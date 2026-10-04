@@ -100,7 +100,7 @@ impl Funnel {
                 loc_of(&[g.sign().reverse()])
             }
             FaceKind::ConeWall => loc_of(&[l[2].sign(), l[2].add_r(&-h).sign().reverse()]),
-            FaceKind::Wall(..) | FaceKind::Half(_) | FaceKind::Patch(..) => {
+            FaceKind::Wall(..) | FaceKind::Half(_) | FaceKind::Patch(..) | FaceKind::Facet(_) => {
                 unreachable!("a cone's faces")
             }
         }
@@ -622,5 +622,6 @@ pub(super) fn model(solid: &Solid, op: Operand, seam: &R) -> Result<Prism> {
         funnel: Some(fun),
         ring: None,
         given: None,
+        hull: None,
     })
 }

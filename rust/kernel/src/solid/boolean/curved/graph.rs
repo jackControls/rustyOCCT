@@ -1040,7 +1040,21 @@ pub(super) fn arrange_shared(models: [Prism; 2]) -> Result<Arr> {
                                 "a section through a sphere's pole off its meridians (S9d.1)",
                             ));
                         }
-                        let id = match vx.iter().position(|v| qv_eq(&v.p, &at)) {
+                        // A vertex of both faces within the resolution of
+                        // the pole is the section's there (S9e.4b.3a: two
+                        // planes' line through a turned frame's pole, an
+                        // edge piercing the sphere there within rounding).
+                        let near = |v: &Vx| {
+                            let (a, b) = (qv_f64(&v.p), qv_f64(&at));
+                            v.faces.contains(&(0, fa))
+                                && v.faces.contains(&(1, fb))
+                                && (0..3).map(|i| (a[i] - b[i]).powi(2)).sum::<f64>() <= res * res
+                        };
+                        let found = vx
+                            .iter()
+                            .position(|v| qv_eq(&v.p, &at))
+                            .or_else(|| vx.iter().position(near));
+                        let id = match found {
                             Some(id) => id,
                             None => {
                                 vx.push(Vx {
@@ -1417,7 +1431,7 @@ pub(super) fn seam_at(m: &Prism, g: usize, x: &QV) -> bool {
 fn on_circle(m: &Prism, f: usize) -> bool {
     match m.faces[f].kind {
         FaceKind::Wall(b, _) => m.bounds[b].circle,
-        FaceKind::Cap(_) | FaceKind::ConeWall => false,
+        FaceKind::Cap(_) | FaceKind::ConeWall | FaceKind::Facet(_) => false,
         // A hemisphere's sides are the split, a torus patch's its seams.
         FaceKind::Patch(..) => true,
         FaceKind::Half(_) => true,

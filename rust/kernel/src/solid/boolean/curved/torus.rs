@@ -1001,5 +1001,6 @@ pub(super) fn model(solid: &Solid, op: Operand, seam: &R) -> Result<Prism> {
         funnel: None,
         ring: Some(ring),
         given: None,
+        hull: None,
     })
 }

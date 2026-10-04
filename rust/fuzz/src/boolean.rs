@@ -68,7 +68,9 @@
 //! the tool again, its volume the object's own result's (`IMPORTED`).
 //! S9e.4b.2: the chained stage's first result of plane faces likewise,
 //! imported (a polyhedron on its stored vertices where it is no prism) and
-//! cut by the turned box again, its volume the chained cut's.
+//! cut by the turned box again, its volume the chained cut's. S9e.4b.3a:
+//! a first result of one sphere, cylinder or cone face and plane faces too
+//! (a plane piece, its primitive common its planes' half-spaces).
 use crate::analytic_intersections::Bytes;
 use crate::split::{profile, spline_profile};
 use rusty_occt::identity::OperationId;
@@ -145,7 +147,8 @@ const GIVEN_MET: bool = false;
 /// is imported and given the chosen operation again (S9e.4a: an imported
 /// solid decided on the construction its stored surfaces give), and the
 /// chained stage's first result of plane faces cut by the turned box again
-/// (S9e.4b.2: an imported polyhedron on its stored vertices). On.
+/// (S9e.4b.2: an imported polyhedron on its stored vertices), or of one
+/// sphere, cylinder or cone face and planes (S9e.4b.3a: a plane piece). On.
 const IMPORTED: bool = true;
 
 /// Whether a spline prism meets a line prism in frames with different
@@ -735,11 +738,21 @@ pub fn check_boolean(data: &[u8]) {
             }
             // S9e.4b.2: the first result of plane faces written, read back
             // and imported, cut by the box again: the chained cut's volume.
-            let planar = first
+            // S9e.4b.3a: one of a sphere, cylinder or cone face and plane
+            // faces likewise (an imported plane piece).
+            use rusty_occt::topology::Surface as S;
+            let curved: Vec<&S> = first
                 .topology()
                 .faces()
                 .iter()
-                .all(|f| matches!(f.surface, rusty_occt::topology::Surface::Plane(_)));
+                .map(|f| &f.surface)
+                .filter(|s| !matches!(s, S::Plane(_)))
+                .collect();
+            let planar = match curved.as_slice() {
+                [] => true,
+                [s] => matches!(s, S::Sphere { .. } | S::Cylinder { .. } | S::Cone { .. }),
+                _ => false,
+            };
             if let (true, true, Some(c)) = (IMPORTED, planar, &c) {
                 if let Some(again) = reimported(first) {
                     if let Some(out) = run(again.cut(OperationId(12), &box_)) {

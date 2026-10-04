@@ -21,8 +21,11 @@
 //! no such prism is a polyhedron decided on its stored vertices
 //! (`boolean::polyhedra::imported`: S9b.2's stored model, each face the
 //! polygon of its stored vertices, cut into exactly planar triangles where
-//! they are not coplanar), its entities its stored ones. Every other body is
-//! S9e.4b's.
+//! they are not coplanar), its entities its stored ones. S9e.4b.3a: a body
+//! of one sphere, cylinder or cone face and plane faces is a plane piece,
+//! its primitive common its planes' half-spaces (`boolean::curved::pieces`),
+//! its model built and matched to its stored topology on import, its
+//! entities its stored ones. Every other body is S9e.4b's.
 use super::{replayable, Construction, Context, Solid};
 use crate::history::{History, Relation};
 use crate::identity::{
@@ -61,6 +64,19 @@ pub(crate) enum Recognized {
     Construction(Box<Solid>),
     /// S9e.4b.2: a polyhedron other than a prism, on its stored vertices.
     Polyhedron,
+    /// S9e.4b.3a: a plane piece of a sphere, a cylinder or a cone, its
+    /// primitive common its planes' half-spaces.
+    Piece(Box<Piece>),
+}
+
+/// S9e.4b.3a: a plane piece's primitive (a whole sphere, or a cylinder or a
+/// cone on the curved face's stored frame reaching past the body's ends,
+/// with ids of its own) and its planes (each plane face's stored frame and
+/// whether its normal `x * y` points into the material).
+#[derive(Debug, Clone, PartialEq)]
+pub(crate) struct Piece {
+    pub(crate) primitive: Box<Solid>,
+    pub(crate) planes: Vec<(Frame3, bool)>,
 }
 
 impl Imported {
@@ -69,13 +85,44 @@ impl Imported {
         self.recognized == Recognized::Polyhedron
     }
 
+    /// Whether it is a plane piece of a sphere, a cylinder or a cone
+    /// (S9e.4b.3a).
+    pub(crate) fn piece(&self) -> bool {
+        matches!(self.recognized, Recognized::Piece(_))
+    }
+
     /// A point's location: its construction's (within the resolution), or
     /// the polyhedron's stored model's (S9e.4b.2).
     pub(crate) fn classify(&self, solid: &Solid, point: Point3) -> Result<crate::Location> {
         match &self.recognized {
             Recognized::Construction(s) => s.classify(point),
             Recognized::Polyhedron => super::boolean::polyhedra::imported::classify(solid, point),
+            Recognized::Piece(p) => p.classify(point, self.tolerance),
         }
+    }
+}
+
+impl Piece {
+    /// A point's location: its primitive's and its planes' sides (within
+    /// the resolution).
+    fn classify(&self, point: Point3, tolerance: Tolerance) -> Result<crate::Location> {
+        use crate::Location;
+        let mut at = self.primitive.classify(point)?;
+        if at == Location::Outside {
+            return Ok(at);
+        }
+        let tol = tolerance.linear();
+        for (frame, into) in &self.planes {
+            let d = frame.coordinates(point)[2];
+            let d = if *into { -d } else { d };
+            if d > tol {
+                return Ok(Location::Outside);
+            }
+            if d >= -tol {
+                at = Location::Boundary;
+            }
+        }
+        Ok(at)
     }
 }
 
@@ -143,6 +190,13 @@ impl Solid {
                 }
                 (Recognized::Polyhedron, BTreeMap::new())
             }
+            // S9e.4b.3a: a plane piece of a sphere, a cylinder or a cone, its
+            // primitive common its planes' half-spaces (checked below).
+            Err(e) if piece_shape(&topology) => {
+                let p = piece(&topology, resolution, construction_operation(operation))
+                    .map_err(|_| e)?;
+                (Recognized::Piece(Box::new(p)), BTreeMap::new())
+            }
             Err(e) => return Err(e),
         };
         let mass = topology
@@ -167,7 +221,11 @@ impl Solid {
             operation,
         };
         // S9e.4b.2: a polyhedron's stored model builds (no face folded).
+        // S9e.4b.3a: a piece's model builds and matches its stored topology.
         if let Construction::Imported(i) = &solid.construction {
+            if i.piece() {
+                super::boolean::curved::pieces::check(&solid)?;
+            }
             if i.polyhedron() {
                 super::boolean::polyhedra::imported::check(&solid)?;
             }
@@ -223,6 +281,10 @@ impl Imported {
                 Recognized::Construction(Box::new(r.transform_with(r.operation, motion)?.0))
             }
             Recognized::Polyhedron => Recognized::Polyhedron,
+            // S9e.4b.3a: read off the moved stored topology again.
+            Recognized::Piece(p) => {
+                Recognized::Piece(Box::new(piece(&moved, tolerance, p.primitive.operation)?))
+            }
         };
         let (frame, start, end, bounds) = placed(&recognized, &moved);
         Ok(Solid {
@@ -291,6 +353,12 @@ fn placed(recognized: &Recognized, t: &Topology) -> (Frame3, f64, f64, crate::Bo
         Recognized::Polyhedron => {
             let b = super::split::edge_bounds(t);
             (Frame3::xy(), b.min.z, b.max.z, b)
+        }
+        // S9e.4b.3a: the primitive's frame, the bounds its stored edges' and
+        // its primitive's between the body's axial ends.
+        Recognized::Piece(p) => {
+            let r = &p.primitive;
+            (r.frame, r.start, r.end, widened(piece_bounds(p, t), t))
         }
     }
 }
@@ -716,4 +784,159 @@ fn torus(t: &Topology, tolerance: Tolerance, op: OperationId) -> Result<Solid> {
     }
     let tau = std::f64::consts::TAU;
     Solid::build_torus(op, *frame, *major, *minor, 0.0, tau, tau, tolerance)
+}
+
+// ------------------------------------------------------------------ plane pieces
+
+/// Whether a stored topology is a plane piece's shape (S9e.4b.3a): one
+/// solid region of one shell, one sphere, cylinder or cone face and plane
+/// faces, no spline edge.
+fn piece_shape(t: &Topology) -> bool {
+    let curved: Vec<_> = t
+        .faces()
+        .iter()
+        .filter(|f| !matches!(f.surface, Surface::Plane(_)))
+        .collect();
+    one_shell(t)
+        && t.faces().len() >= 2
+        && matches!(
+            curved.as_slice(),
+            [f] if matches!(
+                f.surface,
+                Surface::Sphere { .. } | Surface::Cylinder { .. } | Surface::Cone { .. }
+            )
+        )
+        && !t
+            .edges()
+            .iter()
+            .any(|e| matches!(e.curve, Curve3::BSpline(_)))
+}
+
+/// The axial range of the stored topology's edges about a frame (the
+/// corners of their bounds).
+fn axial_range(t: &Topology, frame: &Frame3) -> (f64, f64) {
+    let b = super::split::edge_bounds(t);
+    let (lo, hi) = (b.min.to_array(), b.max.to_array());
+    let mut range = (f64::INFINITY, f64::NEG_INFINITY);
+    for k in 0..8 {
+        let c = Point3::new(
+            if k & 1 == 0 { lo[0] } else { hi[0] },
+            if k & 2 == 0 { lo[1] } else { hi[1] },
+            if k & 4 == 0 { lo[2] } else { hi[2] },
+        );
+        let w = frame.coordinates(c)[2];
+        range = (range.0.min(w), range.1.max(w));
+    }
+    range
+}
+
+/// A plane piece: its primitive on the curved face's stored frame and its
+/// plane faces' stored frames (S9e.4b.3a).
+fn piece(t: &Topology, tolerance: Tolerance, op: OperationId) -> Result<Piece> {
+    let k = t
+        .faces()
+        .iter()
+        .position(|f| !matches!(f.surface, Surface::Plane(_)))
+        .ok_or_else(general)?;
+    let half = std::f64::consts::FRAC_PI_2;
+    let primitive = match &t.faces()[k].surface {
+        Surface::Sphere { frame, radius } => {
+            Solid::build_sphere(op, *frame, *radius, -half, half, tolerance)?
+        }
+        Surface::Cylinder { frame, radius } => {
+            // Past the body's ends along the axis by a quarter of its span.
+            let (w0, w1) = axial_range(t, frame);
+            let margin = 0.25 * (w1 - w0).max(*radius);
+            let profile = Profile::new(
+                Boundary::circle(Point2::new(0.0, 0.0), *radius, tolerance)?,
+                Vec::new(),
+                tolerance,
+            )?;
+            Solid::build(op, profile, *frame, w0 - margin, w1 + margin)?
+        }
+        Surface::Cone {
+            frame,
+            radius,
+            half_angle,
+        } => {
+            // The radius `radius + w tan a`, past the body's ends but not
+            // past the apex.
+            let slope = half_angle.tan();
+            let (w0, w1) = axial_range(t, frame);
+            let margin = 0.25 * (w1 - w0).max(radius.abs());
+            let (mut lo, mut hi) = (w0 - margin, w1 + margin);
+            let apex = -radius / slope;
+            let (mut r_lo, mut r_hi) = (radius + lo * slope, radius + hi * slope);
+            if slope > 0.0 && lo <= apex {
+                lo = apex;
+                r_lo = 0.0;
+            }
+            if slope < 0.0 && hi >= apex {
+                hi = apex;
+                r_hi = 0.0;
+            }
+            if r_lo < 0.0 || r_hi < 0.0 {
+                return Err(general());
+            }
+            let base = frame.at(frame.point(Point2::new(0.0, 0.0), lo));
+            Solid::build_cone(op, base, r_lo, r_hi, hi - lo, tolerance)?
+        }
+        _ => return Err(general()),
+    };
+    let mut planes = Vec::new();
+    for (i, f) in t.faces().iter().enumerate() {
+        if i == k {
+            continue;
+        }
+        let Surface::Plane(frame) = &f.surface else {
+            return Err(general());
+        };
+        let out = outward(t, i).ok_or_else(general)?;
+        planes.push((*frame, frame.normal().dot(out) < 0.0));
+    }
+    Ok(Piece {
+        primitive: Box::new(primitive),
+        planes,
+    })
+}
+
+/// A plane piece's bounds: its primitive's between the body's axial ends
+/// (a cylinder's or a cone's), else its primitive's.
+fn piece_bounds(p: &Piece, t: &Topology) -> crate::Bounds3 {
+    let r = &p.primitive;
+    let (frame, n) = (r.frame, r.frame.normal());
+    let reach = |w: f64, radius: f64| {
+        let c = frame.point(Point2::new(0.0, 0.0), w);
+        let e = n.to_array().map(|x| radius * (1.0 - x * x).max(0.0).sqrt());
+        (c, e)
+    };
+    let (w0, w1) = axial_range(t, &frame);
+    let ends = match &r.construction {
+        Construction::Prism(profile) => {
+            let Some((_, radius)) = profile.outer().circle_geometry() else {
+                return r.bounds;
+            };
+            [reach(w0, radius), reach(w1, radius)]
+        }
+        Construction::Cone { bottom, top, .. } => {
+            let h = r.end - r.start;
+            let at = |w: f64| bottom + (top - bottom) * ((w - r.start) / h).clamp(0.0, 1.0);
+            [reach(w0, at(w0)), reach(w1, at(w1))]
+        }
+        _ => return r.bounds,
+    };
+    let mut lo = [f64::INFINITY; 3];
+    let mut hi = [f64::NEG_INFINITY; 3];
+    for (c, e) in ends {
+        let c = c.to_array();
+        for i in 0..3 {
+            let pad = 4.0 * f64::EPSILON * (c[i].abs() + e[i]);
+            lo[i] = lo[i].min(c[i] - e[i] - pad);
+            hi[i] = hi[i].max(c[i] + e[i] + pad);
+        }
+    }
+    crate::Bounds3 {
+        min: Point3::new(lo[0], lo[1], lo[2]),
+        max: Point3::new(hi[0], hi[1], hi[2]),
+    }
 }

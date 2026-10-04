@@ -765,7 +765,29 @@ fn build_component(
                     Loop::Vertex(_) => 0,
                 })
                 .sum();
-            if total.abs() == 1 {
+            // S9e.4b.3a: a loop through a pole (a meridian circle, an
+            // imported piece's plane through the axis) turns half a turn
+            // there either way: it winds none, the face closing on it.
+            let tol = arr.models[0].tolerance.linear();
+            let ends = [*radius, -*radius].map(|h| frame.point(Point2::default(), h));
+            let through = loop_ids.iter().copied().find(|l| match &p.loops[l.0] {
+                Loop::Edges { fins, winding } => {
+                    winding[0] == total
+                        && fins.iter().any(|f| {
+                            let e = &p.edges[p.fins[f.0].edge.0];
+                            [e.start, e.end].into_iter().flatten().any(|v| {
+                                ends.iter()
+                                    .any(|&q| (p.vertices[v.0].position - q).length() <= tol)
+                            })
+                        })
+                }
+                Loop::Vertex(_) => false,
+            });
+            if let (1, Some(l)) = (total.abs(), through) {
+                if let Loop::Edges { winding, .. } = &mut p.loops[l.0] {
+                    winding[0] -= total;
+                }
+            } else if total.abs() == 1 {
                 let north = (total == 1) == (sense == Orientation::Forward);
                 let at = frame.point(Point2::default(), if north { *radius } else { -*radius });
                 let vid = VertexId(p.vertices.len());

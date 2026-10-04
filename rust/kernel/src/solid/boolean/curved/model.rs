@@ -260,6 +260,8 @@ pub(super) enum FaceKind {
     /// seam) or not, the plus half of the turn (from its meridian seam) or
     /// not (S9d.4a).
     Patch(bool, bool),
+    /// A hull's face on its plane `k` (S9e.4b.3a).
+    Facet(usize),
 }
 
 /// A face's exact surface, its normal leaving the material.
@@ -340,6 +342,8 @@ pub(super) enum EdgeKind {
     /// A given result's edge (S9e.1): an arrangement edge of the Boolean
     /// that made it, `j` in its given model.
     Given(usize),
+    /// A hull's edge `j` (S9e.4b.3a).
+    Facet(usize),
 }
 
 #[derive(Debug, Clone)]
@@ -394,6 +398,9 @@ pub(super) struct Prism {
     /// its inputs' faces holding its kept pieces, each on its input's model
     /// (`view`), its membership and regions the first Boolean's.
     pub(super) given: Option<Box<super::given::Given>>,
+    /// A convex body of planes' half-spaces (S9e.4b.3a): its faces are its
+    /// planes' polygons, its membership every half-space.
+    pub(super) hull: Option<Box<super::pieces::Hull>>,
 }
 
 fn out_of_domain(what: &'static str) -> Error {
@@ -744,6 +751,7 @@ impl Prism {
             funnel: None,
             ring: None,
             given: None,
+            hull: None,
         };
         prism.check_slots(solid)?;
         prism.boxes = (0..prism.faces.len()).map(|i| prism.face_box(i)).collect();
@@ -815,7 +823,7 @@ impl Prism {
                 }
             }
             FaceKind::Wall(b, j) => add_seg(&self.bounds[b].segs[j], &mut pts),
-            FaceKind::Half(_) | FaceKind::ConeWall | FaceKind::Patch(..) => {
+            FaceKind::Half(_) | FaceKind::ConeWall | FaceKind::Patch(..) | FaceKind::Facet(_) => {
                 unreachable!("a sphere's, a cone's and a torus's boxes are their own")
             }
         }
@@ -1188,6 +1196,9 @@ impl Prism {
         if let Some(g) = &self.given {
             return g.member(p, dirs);
         }
+        if let Some(h) = &self.hull {
+            return h.member(p, dirs);
+        }
         if let Some(ball) = &self.ball {
             return ball.member(p, dirs);
         }
@@ -1243,6 +1254,9 @@ impl Prism {
         if let Some(g) = &self.given {
             return g.in_face(fi, p);
         }
+        if let Some(h) = &self.hull {
+            return h.in_face(fi, p);
+        }
         if let Some(ball) = &self.ball {
             return match self.faces[fi].kind {
                 FaceKind::Half(side) => ball.in_half(side, p),
@@ -1255,7 +1269,10 @@ impl Prism {
                         Ordering::Greater => Loc::Out,
                     }
                 }
-                FaceKind::Wall(..) | FaceKind::ConeWall | FaceKind::Patch(..) => {
+                FaceKind::Wall(..)
+                | FaceKind::ConeWall
+                | FaceKind::Patch(..)
+                | FaceKind::Facet(_) => {
                     unreachable!("a sphere has no walls")
                 }
             };
@@ -1274,7 +1291,7 @@ impl Prism {
                 OnProfile::Out => Loc::Out,
                 _ => Loc::On,
             },
-            FaceKind::Half(_) | FaceKind::ConeWall | FaceKind::Patch(..) => {
+            FaceKind::Half(_) | FaceKind::ConeWall | FaceKind::Patch(..) | FaceKind::Facet(_) => {
                 unreachable!("a prism has no hemispheres, cone walls or torus patches")
             }
             FaceKind::Wall(b, j) => {
