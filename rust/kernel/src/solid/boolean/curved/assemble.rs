@@ -1330,6 +1330,28 @@ fn curve3(arr: &Arr, e: &REdge, points: &BTreeMap<usize, Point3>) -> Result<Curv
                 return Err(Error::InvalidTopology("a wall's meeting off a cylinder"));
             };
             let (a, b) = chain_taus(arr, e);
+            // S9f.2b.2: a graph over the height, over the wall's `v` (the
+            // height above the low cap), its window in the wall's `u`.
+            if let Some(win) = &m.window {
+                let face = if m.carrier == 0 { s.fa } else { s.fb };
+                let lo = rational_f64(&arr.models[m.carrier].view(face).0.lo);
+                let (va, vb) = (a.to_f64() - lo, b.to_f64() - lo);
+                if va == vb {
+                    return Err(Error::Degenerate(
+                        "a wall's meeting's piece within rounding",
+                    ));
+                }
+                let ends = win.tau.clone().map(|t| m.seg.t_of(&Qd::rat(t)).to_f64());
+                return Ok(Curve3::WallMeet(Box::new(crate::topology::WallMeet {
+                    wall: wall.clone(),
+                    other: *frame,
+                    other_radius: *radius,
+                    sign: 1.0,
+                    start: va,
+                    sweep: vb - va,
+                    window: Some([ends[0].min(ends[1]), ends[0].max(ends[1])]),
+                })));
+            }
             let (ta, tb) = (m.seg.t_of(&a).to_f64(), m.seg.t_of(&b).to_f64());
             if ta == tb {
                 return Err(Error::Degenerate(
@@ -1343,6 +1365,7 @@ fn curve3(arr: &Arr, e: &REdge, points: &BTreeMap<usize, Point3>) -> Result<Curv
                 sign: if m.plus { 1.0 } else { -1.0 },
                 start: ta,
                 sweep: tb - ta,
+                window: None,
             })))
         }
         Crv::Rise(m) => {

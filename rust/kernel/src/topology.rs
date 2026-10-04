@@ -558,6 +558,13 @@ impl Toric {
 /// range keeps `b^2 - a c > 0` (no turning point), so it is analytic on each
 /// knot span of the wall and C^(p-1) across its knots (as the wall); on its
 /// own wall its pcurve is its own `(u, v)`.
+///
+/// S9f.2b.2: with a `window`, a piece about a turning point (where the
+/// ruling touches the cylinder) is a graph over the wall's `v` instead: `v
+/// = start + sweep f`, and `u` the one root of `a t^2 + 2 b t + c` (`t = v -
+/// v0`) inside the window, a range of `u` inside one knot span of the wall
+/// (`sign` unused). The Boolean verified exactly that the window holds one
+/// simple root at every `v` of the range, so the edge is analytic.
 #[derive(Debug, Clone, PartialEq)]
 pub struct WallMeet {
     pub wall: crate::BSplineSurface3,
@@ -566,6 +573,7 @@ pub struct WallMeet {
     pub sign: f64,
     pub start: f64,
     pub sweep: f64,
+    pub window: Option<[f64; 2]>,
 }
 
 impl WallMeet {
@@ -619,8 +627,71 @@ impl WallMeet {
         (a, (b - a) / (v1 - v0))
     }
 
+    /// The cylinder's function along the ruling at `u`, `t` from its foot.
+    pub fn along(&self, u: f64, t: f64) -> f64 {
+        let (foot, dir) = self.ruling(u);
+        let w = foot + dir * t - self.other.origin();
+        let (x, y) = (w.dot(self.other.x()), w.dot(self.other.y()));
+        x * x + y * y - self.other_radius * self.other_radius
+    }
+
+    /// A graph over `v` (S9f.2b.2): `u` at `t = v - v0`, the root of
+    /// `along(., t)` in the window by bisection (secant steps where they
+    /// stay well inside), sampled across the window for a change of sign
+    /// where its ends show none.
+    pub fn root_at(&self, t: f64) -> f64 {
+        let [mut a, mut b] = self.window.unwrap_or([0.0, 1.0]);
+        let (mut fa, mut fb) = (self.along(a, t), self.along(b, t));
+        if fa.signum() == fb.signum() && fa != 0.0 && fb != 0.0 {
+            let n = 64;
+            let mut prev = (a, fa);
+            for k in 1..=n {
+                let x = a + (b - a) * k as f64 / n as f64;
+                let fx = self.along(x, t);
+                if fx.signum() != prev.1.signum() {
+                    (a, fa, b, fb) = (prev.0, prev.1, x, fx);
+                    break;
+                }
+                prev = (x, fx);
+            }
+        }
+        if fa == 0.0 {
+            b = a;
+        } else if fb == 0.0 {
+            a = b;
+        }
+        for _ in 0..200 {
+            if b - a <= 4.0 * f64::EPSILON * a.abs().max(b.abs()).max(1.0) {
+                break;
+            }
+            let mid = 0.5 * a + 0.5 * b;
+            let secant = a - fa * (b - a) / (fb - fa);
+            let x = if secant > a && secant < b && (secant - mid).abs() < 0.25 * (b - a) {
+                secant
+            } else {
+                mid
+            };
+            let fx = self.along(x, t);
+            if fx == 0.0 {
+                (a, b) = (x, x);
+                break;
+            }
+            if fx.signum() == fa.signum() {
+                (a, fa) = (x, fx);
+            } else {
+                (b, fb) = (x, fx);
+            }
+        }
+        0.5 * a + 0.5 * b
+    }
+
     /// The wall's `(u, v)` at a fraction.
     pub fn parameters(&self, fraction: f64) -> (f64, f64) {
+        if self.window.is_some() {
+            let v = self.start + self.sweep * fraction;
+            let v0 = self.wall.domain().1 .0;
+            return (self.root_at(v - v0), v);
+        }
         let u = self.start + self.sweep * fraction;
         let (foot, dir) = self.ruling(u);
         let w = foot - self.other.origin();

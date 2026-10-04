@@ -2,13 +2,16 @@
   "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
   "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
   "platform": "darwin",
-  "rust_revision": "3d06f5eb826e6f903a72b0a40fa0ca05b5a0b1dd",
-  "rust_spline_crossing_boolean_exists": false,
+  "rust_revision": "2db283c451c4a32d7220d12540738ac01fe11099",
+  "rust_spline_loops_boolean_exists": false,
   "rust_worktree_uncommitted": [
-    "?? rust/fixtures/occt-boolean-spline-crossing-preimplementation/"
+    " M rust/fixtures/occt-boolean-spline-crossing-preimplementation/inputs.txt",
+    " M rust/fixtures/occt-boolean-spline-crossing-preimplementation/native.txt",
+    " M rust/tools/compare_boolean.py",
+    " M rust/tools/compare_spline_crossing_boolean.py"
   ],
   "sdk_manifest_sha256": "cf67084f02f40dc622ee350e0536985f7e138ed3e87d67982f696c9e2b56585e",
-  "input_sha256": "52e8d878508725f61aa59ef95d7126119232a90c671ce3c8f1a169957cc1792f",
+  "input_sha256": "e09fb211ef968ec96c9e285ba329d91a9bc57e610c31984507fd506efd03382e",
   "probe_source_sha256": "ec4bc97c86e88f7a5b876c7b360dafd67906cb1899e3800f41f24c633ff30cf7",
-  "observations_sha256": "6992287653e297b1a7431d80efdd82d2b11e6e9e76574e170af3ecaa04393834"
+  "observations_sha256": "48d07fa1ff8a0b780aab7e93adb4af0caf79d1ffd77933d826bc8ceebe31943d"
 }

@@ -332,6 +332,35 @@ pub(super) fn arrange_shared(models: [Prism; 2]) -> Result<Arr> {
             pairs.insert((fa, fb), pair);
         }
     }
+    // A spline wall and a cylinder on crossing axes (S9f.2b): the meeting's
+    // graphs over the run and over the height and their switches (S9f.2b.2).
+    for fa in 0..models[0].faces.len() {
+        let (va, ia) = models[0].view(fa);
+        for fb in 0..models[1].faces.len() {
+            let (vb, ib) = models[1].view(fb);
+            let crossing =
+                |s: &Prism, c: &Prism| super::spline_parallel::map2(&s.f, &c.f).is_none();
+            let meets = boxes_meet(&models[0].boxes[fa], &models[1].boxes[fb]);
+            let pair = match (&va.faces[ia].surf, &vb.faces[ib].surf) {
+                (Surf::Spline(s), Surf::Cyl { c, r, .. }) if crossing(va, vb) => {
+                    if meets {
+                        super::spline_crossing::meeting(va, ia, s, vb, ib, c, r)?
+                    } else {
+                        CylPair::Apart
+                    }
+                }
+                (Surf::Cyl { c, r, .. }, Surf::Spline(s)) if crossing(vb, va) => {
+                    if meets {
+                        super::spline_crossing::meeting(vb, ib, s, va, ia, c, r)?
+                    } else {
+                        CylPair::Apart
+                    }
+                }
+                _ => continue,
+            };
+            pairs.insert((fa, fb), pair);
+        }
+    }
     // A cylinder and a sphere (S9d.2): rings over the cylinder's angle, or
     // apart.
     let res = models[0].tolerance.linear();

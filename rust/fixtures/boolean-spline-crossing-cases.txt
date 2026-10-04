@@ -331,6 +331,193 @@ frame 5.0 1.0 -0.5 0.0 3.0 4.0 1.0 0.0 0.0
 offsets 0.0 6.0
 boundary C 0.0 0.0 0.5
 end
+case dome_cap_tower_fuse 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 3.0
+boundary S 2 0.0 0.0 L 4.0 0.0 B 2 3 4.0 0.0 2.0 4.0 0.0 0.0 2 0.0 1.0 3 3
+boolean fuse 93
+op 92
+frame -1.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0 0.0
+offsets 0.0 3.5
+boundary C 1.0 1.5 1.25
+end
+case dome_cap_tower_cut 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 3.0
+boundary S 2 0.0 0.0 L 4.0 0.0 B 2 3 4.0 0.0 2.0 4.0 0.0 0.0 2 0.0 1.0 3 3
+boolean cut 93
+op 92
+frame -1.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0 0.0
+offsets 0.0 3.5
+boundary C 1.0 1.5 1.25
+end
+case dome_cap_tower_common 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 3.0
+boundary S 2 0.0 0.0 L 4.0 0.0 B 2 3 4.0 0.0 2.0 4.0 0.0 0.0 2 0.0 1.0 3 3
+boolean common 93
+op 92
+frame -1.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0 0.0
+offsets 0.0 3.5
+boundary C 1.0 1.5 1.25
+end
+case lens_cap_tower_fuse 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 4.0
+boundary S 2 3.0 5.0 B 3 4 3.0 5.0 4.0 2.0 6.0 2.0 7.0 5.0 2 0.0 1.0 4 4 7.0 5.0 B 3 4 7.0 5.0 6.0 8.0 4.0 8.0 3.0 5.0 2 0.0 1.0 4 4
+boolean fuse 93
+op 92
+frame 1.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0 0.0
+offsets 0.0 4.5
+boundary C 5.0 2.0 2.5
+end
+case lens_cap_tower_cut 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 4.0
+boundary S 2 3.0 5.0 B 3 4 3.0 5.0 4.0 2.0 6.0 2.0 7.0 5.0 2 0.0 1.0 4 4 7.0 5.0 B 3 4 7.0 5.0 6.0 8.0 4.0 8.0 3.0 5.0 2 0.0 1.0 4 4
+boolean cut 93
+op 92
+frame 1.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0 0.0
+offsets 0.0 4.5
+boundary C 5.0 2.0 2.5
+end
+case lens_cap_tower_common 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 4.0
+boundary S 2 3.0 5.0 B 3 4 3.0 5.0 4.0 2.0 6.0 2.0 7.0 5.0 2 0.0 1.0 4 4 7.0 5.0 B 3 4 7.0 5.0 6.0 8.0 4.0 8.0 3.0 5.0 2 0.0 1.0 4 4
+boolean common 93
+op 92
+frame 1.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0 0.0
+offsets 0.0 4.5
+boundary C 5.0 2.0 2.5
+end
+case bulge_cap_loop_fuse 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 3.0
+boundary S 4 0.0 0.0 L 10.0 0.0 B 2 3 10.0 0.0 12.0 3.0 10.0 6.0 2 0.0 1.0 3 3 10.0 6.0 L 0.0 6.0 L
+boolean fuse 93
+op 92
+frame -1.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0 0.0
+offsets 0.0 11.95
+boundary C 3.0 1.5 1.0
+end
+case bulge_cap_loop_cut 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 3.0
+boundary S 4 0.0 0.0 L 10.0 0.0 B 2 3 10.0 0.0 12.0 3.0 10.0 6.0 2 0.0 1.0 3 3 10.0 6.0 L 0.0 6.0 L
+boolean cut 93
+op 92
+frame -1.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0 0.0
+offsets 0.0 11.95
+boundary C 3.0 1.5 1.0
+end
+case bulge_cap_loop_common 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 3.0
+boundary S 4 0.0 0.0 L 10.0 0.0 B 2 3 10.0 0.0 12.0 3.0 10.0 6.0 2 0.0 1.0 3 3 10.0 6.0 L 0.0 6.0 L
+boolean common 93
+op 92
+frame -1.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0 0.0
+offsets 0.0 11.95
+boundary C 3.0 1.5 1.0
+end
+case bulge_side_cap_loop_fuse 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 3.0
+boundary S 4 0.0 0.0 L 10.0 0.0 B 2 3 10.0 0.0 12.0 3.0 10.0 6.0 2 0.0 1.0 3 3 10.0 6.0 L 0.0 6.0 L
+boolean fuse 93
+op 92
+frame -1.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0 0.0
+offsets 0.0 14.0
+boundary C 3.0 2.5 1.0
+end
+case bulge_side_cap_loop_cut 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 3.0
+boundary S 4 0.0 0.0 L 10.0 0.0 B 2 3 10.0 0.0 12.0 3.0 10.0 6.0 2 0.0 1.0 3 3 10.0 6.0 L 0.0 6.0 L
+boolean cut 93
+op 92
+frame -1.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0 0.0
+offsets 0.0 14.0
+boundary C 3.0 2.5 1.0
+end
+case bulge_side_cap_loop_common 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 3.0
+boundary S 4 0.0 0.0 L 10.0 0.0 B 2 3 10.0 0.0 12.0 3.0 10.0 6.0 2 0.0 1.0 3 3 10.0 6.0 L 0.0 6.0 L
+boolean common 93
+op 92
+frame -1.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0 0.0
+offsets 0.0 14.0
+boundary C 3.0 2.5 1.0
+end
+case lens_tilt_cap_loop_fuse 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 4.0
+boundary S 2 3.0 5.0 B 3 4 3.0 5.0 4.0 2.0 6.0 2.0 7.0 5.0 2 0.0 1.0 4 4 7.0 5.0 B 3 4 7.0 5.0 6.0 8.0 4.0 8.0 3.0 5.0 2 0.0 1.0 4 4
+boolean fuse 93
+op 92
+frame 5.0 1.0 -0.5 0.0 3.0 4.0 1.0 0.0 0.0
+offsets 0.0 3.4
+boundary C 0.0 0.0 0.5
+end
+case lens_tilt_cap_loop_cut 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 4.0
+boundary S 2 3.0 5.0 B 3 4 3.0 5.0 4.0 2.0 6.0 2.0 7.0 5.0 2 0.0 1.0 4 4 7.0 5.0 B 3 4 7.0 5.0 6.0 8.0 4.0 8.0 3.0 5.0 2 0.0 1.0 4 4
+boolean cut 93
+op 92
+frame 5.0 1.0 -0.5 0.0 3.0 4.0 1.0 0.0 0.0
+offsets 0.0 3.4
+boundary C 0.0 0.0 0.5
+end
+case lens_tilt_cap_loop_common 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 4.0
+boundary S 2 3.0 5.0 B 3 4 3.0 5.0 4.0 2.0 6.0 2.0 7.0 5.0 2 0.0 1.0 4 4 7.0 5.0 B 3 4 7.0 5.0 6.0 8.0 4.0 8.0 3.0 5.0 2 0.0 1.0 4 4
+boolean common 93
+op 92
+frame 5.0 1.0 -0.5 0.0 3.0 4.0 1.0 0.0 0.0
+offsets 0.0 3.4
+boundary C 0.0 0.0 0.5
+end
+case cap_turn_cut 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 3.0
+boundary S 2 0.0 0.0 L 4.0 0.0 B 2 3 4.0 0.0 2.0 4.0 0.0 0.0 2 0.0 1.0 3 3
+boolean cut 93
+op 92
+frame -1.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0 0.0
+offsets 0.0 3.5
+boundary C 2.875 1.5 1.0
+end
+case cap_turn_common 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 3.0
+boundary S 2 0.0 0.0 L 4.0 0.0 B 2 3 4.0 0.0 2.0 4.0 0.0 0.0 2 0.0 1.0 3 3
+boolean common 93
+op 92
+frame -1.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0 0.0
+offsets 0.0 3.5
+boundary C 2.875 1.5 1.0
+end
 case dome_touch_fuse 1e-07
 op 91
 frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0

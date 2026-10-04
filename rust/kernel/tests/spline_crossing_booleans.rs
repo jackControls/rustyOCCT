@@ -1,12 +1,14 @@
-//! S9f.2b.1: Booleans of spline prisms against prisms with arc or circle
+//! S9f.2b: Booleans of spline prisms against prisms with arc or circle
 //! walls whose axes cross, against the independent reference
 //! (`fixtures/boolean-spline-crossing-*` from
 //! `tools/generate_spline_crossing_boolean_fixtures.py`): every meeting a
-//! graph over the spline's parameter inside the faces as the reference,
-//! S9f.2b.2's loops refused (`OutOfDomain`), tangencies and turning points
-//! at knots `Degenerate`; and the decisions' other refusals: a cylinder's
-//! cap circle on a spline wall in a plane holding the wall's axis (a tower
-//! field), spline walls against spline walls on crossing axes.
+//! graph over the spline's parameter inside the faces (S9f.2b.1), loops
+//! turning back inside the faces with graphs over the height about their
+//! turning points and cylinders' cap circles on spline walls in planes
+//! holding the walls' axis (tower fields, S9f.2b.2) as the reference;
+//! tangencies, turning points at knots and on faces' boundaries
+//! `Degenerate`; and the decisions' other refusal: spline walls against
+//! spline walls on crossing axes.
 use rusty_occt::identity::OperationId;
 use rusty_occt::topology::SplineSpan;
 use rusty_occt::{
@@ -55,28 +57,18 @@ fn expected(text: &str) -> std::collections::BTreeMap<String, Expect> {
     expect
 }
 
-/// Every case as the reference declares it: degenerate ones refused,
-/// S9f.2b.2's loops out of the domain, the others with the reference's
-/// solids and their volume, area and centre within enclosures narrower
-/// than 1e-9 relative (a wide one would hold the reference yet report
-/// another).
+/// Every case as the reference declares it (S9f.2b.1's and S9f.2b.2's):
+/// degenerate ones refused, the others with the reference's solids and
+/// their volume, area and centre within enclosures narrower than 1e-9
+/// relative (a wide one would hold the reference yet report another).
 #[test]
 fn every_case_matches_the_reference() {
     let expect = expected(EXPECTED);
     let mut failures = Vec::new();
+    let mut steps = std::collections::BTreeSet::new();
     for case in protocol::cases(CASES) {
         let (kind, step, want) = &expect[&case.name];
-        if step == "S9f.2b.2" {
-            match protocol::run(&case) {
-                Err(Error::OutOfDomain(m)) if m.contains("S9f.2b.2") => {}
-                r => failures.push(format!(
-                    "{}: {:?} not S9f.2b.2's",
-                    case.name,
-                    r.map(|x| x.2.len())
-                )),
-            }
-            continue;
-        }
+        steps.insert(step.clone());
         let rows = match protocol::rows(&case) {
             Ok(r) => r,
             Err(e) => {
@@ -171,6 +163,49 @@ fn every_case_matches_the_reference() {
         "{} failures: {failures:#?}",
         failures.len()
     );
+    assert_eq!(steps.len(), 2, "{steps:?}");
+}
+
+/// S9f.2b.2's loops: about each turning point inside both faces a graph
+/// over the wall's `v` (a `Curve3::WallMeet` with a window inside one knot
+/// span), the graphs over `u` on both branches ending at its switches. The
+/// bulge's wall pierced by the rod (`bulge_side_loop`) holds one loop of two
+/// turning points: two graphs over `v` and two over `u`; the loop cut by the
+/// bulge's top cap (`bulge_side_cap_loop`) keeps its two turning points'
+/// graphs, each from the cap to the graph over `u` below it.
+#[test]
+fn loops_turn_on_graphs_over_the_height() {
+    use rusty_occt::topology::Curve3;
+    for (name, over_v) in [
+        ("bulge_side_loop_common", 2),
+        ("bulge_side_cap_loop_common", 2),
+    ] {
+        let case = protocol::cases(CASES)
+            .into_iter()
+            .find(|c| c.name == name)
+            .unwrap();
+        let (_, _, out, _) = protocol::run(&case).unwrap();
+        let meets: Vec<_> = out
+            .iter()
+            .flat_map(|s| s.topology().edges().to_vec())
+            .filter_map(|e| match e.curve {
+                Curve3::WallMeet(m) => Some(m),
+                _ => None,
+            })
+            .collect();
+        let windows: Vec<_> = meets.iter().filter_map(|m| m.window).collect();
+        assert_eq!(windows.len(), over_v, "{name}: {meets:?}");
+        assert!(meets.len() > windows.len(), "{name}");
+        for m in meets.iter().filter(|m| m.window.is_some()) {
+            let [a, b] = m.window.unwrap();
+            let knots = m.wall.u_knots().knots();
+            assert!(!knots.iter().any(|k| a < *k && *k < b), "{name}: {a} {b}");
+            for f in [0.0, 0.5, 1.0] {
+                let (u, _) = m.parameters(f);
+                assert!(a < u && u < b, "{name}: {u} in {a} {b}");
+            }
+        }
+    }
 }
 
 #[test]
@@ -315,22 +350,26 @@ fn disc(cx: f64, cy: f64, r: f64) -> Profile {
 
 /// A rod along `x` (its axis exactly perpendicular to the dome's) ending at
 /// `x = 2` inside the dome's prism: its cap's plane holds the dome's axis,
-/// meeting the wall in the apex's generatrix, where the circle's points lie
-/// in a tower field (S9f.2b.2's); the same rod through the whole prism, its
-/// caps outside, is S9f.2b.1's (`dome_side`).
+/// meeting the wall in the apex's generatrix, where the circle's point lies
+/// in a tower field, found in one field of the circle's half-angle tangent
+/// (S9f.2b.2); the same rod through the whole prism, its caps outside, is
+/// S9f.2b.1's (`dome_side`). Both by inclusion and exclusion, each result
+/// validated as it is built.
 #[test]
-fn a_cap_circle_on_a_spline_wall_along_its_axis_is_s9f2b2s() {
+fn a_cap_circle_on_a_spline_wall_along_its_axis_evaluates() {
     let a = prism(1, dome(), Frame3::xy(), 0.0, 2.0);
     let side = frame((-1.0, 0.0, 0.0), (1.0, 0.0, 0.0), (0.0, 1.0, 0.0));
     // The rod about (y, z) = (1, -1) of radius 2 to x = 2: its cap circle
     // meets the arch's generatrix at x = 2 (y = 2) at z = sqrt(3) - 1.
     let short = prism(2, disc(1.0, -1.0, 2.0), side, 0.0, 3.0);
-    let r = a.common(OperationId(3), &short);
-    assert!(
-        matches!(&r, Err(Error::OutOfDomain(m)) if m.contains("S9f.2b.2")),
-        "{:?}",
-        r.map(|x| x.0.len())
-    );
+    agree(&a, &short);
+    let (common, _) = a.common(OperationId(3), &short).expect("a common");
+    let z = 3f64.sqrt() - 1.0;
+    assert!(common.iter().any(|s| s
+        .topology()
+        .vertices()
+        .iter()
+        .any(|v| (v.position - Point3::new(2.0, 2.0, z)).length() < 1e-12)));
     // Through the whole prism: its upper branch over the arch from end to
     // end.
     let long = prism(4, disc(1.0, -1.0, 2.0), side, 0.0, 6.0);

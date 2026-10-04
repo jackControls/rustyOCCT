@@ -72,6 +72,13 @@ pub(super) trait Num<T: Real>: Clone {
     /// Whether the value's enclosure at the base is about a point, within
     /// rounding (S9f.2b: a de Casteljau step's form).
     fn sharp(&self) -> bool;
+    /// The count of its Taylor coefficients (one for an enclosure), and its
+    /// coefficient `k` (zero past those it holds): S9f.2b.2's implicit
+    /// roots solve for them one by one.
+    fn terms(&self) -> usize;
+    fn coefficient_at(&self, k: usize) -> T;
+    /// The same number with coefficient `k` (below `terms`) set to `x`.
+    fn with_coefficient(&self, k: usize, x: T) -> Self;
 }
 
 fn middle<T: Real>(x: &T) -> f64 {
@@ -134,6 +141,20 @@ impl<T: Real> Num<T> for Point<T> {
     fn sharp(&self) -> bool {
         sharp(&self.0)
     }
+    fn terms(&self) -> usize {
+        1
+    }
+    fn coefficient_at(&self, k: usize) -> T {
+        if k == 0 {
+            self.0.clone()
+        } else {
+            zero()
+        }
+    }
+    fn with_coefficient(&self, k: usize, x: T) -> Self {
+        debug_assert_eq!(k, 0);
+        Point(x)
+    }
 }
 
 /// Taylor jets (`crate::jet`) as the integrands' numbers (S9f.2b: a spline
@@ -177,6 +198,17 @@ impl<T: Real> Num<T> for crate::jet::Jet<T> {
     }
     fn sharp(&self) -> bool {
         sharp(&self.c[0])
+    }
+    fn terms(&self) -> usize {
+        self.c.len()
+    }
+    fn coefficient_at(&self, k: usize) -> T {
+        self.c.get(k).cloned().unwrap_or_else(zero)
+    }
+    fn with_coefficient(&self, k: usize, x: T) -> Self {
+        let mut out = self.clone();
+        out.c[k] = x;
+        out
     }
 }
 
@@ -359,6 +391,20 @@ impl<T: Real> Num<T> for Series<T> {
     }
     fn sharp(&self) -> bool {
         sharp(&self.c[0])
+    }
+    fn terms(&self) -> usize {
+        self.len
+    }
+    fn coefficient_at(&self, k: usize) -> T {
+        self.coefficient(k)
+    }
+    fn with_coefficient(&self, k: usize, x: T) -> Self {
+        let mut out = self.clone();
+        while out.c.len() <= k {
+            out.c.push(zero());
+        }
+        out.c[k] = x;
+        out
     }
 }
 
@@ -1051,6 +1097,87 @@ impl<T: Real> PieceAt<T> for WallPiece<'_> {
     }
 }
 
+/// A piece of a spline wall's meeting that is a graph over the wall's `v`
+/// (S9f.2b.2) on its window's knot span: the pcurve's fraction `g = ga + τ
+/// len`, the wall's `v` affine in it, `u` the window's root
+/// (`wall_meet::eval_height`), `ū'` from `du/dv = -g_t / g_u`.
+struct HeightPiece<'a> {
+    m: &'a crate::topology::WallMeet,
+    span: &'a super::wall_meet::Span,
+    ga: R,
+    len: R,
+    reversed: bool,
+}
+
+impl HeightPiece<'_> {
+    /// The piece's local `ū` enclosed at its fraction's ends.
+    fn ends<T: Real>(&self) -> Option<[T; 2]> {
+        let at = |t: i64| -> Option<T> {
+            let [u, _, _] = PieceAt::<T>::at(self, &Point(T::from_r(&ratio(t, 1))))?;
+            Some(u.0)
+        };
+        Some([at(0)?, at(1)?])
+    }
+}
+
+impl<T: Real> PieceAt<T> for HeightPiece<'_> {
+    fn at<N: Num<T>>(&self, t: &N) -> Option<[N; 3]> {
+        let g = t.scale(&c(&self.len)).shift(&c(&self.ga));
+        let f = if self.reversed {
+            g.neg().shift(&T::exact_f64(1.0))
+        } else {
+            g
+        };
+        let v = f
+            .scale(&T::exact_f64(self.m.sweep))
+            .shift(&T::exact_f64(self.m.start));
+        let ([u0, u1], [v0, v1]) = (&self.span.u, &self.span.v);
+        let tt = v.shift(&c(&-v0));
+        let (u, du, _) = super::wall_meet::eval_height(self.m, self.span, &tt)?;
+        let ub = u.shift(&c(&-u0)).scale(&c(&(ratio(1, 1) / (u1 - u0))));
+        let vb = tt.scale(&c(&(ratio(1, 1) / (v1 - v0))));
+        let sense = if self.reversed { -1 } else { 1 };
+        let dv = R::from_float(self.m.sweep)? * &self.len * ratio(sense, 1) / (u1 - u0);
+        Some([ub, vb, du.scale(&c(&dv))])
+    }
+}
+
+/// A graph over `v`'s sweep (S9f.2b.2), its fraction range halved exactly
+/// where the rule cannot run on it whole.
+fn sweep_height<T: Real>(
+    nets: &[Net<T>],
+    at: usize,
+    piece: &HeightPiece<'_>,
+    rest: &[T; 3],
+    third: Option<&T>,
+    count: usize,
+    depth: usize,
+) -> Option<Vec<T>> {
+    let mut local = vec![zero::<T>(); count];
+    if sweep_piece(nets, at, piece, piece.ends()?, rest, third, &mut local).is_some() {
+        return Some(local);
+    }
+    if depth >= WALL_SPLITS {
+        return None;
+    }
+    let half = &piece.len / ratio(2, 1);
+    let mut out = vec![zero::<T>(); count];
+    for ga in [piece.ga.clone(), &piece.ga + &half] {
+        let part = HeightPiece {
+            m: piece.m,
+            span: piece.span,
+            ga,
+            len: half.clone(),
+            reversed: piece.reversed,
+        };
+        accumulate(
+            &mut out,
+            &sweep_height(nets, at, &part, rest, third, count, depth + 1)?,
+        );
+    }
+    Some(out)
+}
+
 /// Halvings of a spline wall's meeting's piece before its sweep is given up
 /// (S9f.2b: its `v` a square root whose series over a wide range near a
 /// turning point beyond the piece is undefined).
@@ -1338,6 +1465,18 @@ pub(super) fn spline_face<T: Real>(
                     };
                     let span = spans.spans.get(k)?;
                     let at = nets.iter().position(|q| q.domain[0] == span.u)?;
+                    if m.window.is_some() {
+                        let piece = HeightPiece {
+                            m,
+                            span,
+                            len: &gb - &ga,
+                            ga,
+                            reversed: pr.reversed,
+                        };
+                        let values = sweep_height(&nets, at, &piece, &rest, third, total.len(), 0)?;
+                        accumulate(&mut total, &values);
+                        continue;
+                    }
                     let piece = WallPiece {
                         m,
                         span,

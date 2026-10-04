@@ -28,6 +28,13 @@
 //! bound holds for a function whose `k`-th derivative is absolutely
 //! continuous) and `None` past it; integrals along the curve are split at
 //! the knots exactly (`pieces`), each piece on its span's polynomial.
+//!
+//! S9f.2b.2: a graph over the wall's `v` (a `WallMeet` with a `window`)
+//! lies on one span, its `u` the window's root of the cylinder's function
+//! along the ruling (`eval_height`: interval Newton at the base, then the
+//! series by Newton's steps about a point and coefficient by coefficient
+//! over a range). At a series or a jet every Bernstein polynomial is taken
+//! by its Taylor expansion about the base's value (`Coefficients::at`).
 use super::quadrature::Num;
 use crate::certified::{Fast, Real};
 use crate::jet::Jet;
@@ -43,22 +50,68 @@ use std::sync::Arc;
 struct Coefficients {
     exact: Vec<R>,
     fast: Vec<Fast>,
+    /// The Taylor coefficients' Bernstein polynomials, `P^(m) / m! = C(n,
+    /// m) sum_i (Δ^m b)_i B_i^(n - m)` for `m >= 1`, exact and enclosed.
+    taylor: Vec<(Vec<R>, Vec<Fast>)>,
 }
 
 impl Coefficients {
     fn new(exact: Vec<R>) -> Self {
         let fast = exact.iter().map(Fast::from_r).collect();
-        Self { exact, fast }
+        let n = exact.len().saturating_sub(1);
+        let mut taylor = Vec::new();
+        let mut diff = exact.clone();
+        let mut binomial = one();
+        for m in 1..=n {
+            diff = diff.windows(2).map(|w| &w[1] - &w[0]).collect();
+            binomial = binomial * R::from_integer(((n - m + 1) as i64).into())
+                / R::from_integer((m as i64).into());
+            let e: Vec<R> = diff.iter().map(|x| x * &binomial).collect();
+            let f = e.iter().map(Fast::from_r).collect();
+            taylor.push((e, f));
+        }
+        Self {
+            exact,
+            fast,
+            taylor,
+        }
     }
 
+    /// At an enclosure, by de Casteljau (`bernstein`); at a series or a jet
+    /// by its Taylor expansion about the base, `sum_m P^(m)(t_0) / m! (t -
+    /// t_0)^m` in Horner's form (`P^(m) / m!` enclosed at the base by de
+    /// Casteljau): `n` products of series instead of de Casteljau's `n (n +
+    /// 1)` (S9f.2b.2: a graph over `v` evaluates these at every coefficient
+    /// it solves for), and over a range a mean-value form, its higher terms
+    /// with no constant term to widen.
     fn at<T: Real, N: Num<T>>(&self, t: &N) -> N {
-        let b: Vec<T> = self
-            .exact
-            .iter()
-            .zip(&self.fast)
-            .map(|(x, f)| cached::<T>(f, x))
-            .collect();
-        bernstein(&b, t)
+        let scalars = |exact: &[R], fast: &[Fast]| -> Vec<T> {
+            exact
+                .iter()
+                .zip(fast)
+                .map(|(x, f)| cached::<T>(f, x))
+                .collect()
+        };
+        let b = scalars(&self.exact, &self.fast);
+        if t.terms() <= 1 || self.taylor.is_empty() {
+            return bernstein(&b, t);
+        }
+        let t0 = Jet::constant(t.coefficient_at(0), 0);
+        let at0 = |b: &[T]| bernstein(b, &t0).c[0].clone();
+        let delta = t.with_coefficient(0, T::exact_f64(0.0));
+        let mut acc = t.lift(&at0(&scalars(
+            &self.taylor[self.taylor.len() - 1].0,
+            &self.taylor[self.taylor.len() - 1].1,
+        )));
+        for m in (0..self.taylor.len()).rev() {
+            let c = if m == 0 {
+                at0(&b)
+            } else {
+                at0(&scalars(&self.taylor[m - 1].0, &self.taylor[m - 1].1))
+            };
+            acc = acc.mul(&delta).shift(&c);
+        }
+        acc
     }
 }
 
@@ -76,6 +129,8 @@ pub(super) struct Span {
     /// The foot's and the direction's coordinates along the cylinder's
     /// `x` and `y` (`wx`, `wy`, `mx`, `my`), for ranges.
     axes: [Coefficients; 4],
+    /// Their derivatives in `ū` (S9f.2b.2's graphs over `v`).
+    daxes: [Coefficients; 4],
     /// `-u0`, `1 / (u1 - u0)` and `v0`, exact, and binary64.
     constants: [R; 3],
     fast_constants: [Fast; 3],
@@ -117,6 +172,17 @@ fn product(f: &[R], g: &[R]) -> Vec<R> {
             sum / binomial(m + n, k)
         })
         .collect()
+}
+
+/// The Bernstein coefficients of a Bernstein polynomial's derivative (one
+/// degree lower; zero for a constant).
+fn bernstein_derivative(b: &[R]) -> Vec<R> {
+    let n = b.len() - 1;
+    if n == 0 {
+        return vec![zero()];
+    }
+    let k = R::from_integer((n as i64).into());
+    b.windows(2).map(|w| (&w[1] - &w[0]) * &k).collect()
 }
 
 fn combine(f: &[R], g: &[R], scale: &R) -> Vec<R> {
@@ -228,6 +294,7 @@ pub(super) fn spans(m: &WallMeet) -> Option<Arc<Spans>> {
             low: low.map(Coefficients::new),
             dir: dir.map(Coefficients::new),
             abcd: [a, b, c, d].map(Coefficients::new),
+            daxes: [&wx, &wy, &mx, &my].map(|x| Coefficients::new(bernstein_derivative(x))),
             axes: [wx, wy, mx, my].map(Coefficients::new),
             constants,
             fast_constants,
@@ -362,6 +429,18 @@ pub(super) fn jet<T: Real>(
     pin: Option<usize>,
 ) -> Option<WallJet<T>> {
     let sp = spans(m)?;
+    // S9f.2b.2: a graph over `v` on its window's span.
+    if m.window.is_some() {
+        let k = window_span(&sp, m)?;
+        if pin.is_some_and(|p| p != k) {
+            return None;
+        }
+        let span = &sp.spans[k];
+        let v = fraction.scale(&fc(m.sweep)).add_constant(&fc(m.start));
+        let t = v.add_constant(&T::from_r(&span.v[0]).neg());
+        let (u, _, p) = eval_height(m, span, &t)?;
+        return Some(([u, v], p));
+    }
     let u = fraction.scale(&fc(m.sweep)).add_constant(&fc(m.start));
     let picks = match pin {
         Some(k) => vec![k],
@@ -394,10 +473,162 @@ fn union<T: Real>(a: &Jet<T>, b: &Jet<T>) -> Jet<T> {
     }
 }
 
+/// The span holding a graph over `v`'s window (S9f.2b.2).
+pub(super) fn window_span(sp: &Spans, m: &WallMeet) -> Option<usize> {
+    let [a, b] = m.window?;
+    let (a, b) = (R::from_float(a)?, R::from_float(b)?);
+    sp.spans
+        .iter()
+        .position(|s| s.u[0] <= a && b <= s.u[1] && a < b)
+}
+
+/// S9f.2b.2: a graph over the wall's `v` at `t = v - v0` (any number of the
+/// integrands, its base an enclosure over a range or a point): the root
+/// `u` of `g(u, t) = X^2 + Y^2 - r^2` (`X = wx(ū) + t mx(ū)`, `Y = wy(ū) + t
+/// my(ū)`: the cylinder's function along the ruling) in the window, its
+/// derivative `du/dt = -g_t / g_u` and the curve's point. The root at the
+/// base by interval Newton about the binary64 root (`WallMeet::root_at`),
+/// `u* - g(u*, t) / g_u(U, t)` strictly inside `U` and the window (a unique
+/// root in `U` at every `t` of the base); its Taylor coefficients by the
+/// implicit function theorem term by term: the `k`-th coefficient of
+/// `g(u, t)` is `g_u u_k` plus terms of the lower ones, so `u_k` is minus
+/// those (the coefficient with `u_k` zero) over `g_u` enclosed over the
+/// root's box (inclusion isotone: an enclosure at every point of the base).
+pub(super) fn eval_height<T: Real, N: Num<T>>(
+    m: &WallMeet,
+    span: &Span,
+    t: &N,
+) -> Option<(N, N, [N; 3])> {
+    let window = m.window?;
+    let constant = |i: usize| cached::<T>(&span.fast_constants[i], &span.constants[i]);
+    let local = |u: &N| u.shift(&constant(0)).scale(&constant(1));
+    let r2 = fc::<T>(m.other_radius).square();
+    // `X`, `Y` and their derivatives in `u` at `u` (any number).
+    let parts = |u: &N, t: &N| -> [N; 4] {
+        let ub = local(u);
+        let [wx, wy, mx, my] = std::array::from_fn(|i| span.axes[i].at::<T, N>(&ub));
+        let [dwx, dwy, dmx, dmy] = std::array::from_fn(|i| span.daxes[i].at::<T, N>(&ub));
+        let x = wx.add(&t.mul(&mx));
+        let y = wy.add(&t.mul(&my));
+        let xu = dwx.add(&t.mul(&dmx)).scale(&constant(1));
+        let yu = dwy.add(&t.mul(&dmy)).scale(&constant(1));
+        [x, y, xu, yu]
+    };
+    // `g` and `g_u` over enclosures (a jet of order one in `u`).
+    let g_gu = |u: &T, t: &T| -> (T, T) {
+        let uj = Jet::variable(u.clone(), 1);
+        let tj = Jet::constant(t.clone(), 1);
+        let ub = uj.add_constant(&constant(0)).scale(&constant(1));
+        let [wx, wy, mx, my] = std::array::from_fn(|i| span.axes[i].at::<T, Jet<T>>(&ub));
+        let x = wx.add(&tj.mul(&mx));
+        let y = wy.add(&tj.mul(&my));
+        let g = x.square().add(&y.square()).shift(&r2.neg());
+        (g.c[0].clone(), g.c[1].clone())
+    };
+    let tb = t.coefficient_at(0);
+    let (tlo, thi) = tb.bounds_f64();
+    let star = m.root_at(0.5 * tlo + 0.5 * thi);
+    if !star.is_finite() || star <= window[0] || star >= window[1] {
+        return None;
+    }
+    let s0 = fc::<T>(star);
+    let (g0, _) = g_gu(&s0, &tb);
+    let least = |x: &T| {
+        let (a, b) = x.bounds_f64();
+        if a > 0.0 {
+            a
+        } else if b < 0.0 {
+            -b
+        } else {
+            0.0
+        }
+    };
+    let size = |x: &T| {
+        let (a, b) = x.bounds_f64();
+        a.abs().max(b.abs())
+    };
+    let (_, d0) = g_gu(&s0, &tb);
+    let slope0 = least(&d0);
+    if slope0 <= 0.0 || slope0.is_nan() {
+        return None;
+    }
+    let mut delta = 4.0 * size(&g0) / slope0 + 1e-15 * (1.0 + star.abs());
+    let mut root = None;
+    for _ in 0..12 {
+        if !delta.is_finite() || star - delta <= window[0] || star + delta >= window[1] {
+            break;
+        }
+        let box_u = fc::<T>(star - delta).union(&fc(star + delta));
+        let (_, d) = g_gu(&box_u, &tb);
+        if let Some(q) = g0.div(&d) {
+            let next = s0.sub(&q);
+            let (nlo, nhi) = next.bounds_f64();
+            if nlo > star - delta && nhi < star + delta {
+                root = Some(next);
+                break;
+            }
+        }
+        delta *= 4.0;
+    }
+    let u0 = root?;
+    let (_, gu0) = g_gu(&u0, &tb);
+    if least(&gu0) <= 0.0 {
+        return None;
+    }
+    // About a point, Newton's steps on the series, each doubling the
+    // coefficients known: with `u`'s first `k` those of the root (enclosed)
+    // and the rest any, `u - g(u, t) / g_u(u, t)` holds the root's first `2
+    // k`, its constant term kept the interval Newton enclosure (the
+    // recurrence below divides by `g_u` once per coefficient, widening a
+    // point's high coefficients by its rounding each time). Over a range,
+    // coefficient by coefficient: the `k`-th of `g(u, t)` with `u_k` zero
+    // over `g_u` enclosed over the root's box (Newton's quotient of two wide
+    // series overestimates by orders of magnitude there). Both inclusion
+    // isotone: enclosed at every point of the base.
+    let mut u = t.lift(&u0);
+    if t.sharp() {
+        let mut known = 1;
+        while known < t.terms() {
+            let [x, y, xu, yu] = parts(&u, t);
+            let g = x.square().add(&y.square()).shift(&r2.neg());
+            let gu = x.mul(&xu).add(&y.mul(&yu)).scale(&fc(2.0));
+            let next = u.sub(&g.div(&gu)?);
+            known = (2 * known).min(t.terms());
+            for k in 1..known {
+                u = u.with_coefficient(k, next.coefficient_at(k));
+            }
+        }
+    } else {
+        for k in 1..t.terms() {
+            let ub = local(&u);
+            let [wx, wy, mx, my] = std::array::from_fn(|i| span.axes[i].at::<T, N>(&ub));
+            let x = wx.add(&t.mul(&mx));
+            let y = wy.add(&t.mul(&my));
+            let g = x.square().add(&y.square()).shift(&r2.neg());
+            let uk = g.coefficient_at(k).div(&gu0)?.neg();
+            u = u.with_coefficient(k, uk);
+        }
+    }
+    let ub = local(&u);
+    let [x, y, xu, yu] = parts(&u, t);
+    let [mx, my] = [2, 3].map(|i| span.axes[i].at::<T, N>(&ub));
+    let gt = x.mul(&mx).add(&y.mul(&my));
+    let gu = x.mul(&xu).add(&y.mul(&yu));
+    let du = gt.div(&gu)?.neg();
+    let low: [N; 3] = std::array::from_fn(|k| span.low[k].at(&ub));
+    let dir: [N; 3] = std::array::from_fn(|k| span.dir[k].at(&ub));
+    let point = std::array::from_fn(|k| low[k].add(&dir[k].mul(t)));
+    Some((u, du, point))
+}
+
 /// The edge's fraction range split at the wall's knots, exactly: `(fa,
-/// fb, span)` with `fa < fb`, ascending.
+/// fb, span)` with `fa < fb`, ascending; a graph over `v` (S9f.2b.2) one
+/// piece on its window's span.
 pub(super) fn pieces(m: &WallMeet) -> Option<Vec<(R, R, usize)>> {
     let sp = spans(m)?;
+    if m.window.is_some() {
+        return Some(vec![(zero(), one(), window_span(&sp, m)?)]);
+    }
     let (s, w) = (R::from_float(m.start)?, R::from_float(m.sweep)?);
     if w == zero() {
         return None;
@@ -487,6 +718,7 @@ mod tests {
             sign,
             start,
             sweep,
+            window: None,
         }
     }
 
@@ -602,5 +834,99 @@ mod tests {
         }
         let plane = Surface::Plane(Frame3::xy());
         assert!(Projection::own_wall(Curve3::WallMeet(Box::new(m)), plane, false).is_none());
+    }
+
+    /// S9f.2b.2: the wall above met by a thin rod about `x` through `(0,
+    /// 0.3, 1)` of radius 0.2, whose meeting turns back where the profile's
+    /// `y` is 0.1 (the ruling tangent to the rod): a graph over `v` about
+    /// that turning point, its window across it. Its binary64 points lie on
+    /// the wall and the rod at the window's root, its jets (over a point
+    /// and over a range) enclose its parameters, points and slopes, and its
+    /// pieces are one, on the window's span.
+    #[test]
+    fn graphs_over_v_lie_on_the_wall_and_the_cylinder() {
+        let base = wall_meet(1.0, 0.0, 1.0);
+        let other = Frame3::new(
+            Point3::new(0.0, 0.3, 1.0),
+            Vec3::new(1.0, 0.0, 0.0),
+            Vec3::new(0.0, 1.0, 0.0),
+            Tolerance::default(),
+        )
+        .unwrap();
+        let y = |u: f64| base.wall.point(u, 0.0).unwrap().y;
+        // The turning point on the first span: y = 0.1 rising.
+        let (mut a, mut b) = (0.0, 0.25);
+        for _ in 0..100 {
+            let mid = 0.5 * (a + b);
+            if y(mid) < 0.1 {
+                a = mid;
+            } else {
+                b = mid;
+            }
+        }
+        let turn = 0.5 * (a + b);
+        assert!(turn > 0.01 && turn < 0.2, "{turn}");
+        let switch = turn + 0.01;
+        let h = (0.04 - (y(switch) - 0.3).powi(2)).sqrt();
+        // `v` is the height `z` here: the rod's axis at v = 1.
+        let m = WallMeet {
+            other,
+            other_radius: 0.2,
+            window: Some([turn - 0.01, turn + 0.015]),
+            start: 1.0 - h,
+            sweep: 2.0 * h,
+            ..base
+        };
+        for k in 0..=16 {
+            let f = k as f64 / 16.0;
+            let p = m.point(f);
+            assert!(((p.y - 0.3).hypot(p.z - 1.0) - 0.2).abs() < 1e-14, "{p:?}");
+            let (u, v) = m.parameters(f);
+            assert!(u > turn - 0.01 && u < turn + 0.015);
+            let q = m.wall.point(u, v).unwrap();
+            assert!((p - q).length() < 1e-14, "{p:?} {q:?}");
+            for at in [
+                Jet::variable(Fast::exact_f64(f), 3),
+                Jet::variable(Fast::exact_f64(f).union(&Fast::exact_f64(f + 1e-3)), 3),
+            ] {
+                let ([ju, jv], jp) = jet(&m, &at, None).unwrap();
+                assert!(inside(&ju.c[0], u, 1e-15) && inside(&jv.c[0], v, 1e-14));
+                let dh = 1e-6;
+                let (q0, q1) = (m.point(f - dh), m.point(f + dh));
+                for (i, j) in jp.iter().enumerate() {
+                    assert!(inside(&j.c[0], p.to_array()[i], 1e-14));
+                    let slope = (q1.to_array()[i] - q0.to_array()[i]) / (2.0 * dh);
+                    let (lo, hi) = j.c[1].bounds_f64();
+                    assert!(
+                        lo - 1e-5 <= slope && slope <= hi + 1e-5,
+                        "{slope} {lo} {hi}"
+                    );
+                }
+            }
+        }
+        // Over a range the coefficients hold the point's and stay narrow
+        // (term by term: Newton's series quotient over this range left the
+        // thirteenth `±0.3`, here `±1.6e-3`); about a point the high ones
+        // stay thin (Newton's steps: term by term left the thirteenth `±1.2`).
+        let base = Fast::exact_f64(0.475).union(&Fast::exact_f64(0.525));
+        let range = jet(&m, &Jet::variable(base, 13), None).unwrap().1[1].clone();
+        let point = jet(&m, &Jet::variable(Fast::exact_f64(0.5), 13), None)
+            .unwrap()
+            .1[1]
+            .clone();
+        for k in 0..=13 {
+            let (a, b) = point.c[k].bounds_f64();
+            let (c, d) = range.c[k].bounds_f64();
+            assert!(c <= a && b <= d, "{k}: [{a}, {b}] in [{c}, {d}]");
+            assert!(d - c < 1e-2 && b - a < 1e-9, "{k}: [{c}, {d}], [{a}, {b}]");
+        }
+        assert_eq!(pieces(&m).unwrap(), vec![(zero(), one(), 0)]);
+        assert!(knot_fractions(&m).is_empty());
+        // A window across the knot holds no span.
+        let across = WallMeet {
+            window: Some([0.4, 0.6]),
+            ..m.clone()
+        };
+        assert!(pieces(&across).is_none());
     }
 }

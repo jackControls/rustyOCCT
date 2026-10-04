@@ -94,6 +94,11 @@ class Set:
         """True while the kernel must refuse every case (`unsupported`)."""
         return self.splines and not rust_spline_boolean_exists()
 
+    def must_support(self, case):
+        """Whether the kernel may no longer report `case` `unsupported` (a
+        later sub-step's case once its code exists, S9f.2b.2)."""
+        return False
+
 
 def make_set(splines):
     return Set(splines)
@@ -338,7 +343,7 @@ def main():
     # with different axes): every case unsupported.
     pre_splines = SET.before_code()
     if SET.exists_key != 'rust_boolean_exists':
-        report[SET.exists_key] = not pre_splines
+        report[SET.exists_key] = SET.exists()
     rust = None
     if not args.native_only and PROBE.exists():
         rust, report['rust_probe_failed'] = rust_rows()
@@ -351,6 +356,10 @@ def main():
                                                  or name in report['rust_probe_failed']):
             reason = SET.exists_key[:-len('_exists')]+'_before_its_code'
             report['failures'].append({'case': name, 'reason': reason, 'rust': rust[name]})
+            continue
+        if rust is not None and rust[name] == [['unsupported']] and SET.must_support(case):
+            report['failures'].append({'case': name, 'reason': 'rust_unsupported_after_its_code',
+                                       'rust': rust[name]})
             continue
         if rust is None or rust[name] == [['unsupported']]:
             # No probe yet, or a case of a later sub-step: listed, and the
