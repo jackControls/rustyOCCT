@@ -41,6 +41,7 @@ mod spline_crossing;
 mod spline_parallel;
 mod spline_sphere;
 mod spline_walls;
+pub(crate) mod splits;
 mod torus;
 mod torus_curved;
 mod torus_parts;
@@ -83,6 +84,14 @@ fn profile_splines(p: &crate::Profile) -> bool {
 /// Whether a prism's profile holds a spline segment (S9f.1).
 pub(super) fn applies_splines(s: &crate::Solid) -> bool {
     matches!(&s.construction, Construction::Prism(p) if profile_splines(p))
+}
+
+/// Whether a solid has a face other than a plane.
+fn curved_faces(s: &crate::Solid) -> bool {
+    s.topology
+        .faces()
+        .iter()
+        .any(|f| !matches!(f.surface, crate::topology::Surface::Plane(_)))
 }
 
 /// Whether a solid is a prism of a line profile (S9b.1's polyhedra).
@@ -192,6 +201,16 @@ pub(super) fn applies(poly: &Polyhedron) -> bool {
     if (piece(&poly.a) && (any(&poly.b) || piece(&poly.b))) || (any(&poly.a) && piece(&poly.b)) {
         return true;
     }
+    // S9e.4b.3b: a split piece (S8's `Clipped` and `Half`) where either
+    // input has a curved face, against a prism, a sphere, a cone, a torus,
+    // an imported piece, another split piece or a given result.
+    let split = splits::is_split;
+    let taken = |s: &crate::Solid| any(s) || piece(s) || split(s);
+    if ((split(&poly.a) && taken(&poly.b)) || (taken(&poly.a) && split(&poly.b)))
+        && (curved_faces(&poly.a) || curved_faces(&poly.b))
+    {
+        return true;
+    }
     // S9f.1: a spline prism against a prism (against a solid other than a
     // prism of lines refused in `build`).
     if prism(&poly.a) && prism(&poly.b) && (applies_splines(&poly.a) || applies_splines(&poly.b)) {
@@ -221,6 +240,9 @@ fn model_of(s: &crate::Solid, op: Operand, seam: &R) -> Result<model::Prism> {
         // S9e.4b.3a: an imported plane piece, its primitive common its
         // planes' half-spaces.
         Construction::Imported(_) if pieces::is_piece(s) => pieces::model(s, op),
+        // S9e.4b.3b: a split piece, its primitive common its plane's
+        // half-space.
+        Construction::Clipped(_) | Construction::Half(_) => splits::model(s, op),
         _ => model::Prism::new(s, op, seam),
     }
 }
@@ -237,21 +259,6 @@ pub(super) fn build(poly: &Polyhedron) -> Result<Vec<Component>> {
     // S9e.4b.3a: an imported piece and another input on one sphere are
     // S9e.4b.3c's.
     pieces::one_sphere(&poly.a, &poly.b)?;
-    // S9e.1 and S9e.2 take a given result with a prism or another given
-    // result, S9e.3a with a sphere, cone or torus too.
-    let piece = |s: &crate::Solid| {
-        matches!(
-            s.construction,
-            Construction::Clipped(_) | Construction::Half(_)
-        )
-    };
-    for (x, y) in [(&poly.a, &poly.b), (&poly.b, &poly.a)] {
-        if given::applies(x, y) && piece(y) {
-            return Err(Error::OutOfDomain(
-                "a Boolean's result given to another Boolean with a plane's piece (S9e.4)",
-            ));
-        }
-    }
     let seams = SEAMS;
     for k in 0..seams.len() - 1 {
         let r = |(n, d): (i64, i64)| R::new(BigInt::from(n), BigInt::from(d));

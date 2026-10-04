@@ -28,7 +28,7 @@ mod revolved;
 mod spiric;
 pub(crate) mod spline;
 mod torus;
-pub(super) use meridian::Half;
+pub(super) use meridian::{Half, Primitive};
 pub(crate) use oblique::edge_bounds;
 pub(super) use oblique::Clipped;
 

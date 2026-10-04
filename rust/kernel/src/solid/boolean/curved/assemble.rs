@@ -787,6 +787,21 @@ fn build_component(
                 if let Loop::Edges { winding, .. } = &mut p.loops[l.0] {
                     winding[0] -= total;
                 }
+                // S9e.4b.3b: its fins from the pole on lifted by the turn it
+                // made, so it closes where it does not pass the pole (at the
+                // pole a turn in `u` is no gap).
+                if pole_lift(&mut p, l, &ends, tol) {
+                    // Its other loops (holes) lifted again to lie with it.
+                    let target = loop_mean_u(&p, l);
+                    for &o in loop_ids.iter().filter(|&&o| o != l) {
+                        let k = ((target - loop_mean_u(&p, o)) / TAU).round();
+                        if let (true, Loop::Edges { fins, .. }) = (k != 0.0, &p.loops[o.0]) {
+                            for f in fins.clone() {
+                                shift_u(&mut p.fins[f.0].pcurve, k * TAU);
+                            }
+                        }
+                    }
+                }
             } else if total.abs() == 1 {
                 let north = (total == 1) == (sense == Orientation::Forward);
                 let at = frame.point(Point2::default(), if north { *radius } else { -*radius });
@@ -1283,10 +1298,16 @@ fn curve3(arr: &Arr, e: &REdge, points: &BTreeMap<usize, Point3>) -> Result<Curv
         if let (Some(g), true) = (&arr.models[o].given, super::chain::procedural(&first.crv)) {
             let whole = super::chain::whole(arr, e, o, ei);
             let ends = e.ends.map(|[s, t]| (points[&s], points[&t]));
-            if let Some(c) = g.curves[ei]
-                .as_ref()
-                .filter(|_| whole)
-                .and_then(|c| super::chain::stored(c, ends))
+            if let Some(c) =
+                g.curves[ei]
+                    .as_ref()
+                    .filter(|_| whole)
+                    .and_then(|c| match (ends, &first.crv) {
+                        // S9e.4b.3b: a cone's section stored as a ring runs the
+                        // result's way about the cone's axis.
+                        (None, Crv::Cone(sec)) => ring_about(c, sec.axis(), first.with == d0),
+                        _ => super::chain::stored(c, ends),
+                    })
             {
                 return Ok(c);
             }
@@ -1877,8 +1898,12 @@ fn given_arc(
     match curve? {
         Curve3::Circle { frame, radius } | Curve3::CircularArc { frame, radius, .. } => {
             let Some([s, t]) = e.ends else {
+                // A ring runs the result's way: the stored circle turned
+                // over where it runs the other (S9e.4b.3b: a zone's rim as
+                // a plane's section of its whole sphere, the plane's
+                // normal out of the piece).
                 return Some(Curve3::Circle {
-                    frame: *frame,
+                    frame: if with { *frame } else { frame.flipped() },
                     radius: *radius,
                 });
             };
@@ -2442,6 +2467,96 @@ fn turns_v(p: &TopologyParts, fins: &[FinId]) -> i32 {
         total += pc.point(1.0).y - pc.point(0.0).y;
     }
     (total / TAU).round() as i32
+}
+
+/// A stored ring run counter-clockwise about `axis` where `ccw`, else the
+/// other way: its samples' area vector against the axis.
+fn ring_about(c: &Curve3, axis: [f64; 3], ccw: bool) -> Option<Curve3> {
+    let pts: Vec<Point3> = (0..32).map(|i| c.point(f64::from(i) / 32.0)).collect();
+    let mut area = Vec3::new(0.0, 0.0, 0.0);
+    for i in 0..pts.len() {
+        let (a, b) = (pts[i] - pts[0], pts[(i + 1) % pts.len()] - pts[0]);
+        area = area + a.cross(b);
+    }
+    let along = area.x * axis[0] + area.y * axis[1] + area.z * axis[2] > 0.0;
+    if along == ccw {
+        Some(c.clone())
+    } else {
+        super::chain::reversed(c)
+    }
+}
+
+/// A pcurve moved by `k` in `u`.
+fn shift_u(pc: &mut Curve2, k: f64) {
+    match pc {
+        Curve2::Projection(pr) => {
+            for lift in &mut pr.lifts {
+                lift.x += k;
+            }
+        }
+        Curve2::LineSegment { start, end } => {
+            start.x += k;
+            end.x += k;
+        }
+        Curve2::Sinusoid { start, .. } => *start += k,
+        _ => {}
+    }
+}
+
+/// A loop's mean `u` over its fins' pcurves.
+fn loop_mean_u(p: &TopologyParts, l: LoopId) -> f64 {
+    let Loop::Edges { fins, .. } = &p.loops[l.0] else {
+        return 0.0;
+    };
+    let us: Vec<f64> = fins
+        .iter()
+        .flat_map(|f| (0..8).map(move |i| (f, i as f64 / 8.0)))
+        .map(|(f, t)| p.fins[f.0].pcurve.point(t).x)
+        .collect();
+    us.iter().sum::<f64>() / us.len().max(1) as f64
+}
+
+/// A sphere's loop through a pole that winds none (S9e.4b.3a): where it
+/// does not start at the pole, the fins from the first starting there to
+/// the last lifted by whole turns so its last fin ends where its first
+/// starts (S9e.4b.3b: a half's meridian through the pole and a partner's
+/// sections across the seam). Whether it was lifted.
+fn pole_lift(p: &mut TopologyParts, l: LoopId, poles: &[Point3; 2], tol: f64) -> bool {
+    let Loop::Edges { fins, .. } = &p.loops[l.0] else {
+        return false;
+    };
+    let fins = fins.clone();
+    let (Some(first), Some(last)) = (fins.first(), fins.last()) else {
+        return false;
+    };
+    let gap = p.fins[first.0].pcurve.point(0.0).x - p.fins[last.0].pcurve.point(1.0).x;
+    let k = (gap / TAU).round();
+    if k == 0.0 {
+        return false;
+    }
+    let start = |p: &TopologyParts, f: FinId| {
+        let fin = &p.fins[f.0];
+        let e = &p.edges[fin.edge.0];
+        if fin.sense == Orientation::Forward {
+            e.start
+        } else {
+            e.end
+        }
+    };
+    let at_pole = |p: &TopologyParts, f: FinId| {
+        start(p, f).is_some_and(|v| {
+            poles
+                .iter()
+                .any(|&q| (p.vertices[v.0].position - q).length() <= tol)
+        })
+    };
+    let Some(i) = (1..fins.len()).find(|&i| at_pole(p, fins[i])) else {
+        return false;
+    };
+    for f in &fins[i..] {
+        shift_u(&mut p.fins[f.0].pcurve, k * TAU);
+    }
+    true
 }
 
 /// A cylinder loop's turns about the axis: its pcurves' change of `u`,

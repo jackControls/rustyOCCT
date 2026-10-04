@@ -140,17 +140,7 @@ fn construction(s: &Solid) -> Result<(Polyhedron, bool)> {
         Construction::Polyhedron(poly) => {
             // S9e.1 and S9e.2: a result of prisms (planes and cylinders);
             // S9e.3a: of spheres, cones, tori and given results too, to the
-            // depth limit.
-            if [&poly.a, &poly.b].iter().any(|x| {
-                matches!(
-                    x.construction,
-                    Construction::Clipped(_) | Construction::Half(_)
-                )
-            }) {
-                return Err(out_of_domain(
-                    "a Boolean's result of a plane's piece given to another Boolean (S9e.4)",
-                ));
-            }
+            // depth limit; S9e.4b.3b: of split pieces.
             super::chain::check_depth(s)?;
             // S9e.4a: an imported input as its construction, as the result
             // was built.
