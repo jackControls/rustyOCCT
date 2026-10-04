@@ -66,7 +66,8 @@ over `s9c2-kernel` at `e80e2fd9`) and S9f.2b.2 (branch `s9f2b2`, over
   `tower_points`). Decisions ("S9f.2b.2 refined"), 17 more cases referenced
   and the whole set captured again before the kernel code, the kernel
   within the reference on all 45 results of S9f.2b and refusing the 6
-  degenerate cases. Pending: its DRAW survey and campaign.
+  degenerate cases. Campaign clean at `7199e06a` (with S9e.4a's); pending
+  its DRAW survey.
 - **S9e.3b implemented** (branch `s9e3b`, over `507b8054`, with
   `s9c2-kernel` at `c8e37abe` merged in; not yet pushed): a given result's
   meeting of two curved faces (`Meet`, `Rise`, `Toric`) or a cone's or
@@ -74,7 +75,8 @@ over `s9c2-kernel` at `e80e2fd9`) and S9f.2b.2 (branch `s9f2b2`, over
   decisions, evidence and capture committed before the kernel; the DRAW
   survey of the chained cases done (none reaches it), and the full DRAW
   survey (that of S9e.3b, S9f.2a and S9f.2b.1: no status or refusal
-  changes, the volume audit's values bit for bit). Pending the campaign.
+  changes, the volume audit's values bit for bit). Campaign clean at
+  `b0b9adc6`.
   A given `WallMeet` edge never reaches it (a given result with spline
   walls is refused before, S9f).
 - **S9e.4a implemented** (branch `s9e4`, pushed at `b032c1be`): imported solids
@@ -91,7 +93,7 @@ over `s9c2-kernel` at `e80e2fd9`) and S9f.2b.2 (branch `s9f2b2`, over
   a shape for a Boolean (never surveyed before), the import reaches 171
   and 16 evaluate on both backends with native DRAW's volumes, registered
   (1,089 cases; the ledger's `checknbshapes` 2 to 4 mapped and verified).
-  Pending the campaign.
+  Campaign clean at `7199e06a` (845 runs, the slowest 47 s under ASan).
 - **S9e.4b.1 implemented** (branch `s9e4b`, not merged): imported prisms
   whose arcs' ends round off their circles in their caps' frames (every
   CTO-like part in a turned frame, `dee_turn`), each end taken onto its
@@ -125,13 +127,11 @@ over `s9c2-kernel` at `e80e2fd9`) and S9f.2b.2 (branch `s9f2b2`, over
    with it on reaches, the "points not separated by a projection" limits
    (`triple.rs`'s retries exhausted: a fibre of two points under every
    shear tried) are the one open refusal worth a closer look.
-2. **S9e.4a's and S9f.2b.2's campaign and DRAW survey** (`REVIEW_NOTES.md`'s
-   "S9e.4a implemented" and "S9f.2b.2 implemented"; the fuzz target's
-   imported operations through `IMPORTED` and the crossing variants' loops
-   and towers through `SPLINE_CROSSING`; after the push, the recaptured
-   `occt-boolean-spline-crossing-preimplementation`'s Linux record and
-   reviews from CI's run, as every capture's), then **S9f.3** (spheres and
-   cones; "S9f refined" gives the degrees).
+2. **S9f.2b.2's and S9e.4b.1's DRAW survey** (the campaign of S9e.4a and
+   S9f.2b.2 is clean at `7199e06a`; S9e.4b.1's campaign after its push;
+   the recaptured `occt-boolean-spline-crossing-preimplementation`'s Linux
+   record and reviews from CI's run, as every capture's), then **S9f.3**
+   (spheres and cones; "S9f refined" gives the degrees).
 3. **S9e.4b**, split in "S9e.4b refined": S9e.4b.1 (arcs rounded off
    their circles) is implemented (above, pending its DRAW survey and
    campaign); next **S9e.4b.2**, polyhedra other than prisms on their

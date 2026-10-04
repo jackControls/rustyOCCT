@@ -6001,7 +6001,11 @@ Decisions for S9, recorded before its code (2026-09-28):
     host); the ledger records `F5`'s and `Q2`'s `checknbshapes` confirmed
     natively (mapped-and-verified 2 to 4, lost 12,844 to 12,842). The
     survey found the refusal of a profile its rounded points make touch
-    (`bcut_complex/I6`, now S9e.4b's: amendment (b) above).
+    (`bcut_complex/I6`, now S9e.4b's: amendment (b) above). Campaign: the
+    boolean campaign at `7199e06a`, S9e.4a's and S9f.2b.2's together (600 s,
+    a sampled replay, `IMPORTED` and `SPLINE_CROSSING` on) clean, 845 runs,
+    the slowest input 47 s under AddressSanitizer at load 12 to 17
+    (`17e131e3`, an existing corpus input, the torus against prisms).
   * **S9e.4b refined, before its code (2026-10-03).** Why each class is
     refused today, from the DRAW survey of S9e.4a (the 114 restore cases
     refused as S9e.4b's, the solids of their 86 files listed by the
@@ -6490,7 +6494,11 @@ Decisions for S9, recorded before its code (2026-09-28):
     holds: the suite, all 25 comparisons unchanged but this one with 0
     failures, the 13 generators importing `curved_boolean_reference.py`
     with `--check`, unittest (287 tests) and the ledger. Pending: the DRAW
-    survey, the campaign.
+    survey. Campaign: the boolean campaign at `7199e06a`, S9e.4a's and
+    S9f.2b.2's together (600 s, a sampled replay, `IMPORTED` and
+    `SPLINE_CROSSING` on) clean, 845 runs, the slowest input 47 s under
+    AddressSanitizer at load 12 to 17 (`17e131e3`, an existing corpus input,
+    the torus against prisms).
   * **Where S9 stands (2026-09-30, paused).** Done and pushed: S9a to S9d
     (every sub-step with its DRAW survey and a clean campaign), S9e.1
     (campaign clean at `51c08edf`) and S9e.2 (`8e060c67`), S9f's decisions
