@@ -467,6 +467,72 @@ impl AlgebraicRoot {
     }
 }
 
+/// The Mersenne prime `2^61 - 1`.
+const PRIME: u64 = (1 << 61) - 1;
+
+fn mul_mod(a: u64, b: u64) -> u64 {
+    ((u128::from(a) * u128::from(b)) % u128::from(PRIME)) as u64
+}
+
+fn inverse_mod(a: u64) -> u64 {
+    // Fermat: a^(p - 2).
+    let (mut base, mut e, mut out) = (a, PRIME - 2, 1u64);
+    while e > 0 {
+        if e & 1 == 1 {
+            out = mul_mod(out, base);
+        }
+        base = mul_mod(base, base);
+        e >>= 1;
+    }
+    out
+}
+
+fn reduce_mod(p: &[BigInt]) -> Vec<u64> {
+    let m = BigInt::from(PRIME);
+    let mut out: Vec<u64> = p
+        .iter()
+        .map(|c| {
+            let r = num_integer::Integer::mod_floor(c, &m);
+            r.to_u64_digits().1.first().copied().unwrap_or(0)
+        })
+        .collect();
+    while out.last() == Some(&0) {
+        out.pop();
+    }
+    out
+}
+
+/// Whether two nonzero integer polynomials are certainly coprime: their
+/// reductions modulo `PRIME`, which divides neither leading coefficient,
+/// have a constant gcd (`false`: undecided).
+fn coprime_modulo_prime(a: &[BigInt], b: &[BigInt]) -> bool {
+    let (mut x, mut y) = (reduce_mod(a), reduce_mod(b));
+    if x.len() != a.len() || y.len() != b.len() || x.is_empty() || y.is_empty() {
+        return false;
+    }
+    if x.len() < y.len() {
+        std::mem::swap(&mut x, &mut y);
+    }
+    // Euclid's algorithm in GF(p).
+    while y.len() > 1 {
+        let inv = inverse_mod(*y.last().expect("nonzero"));
+        while x.len() >= y.len() {
+            let c = mul_mod(*x.last().expect("nonempty"), inv);
+            let shift = x.len() - y.len();
+            for (i, t) in y.iter().enumerate() {
+                let s = mul_mod(c, *t);
+                x[i + shift] = (x[i + shift] + PRIME - s) % PRIME;
+            }
+            while x.last() == Some(&0) {
+                x.pop();
+            }
+        }
+        std::mem::swap(&mut x, &mut y);
+    }
+    // A nonzero constant divides both: coprime; zero: `x` the gcd.
+    y.len() == 1 || x.len() == 1
+}
+
 /// `n / d` (`d > 0`) in lowest terms, as `R::new` gives it, by the crate's
 /// Lehmer gcd (`num_rational` reduces by Stein's binary one, quadratic in
 /// the operands' length: an isolator's ends after hundreds of bisections).
@@ -643,6 +709,13 @@ impl IntPolynomial {
         };
         if b.is_zero() {
             return Self::new(a.0.clone()).positive();
+        }
+        // Coprime modulo a prime dividing neither leading coefficient:
+        // coprime over the rationals (the gcd's reduction divides both
+        // reductions and keeps its degree), the subresultant chain's
+        // constant's one form, `1`.
+        if coprime_modulo_prime(&a.0, &b.0) {
+            return Self(vec![BigInt::from(1)]);
         }
         let mut chain = subresultants(Self::new(a.0.clone()), Self::new(b.0.clone()), false);
         Self::new(chain.pop().unwrap().0).positive()
@@ -914,6 +987,36 @@ fn one() -> R {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// The modular shortcut answers only coprime pairs, as the subresultant
+    /// chain does; a common factor, or a prime dividing a leading
+    /// coefficient, goes the exact way.
+    #[test]
+    fn modular_coprimality_agrees_with_subresultants() {
+        let p = |c: &[i64]| IntPolynomial::new(c.iter().map(|&x| BigInt::from(x)).collect());
+        let chain_gcd = |a: &IntPolynomial, b: &IntPolynomial| {
+            let mut chain = subresultants(a.clone(), b.clone(), false);
+            IntPolynomial::new(chain.pop().unwrap().0).positive()
+        };
+        let f = p(&[-7, 3, 0, 5, -2, 11]);
+        let g = p(&[4, 0, -9, 1]);
+        let h = p(&[2, -3, 1]);
+        assert!(coprime_modulo_prime(&f.0, &g.0));
+        assert_eq!(f.gcd(&g), chain_gcd(&f, &g));
+        assert_eq!(f.gcd(&g), p(&[1]));
+        let (fh, gh) = (f.multiply(&h), g.multiply(&h));
+        assert!(!coprime_modulo_prime(&fh.0, &gh.0));
+        assert_eq!(fh.gcd(&gh), h);
+        // A leading coefficient the prime divides: undecided.
+        let big = BigInt::from(PRIME) * 3;
+        let q = IntPolynomial(vec![BigInt::from(1), BigInt::from(2), big]);
+        assert!(!coprime_modulo_prime(&q.0, &g.0));
+        assert_eq!(q.gcd(&g), chain_gcd(&q, &g));
+        // A square-free test of a polynomial with its derivative.
+        let sq = h.multiply(&h).multiply(&g);
+        assert!(!coprime_modulo_prime(&sq.0, &sq.derivative().0));
+        assert_eq!(sq.gcd(&sq.derivative()), h);
+    }
 
     /// The previous rational-arithmetic implementation, kept as a reference.
     fn reference(a: &R, b: &R) -> R {
