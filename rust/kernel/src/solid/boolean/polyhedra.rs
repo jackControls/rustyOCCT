@@ -970,13 +970,14 @@ fn zipped(polys: &[Vec<P2>]) -> Vec<[P2; 3]> {
 /// normal's largest coordinate plane (their corners exact points of the
 /// face's straight edges), so each triangle is planar exactly; a face's
 /// fragments join back by the face. Its side by exact ray parity. S9e.4b.2:
-/// an imported polyhedron's likewise, each face's outward normal from the
+/// an imported polyhedron's likewise (and an imported prism of lines'
+/// against one, `substituted`), each face's outward normal from the
 /// region behind it, each edge between its stored vertices (its stored
 /// line's ends are roundings of its own), a face whose triangles do not all
 /// face its way `Degenerate` (folded by its stored vertices), and a face
 /// whose stored vertices are coplanar exactly joined by its plane.
 fn stored_model(solid: &Solid, op: Operand) -> Result<Model> {
-    let imported = matches!(&solid.construction, Construction::Imported(i) if i.polyhedron());
+    let imported = matches!(&solid.construction, Construction::Imported(_));
     // S9f.1: a spline prism in any position is the curved engine's against
     // a prism of lines; against a plane's piece it is S9f's still.
     if super::curved::applies_splines(solid) {
@@ -1377,12 +1378,18 @@ struct Frag {
 pub(super) fn substituted(
     poly: &Polyhedron,
 ) -> Result<Option<(Polyhedron, BTreeMap<EntityId, EntityId>)>> {
-    // S9e.4b.2: an imported polyhedron stands as itself (its stored model).
-    let imported = |s: &Solid| match &s.construction {
-        Construction::Imported(i) if !i.polyhedron() => Some(i.clone()),
+    // S9e.4b.2: an imported polyhedron stands as itself (its stored model),
+    // and so does an imported prism of lines against one: two files' shared
+    // vertices agree exactly where a construction's corners, re-derived from
+    // its rounded local coordinates, may miss them by an ulp (the DRAW
+    // survey's `bopfuse_complex/K5`, a frustum on an imported box's top).
+    let stored =
+        |s: &Solid, other: &Solid| imported::is_imported(other) && imported::planar(&s.topology);
+    let imported = |s: &Solid, other: &Solid| match &s.construction {
+        Construction::Imported(i) if !i.polyhedron() && !stored(s, other) => Some(i.clone()),
         _ => None,
     };
-    let (ia, ib) = (imported(&poly.a), imported(&poly.b));
+    let (ia, ib) = (imported(&poly.a, &poly.b), imported(&poly.b, &poly.a));
     if ia.is_none() && ib.is_none() {
         return Ok(None);
     }

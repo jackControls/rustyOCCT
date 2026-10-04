@@ -25,7 +25,7 @@ pub(crate) fn is_imported(s: &Solid) -> bool {
 }
 
 /// Whether every face is a plane and every edge a line.
-fn planar(t: &Topology) -> bool {
+pub(super) fn planar(t: &Topology) -> bool {
     t.faces()
         .iter()
         .all(|f| matches!(f.surface, Surface::Plane(_)))
