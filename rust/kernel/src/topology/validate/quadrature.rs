@@ -79,6 +79,10 @@ pub(super) trait Num<T: Real>: Clone {
     fn coefficient_at(&self, k: usize) -> T;
     /// The same number with coefficient `k` (below `terms`) set to `x`.
     fn with_coefficient(&self, k: usize, x: T) -> Self;
+    /// The number cut to its first `terms` coefficients (at least one):
+    /// every operation's coefficient `k` takes its operands' first `k + 1`
+    /// only, so a coefficient below the cut is the same value.
+    fn truncated(&self, terms: usize) -> Self;
 }
 
 fn middle<T: Real>(x: &T) -> f64 {
@@ -155,6 +159,9 @@ impl<T: Real> Num<T> for Point<T> {
         debug_assert_eq!(k, 0);
         Point(x)
     }
+    fn truncated(&self, _terms: usize) -> Self {
+        self.clone()
+    }
 }
 
 /// Taylor jets (`crate::jet`) as the integrands' numbers (S9f.2b: a spline
@@ -209,6 +216,11 @@ impl<T: Real> Num<T> for crate::jet::Jet<T> {
         let mut out = self.clone();
         out.c[k] = x;
         out
+    }
+    fn truncated(&self, terms: usize) -> Self {
+        Self {
+            c: self.c[..terms.clamp(1, self.c.len())].to_vec(),
+        }
     }
 }
 
@@ -405,6 +417,13 @@ impl<T: Real> Num<T> for Series<T> {
         }
         out.c[k] = x;
         out
+    }
+    fn truncated(&self, terms: usize) -> Self {
+        let len = terms.clamp(1, self.len);
+        Self {
+            c: self.c[..self.c.len().min(len)].to_vec(),
+            len,
+        }
     }
 }
 

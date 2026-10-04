@@ -22,9 +22,13 @@
 //! last place of its coefficients: near a turning point, where `v` is `d`'s
 //! square root, `d` formed from enclosed factors (`P` and `M` each from two
 //! rows) was a hundred times wider, and its root's enclosure as much. Over
-//! a range (a remainder's box) they are formed from the factors' exact
-//! polynomials instead, which overestimate less than the products' higher
-//! degrees. A knot span's polynomial holds the curve
+//! a range (a remainder's box) every polynomial is taken in centred form
+//! (`Centre`: its Taylor coefficients at the range's middle, enclosed at
+//! that point, then shifted over the range exactly), a cone's tiers
+//! combined at the point first: the factors' products over the range, as
+//! before, overestimated a discriminant near a loop's turning point by
+//! their own size, so its square root's series was undefined over pieces a
+//! hundred times shorter than it needed (S9f.3's loops). A knot span's polynomial holds the curve
 //! on that span only: across a knot the wall is C^k (k its least interior
 //! continuity, at least one by R4), so a jet over a base across a knot is
 //! the union of both spans' jets up to order `k + 1` (a Taylor remainder's
@@ -95,8 +99,46 @@ impl Coefficients {
     /// Casteljau): `n` products of series instead of de Casteljau's `n (n +
     /// 1)` (S9f.2b.2: a graph over `v` evaluates these at every coefficient
     /// it solves for), and over a range a mean-value form, its higher terms
-    /// with no constant term to widen.
+    /// with no constant term to widen. A base over a range (a remainder's
+    /// box) takes the centred form (`Centre`): `P^(m) / m!` over the range
+    /// from their values at its middle.
     fn at<T: Real, N: Num<T>>(&self, t: &N) -> N {
+        if t.sharp() && t.terms() <= 1 && !self.taylor.is_empty() {
+            let b: Vec<T> = self
+                .exact
+                .iter()
+                .zip(&self.fast)
+                .map(|(x, f)| cached::<T>(f, x))
+                .collect();
+            return bernstein(&b, t);
+        }
+        match self.expansion(&t.coefficient_at(0), t.sharp(), t.terms()) {
+            Some(q) => compose(&q, t),
+            None => self.over_range(t),
+        }
+    }
+
+    /// The Taylor coefficients `P^(m)(t_0) / m!` enclosed at a base `t_0`
+    /// (the first `terms` of them: a series or jet of that length takes no
+    /// more) or, over a range, in centred form (`Centre`, all of them);
+    /// `None` for a range without a finite centre.
+    fn expansion<T: Real>(&self, base: &T, sharp: bool, terms: usize) -> Option<Vec<T>> {
+        if self.taylor.is_empty() {
+            return Some(vec![cached::<T>(&self.fast[0], &self.exact[0])]);
+        }
+        if sharp {
+            let rest = T::exact_f64(1.0).sub(base);
+            return Some(self.taylor_at(base, &rest, terms));
+        }
+        let centre = Centre::of(base)?;
+        let q = self.taylor_at(&centre.m, &centre.rest, usize::MAX);
+        Some(centre.over(&q))
+    }
+
+    /// The Taylor expansion with its coefficients enclosed over the base's
+    /// range by de Casteljau's range form (where the range has no finite
+    /// centre).
+    fn over_range<T: Real, N: Num<T>>(&self, t: &N) -> N {
         let scalars = |exact: &[R], fast: &[Fast]| -> Vec<T> {
             exact
                 .iter()
@@ -105,7 +147,7 @@ impl Coefficients {
                 .collect()
         };
         let b = scalars(&self.exact, &self.fast);
-        if t.terms() <= 1 || self.taylor.is_empty() {
+        if t.terms() <= 1 {
             return bernstein(&b, t);
         }
         let t0 = Jet::constant(t.coefficient_at(0), 0);
@@ -125,6 +167,100 @@ impl Coefficients {
         }
         acc
     }
+
+    /// The first `count` Taylor coefficients `q_j = P^(j)(m) / j!` at a
+    /// point `m` (`rest` its `1 - m`), enclosed by de Casteljau's point
+    /// form (whose enclosures do not grow with the levels), on one scratch
+    /// row.
+    fn taylor_at<T: Real>(&self, m: &T, rest: &T, count: usize) -> Vec<T> {
+        let mut row: Vec<T> = Vec::with_capacity(self.exact.len());
+        let mut point = |exact: &[R], fast: &[Fast]| -> T {
+            row.clear();
+            row.extend(exact.iter().zip(fast).map(|(x, f)| cached::<T>(f, x)));
+            for last in (1..row.len()).rev() {
+                for i in 0..last {
+                    row[i] = row[i].mul(rest).add(&row[i + 1].mul(m));
+                }
+            }
+            row[0].clone()
+        };
+        let count = count.clamp(1, self.taylor.len() + 1);
+        let mut out = Vec::with_capacity(count);
+        out.push(point(&self.exact, &self.fast));
+        for (e, f) in self.taylor.iter().take(count - 1) {
+            out.push(point(e, f));
+        }
+        out
+    }
+}
+
+/// A range's binary64 centre `m` (exact), `1 - m` and the range less `m`:
+/// a polynomial over the range in centred form (S9f.3's loops). With `q_j
+/// = P^(j)(m) / j!` enclosed at the point, `P^(k)(x) / k! = sum_(j >= k)
+/// C(j, k) q_j (x - m)^(j - k)` exactly for every `x` of the range (`P` a
+/// polynomial: no remainder), in Horner's form in `x - m`. Over a range
+/// small against the distance to `P`'s roots its width is about the
+/// range's times `P'`, where de Casteljau over the range (or the factors'
+/// products) takes the coefficients' size: near a loop's turning point the
+/// discriminant is far below its terms, and its square root's series over
+/// a piece was undefined until the piece was a hundred times shorter.
+struct Centre<T> {
+    m: T,
+    rest: T,
+    delta: T,
+}
+
+impl<T: Real> Centre<T> {
+    fn of(x: &T) -> Option<Self> {
+        let (lo, hi) = x.bounds_f64();
+        let m = 0.5 * lo + 0.5 * hi;
+        if !m.is_finite() {
+            return None;
+        }
+        let m = T::exact_f64(m);
+        Some(Self {
+            rest: T::exact_f64(1.0).sub(&m),
+            delta: x.sub(&m),
+            m,
+        })
+    }
+
+    /// The Taylor coefficients `P^(k)(x) / k!` over the range from the
+    /// point's `q`.
+    fn over(&self, q: &[T]) -> Vec<T> {
+        let n = q.len() - 1;
+        (0..=n)
+            .map(|k| {
+                // `C(j, k)` for `j` from `k` up (integers, exact).
+                let mut binomials = vec![1.0f64; n + 1];
+                for j in k + 1..=n {
+                    binomials[j] = binomials[j - 1] * j as f64 / (j - k) as f64;
+                }
+                let mut acc = q[n].mul(&T::exact_f64(binomials[n]));
+                for j in (k..n).rev() {
+                    acc = acc
+                        .mul(&self.delta)
+                        .add(&q[j].mul(&T::exact_f64(binomials[j])));
+                }
+                acc
+            })
+            .collect()
+    }
+}
+
+/// A polynomial at a number of the integrands from its Taylor coefficients
+/// enclosed at (or over) the number's base: `sum_k q_k (t - t_0)^k` in
+/// Horner's form.
+fn compose<T: Real, N: Num<T>>(q: &[T], t: &N) -> N {
+    if t.terms() <= 1 {
+        return t.lift(&q[0]);
+    }
+    let delta = t.with_coefficient(0, T::exact_f64(0.0));
+    let mut acc = t.lift(&q[q.len() - 1]);
+    for c in q[..q.len() - 1].iter().rev() {
+        acc = acc.mul(&delta).shift(c);
+    }
+    acc
 }
 
 /// A knot span of the wall met by one surface: its `u` range (exact and
@@ -468,51 +604,10 @@ pub(super) fn eval<T: Real, N: Num<T>>(m: &WallMeet, span: &Span, u: &N) -> Opti
     let low: [N; 3] = std::array::from_fn(|k| span.low[k].at(&ub));
     let dir: [N; 3] = std::array::from_fn(|k| span.dir[k].at(&ub));
     let tan = cone_tan::<T>(m)?;
-    let [a, b, c, d] = if ub.sharp() {
-        std::array::from_fn(|i| tiers::<T, N>(&span.abcd[i], &ub, tan.as_ref()))
-    } else {
-        // Over a range the polynomials of degree `4p` overestimate (their
-        // coefficients far above a small discriminant): the factors'.
-        let wm: Vec<[N; 2]> = span
-            .axes
-            .iter()
-            .map(|[w, mm]| [w.at::<T, N>(&ub), mm.at::<T, N>(&ub)])
-            .collect();
-        let r = fc::<T>(m.other_radius);
-        let r2 = r.mul(&r);
-        let a = sum_of(wm.iter().map(|[_, mm]| mm.square()));
-        let b = sum_of(wm.iter().map(|[w, mm]| w.mul(mm)));
-        let c = sum_of(wm.iter().map(|[w, _]| w.square()));
-        // S9f.3b: the radius term along the ruling, `r0 + rd t`.
-        let cone = match (&span.radial, &tan) {
-            (Some([[wn, mn], _]), Some(tan)) => Some((
-                wn.at::<T, N>(&ub).scale(tan).shift(&r),
-                mn.at::<T, N>(&ub).scale(tan),
-            )),
-            _ => None,
-        };
-        let (a, b, c) = match &cone {
-            Some((r0, rd)) => (a.sub(&rd.square()), b.sub(&r0.mul(rd)), c.sub(&r0.square())),
-            None => (a, b, c.shift(&r2.neg())),
-        };
-        let mut pairs = Vec::new();
-        for i in 0..wm.len() {
-            for j in i + 1..wm.len() {
-                pairs.push(
-                    wm[i][0]
-                        .mul(&wm[j][1])
-                        .sub(&wm[j][0].mul(&wm[i][1]))
-                        .square(),
-                );
-            }
-        }
-        let lead = match &cone {
-            Some((r0, rd)) => sum_of(wm.iter().map(|[w, mm]| r0.mul(mm).sub(&rd.mul(w)).square())),
-            None => a.scale(&r2),
-        };
-        let d = lead.sub(&sum_of(pairs.into_iter()));
-        [a, b, c, d]
-    };
+    // Over a range too (a remainder's box) the polynomials themselves, in
+    // centred form (`tiers`): the factors' products overestimated a small
+    // discriminant by their own size.
+    let [a, b, c, d] = std::array::from_fn(|i| tiers::<T, N>(&span.abcd[i], &ub, tan.as_ref()));
     let sq = d.sqrt()?.scale(&fc(m.sign));
     let (p, q) = (sq.sub(&b), sq.neg().sub(&b));
     let t = if p.mid().abs() >= q.mid().abs() {
@@ -536,6 +631,32 @@ fn cone_tan<T: Real>(m: &WallMeet) -> Option<Option<T>> {
 
 /// A polynomial kept per power of `tan` at `ū` (one tier without one).
 fn tiers<T: Real, N: Num<T>>(parts: &[Coefficients], ub: &N, tan: Option<&T>) -> N {
+    if !ub.sharp() {
+        if let Some(centre) = Centre::of(&ub.coefficient_at(0)) {
+            // The tiers combined at the centre's point coefficients (by
+            // powers of `tan`), so their terms cancel there before the
+            // range's width enters.
+            let qs: Vec<Vec<T>> = parts
+                .iter()
+                .map(|p| p.taylor_at(&centre.m, &centre.rest, usize::MAX))
+                .collect();
+            let n = qs.iter().map(Vec::len).max().unwrap_or(1);
+            let q: Vec<T> = (0..n)
+                .map(|j| {
+                    let at = |q: &Vec<T>| q.get(j).cloned().unwrap_or_else(|| T::exact_f64(0.0));
+                    match tan {
+                        None => at(&qs[0]),
+                        Some(tan) => qs[1..]
+                            .iter()
+                            .rev()
+                            .fold(T::exact_f64(0.0), |acc, q| acc.add(&at(q)).mul(tan))
+                            .add(&at(&qs[0])),
+                    }
+                })
+                .collect();
+            return compose(&centre.over(&q), ub);
+        }
+    }
     let first = parts[0].at::<T, N>(ub);
     match tan {
         None => first,
@@ -688,37 +809,6 @@ pub(super) fn eval_height<T: Real, N: Num<T>>(
         (Some(rows), Some(tan)) => Some((rows, tan.clone())),
         _ => None,
     };
-    // Each row's coordinate `X_i = w_i + t m_i` and its derivative in `u`
-    // at `u` (any number).
-    let parts = |u: &N, t: &N| -> Vec<[N; 2]> {
-        let ub = local(u);
-        span.axes
-            .iter()
-            .zip(&span.daxes)
-            .map(|([w, mm], [dw, dm])| {
-                let x = w.at::<T, N>(&ub).add(&t.mul(&mm.at::<T, N>(&ub)));
-                let xu = dw
-                    .at::<T, N>(&ub)
-                    .add(&t.mul(&dm.at::<T, N>(&ub)))
-                    .scale(&constant(1));
-                [x, xu]
-            })
-            .collect()
-    };
-    // A cone's radius `R + tan X_n` and its derivative in `u` at `u` (any
-    // number), `X_n = w_n + t m_n`.
-    let radius = |u: &N, t: &N| -> Option<(N, N, N)> {
-        let ([[wn, mn], [dwn, dmn]], tan) = cone.as_ref()?;
-        let ub = local(u);
-        let mnv = mn.at::<T, N>(&ub);
-        let rho = wn.at::<T, N>(&ub).add(&t.mul(&mnv)).scale(tan).shift(&r);
-        let drho = dwn
-            .at::<T, N>(&ub)
-            .add(&t.mul(&dmn.at::<T, N>(&ub)))
-            .scale(&constant(1))
-            .scale(tan);
-        Some((rho, drho, mnv.scale(tan)))
-    };
     // `g` and `g_u` over enclosures (a jet of order one in `u`).
     let g_gu = |u: &T, t: &T| -> (T, T) {
         let uj = Jet::variable(u.clone(), 1);
@@ -801,14 +891,64 @@ pub(super) fn eval_height<T: Real, N: Num<T>>(
     // over `g_u` enclosed over the root's box (Newton's quotient of two wide
     // series overestimates by orders of magnitude there). Both inclusion
     // isotone: enclosed at every point of the base.
+    // The rows' polynomials expanded once about the local base of `u`
+    // (the root's enclosure, which every step below keeps as `u`'s
+    // constant term): each step then composes series only (S9f.3's loops:
+    // the coefficients' Taylor polynomials were made again at every row,
+    // step and coefficient).
+    let ub0 = local(&t.lift(&u0));
+    let (base, sharp, terms) = (ub0.coefficient_at(0), ub0.sharp(), t.terms());
+    let expand = |c: &Coefficients| c.expansion(&base, sharp, terms);
+    let rows_x: Vec<[Vec<T>; 4]> = span
+        .axes
+        .iter()
+        .zip(&span.daxes)
+        .map(|([w, mm], [dw, dm])| Some([expand(w)?, expand(mm)?, expand(dw)?, expand(dm)?]))
+        .collect::<Option<_>>()?;
+    let cone_x = match &cone {
+        Some(([[wn, mn], [dwn, dmn]], tan)) => Some((
+            [expand(wn)?, expand(mn)?, expand(dwn)?, expand(dmn)?],
+            tan.clone(),
+        )),
+        None => None,
+    };
+    // Each row's coordinate `X_i = w_i + t m_i` and its derivative in `u`
+    // at `u` (any number with that base), and the `m_i` there.
+    let parts = |u: &N, t: &N| -> Vec<[N; 3]> {
+        let ub = local(u);
+        rows_x
+            .iter()
+            .map(|[w, mm, dw, dm]| {
+                let mv = compose(mm, &ub);
+                let x = compose(w, &ub).add(&t.mul(&mv));
+                let xu = compose(dw, &ub)
+                    .add(&t.mul(&compose(dm, &ub)))
+                    .scale(&constant(1));
+                [x, xu, mv]
+            })
+            .collect()
+    };
+    // A cone's radius `R + tan X_n` and its derivative in `u` at `u` (any
+    // number with that base), `X_n = w_n + t m_n`.
+    let radius = |u: &N, t: &N| -> Option<(N, N, N)> {
+        let ([wn, mn, dwn, dmn], tan) = cone_x.as_ref()?;
+        let ub = local(u);
+        let mnv = compose(mn, &ub);
+        let rho = compose(wn, &ub).add(&t.mul(&mnv)).scale(tan).shift(&r);
+        let drho = compose(dwn, &ub)
+            .add(&t.mul(&compose(dmn, &ub)))
+            .scale(&constant(1))
+            .scale(tan);
+        Some((rho, drho, mnv.scale(tan)))
+    };
     let mut u = t.lift(&u0);
     if t.sharp() {
         let mut known = 1;
         while known < t.terms() {
             let rows = parts(&u, t);
             let (g, gu) = (
-                sum_of(rows.iter().map(|[x, _]| x.square())),
-                sum_of(rows.iter().map(|[x, xu]| x.mul(xu))),
+                sum_of(rows.iter().map(|[x, _, _]| x.square())),
+                sum_of(rows.iter().map(|[x, xu, _]| x.mul(xu))),
             );
             let (g, gu) = match radius(&u, t) {
                 Some((rho, drho, _)) => (g.sub(&rho.square()), gu.sub(&rho.mul(&drho))),
@@ -823,13 +963,12 @@ pub(super) fn eval_height<T: Real, N: Num<T>>(
         }
     } else {
         for k in 1..t.terms() {
-            let ub = local(&u);
-            let sum = sum_of(
-                span.axes
-                    .iter()
-                    .map(|[w, mm]| w.at::<T, N>(&ub).add(&t.mul(&mm.at::<T, N>(&ub))).square()),
-            );
-            let g = match radius(&u, t) {
+            // Coefficient `k` of `g(u, t)` takes `u`'s and `t`'s first `k +
+            // 1` only: on numbers cut there, the same value.
+            let (uk1, tk1) = (u.truncated(k + 1), t.truncated(k + 1));
+            let rows = parts(&uk1, &tk1);
+            let sum = sum_of(rows.iter().map(|[x, _, _]| x.square()));
+            let g = match radius(&uk1, &tk1) {
                 Some((rho, _, _)) => sum.sub(&rho.square()),
                 None => sum.shift(&r2.neg()),
             };
@@ -839,12 +978,8 @@ pub(super) fn eval_height<T: Real, N: Num<T>>(
     }
     let ub = local(&u);
     let rows = parts(&u, t);
-    let gt = sum_of(
-        rows.iter()
-            .zip(&span.axes)
-            .map(|([x, _], [_, mm])| x.mul(&mm.at::<T, N>(&ub))),
-    );
-    let gu = sum_of(rows.iter().map(|[x, xu]| x.mul(xu)));
+    let gt = sum_of(rows.iter().map(|[x, _, mv]| x.mul(mv)));
+    let gu = sum_of(rows.iter().map(|[x, xu, _]| x.mul(xu)));
     let (gt, gu) = match radius(&u, t) {
         Some((rho, drho, rt)) => (gt.sub(&rho.mul(&rt)), gu.sub(&rho.mul(&drho))),
         None => (gt, gu),
