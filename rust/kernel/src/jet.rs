@@ -240,7 +240,11 @@ pub(crate) type Integrands<'a, T> = &'a dyn Fn(&Jet<T>) -> Option<Vec<Jet<T>>>;
 /// (the jets they share computed once): a piece is bisected until every
 /// integrand's remainder is within its share, of `width` itself or, when
 /// `relative`, of `width` times the integrand's scale (its largest value at
-/// eight points, at least one: mass moments, not signs).
+/// eight points, at least one: mass moments, not signs). A bisected piece's
+/// next coefficients, enclosed over it, hold over its halves too: a half
+/// whose remainder they already bound within its share is integrated
+/// without jets over it of its own (S9f.3's loops: most of the last
+/// bisection's halves, a tenth of the integrals' time).
 #[allow(clippy::too_many_arguments)]
 pub(crate) fn integrate_many<T: Real>(
     g: Integrands<'_, T>,
@@ -253,7 +257,9 @@ pub(crate) fn integrate_many<T: Real>(
     relative: bool,
 ) -> Option<Vec<T>> {
     let mut totals = vec![zero::<T>(); n];
-    let mut stack = vec![(a, b, 0usize)];
+    // Each piece with its parent's next coefficients' magnitudes, if known.
+    type Sizes = Option<std::rc::Rc<Vec<f64>>>;
+    let mut stack: Vec<(f64, f64, usize, Sizes)> = vec![(a, b, 0usize, None)];
     let pow = |x: &T, k: usize| (0..k).fold(T::exact_f64(1.0), |p, _| p.mul(x));
     let mag = |x: &T| {
         let (xl, xh) = x.bounds_f64();
@@ -276,35 +282,58 @@ pub(crate) fn integrate_many<T: Real>(
             }
         }
     }
-    while let Some((lo, hi, level)) = stack.pop() {
+    while let Some((lo, hi, level, inherited)) = stack.pop() {
         let mid = 0.5 * lo + 0.5 * hi;
         let (l, m, h) = (T::exact_f64(lo), T::exact_f64(mid), T::exact_f64(hi));
         let (s0, s1) = (l.sub(&m), h.sub(&m));
         let reach = pow(&mag(&s0), order + 2).add(&pow(&mag(&s1), order + 2));
-        // The remainders: the next coefficients over the piece (unbounded
-        // where the integrands' jets are not defined over all of it).
-        let bounds: Vec<f64> = match g(&Jet::variable(l.union(&h), order + 1)) {
-            Some(over) if over.len() == n => over
-                .iter()
-                .map(|j| {
-                    let (nlo, nhi) = j.c[order + 1].bounds_f64();
-                    T::exact_f64(nlo.abs().max(nhi.abs()))
-                        .mul(&reach)
-                        .div(&T::exact_f64((order + 2) as f64))
-                        .map_or(f64::INFINITY, |x| x.bounds_f64().1)
-                })
-                .collect(),
-            _ => vec![f64::INFINITY; n],
-        };
         let share = width * (hi - lo) / (b - a);
+        // A coefficient's magnitude times the piece's reach over `order + 2`,
+        // rounded up.
+        let bound_of = |size: f64| {
+            T::exact_f64(size)
+                .mul(&reach)
+                .div(&T::exact_f64((order + 2) as f64))
+                .map_or(f64::INFINITY, |x| x.bounds_f64().1)
+        };
         // A NaN bound never settles.
-        let settled = bounds
-            .iter()
-            .zip(&scales)
-            .all(|(bound, scale)| *bound <= share * scale);
-        if !settled && level < depth && lo < mid && mid < hi {
-            stack.push((lo, mid, level + 1));
-            stack.push((mid, hi, level + 1));
+        let settled = |bounds: &[f64]| {
+            bounds
+                .iter()
+                .zip(&scales)
+                .all(|(bound, scale)| *bound <= share * scale)
+        };
+        let from_parent: Option<Vec<f64>> = inherited
+            .as_ref()
+            .map(|sizes| sizes.iter().map(|x| bound_of(*x)).collect())
+            .filter(|bounds: &Vec<f64>| settled(bounds));
+        let (bounds, sizes) = match from_parent {
+            Some(bounds) => (bounds, None),
+            None => {
+                // The remainders: the next coefficients over the piece
+                // (unbounded where the integrands' jets are not defined
+                // over all of it).
+                match g(&Jet::variable(l.union(&h), order + 1)) {
+                    Some(over) if over.len() == n => {
+                        let sizes: Vec<f64> = over
+                            .iter()
+                            .map(|j| {
+                                let (nlo, nhi) = j.c[order + 1].bounds_f64();
+                                nlo.abs().max(nhi.abs())
+                            })
+                            .collect();
+                        (sizes.iter().map(|x| bound_of(*x)).collect(), Some(sizes))
+                    }
+                    _ => (vec![f64::INFINITY; n], None),
+                }
+            }
+        };
+        if !settled(&bounds) && level < depth && lo < mid && mid < hi {
+            let sizes = sizes
+                .filter(|x| x.iter().all(|y| y.is_finite()))
+                .map(std::rc::Rc::new);
+            stack.push((lo, mid, level + 1, sizes.clone()));
+            stack.push((mid, hi, level + 1, sizes));
             continue;
         }
         if !bounds.iter().all(|bound| bound.is_finite()) {

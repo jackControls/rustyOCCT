@@ -732,7 +732,10 @@ fn integrate_1d<T: Real, F: Integrand1<T>>(f: &F) -> Option<Vec<T>> {
 }
 
 /// `∫_0^1 ∫_0^1` of every component of `f(τ, σ)`, enclosed by the tensor
-/// rule and its two remainders.
+/// rule and its two remainders. A halved box's remainder coefficients,
+/// enclosed over it, hold over its halves too: a half whose remainders they
+/// already bound within its budget takes them without series of its own
+/// (S9f.3's loops).
 fn integrate_2d<T: Real, F: Integrand2<T>>(f: &F) -> Option<Vec<T>> {
     type Box2 = [[f64; 2]; 2];
     let rule = rule::<T>();
@@ -749,30 +752,52 @@ fn integrate_2d<T: Real, F: Integrand2<T>>(f: &F) -> Option<Vec<T>> {
         });
         sum_nodes(pairs)
     };
-    // The remainders along τ and along σ, per component.
-    let remainders = |[[a, b], [c0, d]]: Box2| -> Option<(Vec<T>, Vec<T>)> {
+    // The remainders' factors along τ and along σ over a box.
+    let factors = |[[a, b], [c0, d]]: Box2| -> (T, T) {
+        (
+            rule.remainder
+                .mul(&power(b - a, 2 * NODES + 1))
+                .mul(&T::exact_f64(d - c0)),
+            rule.remainder
+                .mul(&T::exact_f64(b - a))
+                .mul(&power(d - c0, 2 * NODES + 1)),
+        )
+    };
+    // The remainders along τ and along σ, per component, and the series'
+    // last coefficients' magnitudes (for the box's halves).
+    type Rest<T> = (Vec<T>, Vec<T>, Vec<f64>, Vec<f64>);
+    let remainders = |bx: Box2| -> Option<Rest<T>> {
+        let [[a, b], [c0, d]] = bx;
         let (x, y) = (
             T::exact_f64(a).union(&T::exact_f64(b)),
             T::exact_f64(c0).union(&T::exact_f64(d)),
         );
-        let along_tau = rule
-            .remainder
-            .mul(&power(b - a, 2 * NODES + 1))
-            .mul(&T::exact_f64(d - c0));
-        let along_sigma = rule
-            .remainder
-            .mul(&T::exact_f64(b - a))
-            .mul(&power(d - c0, 2 * NODES + 1));
+        let (along_tau, along_sigma) = factors(bx);
         let tau = f.at(
             &Series::variable(x.clone(), LENGTH),
             &Series::constant(y.clone(), LENGTH),
         )?;
         let sigma = f.at(&Series::constant(x, LENGTH), &Series::variable(y, LENGTH))?;
         let last = |s: &Series<T>, k: &T| s.coefficient(2 * NODES).mul(k);
+        let size = |s: &Series<T>| magnitude(&s.coefficient(2 * NODES));
         Some((
             tau.iter().map(|s| last(s, &along_tau)).collect(),
             sigma.iter().map(|s| last(s, &along_sigma)).collect(),
+            tau.iter().map(size).collect(),
+            sigma.iter().map(size).collect(),
         ))
+    };
+    // The remainders from a parent box's coefficients' magnitudes.
+    let inherited = |bx: Box2, sizes: &(Vec<f64>, Vec<f64>)| -> (Vec<T>, Vec<T>) {
+        let (along_tau, along_sigma) = factors(bx);
+        let bound = |size: &f64, k: &T| {
+            let e = magnitude(&T::exact_f64(*size).mul(k));
+            T::exact_f64(-e).union(&T::exact_f64(e))
+        };
+        (
+            sizes.0.iter().map(|x| bound(x, &along_tau)).collect(),
+            sizes.1.iter().map(|x| bound(x, &along_sigma)).collect(),
+        )
     };
     let whole: Box2 = [[0.0, 1.0], [0.0, 1.0]];
     let (first, absolute) = nodes(whole)?;
@@ -782,9 +807,10 @@ fn integrate_2d<T: Real, F: Integrand2<T>>(f: &F) -> Option<Vec<T>> {
         .map(|(s, q)| (*s, width(q)))
         .collect();
     let mut total: Vec<T> = vec![zero(); first.len()];
-    let mut stack = vec![(whole, [0_u32; 2])];
+    type Sizes = std::rc::Rc<(Vec<f64>, Vec<f64>)>;
+    let mut stack: Vec<(Box2, [u32; 2], Option<Sizes>)> = vec![(whole, [0_u32; 2], None)];
     let mut work = 0;
-    while let Some((bx, depth)) = stack.pop() {
+    while let Some((bx, depth, parent)) = stack.pop() {
         work += 1;
         if work > WORK {
             return None;
@@ -793,7 +819,30 @@ fn integrate_2d<T: Real, F: Integrand2<T>>(f: &F) -> Option<Vec<T>> {
         // A series undefined over the whole box (an enclosure too wide to
         // exclude a zero) is retried on halves across the less divided
         // side; the node sum is formed only for accepted boxes.
-        let rest = remainders(bx);
+        let budget = |et: &[T], es: &[T]| {
+            let both: Vec<f64> = et
+                .iter()
+                .zip(es)
+                .map(|(a, b)| magnitude(a) + magnitude(b))
+                .collect();
+            within(&both, area, &scale)
+        };
+        if let Some(sizes) = &parent {
+            let (et, es) = inherited(bx, sizes);
+            if budget(&et, &es) {
+                let sum = nodes(bx)?.0;
+                for (t, ((q, a), b)) in total.iter_mut().zip(sum.iter().zip(&et).zip(&es)) {
+                    *t = t.add(&q.add(a).add(b));
+                }
+                continue;
+            }
+        }
+        let own = remainders(bx);
+        let sizes = own.as_ref().and_then(|(_, _, st, ss)| {
+            (st.iter().chain(ss).all(|x| x.is_finite()))
+                .then(|| std::rc::Rc::new((st.clone(), ss.clone())))
+        });
+        let rest = own.map(|(et, es, _, _)| (et, es));
         if rest.is_none() && depth[0] + depth[1] >= SINGULAR {
             return None;
         }
@@ -836,8 +885,8 @@ fn integrate_2d<T: Real, F: Integrand2<T>>(f: &F) -> Option<Vec<T>> {
         left[axis] = [lo, m];
         right[axis] = [m, hi];
         next[axis] += 1;
-        stack.push((left, next));
-        stack.push((right, next));
+        stack.push((left, next, sizes.clone()));
+        stack.push((right, next, sizes));
     }
     Some(total)
 }
