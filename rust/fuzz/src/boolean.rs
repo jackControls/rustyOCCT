@@ -61,6 +61,9 @@
 //! S9e.4a: the object written by the kernel's `.brep` writer and read back
 //! is imported (`Solid::imported_with`) and given the chosen operation with
 //! the tool again, its volume the object's own result's (`IMPORTED`).
+//! S9e.4b.2: the chained stage's first result of plane faces likewise,
+//! imported (a polyhedron on its stored vertices where it is no prism) and
+//! cut by the turned box again, its volume the chained cut's.
 use crate::analytic_intersections::Bytes;
 use crate::split::{profile, spline_profile};
 use rusty_occt::identity::OperationId;
@@ -135,7 +138,9 @@ const GIVEN_MET: bool = false;
 
 /// Whether the object written by the kernel's `.brep` writer and read back
 /// is imported and given the chosen operation again (S9e.4a: an imported
-/// solid decided on the construction its stored surfaces give). On.
+/// solid decided on the construction its stored surfaces give), and the
+/// chained stage's first result of plane faces cut by the turned box again
+/// (S9e.4b.2: an imported polyhedron on its stored vertices). On.
 const IMPORTED: bool = true;
 
 /// Whether a spline prism meets a line prism in frames with different
@@ -699,6 +704,25 @@ pub fn check_boolean(data: &[u8]) {
             if let (Some(c), Some(m)) = (&c, &m) {
                 let v1 = first.mass_properties().volume;
                 assert!(near(volume(c), v1 - volume(m)), "chained cut");
+            }
+            // S9e.4b.2: the first result of plane faces written, read back
+            // and imported, cut by the box again: the chained cut's volume.
+            let planar = first
+                .topology()
+                .faces()
+                .iter()
+                .all(|f| matches!(f.surface, rusty_occt::topology::Surface::Plane(_)));
+            if let (true, true, Some(c)) = (IMPORTED, planar, &c) {
+                if let Some(again) = reimported(first) {
+                    if let Some(out) = run(again.cut(OperationId(12), &box_)) {
+                        assert!(
+                            near(volume(&out), volume(c)),
+                            "imported result cut {} for {}",
+                            volume(&out),
+                            volume(c)
+                        );
+                    }
+                }
             }
         }
     }
