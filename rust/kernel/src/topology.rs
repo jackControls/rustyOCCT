@@ -565,11 +565,17 @@ impl Toric {
 /// v0`) inside the window, a range of `u` inside one knot span of the wall
 /// (`sign` unused). The Boolean verified exactly that the window holds one
 /// simple root at every `v` of the range, so the edge is analytic.
+///
+/// S9f.3a: with `other_sphere` the other surface is the sphere `|w| =
+/// other_radius` about `other`'s origin (its stored frame's), every row of
+/// the world's axes in the function instead of the cylinder's two.
 #[derive(Debug, Clone, PartialEq)]
 pub struct WallMeet {
     pub wall: crate::BSplineSurface3,
     pub other: Frame3,
     pub other_radius: f64,
+    /// The other surface a sphere (S9f.3a): `|w| = other_radius`.
+    pub other_sphere: bool,
     pub sign: f64,
     pub start: f64,
     pub sweep: f64,
@@ -600,7 +606,16 @@ impl WallMeet {
 
     /// The ruling's foot `L(u)` and direction `M(u)` (binary64, de Boor).
     pub fn ruling(&self, u: f64) -> (Point3, crate::Vec3) {
-        let (rows, [v0, v1], flat) = self.rows();
+        self.ruling_with(&self.rows(), u)
+    }
+
+    /// `ruling` on the wall's rows made once (`rows`).
+    fn ruling_with(
+        &self,
+        (rows, [v0, v1], flat): &([Vec<Point3>; 2], [f64; 2], Vec<f64>),
+        u: f64,
+    ) -> (Point3, crate::Vec3) {
+        let (v0, v1) = (*v0, *v1);
         let p = self.wall.u_knots().degree();
         let n = rows[0].len();
         // The span: flat[k] <= u < flat[k + 1], clamped to the domain.
@@ -627,12 +642,34 @@ impl WallMeet {
         (a, (b - a) / (v1 - v0))
     }
 
-    /// The cylinder's function along the ruling at `u`, `t` from its foot.
+    /// The other surface's rows: a cylinder's two axes, or (a sphere) the
+    /// world's three.
+    pub fn other_rows(&self) -> Vec<crate::Vec3> {
+        if self.other_sphere {
+            vec![crate::Vec3::X, crate::Vec3::Y, crate::Vec3::Z]
+        } else {
+            vec![self.other.x(), self.other.y()]
+        }
+    }
+
+    /// The other surface's function along the ruling at `u`, `t` from its
+    /// foot.
     pub fn along(&self, u: f64, t: f64) -> f64 {
-        let (foot, dir) = self.ruling(u);
+        self.along_with(&self.rows(), &self.other_rows(), u, t)
+    }
+
+    /// `along` on the wall's and the other surface's rows made once.
+    fn along_with(
+        &self,
+        wall: &([Vec<Point3>; 2], [f64; 2], Vec<f64>),
+        other: &[crate::Vec3],
+        u: f64,
+        t: f64,
+    ) -> f64 {
+        let (foot, dir) = self.ruling_with(wall, u);
         let w = foot + dir * t - self.other.origin();
-        let (x, y) = (w.dot(self.other.x()), w.dot(self.other.y()));
-        x * x + y * y - self.other_radius * self.other_radius
+        let sum: f64 = other.iter().map(|e| w.dot(*e).powi(2)).sum();
+        sum - self.other_radius * self.other_radius
     }
 
     /// A graph over `v` (S9f.2b.2): `u` at `t = v - v0`, the root of
@@ -640,14 +677,16 @@ impl WallMeet {
     /// stay well inside), sampled across the window for a change of sign
     /// where its ends show none.
     pub fn root_at(&self, t: f64) -> f64 {
+        let (wall, other) = (self.rows(), self.other_rows());
+        let along = |u: f64, t: f64| self.along_with(&wall, &other, u, t);
         let [mut a, mut b] = self.window.unwrap_or([0.0, 1.0]);
-        let (mut fa, mut fb) = (self.along(a, t), self.along(b, t));
+        let (mut fa, mut fb) = (along(a, t), along(b, t));
         if fa.signum() == fb.signum() && fa != 0.0 && fb != 0.0 {
             let n = 64;
             let mut prev = (a, fa);
             for k in 1..=n {
                 let x = a + (b - a) * k as f64 / n as f64;
-                let fx = self.along(x, t);
+                let fx = along(x, t);
                 if fx.signum() != prev.1.signum() {
                     (a, fa, b, fb) = (prev.0, prev.1, x, fx);
                     break;
@@ -671,7 +710,7 @@ impl WallMeet {
             } else {
                 mid
             };
-            let fx = self.along(x, t);
+            let fx = along(x, t);
             if fx == 0.0 {
                 (a, b) = (x, x);
                 break;
@@ -695,14 +734,21 @@ impl WallMeet {
         let u = self.start + self.sweep * fraction;
         let (foot, dir) = self.ruling(u);
         let w = foot - self.other.origin();
-        let (x2, y2) = (self.other.x(), self.other.y());
-        let (wx, wy, mx, my) = (w.dot(x2), w.dot(y2), dir.dot(x2), dir.dot(y2));
-        let a = mx * mx + my * my;
-        let b = wx * mx + wy * my;
-        let c = wx * wx + wy * wy - self.other_radius * self.other_radius;
-        // `b^2 - a c` as `a r^2 - (P x M)^2` (Lagrange's identity).
-        let cross = wx * my - wy * mx;
-        let d = (a * self.other_radius * self.other_radius - cross * cross).max(0.0);
+        let rows = self.other_rows();
+        let wm: Vec<(f64, f64)> = rows.iter().map(|e| (w.dot(*e), dir.dot(*e))).collect();
+        let a: f64 = wm.iter().map(|(_, m)| m * m).sum();
+        let b: f64 = wm.iter().map(|(w, m)| w * m).sum();
+        let c = wm.iter().map(|(w, _)| w * w).sum::<f64>() - self.other_radius * self.other_radius;
+        // `b^2 - a c` as `a r^2 - |P x M|^2` (Lagrange's identity, over the
+        // rows' pairs).
+        let mut cross2 = 0.0;
+        for i in 0..wm.len() {
+            for j in i + 1..wm.len() {
+                let x = wm[i].0 * wm[j].1 - wm[j].0 * wm[i].1;
+                cross2 += x * x;
+            }
+        }
+        let d = (a * self.other_radius * self.other_radius - cross2).max(0.0);
         let sq = self.sign * d.sqrt();
         let (p, m) = (-b + sq, -b - sq);
         let t = if p.abs() >= m.abs() { p / a } else { c / m };

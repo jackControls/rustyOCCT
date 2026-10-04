@@ -14,7 +14,9 @@
 //! them, and their pieces facing one way join. S9f.1: a spline prism's walls
 //! against a prism of lines (`spline_walls.rs`); S9f.2a: against arc,
 //! circle and spline walls on an exactly parallel axis
-//! (`spline_parallel.rs`).
+//! (`spline_parallel.rs`); S9f.2b: against cylinders on crossing axes
+//! (`spline_crossing.rs`); S9f.3a: against spheres, caps and zones
+//! (`spline_sphere.rs`).
 mod algebraic;
 mod assemble;
 mod chain;
@@ -33,6 +35,7 @@ mod spheres;
 mod spheres_turned;
 mod spline_crossing;
 mod spline_parallel;
+mod spline_sphere;
 mod spline_walls;
 mod torus;
 mod torus_curved;
@@ -117,8 +120,9 @@ fn parallel_axes(x: &crate::Solid, y: &crate::Solid) -> bool {
 /// S9f.1 takes a spline prism against a prism of lines in any position,
 /// S9f.2a against a prism with arcs, circles or splines on an exactly
 /// parallel axis, S9f.2b against a prism with arcs or circles (no spline) on
-/// a crossing axis; the others are later sub-steps' or refused
-/// (REVIEW_NOTES.md, "S9f refined").
+/// a crossing axis, S9f.3a against a sphere, a cap or a zone; the others are
+/// later sub-steps' or refused (REVIEW_NOTES.md, "S9f refined" and "S9f.3
+/// refined").
 fn spline_pairs(poly: &Polyhedron) -> Result<()> {
     for (x, y) in [(&poly.a, &poly.b), (&poly.b, &poly.a)] {
         if spline_leaves(x) {
@@ -137,13 +141,16 @@ fn spline_pairs(poly: &Polyhedron) -> Result<()> {
         if matches!(&y.construction, Construction::Prism(p) if !profile_splines(p)) {
             continue;
         }
+        // S9f.3a: against a sphere, a cap or a zone (spline walls against
+        // the sphere).
+        if matches!(y.construction, Construction::Sphere { .. }) {
+            continue;
+        }
         return Err(Error::OutOfDomain(match &y.construction {
             Construction::Prism(_) => {
                 "spline walls against spline walls on crossing axes (refused, S9f)"
             }
-            Construction::Sphere { .. } | Construction::Cone { .. } => {
-                "a spline prism against a sphere or a cone (S9f.3)"
-            }
+            Construction::Cone { .. } => "a spline prism against a cone (S9f.3b)",
             Construction::Torus { .. } => "a spline prism against a torus (refused, S9f)",
             _ => "a spline prism against a solid other than a prism in any position (S9f)",
         }));

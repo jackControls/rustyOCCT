@@ -333,6 +333,20 @@ impl Implicit {
         self.f.eval(&x[0], &x[1])
     }
 
+    /// Its nonzero terms `(i, j, c)`: `c X^i Y^j` (S9f.3a: substituted
+    /// along a circle of a surd radius).
+    pub(super) fn terms(&self) -> Vec<(usize, usize, R)> {
+        let mut out = Vec::new();
+        for (i, row) in self.f.0.iter().enumerate() {
+            for (j, c) in row.iter().enumerate() {
+                if *c != zero() {
+                    out.push((i, j, c.clone()));
+                }
+            }
+        }
+        out
+    }
+
     /// The equation along a rational curve `(U(t), V(t)) / Q(t)`
     /// (polynomials, ascending) times `Q^d`, `d` its total degree: `sum c_ij
     /// U^i V^j Q^(d - i - j)` (S9f.2b.2: a cap circle's projection, in its

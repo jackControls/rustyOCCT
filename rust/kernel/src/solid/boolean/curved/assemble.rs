@@ -1313,7 +1313,8 @@ fn curve3(arr: &Arr, e: &REdge, points: &BTreeMap<usize, Point3>) -> Result<Curv
     match &first.crv {
         Crv::Spline(c) => spline_curve3(arr, e, c),
         // S9f.2b: on the spline wall's and the cylinder's stored surfaces,
-        // a graph over the wall's own parameter (the curve's `t`).
+        // a graph over the wall's own parameter (the curve's `t`); S9f.3a:
+        // the sphere's.
         Crv::WallMeet(m) => {
             let CurveRef::Section(si, _) = first.curve else {
                 unreachable!("a spline wall's meeting is a section")
@@ -1326,8 +1327,14 @@ fn curve3(arr: &Arr, e: &REdge, points: &BTreeMap<usize, Point3>) -> Result<Curv
             let Surface::BSpline(wall) = stored[m.carrier] else {
                 return Err(Error::InvalidTopology("a wall's meeting off a spline wall"));
             };
-            let Surface::Cylinder { frame, radius } = stored[1 - m.carrier] else {
-                return Err(Error::InvalidTopology("a wall's meeting off a cylinder"));
+            let (frame, radius, other_sphere) = match stored[1 - m.carrier] {
+                Surface::Cylinder { frame, radius } => (frame, radius, false),
+                Surface::Sphere { frame, radius } => (frame, radius, true),
+                _ => {
+                    return Err(Error::InvalidTopology(
+                        "a wall's meeting off a cylinder or a sphere",
+                    ))
+                }
             };
             let (a, b) = chain_taus(arr, e);
             // S9f.2b.2: a graph over the height, over the wall's `v` (the
@@ -1346,6 +1353,7 @@ fn curve3(arr: &Arr, e: &REdge, points: &BTreeMap<usize, Point3>) -> Result<Curv
                     wall: wall.clone(),
                     other: *frame,
                     other_radius: *radius,
+                    other_sphere,
                     sign: 1.0,
                     start: va,
                     sweep: vb - va,
@@ -1362,6 +1370,7 @@ fn curve3(arr: &Arr, e: &REdge, points: &BTreeMap<usize, Point3>) -> Result<Curv
                 wall: wall.clone(),
                 other: *frame,
                 other_radius: *radius,
+                other_sphere,
                 sign: if m.plus { 1.0 } else { -1.0 },
                 start: ta,
                 sweep: tb - ta,

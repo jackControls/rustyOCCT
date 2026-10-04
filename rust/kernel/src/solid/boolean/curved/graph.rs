@@ -332,8 +332,9 @@ pub(super) fn arrange_shared(models: [Prism; 2]) -> Result<Arr> {
             pairs.insert((fa, fb), pair);
         }
     }
-    // A spline wall and a cylinder on crossing axes (S9f.2b): the meeting's
-    // graphs over the run and over the height and their switches (S9f.2b.2).
+    // A spline wall and a cylinder on crossing axes (S9f.2b) or a sphere
+    // (S9f.3a): the meeting's graphs over the run and over the height and
+    // their switches (S9f.2b.2).
     for fa in 0..models[0].faces.len() {
         let (va, ia) = models[0].view(fa);
         for fb in 0..models[1].faces.len() {
@@ -352,6 +353,21 @@ pub(super) fn arrange_shared(models: [Prism; 2]) -> Result<Arr> {
                 (Surf::Cyl { c, r, .. }, Surf::Spline(s)) if crossing(vb, va) => {
                     if meets {
                         super::spline_crossing::meeting(vb, ib, s, va, ia, c, r)?
+                    } else {
+                        CylPair::Apart
+                    }
+                }
+                // S9f.3a: a spline wall and a sphere, the same way.
+                (Surf::Spline(s), Surf::Sphere { c, r }) => {
+                    if meets {
+                        super::spline_sphere::meeting(va, ia, s, vb, ib, c, r)?
+                    } else {
+                        CylPair::Apart
+                    }
+                }
+                (Surf::Sphere { c, r }, Surf::Spline(s)) => {
+                    if meets {
+                        super::spline_sphere::meeting(vb, ib, s, va, ia, c, r)?
                     } else {
                         CylPair::Apart
                     }
@@ -1363,7 +1379,7 @@ fn intersect(a: &([f64; 3], [f64; 3]), b: &([f64; 3], [f64; 3])) -> ([f64; 3], [
 
 /// Whether a meeting at `x` on face `g` may be a seam's: on a full circle's
 /// half wall anywhere, on a sphere's hemisphere only on its split (S9d.2).
-fn seam_at(m: &Prism, g: usize, x: &QV) -> bool {
+pub(super) fn seam_at(m: &Prism, g: usize, x: &QV) -> bool {
     let (m, g) = m.view(g);
     if let Some(fun) = &m.funnel {
         // A cone's faces: on the rims' seam direction (S9d.3a).

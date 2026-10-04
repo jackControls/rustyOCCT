@@ -33,10 +33,10 @@ pub(super) fn tangency() -> Error {
     Error::Degenerate("a tangency between the inputs (S9c)")
 }
 
-/// A spline wall against a curved face other than a cylinder or a spline
-/// wall (S9f.3's: spheres and cones).
+/// A spline wall against a curved face other than a cylinder, a spline wall
+/// or a sphere (S9f.3b's: cones).
 fn spline_curved() -> Error {
-    Error::OutOfDomain("a spline wall against a curved face in any position (S9f.3)")
+    Error::OutOfDomain("a spline wall against a curved face in any position (S9f.3b)")
 }
 
 fn quartic() -> Error {
@@ -325,6 +325,14 @@ pub(super) fn section(
             }
         }
         (Surf::Spline(s), Surf::Spline(t)) => super::spline_parallel::spline_spline(px, s, py, t),
+        // S9f.3a: against a sphere, by the pair's relation (its branches
+        // over the run, graphs over the height and switches).
+        (Surf::Spline(s), Surf::Sphere { c, r }) => crossing_section(pair, || {
+            super::spline_sphere::meeting(px, fx, s, py, fy, c, r)
+        }),
+        (Surf::Sphere { c, r }, Surf::Spline(s)) => crossing_section(pair, || {
+            super::spline_sphere::meeting(py, fy, s, px, fx, c, r)
+        }),
         (Surf::Spline(_), _) | (_, Surf::Spline(_)) => Err(spline_curved()),
         // S9d.4a: a plane's section of a torus, by the pair's relation.
         (Surf::Plane { .. }, Surf::Torus) | (Surf::Torus, Surf::Plane { .. }) => {
@@ -560,6 +568,15 @@ pub(super) fn edge_surface(
         (Crv::Conic { c, a, b }, Surf::Spline(s)) if own.is_some() => {
             let (om, oc, or) = own.expect("an arc's own cylinder");
             super::spline_parallel::conic_wall(om, oc, or, c, a, b, &py.f, s)
+        }
+        // S9f.3a: a curve over a spline against a sphere; a sphere's circle
+        // (a rim or the split's great circle) against a spline wall.
+        (Crv::Spline(c), Surf::Sphere { c: cs, r }) => {
+            super::spline_sphere::wallcrv_sphere(c, cs, r)
+        }
+        (Crv::Circle(circ), Surf::Spline(s)) if own_ball.is_some() => {
+            let ball = own_ball.expect("a sphere's circle's own sphere");
+            super::spline_sphere::circ_wall(circ, ball, &py.f, s)
         }
         (Crv::Spline(_), _) | (_, Surf::Spline(_)) => Err(spline_curved()),
         // S9d.4a: a line against a torus; a circle is S9d.4b's.
