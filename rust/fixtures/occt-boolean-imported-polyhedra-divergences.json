@@ -1,0 +1,18 @@
+{
+  "note": "Reviewed BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut and BRepAlgoAPI_Common differences from the S9e.4b.2 reference and the kernel.",
+  "reviews": [
+    {
+      "case": "pyramid_flush_fuse",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "9e5fb2bc9e3b51969f2e24a489472bae660493bbd2e80f69f26ce33b415b744f",
+      "differences": [
+        "measure",
+        "solids"
+      ],
+      "reason": "The declared degenerate case (a slab in the TILTX frame on the plane of the imported pyramid's base, the kernel's fuse refused by S9's rules): OCCT takes the pyramid's base and the slab's face, within its tolerance of one plane, as one face shared by both and fuses them into one solid of volume 416.0000000000001 and area 435.37764081484767, without the base square. The reference's construction keeps the two planes apart by their rounded frames (the stored axes of TILT and TILTX), so no cell of one meets a cell of the other in area and its solid count is 2, its area 563.3776408148476 both solids' whole boundaries. The native volume is the reference's sum within 2.4e-16 relative and its centre the reference's within 1e-15 of the size; its area is the reference's less twice the base square (8 by 8 on the TILT frame's stored x and normal, 128 within rounding), within 3e-15: the same solids merged along the face OCCT shares.",
+      "independent_evidence": "imported_polyhedra_boolean_reference.py's rows on the constructions OCCT was given (generate_imported_polyhedra_boolean_fixtures.py --check, identical under Python 3.9 and 3.12): volumes three ways (inclusion and exclusion, the result's cells, the divergence over its boundary) and the pair identities exactly equal, areas two ways within 1.8e-40, each body's closed form (the pyramid's prismatoid, 128) exactly, Monte Carlo within 3.3 standard errors; the cut and the common of the same pair match natively (the pyramid whole, empty); every stored vertex of the imported files lies on its construction's boundary within 6.6e-16 of the size.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    }
+  ]
+}

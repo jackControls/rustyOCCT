@@ -6483,8 +6483,18 @@ Decisions for S9, recorded before its code (2026-09-28):
     face thinner than the resolution and a non-manifold vertex), the
     octahedron's slab and the tetrahedron moved off vertices within
     rounding of the other's faces; the flush slab's cut and common, which
-    the same trial evaluated within the reference, declared as such. S9e.4b.2's
-    native capture next.
+    the same trial evaluated within the reference, declared as such. The
+    capture `occt-boolean-imported-polyhedra-preimplementation`
+    (`compare_imported_polyhedra_boolean.py`, keyed on
+    `solid/boolean/polyhedra/imported.rs`; the kernel's probe `unsupported`
+    on all 48, S9e.4a refusing every body but `ridge` and the pairs with
+    it): every result valid, 47 matching (volumes within 8.9e-16, areas
+    5.5e-16, centres 2.5e-16 of the size: plane faces, BRepGProp exact), 1
+    reviewed: the declared flush fuse, which OCCT makes one solid sharing
+    the pyramid's base within its tolerance where the reference's rounded
+    frames keep two apart (its volume the reference's, its area less twice
+    the base square); 2 results' counts change when unified (the drafted
+    prism and the ridge). S9e.4b.2's kernel next.
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces
