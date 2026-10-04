@@ -535,7 +535,7 @@ pub(crate) fn rational_f64(x: &R) -> f64 {
     }
     // The nearer of the two bounds.
     let (a, b) = (q(lo.0), q(lo.1));
-    if x - &a <= &b - x {
+    if crate::rational::sub(x, &a) <= crate::rational::sub(&b, x) {
         lo.0
     } else {
         lo.1

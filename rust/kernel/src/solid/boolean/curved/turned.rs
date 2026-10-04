@@ -46,28 +46,21 @@ pub(super) fn padd(a: &Poly, b: &Poly) -> Poly {
     let n = a.len().max(b.len());
     trim(
         (0..n)
-            .map(|i| {
-                a.get(i).cloned().unwrap_or_else(zero) + b.get(i).cloned().unwrap_or_else(zero)
+            .map(|i| match (a.get(i), b.get(i)) {
+                (Some(x), Some(y)) => crate::rational::add(x, y),
+                (Some(x), None) | (None, Some(x)) => x.clone(),
+                (None, None) => zero(),
             })
             .collect(),
     )
 }
 
 pub(super) fn pmul(a: &Poly, b: &Poly) -> Poly {
-    if a.is_empty() || b.is_empty() {
-        return Vec::new();
-    }
-    let mut out = vec![zero(); a.len() + b.len() - 1];
-    for (i, x) in a.iter().enumerate() {
-        for (j, y) in b.iter().enumerate() {
-            out[i + j] += x * y;
-        }
-    }
-    trim(out)
+    super::num::product(a, b)
 }
 
 pub(super) fn pscale(a: &Poly, k: &R) -> Poly {
-    trim(a.iter().map(|x| x * k).collect())
+    trim(a.iter().map(|x| crate::rational::mul(x, k)).collect())
 }
 
 pub(super) fn pderiv(a: &Poly) -> Poly {
@@ -75,7 +68,7 @@ pub(super) fn pderiv(a: &Poly) -> Poly {
         a.iter()
             .enumerate()
             .skip(1)
-            .map(|(i, c)| c * int(i as i64))
+            .map(|(i, c)| crate::rational::mul(c, &int(i as i64)))
             .collect(),
     )
 }
@@ -86,9 +79,9 @@ fn prem(a: &Poly, b: &Poly) -> Poly {
     let lead = b.last().expect("a nonzero divisor").clone();
     while r.len() >= b.len() && !r.is_empty() {
         let shift = r.len() - b.len();
-        let c = r.last().expect("nonempty") / &lead;
+        let c = crate::rational::div(r.last().expect("nonempty"), &lead);
         for (i, x) in b.iter().enumerate() {
-            r[i + shift] -= &c * x;
+            r[i + shift] = crate::rational::sub(&r[i + shift], &crate::rational::mul(&c, x));
         }
         r = trim(r);
     }
@@ -121,7 +114,9 @@ pub(super) fn sturm_int(p: &Poly) -> Vec<IPoly> {
         while v.last().is_some_and(|c| c.sign() == Sign::NoSign) {
             v.pop();
         }
-        let g = v.iter().fold(BigInt::from(0), |g, c| g.gcd(c));
+        let g = v
+            .iter()
+            .fold(BigInt::from(0), |g, c| crate::rational::gcd(&g, c));
         if g > BigInt::from(1) {
             for c in &mut v {
                 *c /= &g;
@@ -267,6 +262,54 @@ pub(super) fn roots(p: &Poly) -> Result<Vec<AlgebraicRoot>> {
     )
 }
 
+/// `gcd(p, p')` where `p = (1 + t^2)^m q` (a chart's factor, `m >= 1`) and
+/// `q` is certainly coprime with its derivative: then `(1 + t^2)^(m - 1)`,
+/// primitive with a positive leading coefficient as `IntPolynomial::gcd`
+/// gives it (`p' = (1 + t^2)^(m - 1) (2 m t q + (1 + t^2) q')`, and the
+/// irreducible `1 + t^2` divides neither `q` nor `2 m t q`). `None`
+/// otherwise: the subresultant chain decides.
+fn chart_gcd(p: &IntPolynomial) -> Option<IntPolynomial> {
+    use num_bigint::BigInt;
+    // Exact division by `t^2 + 1`, where it divides.
+    let divide = |p: &[BigInt]| -> Option<Vec<BigInt>> {
+        if p.len() < 3 {
+            return None;
+        }
+        let mut r = p.to_vec();
+        let mut q = vec![BigInt::from(0); p.len() - 2];
+        for k in (0..q.len()).rev() {
+            let c = r[k + 2].clone();
+            r[k] -= &c;
+            r[k + 2] = BigInt::from(0);
+            q[k] = c;
+        }
+        (r[0].sign() == num_bigint::Sign::NoSign && r[1].sign() == num_bigint::Sign::NoSign)
+            .then_some(q)
+    };
+    let mut q = p.0.clone();
+    let mut m = 0;
+    while let Some(next) = divide(&q) {
+        q = next;
+        m += 1;
+    }
+    if m == 0 {
+        return None;
+    }
+    let q = IntPolynomial::new(q);
+    if q.is_constant() || !q.coprime_with(&q.derivative()) {
+        return None;
+    }
+    // (1 + t^2)^(m - 1) by its binomial coefficients.
+    let k = m - 1;
+    let mut out = vec![BigInt::from(0); 2 * k + 1];
+    let mut binomial = BigInt::from(1);
+    for j in 0..=k {
+        out[2 * j] = binomial.clone();
+        binomial = binomial * BigInt::from(k - j) / BigInt::from(j + 1);
+    }
+    Some(IntPolynomial::new(out))
+}
+
 /// The distinct real roots of a nonzero, nonconstant polynomial, each with
 /// whether it is repeated, and its square-free part (S9d.4b.1: a tangency
 /// off a part's rim is no contact).
@@ -278,13 +321,7 @@ pub(super) fn roots_repeated(p: &Poly) -> Result<(Poly, Vec<(AlgebraicRoot, bool
     // `g` and `ip` primitive, so `h = ip / g` is in integers (Gauss's
     // lemma): exactly, and `p / g` is `h` times `p`'s positive multiple of
     // `ip`, each coefficient reduced once (the same as in rationals).
-    // Square-free (the usual case) decided modulo a prime first: the
-    // subresultants' gcd only where that leaves it open.
-    let ig = if coprime_mod_p(&ip.0, &ip.derivative().0) {
-        IntPolynomial::new(vec![BigInt::from(1)])
-    } else {
-        ip.gcd(&ip.derivative())
-    };
+    let ig = chart_gcd(&ip).unwrap_or_else(|| ip.gcd(&ip.derivative()));
     let g = &ig.0;
     let lead = g.last().expect("a nonzero gcd");
     let mut r = ip.0.clone();
@@ -305,12 +342,20 @@ pub(super) fn roots_repeated(p: &Poly) -> Result<(Poly, Vec<(AlgebraicRoot, bool
         h.pop();
     }
     let top = p.iter().rev().find(|c| **c != zero()).expect("nonzero");
-    let scale = top / R::from_integer(ip.0.last().expect("nonzero").clone());
-    let sf: Poly = h.iter().map(|c| &scale * c).collect();
-    let lead = R::from_integer(h.last().expect("nonzero").magnitude().clone().into());
+    let scale = crate::rational::div(top, &R::from_integer(ip.0.last().expect("nonzero").clone()));
+    let sf: Poly = h
+        .iter()
+        .map(|c| crate::rational::mul(&scale, &R::from_integer(c.clone())))
+        .collect();
+    let lead = h.last().expect("nonzero").magnitude().clone();
     let bound = h[..h.len() - 1]
         .iter()
-        .map(|c| R::from_integer(c.magnitude().clone().into()) / &lead)
+        .map(|c| {
+            reduced(
+                BigInt::from(c.magnitude().clone()),
+                &BigInt::from(lead.clone()),
+            )
+        })
         .fold(zero(), |m, x| if x > m { x } else { m })
         + int(1);
     let rs = isolate(
@@ -329,62 +374,22 @@ pub(super) fn roots_repeated(p: &Poly) -> Result<(Poly, Vec<(AlgebraicRoot, bool
     Ok((sf, out))
 }
 
-/// Whether two integer polynomials are coprime over the rationals, shown
-/// modulo the prime `2^61 - 1` (false: undecided). Where neither leading
-/// coefficient vanishes there, a common factor of positive degree (taken
-/// primitive, its leading coefficient dividing both) stays one of the same
-/// degree modulo the prime: a constant gcd there is a constant gcd.
-fn coprime_mod_p(a: &[BigInt], b: &[BigInt]) -> bool {
-    const P: u64 = (1 << 61) - 1;
-    let modp = |v: &[BigInt]| -> Vec<u64> {
-        let p = BigInt::from(P);
-        v.iter()
-            .map(|c| {
-                let r = c.mod_floor(&p);
-                r.to_u64_digits().1.first().copied().unwrap_or(0)
-            })
-            .collect()
-    };
-    let mul = |x: u64, y: u64| ((u128::from(x) * u128::from(y)) % u128::from(P)) as u64;
-    let inv = |x: u64| {
-        // x^(P - 2).
-        let (mut acc, mut base, mut e) = (1u64, x, P - 2);
-        while e > 0 {
-            if e & 1 == 1 {
-                acc = mul(acc, base);
-            }
-            base = mul(base, base);
-            e >>= 1;
-        }
-        acc
-    };
-    let (mut x, mut y) = (modp(a), modp(b));
-    if x.last().is_none_or(|c| *c == 0) || y.last().is_none_or(|c| *c == 0) {
-        return false;
+/// `n / d` in lowest terms (`d` positive), by the crate's gcd.
+pub(super) fn reduced(n: BigInt, d: &BigInt) -> R {
+    if n.sign() == Sign::NoSign {
+        return zero();
     }
-    // Euclid's remainders in the field.
-    while !y.is_empty() {
-        if y.len() == 1 {
-            return true;
-        }
-        let lead = inv(*y.last().expect("nonempty"));
-        while x.len() >= y.len() {
-            let shift = x.len() - y.len();
-            let k = mul(*x.last().expect("nonempty"), lead);
-            for (i, c) in y.iter().enumerate() {
-                let t = mul(k, *c);
-                x[i + shift] = (x[i + shift] + P - t) % P;
-            }
-            while x.last() == Some(&0) {
-                x.pop();
-            }
-            if x.is_empty() {
-                break;
-            }
-        }
-        std::mem::swap(&mut x, &mut y);
+    let g = crate::rational::gcd(&n, d);
+    if g == BigInt::from(1) {
+        R::new_raw(n, d.clone())
+    } else {
+        R::new_raw(n / &g, d / &g)
     }
-    false
+}
+
+/// The least common multiple of two positive integers, by the crate's gcd.
+pub(super) fn lcm(a: &BigInt, b: &BigInt) -> BigInt {
+    a / crate::rational::gcd(a, b) * b
 }
 
 /// A root's midpoint, rational.
@@ -421,13 +426,13 @@ impl Chart {
         // `(cos, sin)` of the turn: `(d^2 - n^2, 2 n d) / (d^2 + n^2)`.
         let (c, s, w) = (&dd - &nn, (n * d) << 1usize, &dd + &nn);
         // The base over its own denominator.
-        let lcm = num_integer::Integer::lcm(self.c0.denom(), self.s0.denom());
+        let lcm = lcm(self.c0.denom(), self.s0.denom());
         let a = self.c0.numer() * (&lcm / self.c0.denom());
         let b = self.s0.numer() * (&lcm / self.s0.denom());
         let den = w * lcm;
         [
-            R::new(&a * &c - &b * &s, den.clone()),
-            R::new(&b * &c + &a * &s, den),
+            reduced(&a * &c - &b * &s, &den),
+            reduced(&b * &c + &a * &s, &den),
         ]
     }
 
@@ -489,7 +494,7 @@ impl Form {
 
     pub(super) fn add_const(&mut self, k: &R) {
         let e = self.terms.entry((0, 0)).or_insert_with(zero);
-        *e += k;
+        *e = crate::rational::add(e, k);
         if *e == zero() {
             self.terms.remove(&(0, 0));
         }
@@ -501,7 +506,7 @@ impl Form {
                 .terms
                 .iter()
                 .filter(|_| *a != zero())
-                .map(|(e, x)| (*e, x * a))
+                .map(|(e, x)| (*e, crate::rational::mul(x, a)))
                 .collect(),
             deg: self.deg,
         }
@@ -511,7 +516,7 @@ impl Form {
         let mut terms = self.terms.clone();
         for (e, x) in &o.terms {
             let t = terms.entry(*e).or_insert_with(zero);
-            *t += x;
+            *t = crate::rational::add(t, x);
             if *t == zero() {
                 terms.remove(e);
             }
@@ -531,7 +536,7 @@ impl Form {
         for (ea, x) in &self.terms {
             for (eb, y) in &o.terms {
                 let t = terms.entry((ea.0 + eb.0, ea.1 + eb.1)).or_insert_with(zero);
-                *t += x * y;
+                *t = crate::rational::add(t, &crate::rational::mul(x, y));
             }
         }
         terms.retain(|_, x| *x != zero());
@@ -563,9 +568,10 @@ impl Form {
     }
 
     pub(super) fn value(&self, cs: &[R; 2]) -> R {
-        let pow = |x: &R, n: u32| (0..n).fold(int(1), |acc, _| acc * x);
+        use crate::rational::{add, mul};
+        let pow = |x: &R, n: u32| (0..n).fold(int(1), |acc, _| mul(&acc, x));
         self.terms.iter().fold(zero(), |acc, ((i, j), x)| {
-            acc + x * pow(&cs[0], *i) * pow(&cs[1], *j)
+            add(&acc, &mul(&mul(x, &pow(&cs[0], *i)), &pow(&cs[1], *j)))
         })
     }
 
@@ -598,7 +604,7 @@ impl Form {
         // power of a numerator over `l` once more: `cn^i sn^j w^rest` over
         // `l^(i + j)`, brought to the largest such power.
         let (c0, s0) = (&chart.c0, &chart.s0);
-        let l = c0.denom().lcm(s0.denom());
+        let l = lcm(c0.denom(), s0.denom());
         let (a, b) = (
             c0.numer() * (&l / c0.denom()),
             s0.numer() * (&l / s0.denom()),
@@ -609,7 +615,7 @@ impl Form {
         let den = self
             .terms
             .values()
-            .fold(BigInt::from(1), |m, x| m.lcm(x.denom()));
+            .fold(BigInt::from(1), |m, x| lcm(&m, x.denom()));
         let top = self
             .terms
             .keys()
@@ -628,7 +634,7 @@ impl Form {
             }
         }
         let total = den * l.pow(top);
-        trim(out.into_iter().map(|c| R::new(c, total.clone())).collect())
+        trim(out.into_iter().map(|c| reduced(c, &total)).collect())
     }
 }
 
@@ -1042,6 +1048,38 @@ fn verify(p: &Poly, chart: &Chart, range: &[[Qd; 2]; 2]) -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use num_bigint::BigInt;
+
+    fn ip(c: &[i64]) -> IntPolynomial {
+        IntPolynomial::new(c.iter().map(|&x| BigInt::from(x)).collect())
+    }
+
+    fn times(a: &IntPolynomial, b: &IntPolynomial) -> IntPolynomial {
+        let mut out = vec![BigInt::from(0); a.0.len() + b.0.len() - 1];
+        for (i, x) in a.0.iter().enumerate() {
+            for (j, y) in b.0.iter().enumerate() {
+                out[i + j] += x * y;
+            }
+        }
+        IntPolynomial::new(out)
+    }
+
+    /// A chart's factor `(1 + t^2)^m` times a square-free part: the gcd
+    /// with the derivative is `(1 + t^2)^(m - 1)`, the subresultant
+    /// chain's; a part not square-free goes the exact way.
+    #[test]
+    fn a_charts_factor_gives_the_gcd_with_the_derivative() {
+        let w = ip(&[1, 0, 1]);
+        let q = ip(&[-6, 1, 4, -3, 7]);
+        for m in 1..5 {
+            let p = (0..m).fold(q.clone(), |acc, _| times(&acc, &w));
+            assert_eq!(chart_gcd(&p), Some(p.gcd(&p.derivative())));
+        }
+        let square = times(&times(&q, &ip(&[2, -1])), &ip(&[2, -1]));
+        let p = times(&times(&square, &w), &w);
+        assert_eq!(chart_gcd(&p), None);
+        assert_eq!(chart_gcd(&q), None);
+    }
 
     /// A small linear congruential stream.
     fn stream(mut seed: u64) -> impl FnMut() -> i64 {
@@ -1133,11 +1171,6 @@ mod tests {
             if p.len() < 2 {
                 continue;
             }
-            let ip = int_poly(&p);
-            assert_eq!(
-                coprime_mod_p(&ip.0, &ip.derivative().0),
-                ip.gcd(&ip.derivative()).is_constant()
-            );
             let (sf, rs) = roots_repeated(&p).expect("roots");
             let (sf2, rs2) = roots_repeated_rational(&p);
             assert_eq!(sf, sf2);
