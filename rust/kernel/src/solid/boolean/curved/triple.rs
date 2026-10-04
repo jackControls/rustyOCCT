@@ -451,6 +451,26 @@ impl Param {
         }
     }
 
+    /// A ruled parameterization (linear in the place `y` along the ruling)
+    /// in `(x, w)`, `w = y + c x`: each point's ruling and place mixed, so
+    /// two points on one ruling, or at one place on two, have different
+    /// `w`.
+    fn sheared(&self, c: &R) -> Self {
+        let p = [0, 1, 2].map(|i| {
+            let none = Vec::new();
+            let (base, dir) = (
+                self.p[i].first().unwrap_or(&none),
+                self.p[i].get(1).unwrap_or(&none),
+            );
+            let shift = pscale(&pmul(&vec![zero(), int(1)], dir), &-c.clone());
+            bv_trim(vec![padd(base, &shift), dir.clone()])
+        });
+        Self {
+            p,
+            q: self.q.clone(),
+        }
+    }
+
     fn transposed(&self) -> Self {
         Self {
             p: [0, 1, 2].map(|i| bv_transpose(&self.p[i])),
@@ -1059,35 +1079,65 @@ fn ruled(imps: &[Imp; 3], rulings: &[(usize, Ruling)]) -> Result<Found> {
         [R::new(3.into(), 5.into()), R::new(4.into(), 5.into())],
         [R::new((-4).into(), 5.into()), R::new(3.into(), 5.into())],
     ];
-    for (ci, s) in rulings {
-        let [a, b] = match ci {
-            0 => [&imps[1], &imps[2]],
-            1 => [&imps[0], &imps[2]],
-            _ => [&imps[0], &imps[1]],
-        };
-        for swap in [false, true] {
+    // A projection over each chart whose antipode holds no common point:
+    // `None` where a fibre holds two points (the next projection).
+    let project =
+        |ci: usize, s: &Ruling, make: &dyn Fn(&Chart) -> Param| -> Result<Option<Found>> {
+            let [a, b] = match ci {
+                0 => [&imps[1], &imps[2]],
+                1 => [&imps[0], &imps[2]],
+                _ => [&imps[0], &imps[1]],
+            };
             for base in &bases {
                 let chart = Chart {
                     c0: base[0].clone(),
                     s0: base[1].clone(),
                 };
-                // The chart's antipode: a common point of the two there
-                // (or a common complex one) moves the chart.
+                // The chart's antipode: a common point of the two there (or a
+                // common complex one) moves the chart.
                 let anti = Param::ruling_at(s, &[-base[0].clone(), -base[1].clone()]);
                 let (ra, rb) = (a.restrict(&anti.p, &anti.q), b.restrict(&anti.p, &anti.q));
                 if ra.is_empty() || rb.is_empty() || resultant_y(&ra, &rb).is_empty() {
                     continue;
                 }
-                let mut par = Param::ruled(s, &chart);
-                if swap {
-                    par = par.transposed();
-                }
+                let par = make(&chart);
                 let (ra, rb) = (a.restrict(&par.p, &par.q), b.restrict(&par.p, &par.q));
-                match solve(&ra, &rb, par)? {
-                    Solved::Elim(e) => return Ok(Some(e)),
-                    Solved::Shared => return Ok(None),
-                    Solved::Retry => break,
+                return Ok(match solve(&ra, &rb, par)? {
+                    Solved::Elim(e) => Some(Some(e)),
+                    Solved::Shared => Some(None),
+                    Solved::Retry => None,
+                });
+            }
+            Ok(None)
+        };
+    for (ci, s) in rulings {
+        // Over the rulings' angle, then over the place along them.
+        for swap in [false, true] {
+            let made = project(*ci, s, &|chart| {
+                let par = Param::ruled(s, chart);
+                if swap {
+                    par.transposed()
+                } else {
+                    par
                 }
+            })?;
+            if let Some(found) = made {
+                return Ok(found);
+            }
+        }
+    }
+    // Over the place sheared by the angle's chart, `y + c x`: points on one
+    // ruling at two places and at one place on two rulings both apart (two
+    // cylinders with parallel axes meet in two rulings, which a sphere may
+    // cross at equal heights: every point then shares its ruling with one
+    // and its height with another).
+    for (ci, s) in rulings {
+        for c in [int(1), int(-1), int(2), int(1) / int(2)] {
+            let made = project(*ci, s, &|chart| {
+                Param::ruled(s, chart).sheared(&c).transposed()
+            })?;
+            if let Some(found) = made {
+                return Ok(found);
             }
         }
     }
@@ -1172,4 +1222,74 @@ pub(super) fn meet(curve: &Crv, py: &Prism, fy: usize, clip: Option<&Clip>) -> R
         out.push((super::graph::place(curve, &x), x));
     }
     Ok(EdgeMeet::Points(out))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn v(x: i64, y: i64, z: i64) -> V {
+        [int(x), int(y), int(z)]
+    }
+
+    /// A cylinder of radius 5 about the `z` axis through `(cx, 0)`.
+    fn cylinder(cx: i64) -> (Imp, Ruling) {
+        let other = Other {
+            g: vec![v(1, 0, 0), v(0, 1, 0)],
+            e: vec![int(cx), zero()],
+            r: int(5),
+            h: v(0, 0, 0),
+            eh: zero(),
+            t: zero(),
+        };
+        let ruling = Ruling {
+            o: v(cx, 0, 0),
+            x: v(1, 0, 0),
+            y: v(0, 1, 0),
+            n: v(0, 0, 1),
+            r: int(5),
+            k: zero(),
+        };
+        (Imp::Quad(other), ruling)
+    }
+
+    /// Two cylinders with parallel axes meet in two rulings, `x = 3, y =
+    /// +-4`, which a ball about `(3, 0, 0)` of radius 5 crosses at the same
+    /// heights `z = +-3`: each of the four points shares its ruling with one
+    /// and its height with another, so neither surface's rulings nor their
+    /// heights separate them; the sheared projection does.
+    #[test]
+    fn points_on_two_rulings_at_equal_heights_are_separated() {
+        let (carrier, along) = cylinder(0);
+        let (partner, across) = cylinder(6);
+        let ball = Imp::Quad(Other {
+            g: vec![v(1, 0, 0), v(0, 1, 0), v(0, 0, 1)],
+            e: vec![int(3), zero(), zero()],
+            r: int(5),
+            h: v(0, 0, 0),
+            eh: zero(),
+            t: zero(),
+        });
+        let imps = [carrier, ball, partner];
+        let found = ruled(&imps, &[(0, along), (2, across)])
+            .expect("separated")
+            .expect("isolated points");
+        let points = points_of(&found, None).expect("the points");
+        let mut views: Vec<[f64; 3]> = points.iter().map(qv_f64).collect();
+        views.sort_by(|a, b| a.partial_cmp(b).expect("finite"));
+        assert_eq!(
+            views,
+            vec![
+                [3.0, -4.0, -3.0],
+                [3.0, -4.0, 3.0],
+                [3.0, 4.0, -3.0],
+                [3.0, 4.0, 3.0]
+            ]
+        );
+        for p in &points {
+            for s in &imps {
+                assert_eq!(s.value(p).sign(), Ordering::Equal);
+            }
+        }
+    }
 }
