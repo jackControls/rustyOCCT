@@ -36,7 +36,7 @@
 //! chained byte's next bit may make the partner a sphere (`GIVEN_BALL`: a
 //! given result against a sphere); S9e.3b: their meetings of two curved
 //! faces met by the partner, which the chained byte's next bit centres on
-//! the first such edge (`GIVEN_MET`, off for time). S9f.1: a spline prism
+//! the first such edge (`GIVEN_MET`). S9f.1: a spline prism
 //! against a line prism in a turned, leaning, tilted or side frame is
 //! decided by the curved engine's spline walls (`SPLINE_WALLS`; before it,
 //! refused), and the byte after the chained one's place, at or above 128,
@@ -129,16 +129,14 @@ const GIVEN_BALL: bool = true;
 /// meetings of two curved faces (`Meet`, `Rise`, `Toric`) or torus sections
 /// (S9e.3b: a given result's meeting met by the partner), and by the
 /// chained byte's next bit stand about the middle of the first such edge.
-/// Off: the corpus's slowest chained operations reaching them take 60 to
-/// 71 s an input under AddressSanitizer on the Mac (8 to 10 s with debug
-/// assertions: algebraic vertices in fields of degree eight through the
-/// second arrangement), past the target's 60 s and the Linux runners' 2.6
-/// times; off, a partner whose bounds meet such an edge's sampled box is
-/// not given that result (S9e.3a's results whose meetings the partner does
-/// not reach still are). The kernel's tests and the corpus replayed with it
-/// on (debug assertions, every input's partner centred on its meeting
-/// where it has one) cover them.
-const GIVEN_MET: bool = false;
+/// On since the arithmetic of fields of degree eight was sped up
+/// (REVIEW_NOTES.md's track of that name): the corpus's slowest chained
+/// operations reaching them took 60 to 71 s an input under
+/// AddressSanitizer on the Mac before, about a third of that now, below the
+/// corpus's slowest input (`e36969f1`, a torus meeting). Off, a partner
+/// whose bounds meet such an edge's sampled box is not given that result
+/// (S9e.3a's results whose meetings the partner does not reach still are).
+const GIVEN_MET: bool = true;
 
 /// Whether the object written by the kernel's `.brep` writer and read back
 /// is imported and given the chosen operation again (S9e.4a: an imported
