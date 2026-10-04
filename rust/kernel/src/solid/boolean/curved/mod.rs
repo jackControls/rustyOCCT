@@ -30,6 +30,7 @@ pub(crate) mod matched;
 mod meet;
 mod model;
 mod num;
+pub(crate) mod pieces;
 mod procedural;
 mod snapped;
 mod sphere;
@@ -185,6 +186,12 @@ pub(super) fn applies(poly: &Polyhedron) -> bool {
     if given::applies(&poly.a, &poly.b) || given::applies(&poly.b, &poly.a) {
         return true;
     }
+    // S9e.4b.3a: an imported plane piece of a sphere, a cylinder or a cone
+    // against a prism, a sphere, a cone, a torus or another piece.
+    let piece = pieces::is_piece;
+    if (piece(&poly.a) && (any(&poly.b) || piece(&poly.b))) || (any(&poly.a) && piece(&poly.b)) {
+        return true;
+    }
     // S9f.1: a spline prism against a prism (against a solid other than a
     // prism of lines refused in `build`).
     if prism(&poly.a) && prism(&poly.b) && (applies_splines(&poly.a) || applies_splines(&poly.b)) {
@@ -211,6 +218,9 @@ fn model_of(s: &crate::Solid, op: Operand, seam: &R) -> Result<model::Prism> {
         Construction::Sphere { .. } => sphere::model(s, op, seam),
         Construction::Cone { .. } => cone::model(s, op, seam),
         Construction::Torus { .. } => torus::model(s, op, seam),
+        // S9e.4b.3a: an imported plane piece, its primitive common its
+        // planes' half-spaces.
+        Construction::Imported(_) if pieces::is_piece(s) => pieces::model(s, op),
         _ => model::Prism::new(s, op, seam),
     }
 }
@@ -224,6 +234,9 @@ const SEAMS: [(i64, i64); 5] = [(2, 7), (3, 11), (5, 13), (7, 19), (11, 23)];
 pub(super) fn build(poly: &Polyhedron) -> Result<Vec<Component>> {
     // S9f.1: a spline prism against a prism of lines only.
     spline_pairs(poly)?;
+    // S9e.4b.3a: an imported piece and another input on one sphere are
+    // S9e.4b.3c's.
+    pieces::one_sphere(&poly.a, &poly.b)?;
     // S9e.1 and S9e.2 take a given result with a prism or another given
     // result, S9e.3a with a sphere, cone or torus too.
     let piece = |s: &crate::Solid| {

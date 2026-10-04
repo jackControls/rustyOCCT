@@ -17,7 +17,8 @@ then for the near-parallel audit (branch `near-parallel-audit`), S9e.4b.2
 `b903f3fa`, then for the DRAW survey of S9e.4b.2, S9f.3a and S9f.3b (branch
 `s9-draw-5`) and the loops' certified integrals (branch `loop-integrals`),
 each over `s9c2-kernel` at `12b6c176`, and a Linux fix of prism walls'
-frames (branch `linux-imported-arcs`).
+frames (branch `linux-imported-arcs`),
+then for S9e.4b.3a (branch `s9e4b3`, over `s9c2-kernel` at `12b6c176`).
 
 ## Where things stand
 
@@ -187,6 +188,26 @@ frames (branch `linux-imported-arcs`).
   and S9f.3b, branch `s9-draw-5`) confirms the trial: the 4 evaluate with
   native DRAW's volumes and are registered (1,100 cases), nothing else
   moves.
+- **S9e.4b.3a implemented** (branch `s9e4b3`, merged into `s9c2-kernel`): imported plane
+  pieces, a body of one sphere, cylinder or cone face and plane faces that
+  is none of S9e.4a's constructions, decided as its primitive common its
+  planes' half-spaces: S9e.1's given model of that Boolean against a hull
+  leaf model of the stored planes, matched to the stored topology on
+  import, the history over the stored ids (`curved/pieces.rs`). Decisions
+  ("S9e.4b.3 refined", with the split S9e.4b.3a to S9e.4b.3c), 45 cases on
+  8 sphere pieces OCCT wrote in turned rational frames
+  (`generate_imported_pieces_boolean_fixtures.py`, S9e.3a's chained
+  reference with each piece's closed form) captured before the kernel (35
+  matching, 10 reviewed), the kernel within the reference on all 33 solid
+  cases, the 6 degenerate refused, the 6 one-sphere and bitten cases
+  S9e.4b.3c's. Only spheres' pieces come from `.brep` files (a cylinder's
+  or cone's oblique section is an ellipse record the reader does not
+  read; a sphere's section off its frame's meridians and parallels an
+  uncertified pcurve); the kernel's own split pieces are tested as pieces.
+  The fuzz target's `IMPORTED` stage imports such first results too. A
+  trial of the survey's 39 S9e.4b.3 restore cases: none evaluates (18 a
+  piece other than its primitive common its planes, 20 two pieces of one
+  sphere, both S9e.4b.3c's; `buc60926` a plane through a cone's apex).
 - **CI.** Both workflows ("Rust kernel", "Rust geometry fuzzing") were green
   at `6c221525`. They had been red from S7 until 2026-09-29, unnoticed;
   check them after every push (see "Working rules").
@@ -206,7 +227,8 @@ frames (branch `linux-imported-arcs`).
    shear tried) are the one open refusal worth a closer look.
 2. **The Linux records and reviews** of the recaptured
    `occt-boolean-spline-crossing-preimplementation` and of the
-   spline-sphere, spline-cone, imported-polyhedra and imported-arcs
+   spline-sphere, spline-cone, imported-polyhedra, imported-arcs and
+   imported-pieces
    captures from CI's run, as every capture's. `SPLINE_SPHERE` and
    `SPLINE_CONE` are on since the loops' certified integrals were sped up
    (branch `loop-integrals`; REVIEW_NOTES.md's "Certified integrals beside
@@ -218,9 +240,14 @@ frames (branch `linux-imported-arcs`).
 3. **S9e.4b**, split in "S9e.4b refined": S9e.4b.1 (arcs rounded off
    their circles) is implemented (above, its DRAW survey and campaign done); **S9e.4b.2**, polyhedra other than prisms, is
    implemented on their stored vertices (above; its DRAW survey and
-   campaign done, 4 restore cases registered); next **S9e.4b.3**, a
-   plane's pieces of a sphere, cylinder or cone and S9e.2's deferred
-   `Clipped` and `Half` against curved faces (39 cases), then
+   campaign done, 4 restore cases registered); **S9e.4b.3**, split in
+   "S9e.4b.3 refined": S9e.4b.3a, plane pieces as their primitive common
+   their planes' half-spaces, is implemented (above; pending its campaign,
+   the capture's Linux record and the DRAW survey); next **S9e.4b.3b**,
+   S9e.2's deferred `Clipped` and `Half` against curved faces on that
+   model, and **S9e.4b.3c**, two pieces of one sphere (the survey's `so1`
+   to `so7`, 38 cases), rims split by stored vertices and pieces not
+   convex in their planes (`shading_132`); then
    **S9e.4b.4**, the S9e text's plan in full (joints of two circles, prisms
    with walls of two directions, bodies of several curved surfaces: 21
    cases; an imported polyhedron against curved faces, or with a cavity).
@@ -331,6 +358,7 @@ Each comparison takes `--occt-root target/spline-linear-preflight/pinned-sdk/ins
 | `compare_spline_sphere_boolean.py` | 4 / 29 (the kernel within the reference on all 27 results, the 6 degenerate refused, none `unsupported`) |
 | `compare_imported_polyhedra_boolean.py` | 47 / 1 (the kernel within the reference on all 44 solid and empty cases, the flush fuse refused, the cavity `unsupported`, S9e.4b.4's) |
 | `compare_spline_cone_boolean.py` | 4 / 23 (the kernel within the reference on all 21 results, the 6 degenerate refused, none `unsupported`) |
+| `compare_imported_pieces_boolean.py` | 32 / 13 (the kernel within the reference on all 33 solid cases, the 6 degenerate refused, the 6 one-sphere and bitten cases `unsupported`, S9e.4b.3c's) |
 
 Every one must report 0 failures; since S9f.1 also `compare_split.py`
 (72 / 56) and `compare_brep.py --family spline` (10 / 3), which share its

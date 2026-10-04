@@ -1386,7 +1386,9 @@ pub(super) fn substituted(
     let stored =
         |s: &Solid, other: &Solid| imported::is_imported(other) && imported::planar(&s.topology);
     let imported = |s: &Solid, other: &Solid| match &s.construction {
-        Construction::Imported(i) if !i.polyhedron() && !stored(s, other) => Some(i.clone()),
+        Construction::Imported(i) if !i.polyhedron() && !i.piece() && !stored(s, other) => {
+            Some(i.clone())
+        }
         _ => None,
     };
     let (ia, ib) = (imported(&poly.a, &poly.b), imported(&poly.b, &poly.a));
@@ -1404,6 +1406,9 @@ pub(super) fn substituted(
         match i.recognized {
             crate::solid::imported::Recognized::Construction(c) => c,
             crate::solid::imported::Recognized::Polyhedron => Box::new(s.clone()),
+            // S9e.4b.3a: a plane piece is never substituted (above): it
+            // stands as itself, its given model the curved engine's.
+            crate::solid::imported::Recognized::Piece(_) => unreachable!("a piece substituted"),
         }
     };
     let a = stand(&poly.a, ia);

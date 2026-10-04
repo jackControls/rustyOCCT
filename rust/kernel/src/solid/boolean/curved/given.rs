@@ -200,17 +200,31 @@ fn construction(s: &Solid) -> Result<(Polyhedron, bool)> {
 }
 
 /// The given model of a Boolean's result.
-#[allow(clippy::too_many_lines)]
 pub(super) fn model(s: &Solid, op: Operand) -> Result<Prism> {
     let (poly, direct) = construction(s)?;
     let (arr, out) = rerun(&poly)?;
+    built(s, op, arr, out, poly.op, direct.then_some(poly.index))
+}
+
+/// The given model of a solid from its construction's arrangement and
+/// assembly (`out`, under the first Boolean `first`): the solid `direct` of
+/// them, its slots the stored ones (S9e.1), or else the one matched to the
+/// stored topology (S9e.2; S9e.4b.3a's plane pieces).
+#[allow(clippy::too_many_lines)]
+pub(super) fn built(
+    s: &Solid,
+    op: Operand,
+    arr: Arr,
+    out: Vec<(Component, Made)>,
+    first: Op2,
+    direct: Option<usize>,
+) -> Result<Prism> {
     let t = &s.topology;
     let tol = s.resolution().linear();
     let differ = || Error::ComputationLimit("a given result rebuilt differently");
     // The given solid among the re-run's and its slots' stored ones.
-    let (k, slots) = if direct {
+    let (k, slots) = if let Some(k) = direct {
         // S9e.1: the re-run's slots are the stored ones.
-        let k = poly.index;
         let p = &out.get(k).ok_or_else(differ)?.0.parts;
         if p.vertices.len() != t.vertices().len()
             || p.edges.len() != t.edges().len()
@@ -457,6 +471,17 @@ pub(super) fn model(s: &Solid, op: Operand) -> Result<Prism> {
                 let m = frame.normal();
                 n[0] * m.x + n[1] * m.y + n[2] * m.z < 0.0
             }
+            // S9e.4b.3a: a sphere's section matched to a stored circle (an
+            // imported piece's), its basis's normal `x * y` against the
+            // stored frame's.
+            (
+                Crv::Circle(c),
+                Some(Curve3::Circle { frame, .. } | Curve3::CircularArc { frame, .. }),
+            ) => {
+                let n = c.normal().map(|x| crate::solid::split::rational_f64(&x));
+                let m = frame.normal();
+                n[0] * m.x + n[1] * m.y + n[2] * m.z < 0.0
+            }
             _ => false,
         });
         curves.push(stored);
@@ -502,7 +527,7 @@ pub(super) fn model(s: &Solid, op: Operand) -> Result<Prism> {
         ring: None,
         given: Some(Box::new(Given {
             leaves,
-            op: poly.op,
+            op: first,
             coinc: arr.coinc.clone(),
             leaf,
             behind,
@@ -515,6 +540,7 @@ pub(super) fn model(s: &Solid, op: Operand) -> Result<Prism> {
             solid: (out.len() > 1).then_some(k),
             places,
         })),
+        hull: None,
     })
 }
 

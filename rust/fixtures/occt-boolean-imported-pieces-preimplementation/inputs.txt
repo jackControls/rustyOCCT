@@ -1,0 +1,297 @@
+case octant_box_fuse
+brep imported/octant.brep
+boolean fuse
+plane 0.0 0.0 1.75 0.0 0.0 1.0 1.0 0.0 0.0
+wire P 4 4.5 8.5 1.75 7.5 8.5 1.75 7.5 11.25 1.75 4.5 11.25 1.75
+prism 0.0 0.0 3.0
+end
+case octant_box_cut
+brep imported/octant.brep
+boolean cut
+plane 0.0 0.0 1.75 0.0 0.0 1.0 1.0 0.0 0.0
+wire P 4 4.5 8.5 1.75 7.5 8.5 1.75 7.5 11.25 1.75 4.5 11.25 1.75
+prism 0.0 0.0 3.0
+end
+case octant_box_common
+brep imported/octant.brep
+boolean common
+plane 0.0 0.0 1.75 0.0 0.0 1.0 1.0 0.0 0.0
+wire P 4 4.5 8.5 1.75 7.5 8.5 1.75 7.5 11.25 1.75 4.5 11.25 1.75
+prism 0.0 0.0 3.0
+end
+case box_octant_fuse
+plane 0.0 0.0 1.75 0.0 0.0 1.0 1.0 0.0 0.0
+wire P 4 4.5 8.5 1.75 7.5 8.5 1.75 7.5 11.25 1.75 4.5 11.25 1.75
+prism 0.0 0.0 3.0
+boolean fuse
+brep imported/octant.brep
+end
+case box_octant_cut
+plane 0.0 0.0 1.75 0.0 0.0 1.0 1.0 0.0 0.0
+wire P 4 4.5 8.5 1.75 7.5 8.5 1.75 7.5 11.25 1.75 4.5 11.25 1.75
+prism 0.0 0.0 3.0
+boolean cut
+brep imported/octant.brep
+end
+case box_octant_common
+plane 0.0 0.0 1.75 0.0 0.0 1.0 1.0 0.0 0.0
+wire P 4 4.5 8.5 1.75 7.5 8.5 1.75 7.5 11.25 1.75 4.5 11.25 1.75
+prism 0.0 0.0 3.0
+boolean common
+brep imported/octant.brep
+end
+case tilt_rod_fuse
+brep imported/octant_tilt.brep
+boolean fuse
+plane 0.0 0.0 -2.5 0.0 0.0 1.0 1.0 0.0 0.0
+wire C 5.5 5.25 -2.5 0.75
+prism 0.0 0.0 11.5
+end
+case tilt_rod_cut
+brep imported/octant_tilt.brep
+boolean cut
+plane 0.0 0.0 -2.5 0.0 0.0 1.0 1.0 0.0 0.0
+wire C 5.5 5.25 -2.5 0.75
+prism 0.0 0.0 11.5
+end
+case tilt_rod_common
+brep imported/octant_tilt.brep
+boolean common
+plane 0.0 0.0 -2.5 0.0 0.0 1.0 1.0 0.0 0.0
+wire C 5.5 5.25 -2.5 0.75
+prism 0.0 0.0 11.5
+end
+case upper_slab_fuse
+brep imported/upper.brep
+boolean fuse
+plane 0.0 0.0 4.625 0.0 0.6 0.8 1.0 -0.0 0.0
+wire P 4 -4.0 -12.0 13.625 14.0 -12.0 13.625 14.0 12.0 -4.375 -4.0 12.0 -4.375
+prism 0.0 0.8999999999999999 1.2000000000000002
+end
+case upper_slab_cut
+brep imported/upper.brep
+boolean cut
+plane 0.0 0.0 4.625 0.0 0.6 0.8 1.0 -0.0 0.0
+wire P 4 -4.0 -12.0 13.625 14.0 -12.0 13.625 14.0 12.0 -4.375 -4.0 12.0 -4.375
+prism 0.0 0.8999999999999999 1.2000000000000002
+end
+case upper_slab_common
+brep imported/upper.brep
+boolean common
+plane 0.0 0.0 4.625 0.0 0.6 0.8 1.0 -0.0 0.0
+wire P 4 -4.0 -12.0 13.625 14.0 -12.0 13.625 14.0 12.0 -4.375 -4.0 12.0 -4.375
+prism 0.0 0.8999999999999999 1.2000000000000002
+end
+case lune_ball_fuse
+brep imported/lune.brep
+boolean fuse
+sphere 3.25 8.875 3.625 0.0 0.0 1.0 1.0 0.0 0.0 1.5 -1.5707963267948966 1.5707963267948966
+end
+case lune_ball_cut
+brep imported/lune.brep
+boolean cut
+sphere 3.25 8.875 3.625 0.0 0.0 1.0 1.0 0.0 0.0 1.5 -1.5707963267948966 1.5707963267948966
+end
+case lune_ball_common
+brep imported/lune.brep
+boolean common
+sphere 3.25 8.875 3.625 0.0 0.0 1.0 1.0 0.0 0.0 1.5 -1.5707963267948966 1.5707963267948966
+end
+case lune_cone_fuse
+brep imported/lune.brep
+boolean fuse
+cone 3.75 8.25 1.5 0.0 0.0 1.0 1.0 0.0 0.0 1.5 0.5 5.0
+end
+case lune_cone_cut
+brep imported/lune.brep
+boolean cut
+cone 3.75 8.25 1.5 0.0 0.0 1.0 1.0 0.0 0.0 1.5 0.5 5.0
+end
+case lune_cone_common
+brep imported/lune.brep
+boolean common
+cone 3.75 8.25 1.5 0.0 0.0 1.0 1.0 0.0 0.0 1.5 0.5 5.0
+end
+case half_rod_fuse
+brep imported/half.brep
+boolean fuse
+plane 0.0 0.0 0.0 0.0 1.0 0.0 1.0 -0.0 0.0
+wire C 5.25 0.0 5.75 1.0
+prism 0.0 12.0 0.0
+end
+case half_rod_cut
+brep imported/half.brep
+boolean cut
+plane 0.0 0.0 0.0 0.0 1.0 0.0 1.0 -0.0 0.0
+wire C 5.25 0.0 5.75 1.0
+prism 0.0 12.0 0.0
+end
+case half_rod_common
+brep imported/half.brep
+boolean common
+plane 0.0 0.0 0.0 0.0 1.0 0.0 1.0 -0.0 0.0
+wire C 5.25 0.0 5.75 1.0
+prism 0.0 12.0 0.0
+end
+case zone_box_fuse
+brep imported/zone_wedge.brep
+boolean fuse
+plane 0.0 0.0 4.75 0.0 0.0 1.0 1.0 0.0 0.0
+wire P 4 0.25 6.25 4.75 3.0 6.25 4.75 3.0 9.25 4.75 0.25 9.25 4.75
+prism 0.0 0.0 2.5
+end
+case zone_box_cut
+brep imported/zone_wedge.brep
+boolean cut
+plane 0.0 0.0 4.75 0.0 0.0 1.0 1.0 0.0 0.0
+wire P 4 0.25 6.25 4.75 3.0 6.25 4.75 3.0 9.25 4.75 0.25 9.25 4.75
+prism 0.0 0.0 2.5
+end
+case zone_box_common
+brep imported/zone_wedge.brep
+boolean common
+plane 0.0 0.0 4.75 0.0 0.0 1.0 1.0 0.0 0.0
+wire P 4 0.25 6.25 4.75 3.0 6.25 4.75 3.0 9.25 4.75 0.25 9.25 4.75
+prism 0.0 0.0 2.5
+end
+case pieces_fuse
+brep imported/octant.brep
+boolean fuse
+brep imported/octant_tilt.brep
+end
+case pieces_cut
+brep imported/octant.brep
+boolean cut
+brep imported/octant_tilt.brep
+end
+case pieces_common
+brep imported/octant.brep
+boolean common
+brep imported/octant_tilt.brep
+end
+case half_box_fuse
+brep imported/half.brep
+boolean fuse
+brep imported/box.brep
+end
+case half_box_cut
+brep imported/half.brep
+boolean cut
+brep imported/box.brep
+end
+case half_box_common
+brep imported/half.brep
+boolean common
+brep imported/box.brep
+end
+case chain_octant_fuse
+brep imported/octant.brep
+boolean cut
+plane 0.0 0.0 -2.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire C 5.5 7.375 -2.0 0.75
+prism 0.0 0.0 14.0
+then fuse
+plane 0.0 0.0 8.125 0.0 0.6 0.8 1.0 -0.0 0.0
+wire P 4 -4.0 -12.0 17.125 14.0 -12.0 17.125 14.0 12.0 -0.875 -4.0 12.0 -0.875
+prism 0.0 0.8999999999999999 1.2000000000000002
+end
+case chain_octant_cut
+brep imported/octant.brep
+boolean cut
+plane 0.0 0.0 -2.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire C 5.5 7.375 -2.0 0.75
+prism 0.0 0.0 14.0
+then cut
+plane 0.0 0.0 8.125 0.0 0.6 0.8 1.0 -0.0 0.0
+wire P 4 -4.0 -12.0 17.125 14.0 -12.0 17.125 14.0 12.0 -0.875 -4.0 12.0 -0.875
+prism 0.0 0.8999999999999999 1.2000000000000002
+end
+case chain_octant_common
+brep imported/octant.brep
+boolean cut
+plane 0.0 0.0 -2.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire C 5.5 7.375 -2.0 0.75
+prism 0.0 0.0 14.0
+then common
+plane 0.0 0.0 8.125 0.0 0.6 0.8 1.0 -0.0 0.0
+wire P 4 -4.0 -12.0 17.125 14.0 -12.0 17.125 14.0 12.0 -0.875 -4.0 12.0 -0.875
+prism 0.0 0.8999999999999999 1.2000000000000002
+end
+case tilt_flush_fuse
+brep imported/octant_tilt.brep
+boolean fuse
+plane 4.361111111111111 8.277777777777779 -0.02777777777777768 0.4444444444444444 0.1111111111111111 0.8888888888888888 -0.7777777777777778 -0.4444444444444445 0.4444444444444445
+wire P 4 5.3611111111111125 12.277777777777779 -1.027777777777778 0.6944444444444444 9.61111111111111 1.6388888888888893 3.361111111111111 4.277777777777778 0.9722222222222223 8.027777777777779 6.9444444444444455 -1.6944444444444444
+prism 0.8888888888888888 0.2222222222222222 1.7777777777777777
+end
+case tilt_flush_cut
+brep imported/octant_tilt.brep
+boolean cut
+plane 4.361111111111111 8.277777777777779 -0.02777777777777768 0.4444444444444444 0.1111111111111111 0.8888888888888888 -0.7777777777777778 -0.4444444444444445 0.4444444444444445
+wire P 4 5.3611111111111125 12.277777777777779 -1.027777777777778 0.6944444444444444 9.61111111111111 1.6388888888888893 3.361111111111111 4.277777777777778 0.9722222222222223 8.027777777777779 6.9444444444444455 -1.6944444444444444
+prism 0.8888888888888888 0.2222222222222222 1.7777777777777777
+end
+case tilt_flush_common
+brep imported/octant_tilt.brep
+boolean common
+plane 4.361111111111111 8.277777777777779 -0.02777777777777768 0.4444444444444444 0.1111111111111111 0.8888888888888888 -0.7777777777777778 -0.4444444444444445 0.4444444444444445
+wire P 4 5.3611111111111125 12.277777777777779 -1.027777777777778 0.6944444444444444 9.61111111111111 1.6388888888888893 3.361111111111111 4.277777777777778 0.9722222222222223 8.027777777777779 6.9444444444444455 -1.6944444444444444
+prism 0.8888888888888888 0.2222222222222222 1.7777777777777777
+end
+case half_touch_fuse
+brep imported/half.brep
+boolean fuse
+plane 5.444444444444445 1.4444444444444446 6.777777777777778 0.1111111111111111 -0.8888888888888888 0.4444444444444444 0.4444444444444445 0.4444444444444445 0.7777777777777778
+wire P 4 6.333333333333333 0.3333333333333335 4.333333333333334 8.11111111111111 2.111111111111111 7.444444444444445 4.555555555555556 2.555555555555556 9.222222222222223 2.7777777777777777 0.7777777777777779 6.111111111111111
+prism 0.2222222222222222 -1.7777777777777777 0.8888888888888888
+end
+case half_touch_cut
+brep imported/half.brep
+boolean cut
+plane 5.444444444444445 1.4444444444444446 6.777777777777778 0.1111111111111111 -0.8888888888888888 0.4444444444444444 0.4444444444444445 0.4444444444444445 0.7777777777777778
+wire P 4 6.333333333333333 0.3333333333333335 4.333333333333334 8.11111111111111 2.111111111111111 7.444444444444445 4.555555555555556 2.555555555555556 9.222222222222223 2.7777777777777777 0.7777777777777779 6.111111111111111
+prism 0.2222222222222222 -1.7777777777777777 0.8888888888888888
+end
+case half_touch_common
+brep imported/half.brep
+boolean common
+plane 5.444444444444445 1.4444444444444446 6.777777777777778 0.1111111111111111 -0.8888888888888888 0.4444444444444444 0.4444444444444445 0.4444444444444445 0.7777777777777778
+wire P 4 6.333333333333333 0.3333333333333335 4.333333333333334 8.11111111111111 2.111111111111111 7.444444444444445 4.555555555555556 2.555555555555556 9.222222222222223 2.7777777777777777 0.7777777777777779 6.111111111111111
+prism 0.2222222222222222 -1.7777777777777777 0.8888888888888888
+end
+case one_sphere_fuse
+brep imported/octant.brep
+boolean fuse
+brep imported/octant_low.brep
+end
+case one_sphere_cut
+brep imported/octant.brep
+boolean cut
+brep imported/octant_low.brep
+end
+case one_sphere_common
+brep imported/octant.brep
+boolean common
+brep imported/octant_low.brep
+end
+case bitten_box_fuse
+brep imported/bitten.brep
+boolean fuse
+plane 0.0 0.0 3.5 0.0 0.0 1.0 1.0 0.0 0.0
+wire P 4 6.0 5.5 3.5 9.5 5.5 3.5 9.5 8.5 3.5 6.0 8.5 3.5
+prism 0.0 0.0 3.0
+end
+case bitten_box_cut
+brep imported/bitten.brep
+boolean cut
+plane 0.0 0.0 3.5 0.0 0.0 1.0 1.0 0.0 0.0
+wire P 4 6.0 5.5 3.5 9.5 5.5 3.5 9.5 8.5 3.5 6.0 8.5 3.5
+prism 0.0 0.0 3.0
+end
+case bitten_box_common
+brep imported/bitten.brep
+boolean common
+plane 0.0 0.0 3.5 0.0 0.0 1.0 1.0 0.0 0.0
+wire P 4 6.0 5.5 3.5 9.5 5.5 3.5 9.5 8.5 3.5 6.0 8.5 3.5
+prism 0.0 0.0 3.0
+end

@@ -113,7 +113,7 @@ jobs:
       matrix:
         group: [algebra, brep, booleans, cones, cones-loops, tori, torus-parts, chained, spline-any, given,
                 given-curved, given-met, spline-parallel, spline-crossing, imported, imported-arcs, spline-sphere,
-                imported-polyhedra, spline-cone]
+                imported-polyhedra, spline-cone, imported-pieces]
     steps:
       - uses: actions/checkout@v4.2.2
       - run: rustup toolchain install stable --profile minimal
@@ -228,6 +228,9 @@ jobs:
       - name: Verify the spline prisms' Boolean independent reference against cones (S9f.3b)
         if: matrix.group == 'spline-cone'
         run: target/math-oracle-venv/bin/python rust/tools/generate_spline_cone_boolean_fixtures.py --check --workers 4
+      - name: Verify the imported plane pieces' Boolean independent reference (S9e.4b.3a)
+        if: matrix.group == 'imported-pieces'
+        run: target/math-oracle-venv/bin/python rust/tools/generate_imported_pieces_boolean_fixtures.py --check --workers 4
 
   pinned-degree-oracle:
     name: Degree elevation / source-pinned OCCT

@@ -35,7 +35,9 @@ and zones against tori and torus parts against curved solids
 construction, `solid/imported.rs`) are decided on the construction their
 stored surfaces give, S9e.4b.1's imported prisms with their arcs' ends
 taken onto their circles (`curved/snapped.rs`), S9e.4b.2's imported
-polyhedra on their stored vertices (`polyhedra/imported.rs`).
+polyhedra on their stored vertices (`polyhedra/imported.rs`), S9e.4b.3a's
+imported plane pieces of a sphere, cylinder or cone as their primitive
+common their planes' half-spaces (`curved/pieces.rs`).
 
 ## Contract
 
@@ -1070,14 +1072,48 @@ imported polyhedron is decided on its stored vertices too, not S9e.4a's
 construction, whose corners re-derived from rounded local coordinates can
 miss the vertices two files share by an ulp (`bopfuse_complex/K5`).
 
+An imported body of one sphere, cylinder or cone face and plane faces that
+is none of S9e.4a's constructions is S9e.4b.3a's plane piece
+(`curved/pieces.rs`): its primitive (the whole sphere on the stored frame
+and radius, or a cylinder or a cone on the curved face's stored frame
+reaching past the body's ends) common the half-spaces of its plane faces'
+stored planes (`o + u x + v y`, normal `x * y`, the side by the face's
+region), decided as the given model (S9e.1) of that first Boolean. Its
+second input is a hull leaf model (`Hull`): the planes' convex polygons of
+three planes' points (rationals, bounded by a cube about the primitive),
+lines between them, membership every half-space. The first arrangement's
+assembly is matched to the stored topology on import (S9e.2's match), so
+the model's faces, edges and vertices carry the stored ids and the history
+is over them directly; it classifies by the primitive and the planes'
+sides within the resolution and moves with its stored topology, read off it
+again. Two rules of the engine were widened by it: a section within the
+resolution of a stored sphere's pole takes a vertex of both faces already
+within the resolution of the pole as its pole vertex (two planes' line
+through a turned frame's pole, rounded); and a loop through a pole whose
+pcurves turn half a turn there (a meridian circle through both poles) winds
+none, the face closing on it (no pole vertex loop beside it). A given
+model's circle matched to a stored circle whose frame turns against it is
+read the other way (`Given::flip`, S9e.2's rule, for spheres' circles too).
+Only spheres' pieces come from `.brep` files today: a cylinder's or cone's
+oblique section is an ellipse record the reader does not read, and a
+sphere's section other than a meridian or a parallel of its stored frame
+carries an approximated pcurve the converter does not certify; the
+kernel's own split pieces' topologies are pieces too.
+
 Refused: a joint of two arcs of different circles off either
 (`OutOfDomain`, S9e.4b.4: their common point is a quadratic surd); an
 imported polyhedron against a solid with curved faces or edges, or a result
 of one given to a Boolean of curved faces (`OutOfDomain`, S9e.4b.4: the
 curved engine decides on constructions); a polyhedron with a cavity or
-several shells (S9e.4b.4); a torus's v-segment or wedge and every other
-body of curved faces (`OutOfDomain`, S9e.4b: a general body on its stored
-surfaces); spline faces or edges (S9f); S9's degeneracies unchanged (an
+several shells (S9e.4b.4); a plane piece other than its primitive common
+its planes' half-spaces (not convex in its planes, a ring split by stored
+vertices, two plane faces on one plane) and faces of both inputs on one
+sphere where either is a piece (`OutOfDomain`, S9e.4b.3c: the DRAW
+survey's `so1` to `so7`); a piece whose planes pass through its cone's
+apex (`Degenerate`, S9's rule: `shading_132`); a torus's v-segment or wedge
+and every other body of curved faces (`OutOfDomain`, S9e.4b: a general
+body on its stored surfaces); spline faces or edges (S9f); S9's
+degeneracies unchanged (an
 imported cylinder tangent to the partner's wall, a box on the plane of an
 imported prism's wall, a corner of one input on the other's face, a slab
 within the resolution of an imported polyhedron's face). OCCT 8.1 writes `.brep` version 3 under a copyright line
@@ -3112,6 +3148,47 @@ multiple root; and the engine's rules.
   backends with every check, 3 refused by S9's rules (a fuse of frustums
   apart by more than the resolution, two solids; a shared corner stored
   1e-13 apart).
+* **S9e.4b.3a evidence (imported plane pieces), before its kernel code.**
+  8 bodies written by OCCT under `rust/fixtures/imported/` (a `write`
+  block of a sphere common or less a box or prism, on turned rational
+  frames): two octants, a wedge above a parallel's plane, a lune, a half,
+  a zone's wedge, and S9e.4b.3c's octant below a parallel's plane and
+  bitten ball. `generate_imported_pieces_boolean_fixtures.py --check`
+  writes `boolean-imported-pieces-cases.txt`, `-expected.tsv`,
+  `-frames.tsv` and `-bodies.txt`: 45 cases (15 groups; 33 solid, 6
+  degenerate, 6 unsupported) against boxes, a slab, rods, a ball and a
+  cone, as object and tool, two pieces, a piece and an imported box, and a
+  chain, from S9e.3a's chained reference on the constructions OCCT was
+  given (two families within 7.5e-37, closed forms of each solid and each
+  piece within 2.0e-40, the pair and area identities, Monte Carlo 3.5
+  standard errors), every file read independently (stored vertices on the
+  construction's surfaces within 7.6e-16 of the size).
+  `compare_imported_pieces_boolean.py` reproduces
+  `occt-boolean-imported-pieces-preimplementation` (keyed on
+  `curved/pieces.rs`, the probe `unsupported` on all 45 before it): every
+  result valid, 35 match, 10 reviewed (BRepGProp's default integration on
+  the rods' and the cone's meetings with a sphere, adaptively within
+  3.2e-9; the declared touching fuse, two solids sharing a point).
+* **Kernel (S9e.4b.3a).** `tests/imported_piece_booleans.rs`: all 45
+  fixtures as the reference (33 within the kernel's enclosures, each at
+  most `1e-9` wide; the 6 declared degenerate refused, the turned box on
+  the octant's base plane as two faces within the resolution of one plane
+  and the touching box as a tangency; the 6 one-sphere and bitten cases
+  `OutOfDomain` as S9e.4b.3c's), every history complete over the imported
+  bodies' stored ids (none from a primitive or a hull), results
+  deterministic and moved rigidly, both inputs translated and turned
+  keeping the reference's volumes (the piece read again off its moved
+  stored topology), every body a piece (its volume its closed form, a point
+  inside it and its mirror in the centre outside, its stored vertices on
+  its boundary), the kernel's own split pieces of a cylinder, a frustum and
+  a sphere's zone imported as pieces, their Booleans with a box and a ball
+  obeying the pair identities, the octant against a torus, the stored
+  frames the reference's bit for bit.
+  `compare_imported_pieces_boolean.py`: 32 matches and 13 reviewed (the
+  native measures, the touching fuse, and entity counts: each splits its
+  sections at its own points and seams). A trial of the DRAW survey's 39
+  S9e.4b.3 restore cases: none evaluates, 38 pairs of pieces of one sphere
+  S9e.4b.3c's and `buc60926` a plane through a cone's apex.
 * **Fuzzing.** The `boolean` target (`FUZZING.md`): the split target's line
   and arc profiles, the tool offset exactly in the axis-aligned frame or
   sharing the tilted one's origin, heights equal, spanning, overlapping,
@@ -3126,7 +3203,9 @@ multiple root; and the engine's rules.
   its volume the object's own result's (`IMPORTED`; since S9e.4b.1 its
   arcs' ends rounded off their circles taken onto them; since S9e.4b.2 the
   chained stage's first result of plane faces too, imported and cut by the
-  turned box again, its volume the chained cut's).
+  turned box again, its volume the chained cut's; since S9e.4b.3a a first
+  result of one sphere, cylinder or cone face and plane faces too, a plane
+  piece).
 
 ## DRAW commands
 
