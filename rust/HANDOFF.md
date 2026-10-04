@@ -14,7 +14,8 @@ then for S9f.3a (branch `s9f3`, over `s9c2-kernel` at `7199e06a`) and a
 fix of two cylinders within rounding of parallel (branch `fix-conic-eval`),
 then for the near-parallel audit (branch `near-parallel-audit`), S9e.4b.2
 (branch `s9e4b2`) and S9f.3b (branch `s9f3b`), each over `s9c2-kernel` at
-`b903f3fa`.
+`b903f3fa`, then for the DRAW survey of S9e.4b.2, S9f.3a and S9f.3b (branch
+`s9-draw-5`, over `s9c2-kernel` at `12b6c176`).
 
 ## Where things stand
 
@@ -31,10 +32,10 @@ then for the near-parallel audit (branch `near-parallel-audit`), S9e.4b.2
   arcs, and one solid of a result of several (S9e.2, `curved/matched.rs`),
   results of spheres, cones and tori, deeper chains and given results
   against spheres, cones and tori (S9e.3a, `curved/chain.rs`), each with its
-  DRAW survey (the last full survey, that of S9f.2b.2 and S9e.4b.1 at
-  `93e6fcd0`, branch `s9-draw-4`: the Boolean group's 987 cases and 23
+  DRAW survey (the last full survey, that of S9e.4b.2, S9f.3a and S9f.3b
+  at `12b6c176`, branch `s9-draw-5`: the Boolean group's 987 cases and 27
   restore cases registered, none failing or timing out, the volume audit's
-  values those of `b0b9adc6`'s and S9e.4a's bit for bit) and a clean campaign (S9e.3a's and S9f.1's at `b2765f20`, 989
+  values those of `93e6fcd0`'s bit for bit) and a clean campaign (S9e.3a's and S9f.1's at `b2765f20`, 989
   runs).
 - **S9f.1 done.** Spline prisms against polyhedral prisms in any position
   (`curved/spline_walls.rs`), with its survey and campaign as above.
@@ -90,8 +91,9 @@ then for the near-parallel audit (branch `near-parallel-audit`), S9e.4b.2
   code, the kernel within the reference on all 27 results and refusing the
   6 degenerate cases. Its fuzz switch `SPLINE_SPHERE` is off (the corpus's
   `d7599dbe` 472 s under AddressSanitizer). Campaign clean at `788f8861`;
-  pending its DRAW survey.
-- **S9f.3b implemented** (branch `s9f3b`, not merged): spline prisms
+  its DRAW survey done (that of S9e.4b.2, S9f.3a and S9f.3b: no case
+  reaches it, the group's spline solids boxes by `nurbsconvert`).
+- **S9f.3b implemented** (branch `s9f3b`, merged into `s9c2-kernel`): spline prisms
   against cones and frustums in any position, either the object
   (`curved/spline_cone.rs`): S9f.2b's meeting with the cone's radius row of
   negative sign (`spline_crossing`'s rows signed, one code for cylinders,
@@ -107,8 +109,8 @@ then for the near-parallel audit (branch `near-parallel-audit`), S9e.4b.2
   captured before the kernel code, the kernel within the reference on all
   21 results and refusing the 6 degenerate cases. Its fuzz switch
   `SPLINE_CONE` is off (the slowest variants 97 s under
-  AddressSanitizer). Campaign clean at `788f8861`; pending its DRAW
-  survey.
+  AddressSanitizer). Campaign clean at `788f8861`; its DRAW survey done
+  (as S9f.3a's: no case reaches it).
 - **S9e.3b implemented** (branch `s9e3b`, over `507b8054`, with
   `s9c2-kernel` at `c8e37abe` merged in; not yet pushed): a given result's
   meeting of two curved faces (`Meet`, `Rise`, `Toric`) or a cone's or
@@ -135,7 +137,7 @@ then for the near-parallel audit (branch `near-parallel-audit`), S9e.4b.2
   and 16 evaluate on both backends with native DRAW's volumes, registered
   (1,089 cases; the ledger's `checknbshapes` 2 to 4 mapped and verified).
   Campaign clean at `7199e06a` (845 runs, the slowest 47 s under ASan).
-- **S9e.4b.1 implemented** (branch `s9e4b`, not merged): imported prisms
+- **S9e.4b.1 implemented** (branch `s9e4b`, merged into `s9c2-kernel`): imported prisms
   whose arcs' ends round off their circles in their caps' frames (every
   CTO-like part in a turned frame, `dee_turn`), each end taken onto its
   circle in the exact model (`curved/snapped.rs`: the circle's rational
@@ -151,7 +153,7 @@ then for the near-parallel audit (branch `near-parallel-audit`), S9e.4b.2
   and native DRAW's volumes (`bcut_complex/H3`, `K8`, `bfuse_complex/C9`,
   `E9`, `I6`, `N1`, `N9`), registered (1,096 cases), 18 refused by S9's
   rules, 6 S9e.4b.4's; nothing else moves. Campaign clean at `788f8861`.
-- **S9e.4b.2 implemented** (branch `s9e4b2`, not merged): imported
+- **S9e.4b.2 implemented** (branch `s9e4b2`, merged into `s9c2-kernel`): imported
   polyhedra other than prisms (pyramids, frustums of them, slanted wedges,
   results of boxes in different frames) decided on their stored vertices,
   not their planes' common points (a vertex of four planes has none once
@@ -175,7 +177,10 @@ then for the near-parallel audit (branch `near-parallel-audit`), S9e.4b.2
   polyhedron is decided on its stored vertices too), `bug578_1` and `_2`
   refused (the frustums' bases 6.6e-7 to 2.0e-6 apart: their fuse two
   solids) and `bfuse_complex/D9` (a shared corner stored 1e-13 apart).
-  Campaign clean at `788f8861`; pending its DRAW survey.
+  Campaign clean at `788f8861`. Its DRAW survey (that of S9e.4b.2, S9f.3a
+  and S9f.3b, branch `s9-draw-5`) confirms the trial: the 4 evaluate with
+  native DRAW's volumes and are registered (1,100 cases), nothing else
+  moves.
 - **CI.** Both workflows ("Rust kernel", "Rust geometry fuzzing") were green
   at `6c221525`. They had been red from S7 until 2026-09-29, unnoticed;
   check them after every push (see "Working rules").
@@ -193,24 +198,26 @@ then for the near-parallel audit (branch `near-parallel-audit`), S9e.4b.2
    with it on reaches, the "points not separated by a projection" limits
    (`triple.rs`'s retries exhausted: a fibre of two points under every
    shear tried) are the one open refusal worth a closer look.
-2. **The DRAW survey of S9e.4b.2, S9f.3a and S9f.3b** (their campaign,
-   with S9e.4b.1's and the near-parallel guards', is clean at `788f8861`:
-   909 runs, the slowest input 45 s under AddressSanitizer; the DRAW survey of S9f.2b.2 and S9e.4b.1 is
-   done at `93e6fcd0`, branch `s9-draw-4`: 7 restore cases registered, no
-   other status moving; S9e.4b.2's trial evaluates 4 of its 7 restore
-   cases, to register with a volume audit; the campaign of S9e.4a and
-   S9f.2b.2 is clean at `7199e06a`), and the Linux records and reviews of
-   the recaptured `occt-boolean-spline-crossing-preimplementation` and of
-   the spline-sphere, spline-cone and imported-polyhedra captures from
-   CI's run, as every capture's. `SPLINE_SPHERE` and `SPLINE_CONE` are
-   off: the corpus's own `d7599dbe` takes 472 s under AddressSanitizer
-   against a sphere, a cone across a lens hole 97 s; the certified
-   integrals over a spline wall's pieces beside a loop's turning points
-   are the cost and the next lever before either can be switched on.
+2. **The speed of the loops' certified integrals, then `SPLINE_SPHERE`
+   and `SPLINE_CONE`** (the DRAW survey of S9e.4b.2, S9f.3a and S9f.3b is
+   done at `12b6c176`, branch `s9-draw-5`: S9e.4b.2's 4 restore cases
+   registered with native DRAW's volumes, `bug578_1`, `_2` and
+   `bfuse_complex/D9` refused as its trial found, no other status moving,
+   no case reaching S9f.3a's or S9f.3b's spline walls, the near-parallel
+   guards refusing none; their campaign, with S9e.4b.1's and the
+   near-parallel guards', is clean at `788f8861`: 909 runs, the slowest
+   input 45 s under AddressSanitizer). Both switches are off: the corpus's
+   own `d7599dbe` takes 472 s under AddressSanitizer against a sphere, a
+   cone across a lens hole 97 s; the certified integrals over a spline
+   wall's pieces beside a loop's turning points are the cost and the next
+   lever before either can be switched on. Also the Linux records and
+   reviews of the recaptured `occt-boolean-spline-crossing-preimplementation`
+   and of the spline-sphere, spline-cone and imported-polyhedra captures
+   from CI's run, as every capture's.
 3. **S9e.4b**, split in "S9e.4b refined": S9e.4b.1 (arcs rounded off
    their circles) is implemented (above, its DRAW survey and campaign done); **S9e.4b.2**, polyhedra other than prisms, is
-   implemented on their stored vertices (above; campaign clean, pending its DRAW
-   survey, registering the trial's cases); next **S9e.4b.3**, a
+   implemented on their stored vertices (above; its DRAW survey and
+   campaign done, 4 restore cases registered); next **S9e.4b.3**, a
    plane's pieces of a sphere, cylinder or cone and S9e.2's deferred
    `Clipped` and `Half` against curved faces (39 cases), then
    **S9e.4b.4**, the S9e text's plan in full (joints of two circles, prisms
