@@ -83,7 +83,7 @@ pub(super) struct Gen {
     /// Exact signs decided (Sturm-Tarski) by polynomial, kept: a vertex's
     /// coordinates are asked the same questions again and again (S9e.3b:
     /// its surfaces' values on every section through it).
-    exact: Mutex<std::collections::HashMap<Vec<R>, Ordering>>,
+    exact: Mutex<std::collections::HashMap<Ip, Ordering>>,
     /// A factor of `poly` known to vanish at the root (the gcd with every
     /// polynomial found zero there): a polynomial it divides is zero at
     /// the root without another Sturm-Tarski count.
@@ -92,6 +92,136 @@ pub(super) struct Gen {
     /// over one common denominator (S9d.4b.2b: a product reduced without a
     /// rational operation per coefficient), computed once.
     powers: OnceLock<(Vec<Vec<BigInt>>, BigInt)>,
+    /// A dyadic point `x / 2^bits` within `2^-bits` of the root, certified
+    /// by its defining polynomial's signs at `(x -+ 1) / 2^bits` inside the
+    /// isolator; the finest found is kept.
+    tight: Mutex<Option<(u64, BigInt)>>,
+    /// Inverses found (`K::recip`), by the element's coefficients: a
+    /// point's coordinates are divided by the same numbers again and again
+    /// (S9e.3b: a meeting's place on its curve at every test of a vertex).
+    inverses: Mutex<std::collections::HashMap<Ip, Option<Ip>>>,
+    /// The isolator's width's bits above one (`filter_steps`), once.
+    above: OnceLock<usize>,
+}
+
+/// A polynomial with rational coefficients as integer numerators over one
+/// positive denominator sharing no factor with all of them, trimmed: one
+/// form for each polynomial, so equal polynomials are equal and hash alike
+/// (by their integers: `num_rational`'s hash expands every rational into
+/// its continued fraction). A field's products and sums are integer ones
+/// with one content reduction, not a gcd per coefficient and operation.
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub(super) struct Ip {
+    num: Vec<BigInt>,
+    den: BigInt,
+}
+
+impl Ip {
+    /// `num / den` (`den` nonzero) in its one form.
+    fn new(mut num: Vec<BigInt>, mut den: BigInt) -> Self {
+        while num
+            .last()
+            .is_some_and(|c| c.sign() == num_bigint::Sign::NoSign)
+        {
+            num.pop();
+        }
+        if num.is_empty() {
+            return Ip {
+                num,
+                den: BigInt::from(1),
+            };
+        }
+        if den.sign() == num_bigint::Sign::Minus {
+            den = -den;
+            for c in &mut num {
+                *c = -&*c;
+            }
+        }
+        let one = BigInt::from(1);
+        let mut g = den.clone();
+        for c in &num {
+            if g == one {
+                break;
+            }
+            if c.sign() != num_bigint::Sign::NoSign {
+                g = crate::rational::gcd(&g, c);
+            }
+        }
+        if g != one {
+            for c in &mut num {
+                *c /= &g;
+            }
+            den /= &g;
+        }
+        Ip { num, den }
+    }
+
+    fn from_rats(p: &[R]) -> Self {
+        let (num, den) = integral(p);
+        Ip::new(num, den)
+    }
+
+    /// The rational coefficients.
+    fn rats(&self) -> Vec<R> {
+        self.num
+            .iter()
+            .map(|c| ratio(c.clone(), &self.den))
+            .collect()
+    }
+
+    fn len(&self) -> usize {
+        self.num.len()
+    }
+
+    /// `a + s b`, `s` one or minus one.
+    fn add(&self, o: &Self, minus: bool) -> Self {
+        let n = self.num.len().max(o.num.len());
+        let zero = BigInt::from(0);
+        if self.den == o.den {
+            let num = (0..n)
+                .map(|i| {
+                    let (x, y) = (
+                        self.num.get(i).unwrap_or(&zero),
+                        o.num.get(i).unwrap_or(&zero),
+                    );
+                    if minus {
+                        x - y
+                    } else {
+                        x + y
+                    }
+                })
+                .collect();
+            return Ip::new(num, self.den.clone());
+        }
+        let g = crate::rational::gcd(&self.den, &o.den);
+        let (ka, kb) = (&o.den / &g, &self.den / &g);
+        let num = (0..n)
+            .map(|i| {
+                let x = self.num.get(i).unwrap_or(&zero) * &ka;
+                let y = o.num.get(i).unwrap_or(&zero) * &kb;
+                if minus {
+                    x - y
+                } else {
+                    x + y
+                }
+            })
+            .collect();
+        Ip::new(num, &self.den * &ka)
+    }
+
+    fn scale(&self, k: &R) -> Self {
+        Ip::new(
+            self.num.iter().map(|c| c * k.numer()).collect(),
+            &self.den * k.denom(),
+        )
+    }
+
+    fn neg(&self) -> Self {
+        Ip {
+            num: self.num.iter().map(|c| -c).collect(),
+            den: self.den.clone(),
+        }
+    }
 }
 
 /// The bisections of the isolator a sign query starts from (those of
@@ -107,6 +237,9 @@ impl Gen {
             exact: Mutex::new(std::collections::HashMap::new()),
             divisor: Mutex::new(None),
             powers: OnceLock::new(),
+            tight: Mutex::new(None),
+            inverses: Mutex::new(std::collections::HashMap::new()),
+            above: OnceLock::new(),
         }
     }
 
@@ -143,16 +276,16 @@ impl Gen {
     }
 
     /// `p q mod poly` (both reduced), exactly: integer products over the
-    /// operands' common denominators, the high terms by `powers`, one
-    /// reduction per coefficient (the same value as `pmod(pmul(p, q))`).
-    fn mul_mod(&self, p: &[R], q: &[R]) -> Vec<R> {
-        if p.is_empty() || q.is_empty() {
-            return Vec::new();
+    /// operands' denominators, the high terms by `powers`, one content
+    /// reduction (the same polynomial as `pmod(pmul(p, q))`).
+    fn mul_mod(&self, p: &Ip, q: &Ip) -> Ip {
+        if p.num.is_empty() || q.num.is_empty() {
+            return Ip::new(Vec::new(), BigInt::from(1));
         }
         let n = self.poly.len() - 1;
         debug_assert!(p.len() <= n && q.len() <= n, "reduced operands");
-        let (pi, dp) = integral(p);
-        let (qi, dq) = integral(q);
+        let (pi, dp) = (&p.num, &p.den);
+        let (qi, dq) = (&q.num, &q.den);
         let mut prod = vec![BigInt::from(0); pi.len() + qi.len() - 1];
         for (i, x) in pi.iter().enumerate() {
             if x.sign() == num_bigint::Sign::NoSign {
@@ -179,7 +312,7 @@ impl Gen {
             den *= d;
             out
         };
-        ptrim(out.into_iter().map(|c| ratio(c, &den)).collect())
+        Ip::new(out, den)
     }
 }
 
@@ -220,18 +353,31 @@ impl Gen {
         root
     }
 
+    /// `steps` bisections more than the isolator's width has bits above one
+    /// (an eliminant's root isolated over its root bound, `1e66` wide, is
+    /// that wide still after `SIGN_STEPS`): an isolator narrower than
+    /// `2^-steps` for the filters, whose decisions it does not change.
+    fn filter_steps(&self, steps: usize) -> usize {
+        steps
+            + *self.above.get_or_init(|| {
+                let (lo, hi) = self.root.isolator();
+                let w = hi - lo;
+                (w.numer().bits() as i64 - w.denom().bits() as i64 + 1).max(0) as usize
+            })
+    }
+
     /// The exact sign of a polynomial at the root (Sturm-Tarski on a
     /// narrowed isolator: the same root, so the same sign), a binary64
     /// enclosure over the isolator first (S9d.4b.2b: certain where it
     /// excludes zero).
-    fn sign_of(&self, p: &[R]) -> Ordering {
-        let root = self.narrowed(SIGN_STEPS);
+    fn sign_of(&self, p: &Ip) -> Ordering {
+        let root = self.narrowed(self.filter_steps(SIGN_STEPS));
         let (lo, hi) = root.isolator();
         // A few ulps' enclosures of the rationals (no exact comparisons).
         let v = Fast::near_r(lo).zip(Fast::near_r(hi)).and_then(|(lo, hi)| {
             let x = lo.union(&hi);
-            p.iter().rev().try_fold(Fast::exact_f64(0.0), |acc, c| {
-                Some(acc.mul(&x).add(&Fast::near_r(c)?))
+            p.num.iter().rev().try_fold(Fast::exact_f64(0.0), |acc, c| {
+                Some(acc.mul(&x).add(&Fast::near_parts(c, &p.den)?))
             })
         });
         match v.and_then(|v| v.sign()) {
@@ -243,7 +389,7 @@ impl Gen {
                     .unwrap_or_else(|e| e.into_inner())
                     .clone();
                 if let Some(d) = &divisor {
-                    if pmod(p, d).is_empty() {
+                    if pmod(&p.rats(), d).is_empty() {
                         return Ordering::Equal;
                     }
                 }
@@ -253,13 +399,22 @@ impl Gen {
                     .unwrap_or_else(|e| e.into_inner())
                     .get(p)
                     .copied();
-                known.unwrap_or_else(|| {
-                    let ip = IntPolynomial::from_rationals(p);
+                if let Some(s) = known {
+                    return s;
+                }
+                // A dyadic point near the root and the polynomial's
+                // derivative bounded about it: certain where the value there
+                // exceeds the bound.
+                if let Some(s) = self.sign_near(p) {
+                    return s;
+                }
+                {
+                    let ip = IntPolynomial::new(p.num.clone());
                     let s = root.sign_polynomial(&ip);
                     self.exact
                         .lock()
                         .unwrap_or_else(|e| e.into_inner())
-                        .insert(p.to_vec(), s);
+                        .insert(p.clone(), s);
                     if s == Ordering::Equal && !ip.is_constant() {
                         // The gcd with the known factor (or the generator's
                         // polynomial) vanishes at the root too.
@@ -272,10 +427,256 @@ impl Gen {
                         }
                     }
                     s
-                })
+                }
             }
         }
     }
+
+    /// A dyadic point `x / 2^b` with `|alpha - x / 2^b| <= 2^-b`, `b` at
+    /// least `want`: Newton's iteration on the root's defining polynomial
+    /// in integers from the narrowed isolator's middle, the precision
+    /// doubling each step, then certified by the polynomial's opposite
+    /// nonzero signs at `(x -+ 1) / 2^b`, both inside the isolator (where
+    /// it has one root). `None` where that fails (a rational root, roots
+    /// too close for the iteration): the exact path decides.
+    fn tight(&self, want: u64) -> Option<(BigInt, u64)> {
+        let mut kept = self.tight.lock().unwrap_or_else(|e| e.into_inner());
+        if let Some((b, x)) = kept.as_ref() {
+            if *b >= want {
+                return Some((x.clone(), *b));
+            }
+        }
+        if self.root.rational_value().is_some() {
+            return None;
+        }
+        let f = &self.root.defining().0;
+        if f.len() < 2 {
+            return None;
+        }
+        let (mut x, mut b) = match kept.as_ref() {
+            Some((b, x)) => (x.clone(), *b),
+            None => {
+                let root = self.narrowed(self.filter_steps(SIGN_STEPS));
+                let (lo, hi) = root.isolator();
+                let w = hi - lo;
+                let b = (w.denom().bits() as i64 - w.numer().bits() as i64).clamp(64, 4096) as u64;
+                let m = (lo + hi) * R::from_integer(BigInt::from(1) << (b - 1) as usize);
+                (m.floor().to_integer(), b)
+            }
+        };
+        let target = want + 16;
+        let d = f.len() - 1;
+        let mut steps = 0;
+        while b < target {
+            steps += 1;
+            if steps > 40 {
+                return None;
+            }
+            let next = (2 * b).min(target);
+            // `F = f(x) 2^(b d)` and `G = f'(x) 2^(b (d - 1))`.
+            let mut fx = f[d].clone();
+            for i in (0..d).rev() {
+                fx = fx * &x + (&f[i] << (b as usize * (d - i)));
+            }
+            let mut gx = &f[d] * BigInt::from(d);
+            for j in (0..d - 1).rev() {
+                gx = gx * &x + ((&f[j + 1] * BigInt::from(j + 1)) << (b as usize * (d - 1 - j)));
+            }
+            if gx.sign() == num_bigint::Sign::NoSign {
+                return None;
+            }
+            // The step `f / f' = F / (G 2^b)` at the next precision.
+            let num = fx << (next - b) as usize;
+            x = (x << (next - b) as usize) - num_integer::Integer::div_floor(&num, &gx);
+            b = next;
+        }
+        let den = BigInt::from(1) << b as usize;
+        let lo = R::new(&x - 1, den.clone());
+        let hi = R::new(&x + 1, den);
+        let (ilo, ihi) = self.root.isolator();
+        if lo < *ilo || hi > *ihi {
+            return None;
+        }
+        let poly = self.root.defining();
+        let (sl, sh) = (poly.sign_at(&lo), poly.sign_at(&hi));
+        if sl == Ordering::Equal || sh == Ordering::Equal || sl == sh {
+            return None;
+        }
+        *kept = Some((b, x.clone()));
+        Some((x, b))
+    }
+
+    /// The sign of a polynomial at the root from a dyadic point `m = x /
+    /// 2^b` within `2^-b` of it: `p(m)` exactly (integers over `2^(b k)`),
+    /// and `|p(alpha) - p(m)| <= 2^-b max |p'|` over `|t| <= (|x| + 1) /
+    /// 2^b`, bounded by the absolute coefficients; certain where `|p(m)|`
+    /// exceeds that bound. At three precisions from the coefficients'
+    /// size; `None` where none decides (a zero, or a value too small).
+    fn sign_near(&self, p: &Ip) -> Option<Ordering> {
+        if p.len() < 2 {
+            return None;
+        }
+        let t = self.size_bits(&p.num, &p.den)?;
+        for want in [t + 96, 2 * t + 384, 4 * t + 1536] {
+            let (v, bound, _) = self.near_value(&p.num, want)?;
+            if v.magnitude() > bound.magnitude() {
+                return Some(if v.sign() == num_bigint::Sign::Minus {
+                    Ordering::Less
+                } else {
+                    Ordering::Greater
+                });
+            }
+        }
+        None
+    }
+
+    /// The bits above one of a polynomial's largest term near the root
+    /// (`num / den` its coefficients): its derivative's size there, which
+    /// the dyadic point's precision must pass.
+    fn size_bits(&self, num: &[BigInt], den: &BigInt) -> Option<u64> {
+        let top = num.iter().map(|c| c.bits()).max().unwrap_or(0) as i64 - den.bits() as i64;
+        let (x, b) = self.tight(128)?;
+        let mag = (x.bits() as i64 - b as i64).max(0) * (num.len() as i64 - 1);
+        Some((top + mag).max(0) as u64)
+    }
+
+    /// The integer polynomial `num` (degree `k` at least one) near the
+    /// root: `(v, bound, b)` with `|num(alpha) 2^(b k) - v| <= bound`, from
+    /// the dyadic point `m = x / 2^b` within `2^-b` of it (`b >= want`):
+    /// `v = num(m) 2^(b k)` exactly, `bound` the absolute coefficients'
+    /// derivative over `|t| <= (|x| + 1) / 2^b` times `2^(b (k - 1))`.
+    fn near_value(&self, num: &[BigInt], want: u64) -> Option<(BigInt, BigInt, u64)> {
+        let k = num.len() - 1;
+        let (x, b) = self.tight(want)?;
+        let shift = |c: &BigInt, n: usize| c << (b as usize * n);
+        let mut v = num[k].clone();
+        for i in (0..k).rev() {
+            v = v * &x + shift(&num[i], k - i);
+        }
+        let y = BigInt::from(x.magnitude() + 1u32);
+        let mut bound = BigInt::from(num[k].magnitude().clone()) * BigInt::from(k);
+        for j in (0..k - 1).rev() {
+            let c = BigInt::from(num[j + 1].magnitude().clone()) * BigInt::from(j + 1);
+            bound = bound * &y + shift(&c, k - 1 - j);
+        }
+        Some((v, bound, b))
+    }
+}
+
+/// A dyadic enclosure `[lo, hi] / 2^e` of a number of the fields.
+#[derive(Debug, Clone)]
+struct Dy {
+    lo: BigInt,
+    hi: BigInt,
+    e: usize,
+}
+
+/// `floor(x / d)` and `ceil(x / d)`, `d > 0`.
+fn floor_div(x: &BigInt, d: &BigInt) -> BigInt {
+    num_integer::Integer::div_floor(x, d)
+}
+
+fn ceil_div(x: &BigInt, d: &BigInt) -> BigInt {
+    -num_integer::Integer::div_floor(&-x, d)
+}
+
+impl Dy {
+    /// `n / d` (`d > 0`) at `e` bits.
+    fn ratio(n: &BigInt, d: &BigInt, e: usize) -> Self {
+        let s = n << e;
+        Dy {
+            lo: floor_div(&s, d),
+            hi: ceil_div(&s, d),
+            e,
+        }
+    }
+
+    fn add(&self, o: &Self) -> Self {
+        debug_assert_eq!(self.e, o.e);
+        Dy {
+            lo: &self.lo + &o.lo,
+            hi: &self.hi + &o.hi,
+            e: self.e,
+        }
+    }
+
+    fn mul(&self, o: &Self) -> Self {
+        debug_assert_eq!(self.e, o.e);
+        let p = [
+            &self.lo * &o.lo,
+            &self.lo * &o.hi,
+            &self.hi * &o.lo,
+            &self.hi * &o.hi,
+        ];
+        let lo = p.iter().min().expect("four products");
+        let hi = p.iter().max().expect("four products");
+        Dy {
+            lo: lo >> self.e,
+            hi: -((-hi) >> self.e),
+            e: self.e,
+        }
+    }
+
+    /// `sqrt(n / d)`, `n >= 0`, `d > 0`, at `e` bits.
+    fn sqrt(n: &BigInt, d: &BigInt, e: usize) -> Self {
+        let s = n << (2 * e);
+        let (lo, hi) = (floor_div(&s, d), ceil_div(&s, d));
+        let r = hi.sqrt();
+        Dy {
+            lo: lo.sqrt(),
+            hi: if &r * &r == hi { r } else { r + 1 },
+            e,
+        }
+    }
+
+    /// The sign, where the enclosure excludes zero.
+    fn sign(&self) -> Option<Ordering> {
+        if self.lo.sign() == num_bigint::Sign::Plus {
+            Some(Ordering::Greater)
+        } else if self.hi.sign() == num_bigint::Sign::Minus {
+            Some(Ordering::Less)
+        } else {
+            None
+        }
+    }
+
+    /// The binary64 number both ends round to (to nearest), which the
+    /// enclosed number rounds to as well; `None` where they differ or lie
+    /// outside binary64's normal range.
+    fn rounded(&self) -> Option<f64> {
+        let lo = rounded_ratio(&self.lo, self.e)?;
+        (rounded_ratio(&self.hi, self.e)? == lo).then_some(lo)
+    }
+}
+
+/// `n / 2^e` rounded to the nearest binary64 number (rounded to odd at 64
+/// bits, then to nearest by the conversion of a `u64`), or `None` outside
+/// `1e-290 ..= 1e290` in magnitude (zero is zero).
+fn rounded_ratio(n: &BigInt, e: usize) -> Option<f64> {
+    if n.sign() == num_bigint::Sign::NoSign {
+        return Some(0.0);
+    }
+    let m = n.magnitude();
+    // The top 64 bits, the last set where lower bits were dropped.
+    let drop = (m.bits() as i64 - 64).max(0) as usize;
+    let mut q = (m >> drop).to_u64_digits().first().copied().unwrap_or(0);
+    if drop > 0 && m.trailing_zeros().unwrap_or(0) < drop as u64 {
+        q |= 1;
+    }
+    let f = q as f64;
+    let exp = drop as i64 - e as i64;
+    if !(-1000..=1000).contains(&exp) {
+        return None;
+    }
+    let v = f * f64::powi(2.0, exp as i32);
+    if !v.is_finite() || !(1e-290..=1e290).contains(&v.abs()) {
+        return None;
+    }
+    Some(if n.sign() == num_bigint::Sign::Minus {
+        -v
+    } else {
+        v
+    })
 }
 
 /// An element of `Q` or of one `Q(alpha)`: a polynomial in `alpha`
@@ -283,7 +684,7 @@ impl Gen {
 #[derive(Debug, Clone)]
 pub(super) enum K {
     Rat(R),
-    Alg(Arc<Gen>, Vec<R>),
+    Alg(Arc<Gen>, Ip),
 }
 
 impl PartialEq for K {
@@ -336,16 +737,46 @@ fn pdivmod(a: &[R], b: &[R]) -> (Vec<R>, Vec<R>) {
 }
 
 fn pmul(a: &[R], b: &[R]) -> Vec<R> {
+    product(a, b)
+}
+
+/// The product of two polynomials with rational coefficients: integer
+/// products over the operands' common denominators, each coefficient
+/// reduced once (the same rationals as a product of rationals term by
+/// term, without a gcd per term).
+pub(super) fn product(a: &[R], b: &[R]) -> Vec<R> {
     if a.is_empty() || b.is_empty() {
         return Vec::new();
     }
-    let mut out = vec![zero(); a.len() + b.len() - 1];
-    for (i, x) in a.iter().enumerate() {
-        for (j, y) in b.iter().enumerate() {
-            out[i + j] = radd(&out[i + j], &rmul(x, y));
+    if a.len() == 1 || b.len() == 1 {
+        let (k, p) = if a.len() == 1 { (&a[0], b) } else { (&b[0], a) };
+        return ptrim(p.iter().map(|c| rmul(c, k)).collect());
+    }
+    let (ai, da) = integral(a);
+    let (bi, db) = integral(b);
+    // Denominators far apart make the common one far larger than each:
+    // then term by term.
+    let widest = |p: &[R]| p.iter().map(|c| c.denom().bits()).max().unwrap_or(0);
+    if da.bits() > widest(a) + 64 || db.bits() > widest(b) + 64 {
+        let mut out = vec![zero(); a.len() + b.len() - 1];
+        for (i, x) in a.iter().enumerate() {
+            for (j, y) in b.iter().enumerate() {
+                out[i + j] = radd(&out[i + j], &rmul(x, y));
+            }
+        }
+        return ptrim(out);
+    }
+    let mut out = vec![BigInt::from(0); ai.len() + bi.len() - 1];
+    for (i, x) in ai.iter().enumerate() {
+        if x.sign() == num_bigint::Sign::NoSign {
+            continue;
+        }
+        for (j, y) in bi.iter().enumerate() {
+            out[i + j] += x * y;
         }
     }
-    ptrim(out)
+    let den = da * db;
+    ptrim(out.into_iter().map(|c| ratio(c, &den)).collect())
 }
 
 fn psub(a: &[R], b: &[R]) -> Vec<R> {
@@ -372,7 +803,25 @@ impl K {
         match p.len() {
             0 => K::Rat(zero()),
             1 => K::Rat(p[0].clone()),
+            _ => K::Alg(g.clone(), Ip::from_rats(&p)),
+        }
+    }
+
+    /// A reduced polynomial's element (a constant is `Rat`).
+    fn of_ip(g: &Arc<Gen>, p: Ip) -> Self {
+        match p.len() {
+            0 => K::Rat(zero()),
+            1 => K::Rat(ratio(p.num[0].clone(), &p.den)),
             _ => K::Alg(g.clone(), p),
+        }
+    }
+
+    /// The element's polynomial in the integer form (a rational's
+    /// constant).
+    fn ip(&self) -> Ip {
+        match self {
+            K::Rat(a) => Ip::new(vec![a.numer().clone()], a.denom().clone()),
+            K::Alg(_, p) => p.clone(),
         }
     }
 
@@ -388,13 +837,6 @@ impl K {
         }
     }
 
-    fn poly(&self) -> Vec<R> {
-        match self {
-            K::Rat(a) => ptrim(vec![a.clone()]),
-            K::Alg(_, p) => p.clone(),
-        }
-    }
-
     /// The common generator of two elements (`None` inside for `Q`), or
     /// `None` for two different fields.
     fn common<'a>(&'a self, o: &'a Self) -> Option<Option<&'a Arc<Gen>>> {
@@ -405,57 +847,54 @@ impl K {
         }
     }
 
-    fn lift(&self, o: &Self, f: impl Fn(&[R], &[R]) -> Vec<R>, r: impl Fn(&R, &R) -> R) -> Self {
+    /// `a + b` or `a - b`.
+    fn sum(&self, o: &Self, minus: bool) -> Self {
         if let (K::Rat(a), K::Rat(b)) = (self, o) {
-            return K::Rat(r(a, b));
+            return K::Rat(if minus { rsub(a, b) } else { radd(a, b) });
         }
         match self.common(o) {
             None => two_fields(),
-            Some(None) => {
-                let (K::Rat(a), K::Rat(b)) = (self, o) else {
-                    unreachable!("rationals")
-                };
-                K::Rat(r(a, b))
-            }
+            Some(None) => unreachable!("rationals"),
             Some(Some(g)) => {
                 let g = g.clone();
-                K::norm(&g, f(&self.poly(), &o.poly()))
+                K::of_ip(&g, self.ip().add(&o.ip(), minus))
             }
         }
     }
 
     pub(super) fn add(&self, o: &Self) -> Self {
-        self.lift(
-            o,
-            |a, b| psub(a, &b.iter().map(|x| -x).collect::<Vec<_>>()),
-            radd,
-        )
+        self.sum(o, false)
     }
 
     pub(super) fn sub(&self, o: &Self) -> Self {
-        self.lift(o, psub, rsub)
+        self.sum(o, true)
     }
 
     pub(super) fn mul(&self, o: &Self) -> Self {
-        if let (K::Alg(g, p), K::Alg(h, q)) = (self, o) {
-            if Arc::ptr_eq(g, h) {
-                return K::norm(g, g.mul_mod(p, q));
+        match (self, o) {
+            (K::Rat(a), K::Rat(b)) => K::Rat(rmul(a, b)),
+            (K::Alg(g, p), K::Alg(h, q)) => {
+                if !Arc::ptr_eq(g, h) {
+                    two_fields()
+                }
+                K::of_ip(g, g.mul_mod(p, q))
             }
+            (K::Alg(_, _), K::Rat(k)) => self.scale(k),
+            (K::Rat(k), K::Alg(_, _)) => o.scale(k),
         }
-        self.lift(o, pmul, rmul)
     }
 
     pub(super) fn scale(&self, k: &R) -> Self {
         match self {
             K::Rat(a) => K::Rat(rmul(a, k)),
-            K::Alg(g, p) => K::norm(g, p.iter().map(|x| rmul(x, k)).collect()),
+            K::Alg(g, p) => K::of_ip(g, p.scale(k)),
         }
     }
 
     pub(super) fn neg(&self) -> Self {
         match self {
             K::Rat(a) => K::Rat(-a),
-            K::Alg(g, p) => K::Alg(g.clone(), p.iter().map(|x| -x).collect()),
+            K::Alg(g, p) => K::Alg(g.clone(), p.neg()),
         }
     }
 
@@ -476,28 +915,76 @@ impl K {
         match self {
             K::Rat(a) => (*a != zero()).then(|| K::Rat(int(1) / a)),
             K::Alg(g, p) => {
-                let mut m = g.poly.clone();
-                loop {
-                    // Extended Euclid: s p = gcd (mod m).
-                    let (mut r0, mut r1) = (m.clone(), pmod(p, &m));
-                    let (mut s0, mut s1): (Vec<R>, Vec<R>) = (Vec::new(), vec![int(1)]);
-                    while !r1.is_empty() {
-                        let (quo, rem) = pdivmod(&r0, &r1);
-                        let s2 = psub(&s0, &pmul(&quo, &s1));
-                        (r0, r1) = (r1, rem);
-                        (s0, s1) = (s1, s2);
-                    }
-                    if r0.len() == 1 {
-                        let k = int(1) / &r0[0];
-                        return Some(K::norm(g, s0.iter().map(|x| x * &k).collect()));
-                    }
-                    // A common factor: zero at alpha, or alpha is a root of
-                    // the cofactor.
-                    if g.sign_of(&r0) == Ordering::Equal {
-                        return None;
-                    }
-                    m = pdivmod(&m, &r0).0;
+                let key = p.clone();
+                if let Some(known) = g
+                    .inverses
+                    .lock()
+                    .unwrap_or_else(|e| e.into_inner())
+                    .get(&key)
+                {
+                    return known.as_ref().map(|q| K::Alg(g.clone(), q.clone()));
                 }
+                let inv = Self::inverse(g, &p.rats());
+                let mut kept = g.inverses.lock().unwrap_or_else(|e| e.into_inner());
+                if kept.len() >= 4096 {
+                    kept.clear();
+                }
+                match &inv {
+                    None => {
+                        kept.insert(key, None);
+                    }
+                    Some(K::Alg(_, q)) => {
+                        kept.insert(key, Some(q.clone()));
+                    }
+                    Some(K::Rat(_)) => {}
+                }
+                inv
+            }
+        }
+    }
+
+    /// `recip`'s extended Euclid in `Q[x]` modulo the generator's
+    /// polynomial (or a factor of it vanishing at the root).
+    fn inverse(g: &Arc<Gen>, p: &[R]) -> Option<Self> {
+        let mut m = g.poly.clone();
+        loop {
+            // Extended Euclid: s p = gcd (mod m).
+            let (mut r0, mut r1) = (m.clone(), pmod(p, &m));
+            let (mut s0, mut s1): (Vec<R>, Vec<R>) = (Vec::new(), vec![int(1)]);
+            while !r1.is_empty() {
+                let (quo, rem) = pdivmod(&r0, &r1);
+                let s2 = psub(&s0, &pmul(&quo, &s1));
+                (r0, r1) = (r1, rem);
+                (s0, s1) = (s1, s2);
+            }
+            if r0.len() == 1 {
+                let k = int(1) / &r0[0];
+                return Some(K::norm(g, s0.iter().map(|x| x * &k).collect()));
+            }
+            // A common factor: zero at alpha, or alpha is a root of the
+            // cofactor.
+            if g.sign_of(&Ip::from_rats(&r0)) == Ordering::Equal {
+                return None;
+            }
+            m = pdivmod(&m, &r0).0;
+        }
+    }
+
+    /// A dyadic enclosure at `e` bits after the point, from the
+    /// generator's dyadic point (`None` where that fails).
+    fn dy(&self, e: usize) -> Option<Dy> {
+        match self {
+            K::Rat(a) => Some(Dy::ratio(a.numer(), a.denom(), e)),
+            K::Alg(g, p) => {
+                let (num, den) = (&p.num, &p.den);
+                let t = g.size_bits(num, den)?;
+                let (v, bound, b) = g.near_value(num, e as u64 + t + 16)?;
+                let s = den << (b as usize * (num.len() - 1));
+                Some(Dy {
+                    lo: floor_div(&((&v - &bound) << e), &s),
+                    hi: ceil_div(&((v + bound) << e), &s),
+                    e,
+                })
             }
         }
     }
@@ -514,7 +1001,7 @@ impl K {
                 // Horner in integers over one denominator, reduced once:
                 // `sum n_i a^i b^(d - i) / (D b^d)` for `m = a / b` and the
                 // coefficients `n_i / D` (the same value).
-                let (n, den) = integral(p);
+                let (n, den) = (&p.num, p.den.clone());
                 let (a, b) = (m.numer(), m.denom());
                 let mut b_power = BigInt::from(1);
                 let mut acc = BigInt::from(0);
@@ -536,11 +1023,11 @@ impl K {
         match self {
             K::Rat(a) => Fast::near_r(a),
             K::Alg(g, p) => {
-                let root = g.narrowed(steps);
+                let root = g.narrowed(g.filter_steps(steps));
                 let (lo, hi) = root.isolator();
                 let x = Fast::near_r(lo)?.union(&Fast::near_r(hi)?);
-                p.iter().rev().try_fold(Fast::exact_f64(0.0), |acc, c| {
-                    Some(acc.mul(&x).add(&Fast::near_r(c)?))
+                p.num.iter().rev().try_fold(Fast::exact_f64(0.0), |acc, c| {
+                    Some(acc.mul(&x).add(&Fast::near_parts(c, &p.den)?))
                 })
             }
         }
@@ -555,7 +1042,7 @@ impl K {
                 let root = g.narrowed(steps);
                 let (lo, hi) = root.isolator();
                 let x = I::new(lo.clone(), hi.clone());
-                p.iter().rev().fold(I::exact(zero()), |acc, c| {
+                p.rats().iter().rev().fold(I::exact(zero()), |acc, c| {
                     acc.mul(&x).add(&I::exact(c.clone()))
                 })
             }
@@ -734,6 +1221,10 @@ impl Qd {
             {
                 return s;
             }
+            // Then a dyadic enclosure, before the product `a^2 - b^2 d`.
+            if let Some(s) = self.dy(128).and_then(|v| v.sign()) {
+                return s;
+            }
         }
         let sa = self.a.sign();
         let sb = if self.d == zero() {
@@ -781,6 +1272,17 @@ impl Qd {
         )
     }
 
+    /// A dyadic enclosure at `e` bits after the point (`K::dy`; the surd's
+    /// root by integer square roots).
+    fn dy(&self, e: usize) -> Option<Dy> {
+        let a = self.a.dy(e)?;
+        if self.b.is_zero() {
+            return Some(a);
+        }
+        let b = self.b.dy(e)?;
+        Some(a.add(&b.mul(&Dy::sqrt(self.d.numer(), self.d.denom(), e))))
+    }
+
     /// `enclose` in binary64 (`K::enclose_fast`).
     fn enclose_fast(&self, n: usize) -> Option<Fast> {
         let a = self.a.enclose_fast(n)?;
@@ -814,6 +1316,19 @@ impl Qd {
         if let Some(a) = self.rational() {
             return rational_f64(a);
         }
+        // Dyadic enclosures from the generator's dyadic point: the number
+        // rounded to nearest where both ends round alike.
+        for e in [96, 384, 1536] {
+            if let Some(v) = self.dy(e).and_then(|d| d.rounded()) {
+                return v;
+            }
+        }
+        self.to_f64_isolator()
+    }
+
+    /// `to_f64` from the isolator where the dyadic point is not found (a
+    /// rational root) or the value is zero or tiny.
+    fn to_f64_isolator(&self) -> f64 {
         let tiny = R::new(BigInt::from(1), BigInt::from(1u64 << 62));
         let i = self.interval();
         let size = i.abs_hi().max(int(1));
@@ -851,6 +1366,16 @@ pub(super) fn tower_sign(x: &Qd, y: &Qd, e: &R) -> Ordering {
             .and_then(|(a, b)| Some(a.add(&b.mul(&Fast::near_r(e)?.sqrt()))));
         if let Some(s @ (Ordering::Less | Ordering::Greater)) = fast.and_then(|v| v.sign()) {
             return s;
+        }
+        // Then dyadic enclosures, before the products.
+        if x.gen().is_some() || y.gen().is_some() {
+            let v = x
+                .dy(128)
+                .zip(y.dy(128))
+                .map(|(a, b)| a.add(&b.mul(&Dy::sqrt(e.numer(), e.denom(), 128))));
+            if let Some(s) = v.and_then(|v| v.sign()) {
+                return s;
+            }
         }
     }
     let sy = if *e == zero() {
@@ -907,6 +1432,34 @@ pub(super) fn mixed_dot_sign(a: &[Qd], b: &[Qd]) -> Ordering {
             });
         }
     }
+    // Dyadic enclosures from the generator's dyadic point next: certain
+    // where they exclude zero, before the exact products of a field of
+    // degree eight.
+    if ga.is_some() || gb.is_some() {
+        if let Some(s) = dy_dot_sign(a, b) {
+            return s;
+        }
+    }
+    mixed_dot_exact(a, b)
+}
+
+/// The sign of `sum a_i b_i` from dyadic enclosures 128 bits after the
+/// point (`None`: undecided, or no dyadic point).
+fn dy_dot_sign(a: &[Qd], b: &[Qd]) -> Option<Ordering> {
+    let e = 128;
+    let mut acc: Option<Dy> = None;
+    for (x, y) in a.iter().zip(b) {
+        let p = x.dy(e)?.mul(&y.dy(e)?);
+        acc = Some(match acc {
+            None => p,
+            Some(s) => s.add(&p),
+        });
+    }
+    acc?.sign()
+}
+
+/// `mixed_dot_sign`'s exact products in one field.
+fn mixed_dot_exact(a: &[Qd], b: &[Qd]) -> Ordering {
     let e = b
         .iter()
         .find_map(|x| x.field().cloned())
@@ -1001,18 +1554,86 @@ mod tests {
         let g = Arc::new(Gen::new(poly.clone(), roots.last().unwrap().clone()));
         let a = vec![r(1, 3), r(-2, 5), r(7, 11), r(3, 2), r(-1, 7)];
         let b = vec![r(-4, 9), int(2), r(1, 13), zero(), r(5, 3)];
-        assert_eq!(g.mul_mod(&a, &b), pmod(&pmul(&a, &b), &poly));
+        let ip = |p: &[R]| Ip::from_rats(p);
         assert_eq!(
-            g.mul_mod(&a[..2], &b[..3]),
+            g.mul_mod(&ip(&a), &ip(&b)).rats(),
+            pmod(&pmul(&a, &b), &poly)
+        );
+        assert_eq!(
+            g.mul_mod(&ip(&a[..2]), &ip(&b[..3])).rats(),
             pmod(&pmul(&a[..2], &b[..3]), &poly)
         );
         let (x, y) = (K::norm(&g, a.clone()), K::norm(&g, b.clone()));
         let xy = x.mul(&y);
         assert_eq!(xy, K::norm(&g, pmod(&pmul(&a, &b), &poly)));
+        // Sums, differences and multiples in the integer form are the
+        // rational ones, and one polynomial has one form.
+        assert_eq!(
+            x.add(&y),
+            K::norm(&g, psub(&a, &b.iter().map(|c| -c).collect::<Vec<_>>()))
+        );
+        assert_eq!(x.sub(&y), K::norm(&g, psub(&a, &b)));
+        assert_eq!(
+            x.scale(&r(-6, 35)),
+            K::norm(&g, a.iter().map(|c| c * r(-6, 35)).collect())
+        );
+        assert_eq!(
+            Ip::new(
+                vec![int(6).to_integer(), int(-4).to_integer()],
+                int(-10).to_integer()
+            ),
+            Ip::from_rats(&[r(-3, 5), r(2, 5)])
+        );
         let exact = g
             .narrowed(SIGN_STEPS)
-            .sign_polynomial(&IntPolynomial::from_rationals(&xy.poly()));
+            .sign_polynomial(&IntPolynomial::new(xy.ip().num));
         assert_eq!(xy.sign(), exact);
+        // The filters agree with Sturm-Tarski on the elements' signs, and
+        // the dyadic enclosure holds the value the isolator does.
+        for k in [&x, &y, &xy, &x.sub(&y), &xy.add(&K::Rat(r(-1, 3)))] {
+            let p = k.ip();
+            let exact = g
+                .narrowed(SIGN_STEPS)
+                .sign_polynomial(&IntPolynomial::new(p.num.clone()));
+            assert_eq!(g.sign_near(&p), Some(exact));
+            assert_eq!(k.sign(), exact);
+            let d = k.dy(80).unwrap();
+            let i = k.enclose(200);
+            let scale = R::from_integer(BigInt::from(1) << 80);
+            assert!(R::from_integer(d.lo.clone()) <= i.lo() * &scale);
+            assert!(R::from_integer(d.hi.clone()) >= i.hi() * &scale);
+            let inv = k.recip().unwrap();
+            assert_eq!(k.mul(&inv).sub(&K::Rat(int(1))).sign(), Ordering::Equal);
+            assert_eq!(inv, k.recip().unwrap());
+        }
+    }
+
+    /// A ratio of integers over a power of two rounds to nearest: both
+    /// ends of a narrow enclosure agree only where the value rounds alike.
+    #[test]
+    fn dyadic_views_round_to_nearest() {
+        // 1/3 at 70 bits after the point, its ends one unit apart.
+        let e: usize = 70;
+        let lo: BigInt = (BigInt::from(1) << e) / BigInt::from(3);
+        let d = Dy {
+            lo: lo.clone(),
+            hi: &lo + 1,
+            e,
+        };
+        assert_eq!(d.rounded(), Some(1.0 / 3.0));
+        assert_eq!(rounded_ratio(&-lo, e), Some(-(1.0 / 3.0)));
+        // An end on each side of a rounding boundary: none.
+        let one = BigInt::from(1) << 60;
+        let half_ulp = BigInt::from(1) << 7;
+        let d = Dy {
+            lo: &one + &half_ulp - 1,
+            hi: &one + &half_ulp + 1,
+            e: 60,
+        };
+        assert_eq!(d.rounded(), None);
+        // Square roots enclose: sqrt(2) at 64 bits.
+        let s = Dy::sqrt(&BigInt::from(2), &BigInt::from(1), 64);
+        assert_eq!(s.rounded(), Some(std::f64::consts::SQRT_2));
     }
 
     #[test]

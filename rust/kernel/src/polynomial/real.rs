@@ -167,6 +167,10 @@ impl AlgebraicRoot {
     pub(crate) fn isolator(&self) -> (&R, &R) {
         (&self.lower, &self.upper)
     }
+    /// The square-free polynomial with exactly one root in the isolator.
+    pub(crate) fn defining(&self) -> &IntPolynomial {
+        &self.defining.polynomial
+    }
     /// Zero-only query without constructing a signed Sturm-Tarski chain. The
     /// gcd is a square-free divisor of the defining polynomial. Our isolator
     /// contains at most one of its roots, so a sign change is necessary and

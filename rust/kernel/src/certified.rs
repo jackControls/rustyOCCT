@@ -1204,16 +1204,21 @@ impl Fast {
     /// `2^-53` more, widened by four ulps each way; `None` outside the
     /// comfortably normal range.
     pub(crate) fn near_r(x: &R) -> Option<Self> {
-        if x.numer().sign() == Sign::NoSign {
+        Self::near_parts(x.numer(), x.denom())
+    }
+
+    /// `near_r` of `num / den` (`den > 0`, in any terms).
+    pub(crate) fn near_parts(num: &BigInt, den: &BigInt) -> Option<Self> {
+        if num.sign() == Sign::NoSign {
             return Some(Fast::exact_f64(0.0));
         }
-        let ((n, sn), (d, sd)) = (leading(x.numer()), leading(x.denom()));
+        let ((n, sn), (d, sd)) = (leading(num), leading(den));
         let e = sn - sd;
         if !(-900..=900).contains(&e) {
             return None;
         }
         let mut f = n / d * f64::powi(2.0, e as i32);
-        if x.numer().sign() == Sign::Minus {
+        if num.sign() == Sign::Minus {
             f = -f;
         }
         if !f.is_finite() || f.abs() < 1e-250 || f.abs() > 1e250 {
