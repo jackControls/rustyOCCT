@@ -135,13 +135,11 @@ impl Setup<'_> {
     fn at(&self, p: Point2, w: f64) -> Point3 {
         self.frame.point(p, w)
     }
+    /// The prism's axes bit for bit at a level (`Frame3::at`), as its
+    /// walls' (`Topology`'s prism): normalized again, they could turn by an
+    /// ulp with the platform's `hypot`.
     fn level_frame(&self, center: Point2, w: f64) -> Result<Frame3> {
-        Frame3::new(
-            self.frame.point(center, w),
-            self.frame.normal(),
-            self.frame.x(),
-            self.tolerance,
-        )
+        Ok(self.frame.at(self.frame.point(center, w)))
     }
     fn ellipse_frame(&self, center: Point2) -> Result<Frame3> {
         Frame3::new(
@@ -2224,5 +2222,76 @@ impl Solid {
         crate::solid::stack::debug_check(&[self], &outs, &history);
         crate::solid::attrs::debug_check_attributes(context, &[self], &outs, &history);
         Ok((pieces, history))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::history::History;
+    use crate::identity::OperationId;
+    use crate::{Boundary, Frame3, Point2, Point3, Profile, Segment, Solid, Tolerance, Vec3};
+
+    /// A stadium prism on a frame tilted along `(0, 0.6, 0.8)`, its normal
+    /// each platform's normalization of that axis (macOS's `hypot` keeps
+    /// `(0, 0.5999999999999999, 0.8)` when normalized again, glibc's turns
+    /// it to `(0, 0.6, 0.8000000000000002)`, which macOS's turns back): the
+    /// walls a plane split and a Boolean in the prism's frame (S9a.2's
+    /// stack) build on its arcs take its axes bit for bit, as its own walls
+    /// do, so each split wall lies on its input's exactly parallel axis and
+    /// the histories hold on any host.
+    #[test]
+    fn split_walls_keep_their_prisms_axes_on_either_platforms_frames() {
+        let tol = Tolerance::new(1e-7, 1e-12).unwrap();
+        let axis = |y: u64, z: u64| Vec3::new(0.0, f64::from_bits(y), f64::from_bits(z));
+        let stadium = || {
+            let arc = |x: f64| Segment::Arc {
+                center: Point2::new(x, 0.0),
+                radius: 2.0,
+                ccw: true,
+            };
+            let points = [(-3.0, -2.0), (3.0, -2.0), (3.0, 2.0), (-3.0, 2.0)]
+                .map(|(x, y)| Point2::new(x, y))
+                .to_vec();
+            let segments = vec![Segment::Line, arc(3.0), Segment::Line, arc(-3.0)];
+            let outer = Boundary::path(points, segments, tol).unwrap();
+            Profile::new(outer, Vec::new(), tol).unwrap()
+        };
+        let block = || {
+            let points = [(0.0, -5.0), (10.0, -5.0), (10.0, 5.0), (0.0, 5.0)]
+                .map(|(x, y)| Point2::new(x, y))
+                .to_vec();
+            Profile::new(Boundary::polygon(points, tol).unwrap(), Vec::new(), tol).unwrap()
+        };
+        let check = |ins: &[&Solid], outs: &[&Solid], h: &History| {
+            let set = |s: &&Solid| s.topology().entity_set(s.resolution());
+            let ins: Vec<_> = ins.iter().map(set).collect();
+            let outs: Vec<_> = outs.iter().map(set).collect();
+            crate::history::check(&ins, &outs, h)
+        };
+        // macOS's fixed point, glibc's.
+        for n in [
+            axis(0x3fe3_3333_3333_3332, 0x3fe9_9999_9999_999a),
+            axis(0x3fe3_3333_3333_3333, 0x3fe9_9999_9999_999b),
+        ] {
+            let x = Vec3::new(1.0, 0.0, 0.0);
+            let frame = Frame3::from_axes(Point3::new(1.0, 2.0, 0.5), x, n.cross(x), n);
+            let (a, _) = Solid::extrude_with(OperationId(1), stadium(), frame, 0.0, 2.0).unwrap();
+            let plane = Frame3::new(
+                frame.point(Point2::new(0.0, 0.0), 1.0),
+                frame.normal() + frame.x() * 0.3,
+                frame.y(),
+                tol,
+            )
+            .unwrap();
+            let (pieces, h) = a.split_by_plane(OperationId(2), plane).unwrap();
+            assert_eq!(pieces.len(), 2);
+            let outs: Vec<&Solid> = pieces.iter().map(|(_, s)| s).collect();
+            let issues = check(&[&a], &outs, &h);
+            assert!(issues.is_empty(), "split {n:?}: {issues:?}");
+            let (b, _) = Solid::extrude_with(OperationId(3), block(), frame, 0.5, 1.5).unwrap();
+            let (out, h) = a.fuse(OperationId(4), &b).unwrap();
+            let issues = check(&[&a, &b], &out.iter().collect::<Vec<_>>(), &h);
+            assert!(issues.is_empty(), "fuse {n:?}: {issues:?}");
+        }
     }
 }

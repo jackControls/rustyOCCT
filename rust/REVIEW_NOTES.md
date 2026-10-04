@@ -7458,6 +7458,48 @@ Decisions for S9, recorded before its code (2026-09-28):
     16.2 in the last survey, 13.3 here), the restore cases 0.1 to 3.9 s,
     the rollex 2.1 to 3.0. No case fails, crashes or panics; no kernel
     change.
+  * **CI on S9e.4b.1 (2026-10-04).** The "Minimum Rust 1.85" job (debug
+    assertions and overflow checks on Linux) failed at `788f8861` in
+    `tests/imported_arc_booleans.rs`: five tests panicked at the Boolean's
+    debug history check, two `split_support_differs` each. It is (a) and
+    (j) of "CI on `rust-kernel`" above again, glibc's correctly rounded
+    `hypot`: a prism built its walls' frames by `Frame3::new` on its own
+    frame's axes, normalizing the normal again, which is not idempotent and
+    not the same on every host (the slot's tilted axis normalized once,
+    `(0, 0.5999999999999999, 0.8)`, stays under macOS's `hypot` and turns
+    to `(0, 0.6, 0.8000000000000002)` under glibc's, which macOS's turns
+    back). An imported prism's construction (S9e.4a) takes its bottom
+    cap's stored frame, normalized once by the converter as each stored
+    cylinder's axis is, so on Linux its walls, and the Boolean's split
+    walls on them, lay an ulp off the stored cylinders, and the history
+    check asks a split cylinder for an axis exactly parallel to its
+    source's. Reproduced on macOS with `Vec3::length` made correctly
+    rounded (exactly, by big integers) in a local patch: the same five
+    tests fail with the same entity ids. Fix: the walls derived from a
+    prism's frame take its axes bit for bit (`Frame3::at`): `Topology`'s
+    prism's arc and circle walls, S8a.2's plane split's walls
+    (`level_frame`) and S9a.2's stacked Booleans' cylinders, which must
+    agree with the prism's (the prism's walls alone, under the emulated
+    rounding, broke three of `tests/split.rs`'s histories, the split's
+    pieces normalized again). `history::check` is unchanged. Regressions,
+    each failing on macOS without the fix, both frames run on any host:
+    `snapped::tests::split_walls_keep_the_stored_axes_on_either_platforms_frames`
+    (the slot with its caps' and cylinders' stored frames macOS's and
+    glibc's normalized axes bit for bit, fused with and cut by a box) and
+    `oblique::tests::split_walls_keep_their_prisms_axes_on_either_platforms_frames`
+    (a stadium prism on either frame split by an oblique plane and fused
+    with a box across its middle in its frame). Under the emulated
+    rounding with debug assertions the whole suite passes but
+    `properties_baseline`, whose committed baseline is macOS's (CI
+    regenerates it per host); its rows are bit for bit those before the
+    fix there, and the committed baseline holds here. S9e.4a's and
+    S9e.4b.2's paths had no such failure: `imported_booleans.rs` and
+    `imported_polyhedra_booleans.rs` pass under the emulated rounding with
+    debug assertions before and after the fix (the polyhedra have no
+    cylinder). Checks: fmt, clippy, the 1.85 check, the 1.85 suite with
+    debug assertions at `opt-level` 2, the release suite;
+    `compare_imported_boolean.py` 54/15, `compare_imported_arcs_boolean.py`
+    27/9 and `compare_imported_polyhedra_boolean.py` 47/1, none failing.
   * **Where S9 stands (2026-09-30, paused).** Done and pushed: S9a to S9d
     (every sub-step with its DRAW survey and a clean campaign), S9e.1
     (campaign clean at `51c08edf`) and S9e.2 (`8e060c67`), S9f's decisions

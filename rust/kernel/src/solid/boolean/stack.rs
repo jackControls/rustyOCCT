@@ -808,12 +808,8 @@ pub(super) fn build(stack: &Stack, frame: Frame3) -> Result<Vec<Component>> {
                         (Surface::Plane(plane), Orientation::Forward, None)
                     }
                     Some((center, radius)) => {
-                        let axis = Frame3::new(
-                            frame.point(center, heights[low]),
-                            n,
-                            frame.x(),
-                            tolerance,
-                        )?;
+                        // The prisms' axes bit for bit, as their walls'.
+                        let axis = frame.at(frame.point(center, heights[low]));
                         // Its normal leaves the material: outward when the
                         // material lies inside, run counter-clockwise.
                         let sense = if stored_ccw(v) == ml {
