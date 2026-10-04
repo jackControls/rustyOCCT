@@ -6198,7 +6198,18 @@ Decisions for S9, recorded before its code (2026-09-28):
     tangent to a face that the reference's events, the same height found
     twice within 1e-25 and counted once, did not flag (a trial run of the
     cases on a draft of the step's code, not committed, refused it as two
-    result vertices within the resolution).
+    result vertices within the resolution). The capture
+    `occt-boolean-imported-arcs-preimplementation`
+    (`compare_imported_arcs_boolean.py`, keyed on
+    `solid/boolean/curved/snapped.rs`; the kernel's probe `unsupported` on
+    all 36, S9e.4a refusing every body's arcs): every result valid, 30
+    matching (volumes within 1.3e-8, areas 1.2e-8, centres 4.2e-9 of the
+    size), 6 reviewed: the ball across the slot's arc wall and the notch
+    and the slot crossing, BRepGProp's default integration on faces bounded
+    by approximated sections (up to 1.4e-5; adaptively within 3.2e-9,
+    unchanged at 1e-12), and the declared tangent fuse, which OCCT keeps as
+    two solids touching along a line where the reference's rays count one;
+    5 results' counts change when unified. S9e.4b.1's kernel next.
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces
