@@ -6002,6 +6002,143 @@ Decisions for S9, recorded before its code (2026-09-28):
     natively (mapped-and-verified 2 to 4, lost 12,844 to 12,842). The
     survey found the refusal of a profile its rounded points make touch
     (`bcut_complex/I6`, now S9e.4b's: amendment (b) above).
+  * **S9e.4b refined, before its code (2026-10-03).** Why each class is
+    refused today, from the DRAW survey of S9e.4a (the 114 restore cases
+    refused as S9e.4b's, the solids of their 86 files listed by the
+    import's reader: faces, edges, shells) and the fuzz target's imported stage.
+    (a) *Prisms whose arcs round off their circles* (31 cases, the fuzz
+    replay's 42): `polyhedra::substituted` refuses them ("an imported
+    prism's arc whose ends round off its circle in its cap's frame
+    (S9e.4b)") because S9c's model (`model::Prism::new`) takes each arc
+    between its profile's binary64 points and needs both on the circle
+    `|p - c| = r` exactly, and an imported profile's points are the stored
+    vertices' local coordinates rounded once in the cap's frame, its arcs'
+    centres likewise and their radii stored: a vertex of a cap turned about
+    or tilted from the world's axes (`dee_turn`, every `CTO9xx` part whose
+    frame is not the world's), or at an angle whose cosine is irrational
+    (OCCT's 15 digits), lies off the circle by the rounding of its
+    coordinates (up to 7e-14 of the radius in the surveyed `CTO`, `cts`
+    and `pro` files, 5e-11 in `bug27948_a.brep`, whose stored vertices are
+    OCCT's approximations within its tolerance). Their joints: a line and
+    an arc (tangent or crossing) or two arcs of one circle in 25 cases;
+    two arcs of different circles meeting (fillet chains, lenses) in 6
+    (`bcut_complex/E8`, `P4`, `bfuse_complex/D5`, `E1`,
+    `bugs/modalg_2/bug4993_1`, `_2`). (b) *Bodies none of the kernel's
+    constructions* (83 cases, `imported::recognize`'s "an imported solid
+    other than a prism, a sphere, a cone or a torus"): sphere pieces cut by
+    planes (`so1` to `so7`: a sphere with one or three plane faces; 38
+    cases), a hollow sphere of two spherical shells
+    (`case_8_solid_repaired.brep`; 23 cases, each a Boolean with a wire,
+    refused as such anyway), polyhedra other than prisms (hexahedra with
+    slanted faces, a pyramid's frustum, a twisted hexahedron:
+    `buc60803a`, `b`, `OCC578_w1`, `w2`, `pro9481b`, `CTO900_pro12559a`;
+    7), prisms with walls along two directions (`CTO900_fra50089-part`,
+    `CTO900_pro9476-part`, `CTO904_cts20370-part`, `bug28773_2`; 4), and
+    cones, cylinders, spheres and tori together or a cone cut by planes
+    (`OCC485a`, `cts21128c`, `d`, `shading_132`; 11). (c) *A plane's
+    piece* (`Clipped`, `Half`) against curved faces, which S9e.2 deferred
+    here (`curved::build`'s and `polyhedra.rs`'s refusals naming S9e.4).
+    Decisions. (1) *Sub-steps*, ordered by what the survey's cases and the
+    fuzz target need and by the machinery each takes: **S9e.4b.1** (this
+    step): the prisms of (a) whose joints are a line and an arc or two arcs
+    of one circle (25 cases, the fuzz replay's 42), on S9e.4a's
+    construction with each arc's ends taken onto its circle (2);
+    **S9e.4b.2**: polyhedra other than prisms (7 cases), every face its
+    stored plane (the frame's origin and normal in rationals, an exact
+    plane), every vertex the common point of its faces' planes (three or
+    more planes: a rational point, unique and within the resolution of the
+    stored one, else `Degenerate`), every edge the meeting of its two
+    faces' planes between its vertices, decided as S9b.2's stored model
+    decides a polyhedral result (faces' regions by their exact polygons,
+    membership by parity); **S9e.4b.3**: a plane's pieces of a sphere, a
+    cylinder or a cone (one curved face and planes: `so1` to `so7`,
+    `shading_132`; 39 cases) and S9e.2's deferred `Clipped` and `Half`
+    against curved faces: every edge a plane's meeting with the curved
+    surface (a circle, an ellipse, a cone's conic) or with another plane,
+    every vertex their common point (a quadratic surd, unique within the
+    resolution of the stored one), each face's region on its stored
+    surface bounded by those exact curves, membership by the curved
+    surface's side and the planes' half-spaces (parity along a ray where
+    the body is not convex); **S9e.4b.4**: the S9e text's plan in full:
+    profiles whose joints are two circles' common points (a profile
+    segment's ends in a quadratic field, which S9c's `Seg` with rational
+    ends does not hold; 6 cases), prisms with walls of two directions (4)
+    and bodies of several curved surfaces (11), and a profile its rounded
+    points make touch (`bcut_complex/I6`). Not S9e.4b's: the hollow
+    sphere's 23 Booleans with wires (no solid argument), spline bodies
+    (S9f). The reader's header check (OCCT 8.1's version-3 `.brep` under
+    `(c) Open Cascade`, 27 dataset files) stays open on the import track:
+    widening it changes which dataset files restore, a survey of its own,
+    and none of the 114 cases reads such a file. (2) *S9e.4b.1's
+    representation.* The construction is S9e.4a's (the profile's points
+    the stored vertices' local coordinates rounded once in the bottom cap's
+    stored frame, each arc's centre likewise, its radius stored), its
+    topology and the match to the stored topology unchanged. Its exact
+    model takes each arc's end onto the arc's circle: an end off the
+    circle `|p - c| = r` (in rationals) becomes the circle's rational point
+    at its half-angle tangent `s`, `c + r ((1 - s^2), 2 s) / (1 + s^2)`
+    where the end's `dx = p_x - c_x` is not negative, `c + r (-(1 - s^2),
+    2 s) / (1 + s^2)` where it is, with `s` the binary64 rounding (once,
+    to nearest) of `dy / (r + |dx|)` computed exactly (`|s| <= 1` within
+    rounding); an end on its circle is kept. A joint of a line and an arc
+    takes the arc's point, the line's end with it (its wall's plane passes
+    through the point); a joint of two arcs of one circle (equal centres
+    and radii as rationals) that circle's point, the same for both; a
+    joint of two lines keeps its rounded point. The model's ends are then
+    rationals of up to about 220 bits (`s` squared over the centre's and
+    radius's bits) where they were binary64, and move by at most the end's
+    distance from its circle plus `r 2^-52` (the half-angle's rounding):
+    within the resolution, since the profile's validation holds every arc's
+    ends within the resolution of its circle, so the model's vertices stay
+    within the resolution of the stored ones (`check_slots`). A joint
+    tangent in the body OCCT was given is tangent in no binary64 data (two
+    circles' or a circle's and a line's common tangent points are
+    irrational in general): after the ends are taken onto the circle, the
+    line meets the circle at the joint at an angle within rounding of
+    tangency and again within rounding of the joint, outside both faces,
+    and the arrangement decides the joint by its exact turn as any other
+    (S9c's profile test takes a smooth joint and a turning one alike). The flag that
+    asks for it is the imported profile's (`Profile`'s `rounded_arcs`, set
+    by `imported::prism`); a kernel profile's arc ending off its circle
+    stays refused by design (S9c: the caller placed the end, it is not a
+    rounding). The step's code is its own module
+    (`solid/boolean/curved/snapped.rs`), called by `model::Prism::new` for
+    a flagged profile; `polyhedra::substituted`'s refusal goes. (3)
+    *Degenerate and refused.* S9's rules unchanged: a partner's face within
+    the resolution of the imported prism's plane wall (coplanar in the
+    construction: two faces within the resolution of one plane), a
+    partner's face tangent to its cylinder wall, a vertex on a face;
+    `OutOfDomain("an imported prism's arcs of two circles meeting at a
+    joint (S9e.4b.4)")` where an end is shared by arcs of different circles
+    and lies off either. S9e.4a's three `dee_turn` cases, declared
+    `unsupported` as S9e.4b's, are this step's and are declared solid with
+    its kernel. (4) *Its other queries* are S9e.4a's (classification by
+    the construction, mass by the stored topology, rigid motion
+    rebuilding the construction, whose flagged profile is taken onto its
+    circles again in the moved frame: the same local data, the same
+    points). (5) *Fuzzing.* The `boolean` target's `IMPORTED` stage reaches
+    such prisms already (the object written, read back and imported:
+    its 42 refusals); no new stage. (6) *Evidence first.* Bodies OCCT
+    writes (`occt_boolean_oracle.cpp`'s `write` blocks, `MakePrism` of
+    profiles whose world coordinates are the turned frames' roundings)
+    under `rust/fixtures/imported/`: a stadium and a seam-split circle in
+    the `TILT` frame, a rounded rectangle (four fillets) in the `R125`
+    frame, a profile whose arc crosses its lines at an angle in the
+    `TURN30` frame, and two arcs of different circles meeting (a lens,
+    declared `unsupported`, S9e.4b.4's); cases against boxes, a crossing
+    rod and a sphere, as object and as tool, both inputs imported, a chain,
+    a box sharing the stadium's flat wall's plane and a box tangent to its
+    arc wall (declared `degenerate`); the reference the constructions OCCT
+    was given through S9e.3a's chained reference with S9e.4a's checks, each
+    file's stored vertices on the construction's surfaces and its arcs'
+    ends, in its cap's stored frame as written, off their circles
+    (`generate_imported_arcs_boolean_fixtures.py --check`, a CI group
+    `imported-arcs`, `test_imported_arcs_boolean_reference.py`); a native
+    capture before `snapped.rs` exists (`compare_imported_arcs_boolean.py`
+    keyed on it, the kernel's probe refusing every case); then the kernel
+    and its tests (`tests/imported_arc_booleans.rs`: enclosures within
+    `1e-9` of the reference, degenerate cases refused, histories over the
+    stored ids, determinism, rigid motion).
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces
