@@ -7,7 +7,8 @@ where to pick up. Written 2026-10-01, brought up to date 2026-10-03 for
 S9f.2a, S9f.2b.1 and S9e.3b (branch `s9e3b`, `s9c2-kernel` merged in),
 their DRAW survey (branch `s9-draw-3`), then for S9e.4a (branch `s9e4`,
 over `s9c2-kernel` at `e80e2fd9`) and S9f.2b.2 (branch `s9f2b2`, over
-`s9c2-kernel` at `f3362b50`).
+`s9c2-kernel` at `f3362b50`), then for S9e.4b.1 (branch `s9e4b`, over
+`s9c2-kernel` at `7199e06a`).
 
 ## Where things stand
 
@@ -91,6 +92,22 @@ over `s9c2-kernel` at `e80e2fd9`) and S9f.2b.2 (branch `s9f2b2`, over
   and 16 evaluate on both backends with native DRAW's volumes, registered
   (1,089 cases; the ledger's `checknbshapes` 2 to 4 mapped and verified).
   Pending the campaign.
+- **S9e.4b.1 implemented** (branch `s9e4b`, not merged): imported prisms
+  whose arcs' ends round off their circles in their caps' frames (every
+  CTO-like part in a turned frame, `dee_turn`), each end taken onto its
+  circle in the exact model (`curved/snapped.rs`: the circle's rational
+  point at the end's half-angle tangent rounded once; a joint of a line
+  and an arc or of two arcs of one circle shared): decisions ("S9e.4b
+  refined", with the sub-steps S9e.4b.1 to S9e.4b.4), 36 cases on 5 bodies
+  OCCT wrote in turned frames referenced and captured before the kernel,
+  the kernel within the reference on all 27 solid cases, the 6 degenerate
+  refused, the lens (two circles at a joint) S9e.4b.4's; S9e.4a's
+  `dee_turn` cases now degenerate under S9's rules (a corner on the box's).
+  A trial of the survey's 31 such DRAW cases: 7 evaluate with every check
+  (`bcut_complex/H3`, `K8`, `bfuse_complex/C9`, `E9`, `I6`, `N1`, `N9`), 17
+  refused by S9's rules, 6 S9e.4b.4's, 1 a cylinders' section within the
+  resolution of a node. Pending: the DRAW survey (with a volume audit) and
+  the campaign.
 - **CI.** Both workflows ("Rust kernel", "Rust geometry fuzzing") were green
   at `6c221525`. They had been red from S7 until 2026-09-29, unnoticed;
   check them after every push (see "Working rules").
@@ -115,14 +132,17 @@ over `s9c2-kernel` at `e80e2fd9`) and S9f.2b.2 (branch `s9f2b2`, over
    `occt-boolean-spline-crossing-preimplementation`'s Linux record and
    reviews from CI's run, as every capture's), then **S9f.3** (spheres and
    cones; "S9f refined" gives the degrees).
-3. **S9e.4b**: imported bodies other than the kernel's constructions
-   (results of other Booleans, general polyhedra and curved bodies) on
-   their stored surfaces (the S9e text's plan: edges as their faces'
-   meetings, vertices as common points, an exact membership and face
-   regions of their own), with a plane's piece against curved faces. The
-   reader's header check refuses OCCT 8.1's version-3 `.brep`
-   (`(c) Open Cascade`; 27 dataset files): widening it needs a survey of
-   the restores it opens.
+3. **S9e.4b**, split in "S9e.4b refined": S9e.4b.1 (arcs rounded off
+   their circles) is implemented (above, pending its DRAW survey and
+   campaign); next **S9e.4b.2**, polyhedra other than prisms on their
+   stored planes (7 DRAW cases), then **S9e.4b.3**, a plane's pieces of a
+   sphere, cylinder or cone and S9e.2's deferred `Clipped` and `Half`
+   against curved faces (39 cases), then **S9e.4b.4**, the S9e text's plan
+   in full (joints of two circles, prisms with walls of two directions,
+   bodies of several curved surfaces: 21 cases). The reader's header check
+   refuses OCCT 8.1's version-3 `.brep` (`(c) Open Cascade`; 27 dataset
+   files, none among the surveyed restore cases): widening it needs a
+   survey of the restores it opens.
 4. **S9's acceptance** (U6): kernel and fuzz CI green at the accepted
    revision, the schedule run's full replays green (boolean and
    `degree_elevation` are sharded across four jobs plus a completeness check,
@@ -221,7 +241,8 @@ Each comparison takes `--occt-root target/spline-linear-preflight/pinned-sdk/ins
 | `compare_spline_parallel_boolean.py` | 31 / 12 (the kernel within the reference on all 39 results, the 4 degenerate refused) |
 | `compare_spline_crossing_boolean.py` | 14 / 37 (the kernel within the reference on all 45 results, the 6 degenerate refused, none `unsupported`) |
 | `compare_given_met_boolean.py` | 8 / 42 (the kernel within the reference on all 42 solid cases, the 8 degenerate refused) |
-| `compare_imported_boolean.py` | 54 / 15 (the kernel within the reference on all 57 solid cases, the 9 degenerate refused, the 3 turned profiles `unsupported`) |
+| `compare_imported_boolean.py` | 54 / 15 (the kernel within the reference on all 57 solid cases, the 12 degenerate refused: since S9e.4b.1 the 3 turned profiles' corner on the box's) |
+| `compare_imported_arcs_boolean.py` | 27 / 9 (the kernel within the reference on all 27 solid cases, the 6 degenerate refused, the 3 lens cases `unsupported`, S9e.4b.4's) |
 
 Every one must report 0 failures; since S9f.1 also `compare_split.py`
 (72 / 56) and `compare_brep.py --family spline` (10 / 3), which share its

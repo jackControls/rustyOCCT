@@ -6210,6 +6210,58 @@ Decisions for S9, recorded before its code (2026-09-28):
     unchanged at 1e-12), and the declared tangent fuse, which OCCT keeps as
     two solids touching along a line where the reference's rays count one;
     5 results' counts change when unified. S9e.4b.1's kernel next.
+  * **S9e.4b.1 implemented** (`solid/boolean/curved/snapped.rs`,
+    `Profile`'s `rounded_arcs`, set by `imported::prism`;
+    `model::Prism::new` takes a flagged profile's points through it;
+    `polyhedra::substituted`'s refusal and `imported::arcs_on_circles`
+    gone), as the refined decisions describe. All 36 fixtures as declared
+    (27 within the kernel's enclosures, each at most `1e-9` wide; the 6
+    declared degenerate refused, the coplanar box as two faces within the
+    resolution of one plane and the touching box as a tangency; the lens
+    `OutOfDomain` as S9e.4b.4's), every history complete over the imported
+    bodies' stored ids, results deterministic and moved rigidly, both
+    inputs translated keeping the reference's volumes and turned too where
+    no face of one input is exactly parallel to the other's cylinder (a
+    turn rounds such a pair into "a plane within rounding of a cylinder's
+    direction", S9's rule), every body its construction (closed-form
+    volumes, points classified, stored vertices on the boundary), the
+    stored frames the reference's bit for bit
+    (`tests/imported_arc_booleans.rs`, 15 s at `opt-level` 2 with debug
+    assertions on a host at load 29). `compare_imported_arcs_boolean.py`
+    27 matches and 9 reviewed (the native measures and the tangent fuse as
+    captured; entity counts: the ball's meeting with the slot's arc wall in
+    exact pieces, the split circle's two faces kept), every enclosure
+    within the reference with S9e.4a's `1e-12` slack; every other
+    comparison unchanged (`compare_imported_boolean.py` 54/15 with its
+    `dee_turn` cases refused as declared; the 28 others of the verification
+    as `HANDOFF.md`'s table, `compare_step.py` 23/6 on STEP-b's SDK), the
+    tools' unit tests (297) and the ledger unchanged. Amendments and
+    corrections, from the implementation: (a) S9e.4a's three `dee_turn`
+    cases, declared `unsupported` because S9e.4a refused the turned profile's arcs first,
+    are degenerate under S9's rules (the profile's corner at the origin on
+    the box's corner: "a vertex of one input on the other's face"), which
+    the kernel now reaches: declared `degenerate` (CORNER in
+    `generate_imported_boolean_fixtures.py`; the reference's rows
+    unchanged, `compare_imported_boolean.py` still 54 matches and 15
+    reviewed); (b) a turned rigid motion of a pair with a face exactly
+    parallel to the other's cylinder axis (an axis-aligned box against the
+    slot in the `TILT` frame) is S9's degenerate case, not this step's, so
+    the motion test turns only pairs without one. The `boolean` fuzz
+    target's `IMPORTED` stage needs no new code: replaying the corpus
+    (1,430 inputs) and the 24 regressions with debug assertions, no
+    failure, the slowest 24.6 s on a host at load 25 to 48; of the imported
+    operations 663 evaluate and 220 are refused as documented (S9's
+    degeneracies of the converter's frames normalized again, one torus
+    meeting's budget), against 645 and 237 with S9e.4a's 42 refusals of
+    arcs off their circles, none of which remains, and no joint of two
+    circles is met. A trial of the DRAW survey's 31 restore cases with such
+    prisms on the Rust adapter (not the survey: no volume audit, nothing
+    registered): 7 evaluate with every check (`bcut_complex/H3`, `K8`,
+    `bfuse_complex/C9`, `E9`, `I6`, `N1`, `N9`), 17 are refused by S9's
+    rules (12 faces within the resolution of one plane, 3 edges meeting, 2
+    tangencies), 1 by a cylinders' section within the resolution of a node
+    and 6 as S9e.4b.4's (two circles at a joint). Pending: the DRAW survey,
+    the campaign.
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces
