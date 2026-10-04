@@ -386,8 +386,13 @@ fn spline_use(curve: &Curve3, s: &Surface, p: &Curve2) -> bool {
         || matches!(p, Curve2::BSpline(_))
 }
 
-fn curve_at<T: Real>(curve: &Curve3, t: f64) -> V3<T> {
-    match curve {
+/// A curve's point at a fraction, enclosed; `None` where a meeting or a
+/// conic has no point in this tier although its parameters may be valid (a
+/// `Meet` of an ulp's sweep on parallel axes, a `Rise` at a cone's apex, a
+/// `Toric` without a root in its window), which callers report and never
+/// assume.
+fn curve_at<T: Real>(curve: &Curve3, t: f64) -> Option<V3<T>> {
+    Some(match curve {
         Curve3::BSpline(span) => {
             let t = if span.is_reversed() { 1.0 - t } else { t };
             spline_point(span.curve(), span.range(), t).map(|x| q::<T>(&x))
@@ -404,9 +409,7 @@ fn curve_at<T: Real>(curve: &Curve3, t: f64) -> V3<T> {
         | Curve3::Meet(_)
         | Curve3::Rise(_)
         | Curve3::Toric(_)
-        | Curve3::WallMeet(_) => {
-            projection::conic_point::<T>(curve, t).expect("a conic or section evaluates")
-        }
+        | Curve3::WallMeet(_) => projection::conic_point::<T>(curve, t)?,
         _ => {
             let (f, [rx, ry], start, sweep) = arc_of(curve).unwrap();
             let fr = frame::<T>(f);
@@ -419,7 +422,7 @@ fn curve_at<T: Real>(curve: &Curve3, t: f64) -> V3<T> {
                 ),
             )
         }
-    }
+    })
 }
 
 fn pcurve_at<T: Real>(p: &Curve2, t: f64) -> V2<T> {
@@ -1122,10 +1125,11 @@ fn deviation<T: Real>(
     for k in 0..=SAMPLES {
         let t = k as f64 / SAMPLES as f64;
         let tc = if forward { t } else { 1.0 - t };
-        let d = vsub(
-            &curve_at::<T>(curve, tc),
-            &surface_at(s, &pcurve_at::<T>(p, t)),
-        );
+        // A point that does not evaluate in this tier decides nothing.
+        let Some(point) = curve_at::<T>(curve, tc) else {
+            return Verdict::Unknown;
+        };
+        let d = vsub(&point, &surface_at(s, &pcurve_at::<T>(p, t)));
         if vdot(&d, &d).cmp(tol2) == Some(Ordering::Greater) {
             return Verdict::Beyond;
         }
@@ -1454,14 +1458,27 @@ fn fin_vertices(edges: &[Edge], fin: &Fin) -> (Option<usize>, Option<usize>) {
     }
 }
 
-/// Squared distance from a vertex to a curve's point at fraction `t`.
-fn vertex_gap2<T: Real>(curve: &Curve3, vertex: [f64; 3], t: f64) -> T {
-    let d = vsub(&curve_at::<T>(curve, t), &v3::<T>(vertex));
-    vdot(&d, &d)
+/// Squared distance from a vertex to a curve's point at fraction `t`;
+/// `None` where the point does not evaluate in this tier.
+fn vertex_gap2<T: Real>(curve: &Curve3, vertex: [f64; 3], t: f64) -> Option<T> {
+    let d = vsub(&curve_at::<T>(curve, t)?, &v3::<T>(vertex));
+    Some(vdot(&d, &d))
 }
 
 fn vertex_gap<T: Real>(curve: &Curve3, vertex: [f64; 3], t: f64, tol2: &T) -> Verdict {
-    within(&vertex_gap2::<T>(curve, vertex, t), tol2)
+    vertex_gap2::<T>(curve, vertex, t).map_or(Verdict::Unknown, |d2| within(&d2, tol2))
+}
+
+/// Whether an edge's curve evaluates, in either tier, at each end that has
+/// a vertex (the ends `measure` and the vertex checks take); one with valid
+/// parameters but no point there is `degenerate_curve`.
+fn ends_evaluate(edge: &Edge) -> bool {
+    [(edge.start, 0.0), (edge.end, 1.0)]
+        .into_iter()
+        .filter(|(v, _)| v.is_some())
+        .all(|(_, t)| {
+            curve_at::<Fast>(&edge.curve, t).is_some() || curve_at::<I>(&edge.curve, t).is_some()
+        })
 }
 
 /// The squared gap from the end of `p` to the start of `next` shifted by
@@ -1687,11 +1704,20 @@ fn next_above(x: f64) -> f64 {
 /// A certified upper bound of `sqrt(value)`, from binary64 intervals and then
 /// rational ones, or `None` when neither gives a finite bound.
 fn root_bound(fast: impl FnOnce() -> Fast, exact: impl FnOnce() -> I) -> Option<f64> {
-    let hi = fast().sqrt().bounds_f64().1;
+    root_bound_of(|| Some(fast()), || Some(exact()))
+}
+
+/// [`root_bound`] of a value that may not evaluate in a tier: `None` when
+/// it evaluates in neither.
+fn root_bound_of(
+    fast: impl FnOnce() -> Option<Fast>,
+    exact: impl FnOnce() -> Option<I>,
+) -> Option<f64> {
+    let hi = fast().map_or(f64::INFINITY, |x| x.sqrt().bounds_f64().1);
     let hi = if hi.is_finite() {
         hi
     } else {
-        exact().sqrt().bounds_f64().1
+        exact()?.sqrt().bounds_f64().1
     };
     (hi.is_finite() && hi >= 0.0).then(|| next_above(hi))
 }
@@ -1715,7 +1741,9 @@ pub(crate) fn measure(view: &View) -> Measured {
         for (v, t) in [(edge.start, 0.0), (edge.end, 1.0)] {
             let Some(v) = v else { continue };
             let at = view.vertices[v.0].position.to_array();
-            let bound = root_bound(
+            // A curve without a point there leaves no bound (`check`
+            // reports it `degenerate_curve`).
+            let bound = root_bound_of(
                 || vertex_gap2::<Fast>(&edge.curve, at, t),
                 || vertex_gap2::<I>(&edge.curve, at, t),
             );
@@ -3915,7 +3943,7 @@ pub(crate) fn check(view: &View, tolerance: Tolerance) -> Vec<Issue> {
     }
     let curve_ok: Vec<bool> = edges
         .iter()
-        .map(|edge| curve_valid(&edge.curve, &tol, &fast_tol2, &exact_tol2))
+        .map(|edge| curve_valid(&edge.curve, &tol, &fast_tol2, &exact_tol2) && ends_evaluate(edge))
         .collect();
     for (i, ok) in curve_ok.iter().enumerate() {
         if !ok {
@@ -4724,6 +4752,102 @@ mod tests {
         // Cylinder u distances are scaled by the radius.
         assert!(clear(0.5, 0.5, 1.0, 0.4));
         assert!(!clear(0.5, 0.5, 0.1, 0.4));
+    }
+
+    /// A wire edge on `curve` between two vertices, measured: the parts and
+    /// their issues.
+    fn wire(curve: Curve3) -> (crate::topology::TopologyParts, Vec<Issue>) {
+        use crate::topology::{TopologyParts, VertexId};
+        let at = |x: f64| Vertex {
+            position: crate::Point3::new(x, 0.0, 0.0),
+            enclosure: None,
+        };
+        let parts = TopologyParts {
+            vertices: vec![at(1.0), at(-1.0)],
+            edges: vec![Edge {
+                start: Some(VertexId::new(0)),
+                end: Some(VertexId::new(1)),
+                curve,
+                fins: Vec::new(),
+            }],
+            ..TopologyParts::default()
+        }
+        .with_measured_enclosures();
+        let issues = parts.check(crate::Tolerance::default());
+        (parts, issues)
+    }
+
+    /// Meetings whose start has no point (REVIEW_NOTES, after the
+    /// near-parallel audit): two cylinders' `Meet` of an ulp's sweep on
+    /// exactly parallel axes (7567a04b's panic through `measure`, though
+    /// `curve_valid` refuses it), and past `curve_valid` a torus's `Toric`
+    /// with a cylinder far off it and a sphere's `Rise` from a cone's apex.
+    /// Measuring leaves the start vertex without a bound and validation
+    /// reports `degenerate_curve`, never a panic.
+    #[test]
+    fn curves_without_a_point_are_degenerate_not_a_panic() {
+        let xy = Frame3::xy();
+        let off = |x: f64| xy.at(crate::Point3::new(x, 0.0, 0.0));
+        let meet = Curve3::Meet(Box::new(crate::topology::Meet {
+            frame: xy,
+            radius: 1.0,
+            half_angle: 0.0,
+            other: off(0.5),
+            other_radius: 1.0,
+            other_sphere: false,
+            other_half_angle: 0.0,
+            sign: 1.0,
+            start: 0.0,
+            sweep: f64::EPSILON,
+        }));
+        let toric = Curve3::Toric(Box::new(crate::topology::Toric {
+            frame: xy,
+            major: 3.0,
+            minor: 1.0,
+            other: off(100.0),
+            other_radius: 0.5,
+            other_sphere: false,
+            other_half_angle: 0.0,
+            other_minor: 0.0,
+            over_v: false,
+            window: [-1.0, 1.0],
+            start: 0.0,
+            sweep: 1.0,
+        }));
+        let rise = Curve3::Rise(Box::new(crate::topology::Rise {
+            frame: xy,
+            radius: 0.0,
+            half_angle: 0.5,
+            centre: crate::Point3::new(5.0, 0.0, 0.0),
+            sphere_radius: 1.0,
+            sign: 1.0,
+            start: 0.0,
+            sweep: 1.0,
+        }));
+        for (curve, past_valid) in [(meet, false), (toric, true), (rise, true)] {
+            assert!(curve_at::<Fast>(&curve, 0.0).is_none(), "{curve:?}");
+            assert!(curve_at::<I>(&curve, 0.0).is_none(), "{curve:?}");
+            let tol = r(Tolerance::default().linear());
+            let tol2 = &tol * &tol;
+            let valid = curve_valid(&curve, &tol, &Fast::from_r(&tol2), &I::from_r(&tol2));
+            assert_eq!(valid, past_valid, "{curve:?}");
+            let (parts, issues) = wire(curve);
+            assert!(parts.vertices[0].enclosure.is_none());
+            assert!(issues.contains(&Issue {
+                kind: IssueKind::DegenerateCurve,
+                entity: Entity::Edge(0),
+            }));
+            assert!(issues.contains(&Issue {
+                kind: IssueKind::EnclosureMissing,
+                entity: Entity::Vertex(0),
+            }));
+            assert!(!issues.iter().any(|i| matches!(
+                i.kind,
+                IssueKind::VertexOffCurve | IssueKind::UncertifiedVertexOffCurve
+            )));
+            let built = crate::topology::Topology::from_parts(parts, Tolerance::default());
+            assert_eq!(built.err(), Some(issues));
+        }
     }
 
     #[test]
