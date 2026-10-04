@@ -649,7 +649,12 @@ fn bv_primitive(a: &Bv) -> Bv {
 fn fibre_point(e: &Elim, i: usize) -> Result<std::result::Result<Option<QV>, ()>> {
     let g = Arc::new(Gen::new(e.sf.clone(), e.roots[i].clone()));
     let a = K::generator(&g);
-    let gcd = kgcd(bv_at_k(&e.g2, &a), bv_at_k(&e.g3, &a))?;
+    let (fa, fb) = (ktrim(bv_at_k(&e.g2, &a)), ktrim(bv_at_k(&e.g3, &a)));
+    if let Some(found) = fibre_low(e, &a, &fa, &fb) {
+        return Ok(found);
+    }
+    // Higher degrees (a torus's quartic): Euclid's algorithm over `Q(alpha)`.
+    let gcd = kgcd(fa, fb)?;
     match gcd.len() {
         1 => return Ok(Ok(None)),
         2 => {}
@@ -666,6 +671,82 @@ fn fibre_point(e: &Elim, i: usize) -> Result<std::result::Result<Option<QV>, ()>
     Ok(Ok(Some([0, 1, 2].map(|k| {
         Qd::of(keval(&bv_at_k(&e.par.p[k], &a), &y).mul(&inv))
     }))))
+}
+
+/// `sum p_i n^i m^(d - i)`: a polynomial in `y` at `y = n / m` times
+/// `m^d` (`d` at least its degree).
+fn homog(p: &[K], n: &K, m: &K, d: usize) -> K {
+    let mut np = vec![K::Rat(int(1))];
+    let mut mp = vec![K::Rat(int(1))];
+    for j in 1..=d {
+        np.push(np[j - 1].mul(n));
+        mp.push(mp[j - 1].mul(m));
+    }
+    p.iter().enumerate().fold(K::Rat(zero()), |acc, (i, c)| {
+        acc.add(&c.mul(&np[i]).mul(&mp[d - i]))
+    })
+}
+
+/// `fibre_point` for two polynomials of degree one or two in the second
+/// parameter (the restrictions of quadrics): their combination without the
+/// leading terms (`b_2 a - a_2 b`, the linear one itself, or the two
+/// linear ones' resultant), whose root `-r_0 / r_1` is the common one where
+/// the other vanishes there, and the point `p / q` homogenized at `(-r_0,
+/// r_1)`: one inverse where Euclid's algorithm over `Q(alpha)` takes four,
+/// the same gcd and the same point. `None` for other degrees.
+fn fibre_low(e: &Elim, a: &K, fa: &[K], fb: &[K]) -> Option<std::result::Result<Option<QV>, ()>> {
+    let (la, lb) = (fa.len(), fb.len());
+    if !(2..=3).contains(&la) || !(2..=3).contains(&lb) {
+        return None;
+    }
+    let (r, other): (Vec<K>, &[K]) = match (la, lb) {
+        (3, 3) => {
+            let r = (0..2)
+                .map(|j| fb[2].mul(&fa[j]).sub(&fa[2].mul(&fb[j])))
+                .collect();
+            (ktrim(r), fb)
+        }
+        (3, 2) => (fb.to_vec(), fa),
+        (2, 3) => (fa.to_vec(), fb),
+        _ => {
+            let c = fa[1].mul(&fb[0]).sub(&fb[1].mul(&fa[0]));
+            if c.sign() != Ordering::Equal {
+                return Some(Ok(None));
+            }
+            (fa.to_vec(), fb)
+        }
+    };
+    match r.len() {
+        // The two quadratics proportional: a gcd of degree two.
+        0 => return Some(Err(())),
+        // A nonzero constant: no common root.
+        1 => return Some(Ok(None)),
+        _ => {}
+    }
+    let (n, m) = (r[0].neg(), r[1].clone());
+    if homog(other, &n, &m, other.len() - 1).sign() != Ordering::Equal {
+        return Some(Ok(None));
+    }
+    let par: Vec<Vec<K>> = e
+        .par
+        .p
+        .iter()
+        .chain(std::iter::once(&e.par.q))
+        .map(|c| bv_at_k(c, a))
+        .collect();
+    let d = par
+        .iter()
+        .map(|c| c.len().saturating_sub(1))
+        .max()
+        .unwrap_or(0);
+    let den = homog(&par[3], &n, &m, d);
+    if den.sign() == Ordering::Equal {
+        return Some(Ok(None));
+    }
+    let inv = den.recip()?;
+    Some(Ok(Some(
+        [0, 1, 2].map(|k| Qd::of(homog(&par[k], &n, &m, d).mul(&inv))),
+    )))
 }
 
 /// A root's isolator as a binary64 interval, narrowed by 60 bisections.
