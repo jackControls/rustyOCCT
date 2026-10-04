@@ -6540,7 +6540,27 @@ Decisions for S9, recorded before its code (2026-09-28):
     S9f.2b.2's together (600 s, a sampled replay, `IMPORTED` and
     `SPLINE_CROSSING` on) clean, 845 runs, the slowest input 47 s under
     AddressSanitizer at load 12 to 17 (`17e131e3`, an existing corpus input,
-    the torus against prisms).
+    the torus against prisms). A replayed boolean variant with the shipped
+    switches then panicked in the validator (`a conic or section
+    evaluates`, at `7199e06a` and `93e6fcd0` alike): a holed square in the
+    tilted frame, the fuse's first solid with a torus band (the prism
+    itself), given to the `GIVEN_ROUND` cylinder, whose frame's normal is
+    the tilted frame's normalized again, an ulp off it. The two cylinders'
+    models crossed within rounding of parallel, S9c.2b.1's quartic gave a
+    `Meet` of an ulp's sweep of the carrier's angle, and on the stored
+    axes, exactly parallel, it has no point (latent since S9c.2b.1 and
+    S9e.2's `GIVEN_ROUND`; the band is incidental, the holed prism alone
+    panics too). Two cylinders whose axes are within `10^-12` of parallel
+    without being parallel are now `Degenerate` in `meet::cyl_pair`, as a
+    plane within rounding of a cylinder's direction is, unless certainly
+    apart within their faces' bounds (the other's section beyond the first
+    circle, within it or holding it by a certified margin over its axis's
+    drift there), where they evaluate as before
+    (`fuzz/regressions/boolean/crash-3e989fac80f9cef1f1a6abe1d874ec76855724c3.bin`,
+    `tests/turned_booleans.rs`). Replays with debug assertions: the corpus
+    (1,430 inputs), the 25 regressions, 477 variants beside the input and
+    363 single-byte mutations of it, none failing; every comparison
+    unchanged with 0 failures.
   * **Where S9 stands (2026-09-30, paused).** Done and pushed: S9a to S9d
     (every sub-step with its DRAW survey and a clean campaign), S9e.1
     (campaign clean at `51c08edf`) and S9e.2 (`8e060c67`), S9f's decisions

@@ -259,7 +259,12 @@ measure (their frames' axes equal, or both exactly orthonormal): parallel
 crossing axes; others are S9c.2's unless their faces' bounds or their
 sections' reach are certainly apart. A plane within rounding of a
 cylinder's axis direction (its section's axis past `10^12` radii) is
-`Degenerate`. Orders along a curve and around a vertex are exact signs of
+`Degenerate`, and so are two cylinders whose axes are within rounding of
+parallel without being parallel (the sine of their angle at most
+`10^-12`, as a frame's normal normalized again is, its meeting a sliver
+of an ulp of the carrier's angle) unless they are certainly apart within
+their faces' bounds: the other's section beyond the first circle, within
+it or holding it by a certified margin over its axis's drift there. Orders along a curve and around a vertex are exact signs of
 one surd or of two (`x + y sqrt(e)`, `x` and `y` in `Q(sqrt(d))`).
 
 Each face's pieces (`curved/graph.rs`) are traced from its edges split at

@@ -207,6 +207,21 @@ pub(super) fn cyl_pair(
     if apart_boxes {
         return Ok(CylPair::Apart);
     }
+    // Axes within rounding of parallel (a frame's normal normalized again,
+    // an ulp off another's): a meeting within the faces runs along a sliver
+    // of the carrier's angle no binary64 edge holds (a sweep of an ulp,
+    // the stored axes perhaps exactly parallel), as a plane within rounding
+    // of a cylinder's direction does. Apart where certainly apart within
+    // the faces' boxes, `Degenerate` otherwise.
+    let w = cross(&fx.n, &fy.n);
+    if dot(&w, &w) * int(10).pow(24) <= dot(&fx.n, &fx.n) * dot(&fy.n, &fy.n) {
+        if near_parallel_apart(fx, cx, rx, fy, cy, ry, boxes) {
+            return Ok(CylPair::Apart);
+        }
+        return Err(Error::Degenerate(
+            "two cylinders' axes within rounding of parallel",
+        ));
+    }
     if !circular {
         // Turned frames, crossing axes (S9c.2b.1).
         return super::turned::crossing((fx, cx, rx), (fy, cy, ry), px.tolerance.linear());
@@ -239,6 +254,78 @@ pub(super) fn cyl_pair(
         .map(|k| qadd(&qv(&p), &qscale(&w, k)))
         .collect();
     Ok(CylPair::Crossing(Box::new(Crossing { planes, points })))
+}
+
+/// Whether two cylinders whose axes lie within rounding of parallel are
+/// certainly apart where both faces' boxes overlap (a meeting lies in
+/// both): in the first frame's `(u, v)` at a height `w` of the overlap, the
+/// other's section is the ellipse `c(wm) + M e` (its axes' `(u, v)` parts
+/// in the columns of `M`, `c(wm)` its axis at the overlap's middle height)
+/// moved by at most the axis's drift over half the overlap's heights and
+/// its points' own heights' (`slope` per height); apart when that lies
+/// beyond the first circle, or within it, or holds it, by a certified
+/// margin (`M`'s singular values bounding the ellipse's reach).
+fn near_parallel_apart(
+    fx: &Affine,
+    cx: &P2,
+    rx: &R,
+    fy: &Affine,
+    cy: &P2,
+    ry: &R,
+    boxes: [&([f64; 3], [f64; 3]); 2],
+) -> bool {
+    use crate::certified::Interval as I;
+    use crate::solid::split::q;
+    let lo: [f64; 3] = std::array::from_fn(|k| boxes[0].0[k].max(boxes[1].0[k]));
+    let hi: [f64; 3] = std::array::from_fn(|k| boxes[0].1[k].min(boxes[1].1[k]));
+    // The overlap's local heights: extreme at its corners (an affine map).
+    let heights: Vec<R> = (0..8)
+        .map(|m| {
+            let p: V = std::array::from_fn(|k| q(if m >> k & 1 == 1 { hi[k] } else { lo[k] }));
+            fx.local(&p)[2].clone()
+        })
+        .collect();
+    let (Some(wlo), Some(whi)) = (heights.iter().min(), heights.iter().max()) else {
+        return false;
+    };
+    let two = int(2);
+    let (wm, half) = ((wlo + whi) / &two, (whi - wlo) / &two);
+    // The other axis in the first frame, and its centre at `wm`.
+    let l = fx.local(&fy.point(&cy[0], &cy[1], &zero()));
+    let dl = fx.local_dir(&fy.n);
+    if dl[2] == zero() {
+        return false;
+    }
+    let k = (&wm - &l[2]) / &dl[2];
+    let d = [&l[0] + &k * &dl[0] - &cx[0], &l[1] + &k * &dl[1] - &cx[1]];
+    let (ax, ay) = (
+        fx.local_dir(&scale(&fy.x, ry)),
+        fx.local_dir(&scale(&fy.y, ry)),
+    );
+    let e = I::exact;
+    // M's singular values: s^2 = (F +- sqrt(F^2 - 4 det^2)) / 2.
+    let f = &ax[0] * &ax[0] + &ax[1] * &ax[1] + &ay[0] * &ay[0] + &ay[1] * &ay[1];
+    let det = &ax[0] * &ay[1] - &ay[0] * &ax[1];
+    let root = e(&f * &f - int(4) * &det * &det).sqrt();
+    let half_of = |x: I| x.scale(&(int(1) / &two));
+    let smax = half_of(e(f.clone()).add(&root)).sqrt();
+    let smin = half_of(e(f).sub(&root)).sqrt();
+    let slope = e(&dl[0] * &dl[0] + &dl[1] * &dl[1])
+        .sqrt()
+        .div(&e(dl[2].clone()))
+        .map(|s| I::exact(s.abs_hi()));
+    let Some(slope) = slope else {
+        return false;
+    };
+    let lift = e(&ax[2] * &ax[2] + &ay[2] * &ay[2]).sqrt();
+    let drift = e(half).add(&lift).mul(&slope);
+    let dist = e(&d[0] * &d[0] + &d[1] * &d[1]).sqrt();
+    let r = e(rx.clone());
+    let positive = |x: I| x.sign() == Some(Ordering::Greater);
+    // Beyond it, within it, or holding it.
+    positive(dist.sub(&smax).sub(&drift).sub(&r))
+        || positive(r.sub(&dist).sub(&smax).sub(&drift))
+        || positive(smin.sub(&dist).sub(&r).sub(&drift))
 }
 
 /// Whether two parallel cylinders (not circular in a common frame) are

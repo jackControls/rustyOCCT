@@ -1264,3 +1264,27 @@ miss (`tests/sphere_booleans.rs`,
 `a_wall_crossing_within_the_resolution_of_tangency_is_degenerate`). It
 replays in 0.3 s with debug assertions, and 348 single-byte mutations of
 it replay without a failure.
+
+## Boolean: two cylinders' axes within rounding of parallel
+
+`boolean/crash-3e989fac80f9cef1f1a6abe1d874ec76855724c3.bin` is a replayed
+variant of the boolean target with its shipped switches, which panicked in
+the validator at `7199e06a` and `93e6fcd0` (`a conic or section
+evaluates`). It decodes a square `8.5` by `8.5` with a round hole of radius
+`1.375` over heights `0..2.25` in the tilted frame and a torus band
+(`-2.5..-0.25`, radii `2.0625` and `1.03125`) in the same frame; the fuse's
+first solid, the holed prism itself, goes to the `GIVEN_ROUND` cylinder of
+radius 1.25, whose frame's normal is the tilted frame's normalized again,
+an ulp off it. The two cylinders' models crossed within rounding of
+parallel, so S9c.2b.1's quartic gave a meeting of an ulp's sweep of the
+carrier's angle, stored on axes exactly parallel where it has no point.
+Two cylinders whose axes are within `10^-12` of parallel without being
+parallel are now `Degenerate` unless certainly apart within their faces'
+bounds, where they evaluate as before (`meet::cyl_pair`;
+`tests/turned_booleans.rs`,
+`cylinders_within_rounding_of_parallel_are_degenerate_unless_apart`, the
+holed prism, a rod and the given result, and pairs apart). The torus band
+is incidental: the holed prism alone against the cylinder panicked too.
+It replays in 0.6 s with debug assertions, and 363 single-byte mutations
+of it (every value of the chained byte among them) replay without a
+failure.
