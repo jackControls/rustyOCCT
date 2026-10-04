@@ -6957,6 +6957,66 @@ Decisions for S9, recorded before its code (2026-09-28):
     (`spline_cone.rs` with `spline_crossing.rs`'s signed rows), its tests,
     and the `boolean` fuzz target's spline prism object against its cone
     tool (`SPLINE_CONE`).
+    * **S9f.3b evidence (2026-10-04), before its code.**
+      `spline_cone_boolean_reference.py`, an extension of S9f.3a's: the
+      cone on an exact frame, the pair sliced along two directions that cut
+      it in ellipses (its axis leaned toward the prism's), each slice's cone
+      section its quadric's restriction to the slice on its principal axes
+      projected along the prism's axis and cut by the end planes' lines,
+      the Boolean pieces by Green's theorem on the cut boundaries; the
+      cone's wall by its area element `sqrt(1 + k^2) |G(s)| / D(theta)^2`
+      in closed form over the section's arcs inside the prism (an `atan`
+      and a rational term, unwrapped across turns); the prism's walls along
+      their rulings (`F <= 0` within the slab, either sign of `A`); the caps
+      by chords against the cone's conic of any type; the end discs as the
+      hemisphere's; breakpoints at every vertex's slice and every edge's
+      extremes (the cap planes' conics' on the line where the quadric's
+      gradient lies in the span of the cap's normal and the slicing
+      direction, the meeting's by S9f.3a's elimination). Solids by
+      intervals on chords of slices across the prism's axis, joined where
+      they overlap (amending (6)'s "solids by the slices' union-find": a
+      slice leaning from the prism's axis crosses a thin layer under a cap
+      as a moving sliver whose sections never overlap in the profile's
+      plane, and a cone across the prism's axis cuts the caps in
+      hyperbolas, so no slicing of S9f.3a's kind serves).
+      `generate_spline_cone_boolean_fixtures.py --check` writes 27 cases (7
+      fuses, 10 cuts, 10 commons; 21 solid, 6 degenerate): `A < 0` a
+      frustum on the bulge's axis across both caps (`bulge_frustum`), a
+      cone with its apex inside the lens prism (`lens_apex`: the other
+      nappe meets the lens's walls inside the prism's heights, outside the
+      cone's face), a cone hanging over the blob with its apex below the
+      prism (`blob_down`), a frustum object across the wave's middle span
+      (`cone_wave`); `A > 0` a thin frustum across the dome's axis piercing
+      its arch (`dome_pierce`, a loop), one whose bottom rim's plane holds
+      the dome's axis (`dome_side_cone`: the rim's points on the arch's
+      generatrices in a tower field, the top cap cutting the cone in a
+      hyperbola), a frustum on `z` against `knot` in `TILT`
+      (`knot_tilt_cone`, a loop); and `degenerate` the cone's apex on the
+      dome's arch (`apex_wall`), the bulge in `TILT` against a cone whose
+      slope is the stored axis's ratio (`ruling_tilt`, `A = 0` exactly), a
+      cone across the dome's axis touching its arch (`dome_touch`). Checks:
+      the two slicings within 1.1e-39 of the size, both inputs' closed
+      forms 1.0e-39, faces' classes 1.4e-40 (the cone's wall by its
+      element against `pi (b + t)` times its slant), the area identity
+      9.2e-41, Monte Carlo (100,000 points a pair) within 2.1 standard
+      errors; margins outside the declared pairs at least 0.0156 (`|A|` of
+      the coaxial frustum; the apex 0.25 from the walls, crossings 0.16,
+      loops 0.16 inside both faces), the declared pairs' zero; Python 3.9
+      and 3.12 the same files; `test_spline_cone_boolean_reference.py` (a
+      frustum halved by a straight spline wall in closed form, the area
+      element over a turn, `A`'s sign, a rim's tower points in closed
+      form); the CI group `spline-cone`. The capture
+      `occt-boolean-spline-cone-preimplementation`
+      (`compare_spline_cone_boolean.py`, keyed on
+      `solid/boolean/curved/spline_cone.rs`; the probe `unsupported` on all
+      27, refused by `spline_pairs`): every result valid with the
+      reference's solids, 4 matches, 23 reviewed (BRepGProp's default
+      integration up to 5.5e-6 off on the quadratic and cubic walls, 7.4e-5
+      on `knot` in `TILT`, the wave's 1.0e-3; a diagnostic build's adaptive
+      BRepGProp and Green's theorem over OCCT's own faces and pcurves, the
+      better within 3.2e-8 in volume, 7.0e-9 in area and 9.0e-9 in the
+      centre); three solids' counts change when unified. No other correction
+      to the decisions from the evidence. S9f.3b's kernel next.
   * **Where S9 stands (2026-09-30, paused).** Done and pushed: S9a to S9d
     (every sub-step with its DRAW survey and a clean campaign), S9e.1
     (campaign clean at `51c08edf`) and S9e.2 (`8e060c67`), S9f's decisions
