@@ -56,13 +56,12 @@
 //! prism object against the sphere, cap or zone tool (the spline byte from
 //! 192, its low bit set, the flags' bits 5 and 6 keeping the object's
 //! prism) meets it along the walls' meetings with the sphere, their loops
-//! and the rims' and split's circles on the walls (`SPLINE_SPHERE`, off for
-//! time: refused as before its kernel). S9f.3b: a spline prism object
-//! against the cone or frustum tool (the spline byte in 160..192, its low
-//! bit set, the flags' bits 5 and 6 keeping the object's prism) meets it
-//! along the walls' meetings with the cone, both nappes or its loops, and
-//! the rims on the walls (`SPLINE_CONE`, off for time: refused as before
-//! its kernel).
+//! and the rims' and split's circles on the walls (`SPLINE_SPHERE`).
+//! S9f.3b: a spline prism object against the cone or frustum tool (the
+//! spline byte in 160..192, its low bit set, the flags' bits 5 and 6
+//! keeping the object's prism) meets it along the walls' meetings with the
+//! cone, both nappes or its loops, and the rims on the walls
+//! (`SPLINE_CONE`).
 //! S9e.4a: the object written by the kernel's `.brep` writer and read back
 //! is imported (`Solid::imported_with`) and given the chosen operation with
 //! the tool again, its volume the object's own result's (`IMPORTED`).
@@ -179,28 +178,30 @@ const SPLINE_CROSSING: bool = true;
 /// meetings of spline walls with the sphere, S9f.2b's quadratic over its
 /// three rows: branches over the run, loops' graphs over the height, rims
 /// and the split's great circle on the walls along their creases or in
-/// tower fields). Off: of 477 replayed variants (debug assertions) the
-/// median took 0.55 s and the ninth decile 1.5 s, but the slowest 37 s, a
-/// corpus input itself (`d7599dbe`, a lens hole under a leaning sphere
-/// whose loops turn back near the lens's tips) 48 s, and that one 472 s
-/// under AddressSanitizer: the certified integrals over the spline walls'
-/// pieces beside a loop's turning points (graphs over the run halved toward
-/// it, graphs over the height) are too slow for the target's 60 s. The
-/// kernel's tests and the replayed variants cover them meanwhile.
-const SPLINE_SPHERE: bool = false;
+/// tower fields). On since the certified integrals beside the loops'
+/// turning points were sped up (REVIEW_NOTES.md's track of that name): of
+/// 477 replayed variants (debug assertions) none failed, 4.9 G
+/// instructions at the median, 11.1 G at the ninth decile and 36.8 G at the
+/// slowest (5.5, 14.2 and 472 G before), the corpus's own `d7599dbe` (a
+/// lens hole under a leaning sphere whose loops turn back near the lens's
+/// tips) the slowest, 472 s under AddressSanitizer before and 24 to 38 s
+/// now on a host at load 8 to 22, where the corpus's slowest input,
+/// unrelated to the switch, took 87 to 138 s (`e36969f1`, 45 s in the last
+/// campaign at load 3 to 7).
+const SPLINE_SPHERE: bool = true;
 
 /// Whether a spline prism meets a cone or a frustum (S9f.3b's meetings of
 /// spline walls with the cone, S9f.2b's quadratic with its radius row:
 /// both nappes for a ruling within its half angle, loops and branches
 /// beyond it, its rims on the walls along their creases or in the rims'
-/// half-angle charts). Off: of 405 replayed variants (debug assertions, a
-/// host at load 26) none failed, the median took 0.47 s and the ninth
-/// decile 2.0 s, but the slowest 12.6 s and under AddressSanitizer the
-/// three slowest 97, 76 and 49 s (a cone on its side or tilted across a
-/// lens hole, its loops' certified integrals the cost, as `SPLINE_SPHERE`'s),
-/// over the target's 60 s. The kernel's tests and the replayed variants
-/// cover them meanwhile.
-const SPLINE_CONE: bool = false;
+/// half-angle charts). On since the certified integrals beside the loops'
+/// turning points were sped up (as `SPLINE_SPHERE`): of 402 replayed
+/// variants (debug assertions) none failed, 3.3 G instructions at the
+/// median, 8.6 G at the ninth decile and 27.1 G at the slowest (3.5, 11.7
+/// and 87.7 G before); under AddressSanitizer the slowest (a cone on its
+/// side across a lens hole) 23 to 33 s on a host at load 8 to 22, 97 s
+/// before.
+const SPLINE_CONE: bool = true;
 
 /// R4's knot on the target's sizes: a rectangle `2s` by `t` under a
 /// quadratic from `(2s, t)` to `(0, 2t)` whose interior knot of
