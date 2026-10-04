@@ -119,7 +119,7 @@ class ImportedReferenceTests(unittest.TestCase):
         fixtures.validate(listed)
         self.assertEqual(len(listed), 69)
         kinds = {k: sum(1 for c in listed if c.kind == k) for k in ('solid', 'empty', 'degenerate', 'unsupported')}
-        self.assertEqual(kinds, {'solid': 57, 'empty': 0, 'degenerate': 9, 'unsupported': 3})
+        self.assertEqual(kinds, {'solid': 57, 'empty': 0, 'degenerate': 12, 'unsupported': 0})
         for klass in fixtures.CLASSES:
             self.assertTrue(any(c.klass == klass for c in listed), klass)
         # An imported input's one row in both protocols, as object, as tool

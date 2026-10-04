@@ -28,6 +28,7 @@ mod meet;
 mod model;
 mod num;
 mod procedural;
+mod snapped;
 mod sphere;
 mod spheres;
 mod spheres_turned;

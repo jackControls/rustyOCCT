@@ -455,8 +455,15 @@ impl Prism {
                 }
                 BoundaryKind::Path { points, segments } => {
                     let mut segs = Vec::new();
+                    // S9e.4b.1: an imported profile's arcs' ends taken onto
+                    // their circles.
+                    let pts: Vec<P2> = if profile.rounded_arcs() {
+                        super::snapped::points(points, segments)?
+                    } else {
+                        points.iter().map(|p| p2(*p)).collect()
+                    };
                     for j in 0..points.len() {
-                        let (p, qq) = (p2(points[j]), p2(points[(j + 1) % points.len()]));
+                        let (p, qq) = (pts[j].clone(), pts[(j + 1) % points.len()].clone());
                         segs.push(match &segments[j] {
                             Segment::Line => Seg::Line { p, q: qq },
                             Segment::Arc {

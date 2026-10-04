@@ -1350,24 +1350,17 @@ pub(super) fn substituted(
         return Ok(None);
     }
     let mut names = BTreeMap::new();
-    let mut stand = |s: &Solid,
-                     i: Option<Box<crate::solid::imported::Imported>>|
-     -> Result<Box<Solid>> {
+    // S9e.4b.1: an imported prism's arcs' ends, rounded off their circles in
+    // its cap's frame, are taken onto them by its model (`curved::snapped`).
+    let mut stand = |s: &Solid, i: Option<Box<crate::solid::imported::Imported>>| -> Box<Solid> {
         let Some(i) = i else {
-            return Ok(Box::new(s.clone()));
+            return Box::new(s.clone());
         };
-        // S9c's model takes an arc whose ends lie on its circle exactly; an
-        // imported profile rounded into its cap's frame may hold none.
-        if !crate::solid::imported::arcs_on_circles(&i.recognized) {
-            return Err(Error::OutOfDomain(
-                "an imported prism's arc whose ends round off its circle in its cap's frame (S9e.4b)",
-            ));
-        }
         names.extend(i.names.iter().map(|(k, v)| (*k, *v)));
-        Ok(i.recognized)
+        i.recognized
     };
-    let a = stand(&poly.a, ia)?;
-    let b = stand(&poly.b, ib)?;
+    let a = stand(&poly.a, ia);
+    let b = stand(&poly.b, ib);
     let ids: BTreeSet<EntityId> = a
         .topology
         .ids()

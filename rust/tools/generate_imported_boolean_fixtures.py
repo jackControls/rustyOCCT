@@ -80,9 +80,12 @@ slab and the imported ball as the tool; `chain_drill`, the imported box
 less a rod, then with a `TILT` slab. Declared `degenerate`: `cyl_tangent`,
 the cylinder and a box whose wall touches it along a generatrix;
 `ball_touch`, the ball and a box whose bottom touches its top point;
-`box_kiss`, `B` and a rod touching its wall. Declared `unsupported`:
-`dee_turn`, the turned profile (its arc's ends rounded off its circle in
-its cap's frame) and a box.
+`box_kiss`, `B` and a rod touching its wall; `dee_turn`, the turned
+profile and `B`, whose corners meet at the origin on both bodies' faces (a
+vertex of one input on the other's face). Until S9e.4b.1 took an imported
+arc's ends onto its circle, `dee_turn` was declared `unsupported` (its
+arc's ends rounded off its circle in its cap's frame), which the kernel
+decided before the corner.
 
 Before writing, the checks (limits relative to the case's size): the
 coaxial and hemisphere closed forms within 1e-30; the chained reference's
@@ -316,8 +319,8 @@ def group(name, klass, specs, outcomes, first=None, reason=None, kind=None, refe
 TANGENT = 'a box\'s wall tangent to the imported cylinder along a generatrix'
 TOUCH = 'a box\'s bottom face touching the imported sphere at its top point'
 KISS = 'a rod tangent to the imported box\'s wall along a generatrix'
-TURNED = ('S9e.4b: the imported prism\'s arc whose ends, rounded into its cap\'s frame turned by 30 degrees, '
-          'lie off its circle')
+CORNER = ('the turned profile\'s corner at the box\'s corner, the origin (a vertex of one input on the other\'s '
+          'face)')
 
 
 def cases():
@@ -373,7 +376,7 @@ def cases():
     out += group('box_kiss', 'prism', [imported('box'), prism([disc(12.0, 5.0, 2.0)], at('XY', (0, 0, -1)),
                                                               0.0, 6.0)],
                  {'fuse': 1, 'cut': 1, 'common': 0}, reason=KISS)
-    out += group('dee_turn', 'prism', [imported('dee_turn'), B], three, kind='unsupported', reason=TURNED)
+    out += group('dee_turn', 'prism', [imported('dee_turn'), B], three, reason=CORNER)
     return out
 
 

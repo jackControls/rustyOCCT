@@ -1,11 +1,11 @@
-//! S9e.4a: imported solids (bodies OCCT wrote to `.brep` files, read and
-//! converted, without a construction) given to Booleans, against the
-//! independent reference (`fixtures/boolean-imported-*` from
-//! `tools/generate_imported_boolean_fixtures.py`, the bodies under
-//! `fixtures/imported/`): each case's Boolean (or chain) with its imported
-//! inputs made by `Solid::imported_with`, decided on the construction their
-//! stored surfaces give. Each case runs once (on a few threads) for the
-//! checks that read its result.
+//! S9e.4b.1: imported prisms whose arcs' ends round off their circles in
+//! their caps' frames (bodies OCCT wrote to `.brep` files), given to
+//! Booleans, against the independent reference (`fixtures/boolean-imported-
+//! arcs-*` from `tools/generate_imported_arcs_boolean_fixtures.py`, the
+//! bodies under `fixtures/imported/`): each case's Boolean (or chain) with
+//! its imported inputs made by `Solid::imported_with`, decided on S9e.4a's
+//! construction with every arc's ends taken onto its circle. Each case runs
+//! once (on a few threads) for the checks that read its result.
 #[path = "support/boolean_protocol.rs"]
 #[allow(dead_code)]
 mod protocol;
@@ -16,7 +16,9 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::OnceLock;
 
 fn cases() -> Vec<protocol::Case> {
-    protocol::cases(include_str!("../../fixtures/boolean-imported-cases.txt"))
+    protocol::cases(include_str!(
+        "../../fixtures/boolean-imported-arcs-cases.txt"
+    ))
 }
 
 /// `f` over the cases on at most six threads, in the cases' order.
@@ -60,7 +62,7 @@ type Expected = std::collections::BTreeMap<String, (String, Option<(usize, [f64;
 
 fn expected() -> Expected {
     let mut expect = std::collections::BTreeMap::new();
-    for line in include_str!("../../fixtures/boolean-imported-expected.tsv")
+    for line in include_str!("../../fixtures/boolean-imported-arcs-expected.tsv")
         .lines()
         .filter(|l| !l.starts_with('#'))
     {
@@ -162,29 +164,36 @@ fn every_case_matches_the_reference() {
     );
 }
 
-/// The declared tangencies are refused as `Degenerate`; the turned
-/// profile (its arc's ends taken onto their circle since S9e.4b.1) for its
-/// corner on the box's.
+/// The declared refusals name their reasons: the lens's two circles at a
+/// joint as S9e.4b.4's, the coplanar box and the tangent box as S9's.
 #[test]
 fn refusals_name_their_reasons() {
     for (name, run) in runs() {
-        if name.starts_with("dee_turn") {
+        let reason = match run {
+            Err(Error::Degenerate(m) | Error::OutOfDomain(m)) => *m,
+            _ => "",
+        };
+        if name.starts_with("lens_box") {
             assert!(
-                matches!(run, Err(Error::Degenerate(m)) if m.contains("vertex of one input")),
-                "{name}: {run:?}"
+                matches!(run, Err(Error::OutOfDomain(_))) && reason.contains("S9e.4b.4"),
+                "{name}: {reason}"
             );
         }
-        if ["cyl_tangent", "ball_touch", "box_kiss"]
-            .iter()
-            .any(|p| name.starts_with(p))
-        {
-            assert!(matches!(run, Err(Error::Degenerate(_))), "{name}: {run:?}");
+        if name.starts_with("slot_flush") {
+            assert_eq!(
+                reason, "two faces within the resolution of one plane",
+                "{name}"
+            );
+        }
+        if name.starts_with("slot_kiss") {
+            assert!(reason.contains("tangency"), "{name}: {reason}");
         }
     }
 }
 
 /// Each Boolean's history is complete over its inputs, the imported ones'
-/// stored ids among them: every entity of every input resolved.
+/// stored ids among them: every entity of every input resolved, and no
+/// relation from a construction's own ids.
 #[test]
 fn histories_are_complete_over_the_imported_ids() {
     let failures: Vec<String> = runs()
@@ -217,8 +226,6 @@ fn histories_are_complete_over_the_imported_ids() {
                     }
                 }
             }
-            // No relation names an entity of neither input (a
-            // construction's own id).
             for r in &h.relations {
                 if r.sources().iter().any(|id| !inputs.contains(id)) {
                     bad.push(format!("{name}: a relation from outside the inputs"));
@@ -278,41 +285,52 @@ fn results_are_deterministic_and_move_rigidly() {
     assert!(failures.is_empty(), "{failures:#?}");
 }
 
-/// Both inputs moved rigidly keep the reference's volumes: an imported
-/// solid moves with its stored geometry and its construction.
+/// Both inputs moved rigidly keep the reference's volumes: translated, and
+/// turned where no face of one input is exactly parallel to the other's
+/// cylinder (a turn rounds such a pair into S9's `Degenerate` "a plane
+/// within rounding of a cylinder's direction"); an imported prism's arcs'
+/// ends are taken onto their circles again in the moved frame.
 #[test]
 fn moved_inputs_keep_their_volumes() {
     use rusty_occt::{RigidTransform, Vec3};
-    let motion = RigidTransform::translation(Vec3::new(0.5, -0.25, 1.0)).unwrap();
+    let shift = RigidTransform::translation(Vec3::new(0.5, -0.25, 1.0)).unwrap();
+    let turn = RigidTransform::rotation(Point3::new(1.0, 0.0, 0.0), Vec3::new(1.0, 2.0, 2.0), 0.5)
+        .unwrap();
     let expect = expected();
     let all = cases();
-    for name in [
-        "box_slab_cut",
-        "tilt_box_fuse",
-        "box_cyl_common",
-        "dee_slab_cut",
-        "halves_box_fuse",
-        "plate_bore_cut",
-        "ball_box_common",
-        "dome_box_cut",
-        "frustum_box_fuse",
-        "spike_ball_cut",
-        "ring_pin_cut",
-        "both_fuse",
+    for (name, turned) in [
+        ("slot_box_cut", false),
+        ("box_slot_common", false),
+        ("slot_rod_cut", false),
+        ("slot_ball_fuse", true),
+        ("halves_box_cut", false),
+        ("rounded_slab_cut", false),
+        ("notch_box_common", false),
+        ("both_fuse", true),
+        ("both_cut", true),
     ] {
         let case = all.iter().find(|c| c.name == name).unwrap();
-        let (a, b, _, _) = protocol::run_first(case).unwrap();
-        let a = a.transform_with(OperationId(801), motion).unwrap().0;
-        let b = b.transform_with(OperationId(802), motion).unwrap().0;
-        let out = match case.op.as_str() {
-            "fuse" => a.fuse(case.operation, &b),
-            "cut" => a.cut(case.operation, &b),
-            _ => a.common(case.operation, &b),
+        let motions = if turned {
+            vec![shift, turn]
+        } else {
+            vec![shift]
+        };
+        for (k, motion) in motions.into_iter().enumerate() {
+            let (a, b, _, _) = protocol::run_first(case).unwrap();
+            let a = a.transform_with(OperationId(801), motion).unwrap().0;
+            let b = b.transform_with(OperationId(802), motion).unwrap().0;
+            let out = match case.op.as_str() {
+                "fuse" => a.fuse(case.operation, &b),
+                "cut" => a.cut(case.operation, &b),
+                _ => a.common(case.operation, &b),
+            }
+            .unwrap_or_else(|e| panic!("{name} {k}: {e}"))
+            .0;
+            let (count, [v, _]) = expect[name].1.unwrap();
+            let got: f64 = out.iter().map(|s| s.mass_properties().volume).sum();
+            assert_eq!(out.len(), count, "{name} {k}");
+            assert!((got - v).abs() <= 1e-9 * v, "{name} {k}: {got} for {v}");
         }
-        .unwrap_or_else(|e| panic!("{name}: {e}"))
-        .0;
-        let (count, v) = expect[name].1.unwrap();
-        within(&out, count, v).unwrap_or_else(|e| panic!("{name}: {e}"));
     }
 }
 
@@ -322,28 +340,26 @@ fn body(name: &str, op: u64) -> Result<Solid, Error> {
     Solid::imported_with(OperationId(op), topology, resolution).map(|(s, _)| s)
 }
 
-/// Every body is its construction: its mass the construction's in closed
-/// form, its stored vertices on its boundary and points off it classified,
-/// its ids the stored topology's under the import's operation (two imports
-/// apart), no profile.
+/// Every body imports as S9e.4a's construction (the lens too: its joints
+/// are refused only in a Boolean's exact model), its mass in closed form,
+/// its stored vertices on its boundary and points off it classified.
 #[test]
-fn imported_solids_are_their_constructions() {
+fn imported_bodies_are_their_constructions() {
     use std::f64::consts::PI;
-    let dee = 6.0 * (100.0 + 12.5 * PI);
     let bodies = [
-        ("box", 400.0, [5.0, 5.0, 2.0]),
-        ("box_tilt", 120.0, [5.0, 4.2, 0.1]),
-        ("cyl", 54.0 * PI, [5.0, 5.0, 2.0]),
-        ("cyl_side", 27.0 * PI, [5.0, 5.0, 2.0]),
-        ("dee", dee, [5.0, 5.0, 3.0]),
-        ("halves", 31.25 * PI, [5.0, 5.0, 2.5]),
-        ("plate", 3.0 * (144.0 - 4.0 * PI), [4.0, 0.0, 1.5]),
-        ("ball", 36.0 * PI, [5.0, 5.0, 4.0]),
-        ("dome", 128.0 * PI / 3.0, [0.0, 0.0, 1.0]),
-        ("frustum", 52.0 * PI / 3.0, [5.0, 5.0, 2.0]),
-        ("spike", 20.0 * PI / 3.0, [0.0, 0.0, 2.0]),
-        ("ring", 22.5 * PI * PI, [5.0, 0.0, 0.0]),
-        ("dee_turn", dee, [3.0, 4.0, 3.0]),
+        ("slot", 5.0 * (24.0 + 4.0 * PI), [5.0, 4.5, 2.0]),
+        ("halves_turn", 5.0 * 6.25 * PI, [5.0, 3.9, 2.5]),
+        ("rounded", 3.0 * (40.0 - 4.0 + PI), [5.0, 5.0, 1.5]),
+        (
+            "notch",
+            4.0 * (64.0 + 25.0 * (0.9272952180016122 - 0.48)),
+            [6.0, 4.0, 1.5],
+        ),
+        (
+            "lens",
+            4.0 * (25.0 * 2.0 * 0.9272952180016122 - 24.0),
+            [5.0, 3.0, 2.5],
+        ),
     ];
     for (name, volume, inside) in bodies {
         let s = body(name, 91).unwrap_or_else(|e| panic!("{name}: {e}"));
@@ -353,7 +369,6 @@ fn imported_solids_are_their_constructions() {
             "{name}: {} for {volume}",
             m.volume
         );
-        assert!(s.profile().is_none(), "{name}");
         let [x, y, z] = inside;
         assert_eq!(
             s.classify(Point3::new(x, y, z)).unwrap(),
@@ -372,91 +387,6 @@ fn imported_solids_are_their_constructions() {
                 "{name}"
             );
         }
-        let other = body(name, 92).unwrap();
-        let ids = |s: &Solid| s.topology().ids().map(|(id, _)| id).collect::<Vec<_>>();
-        assert!(
-            ids(&s).iter().all(|id| !ids(&other).contains(id)),
-            "{name}: two imports share ids"
-        );
-    }
-}
-
-/// A STEP body is imported the same way: OCCT's STEP solids of the import
-/// track's fixtures, decided on their constructions (a box, cylinders, a
-/// sphere, a hemisphere, cones and a torus, a prism of lines, a plate with a
-/// hole), each cut by a box through it, the cut and the common its volume;
-/// a body with a cavity and a spline prism refused.
-#[test]
-fn step_solids_are_imported_too() {
-    use rusty_occt::step;
-    let solids = |name: &str| -> Vec<(rusty_occt::topology::Topology, rusty_occt::Tolerance)> {
-        let path = format!("{}/../fixtures/step/{name}.stp", env!("CARGO_MANIFEST_DIR"));
-        let text = std::fs::read_to_string(path).unwrap();
-        let imported = step::import(&step::read(text.as_bytes()).unwrap()).unwrap();
-        imported
-            .bodies
-            .into_iter()
-            .filter(|b| b.item == step::Item::Solid)
-            .map(|b| (b.result.unwrap(), b.tolerance))
-            .collect()
-    };
-    for name in [
-        "box",
-        "cylinder",
-        "cylinder_tilted",
-        "sphere",
-        "hemisphere",
-        "cone",
-        "frustum",
-        "torus",
-        "l_prism",
-        "plate_hole",
-    ] {
-        for (k, (t, tol)) in solids(name).into_iter().enumerate() {
-            let s = Solid::imported_with(OperationId(91 + k as u64), t, tol)
-                .unwrap_or_else(|e| panic!("{name}: {e}"))
-                .0;
-            let b = s.bounds();
-            let mid = |i: usize| (b.min.to_array()[i] + b.max.to_array()[i]) / 2.0;
-            // A box over the solid's lower half, a little wider.
-            let (lo, hi) = (b.min.to_array(), b.max.to_array());
-            let pad = 0.25 * (0..3).map(|i| hi[i] - lo[i]).fold(0.0, f64::max);
-            let cutter = Solid::box_at_with(
-                OperationId(200),
-                Point3::new(lo[0] - pad, lo[1] - pad, lo[2] - pad),
-                rusty_occt::Vec3::new(
-                    hi[0] - lo[0] + 2.0 * pad,
-                    hi[1] - lo[1] + 2.0 * pad,
-                    mid(2) - lo[2] + pad + 0.123,
-                ),
-                tol,
-            )
-            .unwrap()
-            .0;
-            let volume =
-                |out: Vec<Solid>| out.iter().map(|s| s.mass_properties().volume).sum::<f64>();
-            let c = volume(
-                s.cut(OperationId(201), &cutter)
-                    .unwrap_or_else(|e| panic!("{name}: {e}"))
-                    .0,
-            );
-            let m = volume(
-                s.common(OperationId(202), &cutter)
-                    .unwrap_or_else(|e| panic!("{name}: {e}"))
-                    .0,
-            );
-            let v = s.mass_properties().volume;
-            assert!((c + m - v).abs() <= 1e-9 * v, "{name}: {c} + {m} for {v}");
-            assert!(c > 0.0 && m > 0.0, "{name}: {c} {m}");
-        }
-    }
-    for (name, why) in [("box_void", "S9e.4b"), ("bspline_prism", "S9f")] {
-        for (t, tol) in solids(name) {
-            match Solid::imported_with(OperationId(91), t, tol) {
-                Err(Error::OutOfDomain(m)) => assert!(m.contains(why), "{name}: {m}"),
-                other => panic!("{name}: {:?}", other.map(|_| ())),
-            }
-        }
     }
 }
 
@@ -466,7 +396,7 @@ fn step_solids_are_imported_too() {
 fn stored_frames_are_the_reference_inputs() {
     let hex = |x: f64| format!("{:016x}", x.to_bits());
     let cases = cases();
-    for row in include_str!("../../fixtures/boolean-imported-frames.tsv")
+    for row in include_str!("../../fixtures/boolean-imported-arcs-frames.tsv")
         .lines()
         .filter(|l| !l.starts_with('#'))
     {

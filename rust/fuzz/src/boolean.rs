@@ -705,8 +705,9 @@ pub fn check_boolean(data: &[u8]) {
 
 /// A solid written by the kernel's `.brep` writer, read back and imported
 /// (S9e.4a); none where the writer, the reader or the recognition refuses
-/// it (a spline prism, S9f; arcs off their circles once rounded are
-/// refused by the Boolean, S9e.4b).
+/// it (a spline prism, S9f). Arcs off their circles once rounded are taken
+/// onto them by the Boolean's model (S9e.4b.1); a joint of two arcs of
+/// different circles rounded off either is refused there (S9e.4b.4).
 fn reimported(s: &Solid) -> Option<Solid> {
     use rusty_occt::occt_brep::{import, read, write};
     let text = write(s.topology(), s.resolution().linear()).ok()?;
