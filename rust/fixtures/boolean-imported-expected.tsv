@@ -140,12 +140,12 @@ box_kiss_cut	result 1 400.0 360.0 5.0 5.0 2.0
 box_kiss_common	expect degenerate S9e.4a prism
 box_kiss_common	reason a rod tangent to the imported box's wall along a generatrix
 box_kiss_common	empty
-dee_turn_fuse	expect unsupported S9e.4a prism
-dee_turn_fuse	reason S9e.4b: the imported prism's arc whose ends, rounded into its cap's frame turned by 30 degrees, lie off its circle
+dee_turn_fuse	expect degenerate S9e.4a prism
+dee_turn_fuse	reason the turned profile's corner at the box's corner, the origin (a vertex of one input on the other's face)
 dee_turn_fuse	result 1 951.6769198443934819050911 628.2859367791549098610424 3.948871911656409988715608 7.11586128864398364178317 2.878049505661926633687768
-dee_turn_cut	expect unsupported S9e.4a prism
-dee_turn_cut	reason S9e.4b: the imported prism's arc whose ends, rounded into its cap's frame turned by 30 degrees, lie off its circle
+dee_turn_cut	expect degenerate S9e.4a prism
+dee_turn_cut	reason the turned profile's corner at the box's corner, the origin (a vertex of one input on the other's face)
 dee_turn_cut	result 1 551.6769198443934819050911 601.236615745363102713262 3.1867388221372238663403 8.649992018086705657096505 3.514689882721449163337857
-dee_turn_common	expect unsupported S9e.4a prism
-dee_turn_common	reason S9e.4b: the imported prism's arc whose ends, rounded into its cap's frame turned by 30 degrees, lie off its circle
+dee_turn_common	expect degenerate S9e.4a prism
+dee_turn_common	reason the turned profile's corner at the box's corner, the origin (a vertex of one input on the other's face)
 dee_turn_common	result 1 283.9425291748411918178442 284.501659168283808209097 4.312542827854154865903083 6.249273931493174924302704 2.0

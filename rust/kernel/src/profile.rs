@@ -759,6 +759,10 @@ pub struct Profile {
     tolerance: Tolerance,
     pub(crate) moments: AreaMoments,
     perimeter: f64,
+    /// An imported prism's profile (S9e.4b.1): its points are roundings of
+    /// stored vertices, so an arc's ends may lie off its circle within the
+    /// resolution, and an exact model takes them onto it.
+    rounded_arcs: bool,
 }
 
 impl Profile {
@@ -856,6 +860,7 @@ impl Profile {
                 second,
             },
             perimeter,
+            rounded_arcs: false,
         })
     }
     pub fn outer(&self) -> &Boundary {
@@ -893,6 +898,17 @@ impl Profile {
     }
     pub(crate) fn boundaries(&self) -> impl Iterator<Item = &Boundary> {
         std::iter::once(&self.outer).chain(&self.holes)
+    }
+    /// The profile marked as an imported prism's (S9e.4b.1): its arcs'
+    /// ends are roundings, taken onto their circles by an exact model.
+    pub(crate) fn with_rounded_arcs(mut self) -> Self {
+        self.rounded_arcs = true;
+        self
+    }
+    /// Whether an exact model takes its arcs' ends onto their circles (an
+    /// imported prism's profile, S9e.4b.1).
+    pub(crate) fn rounded_arcs(&self) -> bool {
+        self.rounded_arcs
     }
 }
 

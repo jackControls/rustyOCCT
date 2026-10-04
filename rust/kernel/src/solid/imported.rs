@@ -492,7 +492,9 @@ fn prism(t: &Topology, tolerance: Tolerance, op: OperationId) -> Result<Solid> {
     }
     // The outer loop first on a plane (`Face::loops`).
     let holes = boundaries.split_off(1);
-    let profile = Profile::new(boundaries.remove(0), holes, tolerance)?;
+    // S9e.4b.1: its arcs' ends are roundings, taken onto their circles by
+    // the exact model.
+    let profile = Profile::new(boundaries.remove(0), holes, tolerance)?.with_rounded_arcs();
     let Surface::Plane(top_frame) = &faces[top].surface else {
         return Err(general());
     };
@@ -622,25 +624,4 @@ fn torus(t: &Topology, tolerance: Tolerance, op: OperationId) -> Result<Solid> {
     }
     let tau = std::f64::consts::TAU;
     Solid::build_torus(op, *frame, *major, *minor, 0.0, tau, tau, tolerance)
-}
-
-/// Whether every arc of a prism's profile ends on its circle exactly
-/// (S9c's model: an imported profile rounded into its cap's frame may not).
-pub(crate) fn arcs_on_circles(s: &Solid) -> bool {
-    let Construction::Prism(p) = &s.construction else {
-        return true;
-    };
-    p.boundaries().all(|b| match b.path_geometry() {
-        Some((points, segments)) => segments.iter().enumerate().all(|(j, seg)| {
-            let Segment::Arc { center, radius, .. } = seg else {
-                return true;
-            };
-            let on = |p: Point2| {
-                let (dx, dy) = (q(p.x) - q(center.x), q(p.y) - q(center.y));
-                &dx * &dx + &dy * &dy == q(*radius) * q(*radius)
-            };
-            on(points[j]) && on(points[(j + 1) % points.len()])
-        }),
-        None => true,
-    })
 }

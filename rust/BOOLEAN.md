@@ -33,7 +33,8 @@ and zones against tori and torus parts against curved solids
 (`curved/torus_parts.rs`). Since S9e a Boolean's result is an input again
 (below), and S9e.4a's imported solids (a `.brep` or STEP body without a
 construction, `solid/imported.rs`) are decided on the construction their
-stored surfaces give.
+stored surfaces give, S9e.4b.1's imported prisms with their arcs' ends
+taken onto their circles (`curved/snapped.rs`).
 
 ## Contract
 
@@ -1015,12 +1016,33 @@ construction. No stored edge is trusted as an exact curve, so a line
 tangent to its arc and a periodic face split at a seam (two arcs of one
 circle) are the profile's data, decided as S9c decides them.
 
-Refused: a prism's arc whose ends, rounded into its cap's frame, lie off
-its circle (a frame turned by 30 degrees; S9e.4b); a torus's v-segment or
-wedge, a cavity, several shells and every other body (`OutOfDomain`,
-S9e.4b: a general body on its stored surfaces); spline faces or edges
-(S9f); S9's degeneracies unchanged (an imported cylinder tangent to the
-partner's wall). OCCT 8.1 writes `.brep` version 3 under a copyright line
+An imported prism's arc whose ends, rounded into its cap's frame, lie off
+its circle (a cap turned or tilted from the world's axes, a vertex at an
+angle whose cosine is irrational: OCCT's 15 digits) is S9e.4b.1's: the
+construction keeps the rounded profile (its topology and the match are
+S9e.4a's), and its exact model (`model::Prism::new`, for a profile the
+import flags, `Profile::rounded_arcs`) takes each arc's end onto the
+arc's circle (`curved/snapped.rs`): the circle's rational point at the
+binary64 rounding of the end's half-angle tangent `dy / (r + |dx|)`,
+computed exactly, reflected where the end lies left of the centre; an end
+on its circle is kept, a joint of a line and an arc takes the arc's point
+(the line's end with it), a joint of two arcs of one circle that circle's
+point. An end moves by at most its distance from the circle plus `r
+2^-52`, within the resolution (the profile's validation), so the model's
+vertices stay within the resolution of the stored ones. A joint tangent
+in the body OCCT was given is tangent in no binary64 data; taken onto the
+circle, the line meets it at the joint at an angle within rounding of
+tangency, which the arrangement decides by its exact turn as any joint. A
+kernel profile's arc ending off its circle stays refused (S9c: the caller
+placed it).
+
+Refused: a joint of two arcs of different circles off either
+(`OutOfDomain`, S9e.4b.4: their common point is a quadratic surd); a
+torus's v-segment or wedge, a cavity, several shells and every other body
+(`OutOfDomain`, S9e.4b: a general body on its stored surfaces); spline
+faces or edges (S9f); S9's degeneracies unchanged (an imported cylinder
+tangent to the partner's wall, a box on the plane of an imported prism's
+wall, a corner of one input on the other's face). OCCT 8.1 writes `.brep` version 3 under a copyright line
 the reader refuses, so the fixtures are version 1. Found with it: a point
 on a profile arc's chord is displaced alike for every chord (two arcs of
 one circle share their chord, run either way, and the point counted inside
@@ -2794,6 +2816,42 @@ stay refused (S9f).
   native measures, and entity counts: the kernel's whole periodic faces and
   exact meeting pieces against OCCT's seams and split approximations, the
   imported seam-split cylinder's two faces kept).
+* **S9e.4b.1 evidence (imported prisms whose arcs round off their
+  circles), before its kernel code.** 5 bodies written by OCCT
+  (`MakePrism` of profiles in turned frames: a stadium in `TILT`, a
+  rectangle with four fillets in `R125`, a circle as two arcs, an arc
+  crossing its lines and a lens of two circles in `TURN30`) under
+  `rust/fixtures/imported/`. `generate_imported_arcs_boolean_fixtures.py
+  --check` writes `boolean-imported-arcs-cases.txt`, `-expected.tsv`,
+  `-frames.tsv` and `-bodies.txt`: 36 cases (12 groups; 27 solid, 6
+  degenerate, 3 unsupported) against boxes, a rod, a ball, a slab and
+  another imported body, as object and tool, and one chain, from S9e.3a's
+  chained reference on the constructions OCCT was given (two families
+  4.1e-32, pair identities 4.4e-38, Monte Carlo 3.2 standard errors),
+  every file read independently (stored vertices on the constructions'
+  surfaces within 3.9e-17 of the size, the arcs' ends off their circles
+  once rounded into the construction's frame).
+  `compare_imported_arcs_boolean.py` reproduces
+  `occt-boolean-imported-arcs-preimplementation` (keyed on
+  `curved/snapped.rs`, the probe `unsupported` on all 36 before it):
+  every result valid, 30 match, 6 reviewed (BRepGProp's default
+  integration on the ball's and crossing cylinders' approximated sections,
+  up to 1.4e-5, adaptively within 3.2e-9; the declared tangent fuse OCCT
+  keeps as two solids touching along a line).
+* **Kernel (S9e.4b.1).** `tests/imported_arc_booleans.rs`: all 36
+  fixtures as the reference (27 within the kernel's enclosures, each at
+  most `1e-9` wide; the 6 declared degenerate refused, the coplanar box as
+  two faces within the resolution of one plane and the touching box as a
+  tangency; the lens `OutOfDomain` as S9e.4b.4's), every history complete
+  over the imported bodies' stored ids, results deterministic and moved
+  rigidly, both inputs translated (and turned where no face of one is
+  exactly parallel to the other's cylinder) keeping the reference's
+  volumes, every body its construction. `compare_imported_arcs_boolean.py`:
+  27 matches and 9 reviewed (the native measures, the tangent fuse, and
+  entity counts: the ball's meeting with the slot's wall in exact pieces,
+  the split circle's two faces kept). S9e.4a's `dee_turn` cases, refused
+  before as S9e.4b's, are degenerate under S9's rules (the turned
+  profile's corner on the box's), declared so.
 * **Fuzzing.** The `boolean` target (`FUZZING.md`): the split target's line
   and arc profiles, the tool offset exactly in the axis-aligned frame or
   sharing the tilted one's origin, heights equal, spanning, overlapping,
@@ -2805,7 +2863,8 @@ stay refused (S9f).
   `GIVEN_ROUND`; S9e.3a: results of spheres, cones and tori too, or a
   sphere, `GIVEN_BALL`); S9e.4a: the object written by the kernel's
   `.brep` writer, read back and imported, given the chosen operation again,
-  its volume the object's own result's (`IMPORTED`).
+  its volume the object's own result's (`IMPORTED`; since S9e.4b.1 its
+  arcs' ends rounded off their circles taken onto them).
 
 ## DRAW commands
 

@@ -1,0 +1,330 @@
+case slot_box_fuse 1e-07
+op 91
+brep imported/slot.brep
+boolean fuse 93
+op 92
+frame 0.0 0.0 1.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 1.5
+boundary P 4 7.0 0.0 12.0 0.0 12.0 10.0 7.0 10.0
+end
+case slot_box_cut 1e-07
+op 91
+brep imported/slot.brep
+boolean cut 93
+op 92
+frame 0.0 0.0 1.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 1.5
+boundary P 4 7.0 0.0 12.0 0.0 12.0 10.0 7.0 10.0
+end
+case slot_box_common 1e-07
+op 91
+brep imported/slot.brep
+boolean common 93
+op 92
+frame 0.0 0.0 1.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 1.5
+boundary P 4 7.0 0.0 12.0 0.0 12.0 10.0 7.0 10.0
+end
+case box_slot_fuse 1e-07
+op 91
+frame 0.0 0.0 1.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 1.5
+boundary P 4 7.0 0.0 12.0 0.0 12.0 10.0 7.0 10.0
+boolean fuse 93
+op 92
+brep imported/slot.brep
+end
+case box_slot_cut 1e-07
+op 91
+frame 0.0 0.0 1.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 1.5
+boundary P 4 7.0 0.0 12.0 0.0 12.0 10.0 7.0 10.0
+boolean cut 93
+op 92
+brep imported/slot.brep
+end
+case box_slot_common 1e-07
+op 91
+frame 0.0 0.0 1.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 1.5
+boundary P 4 7.0 0.0 12.0 0.0 12.0 10.0 7.0 10.0
+boolean common 93
+op 92
+brep imported/slot.brep
+end
+case slot_rod_fuse 1e-07
+op 91
+brep imported/slot.brep
+boolean fuse 93
+op 92
+frame 0.0 0.0 -3.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 11.0
+boundary C 3.5 4.5 0.8
+end
+case slot_rod_cut 1e-07
+op 91
+brep imported/slot.brep
+boolean cut 93
+op 92
+frame 0.0 0.0 -3.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 11.0
+boundary C 3.5 4.5 0.8
+end
+case slot_rod_common 1e-07
+op 91
+brep imported/slot.brep
+boolean common 93
+op 92
+frame 0.0 0.0 -3.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 11.0
+boundary C 3.5 4.5 0.8
+end
+case slot_ball_fuse 1e-07
+op 91
+brep imported/slot.brep
+boolean fuse 93
+op 92
+frame 10.25 4.625 2.125 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 1.5 -1.5707963267948966 1.5707963267948966
+end
+case slot_ball_cut 1e-07
+op 91
+brep imported/slot.brep
+boolean cut 93
+op 92
+frame 10.25 4.625 2.125 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 1.5 -1.5707963267948966 1.5707963267948966
+end
+case slot_ball_common 1e-07
+op 91
+brep imported/slot.brep
+boolean common 93
+op 92
+frame 10.25 4.625 2.125 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 1.5 -1.5707963267948966 1.5707963267948966
+end
+case halves_box_fuse 1e-07
+op 91
+brep imported/halves_turn.brep
+boolean fuse 93
+op 92
+frame 0.0 0.0 1.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 2.0
+boundary P 4 6.5 0.0 9.0 0.0 9.0 10.0 6.5 10.0
+end
+case halves_box_cut 1e-07
+op 91
+brep imported/halves_turn.brep
+boolean cut 93
+op 92
+frame 0.0 0.0 1.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 2.0
+boundary P 4 6.5 0.0 9.0 0.0 9.0 10.0 6.5 10.0
+end
+case halves_box_common 1e-07
+op 91
+brep imported/halves_turn.brep
+boolean common 93
+op 92
+frame 0.0 0.0 1.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 2.0
+boundary P 4 6.5 0.0 9.0 0.0 9.0 10.0 6.5 10.0
+end
+case rounded_slab_fuse 1e-07
+op 91
+brep imported/rounded.brep
+boolean fuse 93
+op 92
+frame 0.0 0.0 2.5 0.0 3.0 4.0 1.0 0.0 0.0
+offsets 0.0 1.0
+boundary P 4 -2.0 -15.0 12.0 -15.0 12.0 15.0 -2.0 15.0
+end
+case rounded_slab_cut 1e-07
+op 91
+brep imported/rounded.brep
+boolean cut 93
+op 92
+frame 0.0 0.0 2.5 0.0 3.0 4.0 1.0 0.0 0.0
+offsets 0.0 1.0
+boundary P 4 -2.0 -15.0 12.0 -15.0 12.0 15.0 -2.0 15.0
+end
+case rounded_slab_common 1e-07
+op 91
+brep imported/rounded.brep
+boolean common 93
+op 92
+frame 0.0 0.0 2.5 0.0 3.0 4.0 1.0 0.0 0.0
+offsets 0.0 1.0
+boundary P 4 -2.0 -15.0 12.0 -15.0 12.0 15.0 -2.0 15.0
+end
+case notch_box_fuse 1e-07
+op 91
+brep imported/notch.brep
+boolean fuse 93
+op 92
+frame 0.0 0.0 1.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 2.0
+boundary P 4 4.0 5.0 8.0 5.0 8.0 9.0 4.0 9.0
+end
+case notch_box_cut 1e-07
+op 91
+brep imported/notch.brep
+boolean cut 93
+op 92
+frame 0.0 0.0 1.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 2.0
+boundary P 4 4.0 5.0 8.0 5.0 8.0 9.0 4.0 9.0
+end
+case notch_box_common 1e-07
+op 91
+brep imported/notch.brep
+boolean common 93
+op 92
+frame 0.0 0.0 1.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 2.0
+boundary P 4 4.0 5.0 8.0 5.0 8.0 9.0 4.0 9.0
+end
+case both_fuse 1e-07
+op 91
+brep imported/notch.brep
+boolean fuse 93
+op 92
+brep imported/slot.brep
+end
+case both_cut 1e-07
+op 91
+brep imported/notch.brep
+boolean cut 93
+op 92
+brep imported/slot.brep
+end
+case both_common 1e-07
+op 91
+brep imported/notch.brep
+boolean common 93
+op 92
+brep imported/slot.brep
+end
+case chain_slot_fuse 1e-07
+op 91
+brep imported/slot.brep
+boolean cut 93
+op 92
+frame 0.0 0.0 -3.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 11.0
+boundary C 3.5 4.5 0.8
+then fuse 95
+op 94
+frame 0.0 0.0 1.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 1.5
+boundary P 4 7.0 0.0 12.0 0.0 12.0 10.0 7.0 10.0
+end
+case chain_slot_cut 1e-07
+op 91
+brep imported/slot.brep
+boolean cut 93
+op 92
+frame 0.0 0.0 -3.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 11.0
+boundary C 3.5 4.5 0.8
+then cut 95
+op 94
+frame 0.0 0.0 1.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 1.5
+boundary P 4 7.0 0.0 12.0 0.0 12.0 10.0 7.0 10.0
+end
+case chain_slot_common 1e-07
+op 91
+brep imported/slot.brep
+boolean cut 93
+op 92
+frame 0.0 0.0 -3.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 11.0
+boundary C 3.5 4.5 0.8
+then common 95
+op 94
+frame 0.0 0.0 1.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 1.5
+boundary P 4 7.0 0.0 12.0 0.0 12.0 10.0 7.0 10.0
+end
+case slot_flush_fuse 1e-07
+op 91
+brep imported/slot.brep
+boolean fuse 93
+op 92
+frame 5.0 3.0 0.0 0.0 3.0 4.0 1.0 0.0 0.0
+offsets 1.0 3.0
+boundary P 4 -1.0 2.0 1.0 2.0 1.0 4.0 -1.0 4.0
+end
+case slot_flush_cut 1e-07
+op 91
+brep imported/slot.brep
+boolean cut 93
+op 92
+frame 5.0 3.0 0.0 0.0 3.0 4.0 1.0 0.0 0.0
+offsets 1.0 3.0
+boundary P 4 -1.0 2.0 1.0 2.0 1.0 4.0 -1.0 4.0
+end
+case slot_flush_common 1e-07
+op 91
+brep imported/slot.brep
+boolean common 93
+op 92
+frame 5.0 3.0 0.0 0.0 3.0 4.0 1.0 0.0 0.0
+offsets 1.0 3.0
+boundary P 4 -1.0 2.0 1.0 2.0 1.0 4.0 -1.0 4.0
+end
+case slot_kiss_fuse 1e-07
+op 91
+brep imported/slot.brep
+boolean fuse 93
+op 92
+frame 5.0 3.0 0.0 0.0 3.0 4.0 1.0 0.0 0.0
+offsets 1.0 3.0
+boundary P 4 5.0 -1.0 8.0 -1.0 8.0 1.0 5.0 1.0
+end
+case slot_kiss_cut 1e-07
+op 91
+brep imported/slot.brep
+boolean cut 93
+op 92
+frame 5.0 3.0 0.0 0.0 3.0 4.0 1.0 0.0 0.0
+offsets 1.0 3.0
+boundary P 4 5.0 -1.0 8.0 -1.0 8.0 1.0 5.0 1.0
+end
+case slot_kiss_common 1e-07
+op 91
+brep imported/slot.brep
+boolean common 93
+op 92
+frame 5.0 3.0 0.0 0.0 3.0 4.0 1.0 0.0 0.0
+offsets 1.0 3.0
+boundary P 4 5.0 -1.0 8.0 -1.0 8.0 1.0 5.0 1.0
+end
+case lens_box_fuse 1e-07
+op 91
+brep imported/lens.brep
+boolean fuse 93
+op 92
+frame 0.0 0.0 1.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 1.5
+boundary P 4 4.0 -2.0 6.0 -2.0 6.0 12.0 4.0 12.0
+end
+case lens_box_cut 1e-07
+op 91
+brep imported/lens.brep
+boolean cut 93
+op 92
+frame 0.0 0.0 1.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 1.5
+boundary P 4 4.0 -2.0 6.0 -2.0 6.0 12.0 4.0 12.0
+end
+case lens_box_common 1e-07
+op 91
+brep imported/lens.brep
+boolean common 93
+op 92
+frame 0.0 0.0 1.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 1.5
+boundary P 4 4.0 -2.0 6.0 -2.0 6.0 12.0 4.0 12.0
+end
