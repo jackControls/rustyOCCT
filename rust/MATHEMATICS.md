@@ -2732,6 +2732,48 @@ points on one generatrix), and the same elimination in `dy` is used. A
 repeated root of `R` with `O != 0` on the segment is the circle tangent to
 the generatrix there.
 
+## Spline walls against cones (S9f.3b)
+
+**The radius row.** A cone `u^2 + v^2 = (b + k w)^2` is a quadric of three
+rows with signs: `u`'s and `v`'s positive and the radius row `k w + b`
+negative, so along a ruling `X = P(tau) + w n` its function is `A w^2 + 2 B
+w + C` with `A = q_u^2 + q_v^2 - k^2 q_w^2`, `B = q_u P_u + q_v P_v - k q_w
+rho(P)` and `C = P_u^2 + P_v^2 - rho(P)^2` (`q` the axis's coordinates,
+`rho(P) = b + k P_w`). `A` is the same for every ruling, since the rulings
+are parallel: positive when the axis lies outside the cone's asymptotic
+directions (a ruling meets one nappe twice, or not at all), negative inside
+them (a ruling meets each nappe once: `F` tends to `-infinity` at both ends,
+each end inside one nappe, and crosses the boundary twice between them, so
+`D > 0` unless the ruling passes the apex, where both points coincide), zero
+along a generatrix direction (one finite root, the other at infinity). The
+two roots of a ruling with `A < 0` lie on opposite nappes, so a branch over
+the run keeps its nappe until a ruling passes the apex; the solid's nappe is
+the one whose points have `b + k w > 0`, and since `b` and `t = b + k h`
+are nonnegative its other nappe lies beyond an end, where no face is.
+
+**Lagrange's identity with the radius row.** With the rows `w_i`, `m_i` (the
+foot's and the ruling's direction's coordinates) and the radius term `r0 +
+rd t` along the ruling (`r0 = R + tan w_n`, `rd = tan m_n`), `b^2 - a c =
+(sum w_i m_i - r0 rd)^2 - (sum m_i^2 - rd^2)(sum w_i^2 - r0^2) = sum_i (r0
+m_i - rd w_i)^2 - sum_{i<j} (w_i m_j - w_j m_i)^2`: the terms in `r0^2
+rd^2` cancel, and `(sum w_i m_i)^2 - sum m_i^2 sum w_i^2` is minus the
+cross terms. In the stored data `tan` is the stored half angle's tangent,
+not rational, so the certified evaluation keeps `a = a0 - tan^2 m_n^2`, `b
+= b0 - tan R m_n - tan^2 w_n m_n`, `c = c0 - 2 tan R w_n - tan^2 w_n^2` and
+`d = (R^2 a0 - cross) + 2 tan R sum_i m_i (w_n m_i - m_n w_i) + tan^2 sum_i
+(w_n m_i - m_n w_i)^2` as exact Bernstein polynomials per power of `tan`,
+and encloses `tan` in each tier (its sine over its cosine).
+
+**The cone's wall area in a slice (the reference).** On a slice `d . X =
+s` cutting the cone in an ellipse, the ruling at the cone's angle `theta`
+has `r = G(s) / D(theta)` with `D = d . n + k d . (cos x + sin y)` (never
+zero for such a `d`) and `G = b d . n + k (s - d . o)`, and `dw = ds / D`;
+the area element `r sqrt(1 + k^2) dtheta dw` (an orthonormal frame) is
+`sqrt(1 + k^2) |G| dtheta ds / D^2`, and with `D = a + b' cos psi` (`|b'| <
+a`) `int dpsi / D^2 = a / (a^2 - b'^2) I1 - b' sin psi / ((a^2 - b'^2) D)`,
+`I1 = 2 atan(sqrt((a - b') / (a + b')) tan(psi / 2)) / sqrt(a^2 - b'^2)`
+continued across turns.
+
 ## Tessellation bounds (T-a)
 
 A mesh triangle has nodes `X_i` and parameter points `p_i` on its face's

@@ -977,7 +977,15 @@ procedural pcurves with explicit conic edges.
   ruling sums the world's three rows instead of the cylinder's two axes
   (`WallMeet::other_rows`), the validity rule asks no ruling to cross an
   axis, the sphere's pcurve is its inverse and a rigid motion moves its
-  frame.
+  frame. S9f.3b: with a nonzero `other_half_angle` the other surface is the
+  cone `|(w . x2, w . y2)| = other_radius + (w . n2) tan a2` of `other`'s
+  frame (its stored base frame, `other_radius` its bottom radius, zero at an
+  apex): the function along the ruling is the cylinder's less the radius
+  term's square (`WallMeet::radius_row`), `a` of either sign, `b^2 - a c` by
+  Lagrange's identity with the radius row; the validity rule asks a half
+  angle under a right angle, a radius positive or zero and no sphere, no
+  ruling to cross an axis; the cone's pcurve is its inverse and a rigid
+  motion moves its frame.
 * **A cone's sections in Boolean results (S9d.3a).** `HyperbolaArc` and
   `ParabolaArc` edges bound Boolean results too; a rigid motion moves their
   frames, and a body's bounds hold their coordinates' extremes inside their

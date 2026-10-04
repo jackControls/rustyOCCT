@@ -11,7 +11,8 @@ over `s9c2-kernel` at `e80e2fd9`) and S9f.2b.2 (branch `s9f2b2`, over
 `s9c2-kernel` at `7199e06a`), then for the DRAW survey of S9f.2b.2 and
 S9e.4b.1 (branch `s9-draw-4`, over `s9c2-kernel` at `93e6fcd0`),
 then for S9f.3a (branch `s9f3`, over `s9c2-kernel` at `7199e06a`) and a
-fix of two cylinders within rounding of parallel (branch `fix-conic-eval`).
+fix of two cylinders within rounding of parallel (branch `fix-conic-eval`),
+then for S9f.3b (branch `s9f3b`, over `s9c2-kernel` at `b903f3fa`).
 
 ## Where things stand
 
@@ -88,6 +89,23 @@ fix of two cylinders within rounding of parallel (branch `fix-conic-eval`).
   6 degenerate cases. Its fuzz switch `SPLINE_SPHERE` is off (the corpus's
   `d7599dbe` 472 s under AddressSanitizer). Pending: its DRAW survey and
   campaign.
+- **S9f.3b implemented** (branch `s9f3b`, not merged): spline prisms
+  against cones and frustums in any position, either the object
+  (`curved/spline_cone.rs`): S9f.2b's meeting with the cone's radius row of
+  negative sign (`spline_crossing`'s rows signed, one code for cylinders,
+  spheres and cones); `A = q_u^2 + q_v^2 - k^2 q_w^2` one constant per
+  pair, `A > 0` S9f.3a's loops and branches, `A < 0` both nappes over the
+  whole run (the other nappe's branch outside the cone's face), `A = 0`
+  and the apex (real or virtual) on a spline wall `Degenerate`; a rim on a
+  wall along its crease in its own elliptic cylinder or in S9f.2b.2's
+  half-angle chart; `Curve3::WallMeet`'s `other_half_angle` with
+  `wall_meet.rs`'s polynomials kept per power of the stored half angle's
+  tangent. Decisions ("S9f.3b refined"), 27 cases referenced by an
+  extension of S9f.3a's reference (`spline_cone_boolean_reference.py`) and
+  captured before the kernel code, the kernel within the reference on all
+  21 results and refusing the 6 degenerate cases. Its fuzz switch
+  `SPLINE_CONE` is off (the slowest variants 97 s under
+  AddressSanitizer). Pending: its DRAW survey and campaign.
 - **S9e.3b implemented** (branch `s9e3b`, over `507b8054`, with
   `s9c2-kernel` at `c8e37abe` merged in; not yet pushed): a given result's
   meeting of two curved faces (`Meet`, `Rise`, `Toric`) or a cone's or
@@ -158,10 +176,11 @@ fix of two cylinders within rounding of parallel (branch `fix-conic-eval`).
    capture's). `SPLINE_SPHERE` is off: the corpus's own `d7599dbe` takes
    472 s under AddressSanitizer, the certified integrals over a spline
    wall's pieces beside a loop's turning points the cost, the next lever
-   before it can be switched on. Then **S9f.3b** (cones and frustums
-   against spline prisms: "S9f.3 refined" lists what differs from the
-   sphere: the radius term's `A` of either sign, the other nappe, the
-   apex, the stored half angle's tangent).
+   before it can be switched on, and before `SPLINE_CONE` too (S9f.3b's
+   slowest variants, a cone across a lens hole, 97 s under
+   AddressSanitizer). S9f.3b's DRAW survey and campaign with them, and the
+   Linux record and reviews of `occt-boolean-spline-cone-preimplementation`
+   from CI's run.
 3. **S9e.4b**, split in "S9e.4b refined": S9e.4b.1 (arcs rounded off
    their circles) is implemented (above, its DRAW survey done, pending
    its campaign); next **S9e.4b.2**, polyhedra other than prisms on their
@@ -274,6 +293,7 @@ Each comparison takes `--occt-root target/spline-linear-preflight/pinned-sdk/ins
 | `compare_imported_boolean.py` | 54 / 15 (the kernel within the reference on all 57 solid cases, the 12 degenerate refused: since S9e.4b.1 the 3 turned profiles' corner on the box's) |
 | `compare_imported_arcs_boolean.py` | 27 / 9 (the kernel within the reference on all 27 solid cases, the 6 degenerate refused, the 3 lens cases `unsupported`, S9e.4b.4's) |
 | `compare_spline_sphere_boolean.py` | 4 / 29 (the kernel within the reference on all 27 results, the 6 degenerate refused, none `unsupported`) |
+| `compare_spline_cone_boolean.py` | 4 / 23 (the kernel within the reference on all 21 results, the 6 degenerate refused, none `unsupported`) |
 
 Every one must report 0 failures; since S9f.1 also `compare_split.py`
 (72 / 56) and `compare_brep.py --family spline` (10 / 3), which share its
@@ -313,7 +333,7 @@ changes, every generator importing it runs with `--check --workers 4`. Then:
   on the exact arithmetic, and Linux runners about 2.6 times this host; the
   boolean target's limit is 60 s an input. Configurations too slow for it are
   switched off in `rust/fuzz/src/boolean.rs` (`TORUS_PAIRS`, `CONE_PAIRS`,
-  `TURNED_PARTS`, `GIVEN_MET`, `SPLINE_SPHERE`; `GIVEN_CURVED`,
+  `TURNED_PARTS`, `GIVEN_MET`, `SPLINE_SPHERE`, `SPLINE_CONE`; `GIVEN_CURVED`,
   `GIVEN_ROUND`, `GIVEN_BALL`, `SPLINE_WALLS`, `SPLINE_PARALLEL`,
   `SPLINE_CROSSING` and `IMPORTED` are on; the first four off switches on
   at once make corpus input `6fab9d41` fail `vertex_off_curve`, each alone

@@ -1293,9 +1293,59 @@ with `other_sphere` (the sphere's stored frame and radius;
 wall"); a turning point at an interior knot; a turning point on a face's
 boundary (a cap's edge, a rim, a segment's end); a vertex's polynomial with
 a multiple root (an edge tangent to the other's face, a circle tangent to a
-generatrix). A spline prism against a cone stays refused (S9f.3b's: the
-radius term's `A` of either sign, the other nappe, the apex, the stored half
-angle's tangent).
+generatrix). A spline prism against a cone is S9f.3b's (below).
+
+### Spline walls against cones (S9f.3b)
+
+A spline prism meets a cone or a frustum (`Solid::cone_with`) in any
+position, either the object. Along the wall's ruling the cone's function on
+its exact model (`procedural::other_cone`: `u^2 + v^2 - (b + k w)^2` in its
+frame's exact rows, `k` its rational slope) is `A w^2 + 2 B(tau) w +
+C(tau)`: S9f.2b's quadratic with a radius row of negative sign
+(`spline_crossing::terms`: every row carries its sign, so the coefficients,
+a point's `F_w`, the tangent, the binary64 views and the graphs over the
+height are one code for cylinders, spheres and cones). `A = q_u^2 + q_v^2 -
+k^2 q_w^2` (`q` the prism's axis in the cone's rows) is one constant for
+the pair, and its sign is the case. `A > 0` (the prism's axis farther from
+the cone's than its half angle): each ruling meets the quadric twice on one
+nappe or not at all, and the meeting is S9f.3a's (branches over the run
+between the turning points, loops' graphs over the height about turning
+points inside both faces, switched a sixty-fourth of the way as a sphere's;
+a turning point within the resolution of a rim's plane `Degenerate`). `A <
+0` (within the half angle, the prism's axis along the cone's among them):
+each ruling meets the double cone once on each nappe, `D > 0` but where a
+ruling passes the apex, and the plus and minus branches run over the whole
+run, one on each nappe; the other nappe's lies beyond the apex, outside the
+cone's face (a cone's radii are nonnegative, so its apex, real or virtual,
+lies at or beyond an end), and the arrangement drops it as any piece outside
+a face. `A = 0` (the axis exactly along a generatrix direction: one finite
+root per ruling, running to infinity where `B` vanishes) is
+`Degenerate("a spline wall along a cone's ruling")`, as S9d.3c's cylinder
+along a cone's ruling; the apex, a cone's or a frustum's virtual one, on a
+spline wall's surface is `Degenerate("a cone's apex on the other input's
+surface")`, `cone_pair`'s rule; both are checked first
+(`curved/spline_cone.rs`'s `meeting`). The cone pairs' pass leaves spline
+walls to it.
+
+Vertices (`curved/spline_cone.rs`): a spline cap edge or crease against the
+cone at the roots of its function along it, degree `2 p` (`wallcrv_cone`);
+the spline prism's vertical edges by S9d.3a's `line_cone`; a rim (a circle
+of rational radius on the cone's stored axes) against a spline wall along
+its plane's crease in the rim's own elliptic cylinder (the rows dual to the
+conic's axes, `alpha^2 + beta^2 - 1`, degree `2 p`, placed by its angle:
+`spline_crossing::conic_crease`), or, in a plane holding the wall's axis
+direction (the cone's axis across the prism's), at S9f.2b.2's points in the
+rim's half-angle chart (`tower_points`: its radius rational, no elimination
+needed). In the topology the meeting is `Curve3::WallMeet` with
+`other_half_angle` (the cone's stored base frame, bottom radius and half
+angle; `TOPOLOGY_MODEL.md`), certified with its polynomials kept per power
+of the half angle's tangent (`MATHEMATICS.md`); on the cone its pcurve is
+the cone's inverse.
+
+`Degenerate`: the two above; the cone tangent to the wall ("a cone tangent
+to a spline wall"); a turning point at an interior knot or on a face's
+boundary, as S9f.3a's with the cone's reasons; a vertex's polynomial with a
+multiple root; and the engine's rules.
 
 ## Evidence
 
@@ -2676,6 +2726,43 @@ angle's tangent).
   27 results and refusing the 6 degenerate cases; the 18 loop cases'
   reviews name their counts (the kernel's loops cut at their switches and
   at the hemispheres' split, OCCT's edges at its own seams).
+* **S9f.3b evidence (spline walls against cones), before its kernel
+  code.** `spline_cone_boolean_reference.py`, an extension of S9f.3a's (its
+  prism, profile elements, Green's integrals of the pieces reused): the cone
+  on an exact frame, the pair sliced along two directions cutting it in
+  ellipses (its axis leaned toward the prism's), each slice's cone section
+  its quadric's restriction on its principal axes projected along the
+  prism's axis and cut by the end planes' lines; the cone's wall by its area
+  element `sqrt(1 + k^2) |G(s)| / D(theta)^2` in closed form over the
+  section's arcs inside the prism (`r = G / D` along the slice); the prism's
+  walls along their rulings with `A` of either sign; the caps by chords
+  against the cone's conic of any type; the end discs as the hemisphere's;
+  solids by intervals on chords of slices across the prism's axis.
+  `generate_spline_cone_boolean_fixtures.py --check` writes 27 cases (21
+  solid, 6 degenerate): `A < 0` a frustum on the bulge's axis across both
+  caps, a cone with its apex inside the lens prism (the other nappe meeting
+  the walls outside the cone's face), a cone hanging over the blob with its
+  apex below, a frustum object across the wave; `A > 0` a thin frustum
+  piercing the dome's arch (a loop), one whose rim's plane holds the dome's
+  axis (the rim's tower points, the top cap cutting the cone in a
+  hyperbola), a frustum on `z` against `knot` in `TILT` (a loop); declared
+  degenerate the apex on the dome's arch, `A = 0` exactly (the bulge in
+  `TILT` against a cone of the stored axis's slope) and a cone touching the
+  arch. The two slicings within 1.1e-39 of the size, the inputs' closed
+  forms 1.0e-39, faces' classes 1.4e-40, the area identity 9.2e-41, Monte
+  Carlo within 2.1 standard errors, margins outside the declared pairs at
+  least 0.0156 (`|A|`), Python 3.9 and 3.12 the same files. The capture
+  `occt-boolean-spline-cone-preimplementation` (keyed on
+  `curved/spline_cone.rs`, the probe `unsupported` on all 27): every result
+  valid with the reference's counts, 4 matching and 23 reviewed (BRepGProp's
+  default measure up to 5.5e-6 on the quadratic and cubic walls, 7.4e-5 on
+  `knot` in `TILT`, the wave's 1.0e-3; adaptive BRepGProp or Green's
+  theorem over OCCT's faces within 3.2e-8 in volume, 7.0e-9 in area and
+  9.0e-9 in the centre). With S9f.3b's kernel: 4 matches and 23 reviewed,
+  the kernel within the reference on all 21 results and refusing the 6
+  degenerate cases; the 6 loop cases' reviews name their counts (the
+  kernel's loops cut at their switches; in `knot_tilt_cone_fuse` OCCT's
+  cone face outside the prism two faces, the kernel's one).
 * **S9f.2b.2 evidence (loops and towers), before its kernel code.** The
   same generator writes 51 cases, 17 new (`step` `S9f.2b.2` exactly when a
   turning point lies inside both faces or a cap circle meets a wall in a

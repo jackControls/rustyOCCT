@@ -7017,6 +7017,67 @@ Decisions for S9, recorded before its code (2026-09-28):
       better within 3.2e-8 in volume, 7.0e-9 in area and 9.0e-9 in the
       centre); three solids' counts change when unified. No other correction
       to the decisions from the evidence. S9f.3b's kernel next.
+  * **S9f.3b implemented** (`solid/boolean/curved/spline_cone.rs`;
+    `spline_crossing.rs`'s signed rows (`terms`), `conic_crease` and
+    `tower_points` over a partner, `inner_gap`'s cone; `mod.rs`'s
+    `spline_pairs`, `graph.rs`'s pairs pass (the cone pairs' pass leaving
+    spline walls to it), `meet.rs`'s sections and edge meetings,
+    `assemble.rs`'s curves; the topology's `Curve3::WallMeet::other_half_angle`
+    with `WallMeet::radius_row`, `topology/validate/wall_meet.rs`'s
+    polynomials per power of the half angle's tangent and the validity
+    rule): spline prisms against cones and frustums in any position as the
+    refined decisions describe. The meeting is S9f.2b's over the cone's
+    signed rows, found once per pair of a spline wall and the cone's wall
+    after the decisions' two refusals (`A = 0`; the apex, real or virtual,
+    on the wall's surface); `A > 0` gives S9f.3a's loops and branches (the
+    loops switched a sixty-fourth of the way, as a sphere's), `A < 0` the
+    two branches over the whole run on opposite nappes, the other nappe's
+    dropped as outside the cone's face. A rim meets a wall along its
+    plane's crease in its own elliptic cylinder (the rows dual to the
+    conic's axes) or, in a plane holding the wall's axis, at S9f.2b.2's
+    points in its half-angle chart. All 27 fixtures as the reference (the
+    21 results within the kernel's enclosures of volume, area and centre,
+    each at most `1e-9` wide; the 6 degenerate refused with the decisions'
+    reasons); every history complete, results deterministic and moved
+    rigidly (`tests/spline_cone_booleans.rs`, 6 tests, 20 s in release on a
+    host at load 10 to 17, 23 s at `opt-level` 2 with debug assertions:
+    also the loops' graphs over `v` each in one knot span and the coaxial
+    frustum's branch on its own nappe, a rim's tower vertices on the dome,
+    a leaning frustum (`A > 0`) and a tilted one (`A < 0`) in turned frames
+    by inclusion and exclusion; `wall_meet.rs`'s seventh test: cones
+    across and along a wall, their points on both surfaces, jets enclosing
+    them, `a`'s sign). `compare_spline_cone_boolean.py` 4 matches and 23
+    reviewed, the kernel within the reference on all 21 results and none
+    `unsupported` (the 6 loop cases' reviews name their counts: the
+    kernel's loops cut at their switches; in `knot_tilt_cone_fuse` the
+    cone's wall outside the prism, two regions, two faces of OCCT's and one
+    of the kernel's, its cone wall one face traced in projection); every
+    other spline comparison unchanged with 0 failures
+    (`compare_spline_sphere_boolean.py` 4/29, `compare_spline_crossing_boolean.py`
+    14/37, `compare_spline_parallel_boolean.py` 31/12,
+    `compare_spline_any_boolean.py` 22/16). Amendments to the decisions,
+    from the implementation: (a) a turning point inside both faces but
+    within the resolution of a cone's rim's plane is `Degenerate`, as a
+    sphere's rim's (S9f.3a's amendment (b), `inner_gap`); (b) a sphere's
+    and a cylinder's binary64 curve and certified polynomials are as
+    before bit for bit (the radius row's terms only where there is one).
+    The `boolean` fuzz target decodes a spline prism object against its
+    cone or frustum tool through S9f.3b (`SPLINE_CONE`), switched off for
+    time: of 405 variants of every third corpus input (the spline byte in
+    `161 + 4 m`, the flags' bits 5 and 6 clear) replayed with debug
+    assertions on a host at load 26, none failing, the median took 0.47 s,
+    the ninth decile 2.0 s and the slowest 12.6 s, and under
+    AddressSanitizer the three slowest 97, 76 and 49 s (a cone on its side
+    or tilted across a lens hole, its loops: the certified integrals beside
+    the turning points, as `SPLINE_SPHERE`'s). Replays with debug
+    assertions of the corpus (1,430 inputs) and the 25 regressions, none
+    failing, with the switch off (the slowest 18 s) and on (16 s). Every
+    check asked holds: fmt, clippy, the 1.85 check, the suite, the five
+    spline comparisons with 0 failures, the generator's `--check` under
+    Python 3.9 and 3.12 and its unit tests. Pending: the DRAW survey, the
+    campaign (with `SPLINE_CONE` off), the Linux record of the capture, and
+    the speed of the loops' certified integrals before `SPLINE_SPHERE` and
+    `SPLINE_CONE` can be switched on.
   * **Where S9 stands (2026-09-30, paused).** Done and pushed: S9a to S9d
     (every sub-step with its DRAW survey and a clean campaign), S9e.1
     (campaign clean at `51c08edf`) and S9e.2 (`8e060c67`), S9f's decisions
