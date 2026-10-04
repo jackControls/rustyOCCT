@@ -1,13 +1,13 @@
-//! S9f.3a: Booleans of spline prisms against spheres and hemispheres in any
+//! S9f.3b: Booleans of spline prisms against cones and frustums in any
 //! relative position, against the independent reference
-//! (`fixtures/boolean-spline-sphere-*` from
-//! `tools/generate_spline_sphere_boolean_fixtures.py`): loops turning back
-//! inside the faces on graphs over the height, branches over the spline's
-//! parameter, hemispheres' split great circles and rims on spline walls in
-//! tower fields, as the reference; tangencies, turning points at knots and
-//! on faces' boundaries `Degenerate` with the decisions' reasons; zones in
-//! turned frames by inclusion and exclusion (a cone against a spline prism,
-//! refused here before S9f.3b, is `spline_cone_booleans.rs`'s).
+//! (`fixtures/boolean-spline-cone-*` from
+//! `tools/generate_spline_cone_boolean_fixtures.py`): rulings meeting both
+//! nappes (`A < 0`, the apex inside the prism and outside it), loops turning
+//! back inside the faces on graphs over the height and branches over the
+//! spline's parameter (`A > 0`), a rim's points on a wall's generatrices in
+//! a tower field, as the reference; the apex on a wall, a wall along the
+//! cone's ruling and a tangency `Degenerate` with the decisions' reasons;
+//! cones in turned frames by inclusion and exclusion.
 use rusty_occt::identity::OperationId;
 use rusty_occt::topology::SplineSpan;
 use rusty_occt::{
@@ -19,8 +19,8 @@ use rusty_occt::{
 mod protocol;
 use rusty_occt::history;
 
-const CASES: &str = include_str!("../../fixtures/boolean-spline-sphere-cases.txt");
-const EXPECTED: &str = include_str!("../../fixtures/boolean-spline-sphere-expected.tsv");
+const CASES: &str = include_str!("../../fixtures/boolean-spline-cone-cases.txt");
+const EXPECTED: &str = include_str!("../../fixtures/boolean-spline-cone-expected.tsv");
 
 fn tol() -> Tolerance {
     Tolerance::default()
@@ -181,32 +181,52 @@ fn meetings(out: &[Solid]) -> Vec<rusty_occt::topology::WallMeet> {
         .collect()
 }
 
-/// A sphere straddling a spline wall meets it in a loop: about each of its
-/// two turning points a graph over the wall's `v` on the sphere (a
-/// `Curve3::WallMeet` with `other_sphere` and a window inside one knot
-/// span), graphs over `u` between them; a large sphere over the dome in one
-/// branch over `u` from edge to edge, no window. Every piece's points lie
-/// on the wall and on the sphere.
+/// The other surface's (a cone's) function at a point, `|(w . x2, w . y2)|
+/// - (R + (w . n2) tan a2)`.
+fn cone_gap(m: &rusty_occt::topology::WallMeet, p: Point3) -> f64 {
+    let w = p - m.other.origin();
+    let r = m.other_radius + w.dot(m.other.normal()) * m.other_half_angle.tan();
+    w.dot(m.other.x()).hypot(w.dot(m.other.y())) - r
+}
+
+/// A thin frustum across the dome's axis piercing its arch (`A > 0`) meets
+/// it in a loop: about each of its two turning points a graph over the
+/// wall's `v` (a window inside one knot span), graphs over `u` between
+/// them; a frustum on the bulge's axis (`A < 0`) in one branch over `u` on
+/// its own nappe, no window. Every piece's points lie on the wall and on the
+/// cone (its stored half angle's), on the cone's face.
 #[test]
-fn loops_and_branches_on_the_sphere() {
-    for (name, windows) in [("bulge_ball_common", 2), ("dome_ball_common", 0)] {
+fn loops_and_branches_on_the_cone() {
+    for (name, windows) in [("dome_pierce_common", 2), ("bulge_frustum_common", 0)] {
         let (_, _, out, _) = run(name);
         let meets = meetings(&out);
         assert!(!meets.is_empty(), "{name}");
-        assert!(meets.iter().all(|m| m.other_sphere), "{name}");
+        assert!(
+            meets
+                .iter()
+                .all(|m| m.other_half_angle != 0.0 && !m.other_sphere),
+            "{name}"
+        );
         let over_v: Vec<_> = meets.iter().filter_map(|m| m.window).collect();
         assert_eq!(over_v.len(), windows, "{name}: {meets:?}");
         for m in &meets {
-            let c = m.other.origin();
             for k in 0..=8 {
                 let f = f64::from(k) / 8.0;
                 let p = m.point(f);
                 let (u, v) = m.parameters(f);
+                assert!(cone_gap(m, p).abs() < 1e-12, "{name}: {p:?}");
+                // (At a cap the height may round past the wall's domain.)
+                let ((u0, u1), (v0, v1)) = m.wall.domain();
+                let (uc, vc) = (u.clamp(u0, u1), v.clamp(v0, v1));
+                assert!((v - vc).abs() < 1e-12, "{name}: {v}");
                 assert!(
-                    ((p - c).length() - m.other_radius).abs() < 1e-12,
-                    "{name}: {p:?}"
+                    (m.wall.point(uc, vc).unwrap() - p).length() < 1e-12,
+                    "{name}"
                 );
-                assert!((m.wall.point(u, v).unwrap() - p).length() < 1e-12, "{name}");
+                // On the cone's own nappe: its radius term positive.
+                let w = p - m.other.origin();
+                let r = m.other_radius + w.dot(m.other.normal()) * m.other_half_angle.tan();
+                assert!(r > 0.0, "{name}: {p:?}");
                 if let Some([a, b]) = m.window {
                     assert!(a < u && u < b, "{name}: {u} in {a} {b}");
                     let knots = m.wall.u_knots().knots();
@@ -217,26 +237,26 @@ fn loops_and_branches_on_the_sphere() {
     }
 }
 
-/// A hemisphere on its side whose rim's plane `x = 10.6` holds the bulge's
-/// axis: the rim meets the wall's generatrices there in a tower field, found
-/// in one field (a primitive element): the common's vertices on that plane
-/// and on the sphere, inside the wall's heights.
+/// A frustum across the dome's axis whose bottom rim's plane `y = 5/4`
+/// holds the dome's axis: the rim meets the arch's generatrices at `x = 2
+/// +- sqrt(3/2)` in a tower field: the common's vertices there on the rim
+/// and on the dome, inside the prism's heights.
 #[test]
 fn a_rims_tower_points_are_vertices() {
-    let (_, b, out, _) = run("side_hemi_bulge_common");
-    let centre = b.frame().origin();
+    let (_, b, out, _) = run("dome_side_cone_common");
+    let c = b.frame().origin();
     let on_rim: Vec<Point3> = out
         .iter()
         .flat_map(|s| s.topology().vertices().to_vec())
         .map(|v| v.position)
-        .filter(|p| (p.x - 10.6).abs() < 1e-12 && ((*p - centre).length() - 0.9).abs() < 1e-12)
+        .filter(|p| {
+            (p.y - 1.25).abs() < 1e-12 && ((p.x - c.x).hypot(p.z - c.z) - 1.5).abs() < 1e-12
+        })
         .collect();
     assert!(on_rim.len() >= 2, "{on_rim:?}");
     for p in &on_rim {
-        // On the bulge: x = 10 + (2/3) y (1 - y/6).
-        let x = 10.0 + 2.0 / 3.0 * p.y * (1.0 - p.y / 6.0);
-        assert!((x - p.x).abs() < 1e-12, "{p:?}");
-        assert!(p.z > 0.0 && p.z < 3.0);
+        assert!(((p.x - 2.0).abs() - 1.5f64.sqrt()).abs() < 1e-12, "{p:?}");
+        assert!(p.z > 0.0 && p.z < 3.0, "{p:?}");
     }
 }
 
@@ -388,21 +408,18 @@ fn agree(a: &Solid, b: &Solid) -> f64 {
     common
 }
 
-/// Zones in turned frames (latitudes whose heights round): their rims in
-/// planes oblique to the dome's wall meet it along their creases, their end
-/// discs cut it in creases, the sphere meets it in a loop; and a cap whose
-/// rim's plane holds the wall's axis (on its side). Each result validated as
-/// it is built, the three operations by inclusion and exclusion.
+/// Cones in turned frames (stored axes not exactly orthonormal, the half
+/// angle's tangent not the model's slope): a frustum leaning across the
+/// dome's arch (`A > 0`) and one in the tilted frame along the dome's axis
+/// within its half angle (`A < 0`), each result validated as it is built,
+/// the three operations by inclusion and exclusion.
 #[test]
-fn zones_and_caps_in_turned_frames_agree() {
+fn cones_in_turned_frames_agree() {
     let a = prism(1, dome(), Frame3::xy(), 0.0, 3.0);
-    let tilt = frame((2.0, 1.75, 1.5), (0.0, 3.0, 4.0), (1.0, 0.0, 0.0));
-    let (zone, _) =
-        Solid::sphere_with(OperationId(2), tilt, 1.0, -0.5, 0.75, tol()).expect("a zone");
-    assert!(agree(&a, &zone) > 0.0);
-    let side = frame((2.25, 1.75, 1.5), (1.0, 0.0, 0.0), (0.0, 1.0, 0.0));
-    let half = std::f64::consts::FRAC_PI_2;
-    let (cap, _) =
-        Solid::sphere_with(OperationId(3), side, 1.0, -half, 0.25, tol()).expect("a cap");
-    assert!(agree(&a, &cap) > 0.0);
+    let lean = frame((2.5, 0.5, 1.5), (0.0, 4.0, 3.0), (1.0, 0.0, 0.0));
+    let (k, _) = Solid::cone_with(OperationId(2), lean, 0.75, 0.5, 3.0, tol()).expect("a frustum");
+    assert!(agree(&a, &k) > 0.0);
+    let tilt = frame((2.0, 1.0, -1.0), (0.0, 0.25, 1.0), (1.0, 0.0, 0.0));
+    let (k, _) = Solid::cone_with(OperationId(3), tilt, 2.0, 0.5, 5.0, tol()).expect("a frustum");
+    assert!(agree(&a, &k) > 0.0);
 }

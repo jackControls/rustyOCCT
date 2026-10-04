@@ -57,7 +57,12 @@
 //! 192, its low bit set, the flags' bits 5 and 6 keeping the object's
 //! prism) meets it along the walls' meetings with the sphere, their loops
 //! and the rims' and split's circles on the walls (`SPLINE_SPHERE`, off for
-//! time: refused as before its kernel).
+//! time: refused as before its kernel). S9f.3b: a spline prism object
+//! against the cone or frustum tool (the spline byte in 160..192, its low
+//! bit set, the flags' bits 5 and 6 keeping the object's prism) meets it
+//! along the walls' meetings with the cone, both nappes or its loops, and
+//! the rims on the walls (`SPLINE_CONE`, off for time: refused as before
+//! its kernel).
 //! S9e.4a: the object written by the kernel's `.brep` writer and read back
 //! is imported (`Solid::imported_with`) and given the chosen operation with
 //! the tool again, its volume the object's own result's (`IMPORTED`).
@@ -183,6 +188,19 @@ const SPLINE_CROSSING: bool = true;
 /// it, graphs over the height) are too slow for the target's 60 s. The
 /// kernel's tests and the replayed variants cover them meanwhile.
 const SPLINE_SPHERE: bool = false;
+
+/// Whether a spline prism meets a cone or a frustum (S9f.3b's meetings of
+/// spline walls with the cone, S9f.2b's quadratic with its radius row:
+/// both nappes for a ruling within its half angle, loops and branches
+/// beyond it, its rims on the walls along their creases or in the rims'
+/// half-angle charts). Off: of 405 replayed variants (debug assertions, a
+/// host at load 26) none failed, the median took 0.47 s and the ninth
+/// decile 2.0 s, but the slowest 12.6 s and under AddressSanitizer the
+/// three slowest 97, 76 and 49 s (a cone on its side or tilted across a
+/// lens hole, its loops' certified integrals the cost, as `SPLINE_SPHERE`'s),
+/// over the target's 60 s. The kernel's tests and the replayed variants
+/// cover them meanwhile.
+const SPLINE_CONE: bool = false;
 
 /// R4's knot on the target's sizes: a rectangle `2s` by `t` under a
 /// quadratic from `(2s, t)` to `(0, 2t)` whose interior knot of
@@ -358,6 +376,16 @@ pub fn check_boolean(data: &[u8]) {
     // (off: refused as before its kernel).
     if !SPLINE_SPHERE && splines & 1 == 1 && spline_byte >= 192 && matches!((flags >> 5) % 4, 0 | 3)
     {
+        return;
+    }
+    // S9f.3b: a spline prism object against the cone or frustum tool (off:
+    // refused as before its kernel).
+    let prism_object = match (flags >> 5) % 4 {
+        0 | 3 => true,
+        2 => !CONE_PAIRS,
+        _ => false,
+    };
+    if !SPLINE_CONE && splines & 1 == 1 && (160..192).contains(&spline_byte) && prism_object {
         return;
     }
     let fb = if offset_tilt {

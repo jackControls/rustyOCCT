@@ -1314,7 +1314,7 @@ fn curve3(arr: &Arr, e: &REdge, points: &BTreeMap<usize, Point3>) -> Result<Curv
         Crv::Spline(c) => spline_curve3(arr, e, c),
         // S9f.2b: on the spline wall's and the cylinder's stored surfaces,
         // a graph over the wall's own parameter (the curve's `t`); S9f.3a:
-        // the sphere's.
+        // the sphere's; S9f.3b: the cone's, by its stored half angle.
         Crv::WallMeet(m) => {
             let CurveRef::Section(si, _) = first.curve else {
                 unreachable!("a spline wall's meeting is a section")
@@ -1327,12 +1327,17 @@ fn curve3(arr: &Arr, e: &REdge, points: &BTreeMap<usize, Point3>) -> Result<Curv
             let Surface::BSpline(wall) = stored[m.carrier] else {
                 return Err(Error::InvalidTopology("a wall's meeting off a spline wall"));
             };
-            let (frame, radius, other_sphere) = match stored[1 - m.carrier] {
-                Surface::Cylinder { frame, radius } => (frame, radius, false),
-                Surface::Sphere { frame, radius } => (frame, radius, true),
+            let (frame, radius, other_sphere, other_half_angle) = match stored[1 - m.carrier] {
+                Surface::Cylinder { frame, radius } => (frame, radius, false, 0.0),
+                Surface::Sphere { frame, radius } => (frame, radius, true, 0.0),
+                Surface::Cone {
+                    frame,
+                    radius,
+                    half_angle,
+                } => (frame, radius, false, *half_angle),
                 _ => {
                     return Err(Error::InvalidTopology(
-                        "a wall's meeting off a cylinder or a sphere",
+                        "a wall's meeting off a cylinder, a sphere or a cone",
                     ))
                 }
             };
@@ -1354,6 +1359,7 @@ fn curve3(arr: &Arr, e: &REdge, points: &BTreeMap<usize, Point3>) -> Result<Curv
                     other: *frame,
                     other_radius: *radius,
                     other_sphere,
+                    other_half_angle,
                     sign: 1.0,
                     start: va,
                     sweep: vb - va,
@@ -1371,6 +1377,7 @@ fn curve3(arr: &Arr, e: &REdge, points: &BTreeMap<usize, Point3>) -> Result<Curv
                 other: *frame,
                 other_radius: *radius,
                 other_sphere,
+                other_half_angle,
                 sign: if m.plus { 1.0 } else { -1.0 },
                 start: ta,
                 sweep: tb - ta,

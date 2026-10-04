@@ -7132,6 +7132,265 @@ Decisions for S9, recorded before its code (2026-09-28):
     survey, the campaign (with `SPLINE_SPHERE` off), and the speed of the
     certified integrals beside a loop's turning points before it can be
     switched on.
+  * **S9f.3b refined, before its code (2026-10-04).** Why it is refused
+    today: `curved::spline_pairs` refuses a spline prism against a cone or
+    frustum ("a spline prism against a cone (S9f.3b)"); behind it
+    `meet::section` and `meet::edge_surface` have no spline wall against a
+    cone's wall, no spline cap edge or crease against it and no cone's rim
+    against a spline wall (`spline_curved`), `spline_crossing`'s quadratic
+    has no radius term (its rows, coefficients, slope and tangent are sums
+    of squares less `r^2`; `meeting_with` asserts `t = 0`), the cone pairs'
+    pass would take a spline wall for a ruled quadric (`cones::cone_pair`,
+    never reached since S9f.3a's amendment (d)), and `Curve3::WallMeet`
+    holds a cylinder or a sphere. Decisions, refining "S9f.3 refined" (1)
+    for the cone; its (2) to (7) hold where nothing below differs.
+    (1) *The meeting.* Along a spline wall's ruling `X = P(tau) + w n` the
+    cone's function on its exact model (`procedural::other_cone`: `u^2 +
+    v^2 - (b + k w_c)^2` in the cone frame's exact rows, `k` its rational
+    slope) is `F = A w^2 + 2 B(tau) w + C(tau)` with `A = q_u^2 + q_v^2 -
+    k^2 q_w^2` (`q` the prism's axis in the cone's rows), `B = q_u P_u + q_v
+    P_v - k q_w rho(P)` of degree `p` and `C = P_u^2 + P_v^2 - rho(P)^2` of
+    degree `2 p` (`rho(P) = b + k P_w` the radius term at the ruling's
+    foot): S9f.2b's quadratic with a radius row of negative sign. `A` is
+    one constant for the whole pair (every ruling is parallel to the
+    prism's axis) and its sign is the case: (a) `A > 0`, the prism's axis
+    farther from the cone's than its half angle: each ruling meets the
+    quadric twice on one nappe or not at all, its turning points (roots of
+    `D = B^2 - A C`) where it touches the cone, and S9f.3a's meeting
+    carries over unchanged (branches over the run, loops' graphs over the
+    height about turning points inside both faces, their switches; a
+    turning point within the resolution of a rim's plane `Degenerate` as a
+    sphere's, S9f.3a's amendment (b)); (b) `A < 0`, within the half angle
+    (the prism's axis along the cone's among them): each ruling meets the
+    double cone once on each nappe, so `D > 0` but where the ruling passes
+    the apex, and the plus and minus branches run over the whole run, one
+    on each nappe; the other nappe's lies beyond the apex, outside the
+    cone's face (its heights: a cone's radii are nonnegative, so the apex,
+    real or virtual, lies at or beyond an end), and the arrangement drops
+    it as it drops any piece outside a face; (c) `A = 0`, the prism's axis
+    exactly along a generatrix direction: one finite root per ruling,
+    running to infinity where `B` vanishes, `Degenerate("a spline wall
+    along a cone's ruling")`, as S9d.3c's cylinder along a cone's ruling
+    (the limit of the rounding cases, whose second branch comes in from
+    either side), checked first. (d) The apex, a cone's or a frustum's
+    virtual one, on a spline wall's surface (the segment's wall, at any
+    height) is `Degenerate("a cone's apex on the other input's surface")`,
+    `cone_pair`'s rule: every ruling's two points meet there (a node of the
+    meeting or an isolated point, `D`'s double root), checked before the
+    turning points. The apex of a cone (a vertex of its model) inside the
+    prism, outside it or on a face other than a spline wall is the
+    engine's as before.
+    (2) *Representation.* In the engine `Crv::WallMeet` unchanged, its
+    `other` the cone's `Other` (`t = k`); `spline_crossing`'s rows carry
+    their signs (a cylinder's two and a sphere's three positive less
+    `r^2`, a cone's two positive and its radius row negative), so `A`,
+    `B`, `C`, a point's `F_w / 2`, the tangent, the binary64 views and the
+    graphs over the height are one code for the three quadrics; `Partner`
+    gains `Cone` (its reasons: "a cone tangent to a spline wall", "a spline
+    wall's meeting with a cone turning back at a knot" and "... on a face's
+    boundary"), its loops' switch a sixty-fourth of the way as a sphere's
+    until timing says otherwise. In the topology `Curve3::WallMeet` gains
+    `other_half_angle` (as `Curve3::Meet`'s and `Toric`'s): nonzero, the
+    other surface is the cone `|(w . x2, w . y2)| = other_radius + (w . n2)
+    tan a2` of `other`'s frame (its stored base frame, `other_radius` its
+    bottom radius, zero at an apex) and its function along the ruling `a
+    t^2 + 2 b t + c` with `a = m_x^2 + m_y^2 - tan^2 m_n^2`, `b = w_x m_x +
+    w_y m_y - (R + tan w_n) tan m_n`, `c = w_x^2 + w_y^2 - (R + tan w_n)^2`
+    and `d = b^2 - a c = sum_i (R m_i + tan (w_n m_i - m_n w_i))^2 - (w_x
+    m_y - w_y m_x)^2` (`i` over `x`, `y`; Lagrange's identity with the
+    radius row). The stored half angle's tangent is not rational, so
+    `wall_meet.rs`'s spans keep each of `a`, `b`, `c`, `d` as exact
+    Bernstein polynomials per power of `tan` (`a0 + tan^2 a2`, `b0 + tan b1
+    + tan^2 b2`, ...), combined at evaluation with `tan` enclosed in the
+    tier (`cos_sin`, then a quotient, as `projection::meet_jet`'s), the
+    graphs over `v`'s `g` with the radius row's square subtracted. The
+    curve's evaluation and its `(-b + s sqrt(d)) / a` or `c / (-b - s
+    sqrt(d))` choice are unchanged (`a` of either sign; at `a` near zero the
+    second form, as `Meet`'s). On the cone face its pcurve is a
+    `Projection` by the cone's inverse. Validity: a cone's half angle
+    nonzero and under a right angle, its radius positive or zero (an apex),
+    never both a sphere and a cone, the axis crossing asked of a cylinder
+    only. Rigid motion, the writer's and importer's refusals, history,
+    `curve_curve` and `curve_surface` as S9f.2b's.
+    (3) *Vertices.* A spline cap edge or crease against the cone: `F` along
+    it (degree `2 p`, `wallcrv_quadric` with the radius row); the spline
+    prism's vertical edges: S9d.3a's `line_cone`; a cone's rim (a circle of
+    rational radius `b` or `t` in its end plane) against a spline wall:
+    along its plane's crease on the wall in the rim's own elliptic
+    cylinder (the conic `c + a cos + b sin`'s, degree `2 p`, placed by its
+    angle), or, in a plane holding the wall's axis direction (the cone's
+    axis across the prism's), S9f.2b.2's half-angle chart (`tower_points`:
+    the rim's radius is rational, so its chart is, and no elimination is
+    needed); the cone's end discs against spline walls by S9f.1's creases
+    and generatrices. Every vertex on a wall lies in `Q(alpha)` of degree
+    at most `2 p` or in `Q(sqrt(d))`; no new limit.
+    (4) *Degenerate*: (1)(c) and (1)(d); the cone tangent to a spline wall
+    (a multiple root of `D` inside both faces' closures: "a cone tangent to
+    a spline wall"); a turning point at an interior knot or on a face's
+    boundary (a cap's edge, a rim, the segment's end) as S9f.3a's with the
+    cone's reasons; a vertex's polynomial with a multiple root; and the
+    engine's rules (a vertex of one input on the other's face, the rims'
+    seams tried again). A meeting within rounding of these validates or is
+    `PrecisionLoss`; fixtures keep a margin.
+    (5) *Stays refused*: tori (by design), spline walls against spline
+    walls on crossing axes, given results with spline walls or made from
+    cones against a spline prism (S9e's general faces), rational and
+    periodic profile splines.
+    (6) *Evidence first*: `spline_cone_boolean_reference.py`, an extension
+    of `spline_sphere_boolean_reference.py` (its prism, profile elements,
+    Green's integrals of the pieces and solids reused; the cone its own):
+    the cone or frustum on an exact frame (axes along the world's, either
+    sense; any relative position comes from the prism's frame), the pair
+    sliced along two directions that cut the cone in ellipses (its axis
+    leaned toward the prism's), each slice's cone section the quadric's
+    restriction to the slice (an ellipse about its centre on its principal
+    axes) projected along the prism's axis and cut by the end planes'
+    lines; the cone's wall area by its element `sqrt(1 + k^2) |G(s)| /
+    D(theta)^2 dtheta ds` (`r = G / D` along the slice), in closed form
+    over the section's arcs inside the prism; the prism's walls along
+    their rulings (`F <= 0` within the end planes' slab, either sign of
+    `A`); the caps by chords in their planes against the cone's conic of
+    any type; the end discs as the sphere's; volumes and moments two ways,
+    the inputs' closed forms, inclusion and exclusion, the area identity,
+    Monte Carlo, solids by the slices' union-find; margins as S9f.3a's plus
+    `|A|` and the apex's distance from the spline walls' surfaces.
+    `generate_spline_cone_boolean_fixtures.py --check` (the same files
+    under Python 3.9 and 3.12) across cones and frustums in either
+    relation of the axes (`A < 0`: coaxial and leaning, both nappes met by
+    every ruling, the apex inside the prism and outside it; `A > 0`: a
+    leaning cone's loop through a wall, branches over the run, a cone
+    across the prism's axis whose rims' planes hold it and whose cap
+    sections are hyperbolas), either input the object, and declared
+    degenerate pairs (the apex on a wall, `A = 0`, a cone touching a
+    wall); `test_spline_cone_boolean_reference.py`; the CI group
+    `spline-cone`; a native capture
+    `occt-boolean-spline-cone-preimplementation` before
+    `solid/boolean/curved/spline_cone.rs` exists
+    (`compare_spline_cone_boolean.py` keyed on it); then the kernel
+    (`spline_cone.rs` with `spline_crossing.rs`'s signed rows), its tests,
+    and the `boolean` fuzz target's spline prism object against its cone
+    tool (`SPLINE_CONE`).
+    * **S9f.3b evidence (2026-10-04), before its code.**
+      `spline_cone_boolean_reference.py`, an extension of S9f.3a's: the
+      cone on an exact frame, the pair sliced along two directions that cut
+      it in ellipses (its axis leaned toward the prism's), each slice's cone
+      section its quadric's restriction to the slice on its principal axes
+      projected along the prism's axis and cut by the end planes' lines,
+      the Boolean pieces by Green's theorem on the cut boundaries; the
+      cone's wall by its area element `sqrt(1 + k^2) |G(s)| / D(theta)^2`
+      in closed form over the section's arcs inside the prism (an `atan`
+      and a rational term, unwrapped across turns); the prism's walls along
+      their rulings (`F <= 0` within the slab, either sign of `A`); the caps
+      by chords against the cone's conic of any type; the end discs as the
+      hemisphere's; breakpoints at every vertex's slice and every edge's
+      extremes (the cap planes' conics' on the line where the quadric's
+      gradient lies in the span of the cap's normal and the slicing
+      direction, the meeting's by S9f.3a's elimination). Solids by
+      intervals on chords of slices across the prism's axis, joined where
+      they overlap (amending (6)'s "solids by the slices' union-find": a
+      slice leaning from the prism's axis crosses a thin layer under a cap
+      as a moving sliver whose sections never overlap in the profile's
+      plane, and a cone across the prism's axis cuts the caps in
+      hyperbolas, so no slicing of S9f.3a's kind serves).
+      `generate_spline_cone_boolean_fixtures.py --check` writes 27 cases (7
+      fuses, 10 cuts, 10 commons; 21 solid, 6 degenerate): `A < 0` a
+      frustum on the bulge's axis across both caps (`bulge_frustum`), a
+      cone with its apex inside the lens prism (`lens_apex`: the other
+      nappe meets the lens's walls inside the prism's heights, outside the
+      cone's face), a cone hanging over the blob with its apex below the
+      prism (`blob_down`), a frustum object across the wave's middle span
+      (`cone_wave`); `A > 0` a thin frustum across the dome's axis piercing
+      its arch (`dome_pierce`, a loop), one whose bottom rim's plane holds
+      the dome's axis (`dome_side_cone`: the rim's points on the arch's
+      generatrices in a tower field, the top cap cutting the cone in a
+      hyperbola), a frustum on `z` against `knot` in `TILT`
+      (`knot_tilt_cone`, a loop); and `degenerate` the cone's apex on the
+      dome's arch (`apex_wall`), the bulge in `TILT` against a cone whose
+      slope is the stored axis's ratio (`ruling_tilt`, `A = 0` exactly), a
+      cone across the dome's axis touching its arch (`dome_touch`). Checks:
+      the two slicings within 1.1e-39 of the size, both inputs' closed
+      forms 1.0e-39, faces' classes 1.4e-40 (the cone's wall by its
+      element against `pi (b + t)` times its slant), the area identity
+      9.2e-41, Monte Carlo (100,000 points a pair) within 2.1 standard
+      errors; margins outside the declared pairs at least 0.0156 (`|A|` of
+      the coaxial frustum; the apex 0.25 from the walls, crossings 0.16,
+      loops 0.16 inside both faces), the declared pairs' zero; Python 3.9
+      and 3.12 the same files; `test_spline_cone_boolean_reference.py` (a
+      frustum halved by a straight spline wall in closed form, the area
+      element over a turn, `A`'s sign, a rim's tower points in closed
+      form); the CI group `spline-cone`. The capture
+      `occt-boolean-spline-cone-preimplementation`
+      (`compare_spline_cone_boolean.py`, keyed on
+      `solid/boolean/curved/spline_cone.rs`; the probe `unsupported` on all
+      27, refused by `spline_pairs`): every result valid with the
+      reference's solids, 4 matches, 23 reviewed (BRepGProp's default
+      integration up to 5.5e-6 off on the quadratic and cubic walls, 7.4e-5
+      on `knot` in `TILT`, the wave's 1.0e-3; a diagnostic build's adaptive
+      BRepGProp and Green's theorem over OCCT's own faces and pcurves, the
+      better within 3.2e-8 in volume, 7.0e-9 in area and 9.0e-9 in the
+      centre); three solids' counts change when unified. No other correction
+      to the decisions from the evidence. S9f.3b's kernel next.
+  * **S9f.3b implemented** (`solid/boolean/curved/spline_cone.rs`;
+    `spline_crossing.rs`'s signed rows (`terms`), `conic_crease` and
+    `tower_points` over a partner, `inner_gap`'s cone; `mod.rs`'s
+    `spline_pairs`, `graph.rs`'s pairs pass (the cone pairs' pass leaving
+    spline walls to it), `meet.rs`'s sections and edge meetings,
+    `assemble.rs`'s curves; the topology's `Curve3::WallMeet::other_half_angle`
+    with `WallMeet::radius_row`, `topology/validate/wall_meet.rs`'s
+    polynomials per power of the half angle's tangent and the validity
+    rule): spline prisms against cones and frustums in any position as the
+    refined decisions describe. The meeting is S9f.2b's over the cone's
+    signed rows, found once per pair of a spline wall and the cone's wall
+    after the decisions' two refusals (`A = 0`; the apex, real or virtual,
+    on the wall's surface); `A > 0` gives S9f.3a's loops and branches (the
+    loops switched a sixty-fourth of the way, as a sphere's), `A < 0` the
+    two branches over the whole run on opposite nappes, the other nappe's
+    dropped as outside the cone's face. A rim meets a wall along its
+    plane's crease in its own elliptic cylinder (the rows dual to the
+    conic's axes) or, in a plane holding the wall's axis, at S9f.2b.2's
+    points in its half-angle chart. All 27 fixtures as the reference (the
+    21 results within the kernel's enclosures of volume, area and centre,
+    each at most `1e-9` wide; the 6 degenerate refused with the decisions'
+    reasons); every history complete, results deterministic and moved
+    rigidly (`tests/spline_cone_booleans.rs`, 6 tests, 20 s in release on a
+    host at load 10 to 17, 23 s at `opt-level` 2 with debug assertions:
+    also the loops' graphs over `v` each in one knot span and the coaxial
+    frustum's branch on its own nappe, a rim's tower vertices on the dome,
+    a leaning frustum (`A > 0`) and a tilted one (`A < 0`) in turned frames
+    by inclusion and exclusion; `wall_meet.rs`'s seventh test: cones
+    across and along a wall, their points on both surfaces, jets enclosing
+    them, `a`'s sign). `compare_spline_cone_boolean.py` 4 matches and 23
+    reviewed, the kernel within the reference on all 21 results and none
+    `unsupported` (the 6 loop cases' reviews name their counts: the
+    kernel's loops cut at their switches; in `knot_tilt_cone_fuse` the
+    cone's wall outside the prism, two regions, two faces of OCCT's and one
+    of the kernel's, its cone wall one face traced in projection); every
+    other spline comparison unchanged with 0 failures
+    (`compare_spline_sphere_boolean.py` 4/29, `compare_spline_crossing_boolean.py`
+    14/37, `compare_spline_parallel_boolean.py` 31/12,
+    `compare_spline_any_boolean.py` 22/16). Amendments to the decisions,
+    from the implementation: (a) a turning point inside both faces but
+    within the resolution of a cone's rim's plane is `Degenerate`, as a
+    sphere's rim's (S9f.3a's amendment (b), `inner_gap`); (b) a sphere's
+    and a cylinder's binary64 curve and certified polynomials are as
+    before bit for bit (the radius row's terms only where there is one).
+    The `boolean` fuzz target decodes a spline prism object against its
+    cone or frustum tool through S9f.3b (`SPLINE_CONE`), switched off for
+    time: of 405 variants of every third corpus input (the spline byte in
+    `161 + 4 m`, the flags' bits 5 and 6 clear) replayed with debug
+    assertions on a host at load 26, none failing, the median took 0.47 s,
+    the ninth decile 2.0 s and the slowest 12.6 s, and under
+    AddressSanitizer the three slowest 97, 76 and 49 s (a cone on its side
+    or tilted across a lens hole, its loops: the certified integrals beside
+    the turning points, as `SPLINE_SPHERE`'s). Replays with debug
+    assertions of the corpus (1,430 inputs) and the 25 regressions, none
+    failing, with the switch off (the slowest 18 s) and on (16 s). Every
+    check asked holds: fmt, clippy, the 1.85 check, the suite, the five
+    spline comparisons with 0 failures, the generator's `--check` under
+    Python 3.9 and 3.12 and its unit tests. Pending: the DRAW survey, the
+    campaign (with `SPLINE_CONE` off), the Linux record of the capture, and
+    the speed of the loops' certified integrals before `SPLINE_SPHERE` and
+    `SPLINE_CONE` can be switched on.
   * **Where S9 stands (2026-09-30, paused).** Done and pushed: S9a to S9d
     (every sub-step with its DRAW survey and a clean campaign), S9e.1
     (campaign clean at `51c08edf`) and S9e.2 (`8e060c67`), S9f's decisions

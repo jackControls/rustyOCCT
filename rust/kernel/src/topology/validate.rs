@@ -1245,11 +1245,12 @@ fn curve_valid(curve: &Curve3, tol: &R, fast_tol2: &Fast, exact_tol2: &I) -> boo
                 && m.sweep != 0.0
                 && a.hypot(b) > 1e-12
         }
-        // A spline wall's meeting with a cylinder (S9f.2b) or a sphere
-        // (S9f.3a): a nonrational wall of degree one in `v` over two pole
-        // rows, a range inside its `u` domain, a sign, a positive radius, a
-        // ruling crossing a cylinder's axis, the discriminant positive at
-        // the ends. A graph over `v` (S9f.2b.2): its window inside one knot
+        // A spline wall's meeting with a cylinder (S9f.2b), a sphere
+        // (S9f.3a) or a cone (S9f.3b): a nonrational wall of degree one in
+        // `v` over two pole rows, a range inside its `u` domain, a sign, a
+        // positive radius (a cone's zero at an apex, its half angle nonzero
+        // and under a right angle, never a sphere's), a ruling crossing a
+        // cylinder's axis, the discriminant positive at the ends. A graph over `v` (S9f.2b.2): its window inside one knot
         // span of the `u` domain, its range inside the `v` domain, the other
         // surface's function along the ruling of opposite signs at the
         // window's ends at the range's ends and middle.
@@ -1259,18 +1260,26 @@ fn curve_valid(curve: &Curve3, tol: &R, fast_tol2: &Fast, exact_tol2: &I) -> boo
             let (a, b) = (m.start, m.start + m.sweep);
             let inside = |x: f64| u0 <= x && x <= u1;
             // S9f.3a: a sphere meets every ruling's line; a cylinder only
-            // one crossing its axis.
+            // one crossing its axis; S9f.3b: a cone's `a` of either sign.
+            let cone = m.other_half_angle != 0.0;
             let crossing = |u: f64| {
                 let (_, dir) = m.ruling(u);
                 let (x2, y2) = (m.other.x(), m.other.y());
-                m.other_sphere || dir.dot(x2).hypot(dir.dot(y2)) > 1e-6 * dir.length()
+                m.other_sphere || cone || dir.dot(x2).hypot(dir.dot(y2)) > 1e-6 * dir.length()
             };
-            let common = finite(&[m.other_radius, m.sign, m.start, m.sweep])
+            let radius = if cone {
+                m.other_radius >= 0.0
+                    && !m.other_sphere
+                    && m.other_half_angle.abs() < std::f64::consts::FRAC_PI_2
+            } else {
+                r(m.other_radius) > *tol
+            };
+            let common = finite(&[m.other_radius, m.other_half_angle, m.sign, m.start, m.sweep])
                 && !s.is_rational()
                 && !s.u_knots().is_periodic()
                 && s.v_knots().degree() == 1
                 && s.v_knots().pole_count() == 2
-                && r(m.other_radius) > *tol
+                && radius
                 && (m.sign == 1.0 || m.sign == -1.0)
                 && m.sweep != 0.0;
             match m.window {

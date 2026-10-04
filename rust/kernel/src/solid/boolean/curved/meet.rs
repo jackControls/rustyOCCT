@@ -33,10 +33,10 @@ pub(super) fn tangency() -> Error {
     Error::Degenerate("a tangency between the inputs (S9c)")
 }
 
-/// A spline wall against a curved face other than a cylinder, a spline wall
-/// or a sphere (S9f.3b's: cones).
+/// A spline wall against a curved face other than a cylinder, a spline
+/// wall, a sphere or a cone (a torus: refused, S9f).
 fn spline_curved() -> Error {
-    Error::OutOfDomain("a spline wall against a curved face in any position (S9f.3b)")
+    Error::OutOfDomain("a spline wall against a curved face in any position (S9f)")
 }
 
 fn quartic() -> Error {
@@ -433,6 +433,13 @@ pub(super) fn section(
         (Surf::Sphere { c, r }, Surf::Spline(s)) => crossing_section(pair, || {
             super::spline_sphere::meeting(py, fy, s, px, fx, c, r)
         }),
+        // S9f.3b: against a cone's wall, the same way.
+        (Surf::Spline(s), Surf::Cone { b, k }) => crossing_section(pair, || {
+            super::spline_cone::meeting(px, fx, s, py, fy, b, k)
+        }),
+        (Surf::Cone { b, k }, Surf::Spline(s)) => crossing_section(pair, || {
+            super::spline_cone::meeting(py, fy, s, px, fx, b, k)
+        }),
         (Surf::Spline(_), _) | (_, Surf::Spline(_)) => Err(spline_curved()),
         // S9d.4a: a plane's section of a torus, by the pair's relation.
         (Surf::Plane { .. }, Surf::Torus) | (Surf::Torus, Surf::Plane { .. }) => {
@@ -677,6 +684,12 @@ pub(super) fn edge_surface(
         (Crv::Circle(circ), Surf::Spline(s)) if own_ball.is_some() => {
             let ball = own_ball.expect("a sphere's circle's own sphere");
             super::spline_sphere::circ_wall(circ, ball, &py.f, s)
+        }
+        // S9f.3b: a curve over a spline against a cone; a cone's rim (a
+        // conic with no cylinder of its own) against a spline wall.
+        (Crv::Spline(c), Surf::Cone { b, k }) => super::spline_cone::wallcrv_cone(c, &py.f, b, k),
+        (Crv::Conic { c, a, b }, Surf::Spline(s)) => {
+            super::spline_cone::conic_wall(c, a, b, &py.f, s)
         }
         (Crv::Spline(_), _) | (_, Surf::Spline(_)) => Err(spline_curved()),
         // S9d.4a: a line against a torus; a circle is S9d.4b's.

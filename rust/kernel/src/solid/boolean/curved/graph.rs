@@ -332,9 +332,9 @@ pub(super) fn arrange_shared(models: [Prism; 2]) -> Result<Arr> {
             pairs.insert((fa, fb), pair);
         }
     }
-    // A spline wall and a cylinder on crossing axes (S9f.2b) or a sphere
-    // (S9f.3a): the meeting's graphs over the run and over the height and
-    // their switches (S9f.2b.2).
+    // A spline wall and a cylinder on crossing axes (S9f.2b), a sphere
+    // (S9f.3a) or a cone (S9f.3b): the meeting's graphs over the run and
+    // over the height and their switches (S9f.2b.2).
     for fa in 0..models[0].faces.len() {
         let (va, ia) = models[0].view(fa);
         for fb in 0..models[1].faces.len() {
@@ -372,6 +372,21 @@ pub(super) fn arrange_shared(models: [Prism; 2]) -> Result<Arr> {
                         CylPair::Apart
                     }
                 }
+                // S9f.3b: a spline wall and a cone's wall, the same way.
+                (Surf::Spline(s), Surf::Cone { b, k }) => {
+                    if meets {
+                        super::spline_cone::meeting(va, ia, s, vb, ib, b, k)?
+                    } else {
+                        CylPair::Apart
+                    }
+                }
+                (Surf::Cone { b, k }, Surf::Spline(s)) => {
+                    if meets {
+                        super::spline_cone::meeting(vb, ib, s, va, ia, b, k)?
+                    } else {
+                        CylPair::Apart
+                    }
+                }
                 _ => continue,
             };
             pairs.insert((fa, fb), pair);
@@ -405,12 +420,13 @@ pub(super) fn arrange_shared(models: [Prism; 2]) -> Result<Arr> {
         }
     }
     // A cone and a curved face (S9d.3b): rings over a carrier, a plane, or
-    // apart.
+    // apart (a spline wall's above, S9f.3b).
     for fa in 0..models[0].faces.len() {
         for fb in 0..models[1].faces.len() {
             let (sa, sb) = (&models[0].faces[fa].surf, &models[1].faces[fb].surf);
             let cone = matches!(sa, Surf::Cone { .. }) || matches!(sb, Surf::Cone { .. });
-            let curved = |s: &Surf| !matches!(s, Surf::Plane { .. } | Surf::Torus);
+            let curved =
+                |s: &Surf| !matches!(s, Surf::Plane { .. } | Surf::Torus | Surf::Spline(_));
             if !cone || !curved(sa) || !curved(sb) {
                 continue;
             }
