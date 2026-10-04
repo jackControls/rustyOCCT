@@ -2871,12 +2871,11 @@ impl Topology {
                             else {
                                 return Ok(None);
                             };
-                            let arc_frame = Frame3::new(
-                                frame.point(center, height),
-                                frame.normal(),
-                                frame.x(),
-                                tolerance,
-                            )?;
+                            // The prism's axes bit for bit (`Frame3::at`):
+                            // normalized again, its normal could turn by an
+                            // ulp with the platform's `hypot`, off an
+                            // imported wall's stored axis (S9e.4b.1).
+                            let arc_frame = frame.at(frame.point(center, height));
                             let a = points[i];
                             let start = (a.y - center.y).atan2(a.x - center.x);
                             let sweep =
@@ -3166,18 +3165,9 @@ impl Topology {
                     }
                 }
                 BoundaryKind::Circle { center, radius } => {
-                    let cylinder_frame = Frame3::new(
-                        frame.point(*center, low),
-                        frame.normal(),
-                        frame.x(),
-                        tolerance,
-                    )?;
-                    let end_frame = Frame3::new(
-                        frame.point(*center, high),
-                        frame.normal(),
-                        frame.x(),
-                        tolerance,
-                    )?;
+                    // The prism's axes bit for bit, as an arc's above.
+                    let cylinder_frame = frame.at(frame.point(*center, low));
+                    let end_frame = frame.at(frame.point(*center, high));
                     // Two ring edges and the wall; no seam, no vertex.
                     let bottom = topology.add_ring(Curve3::Circle {
                         frame: cylinder_frame,

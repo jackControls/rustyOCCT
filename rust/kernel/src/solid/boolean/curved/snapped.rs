@@ -155,4 +155,75 @@ mod tests {
             Err(Error::OutOfDomain(_))
         ));
     }
+
+    /// The imported slot (`fixtures/imported/slot.brep`, its caps and walls
+    /// tilted along `(0, 0.6, 0.8)`) with its caps' and cylinders' stored
+    /// frames each platform's normalization of that axis: macOS's `hypot`
+    /// keeps `(0, 0.5999999999999999, 0.8)` when normalized again, glibc's
+    /// (correctly rounded) turns it to `(0, 0.6, 0.8000000000000002)`, which
+    /// macOS's turns back. The construction's walls carry its cap's axes bit
+    /// for bit, so a Boolean's split walls lie on the stored cylinders'
+    /// exactly parallel axes on either frame: the history holds on any host.
+    #[test]
+    fn split_walls_keep_the_stored_axes_on_either_platforms_frames() {
+        use crate::identity::OperationId;
+        use crate::topology::{Surface, Topology};
+        use crate::{Frame3, Point3, Solid, Vec3};
+        let doc =
+            crate::occt_brep::read(include_str!("../../../../../fixtures/imported/slot.brep"))
+                .unwrap();
+        let [solid] = <[_; 1]>::try_from(crate::occt_brep::import(&doc).solids).unwrap();
+        let (stored, resolution) = (solid.result.unwrap(), solid.tolerance);
+        let axis = |y: u64, z: u64| Vec3::new(0.0, f64::from_bits(y), f64::from_bits(z));
+        // macOS's fixed point, glibc's.
+        for n in [
+            axis(0x3fe3_3333_3333_3332, 0x3fe9_9999_9999_999a),
+            axis(0x3fe3_3333_3333_3333, 0x3fe9_9999_9999_999b),
+        ] {
+            // A frame of normal `+-n`, the stored `x` and `y = n x x`.
+            let turned = |f: Frame3| {
+                let n = if f.normal().dot(n) > 0.0 { n } else { -n };
+                Frame3::from_axes(f.origin(), f.x(), n.cross(f.x()), n)
+            };
+            let mut parts = stored.to_parts();
+            let mut cylinders = 0;
+            for face in &mut parts.faces {
+                match &mut face.surface {
+                    Surface::Cylinder { frame, .. } => {
+                        *frame = turned(*frame);
+                        cylinders += 1;
+                    }
+                    Surface::Plane(frame) if frame.normal().cross(n).length() < 1e-12 => {
+                        *frame = turned(*frame);
+                    }
+                    _ => {}
+                }
+            }
+            assert_eq!(cylinders, 2);
+            let t = Topology::from_parts(parts.with_measured_enclosures(), resolution).unwrap();
+            let (slot, _) = Solid::imported_with(OperationId(91), t, resolution).unwrap();
+            let (block, _) = Solid::box_at_with(
+                OperationId(92),
+                Point3::new(7.0, 0.0, 0.0),
+                Vec3::new(5.0, 10.0, 1.5),
+                resolution,
+            )
+            .unwrap();
+            for (out, history) in [
+                slot.fuse(OperationId(93), &block).unwrap(),
+                slot.cut(OperationId(94), &block).unwrap(),
+            ] {
+                let ins = [
+                    slot.topology().entity_set(slot.resolution()),
+                    block.topology().entity_set(block.resolution()),
+                ];
+                let outs: Vec<_> = out
+                    .iter()
+                    .map(|s| s.topology().entity_set(s.resolution()))
+                    .collect();
+                let issues = crate::history::check(&ins, &outs, &history);
+                assert!(issues.is_empty(), "{n:?}: {issues:?}");
+            }
+        }
+    }
 }
