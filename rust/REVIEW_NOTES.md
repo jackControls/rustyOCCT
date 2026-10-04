@@ -7034,7 +7034,22 @@ Decisions for S9, recorded before its code (2026-09-28):
     cylinder's wall, a ray count's resolution split a thin neck (a box
     lowered, a cone along the zone's axis, the band's torus on the world's
     axes and its ball smaller), and the pair is the cylinder's and the dee's
-    pieces (a zone's half beside them took the longest of all).
+    pieces (a zone's half beside them took the longest of all). The oracle
+    takes the `split` row as the solid common `BRepPrimAPI_MakeHalfSpace` of
+    the plane's face on the kept side (its reference point the origin a unit
+    along or against the normal). The capture
+    `occt-boolean-split-pieces-preimplementation`
+    (`compare_split_pieces_boolean.py`, keyed on
+    `solid/boolean/curved/splits.rs`, S9e.4a's slack; the kernel's probe
+    `unsupported` on all 48, every split piece refused as S9e.4's): every
+    result valid with the reference's solid count, 33 matching, 15 reviewed
+    (BRepGProp's default integration on faces bounded by the approximated
+    sections of the ball and the rods with the cylinder's piece, the ball
+    with the frustum's, the rod with the zone's, the ball with the band
+    and the chain's common: volumes up to 3.6e-6 relative off, within
+    1.4e-8 measured adaptively at 1e-10 and at 1e-12 by a diagnostic
+    build); 20 results' counts change when unified. S9e.4b.3b's kernel
+    next.
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces
