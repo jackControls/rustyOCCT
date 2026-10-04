@@ -701,6 +701,11 @@ impl IntPolynomial {
         }
         self
     }
+    /// Whether the two (nonzero) are certainly coprime, by their reductions
+    /// modulo a prime (`false`: undecided).
+    pub(crate) fn coprime_with(&self, other: &Self) -> bool {
+        !self.is_zero() && !other.is_zero() && coprime_modulo_prime(&self.0, &other.0)
+    }
     pub(crate) fn gcd(&self, other: &Self) -> Self {
         let (a, b) = if self.0.len() >= other.0.len() {
             (self, other)

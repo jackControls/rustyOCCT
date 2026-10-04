@@ -171,6 +171,54 @@ pub(super) fn roots(p: &Poly) -> Result<Vec<AlgebraicRoot>> {
     )
 }
 
+/// `gcd(p, p')` where `p = (1 + t^2)^m q` (a chart's factor, `m >= 1`) and
+/// `q` is certainly coprime with its derivative: then `(1 + t^2)^(m - 1)`,
+/// primitive with a positive leading coefficient as `IntPolynomial::gcd`
+/// gives it (`p' = (1 + t^2)^(m - 1) (2 m t q + (1 + t^2) q')`, and the
+/// irreducible `1 + t^2` divides neither `q` nor `2 m t q`). `None`
+/// otherwise: the subresultant chain decides.
+fn chart_gcd(p: &IntPolynomial) -> Option<IntPolynomial> {
+    use num_bigint::BigInt;
+    // Exact division by `t^2 + 1`, where it divides.
+    let divide = |p: &[BigInt]| -> Option<Vec<BigInt>> {
+        if p.len() < 3 {
+            return None;
+        }
+        let mut r = p.to_vec();
+        let mut q = vec![BigInt::from(0); p.len() - 2];
+        for k in (0..q.len()).rev() {
+            let c = r[k + 2].clone();
+            r[k] -= &c;
+            r[k + 2] = BigInt::from(0);
+            q[k] = c;
+        }
+        (r[0].sign() == num_bigint::Sign::NoSign && r[1].sign() == num_bigint::Sign::NoSign)
+            .then_some(q)
+    };
+    let mut q = p.0.clone();
+    let mut m = 0;
+    while let Some(next) = divide(&q) {
+        q = next;
+        m += 1;
+    }
+    if m == 0 {
+        return None;
+    }
+    let q = IntPolynomial::new(q);
+    if q.is_constant() || !q.coprime_with(&q.derivative()) {
+        return None;
+    }
+    // (1 + t^2)^(m - 1) by its binomial coefficients.
+    let k = m - 1;
+    let mut out = vec![BigInt::from(0); 2 * k + 1];
+    let mut binomial = BigInt::from(1);
+    for j in 0..=k {
+        out[2 * j] = binomial.clone();
+        binomial = binomial * BigInt::from(k - j) / BigInt::from(j + 1);
+    }
+    Some(IntPolynomial::new(out))
+}
+
 /// The distinct real roots of a nonzero, nonconstant polynomial, each with
 /// whether it is repeated, and its square-free part (S9d.4b.1: a tangency
 /// off a part's rim is no contact).
@@ -179,7 +227,7 @@ pub(super) fn roots_repeated(p: &Poly) -> Result<(Poly, Vec<(AlgebraicRoot, bool
     if ip.is_zero() || ip.is_constant() {
         return Err(tangency());
     }
-    let g = ip.gcd(&ip.derivative());
+    let g = chart_gcd(&ip).unwrap_or_else(|| ip.gcd(&ip.derivative()));
     let g: Poly = trim(g.0.iter().map(|c| R::from_integer(c.clone())).collect());
     // p / g, exactly.
     let mut r = p.clone();
@@ -826,4 +874,41 @@ fn verify(p: &Poly, chart: &Chart, range: &[[Qd; 2]; 2]) -> Result<()> {
         return Err(limit("a turning point inside a piece"));
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use num_bigint::BigInt;
+
+    fn ip(c: &[i64]) -> IntPolynomial {
+        IntPolynomial::new(c.iter().map(|&x| BigInt::from(x)).collect())
+    }
+
+    fn times(a: &IntPolynomial, b: &IntPolynomial) -> IntPolynomial {
+        let mut out = vec![BigInt::from(0); a.0.len() + b.0.len() - 1];
+        for (i, x) in a.0.iter().enumerate() {
+            for (j, y) in b.0.iter().enumerate() {
+                out[i + j] += x * y;
+            }
+        }
+        IntPolynomial::new(out)
+    }
+
+    /// A chart's factor `(1 + t^2)^m` times a square-free part: the gcd
+    /// with the derivative is `(1 + t^2)^(m - 1)`, the subresultant
+    /// chain's; a part not square-free goes the exact way.
+    #[test]
+    fn a_charts_factor_gives_the_gcd_with_the_derivative() {
+        let w = ip(&[1, 0, 1]);
+        let q = ip(&[-6, 1, 4, -3, 7]);
+        for m in 1..5 {
+            let p = (0..m).fold(q.clone(), |acc, _| times(&acc, &w));
+            assert_eq!(chart_gcd(&p), Some(p.gcd(&p.derivative())));
+        }
+        let square = times(&times(&q, &ip(&[2, -1])), &ip(&[2, -1]));
+        let p = times(&times(&square, &w), &w);
+        assert_eq!(chart_gcd(&p), None);
+        assert_eq!(chart_gcd(&q), None);
+    }
 }
