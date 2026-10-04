@@ -433,11 +433,8 @@ impl Gen {
     /// enclosure over the isolator first (S9d.4b.2b: certain where it
     /// excludes zero).
     fn sign_of(&self, p: &Ip) -> Ordering {
-        let root = self.narrowed(self.filter_steps(SIGN_STEPS));
-        let (lo, hi) = root.isolator();
         // A few ulps' enclosures of the rationals (no exact comparisons).
-        let v = Fast::near_r(lo).zip(Fast::near_r(hi)).and_then(|(lo, hi)| {
-            let x = lo.union(&hi);
+        let v = self.fast_root(SIGN_STEPS).and_then(|x| {
             p.num.iter().rev().try_fold(Fast::exact_f64(0.0), |acc, c| {
                 Some(acc.mul(&x).add(&Fast::near_parts(c, &p.den)?))
             })
@@ -471,6 +468,7 @@ impl Gen {
                     return s;
                 }
                 {
+                    let root = self.narrowed(self.filter_steps(SIGN_STEPS));
                     let ip = IntPolynomial::new(p.num.clone());
                     let s = root.sign_polynomial(&ip);
                     self.exact
@@ -496,11 +494,12 @@ impl Gen {
 
     /// A dyadic point `x / 2^b` with `|alpha - x / 2^b| <= 2^-b`, `b` at
     /// least `want`: Newton's iteration on the root's defining polynomial
-    /// in integers from the narrowed isolator's middle, the precision
-    /// doubling each step, then certified by the polynomial's opposite
-    /// nonzero signs at `(x -+ 1) / 2^b`, both inside the isolator (where
-    /// it has one root). `None` where that fails (a rational root, roots
-    /// too close for the iteration): the exact path decides.
+    /// in integers, the precision doubling each step, from the finest point
+    /// found before or the middle of the isolator narrowed to `2^-24` (to
+    /// `2^-96` where that fails: roots that close), then certified by the
+    /// polynomial's opposite nonzero signs at `(x -+ 1) / 2^b`, both inside
+    /// the isolator (where it has one root). `None` where that fails too (a
+    /// rational root): the exact path decides.
     fn tight(&self, want: u64) -> Option<(BigInt, u64)> {
         let mut kept = self.tight.lock().unwrap_or_else(|e| e.into_inner());
         if let Some((b, x)) = kept.as_ref() {
@@ -508,25 +507,35 @@ impl Gen {
                 return Some((x.clone(), *b));
             }
         }
-        if self.root.rational_value().is_some() {
+        if self.root.rational_value().is_some() || self.root.defining().0.len() < 2 {
             return None;
         }
-        let f = &self.root.defining().0;
-        if f.len() < 2 {
-            return None;
-        }
-        let (mut x, mut b) = match kept.as_ref() {
-            Some((b, x)) => (x.clone(), *b),
-            None => {
-                let root = self.narrowed(self.filter_steps(SIGN_STEPS));
-                let (lo, hi) = root.isolator();
-                let w = hi - lo;
-                let b = (w.denom().bits() as i64 - w.numer().bits() as i64).clamp(64, 4096) as u64;
-                let m = (lo + hi) * R::from_integer(BigInt::from(1) << (b - 1) as usize);
-                (m.floor().to_integer(), b)
-            }
+        let start = |steps: usize| {
+            let root = self.narrowed(self.filter_steps(steps));
+            let (lo, hi) = root.isolator();
+            let w = hi - lo;
+            let b = (w.denom().bits() as i64 - w.numer().bits() as i64).clamp(16, 4096) as u64;
+            let m = (lo + hi) * R::from_integer(BigInt::from(1) << (b - 1) as usize);
+            (m.floor().to_integer(), b)
         };
-        let target = want + 16;
+        let found = match kept.as_ref() {
+            Some((b, x)) => self.newton(x.clone(), *b, want + 16),
+            None => {
+                let (x, b) = start(24);
+                self.newton(x, b, want + 16).or_else(|| {
+                    let (x, b) = start(SIGN_STEPS);
+                    self.newton(x, b, want + 16)
+                })
+            }
+        }?;
+        *kept = Some((found.1, found.0.clone()));
+        Some(found)
+    }
+
+    /// `tight`'s iteration from `x / 2^b` to `target` bits and its
+    /// certificate.
+    fn newton(&self, mut x: BigInt, mut b: u64, target: u64) -> Option<(BigInt, u64)> {
+        let f = &self.root.defining().0;
         let d = f.len() - 1;
         let mut steps = 0;
         while b < target {
@@ -564,8 +573,22 @@ impl Gen {
         if sl == Ordering::Equal || sh == Ordering::Equal || sl == sh {
             return None;
         }
-        *kept = Some((b, x.clone()));
         Some((x, b))
+    }
+
+    /// A binary64 interval holding the root: about the dyadic point at
+    /// `steps` bits, else the isolator narrowed by `steps` bisections more
+    /// than its width's bits.
+    fn fast_root(&self, steps: usize) -> Option<Fast> {
+        if let Some((x, b)) = self.tight(steps as u64) {
+            let den = BigInt::from(1) << b as usize;
+            return Some(
+                Fast::near_parts(&(&x - 1), &den)?.union(&Fast::near_parts(&(&x + 1), &den)?),
+            );
+        }
+        let root = self.narrowed(self.filter_steps(steps));
+        let (lo, hi) = root.isolator();
+        Some(Fast::near_r(lo)?.union(&Fast::near_r(hi)?))
     }
 
     /// The sign of a polynomial at the root from a dyadic point `m = x /
@@ -1074,9 +1097,7 @@ impl K {
         match self {
             K::Rat(a) => Fast::near_r(a),
             K::Alg(g, p) => {
-                let root = g.narrowed(g.filter_steps(steps));
-                let (lo, hi) = root.isolator();
-                let x = Fast::near_r(lo)?.union(&Fast::near_r(hi)?);
+                let x = g.fast_root(steps)?;
                 p.num.iter().rev().try_fold(Fast::exact_f64(0.0), |acc, c| {
                     Some(acc.mul(&x).add(&Fast::near_parts(c, &p.den)?))
                 })
