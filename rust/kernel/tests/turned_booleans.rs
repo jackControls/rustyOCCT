@@ -228,16 +228,24 @@ fn cylinders_within_rounding_of_parallel_are_degenerate_unless_apart() {
     .unwrap();
     let (fused, _) = prism.fuse(OperationId(3), &band).unwrap();
     // The chained stage's partner: the tilted frame's normal normalized
-    // again (an ulp off), its x turned.
+    // again (an ulp off here; on a platform whose `hypot` keeps it, turned
+    // by an ulp first), its x turned.
     let partner = |r: f64, at: Point2| {
-        let f = Frame3::new(
-            tilt.point(at, h / 3.0),
-            tilt.normal(),
-            tilt.x() * 3.0 + tilt.y() * 4.0,
-            tol,
-        )
-        .unwrap();
-        assert_ne!(f.normal(), tilt.normal(), "an ulp off");
+        let n = tilt.normal();
+        let up = |x: f64, k: i64| f64::from_bits(x.to_bits().wrapping_add_signed(k));
+        let f = [(0, 0), (1, 0), (0, 1), (-1, 0), (0, -1), (2, 0), (0, 2)]
+            .into_iter()
+            .map(|(ky, kz)| {
+                Frame3::new(
+                    tilt.point(at, h / 3.0),
+                    Vec3::new(n.x, up(n.y, ky), up(n.z, kz)),
+                    tilt.x() * 3.0 + tilt.y() * 4.0,
+                    tol,
+                )
+                .unwrap()
+            })
+            .find(|f| f.normal() != n)
+            .expect("a frame an ulp off");
         Solid::extrude_with(OperationId(7), disc(r), f, 0.0, h)
             .unwrap()
             .0
