@@ -21,7 +21,7 @@ construction (`frame` and `offsets` or `make`, `box`, `cone`, `sphere` or
 a `split` row before `end`, and a Boolean case (S9a, `encode_boolean_case`)
 is two prisms' rows joined by a `boolean OP ID` row.
 """
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from fractions import Fraction as F
 import struct
 
@@ -308,6 +308,7 @@ class Case:
     torus: tuple = None          # (major, minor, low, high, angle) for Solid::torus_with
     make: str = None             # 'face' (Body::face_from_profile) or 'wire' (the first boundary's)
     brep: str = None             # S9e.4: an imported solid, the one solid of this .brep (under rust/fixtures)
+    split: tuple = None          # S9e.4b.3b: (plane frame (9 floats), 'below' or 'above'), the piece on that side
 
 
 def number(x):
@@ -373,6 +374,10 @@ def encode_case(c):
                 bl, seg, vert = b.labels
                 row += f' labels {bl} '+' '.join(map(str, seg))+' | '+' '.join(map(str, vert))
             out.append(row)
+    if c.split is not None:
+        # S9e.4b.3b: the piece on one side of a plane (Solid::split_by_plane).
+        assert not c.transforms and c.brep is None and c.make is None, f'{c.name}: a split in place'
+        out.append('split '+' '.join(number(x) for x in c.split[0])+' '+c.split[1])
     for t in c.transforms:
         if t[0] == 'T':
             out.append('transform T '+' '.join(number(x) for x in t[1]))
@@ -820,7 +825,16 @@ def native_case(c):
     R r LOW HIGH ANGLE`, as `BRepPrimAPI_MakeTorus(gp_Ax2, R, r, angle1,
     angle2, angle)` takes them (a whole torus keeps the short row). An
     imported solid (S9e.4) is one row `brep PATH`, the file (under
-    `rust/fixtures`) `BRepTools::Read` reads."""
+    `rust/fixtures`) `BRepTools::Read` reads. S9e.4b.3b: a split piece
+    adds a row `split ox oy oz nx ny nz xx xy xz below|above` before `end`,
+    the plane through the stored frame's origin normal to its stored normal
+    and the side kept, which `occt_boolean_oracle.cpp` takes as the solid
+    common the half-space."""
+    if c.split is not None:
+        assert not c.transforms and c.brep is None and c.make is None, f'{c.name}: a split in place'
+        rows = native_case(replace(c, split=None)).split('\n')
+        o, x, _, n = frame_axes(c.split[0])
+        return '\n'.join(rows[:-1]+['split '+' '.join(number(v) for v in (*o, *n, *x))+' '+c.split[1], 'end'])
     if c.brep is not None:
         assert not c.transforms and c.make is None, f'{c.name}: an imported solid in place'
         return '\n'.join([f'case {c.name}', f'brep {c.brep}', 'end'])

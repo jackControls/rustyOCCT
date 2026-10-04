@@ -29,6 +29,9 @@ pub struct CaseSpec {
     /// S9e.4: an imported solid instead, the one solid of this `.brep` file
     /// (a path under `rust/fixtures`).
     pub brep: Option<String>,
+    /// S9e.4b.3b: the solid's piece on one side of a plane (its frame, and
+    /// whether the side is along its normal), `Solid::split_by_plane`'s.
+    pub split: Option<([f64; 9], bool)>,
 }
 
 fn labels(words: &[&str]) -> BoundaryLabels {
@@ -58,6 +61,7 @@ pub fn parse(block: &str) -> CaseSpec {
         transforms: Vec::new(),
         make: None,
         brep: None,
+        split: None,
     };
     for line in block.lines().filter(|l| !l.trim().is_empty()) {
         let w: Vec<&str> = line.split_whitespace().collect();
@@ -72,6 +76,14 @@ pub fn parse(block: &str) -> CaseSpec {
             "offsets" => (spec.start, spec.end) = (f(1), f(2)),
             "make" => spec.make = Some(w[1].to_string()),
             "brep" => spec.brep = Some(w[1].to_string()),
+            "split" => {
+                let side = match w[10] {
+                    "below" => false,
+                    "above" => true,
+                    other => panic!("unknown side {other}"),
+                };
+                spec.split = Some((std::array::from_fn(|i| f(i + 1)), side));
+            }
             "box" => spec.box_at = Some(([f(1), f(2), f(3)], [f(4), f(5), f(6)])),
             "cone" => spec.cone = Some([f(1), f(2), f(3)]),
             "sphere" => spec.sphere = Some([f(1), f(2), f(3)]),
@@ -286,7 +298,31 @@ pub fn body_rows(body: &Body) -> Vec<String> {
 
 /// The solid before any transform.
 pub fn build(spec: &CaseSpec) -> Solid {
-    build_tracked(spec).0
+    let solid = build_tracked(spec).0;
+    // S9e.4b.3b: the one piece on the plane's side.
+    let Some((f, above)) = spec.split else {
+        return solid;
+    };
+    let plane = Frame3::new(
+        Point3::new(f[0], f[1], f[2]),
+        Vec3::new(f[3], f[4], f[5]),
+        Vec3::new(f[6], f[7], f[8]),
+        spec.tolerance,
+    )
+    .unwrap();
+    let (pieces, _) = solid.split_by_plane(spec.operation, plane).unwrap();
+    let side = if above {
+        rusty_occt::Side::Above
+    } else {
+        rusty_occt::Side::Below
+    };
+    let mut on: Vec<Solid> = pieces
+        .into_iter()
+        .filter(|(s, _)| *s == side)
+        .map(|(_, p)| p)
+        .collect();
+    assert_eq!(on.len(), 1, "{}: one piece on the split's side", spec.name);
+    on.remove(0)
 }
 
 /// The solid before any transform, with its construction history.

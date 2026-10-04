@@ -6974,6 +6974,67 @@ Decisions for S9, recorded before its code (2026-09-28):
     (`compare_split_pieces_boolean.py` keyed on it, the kernel's probe
     refusing every case); then the kernel and its tests
     (`tests/split_piece_booleans.rs`).
+  * **S9e.4b.3b evidence (2026-10-04).** The protocols take a split piece:
+    after a solid's rows a row `split ox oy oz nx ny nz xx xy xz
+    below|above` (`identity_reference.Case.split` in `encode_case` and
+    `native_case`; `tests/support/identity_protocol.rs`'s `CaseSpec.split`,
+    `build` keeping the one piece `Solid::split_by_plane` leaves on that
+    side). `generate_split_pieces_boolean_fixtures.py --check`: 48 cases of
+    16 groups (39 solid, 6 declared `degenerate`, 3 `unsupported`; 21 of
+    class `prism`, 21 `revolved`, 3 `both`, 3 `chain`) on 8 pieces: a
+    cylinder of radius 3 below a leaning plane across its wall
+    (`cyl_low`, its closed form), S9e.4a's `dee` below a tilted plane across
+    both caps, a box above a leaning plane across both caps (plane faces
+    only, against curved partners), a frustum below a tilted plane across its
+    wall (an ellipse), a zone on `SKEW2` on one side of the plane through its
+    axis (S8c.2's half), a zone on `SKEW` above a tilted plane (a circle
+    across its wall), a whole torus above a plane normal to its axis (S8d.1's
+    band) and a frustum's half by a plane through its axis; each against
+    boxes, balls, rods along the world's `y` and upright, a cone along the
+    zone's axis inside its band, as object and as tool, the cylinder's and
+    the dee's pieces together, and a chain (the cylinder's piece less a rod,
+    then with a level slab across it); declared `degenerate` the frustum's
+    half through its axis against a box (its virtual apex) and a box on the
+    cylinder piece's cut plane, `unsupported` (S9e.4b.3c) the zone's half
+    against its own whole ball. Each split is checked to be the kernel's
+    piece of its class (`split_class`, exactly on the stored axes: a
+    prism's plane oblique to its axis, a revolved solid's within a quarter
+    of the resolution of its axis or not, a torus's normal to its axis).
+    The reference is the construction OCCT is given through S9e.3a's
+    chained reference, each piece `P common H`, `H` a box on the plane's
+    frame on the kept side reaching past the solid (each solid within four
+    fifths of its reach), a zone's piece its whole sphere common `H` common
+    the slab between its ends' parallels at the heights the kernel stores
+    (`r sin(lat)`, the sine and the product each rounded once: the chained
+    reference takes whole spheres): the two families within 6.2e-36 of the
+    case's size, each solid's closed form 9.7e-36, the cylinder's piece's
+    closed form 1.9e-41 (its volume the disc's area times the plane's height
+    over the axis, its area the disc, the wall and the ellipse `pi r^2 |m| /
+    |m_z|`, `m` its box's face's normal), the pair identities on the last
+    Boolean's arguments 2.6e-38 and the area identity 3.8e-41, Monte Carlo
+    2.8 standard errors (50,000 points a group), quadrature estimates
+    1.9e-32, solid counts by rays at two resolutions and each piece one
+    solid, every meeting's sine at least 0.083 and events at least 1.3e-5 of
+    their range apart outside the declared groups.
+    `test_split_pieces_boolean_reference.py` checks the cylinder's piece's
+    closed form against a direct integration (a plane normal to the axis
+    the cylinder's own), the chained reference on the piece against it, the
+    splits' classes (a plane normal to a prism's axis, off a zone's centre
+    or oblique to a torus's axis not that class), the half-space boxes and
+    the case list and its protocol rows. The generator's check is a CI group
+    of its own (`split-pieces`, 15 to 27 minutes on four workers locally); Python
+    3.9 and 3.12 write the same files. Corrections from the evidence,
+    amending the refined decisions' plan (7): (a) the chained reference
+    takes whole spheres only, so a zone's piece is its sphere common two
+    boxes (above); (b) half-space boxes reaching far past the solids made a
+    group take up to 50 minutes (the chain's), so each box reaches just past
+    its piece's solid and the chain's slab is level, and Monte Carlo takes
+    50,000 points a group; (c) partners moved where a ball's pole touched a
+    frustum's cap's plane, the chain's slab's plane met the cut plane on the
+    cylinder's wall, a ray count's resolution split a thin neck (a box
+    lowered, a cone along the zone's axis, the band's torus on the world's
+    axes and its ball smaller), and the pair is the cylinder's and the dee's
+    pieces (a zone's half beside them took the longest of all).
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces
