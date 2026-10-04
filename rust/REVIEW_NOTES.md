@@ -8184,6 +8184,88 @@ Decisions for S9, recorded before its code (2026-09-28):
   of its instructions in `projection::along`); the torus meetings' root
   sampling (`e36969f1`'s `all_roots`, 72 bisections a root at each of 17 to
   49 samples).
+* **The boolean target's slowest inputs (S9's campaign), done.** The 600 s
+  boolean campaigns were clean but the corpus's slowest input, `e36969f1`,
+  took 45, 52 and 60 s under AddressSanitizer at the target's 60 s limit
+  (load 3 to 8), and the Linux runners take about 2.6 times this host's;
+  next `62cf4d8f`, `a46b4614`, `17e131e3` and `c4d14627`. Profiles (macOS
+  `sample` of the replay with debug assertions and of the sanitizer's
+  target; instructions retired as the load-free measure; the corpus decoded
+  stage by stage): `e36969f1` (90.9 G, `a67d82c5` the same Boolean) is a
+  stadium prism against the outer half of a torus in the tilted frame, its
+  two arcs' cylinders met by the torus (S9d.4b.2a's `torus_far`, 71% of its
+  instructions); 54% was the S9e.4a stage, whose imported construction
+  (its cylinders' centres read back, with more bits) arranges the same
+  pair again, a third heavier. Within a torus meeting: the windows of its
+  pieces 42% (`window`'s 17 samples a run, 136 a meeting, each root's angle
+  from its isolator bisected 72 times, then turned through the chart and
+  rounded: `Chart::at`, `rational_f64`, all in rationals reduced at every
+  operation), the critical values 24% (the quartic's discriminant of
+  degree 24, a product of rational polynomials, 16%, and its square-free
+  roots), the pieces' verification 12% (`clear_over`'s Sturm chains in
+  rationals); the rationals' gcds a third of everything. `62cf4d8f`,
+  `17e131e3`, `f0987e7a`, `1745232e` and `01b580b7`: prisms against torus
+  bands, wedges and halves in the tilted or turned frames, the same meetings
+  and the arrangement's tests in fields (`cross2`, `Qd::sign`, `Qd::to_f64`:
+  the degree-eight arrangement's arithmetic above); `c4d14627`, a polyhedral
+  chained cut, 16 s with the sanitizer against 1.9 s without (its rational
+  vectors' allocations and gcds), unchanged. `a46b4614` is not in this
+  corpus. Under the sanitizer each of these runs twice in a replay (the
+  leak check's rerun, above); the per-input limit sees one run, so the
+  timings here are one run (`-detect_leaks=0`). Changes, every number the
+  same (each result's text, its history's and its mass properties' hashed
+  over the corpus and the regressions, identical before and after each
+  step): (a) `rational_f64` by one integer division in the comfortably
+  normal range (the quotient's 55 or 56 leading bits and the remainder: the
+  nearest binary64, a tie the lower, as the bounds' comparison gives it);
+  (b) `Chart::at`, `Form::poly` and a torus meeting's form at a rational
+  angle (`Bi::at`) in integers over one denominator, each coefficient
+  reduced once; (c) the quartic's discriminant over its coefficients'
+  common denominator (with the arithmetic above, a positive multiple); (d)
+  `roots_repeated`'s square-free part by an exact integer quotient (Gauss's
+  lemma: both primitive), the gcd as above (modulo a prime, a chart's
+  factor); (e) `clear_over`'s Sturm chain in integers at its rational ends
+  (positively scaled pseudo-remainders, contents removed: each member a
+  positive multiple, the same sign changes); (f) what the arrangement asks
+  again kept: a half-edge's travel at its start across the faces traced at
+  a vertex, a vertex's binary64 view and an edge's binary64 samples (each
+  face along it and each operation's assembly asked again); (g) the mass
+  moments' integrals along a projection kept by their content (its and its
+  integrands' `Debug` texts): a pair's other results and an imported
+  input's own construction ask one face's integrals along one pcurve again.
+  Results, instructions retired with debug assertions: with `GIVEN_MET` off
+  (as before the arithmetic above), the corpus and regressions 8,145 G to
+  6,882 G with (a) to (e) but `Bi::at`, and 6,569 G with it, (f) and a
+  modular gcd (since replaced by the arithmetic's own);
+  `e36969f1` 90.9 to 50.6 and 46.9 G, `62cf4d8f` 91.1 to 76.5 and 68.7,
+  `f0987e7a` 53.5 to 34.0 and 32.2, `17e131e3` 52.0 to 43.5 and 41.2. Merged
+  with the arithmetic above (`86b1d834`, the switch on: 7,307 G, `e36969f1`
+  43.8 G), its own quartic and gcd kept: 6,418 G, and 6,312 G with (g);
+  `e36969f1` 36.4 G, `487e8cac` 42.1 to 39.3, `1b405929` 31.2 to 27.3, the
+  slowest now `487e8cac` (its results' mass along a cone carrier's
+  meetings). Under AddressSanitizer with the target's options, one run each,
+  the original target and the merged one side by side on a host at load 10
+  to 15 (before the arithmetic above and these changes; after both, the
+  switch on): `e36969f1` 67.2 s and 1,051 G to 21.0 s and 275 G, `62cf4d8f`
+  64.5 s to 17.7 s, `17e131e3` 36.9 to 17.8, `f0987e7a` 72.3 to 10.6,
+  `1745232e` 33.2 to 17.1, `85659e3a` 19.9 to 18.8; `487e8cac`, `41833cc4`
+  and `972c8678`, which the switch reaches now, 17.6, 15.0 and 16.5 s
+  (10.1, 7.4 and 8.5 s off); every one under 23 s, and with (g) at the
+  last commit `e36969f1` 20.4 s (267 G), `487e8cac` 16.5 s; `c4d14627`
+  (251 G either way) 16 s at load 8, 26 s at load 25. Checks: fmt, clippy
+  (release, all targets), the 1.85 check, the release suite (569 tests),
+  the fuzz crate's fmt and check; every comparison unchanged with 0
+  failures (the table's 31 boolean comparisons, `compare_split.py` 72/56,
+  `compare_brep.py --family spline` 10/3, `compare_brep_io.py` 6,835/7);
+  the corpus and regressions replay with debug assertions (the slowest
+  39.3 G, `487e8cac`). Open:
+  the root sampling's 72 bisections a root (now 15% of `e36969f1`, in
+  `refine_for_signs`, which must give the same isolator); the leak-check
+  rerun; `487e8cac`'s certified integrals along the cone carrier's meetings.
+  The corpus's `21928984` panics with `InvalidTopology` (`uv_gap`) at
+  `86b1d834` and here alike (`GIVEN_MET` on, S9e.4b.3a's stage and the
+  validator together; fixed on its own track), so the replays above count
+  1,457 inputs.
 * **The DRAW adapter's curved primitives (S9d.4b.2b), done in S9d.4b's
   survey.** It built every `ptorus`, `psphere` and `pcone` with the same
   ids, so two tori (and two spheres or cones) were refused as solids
