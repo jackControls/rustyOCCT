@@ -44,28 +44,21 @@ pub(super) fn padd(a: &Poly, b: &Poly) -> Poly {
     let n = a.len().max(b.len());
     trim(
         (0..n)
-            .map(|i| {
-                a.get(i).cloned().unwrap_or_else(zero) + b.get(i).cloned().unwrap_or_else(zero)
+            .map(|i| match (a.get(i), b.get(i)) {
+                (Some(x), Some(y)) => crate::rational::add(x, y),
+                (Some(x), None) | (None, Some(x)) => x.clone(),
+                (None, None) => zero(),
             })
             .collect(),
     )
 }
 
 pub(super) fn pmul(a: &Poly, b: &Poly) -> Poly {
-    if a.is_empty() || b.is_empty() {
-        return Vec::new();
-    }
-    let mut out = vec![zero(); a.len() + b.len() - 1];
-    for (i, x) in a.iter().enumerate() {
-        for (j, y) in b.iter().enumerate() {
-            out[i + j] += x * y;
-        }
-    }
-    trim(out)
+    super::num::product(a, b)
 }
 
 pub(super) fn pscale(a: &Poly, k: &R) -> Poly {
-    trim(a.iter().map(|x| x * k).collect())
+    trim(a.iter().map(|x| crate::rational::mul(x, k)).collect())
 }
 
 pub(super) fn pderiv(a: &Poly) -> Poly {
@@ -73,7 +66,7 @@ pub(super) fn pderiv(a: &Poly) -> Poly {
         a.iter()
             .enumerate()
             .skip(1)
-            .map(|(i, c)| c * int(i as i64))
+            .map(|(i, c)| crate::rational::mul(c, &int(i as i64)))
             .collect(),
     )
 }
@@ -84,9 +77,9 @@ fn prem(a: &Poly, b: &Poly) -> Poly {
     let lead = b.last().expect("a nonzero divisor").clone();
     while r.len() >= b.len() && !r.is_empty() {
         let shift = r.len() - b.len();
-        let c = r.last().expect("nonempty") / &lead;
+        let c = crate::rational::div(r.last().expect("nonempty"), &lead);
         for (i, x) in b.iter().enumerate() {
-            r[i + shift] -= &c * x;
+            r[i + shift] = crate::rational::sub(&r[i + shift], &crate::rational::mul(&c, x));
         }
         r = trim(r);
     }
@@ -194,9 +187,9 @@ pub(super) fn roots_repeated(p: &Poly) -> Result<(Poly, Vec<(AlgebraicRoot, bool
     let mut quot = vec![zero(); r.len().saturating_sub(g.len()) + 1];
     while r.len() >= g.len() && !r.is_empty() {
         let shift = r.len() - g.len();
-        let c = r.last().expect("nonempty") / &lead;
+        let c = crate::rational::div(r.last().expect("nonempty"), &lead);
         for (i, x) in g.iter().enumerate() {
-            r[i + shift] -= &c * x;
+            r[i + shift] = crate::rational::sub(&r[i + shift], &crate::rational::mul(&c, x));
         }
         quot[shift] = c;
         r = trim(r);
@@ -253,9 +246,17 @@ impl Chart {
     }
 
     pub(super) fn at(&self, t: &R) -> [R; 2] {
-        let den = int(1) + t * t;
-        let (c, s) = ((int(1) - t * t) / &den, int(2) * t / &den);
-        [&self.c0 * &c - &self.s0 * &s, &self.s0 * &c + &self.c0 * &s]
+        // `t = a / b`: `cos = (b^2 - a^2) / n`, `sin = 2 a b / n`, `n = a^2
+        // + b^2`, turned by the base in lowest terms (`crate::rational`).
+        use crate::rational::{add, div, mul, sub};
+        let (a, b) = (t.numer(), t.denom());
+        let n = R::from_integer(a * a + b * b);
+        let c = R::from_integer(b * b - a * a);
+        let s = R::from_integer(num_bigint::BigInt::from(2) * a * b);
+        [
+            div(&sub(&mul(&self.c0, &c), &mul(&self.s0, &s)), &n),
+            div(&add(&mul(&self.s0, &c), &mul(&self.c0, &s)), &n),
+        ]
     }
 
     /// The chart's `t` of a direction (`None` at the antipode).
@@ -316,7 +317,7 @@ impl Form {
 
     pub(super) fn add_const(&mut self, k: &R) {
         let e = self.terms.entry((0, 0)).or_insert_with(zero);
-        *e += k;
+        *e = crate::rational::add(e, k);
         if *e == zero() {
             self.terms.remove(&(0, 0));
         }
@@ -328,7 +329,7 @@ impl Form {
                 .terms
                 .iter()
                 .filter(|_| *a != zero())
-                .map(|(e, x)| (*e, x * a))
+                .map(|(e, x)| (*e, crate::rational::mul(x, a)))
                 .collect(),
             deg: self.deg,
         }
@@ -338,7 +339,7 @@ impl Form {
         let mut terms = self.terms.clone();
         for (e, x) in &o.terms {
             let t = terms.entry(*e).or_insert_with(zero);
-            *t += x;
+            *t = crate::rational::add(t, x);
             if *t == zero() {
                 terms.remove(e);
             }
@@ -358,7 +359,7 @@ impl Form {
         for (ea, x) in &self.terms {
             for (eb, y) in &o.terms {
                 let t = terms.entry((ea.0 + eb.0, ea.1 + eb.1)).or_insert_with(zero);
-                *t += x * y;
+                *t = crate::rational::add(t, &crate::rational::mul(x, y));
             }
         }
         terms.retain(|_, x| *x != zero());
@@ -390,9 +391,10 @@ impl Form {
     }
 
     pub(super) fn value(&self, cs: &[R; 2]) -> R {
-        let pow = |x: &R, n: u32| (0..n).fold(int(1), |acc, _| acc * x);
+        use crate::rational::{add, mul};
+        let pow = |x: &R, n: u32| (0..n).fold(int(1), |acc, _| mul(&acc, x));
         self.terms.iter().fold(zero(), |acc, ((i, j), x)| {
-            acc + x * pow(&cs[0], *i) * pow(&cs[1], *j)
+            add(&acc, &mul(&mul(x, &pow(&cs[0], *i)), &pow(&cs[1], *j)))
         })
     }
 

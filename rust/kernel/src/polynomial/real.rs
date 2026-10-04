@@ -225,8 +225,8 @@ impl AlgebraicRoot {
                 }
                 done += 1;
             }
-            self.lower = R::new(lo, den.clone());
-            self.upper = R::new(hi, den);
+            self.lower = lowest(lo, den.clone());
+            self.upper = lowest(hi, den);
             if done % 16 == 0 && self.recognize_rational() {
                 break;
             }
@@ -464,6 +464,18 @@ impl AlgebraicRoot {
         let sign = variations(&query, &refined.lower) - variations(&query, &refined.upper);
         debug_assert!((-1..=1).contains(&sign));
         sign.cmp(&0)
+    }
+}
+
+/// `n / d` (`d > 0`) in lowest terms, as `R::new` gives it, by the crate's
+/// Lehmer gcd (`num_rational` reduces by Stein's binary one, quadratic in
+/// the operands' length: an isolator's ends after hundreds of bisections).
+fn lowest(n: BigInt, d: BigInt) -> R {
+    let g = crate::rational::gcd(&n, &d);
+    if g == BigInt::from(1) {
+        R::new_raw(n, d)
+    } else {
+        R::new_raw(n / &g, d / &g)
     }
 }
 
