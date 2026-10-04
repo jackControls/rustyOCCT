@@ -2585,9 +2585,73 @@ cap plane's crease, at its angle `atan2` of the point's coordinates. Every
 root is the arc's own parameter, so every vertex on the wall lies in
 S9f.1's `Q(alpha)` (degree at most `2 p`) or, on a vertical edge of the
 spline prism against the cylinder, in `Q(sqrt(d))`. A cap plane holding the
-wall's axis direction exactly (`h_0 + h_1 S_x + h_2 S_y` with the plane
-parallel to `n`) meets the wall in generatrices, whose points with the
-circle lie in a tower `Q(alpha)(sqrt(delta))`: refused (S9f.2b.2).
+wall's axis direction exactly (the plane parallel to `n`) meets the wall in
+generatrices at the roots of its trace's equation (degree `p`), and the
+circle meets each where a quadratic over that field vanishes: its points
+lie in a tower `Q(alpha)(sqrt(delta))`, `delta` in `Q(alpha)` (S9f.2b.2,
+below).
+
+**Loops: graphs over the height (S9f.2b.2).** Near a turning point `tau*`
+inside both faces the branches `w_+-` have unbounded slope, but the curve
+is regular there (`F_tau != 0` at a simple root of `D`): as a graph over
+`w`, `tau(w)` has an extremum at `w* = -B(tau*) / A`. The piece about it is
+the one root of `F(., w)` in a rational window `(t_0, t_1)` of one Bézier
+arc, over `w` in `[w_-(tau_s), w_+(tau_s)]`, `tau_s` a rational switch on
+the side where `D > 0` (a quarter of the way from `tau*` to where the
+gentler branch's slope `|dw/ds|` over the profile's arc length has fallen
+to one, so about two there: the slope grows as `|tau - tau*|^(-1/2)`). The
+graphs over `tau` end at `tau_s`, the two switch points `(tau_s, w_+-)`
+rational in the profile with a surd height. The window holds exactly one
+simple root at every height of the range when, exactly: (i) at `t_0` the
+roots of the quadratic `F(t_0, .)` lie outside the range and `D(t_1) < 0`,
+so no root crosses the window's ends; (ii) at the rational height
+`-B(tau_s) / A` one root lies in the window (isolation of a polynomial of
+degree `2 p`); (iii) `H = A C'^2 - 4 B B' C' + 4 C B'^2` (degree `4 p - 2`)
+has no root in the closed window. For (iii): `F = F_tau = 0` means `A w^2 +
+2 B w + C = 0` and `2 B' w + C' = 0`; where `B' != 0`, `w = -C' / (2 B')`
+and substituting gives `H = 0`; where `B' = 0`, `C' = 0` too and `H = A
+C'^2 = 0`. So a window free of `H`'s roots holds no double root at any
+height, and by continuity in `w` the count of roots inside is constant over
+the range: the piece is a graph. (A perpendicular rod has `B` constant and
+`H = A C'^2`: the window must avoid the profile's extremes along the rod.)
+
+**Towers by a primitive element.** A cap circle `c + a cos + b sin` in a
+plane holding `n` meets the wall where its projection along `n` meets the
+profile. With `(cos, sin)` the chart `(c_0 (1 - t^2) - 2 s_0 t, s_0 (1 -
+t^2) + 2 c_0 t) / (1 + t^2)` (its antipode `-(c_0, s_0)` no point of the
+curve) the projection's profile coordinates are `U(t) / Q`, `V(t) / Q`, `Q =
+1 + t^2`, `U`, `V` quadratics, and each arc's implicit equation `f` (total
+degree `d <= p`, S9f.2a's resultant) gives `sum f_ij U^i V^j Q^(d - i - j)`,
+a polynomial of degree at most `2 p` in `t`. Its real roots whose points lie
+on the arc are the crossings, each point and its angle in the one field
+`Q(t)`: `Q(t)` holds the tower `Q(alpha)(sqrt(delta))`'s point (its run
+parameter is a rational function of `t`, the arc's inversion), so no tower
+of numbers is needed. A repeated root on the arc is the circle tangent to
+the generatrix: the ruling tangent to the cylinder on its cap rim.
+
+**Certified evaluation over the height.** On the window's span, at `t = v -
+v_0` (any number of the integrands: an enclosure, a series or a jet, about
+a point or over a range) `g(u, t) = X^2 + Y^2 - r^2`, `X = w_x(ū) + t
+m_x(ū)`, `Y = w_y(ū) + t m_y(ū)`. Its root at the base is enclosed by
+interval Newton about the binary64 root: `u* - g(u*, t) / g_u(U, t)`
+strictly inside `U` and the window proves a unique root in `U` at every
+`t` of the base. Its Taylor coefficients: about a point base by Newton's
+steps on the series (with `u`'s first `k` coefficients the root's,
+`u - g / g_u` holds its first `2 k`), four steps for thirteen
+coefficients; over a range coefficient by coefficient, the `k`-th of `g(u,
+t)` with `u_k` zero over `g_u` enclosed over the root's box (the series
+quotient of two wide series overestimates by orders of magnitude there,
+`10^6` on the tests' wall at a range of a quarter; a point's coefficients
+by the recurrence widen by the rounding of each division, `±1.2` at the
+thirteenth). Both are inclusion isotone. `du/dt = -g_t / g_u`, `g_t = 2 (X
+m_x + Y m_y)`, gives the sweep's `ū'`.
+
+**Bernstein bases' jets.** The wall's Green integrals evaluate its ten
+moment tensors (degree up to about `5 p` in `ū`) at the same jets of `(ū,
+v̄)`: the bases `C(n, i) ū^i (1 - ū)^(n - i)` are made once per degree and
+each tensor is `sum_i B_i(ū) sum_j g_ij b_j(v̄)`, one product of jets per
+row instead of de Casteljau's two hundred; over the integrals' pieces the
+enclosures came out no wider (fewer pieces were bisected).
 
 **The rounded curve.** `Curve3::WallMeet` stores the wall's surface, of
 degree one in `v` between its two pole rows: at `u` its ruling is `L(u) +

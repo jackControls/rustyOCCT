@@ -5840,6 +5840,78 @@ Decisions for S9, recorded before its code (2026-09-28):
       in all, S9f.2b.2's 23 `unsupported` until its code, failures after.
       No correction to the decisions from the evidence. S9f.2b.2's kernel
       next.
+  * **S9f.2b.2 implemented** (`solid/boolean/curved/spline_crossing.rs`'s
+    `meeting`, `height_piece` and `tower_points`; `graph.rs`'s pairs pass,
+    `meet.rs`'s sections, `assemble.rs`'s curves, `spline_parallel.rs`'s
+    `Implicit::homogeneous`; the topology's `Curve3::WallMeet::window` with
+    `topology/validate/wall_meet.rs`'s `eval_height`, `quadrature.rs`'s
+    `HeightPiece` and its `Num` numbers' coefficients, `spline_flux.rs`'s
+    `tensor_jets`, the validity rule): loops and towers as the refined
+    decisions describe, S9f.2b.2's two `OutOfDomain` refusals gone. A spline
+    wall's meeting with a crossing cylinder is found once per pair of faces
+    (`CylPair::Mixed`: its pieces and switches); each turning point strictly
+    inside both faces gets its graph over the height, verified exactly ((i)
+    to (iii)) before it is kept, the graphs over the run on both branches
+    ending at its switch; a cap circle in a plane holding the wall's axis
+    meets each arc where the arc's implicit equation vanishes along the
+    circle's half-angle tangent, its points in that one field. All 51
+    fixtures as the reference (the 45 results within the kernel's enclosures
+    of volume, area and centre, each at most `1e-9` wide; the 6 degenerate
+    refused, `cap_turn` as a turning point on a face's boundary); every
+    history complete, results deterministic and moved rigidly
+    (`tests/spline_crossing_booleans.rs`, 8 tests, 43 s in release and 50 s
+    at `opt-level` 2 with debug assertions: also the cap circle on the
+    dome's wall along its axis evaluated, its tower vertex at `(2, 2,
+    sqrt(3) - 1)`, and the loops' graphs over `v` each in one knot span,
+    bracketing their roots; the module's 5: a graph over `v` on the wall and
+    the rod with jets over points and ranges enclosing its points and
+    slopes, a range's coefficients holding the point's and narrow, one piece
+    on its window's span). `compare_spline_crossing_boolean.py` 14 matches
+    and 37 reviewed, the kernel within the reference on all 45 results and
+    none `unsupported` (the 15 loop cases' reviews name their counts: the
+    kernel cuts each loop at its four switches and where the meeting crosses
+    its rod's faces' boundaries in the arrangement, OCCT at its rod's seam
+    touching the loop at a turning point and at its intersection edges' own
+    splits); every other comparison unchanged, `compare_split.py` 72/56,
+    `compare_brep.py --family spline` 10/3, `compare_brep_io.py` 6835/7.
+    Amendments to the decisions, from the implementation: (a) the switch
+    lies a quarter of the way from the turning point to where the gentler
+    branch's slope over the profile's arc length has fallen to one (about
+    two there: the slope grows as the distance's inverse square root), the
+    window's near end at that point: half the way, the slowest crossing fuzz
+    variant took a fifth to a third longer (a graph over the height costs
+    more per point than one over the run, the run's more per piece the
+    nearer it ends to the turning point); (b) a graph over the height's
+    series about a point comes from Newton's steps on the series (thirteen
+    coefficients in four steps), over a range coefficient by coefficient:
+    Newton's series quotient over a range overestimated by `10^6` (the
+    tests' wall at a quarter of the piece), the recurrence about a point
+    widened the thirteenth coefficient to `±1.2` by the rounding of its
+    twelve divisions; (c) the wall's Green integrals evaluate their ten
+    moment tensors (degree up to about `5 p` in `ū`) through the Bernstein
+    bases' jets made once per degree, one product of jets per row instead of
+    de Casteljau's two hundred: about points and over ranges the integrals
+    needed no more pieces (somewhat fewer), and the slowest loop variant
+    took a third less (S9f.2b.1's meetings gain as much); (d) a tower
+    polynomial's root whose point lies off the segment (another branch of an
+    arc's implicit curve) is dropped before its repetition is asked, so only
+    the segment's own tangencies are `Degenerate`; (e) a cylinder's halves
+    each have their pieces: a turning point inside one half lies outside the
+    other, whose graphs over the run end there as S9f.2b.1's. The `boolean`
+    fuzz target's crossing variants (`SPLINE_CROSSING`, on) now reach loops
+    and towers. Replays with debug assertions: the corpus (1,430 inputs) and
+    the 24 regressions, none failing; the 1,431 S9f.2b variants of S9f.2b.1,
+    none failing, 3,646 of their operations evaluating (3,232 before; the
+    rest refused as documented, none naming S9f.2b.2), median 0.45 s and the
+    slowest 6.8 s on a host at load 30 to 48; the 150 of them S9f.2b.1
+    refused as S9f.2b.2's (loops and towers): 414 operations evaluating,
+    median 0.85 s, ninth decile 3.7 s, the slowest 6.8 s (32 s under
+    AddressSanitizer on this host at load 6 to 15, where the corpus's
+    slowest input took 36 s). Every check of `HANDOFF.md`'s "Verification"
+    holds: the suite, all 25 comparisons unchanged but this one with 0
+    failures, the 13 generators importing `curved_boolean_reference.py`
+    with `--check`, unittest (287 tests) and the ledger. Pending: the DRAW
+    survey, the campaign.
   * **Where S9 stands (2026-09-30, paused).** Done and pushed: S9a to S9d
     (every sub-step with its DRAW survey and a clean campaign), S9e.1
     (campaign clean at `51c08edf`) and S9e.2 (`8e060c67`), S9f's decisions

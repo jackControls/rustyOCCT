@@ -4,8 +4,9 @@ State of the work for whoever continues it. `REVIEW_NOTES.md` remains the
 plan of record: its decisions, evidence, implemented, survey and campaign
 bullets are authoritative, and this page only summarizes them and says
 where to pick up. Written 2026-10-01, brought up to date 2026-10-03 for
-S9f.2a, S9f.2b.1 and S9e.3b (branch `s9e3b`, `s9c2-kernel` merged in)
-and their DRAW survey (branch `s9-draw-3`).
+S9f.2a, S9f.2b.1 and S9e.3b (branch `s9e3b`, `s9c2-kernel` merged in),
+their DRAW survey (branch `s9-draw-3`) and S9f.2b.2 (branch `s9f2b2`, over
+`s9c2-kernel` at `f3362b50`; not yet pushed).
 
 ## Where things stand
 
@@ -52,6 +53,18 @@ and their DRAW survey (branch `s9-draw-3`).
   tower fields). Campaign clean at `6c77655a` (902 runs, the slowest input
   50 s under AddressSanitizer at load 6 to 8); its DRAW survey done (as
   S9f.2a's: no case of the group reaches it).
+- **S9f.2b.2 implemented** (branch `s9f2b2`): a spline wall's meeting with
+  a crossing cylinder turning back inside both faces, a graph over the
+  spline prism's height about each such turning point (the run parameter
+  the one root of `F(., w)` in a rational window of one arc, verified
+  exactly; `Curve3::WallMeet` with a `window`), switched at rational
+  parameters; a cap circle on a wall in a plane holding its axis, its
+  points in one field of the circle's half-angle tangent instead of a tower
+  (`curved/spline_crossing.rs`'s `meeting`, `height_piece`,
+  `tower_points`). Decisions ("S9f.2b.2 refined"), 17 more cases referenced
+  and the whole set captured again before the kernel code, the kernel
+  within the reference on all 45 results of S9f.2b and refusing the 6
+  degenerate cases. Pending: its DRAW survey and campaign.
 - **S9e.3b implemented** (branch `s9e3b`, over `507b8054`, with
   `s9c2-kernel` at `c8e37abe` merged in; not yet pushed): a given result's
   meeting of two curved faces (`Meet`, `Rise`, `Toric`) or a cone's or
@@ -80,10 +93,12 @@ and their DRAW survey (branch `s9-draw-3`).
    with it on reaches, the "points not separated by a projection" limits
    (`triple.rs`'s retries exhausted: a fibre of two points under every
    shear tried) are the one open refusal worth a closer look.
-2. **S9f.2b.2** (loops round a turning point inside the faces, each piece
-   about it a graph over the cylinder's angle in a verified window, and the
-   tower fields of a cap circle on a wall along its axis), then **S9f.3**
-   (spheres and cones; "S9f refined" gives the degrees).
+2. **S9f.2b.2's DRAW survey and campaign** (`REVIEW_NOTES.md`'s "S9f.2b.2
+   implemented"; the fuzz target's crossing variants reach loops and towers
+   through `SPLINE_CROSSING`; after the push, the recaptured
+   `occt-boolean-spline-crossing-preimplementation`'s Linux record and
+   reviews from CI's run, as every capture's), then **S9f.3** (spheres and
+   cones; "S9f refined" gives the degrees).
 3. **S9e.4**: imported bodies decided on their stored surfaces.
 4. **S9's acceptance** (U6): kernel and fuzz CI green at the accepted
    revision, the schedule run's full replays green (boolean and
@@ -181,7 +196,7 @@ Each comparison takes `--occt-root target/spline-linear-preflight/pinned-sdk/ins
 | `compare_given_curved_boolean.py` | 25 / 23 |
 | `compare_spline_any_boolean.py` | 22 / 16 (the kernel within the reference on all 33 solid and empty cases, the 5 degenerate refused) |
 | `compare_spline_parallel_boolean.py` | 31 / 12 (the kernel within the reference on all 39 results, the 4 degenerate refused) |
-| `compare_spline_crossing_boolean.py` | 13 / 21 (the kernel within the reference on all 24 S9f.2b.1 results, the 4 degenerate refused, S9f.2b.2's 6 `unsupported`) |
+| `compare_spline_crossing_boolean.py` | 14 / 37 (the kernel within the reference on all 45 results, the 6 degenerate refused, none `unsupported`) |
 | `compare_given_met_boolean.py` | 8 / 42 (the kernel within the reference on all 42 solid cases, the 8 degenerate refused) |
 
 Every one must report 0 failures; since S9f.1 also `compare_split.py`

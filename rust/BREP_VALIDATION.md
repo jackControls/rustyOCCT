@@ -295,7 +295,15 @@ only on a certified lower bound `> tol`. Otherwise it reports the matching
   sweep whose square root's series cannot run near a turning point beyond
   the piece is halved toward it (at most 40 times, guided by the
   discriminant's binary64 values, a piece whose discriminant varies by
-  more than a factor of two halved without a try). A closing chord on a
+  more than a factor of two halved without a try). A graph over the wall's
+  `v` (S9f.2b.2, the meeting about a turning point inside both faces) is
+  one piece on its window's span: its `u` the window's root at every number
+  of the integrands (`wall_meet::eval_height`: interval Newton at the
+  base, the series by Newton's steps about a point and coefficient by
+  coefficient over a range), the sweep's `ū'` from `du/dv = -g_t / g_u`,
+  halved where it cannot run whole; the Green integrals' moment tensors are
+  evaluated at each jet through the Bernstein bases' jets made once per
+  degree (`spline_flux::tensor_jets`). A closing chord on a
   spline surface lies in the first patch holding both its ends'
   enclosures, else within `2^-40` of a patch's width past its sides inside
   the domain and anywhere past the domain's edges (the boundary patch's

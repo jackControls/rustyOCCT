@@ -1102,7 +1102,7 @@ other arc's curve. `OutOfDomain`: coincident spline walls (a resultant
 identically zero on an arc, refused, S9f); crossing axes (against a
 cylinder S9f.2b's, against a spline wall refused, S9f).
 
-### Spline walls against crossing cylinders (S9f.2b.1)
+### Spline walls against crossing cylinders (S9f.2b)
 
 A spline prism meets a prism with arcs or circles whose stored normal
 crosses its own (`n_A x n_B != 0` exactly), a leaning, tilted or side
@@ -1125,6 +1125,29 @@ crease, at its angle there (`conic_wall`); vertical edges by S9f.1's
 every vertex lies in `Q(alpha)` of degree at most `2 p` or in
 `Q(sqrt(d))`.
 
+S9f.2b.2 adds the loops and the towers. A turning point strictly inside
+both faces gets a graph over the spline prism's height about it: the run
+parameter the one root of `F(., w)` in a rational window of one Bézier arc,
+over the heights `[w_-(tau_s), w_+(tau_s)]` of a rational switch `tau_s` on
+the side where `D > 0` (a quarter of the way to where the gentler branch's
+slope over the profile has fallen to one), placed by the height; the
+graphs over `tau` on both branches end at `tau_s`, and the two switch
+points are vertices of the arrangement (`CylPair::Mixed`'s switches: the
+meeting of a spline wall with a crossing cylinder is now found once per
+pair of faces in the pairs' pass). Each piece is verified exactly before it
+is kept: `F`'s roots at the window's near end outside the range and `D < 0`
+at its far end, one root at the rational height `-B(tau_s) / A`, and `H = A
+C'^2 - 4 B B' C' + 4 C B'^2` without a root in the closed window (no double
+root at any height), the distances halved otherwise (at most twenty times,
+then `ComputationLimit`). A cylinder's cap circle in a plane holding the
+wall's axis direction meets the wall where each arc's implicit equation
+vanishes along the circle's half-angle tangent `t` (degree at most `2 p`),
+its points and angles in one field `Q(t)` instead of the tower
+`Q(alpha)(sqrt(delta))` (`tower_points`). In the topology the graph over
+the height is `Curve3::WallMeet` with a `window` of the wall's `u`
+(`TOPOLOGY_MODEL.md`), certified by interval Newton and the implicit
+function theorem on the window's span (`MATHEMATICS.md`).
+
 In the topology the meeting is a new procedural curve,
 `Curve3::WallMeet` (`TOPOLOGY_MODEL.md`): the wall face's stored surface,
 the other cylinder's stored frame and radius, the branch's sign and the
@@ -1139,11 +1162,12 @@ Bernstein polynomials per wall and cylinder (`MATHEMATICS.md`).
 multiplicity above one near the faces); a turning point at an interior
 knot; a turning point on a face's boundary, at a segment's end, or outside
 the faces within the resolution of both (a rounding away from turning back
-on a cap's edge); a vertex's polynomial with a multiple root (an edge
-tangent to the other's face). `OutOfDomain` (S9f.2b.2): a turning point
-inside both faces (loops round it), a cylinder's cap circle on a spline
-wall in a plane holding the wall's axis direction (a tower field). Spline
-walls against spline walls on crossing axes stay refused (S9f).
+on a cap's edge, or a loop's on a cap's rim); a vertex's polynomial with a
+multiple root (an edge tangent to the other's face; a cap circle tangent to
+the wall's generatrix, the meeting turning back on the rim).
+`ComputationLimit`: a graph over the height whose window does not verify
+after twenty halvings. Spline walls against spline walls on crossing axes
+stay refused (S9f).
 
 ## Evidence
 
@@ -2489,6 +2513,29 @@ walls against spline walls on crossing axes stay refused (S9f).
   ellipse arcs on the capsule's caps at the rod's seam generatrix, and in
   the fuse its seam at the hole: those three reviews now name the counts
   too), refusing the 4 degenerate cases and S9f.2b.2's 6 (`unsupported`).
+* **S9f.2b.2 evidence (loops and towers), before its kernel code.** The
+  same generator writes 51 cases, 17 new (`step` `S9f.2b.2` exactly when a
+  turning point lies inside both faces or a cap circle meets a wall in a
+  plane holding its axis inside its heights, `towers`): a rod ending
+  inside the dome on its arch and a wide rod ending inside the lens across
+  its two cubics (towers alone), loops cut by a tower's cap circle and by
+  the spline prism's top cap (the bulge) and by a tilted rod's cap circle
+  (the lens), and `cap_turn`, declared degenerate (a loop's turning point
+  on the rod's cap rim). Checks as S9f.2b's within 9.4e-41, margins outside
+  the declared pairs at least 0.006, Python 3.9 and 3.12 the same files;
+  the reference test checks the dome's tower points in closed form. The
+  capture was taken again, whole (`rust_spline_loops_boolean_exists`
+  false, keyed on S9f.2b.2's two refusals in `spline_crossing.rs`): the 34
+  earlier rows to the bit, the 17 new done and valid with the reference's
+  counts, 4 matching and 13 reviewed (BRepGProp's default measure; adaptive
+  BRepGProp or Green's theorem over OCCT's faces within 2.1e-9 in volume,
+  3.7e-9 in area, 1.8e-10 in the centre). With S9f.2b.2's kernel: 14
+  matches and 37 reviewed, the kernel within the reference on all 45
+  results and refusing the 6 degenerate cases; the 15 loop cases' reviews
+  name their counts (the kernel's loops cut at its switches and at its
+  rod's faces' boundaries, OCCT's at its rod's seam touching a turning
+  point and at its intersection edges' own splits), `bulge_cap_loop`'s
+  three for counts alone.
 * **S9f.2a evidence (spline walls against arc, circle and spline walls on
   exactly parallel axes), before its kernel code.**
   `curved_boolean_reference.py` takes the other prism's arcs, circles and

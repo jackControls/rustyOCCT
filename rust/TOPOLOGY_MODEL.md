@@ -962,7 +962,16 @@ procedural pcurves with explicit conic edges.
   the surface's poles and the other frame; the writer refuses it
   (`Unwritable`) until D13's interchange approximation, the reader never
   makes one, and history, `curve_curve` and `curve_surface` refuse it as
-  `Meet`.
+  `Meet`. S9f.2b.2: with a `window` (a range of the wall's `u` inside one
+  knot span) the edge is a graph over the wall's `v` instead, about a
+  turning point inside both faces: `v = start + sweep f`, `u` the one root
+  of `a t^2 + 2 b t + c` in the window (bisection in binary64; certified by
+  interval Newton and the implicit function theorem on the window's span,
+  `wall_meet::eval_height`), `sign` unused; its integrals are one piece on
+  that span, its own wall's pcurve again its own `(u, v)`. The Boolean
+  verified exactly that the window holds one simple root at every `v` of
+  the range; the validator checks that the window lies inside one knot span
+  and brackets the root at the range's ends and middle.
 * **A cone's sections in Boolean results (S9d.3a).** `HyperbolaArc` and
   `ParabolaArc` edges bound Boolean results too; a rigid motion moves their
   frames, and a body's bounds hold their coordinates' extremes inside their
