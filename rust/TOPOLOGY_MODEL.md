@@ -971,7 +971,13 @@ procedural pcurves with explicit conic edges.
   that span, its own wall's pcurve again its own `(u, v)`. The Boolean
   verified exactly that the window holds one simple root at every `v` of
   the range; the validator checks that the window lies inside one knot span
-  and brackets the root at the range's ends and middle.
+  and brackets the root at the range's ends and middle. S9f.3a: with
+  `other_sphere` the other surface is the sphere `|w| = other_radius` about
+  `other`'s origin (its stored frame, the centre): the function along the
+  ruling sums the world's three rows instead of the cylinder's two axes
+  (`WallMeet::other_rows`), the validity rule asks no ruling to cross an
+  axis, the sphere's pcurve is its inverse and a rigid motion moves its
+  frame.
 * **A cone's sections in Boolean results (S9d.3a).** `HyperbolaArc` and
   `ParabolaArc` edges bound Boolean results too; a rigid motion moves their
   frames, and a body's bounds hold their coordinates' extremes inside their

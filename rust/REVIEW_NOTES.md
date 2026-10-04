@@ -6535,8 +6535,9 @@ Decisions for S9, recorded before its code (2026-09-28):
     slowest input took 36 s). Every check of `HANDOFF.md`'s "Verification"
     holds: the suite, all 25 comparisons unchanged but this one with 0
     failures, the 13 generators importing `curved_boolean_reference.py`
-    with `--check`, unittest (287 tests) and the ledger. Pending: the DRAW
-    survey. Campaign: the boolean campaign at `7199e06a`, S9e.4a's and
+    with `--check`, unittest (287 tests) and the ledger. DRAW survey: that
+    of S9f.2b.2 and S9e.4b.1 (no case reaches its loops or towers).
+    Campaign: the boolean campaign at `7199e06a`, S9e.4a's and
     S9f.2b.2's together (600 s, a sampled replay, `IMPORTED` and
     `SPLINE_CROSSING` on) clean, 845 runs, the slowest input 47 s under
     AddressSanitizer at load 12 to 17 (`17e131e3`, an existing corpus input,
@@ -6561,6 +6562,263 @@ Decisions for S9, recorded before its code (2026-09-28):
     (1,430 inputs), the 25 regressions, 477 variants beside the input and
     363 single-byte mutations of it, none failing; every comparison
     unchanged with 0 failures.
+  * **S9f.3 refined, before its code (2026-10-03).** Why it is refused
+    today: `curved::spline_pairs` refuses a spline prism against a sphere
+    or a cone ("a spline prism against a sphere or a cone (S9f.3)");
+    behind that refusal `meet::section` and `meet::edge_surface` have no
+    spline wall against a sphere or a cone face, no spline cap edge or
+    crease against them and no sphere's circle or cone's rim against a
+    spline wall (`spline_curved`: "a spline wall against a curved face in
+    any position (S9f.3)"), the cone pairs' pass would take a spline wall
+    for a quadric (`cones::cone_pair`), and the topology's
+    `Curve3::WallMeet` holds a cylinder only. Decisions.
+    (1) *Sub-steps.* **S9f.3a** (this step): a sphere, a cap or a zone
+    (`Solid::sphere_with`) against a spline prism in any position, either
+    the object; **S9f.3b**: a cone or frustum against a spline prism. They
+    differ where the cone's radius term enters: along a spline wall's
+    ruling a cone's function is `A w^2 + 2 B w + C` with `A = sum q_i^2 -
+    k^2 q_h^2` of either sign (a ruling steeper than the cone's generatrices
+    meets both nappes, one point on each and no turning point but where the
+    ruling passes the apex; a ruling along a generatrix direction, `A = 0`,
+    meets it once), the other nappe's points lie on the quadric but not on
+    the face, the apex is a vertex on the meeting when the wall holds it,
+    and the topology's cone is stored by its half angle, whose tangent is
+    not rational (the certified evaluation's polynomials split by powers
+    of `tan(a)`, enclosed per tier, where the sphere's and cylinder's are
+    exact). S9f.3b refines those before its own evidence; this bullet's
+    remaining decisions are S9f.3a's.
+    (2) *The meeting.* Along the spline wall's ruling at the run parameter
+    `tau`, `X = o + S_x(tau) x + S_y(tau) y + w n` (the spline prism's exact
+    model), the sphere's function in the world's rows (`procedural::Other`
+    of `other_sphere`: `|X - c|^2 - r^2`, its stored centre and radius) is
+    `F = A w^2 + 2 B(tau) w + C(tau)` with `A = n . n` (positive: every
+    ruling, so no condition on the axes), `B = n . (P - c)` of degree `p`
+    and `C = |P - c|^2 - r^2` of degree `2 p` on each Bézier arc (`P = o +
+    S_x x + S_y y`), and `D = B^2 - A C = A r^2 - |(P - c) x n|^2` (Lagrange)
+    of degree `2 p`. These are S9f.2b's polynomials with three rows instead
+    of a cylinder's two: S9f.2b.1's branches over `tau` between the roots
+    of `D`, S9f.2b.2's graphs over the height about each turning point
+    strictly inside both faces (the window's root, verified exactly by its
+    (i) to (iii), switched at rational run parameters, the switches
+    vertices) and the classification of turning points carry over
+    unchanged (`spline_crossing::meeting` takes the partner's rows, the
+    sphere's face and labels). A sphere smaller than the wall's height
+    straddling it meets it in a loop with two turning points inside both
+    faces (graphs over the height); one crossing a cap or larger than the
+    wall in branches over `tau`, the turning points outside a face. The
+    meeting is found once per pair of faces (`CylPair::Mixed`), for each
+    hemisphere (S9d.1's split): a turning point inside one lies outside
+    the other, whose branches over `tau` end there (S9f.2b.2's (e)).
+    (3) *Representation.* In the engine `Crv::WallMeet` unchanged, its
+    `other` the sphere's three rows, its carrier's partner a hemisphere
+    (`FaceKind::Half`). In the topology `Curve3::WallMeet` gains
+    `other_sphere: bool` (as `Curve3::Meet`'s): with it the other surface
+    is the sphere of `other`'s origin (its stored frame, the centre) and
+    `other_radius`, its function along the ruling `|L(u) + t M(u) -
+    o|^2 - r^2`, and `topology/validate/wall_meet.rs`'s spans take the
+    partner's rows (a cylinder's `x2` and `y2`, a sphere's three world axes,
+    exact): `a = sum m_i^2`, `b = sum w_i m_i`, `c = sum w_i^2 - r^2` and `d
+    = a r^2 - sum_{i<j} (w_i m_j - w_j m_i)^2` (Lagrange's identity, as the
+    cylinder's two-row form), each made exactly once per wall and sphere as
+    Bernstein polynomials, the graphs over `v` with `g = sum X_i^2 - r^2`.
+    On the sphere face its pcurve is a `Projection` by the sphere's inverse,
+    on its own wall its own `(u, v)`. Validity: S9f.2b's, the ruling's
+    crossing of the cylinder's axis asked only of a cylinder. Rigid
+    motion (the sphere's frame moves), the writer's and importer's
+    refusals, history, `curve_curve` and `curve_surface` as S9f.2b's.
+    (4) *Vertices, degrees and fields.* A spline cap edge or crease against
+    the sphere: `F` along it, degree `2 p` (S9f.2b's `wallcrv_cyl` with the
+    sphere's rows); the spline prism's vertical edges against the sphere:
+    quadratic surds (S9d.1's `line_sphere`); the sphere's circles (`Circ`:
+    the rims of a cap or zone and the split's great circle, each on its
+    own sphere) against a spline wall: (a) in a plane not holding the
+    wall's axis direction, its crease on the wall `w = h0 + h1 S_x + h2
+    S_y` in `F`, degree `2 p`, each root a point in `Q(alpha)` and its place
+    `(dx, dy)` on the circle read off rationally (S9f.2b's `conic_wall`
+    with the circle's own sphere); (b) in a plane holding the wall's axis
+    direction (a cap's or zone's split great circle when the sphere's axis
+    is parallel to the wall's, a rim when perpendicular): the plane's
+    generatrices on the wall meet the circle in the tower
+    `Q(alpha)(sqrt(delta))`, and a circle of a surd radius has no rational
+    chart (S9f.2b.2's half-angle tangent), so a primitive element by
+    elimination instead: each arc's implicit equation `f(u, v)` (degree
+    `p`, S9f.2a's `Implicit`) at the circle's projection `l0 + dx lx + dy
+    ly`, reduced by the circle's equation `dx^2 |x|^2 + dy^2 |y|^2 = r2` to
+    `E(dx) + dy O(dx)`, gives `R = E^2 - (r2 - |x|^2 dx^2) / |y|^2 O^2` of
+    degree at most `2 p` in `dx`, and at each real root `dy = -E / O` in
+    the same field `Q(dx)`; where `O` vanishes at a root on the segment
+    (two of the circle's points share `dx`: a great circle whose `x` is the
+    axis, its generatrices' two points) the roles of `dx` and `dy` are
+    swapped, and where both vanish `ComputationLimit`. A root whose point
+    lies off the segment (another branch of the implicit curve) is dropped,
+    one found on two arcs (a knot) kept once, a repeated root on the
+    segment (the circle tangent to a generatrix: a turning point on the
+    circle) `Degenerate`. The sphere's poles are its vertices (on a spline
+    wall, the engine's vertex-on-face rule). Every vertex on a wall lies in
+    `Q(alpha)` of degree at most `2 p` or in `Q(sqrt(d))`; turning points
+    are roots of `D`, degree `2 p`; `H` of S9f.2b.2's (iii), degree `4 p -
+    2`, is only counted; no new limit.
+    (5) *Degenerate*: the sphere tangent to the wall (a root of `D` of
+    multiplicity above one inside both faces' closures: an isolated point
+    or a node of the meeting, "a sphere tangent to a spline wall"); a
+    turning point at an interior knot inside both faces' closures; a
+    turning point on a face's boundary (a cap's edge, a rim, the
+    segment's end; on the hemispheres' split, which is no edge of the
+    input, the split is tried at another seam instead); a vertex's
+    polynomial with a multiple root (an edge tangent to the other's face);
+    and the engine's rules (a vertex of one input on the other's face,
+    crossings within the resolution). A meeting within rounding of tangency
+    validates or is `PrecisionLoss`, never taken for one; fixtures keep a
+    margin.
+    (6) *Stays refused*: cones and frustums (S9f.3b's), tori (by design,
+    "S9f refined"), spline walls against spline walls on crossing axes,
+    given results with spline walls or made from spheres against a spline
+    prism (S9e's general faces), rational and periodic profile splines.
+    (7) *Evidence first*: an independent reference of its own,
+    `spline_sphere_boolean_reference.py` (the spline prism's exact model
+    and profile parsing shared with `curved_boolean_reference.py`, nothing
+    else): the pair sliced by planes, each slice's sections exact 2D
+    regions (the profile cut by the prism's caps' lines; the sphere's
+    circle projected along the prism's axis, cut by a cap's or zone's
+    planes' lines), their Boolean pieces by Green's theorem on the cut
+    boundaries, the breakpoints every vertex's slice and every edge's
+    extreme ones (roots of exact polynomials: the meeting's by a resultant
+    of the quadratic `F` and its tangent condition), each operation's
+    volume and moments two ways (slicing along the prism's axis and along
+    an oblique direction), the faces' classes (the walls swept along their
+    generatrices, the sphere's by Archimedes' area element, the planar
+    faces in their planes), closed forms of each input, inclusion and
+    exclusion, the area identity, a Monte Carlo estimate, solids by the
+    slices' union-find, and margins as S9f.2b's (turning points from faces
+    and knots, crossings' sines at caps and circles, the discriminant's
+    critical values, vertices from faces); `generate_spline_sphere_boolean_fixtures.py
+    --check` (the same files under Python 3.9 and 3.12) across spheres
+    straddling the bulge's, dome's, lens's and `knot`'s walls (loops),
+    spheres larger than the wall or crossing a cap (branches), hemispheres
+    on the prism's axis (their split great circles' towers) and on its
+    side (their rims'), tilted prisms, either input the object, and
+    declared degenerate pairs (a sphere touching the dome's arch, a
+    turning point at `knot`'s knot, a loop turning back on a cap's edge);
+    `test_spline_sphere_boolean_reference.py`; the generator in a CI group
+    of its own (`spline-sphere`); a native capture
+    `occt-boolean-spline-sphere-preimplementation` before
+    `solid/boolean/curved/spline_sphere.rs` exists
+    (`compare_spline_sphere_boolean.py` keyed on it); then the kernel in
+    that file (the sphere's meeting, its cap edges' and circles' vertices)
+    and `spline_crossing.rs` (the partner's rows), its tests, and the
+    `boolean` fuzz target's spline prisms against its sphere, cap and zone
+    tools (`SPLINE_SPHERE`).
+    * **S9f.3a evidence (2026-10-03), before its code.**
+      `spline_sphere_boolean_reference.py`, an independent reference of its
+      own: the pair sliced by planes, each slice's sections exact regions
+      of the profile's plane (the profile cut by the caps' lines; the
+      sphere's circle projected along the prism's axis, an ellipse
+      parameterised by the circle's own angle, cut by a hemisphere's line),
+      their Boolean pieces by Green's theorem on the cut boundaries in
+      closed form; breakpoints at every vertex's slice and every edge's
+      extremes (the meeting's from `F` and its tangent condition, linear in
+      `w`, eliminated exactly); the walls swept along their generatrices,
+      the sphere's face by Archimedes' area element, a hemisphere's disc in
+      its plane (by the profile's chords where it holds the axis); solids by
+      the slices' union-find. `generate_spline_sphere_boolean_fixtures.py
+      --check` writes 33 cases (9 fuses, 12 cuts, 12 commons; 27 solid, 6
+      degenerate): loops (spheres straddling the bulge's wall, the lens's
+      lower cubic, `knot`'s second span in `TILT`, the blob's wall under its
+      top cap, and a sphere object across the wave's knot), branches over
+      the run (a large sphere over the dome, its top cap inside it; a
+      sphere under the blob in `TILT`, arches from its bottom cap's edge
+      back to it), hemispheres (`hemi_bulge` through the bulge's bottom cap
+      on its axis, its split great circle on the wall in a tower field;
+      `side_hemi_bulge` on its side, its rim's plane holding the wall's
+      axis, one turning point inside the hemisphere and one beyond its
+      rim), and `degenerate` a sphere touching the dome's apex, a turning
+      point at `knot`'s knot and a loop turning back on the bulge's top
+      cap's edge. Checks: the two slicings (along the caps' normal and
+      along `(2, -3, 5)`) within 1.8e-41 of the size, both inputs' closed
+      forms 5.7e-42, faces' classes 2.8e-41, the area identity 8.0e-41,
+      Monte Carlo (100,000 points a pair) within 2.8 standard errors;
+      margins outside the declared pairs at least 0.023 (a vertex of the
+      prism from the sphere; crossings at caps and the rim 0.071, turning
+      points 0.27 outside a face and loops 0.34 inside both), the declared
+      pairs' zero; Python 3.9 and 3.12 the same files;
+      `test_spline_sphere_boolean_reference.py` (a sphere across a straight
+      spline wall: its common, moments, areas and turning points in closed
+      form; a rim's tower points in closed form); the CI group
+      `spline-sphere`. The capture `occt-boolean-spline-sphere-preimplementation`
+      (`compare_spline_sphere_boolean.py`, keyed on
+      `solid/boolean/curved/spline_sphere.rs`; the probe `unsupported` on all
+      33, refused by `spline_pairs`): every result valid with the
+      reference's solids, 4 matches, 29 reviewed (BRepGProp's default
+      integration up to 4.1e-5, the wave's up to 1.0e-3; a diagnostic
+      build's adaptive BRepGProp and Green's theorem over OCCT's own faces
+      and pcurves, the better within 6.0e-9 in volume, 7.8e-9 in area and
+      8.5e-9 in the centre but on the wave's cut and common, 9.3e-7 within
+      its edges' own tolerance of 3.7e-5); two solids' counts change when
+      unified. No correction to the decisions from the evidence. S9f.3a's
+      kernel next.
+  * **S9f.3a implemented** (`solid/boolean/curved/spline_sphere.rs`;
+    `spline_crossing.rs`'s `meeting_with` over the partner's rows and
+    labels, `wallcrv_quadric`; `mod.rs`'s `spline_pairs`, `graph.rs`'s pairs
+    pass, `meet.rs`'s sections and edge meetings, `assemble.rs`'s curves,
+    `spline_parallel.rs`'s `Implicit::terms`; the topology's
+    `Curve3::WallMeet::other_sphere` with `topology/validate/wall_meet.rs`'s
+    spans over the other surface's rows and the validity rule): spline
+    prisms against spheres, caps and zones in any position as the refined
+    decisions describe, cones refused as S9f.3b's ("a spline prism against
+    a cone (S9f.3b)"). The meeting is S9f.2b's over the sphere's three rows,
+    found once per pair of a spline wall and a hemisphere; a sphere's circle
+    meets a wall along its crease or, in a plane holding the wall's axis,
+    at the roots of `E^2 - rho O^2` with `dy = -E / O`, the roles of `dx` and
+    `dy` swapped where `O` vanishes (the hemispheres' great circles on the
+    prism's axis, whose `x` is that axis, take the swapped order). All 33
+    fixtures as the reference (the 27 results within the kernel's
+    enclosures of volume, area and centre, each at most `1e-9` wide; the 6
+    degenerate refused with the decisions' reasons); every history
+    complete, results deterministic and moved rigidly
+    (`tests/spline_sphere_booleans.rs`, 7 tests, 38 to 51 s in release on
+    a host at load 15 to 50, 42 s at `opt-level` 2 with debug assertions: also the loops' graphs over `v` each in one knot span, a
+    rim's tower vertices on the bulge, zones and caps in turned frames by
+    inclusion and exclusion, a cone refused; the module's sixth test: a
+    graph over `u` and one over `v` on a sphere with jets over points and
+    ranges enclosing its points and slopes). `compare_spline_sphere_boolean.py`
+    4 matches and 29 reviewed, the kernel within the reference on all 27
+    results and none `unsupported` (the 18 loop cases' reviews name their
+    counts: the kernel cuts each loop at its switches and at the
+    hemispheres' split, OCCT's edges follow its own seams); every other
+    comparison unchanged, `compare_split.py` 72/56, `compare_brep.py
+    --family spline` 10/3, `compare_brep_io.py` 6835/7, `compare_step.py`
+    23/6. Amendments to the decisions, from the implementation: (a) a
+    sphere's loop switches a sixty-fourth of the way from its turning point
+    to where the gentler branch's slope has fallen to one (a cylinder's
+    stays a quarter): its graph over the height spans the sphere's section
+    there, and at a quarter the slowest fuzz variants (spheres larger than
+    a thin prism) spent ten times longer in the certified integrals over
+    it, at a sixty-fourth and a two-hundred-fifty-sixth alike, the
+    fixtures' tests no slower; (b) a turning point inside both faces but
+    within the resolution of a prism wall's cap plane or a sphere's rim
+    plane is `Degenerate` like one on it (a sphere about a turned prism's
+    frame origin: a loop turning back `1e-17` above the cap, its graphs
+    over the height cut there); (c) the binary64 root of a graph over `v`
+    (`WallMeet::root_at`) builds the wall's pole rows once instead of at
+    each of its bisection's steps; (d) the cone pairs' pass never sees a
+    spline wall (`spline_pairs` refuses a cone first). The `boolean` fuzz
+    target decodes a spline prism object against its sphere, cap or zone
+    tool through S9f.3a (`SPLINE_SPHERE`), switched off for time: of 477
+    variants of every third corpus input (the spline byte from 192 with its
+    low bit, the flags' bits 5 and 6 clear) replayed with debug assertions,
+    none failing, the median took 0.55 s, the ninth decile 1.5 s and the
+    slowest 37 s (`d7599dbe`, a lens hole under a leaning sphere whose
+    loops turn back near the lens's tips: the graphs over the run halved
+    toward the turning points, sweep after sweep), 472 s under
+    AddressSanitizer, another 297 s; the corpus holds `d7599dbe` itself.
+    Replays with debug assertions of the corpus (1,430 inputs) and the 24
+    regressions, none failing, with the switch off (the slowest 12.6 s) and
+    on (48 s, `d7599dbe`). Every check of `HANDOFF.md`'s "Verification"
+    holds: fmt, clippy, the 1.85 check, the suite, the table's 26 comparisons
+    and the four beside it with 0 failures, unittest (296 tests) and the ledger. Pending: the DRAW
+    survey, the campaign (with `SPLINE_SPHERE` off), and the speed of the
+    certified integrals beside a loop's turning points before it can be
+    switched on.
   * **Where S9 stands (2026-09-30, paused).** Done and pushed: S9a to S9d
     (every sub-step with its DRAW survey and a clean campaign), S9e.1
     (campaign clean at `51c08edf`) and S9e.2 (`8e060c67`), S9f's decisions

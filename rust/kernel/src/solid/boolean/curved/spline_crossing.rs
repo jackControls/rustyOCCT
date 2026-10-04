@@ -1,6 +1,8 @@
 //! S9f.2b: spline walls against cylinder walls on crossing axes
 //! (REVIEW_NOTES.md, "S9f.2b refined, before its code" and "S9f.2b.2
-//! refined, before its code").
+//! refined, before its code"); S9f.3a: against spheres, whose function
+//! along a ruling is the same quadratic over the world's three rows
+//! (`spline_sphere.rs`).
 //!
 //! Along a spline wall's ruling at the run parameter `tau`, `X = o + S_x(tau)
 //! x + S_y(tau) y + w n` (the spline prism's exact model), the cylinder's
@@ -66,16 +68,52 @@ use num_rational::BigRational as R;
 use std::cmp::Ordering;
 use std::sync::Arc;
 
-fn tangent_wall() -> Error {
-    Error::Degenerate("a cylinder tangent to a spline wall")
+/// The quadric a spline wall meets: a cylinder (S9f.2b) or a sphere
+/// (S9f.3a), for the refusals' labels.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(super) enum Partner {
+    Cylinder,
+    Sphere,
 }
 
-fn turning_knot() -> Error {
-    Error::Degenerate("a spline wall's meeting with a cylinder turning back at a knot")
-}
+impl Partner {
+    fn tangent(self) -> Error {
+        Error::Degenerate(match self {
+            Partner::Cylinder => "a cylinder tangent to a spline wall",
+            Partner::Sphere => "a sphere tangent to a spline wall",
+        })
+    }
 
-fn turning_edge() -> Error {
-    Error::Degenerate("a spline wall's meeting with a cylinder turning back on a face's boundary")
+    fn knot(self) -> Error {
+        Error::Degenerate(match self {
+            Partner::Cylinder => "a spline wall's meeting with a cylinder turning back at a knot",
+            Partner::Sphere => "a spline wall's meeting with a sphere turning back at a knot",
+        })
+    }
+
+    /// How far the switch lies from a loop's turning point toward where the
+    /// gentler branch's slope has fallen to one: a quarter of the way for a
+    /// cylinder (S9f.2b.2), a sixty-fourth for a sphere (S9f.3a: its loops'
+    /// graphs over the height, as tall as the sphere's section there, cost
+    /// ten times more to integrate at a quarter on the slowest fuzz variants,
+    /// the graphs over the run beside them little more).
+    fn switch(self) -> f64 {
+        match self {
+            Partner::Cylinder => 0.25,
+            Partner::Sphere => 0.015625,
+        }
+    }
+
+    pub(super) fn edge(self) -> Error {
+        Error::Degenerate(match self {
+            Partner::Cylinder => {
+                "a spline wall's meeting with a cylinder turning back on a face's boundary"
+            }
+            Partner::Sphere => {
+                "a spline wall's meeting with a sphere turning back on a face's boundary"
+            }
+        })
+    }
 }
 
 fn tangent_curve() -> Error {
@@ -90,7 +128,7 @@ fn unverified() -> Error {
 
 // ------------------------------------------------------------ polynomials
 
-fn pmul(a: &[R], b: &[R]) -> Vec<R> {
+pub(super) fn pmul(a: &[R], b: &[R]) -> Vec<R> {
     if a.is_empty() || b.is_empty() {
         return Vec::new();
     }
@@ -106,7 +144,7 @@ fn pmul(a: &[R], b: &[R]) -> Vec<R> {
     trim(out)
 }
 
-fn padd(a: &[R], b: &[R]) -> Vec<R> {
+pub(super) fn padd(a: &[R], b: &[R]) -> Vec<R> {
     let mut out = vec![zero(); a.len().max(b.len())];
     for (i, x) in a.iter().enumerate() {
         out[i] += x;
@@ -117,13 +155,14 @@ fn padd(a: &[R], b: &[R]) -> Vec<R> {
     trim(out)
 }
 
-fn pscale(a: &[R], k: &R) -> Vec<R> {
+pub(super) fn pscale(a: &[R], k: &R) -> Vec<R> {
     trim(a.iter().map(|x| x * k).collect())
 }
 
-/// The cylinder's rows along a curve over an arc, `w = h0 + h1 S_x + h2 S_y`
-/// (`h = None`: free, the ruling's `w` coefficient kept apart): per row `P_i
-/// + q_i w`, `(P_i(s), q_i)`.
+/// The other quadric's rows along a curve over an arc, `w = h0 + h1 S_x +
+/// h2 S_y` (`h = None`: free, the ruling's `w` coefficient kept apart): per
+/// row `P_i + q_i w`, `(P_i(s), q_i)` (a cylinder's two, a sphere's three;
+/// no radius term: a cone's is S9f.3b's).
 fn rows(f: &Affine, arc: &BArc, other: &Other, h: Option<&[R; 3]>) -> Vec<(Vec<R>, R)> {
     other
         .g
@@ -166,8 +205,9 @@ fn ruling_coeffs(f: &Affine, arc: &BArc, other: &Other) -> (R, Vec<R>, Vec<R>) {
     (a, b, c)
 }
 
-/// The cylinder's function along a curve over an arc (`w` given by `h`).
-fn along_curve(f: &Affine, arc: &BArc, other: &Other, h: &[R; 3]) -> Vec<R> {
+/// The other quadric's function along a curve over an arc (`w` given by
+/// `h`).
+pub(super) fn along_curve(f: &Affine, arc: &BArc, other: &Other, h: &[R; 3]) -> Vec<R> {
     rows(f, arc, other, Some(h))
         .iter()
         .fold(vec![-(&other.r * &other.r)], |acc: Vec<R>, (p, _)| {
@@ -487,14 +527,36 @@ pub(super) fn meeting(
     c: &P2,
     r: &R,
 ) -> Result<CylPair> {
-    let other = other_of(&cm.f, c, r);
+    meeting_with(
+        sm,
+        sf,
+        seg,
+        cm,
+        cf,
+        other_of(&cm.f, c, r),
+        Partner::Cylinder,
+    )
+}
+
+/// A spline wall's meeting with the quadric `other` of face `cf` of `cm`
+/// (a cylinder's on a crossing axis, S9f.2b; a sphere's, S9f.3a).
+pub(super) fn meeting_with(
+    sm: &Prism,
+    sf: usize,
+    seg: &Arc<SplineSeg>,
+    cm: &Prism,
+    cf: usize,
+    other: Other,
+    partner: Partner,
+) -> Result<CylPair> {
+    debug_assert!(other.t == zero(), "a cone's radius term is S9f.3b's");
     let f = &sm.f;
     let rs = match seg.roots_of(&|arc: &BArc| {
         let (a, b, cc) = ruling_coeffs(f, arc, &other);
         padd(&pmul(&b, &b), &pscale(&cc, &-a))
     })? {
         Roots::At(rs) => rs,
-        Roots::Along | Roots::Partly => return Err(tangent_wall()),
+        Roots::Along | Roots::Partly => return Err(partner.tangent()),
     };
     let first = Qd::rat(seg.first.clone());
     let last = Qd::rat(seg.last.clone());
@@ -514,6 +576,15 @@ pub(super) fn meeting(
         let w = b.scale(&(int(-1) / a));
         let x = qpoint(f, &uv[0], &uv[1], &w);
         let inside = (sm.in_face(sf, &x), cm.in_face(cf, &x));
+        // S9f.3a: on the hemispheres' split, which is no edge of the input:
+        // the split is tried at another seam.
+        if partner == Partner::Sphere
+            && inside.0 != Loc::Out
+            && inside.1 == Loc::On
+            && super::graph::seam_at(cm, cf, &x)
+        {
+            return Err(Error::ComputationLimit(super::graph::SEAM));
+        }
         let near = !matches!(inside, (Loc::Out, _) | (_, Loc::Out));
         // Outside a face but within the resolution of both: the meeting's
         // end there a rounding away from turning back, its square root's
@@ -522,17 +593,24 @@ pub(super) fn meeting(
         let tol = sm.tolerance.linear().max(cm.tolerance.linear());
         let close = |pr: &Prism, fi: usize, at: Loc| at != Loc::Out || outside(pr, fi, &x) <= tol;
         if !near && close(sm, sf, inside.0) && close(cm, cf, inside.1) {
-            return Err(turning_edge());
+            return Err(partner.edge());
         }
         if near {
             if root.mult > 1 {
-                return Err(tangent_wall());
+                return Err(partner.tangent());
             }
             if root.knot {
-                return Err(turning_knot());
+                return Err(partner.knot());
             }
             if root.end || inside != (Loc::In, Loc::In) {
-                return Err(turning_edge());
+                return Err(partner.edge());
+            }
+            // S9f.3a: inside both faces but within the resolution of a
+            // cap's or a rim's plane: a rounding away from turning back on
+            // that edge (a sphere about a turned prism's frame origin), the
+            // graph over the height cut there.
+            if inner_gap(sm, sf, &x) <= tol || inner_gap(cm, cf, &x) <= tol {
+                return Err(partner.edge());
             }
             // A loop's turning point (S9f.2b.2): a graph over the height.
             bounds.push((root.tau.clone(), true));
@@ -550,7 +628,7 @@ pub(super) fn meeting(
         if !bounds[i].1 {
             continue;
         }
-        let (piece, tau_s, xs) = height_piece(seg, f, &other, &bounds, i)?;
+        let (piece, tau_s, xs) = height_piece(seg, f, &other, &bounds, i, partner)?;
         out.push(Crv::WallMeet(Box::new(WallMeetCrv {
             carrier: seg.op,
             ..piece
@@ -661,10 +739,11 @@ impl View {
 /// `D > 0` (the sign of `D'` there, exactly), `d1` is where the gentler
 /// branch's slope over the profile's arc length has fallen to one (binary64,
 /// at most a third of the way to the next bound and inside the arc); the
-/// switch `s_s` a quarter of the way (the slope there about two: it grows as
-/// the distance's inverse square root; the graphs over the height cost more
-/// per point than those over the run, the run's more per piece the nearer
-/// they end to `s*`), the window's near end `s0` at `d1`, its far end
+/// switch `s_s` a quarter of the way for a cylinder (the slope there about
+/// two: it grows as the distance's inverse square root; the graphs over the
+/// height cost more per point than those over the run, the run's more per
+/// piece the nearer they end to `s*`), a sixty-fourth for a sphere
+/// (`Partner::switch`), the window's near end `s0` at `d1`, its far end
 /// `s1` past `s*` as far (at most half the way to the bound behind and
 /// inside the arc), all rational. The piece is kept when, exactly: (i) `F`'s
 /// roots in `w` at `s0` (surds, or none) lie outside the range
@@ -679,6 +758,7 @@ fn height_piece(
     other: &Other,
     bounds: &[(Qd, bool)],
     i: usize,
+    partner: Partner,
 ) -> Result<(WallMeetCrv, R, [QV; 2])> {
     let tau = &bounds[i].0;
     // Its arc (not at a knot: refused before).
@@ -695,7 +775,7 @@ fn height_piece(
     let side = match peval(&derivative(&dpoly), &star).sign() {
         Ordering::Greater => 1.0,
         Ordering::Less => -1.0,
-        Ordering::Equal => return Err(tangent_wall()),
+        Ordering::Equal => return Err(partner.tangent()),
     };
     let s_star = star.to_f64();
     let span_f = rational_f64(&span);
@@ -734,7 +814,7 @@ fn height_piece(
     let dyadic = |x: f64| R::from_float(x).ok_or_else(unverified);
     let one = int(1);
     for _ in 0..20 {
-        let ss = dyadic(s_star + side * 0.25 * reach)?;
+        let ss = dyadic(s_star + side * partner.switch() * reach)?;
         let s0 = dyadic(s_star + side * reach)?;
         let s1 = dyadic(s_star - side * back)?;
         reach *= 0.5;
@@ -830,6 +910,30 @@ fn height_piece(
     Err(unverified())
 }
 
+/// How far (binary64) a point inside a face lies from the planes of its
+/// caps or rims: a prism wall's heights, a sphere's ends; infinite for
+/// other faces.
+fn inner_gap(pr: &Prism, fi: usize, x: &QV) -> f64 {
+    match (pr.faces[fi].kind, &pr.ball) {
+        (FaceKind::Wall(..), _) if pr.ball.is_none() && pr.funnel.is_none() => {
+            let w = pr.f.local_q(x)[2].to_f64();
+            (w - rational_f64(&pr.lo))
+                .abs()
+                .min((rational_f64(&pr.hi) - w).abs())
+        }
+        (FaceKind::Half(_), Some(ball)) => {
+            let nn = rational_f64(&dot(&ball.n, &ball.n));
+            let along = qdot(&qsub(x, &qv(&ball.c)), &ball.n).to_f64();
+            ball.ends
+                .iter()
+                .flatten()
+                .map(|h| (along - rational_f64(h) * nn).abs() / nn.sqrt())
+                .fold(f64::INFINITY, f64::min)
+        }
+        _ => f64::INFINITY,
+    }
+}
+
 /// How far (binary64, in the prism's local units) a point on a wall face's
 /// surface lies outside the face: past its heights and, where its generatrix
 /// leaves the face's line or arc, from the nearer of their ends.
@@ -867,10 +971,16 @@ fn outside(pr: &Prism, fi: usize, x: &QV) -> f64 {
 /// cylinder wall of another prism on a crossing axis (`c`, `r` on frame
 /// `cf`): the roots of the cylinder's function along it.
 pub(super) fn wallcrv_cyl(curve: &WallCrv, cf: &Affine, c: &P2, r: &R) -> Result<EdgeMeet> {
-    let other = other_of(cf, c, r);
+    wallcrv_quadric(curve, &other_of(cf, c, r))
+}
+
+/// Where a curve over a spline segment meets the quadric `other` (a
+/// cylinder's, S9f.2b; a sphere's, S9f.3a): the roots of its function
+/// along it, degree `2 p`.
+pub(super) fn wallcrv_quadric(curve: &WallCrv, other: &Other) -> Result<EdgeMeet> {
     let rs = match curve
         .seg
-        .roots_of(&|arc: &BArc| along_curve(&curve.f, arc, &other, &curve.h))?
+        .roots_of(&|arc: &BArc| along_curve(&curve.f, arc, other, &curve.h))?
     {
         Roots::At(rs) => rs,
         Roots::Along => return Ok(EdgeMeet::Along),
@@ -1023,7 +1133,7 @@ fn tower_points(cc: &V, a: &V, b: &V, sf: &Affine, seg: &SplineSeg) -> Result<Ed
                     continue;
                 }
                 if repeated {
-                    return Err(turning_edge());
+                    return Err(Partner::Cylinder.edge());
                 }
                 if !out.iter().any(|(_, y)| qv_eq(y, &x)) {
                     out.push((Pos::Ang(cs), x));

@@ -1,20 +1,23 @@
 //! Certified evaluation of a spline wall's meeting with a cylinder
-//! (`Curve3::WallMeet`, S9f.2b; D13), in either tier and over any of the
-//! integrands' numbers (`quadrature::Num`: plain enclosures, Taylor series,
-//! jets).
+//! (`Curve3::WallMeet`, S9f.2b; D13) or a sphere (S9f.3a), in either tier and
+//! over any of the integrands' numbers (`quadrature::Num`: plain enclosures,
+//! Taylor series, jets).
 //!
 //! The wall is its face's stored B-spline surface of degree one in `v`: on
 //! each knot span its two pole rows are exact Bézier rows (the surface's
 //! exact patches), so its ruling there is `L(ū) + t M(ū)` with `L` the low
 //! row's Bernstein polynomial, `M` the rows' difference over the `v` range
-//! and `ū` the span's local parameter. The other cylinder's function along
+//! and `ū` the span's local parameter. The other surface's function along
 //! the ruling is `a t^2 + 2 b t + c`, and the curve's `t` is `(-b + s
 //! sqrt(b^2 - a c)) / a` or `c / (-b - s sqrt(b^2 - a c))`, the one whose
 //! middle cancels less (the binary64 curve's own choice, both the same
-//! value). `a`, `b`, `c` and the discriminant `d = a r^2 - (P x M)^2` (`P`
-//! and `M` the ruling's foot and direction in the cylinder's axes:
-//! Lagrange's identity) are polynomials in `ū` whose Bernstein coefficients
-//! are made exactly once per wall and cylinder (products of Bernstein
+//! value). Over the other surface's rows `e_i` (a cylinder's two axes, a
+//! sphere's three world axes, S9f.3a), with the foot's and the direction's
+//! coordinates `w_i` and `m_i` along them, `a = sum m_i^2`, `b = sum w_i
+//! m_i`, `c = sum w_i^2 - r^2` and the discriminant `d = a r^2 - sum_{i<j}
+//! (w_i m_j - w_j m_i)^2` (Lagrange's identity) are polynomials in `ū` whose
+//! Bernstein coefficients are made exactly once per wall and surface
+//! (products of Bernstein
 //! polynomials), so each is enclosed at a point within a few units in the
 //! last place of its coefficients: near a turning point, where `v` is `d`'s
 //! square root, `d` formed from enclosed factors (`P` and `M` each from two
@@ -115,7 +118,7 @@ impl Coefficients {
     }
 }
 
-/// A knot span of the wall met by one cylinder: its `u` range (exact and
+/// A knot span of the wall met by one surface: its `u` range (exact and
 /// binary64), the wall's `v` range, the low row's and the rulings'
 /// direction's Bernstein coordinates (`low[k]`, `dir[k]`: coordinate `k`)
 /// and the polynomials `a`, `b`, `c` and `d` in `ū`.
@@ -126,28 +129,28 @@ pub(super) struct Span {
     low: [Coefficients; 3],
     dir: [Coefficients; 3],
     abcd: [Coefficients; 4],
-    /// The foot's and the direction's coordinates along the cylinder's
-    /// `x` and `y` (`wx`, `wy`, `mx`, `my`), for ranges.
-    axes: [Coefficients; 4],
+    /// The foot's and the direction's coordinates along each of the other
+    /// surface's rows (`[w_i, m_i]`), for ranges.
+    axes: Vec<[Coefficients; 2]>,
     /// Their derivatives in `ū` (S9f.2b.2's graphs over `v`).
-    daxes: [Coefficients; 4],
+    daxes: Vec<[Coefficients; 2]>,
     /// `-u0`, `1 / (u1 - u0)` and `v0`, exact, and binary64.
     constants: [R; 3],
     fast_constants: [Fast; 3],
 }
 
-/// The wall's spans met by the cylinder and the wall's least continuity
-/// across an interior knot.
+/// The wall's spans met by the other surface and the wall's least
+/// continuity across an interior knot.
 pub(super) struct Spans {
     pub(super) spans: Vec<Span>,
     continuity: usize,
 }
 
-/// Walls and cylinders kept (each pair's polynomials are exact rational
+/// Walls and surfaces kept (each pair's polynomials are exact rational
 /// work).
 const KEPT: usize = 64;
 
-type Key = (BSplineSurface3, crate::Frame3, u64);
+type Key = (BSplineSurface3, crate::Frame3, u64, bool);
 
 thread_local! {
     static WALLS: RefCell<Vec<(Key, Arc<Spans>)>> = const { RefCell::new(Vec::new()) };
@@ -189,11 +192,16 @@ fn combine(f: &[R], g: &[R], scale: &R) -> Vec<R> {
     f.iter().zip(g).map(|(a, b)| a + b * scale).collect()
 }
 
-/// The wall's spans met by the curve's cylinder, made once per wall and
-/// cylinder (`None` for a wall that is not a nonrational surface of degree
-/// one in `v` over one `v` span).
+/// The wall's spans met by the curve's other surface, made once per wall
+/// and surface (`None` for a wall that is not a nonrational surface of
+/// degree one in `v` over one `v` span).
 pub(super) fn spans(m: &WallMeet) -> Option<Arc<Spans>> {
-    let key: Key = (m.wall.clone(), m.other, m.other_radius.to_bits());
+    let key: Key = (
+        m.wall.clone(),
+        m.other,
+        m.other_radius.to_bits(),
+        m.other_sphere,
+    );
     if let Some(hit) = WALLS.with(|w| {
         w.borrow()
             .iter()
@@ -203,14 +211,15 @@ pub(super) fn spans(m: &WallMeet) -> Option<Arc<Spans>> {
         return Some(hit);
     }
     let exact = |x: f64| R::from_float(x);
-    let (o, x2, y2) = (
-        m.other.origin().to_array(),
-        m.other.x().to_array(),
-        m.other.y().to_array(),
-    );
+    let o = m.other.origin().to_array();
     let o: [R; 3] = [exact(o[0])?, exact(o[1])?, exact(o[2])?];
-    let x2: [R; 3] = [exact(x2[0])?, exact(x2[1])?, exact(x2[2])?];
-    let y2: [R; 3] = [exact(y2[0])?, exact(y2[1])?, exact(y2[2])?];
+    // The other surface's rows, exact (a cylinder's stored axes, the
+    // world's for a sphere).
+    let mut rows: Vec<[R; 3]> = Vec::new();
+    for e in m.other_rows() {
+        let e = e.to_array();
+        rows.push([exact(e[0])?, exact(e[1])?, exact(e[2])?]);
+    }
     let r = exact(m.other_radius)?;
     let r2 = &r * &r;
     let s = &m.wall;
@@ -249,8 +258,8 @@ pub(super) fn spans(m: &WallMeet) -> Option<Arc<Spans>> {
                 .map(|(a, b)| (b - a) * &per)
                 .collect()
         });
-        // The foot's and the direction's coordinates in the cylinder's
-        // axes, then `a`, `b`, `c` and `d`.
+        // The foot's and the direction's coordinates along the other
+        // surface's rows, then `a`, `b`, `c` and `d`.
         let axis = |p: &[Vec<R>; 3], e: &[R; 3], shift: bool| -> Vec<R> {
             (0..=du)
                 .map(|i| {
@@ -267,24 +276,35 @@ pub(super) fn spans(m: &WallMeet) -> Option<Arc<Spans>> {
                 })
                 .collect()
         };
-        let (wx, wy) = (axis(&low, &x2, true), axis(&low, &y2, true));
-        let (mx, my) = (axis(&dir, &x2, false), axis(&dir, &y2, false));
-        let minus = -one();
-        let a = combine(&product(&mx, &mx), &product(&my, &my), &one());
-        let b = combine(&product(&wx, &mx), &product(&wy, &my), &one());
-        let c: Vec<R> = combine(&product(&wx, &wx), &product(&wy, &wy), &one())
-            .into_iter()
-            .map(|x| x - &r2)
+        let wm: Vec<[Vec<R>; 2]> = rows
+            .iter()
+            .map(|e| [axis(&low, e, true), axis(&dir, e, false)])
             .collect();
-        let cross = combine(&product(&wx, &my), &product(&wy, &mx), &minus);
-        // `a r^2` raised to `cross^2`'s degree (times one of degree
+        let minus = -one();
+        let zeros = |n: usize| vec![zero(); n];
+        let (mut a, mut b, mut c) = (zeros(2 * du + 1), zeros(2 * du + 1), zeros(2 * du + 1));
+        for [w, mm] in &wm {
+            a = combine(&a, &product(mm, mm), &one());
+            b = combine(&b, &product(w, mm), &one());
+            c = combine(&c, &product(w, w), &one());
+        }
+        let c: Vec<R> = c.into_iter().map(|x| x - &r2).collect();
+        // `sum_{i<j} (w_i m_j - w_j m_i)^2`, of degree `4 du`.
+        let mut cross2 = zeros(4 * du + 1);
+        for i in 0..wm.len() {
+            for j in i + 1..wm.len() {
+                let x = combine(
+                    &product(&wm[i][0], &wm[j][1]),
+                    &product(&wm[j][0], &wm[i][1]),
+                    &minus,
+                );
+                cross2 = combine(&cross2, &product(&x, &x), &one());
+            }
+        }
+        // `a r^2` raised to the cross terms' degree (times one of degree
         // `2 du`).
         let ar2: Vec<R> = a.iter().map(|x| x * &r2).collect();
-        let d = combine(
-            &product(&ar2, &vec![one(); 2 * du + 1]),
-            &product(&cross, &cross),
-            &minus,
-        );
+        let d = combine(&product(&ar2, &vec![one(); 2 * du + 1]), &cross2, &minus);
         let constants = [-&u[0], one() / (&u[1] - &u[0]), v[0].clone()];
         let fast_constants = std::array::from_fn(|i| Fast::from_r(&constants[i]));
         spans.push(Span {
@@ -294,8 +314,11 @@ pub(super) fn spans(m: &WallMeet) -> Option<Arc<Spans>> {
             low: low.map(Coefficients::new),
             dir: dir.map(Coefficients::new),
             abcd: [a, b, c, d].map(Coefficients::new),
-            daxes: [&wx, &wy, &mx, &my].map(|x| Coefficients::new(bernstein_derivative(x))),
-            axes: [wx, wy, mx, my].map(Coefficients::new),
+            daxes: wm
+                .iter()
+                .map(|[w, mm]| [w, mm].map(|x| Coefficients::new(bernstein_derivative(x))))
+                .collect(),
+            axes: wm.into_iter().map(|x| x.map(Coefficients::new)).collect(),
             constants,
             fast_constants,
         });
@@ -363,14 +386,28 @@ pub(super) fn eval<T: Real, N: Num<T>>(m: &WallMeet, span: &Span, u: &N) -> Opti
     } else {
         // Over a range the polynomials of degree `4p` overestimate (their
         // coefficients far above a small discriminant): the factors'.
-        let [wx, wy, mx, my] = std::array::from_fn(|i| span.axes[i].at::<T, N>(&ub));
+        let wm: Vec<[N; 2]> = span
+            .axes
+            .iter()
+            .map(|[w, mm]| [w.at::<T, N>(&ub), mm.at::<T, N>(&ub)])
+            .collect();
         let r = fc::<T>(m.other_radius);
         let r2 = r.mul(&r);
-        let a = mx.square().add(&my.square());
-        let b = wx.mul(&mx).add(&wy.mul(&my));
-        let c = wx.square().add(&wy.square()).shift(&r2.neg());
-        let cross = wx.mul(&my).sub(&wy.mul(&mx));
-        let d = a.scale(&r2).sub(&cross.square());
+        let a = sum_of(wm.iter().map(|[_, mm]| mm.square()));
+        let b = sum_of(wm.iter().map(|[w, mm]| w.mul(mm)));
+        let c = sum_of(wm.iter().map(|[w, _]| w.square())).shift(&r2.neg());
+        let mut pairs = Vec::new();
+        for i in 0..wm.len() {
+            for j in i + 1..wm.len() {
+                pairs.push(
+                    wm[i][0]
+                        .mul(&wm[j][1])
+                        .sub(&wm[j][0].mul(&wm[i][1]))
+                        .square(),
+                );
+            }
+        }
+        let d = a.scale(&r2).sub(&sum_of(pairs.into_iter()));
         [a, b, c, d]
     };
     let sq = d.sqrt()?.scale(&fc(m.sign));
@@ -382,6 +419,12 @@ pub(super) fn eval<T: Real, N: Num<T>>(m: &WallMeet, span: &Span, u: &N) -> Opti
     };
     let point = std::array::from_fn(|k| low[k].add(&dir[k].mul(&t)));
     Some((t.shift(&constant(2)), point))
+}
+
+/// The sum of a nonempty sequence of numbers.
+fn sum_of<T: Real, N: Num<T>>(mut it: impl Iterator<Item = N>) -> N {
+    let first = it.next().expect("a row");
+    it.fold(first, |acc, x| acc.add(&x))
 }
 
 /// The discriminant `d` at a local `ū` in binary64 (no enclosure: a guide
@@ -484,8 +527,8 @@ pub(super) fn window_span(sp: &Spans, m: &WallMeet) -> Option<usize> {
 
 /// S9f.2b.2: a graph over the wall's `v` at `t = v - v0` (any number of the
 /// integrands, its base an enclosure over a range or a point): the root
-/// `u` of `g(u, t) = X^2 + Y^2 - r^2` (`X = wx(ū) + t mx(ū)`, `Y = wy(ū) + t
-/// my(ū)`: the cylinder's function along the ruling) in the window, its
+/// `u` of `g(u, t) = sum X_i^2 - r^2` (`X_i = w_i(ū) + t m_i(ū)` over the
+/// other surface's rows: its function along the ruling) in the window, its
 /// derivative `du/dt = -g_t / g_u` and the curve's point. The root at the
 /// base by interval Newton about the binary64 root (`WallMeet::root_at`),
 /// `u* - g(u*, t) / g_u(U, t)` strictly inside `U` and the window (a unique
@@ -503,26 +546,34 @@ pub(super) fn eval_height<T: Real, N: Num<T>>(
     let constant = |i: usize| cached::<T>(&span.fast_constants[i], &span.constants[i]);
     let local = |u: &N| u.shift(&constant(0)).scale(&constant(1));
     let r2 = fc::<T>(m.other_radius).square();
-    // `X`, `Y` and their derivatives in `u` at `u` (any number).
-    let parts = |u: &N, t: &N| -> [N; 4] {
+    // Each row's coordinate `X_i = w_i + t m_i` and its derivative in `u`
+    // at `u` (any number).
+    let parts = |u: &N, t: &N| -> Vec<[N; 2]> {
         let ub = local(u);
-        let [wx, wy, mx, my] = std::array::from_fn(|i| span.axes[i].at::<T, N>(&ub));
-        let [dwx, dwy, dmx, dmy] = std::array::from_fn(|i| span.daxes[i].at::<T, N>(&ub));
-        let x = wx.add(&t.mul(&mx));
-        let y = wy.add(&t.mul(&my));
-        let xu = dwx.add(&t.mul(&dmx)).scale(&constant(1));
-        let yu = dwy.add(&t.mul(&dmy)).scale(&constant(1));
-        [x, y, xu, yu]
+        span.axes
+            .iter()
+            .zip(&span.daxes)
+            .map(|([w, mm], [dw, dm])| {
+                let x = w.at::<T, N>(&ub).add(&t.mul(&mm.at::<T, N>(&ub)));
+                let xu = dw
+                    .at::<T, N>(&ub)
+                    .add(&t.mul(&dm.at::<T, N>(&ub)))
+                    .scale(&constant(1));
+                [x, xu]
+            })
+            .collect()
     };
     // `g` and `g_u` over enclosures (a jet of order one in `u`).
     let g_gu = |u: &T, t: &T| -> (T, T) {
         let uj = Jet::variable(u.clone(), 1);
         let tj = Jet::constant(t.clone(), 1);
         let ub = uj.add_constant(&constant(0)).scale(&constant(1));
-        let [wx, wy, mx, my] = std::array::from_fn(|i| span.axes[i].at::<T, Jet<T>>(&ub));
-        let x = wx.add(&tj.mul(&mx));
-        let y = wy.add(&tj.mul(&my));
-        let g = x.square().add(&y.square()).shift(&r2.neg());
+        let g = sum_of(span.axes.iter().map(|[w, mm]| {
+            w.at::<T, Jet<T>>(&ub)
+                .add(&tj.mul(&mm.at::<T, Jet<T>>(&ub)))
+                .square()
+        }))
+        .shift(&r2.neg());
         (g.c[0].clone(), g.c[1].clone())
     };
     let tb = t.coefficient_at(0);
@@ -589,9 +640,9 @@ pub(super) fn eval_height<T: Real, N: Num<T>>(
     if t.sharp() {
         let mut known = 1;
         while known < t.terms() {
-            let [x, y, xu, yu] = parts(&u, t);
-            let g = x.square().add(&y.square()).shift(&r2.neg());
-            let gu = x.mul(&xu).add(&y.mul(&yu)).scale(&fc(2.0));
+            let rows = parts(&u, t);
+            let g = sum_of(rows.iter().map(|[x, _]| x.square())).shift(&r2.neg());
+            let gu = sum_of(rows.iter().map(|[x, xu]| x.mul(xu))).scale(&fc(2.0));
             let next = u.sub(&g.div(&gu)?);
             known = (2 * known).min(t.terms());
             for k in 1..known {
@@ -601,19 +652,24 @@ pub(super) fn eval_height<T: Real, N: Num<T>>(
     } else {
         for k in 1..t.terms() {
             let ub = local(&u);
-            let [wx, wy, mx, my] = std::array::from_fn(|i| span.axes[i].at::<T, N>(&ub));
-            let x = wx.add(&t.mul(&mx));
-            let y = wy.add(&t.mul(&my));
-            let g = x.square().add(&y.square()).shift(&r2.neg());
+            let g = sum_of(
+                span.axes
+                    .iter()
+                    .map(|[w, mm]| w.at::<T, N>(&ub).add(&t.mul(&mm.at::<T, N>(&ub))).square()),
+            )
+            .shift(&r2.neg());
             let uk = g.coefficient_at(k).div(&gu0)?.neg();
             u = u.with_coefficient(k, uk);
         }
     }
     let ub = local(&u);
-    let [x, y, xu, yu] = parts(&u, t);
-    let [mx, my] = [2, 3].map(|i| span.axes[i].at::<T, N>(&ub));
-    let gt = x.mul(&mx).add(&y.mul(&my));
-    let gu = x.mul(&xu).add(&y.mul(&yu));
+    let rows = parts(&u, t);
+    let gt = sum_of(
+        rows.iter()
+            .zip(&span.axes)
+            .map(|([x, _], [_, mm])| x.mul(&mm.at::<T, N>(&ub))),
+    );
+    let gu = sum_of(rows.iter().map(|[x, xu]| x.mul(xu)));
     let du = gt.div(&gu)?.neg();
     let low: [N; 3] = std::array::from_fn(|k| span.low[k].at(&ub));
     let dir: [N; 3] = std::array::from_fn(|k| span.dir[k].at(&ub));
@@ -715,6 +771,7 @@ mod tests {
             wall,
             other,
             other_radius: 1.5,
+            other_sphere: false,
             sign,
             start,
             sweep,
@@ -928,5 +985,113 @@ mod tests {
             ..m.clone()
         };
         assert!(pieces(&across).is_none());
+    }
+
+    /// Jets of order `n` over a point and over a short range enclose the
+    /// binary64 curve's parameters, points and slopes at `f` (across a knot
+    /// of the C1 wall order two at most).
+    fn jets_enclose(m: &WallMeet, f: f64, n: usize, name: &str) {
+        let (u, v) = m.parameters(f);
+        let p = m.point(f);
+        for at in [
+            Jet::variable(Fast::exact_f64(f), n),
+            Jet::variable(Fast::exact_f64(f).union(&Fast::exact_f64(f + 1e-3)), n),
+        ] {
+            let ([ju, jv], jp) = jet(m, &at, None).unwrap();
+            assert!(
+                inside(&ju.c[0], u, 1e-14) && inside(&jv.c[0], v, 1e-14),
+                "{name}"
+            );
+            let dh = 1e-6;
+            let (q0, q1) = (m.point(f - dh), m.point(f + dh));
+            for (i, j) in jp.iter().enumerate() {
+                assert!(inside(&j.c[0], p.to_array()[i], 1e-14), "{name}");
+                let slope = (q1.to_array()[i] - q0.to_array()[i]) / (2.0 * dh);
+                let (lo, hi) = j.c[1].bounds_f64();
+                assert!(
+                    lo - 1e-5 <= slope && slope <= hi + 1e-5,
+                    "{name}: {slope} {lo} {hi}"
+                );
+            }
+        }
+    }
+
+    /// S9f.3a: the wall above met by a sphere about `(0.1, 0.3, 1)` of
+    /// radius 1.2 (every ruling twice: the profile within 1.14 of the
+    /// centre's foot), its upper or lower curve by `sign` over the whole
+    /// `u` domain; and a small sphere about `(0, 0.4, 1)` of radius 0.2
+    /// turning back where the profile is 0.2 from its centre's foot, a
+    /// graph over `v` about that turning point. Their binary64 points lie on
+    /// the wall and the sphere, their jets enclose them (the sphere's three
+    /// rows in `a`, `b`, `c` and `d`).
+    #[test]
+    fn sphere_meetings_lie_on_the_wall_and_the_sphere() {
+        let at = |x: f64, y: f64, z: f64| {
+            Frame3::new(
+                Point3::new(x, y, z),
+                Vec3::new(0.0, 0.0, 1.0),
+                Vec3::new(1.0, 0.0, 0.0),
+                Tolerance::default(),
+            )
+            .unwrap()
+        };
+        for sign in [1.0, -1.0] {
+            let m = WallMeet {
+                other: at(0.1, 0.3, 1.0),
+                other_radius: 1.2,
+                other_sphere: true,
+                ..wall_meet(sign, 0.0, 1.0)
+            };
+            let c = m.other.origin();
+            for k in 0..=16 {
+                let f = f64::from(k) / 16.0;
+                let p = m.point(f);
+                assert!(((p - c).length() - 1.2).abs() < 1e-14, "{p:?}");
+                assert_eq!((p.z - 1.0).signum(), sign);
+                let (u, v) = m.parameters(f);
+                assert!((m.wall.point(u, v).unwrap() - p).length() < 1e-14);
+                if k < 16 {
+                    jets_enclose(&m, f, 2, "over u");
+                }
+            }
+        }
+        let base = wall_meet(1.0, 0.0, 1.0);
+        let reach = |u: f64| {
+            let p = base.wall.point(u, 0.0).unwrap();
+            p.x.hypot(p.y - 0.4)
+        };
+        // The turning point on the first span: the profile 0.2 from (0, 0.4).
+        let (mut a, mut b) = (0.0, 0.5);
+        assert!(reach(a) > 0.2 && reach(b) < 0.2);
+        for _ in 0..100 {
+            let mid = 0.5 * (a + b);
+            if reach(mid) > 0.2 {
+                a = mid;
+            } else {
+                b = mid;
+            }
+        }
+        let turn = 0.5 * (a + b);
+        let switch = turn + 0.01;
+        let h = (0.04 - reach(switch).powi(2)).sqrt();
+        let m = WallMeet {
+            other: at(0.0, 0.4, 1.0),
+            other_radius: 0.2,
+            other_sphere: true,
+            window: Some([turn - 0.01, turn + 0.015]),
+            start: 1.0 - h,
+            sweep: 2.0 * h,
+            ..base
+        };
+        let c = m.other.origin();
+        for k in 0..16 {
+            let f = f64::from(k) / 16.0;
+            let p = m.point(f);
+            assert!(((p - c).length() - 0.2).abs() < 1e-14, "{p:?}");
+            let (u, v) = m.parameters(f);
+            assert!(u > turn - 0.01 && u < turn + 0.015);
+            assert!((m.wall.point(u, v).unwrap() - p).length() < 1e-14);
+            jets_enclose(&m, f, 3, "over v");
+        }
     }
 }

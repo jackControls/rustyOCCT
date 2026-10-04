@@ -1244,6 +1244,59 @@ the wall's generatrix, the meeting turning back on the rim).
 after twenty halvings. Spline walls against spline walls on crossing axes
 stay refused (S9f).
 
+### Spline walls against spheres (S9f.3a)
+
+A spline prism meets a sphere, a cap or a zone (`Solid::sphere_with`) in
+any position, either the object. Along the wall's ruling at the run
+parameter `tau` the sphere's function `|X - c|^2 - r^2` (its stored centre
+and radius, the world's three rows: `procedural::other_sphere`) is `A w^2
++ 2 B(tau) w + C(tau)` with `A = n . n` positive for every ruling, `B` of
+degree `p`, `C` of degree `2 p` and `D = B^2 - A C = A r^2 - |(P - c) x
+n|^2` of degree `2 p`: S9f.2b's quadratic with three rows instead of a
+cylinder's two. The meeting is S9f.2b's (`spline_crossing::meeting_with`,
+the partner's rows and labels): branches over the run between the roots of
+`D`, graphs over the height about each turning point inside both faces,
+their switches vertices, found once per pair of a spline wall and a
+hemisphere (S9d.1's split; a turning point inside one hemisphere lies
+outside the other, whose branches end there). A sphere smaller than the
+wall's height straddling it meets it in a loop; a larger one, or one
+crossing a cap, in branches whose turning points lie outside a face. A
+loop's switch lies a sixty-fourth of the way from its turning point to
+where the gentler branch's slope has fallen to one (a cylinder's a
+quarter): its graph over the height spans the sphere's section there, and
+at a quarter the slowest fuzz variants spent ten times longer integrating
+it. A turning point on the hemispheres' split, which is no edge of the
+input, tries the split at another seam; one inside both faces but within
+the resolution of a cap's or a rim's plane is `Degenerate` like one on it
+(a sphere about a turned prism's frame origin).
+
+Vertices (`curved/spline_sphere.rs`): a spline cap edge or crease against
+the sphere at the roots of the sphere's function along it, degree `2 p`
+(`wallcrv_sphere`); the spline prism's vertical edges at quadratic surds
+(S9d.1's `line_sphere`); a sphere's circle (a rim of a cap or zone, the
+split's great circle) against a spline wall along its plane's crease on
+the wall, degree `2 p`, its place on the circle read off rationally
+(`circ_wall`), or, in a plane holding the wall's axis direction (a cap's
+split great circle on the prism's axis, a rim on its side), by a primitive
+element of the tower: each arc's implicit equation at the circle's
+projection `l0 + dx lx + dy ly`, reduced by `dx^2 |x|^2 + dy^2 |y|^2 = r2`
+to `E(dx) + dy O(dx)`, vanishes where `E^2 - (r2 - |x|^2 dx^2) / |y|^2 O^2`
+does (degree at most `2 p`), and there `dy = -E / O` in the same field;
+where `O` vanishes at a root (a great circle whose `x` is the wall's axis:
+its points on one generatrix share `dx`) the roles of `dx` and `dy` are
+swapped (`tower_points`). In the topology the meeting is `Curve3::WallMeet`
+with `other_sphere` (the sphere's stored frame and radius;
+`TOPOLOGY_MODEL.md`), certified over the sphere's three rows
+(`MATHEMATICS.md`); on the sphere its pcurve is the sphere's inverse.
+
+`Degenerate`: the sphere tangent to the wall ("a sphere tangent to a spline
+wall"); a turning point at an interior knot; a turning point on a face's
+boundary (a cap's edge, a rim, a segment's end); a vertex's polynomial with
+a multiple root (an edge tangent to the other's face, a circle tangent to a
+generatrix). A spline prism against a cone stays refused (S9f.3b's: the
+radius term's `A` of either sign, the other nappe, the apex, the stored half
+angle's tangent).
+
 ## Evidence
 
 * **Case protocol.** A Boolean case (`identity_reference.
@@ -2588,6 +2641,41 @@ stay refused (S9f).
   ellipse arcs on the capsule's caps at the rod's seam generatrix, and in
   the fuse its seam at the hole: those three reviews now name the counts
   too), refusing the 4 degenerate cases and S9f.2b.2's 6 (`unsupported`).
+* **S9f.3a evidence (spline walls against spheres), before its kernel
+  code.** An independent reference of its own,
+  `spline_sphere_boolean_reference.py` (the spline prism's exact model and
+  profile parsing shared with `curved_boolean_reference.py`): the pair
+  sliced by planes, each slice's sections exact regions of the profile's
+  plane (the profile cut by the caps' lines, the sphere's circle projected
+  along the prism's axis and cut by a hemisphere's line), their Boolean
+  pieces by Green's theorem in closed form, breakpoints at every vertex's
+  slice and every edge's extremes (the meeting's from `F` and its tangent
+  condition, `w` eliminated exactly), volumes and moments two ways (along
+  the caps' normal and along `(2, -3, 5)`), the walls swept along their
+  generatrices, the sphere's face by Archimedes' area element, a
+  hemisphere's disc in its plane, solids by the slices' union-find.
+  `generate_spline_sphere_boolean_fixtures.py --check` writes 33 cases (27
+  solid, 6 degenerate): loops on the bulge, the lens, the blob under its
+  top cap, `knot`'s span in `TILT` and a sphere object across the wave's
+  knot, branches over the dome and under the blob in `TILT`, hemispheres on
+  the bulge's axis and on its side (towers on the split's great circle and
+  on the rim), and declared degenerate a touch at the dome's apex, a turning
+  point at `knot`'s knot and a loop turning back on a cap's edge. The two
+  slicings within 1.8e-41 of the size, the inputs' closed forms 5.7e-42,
+  faces' classes 2.8e-41, the area identity 8.0e-41, Monte Carlo within 2.8
+  standard errors, margins outside the declared pairs at least 0.023,
+  Python 3.9 and 3.12 the same files. The capture
+  `occt-boolean-spline-sphere-preimplementation` (keyed on
+  `curved/spline_sphere.rs`, the probe `unsupported` on all 33): every
+  result valid with the reference's counts, 4 matching and 29 reviewed
+  (BRepGProp's default measure up to 4.1e-5, the wave's 1.0e-3; adaptive
+  BRepGProp or Green's theorem over OCCT's faces within 6.0e-9 in volume,
+  7.8e-9 in area and 8.5e-9 in the centre, the wave's cut and common
+  within 9.3e-7 inside their edges' tolerance of 3.7e-5). With S9f.3a's
+  kernel: 4 matches and 29 reviewed, the kernel within the reference on all
+  27 results and refusing the 6 degenerate cases; the 18 loop cases'
+  reviews name their counts (the kernel's loops cut at their switches and
+  at the hemispheres' split, OCCT's edges at its own seams).
 * **S9f.2b.2 evidence (loops and towers), before its kernel code.** The
   same generator writes 51 cases, 17 new (`step` `S9f.2b.2` exactly when a
   turning point lies inside both faces or a cap circle meets a wall in a

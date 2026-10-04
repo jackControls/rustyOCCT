@@ -1,0 +1,392 @@
+{
+  "note": "Reviewed BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut and BRepAlgoAPI_Common differences from the S9f.3a reference and the kernel.",
+  "reviews": [
+    {
+      "case": "bulge_ball_fuse",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "3d3dab9aa69c1921be178eb5a53923ca61fcb804efdfe5adc5558b547dcc750f",
+      "differences": [
+        "centre",
+        "measure",
+        "rust_entity_counts"
+      ],
+      "reason": "BRepGProp's default integration on the faces bounded by the Boolean's intersection edges (the sphere and the spline wall) misses the reference by 3.2e-06 in volume (194.568117 against 194.567495), 5.9e-07 in area and 1.2e-06 of the size in the centre. With an adaptive accuracy of 1e-10 (a diagnostic build, not the captured probe) BRepGProp gives 3.1e-12 in volume, 1.9e-10 in area and 1.1e-12 in the centre; Green's theorem over OCCT's own faces and pcurves gives 7.2e-11, 8.1e-12 and 9.8e-11: the better of the two within 8.1e-12, so the native geometry is the reference's and its default measure is not. The result is valid with the reference's solid count. Entity counts: the kernel's solid has 7/18/14 faces, edges and vertices where OCCT's has 7/16/11 unified, the same faces: the kernel cuts its loop with the sphere at the switches about its two turning points (graphs over the height meeting the graphs over the run) and where it crosses the split of the sphere's hemispheres (and the faces' boundaries), where OCCT's edges follow its own seams and splits.",
+      "independent_evidence": "spline_sphere_boolean_reference.py (generate_spline_sphere_boolean_fixtures.py --check): each region's volume and first moments by two slicings (along the caps' normal and along (2, -3, 5)) within 1.8e-41 of the case's size, both inputs against their closed forms within 5.7e-42, every face's classes within 2.8e-41 of its area, the area identity within 8.0e-41, Monte Carlo estimates within 2.8 standard errors. A scratch variant of occt_boolean_oracle.cpp (not the captured probe) measuring each native solid twice more: BRepGProp with an adaptive accuracy of 1e-10, and Green's theorem over OCCT's own faces and pcurves (the inner integral along each surface's v by 24-point Gauss-Legendre, the outer along every pcurve by 2,000 subintervals of 5-point Gauss-Legendre); the better of the two is within 9.2e-7 in volume, 8.5e-8 in area and 9.3e-7 of the size in the centre over the 29 reviewed cases, within 6.0e-9, 7.8e-9 and 8.5e-9 but for the wave's cut and common (its edges' tolerance 3.7e-5) (this case: adaptive 3.1e-12, 1.9e-10, 1.1e-12; Green 7.2e-11, 8.1e-12, 9.8e-11). The kernel's meeting edges counted by a throwaway test: 2 graphs over the height (Curve3::WallMeet with a window) and 4 over the run.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "bulge_ball_cut",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "898153d8ca7befa7312b756b26e2d81a40da78e1cdd987c7d9d12e70001b0a83",
+      "differences": [
+        "centre",
+        "measure",
+        "rust_entity_counts"
+      ],
+      "reason": "BRepGProp's default integration on the faces bounded by the Boolean's intersection edges (the sphere and the spline wall) misses the reference by 4.1e-06 in volume (190.379493 against 190.378704), 2.5e-06 in area and 1.5e-06 of the size in the centre. With an adaptive accuracy of 1e-10 (a diagnostic build, not the captured probe) BRepGProp gives 8.0e-12 in volume, 5.2e-11 in area and 2.8e-12 in the centre; Green's theorem over OCCT's own faces and pcurves gives 7.3e-11, 2.6e-11 and 1.0e-10: the better of the two within 2.6e-11, so the native geometry is the reference's and its default measure is not. The result is valid with the reference's solid count. Entity counts: the kernel's solid has 7/18/14 faces, edges and vertices where OCCT's has 7/13/9 unified, the same faces: the kernel cuts its loop with the sphere at the switches about its two turning points (graphs over the height meeting the graphs over the run) and where it crosses the split of the sphere's hemispheres (and the faces' boundaries), where OCCT's edges follow its own seams and splits.",
+      "independent_evidence": "spline_sphere_boolean_reference.py (generate_spline_sphere_boolean_fixtures.py --check): each region's volume and first moments by two slicings (along the caps' normal and along (2, -3, 5)) within 1.8e-41 of the case's size, both inputs against their closed forms within 5.7e-42, every face's classes within 2.8e-41 of its area, the area identity within 8.0e-41, Monte Carlo estimates within 2.8 standard errors. A scratch variant of occt_boolean_oracle.cpp (not the captured probe) measuring each native solid twice more: BRepGProp with an adaptive accuracy of 1e-10, and Green's theorem over OCCT's own faces and pcurves (the inner integral along each surface's v by 24-point Gauss-Legendre, the outer along every pcurve by 2,000 subintervals of 5-point Gauss-Legendre); the better of the two is within 9.2e-7 in volume, 8.5e-8 in area and 9.3e-7 of the size in the centre over the 29 reviewed cases, within 6.0e-9, 7.8e-9 and 8.5e-9 but for the wave's cut and common (its edges' tolerance 3.7e-5) (this case: adaptive 8.0e-12, 5.2e-11, 2.8e-12; Green 7.3e-11, 2.6e-11, 1.0e-10). The kernel's meeting edges counted by a throwaway test: 2 graphs over the height (Curve3::WallMeet with a window) and 4 over the run.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "bulge_ball_common",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "190d537f0b6b3e5601defb20c01a5f8769b5a4b54a728145ef558cef4b4b7e0d",
+      "differences": [
+        "centre",
+        "measure",
+        "rust_entity_counts"
+      ],
+      "reason": "BRepGProp's default integration on the faces bounded by the Boolean's intersection edges (the sphere and the spline wall) misses the reference by 4.1e-05 in volume (1.6213614 against 1.62129565), 8.8e-06 in area and 2.9e-06 of the size in the centre. With an adaptive accuracy of 1e-10 (a diagnostic build, not the captured probe) BRepGProp gives 3.2e-09 in volume, 1.9e-09 in area and 8.3e-11 in the centre; Green's theorem over OCCT's own faces and pcurves gives 8.6e-09, 2.3e-10 and 8.5e-09: the better of the two within 3.2e-09, so the native geometry is the reference's and its default measure is not. The result is valid with the reference's solid count. Entity counts: the kernel's solid has 2/6/6 faces, edges and vertices where OCCT's has 2/1/1 unified, the same faces: the kernel cuts its loop with the sphere at the switches about its two turning points (graphs over the height meeting the graphs over the run) and where it crosses the split of the sphere's hemispheres (and the faces' boundaries), where OCCT's edges follow its own seams and splits.",
+      "independent_evidence": "spline_sphere_boolean_reference.py (generate_spline_sphere_boolean_fixtures.py --check): each region's volume and first moments by two slicings (along the caps' normal and along (2, -3, 5)) within 1.8e-41 of the case's size, both inputs against their closed forms within 5.7e-42, every face's classes within 2.8e-41 of its area, the area identity within 8.0e-41, Monte Carlo estimates within 2.8 standard errors. A scratch variant of occt_boolean_oracle.cpp (not the captured probe) measuring each native solid twice more: BRepGProp with an adaptive accuracy of 1e-10, and Green's theorem over OCCT's own faces and pcurves (the inner integral along each surface's v by 24-point Gauss-Legendre, the outer along every pcurve by 2,000 subintervals of 5-point Gauss-Legendre); the better of the two is within 9.2e-7 in volume, 8.5e-8 in area and 9.3e-7 of the size in the centre over the 29 reviewed cases, within 6.0e-9, 7.8e-9 and 8.5e-9 but for the wave's cut and common (its edges' tolerance 3.7e-5) (this case: adaptive 3.2e-09, 1.9e-09, 8.3e-11; Green 8.6e-09, 2.3e-10, 8.5e-09). The kernel's meeting edges counted by a throwaway test: 2 graphs over the height (Curve3::WallMeet with a window) and 4 over the run.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "lens_ball_fuse",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "16d079f572c571dd4a1213e013f6897e11f566af621ccf2d97d4ea0830b2e2bb",
+      "differences": [
+        "measure",
+        "rust_entity_counts"
+      ],
+      "reason": "BRepGProp's default integration on the faces bounded by the Boolean's intersection edges (the sphere and the spline wall) misses the reference by 2.4e-08 in volume (51.365438 against 51.3654393), 2.9e-08 in area and 6.0e-09 of the size in the centre. With an adaptive accuracy of 1e-10 (a diagnostic build, not the captured probe) BRepGProp gives 5.7e-12 in volume, 1.3e-05 in area and 1.8e-12 in the centre; Green's theorem over OCCT's own faces and pcurves gives 4.1e-11, 9.4e-12 and 2.7e-11: the better of the two within 9.4e-12, so the native geometry is the reference's and its default measure is not. The result is valid with the reference's solid count. Entity counts: the kernel's solid has 5/12/10 faces, edges and vertices where OCCT's has 5/9/7 unified, the same faces: the kernel cuts its loop with the sphere at the switches about its two turning points (graphs over the height meeting the graphs over the run) and where it crosses the split of the sphere's hemispheres (and the faces' boundaries), where OCCT's edges follow its own seams and splits.",
+      "independent_evidence": "spline_sphere_boolean_reference.py (generate_spline_sphere_boolean_fixtures.py --check): each region's volume and first moments by two slicings (along the caps' normal and along (2, -3, 5)) within 1.8e-41 of the case's size, both inputs against their closed forms within 5.7e-42, every face's classes within 2.8e-41 of its area, the area identity within 8.0e-41, Monte Carlo estimates within 2.8 standard errors. A scratch variant of occt_boolean_oracle.cpp (not the captured probe) measuring each native solid twice more: BRepGProp with an adaptive accuracy of 1e-10, and Green's theorem over OCCT's own faces and pcurves (the inner integral along each surface's v by 24-point Gauss-Legendre, the outer along every pcurve by 2,000 subintervals of 5-point Gauss-Legendre); the better of the two is within 9.2e-7 in volume, 8.5e-8 in area and 9.3e-7 of the size in the centre over the 29 reviewed cases, within 6.0e-9, 7.8e-9 and 8.5e-9 but for the wave's cut and common (its edges' tolerance 3.7e-5) (this case: adaptive 5.7e-12, 1.3e-05, 1.8e-12; Green 4.1e-11, 9.4e-12, 2.7e-11). The kernel's meeting edges counted by a throwaway test: 2 graphs over the height (Curve3::WallMeet with a window) and 4 over the run.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "lens_ball_cut",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "3b7929638da1b154b5dc1caba10956da6351365f54d339b43cc03317733fcc66",
+      "differences": [
+        "measure",
+        "rust_entity_counts"
+      ],
+      "reason": "BRepGProp's default integration on the faces bounded by the Boolean's intersection edges (the sphere and the spline wall) misses the reference by 4.9e-09 in volume (49.2207785 against 49.2207787), 4.3e-08 in area and 2.4e-09 of the size in the centre. With an adaptive accuracy of 1e-10 (a diagnostic build, not the captured probe) BRepGProp gives 5.8e-12 in volume, 1.3e-05 in area and 1.8e-12 in the centre; Green's theorem over OCCT's own faces and pcurves gives 4.2e-11, 6.0e-12 and 2.8e-11: the better of the two within 6.0e-12, so the native geometry is the reference's and its default measure is not. The result is valid with the reference's solid count. Entity counts: the kernel's solid has 5/12/10 faces, edges and vertices where OCCT's has 5/13/9 unified, the same faces: the kernel cuts its loop with the sphere at the switches about its two turning points (graphs over the height meeting the graphs over the run) and where it crosses the split of the sphere's hemispheres (and the faces' boundaries), where OCCT's edges follow its own seams and splits.",
+      "independent_evidence": "spline_sphere_boolean_reference.py (generate_spline_sphere_boolean_fixtures.py --check): each region's volume and first moments by two slicings (along the caps' normal and along (2, -3, 5)) within 1.8e-41 of the case's size, both inputs against their closed forms within 5.7e-42, every face's classes within 2.8e-41 of its area, the area identity within 8.0e-41, Monte Carlo estimates within 2.8 standard errors. A scratch variant of occt_boolean_oracle.cpp (not the captured probe) measuring each native solid twice more: BRepGProp with an adaptive accuracy of 1e-10, and Green's theorem over OCCT's own faces and pcurves (the inner integral along each surface's v by 24-point Gauss-Legendre, the outer along every pcurve by 2,000 subintervals of 5-point Gauss-Legendre); the better of the two is within 9.2e-7 in volume, 8.5e-8 in area and 9.3e-7 of the size in the centre over the 29 reviewed cases, within 6.0e-9, 7.8e-9 and 8.5e-9 but for the wave's cut and common (its edges' tolerance 3.7e-5) (this case: adaptive 5.8e-12, 1.3e-05, 1.8e-12; Green 4.2e-11, 6.0e-12, 2.8e-11). The kernel's meeting edges counted by a throwaway test: 2 graphs over the height (Curve3::WallMeet with a window) and 4 over the run.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "lens_ball_common",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "07a2629730efb7aa78366bc3a9cd27b56882393c91d5913975b03f06fc26784f",
+      "differences": [
+        "centre",
+        "measure",
+        "rust_entity_counts"
+      ],
+      "reason": "BRepGProp's default integration on the faces bounded by the Boolean's intersection edges (the sphere and the spline wall) misses the reference by 2.4e-07 in volume (1.17922103 against 1.17922131), 2.4e-07 in area and 1.4e-07 of the size in the centre. With an adaptive accuracy of 1e-10 (a diagnostic build, not the captured probe) BRepGProp gives 9.9e-11 in volume, 3.6e-10 in area and 2.5e-11 in the centre; Green's theorem over OCCT's own faces and pcurves gives 1.8e-09, 1.2e-10 and 7.7e-10: the better of the two within 1.2e-10, so the native geometry is the reference's and its default measure is not. The result is valid with the reference's solid count. Entity counts: the kernel's solid has 2/6/6 faces, edges and vertices where OCCT's has 2/7/5 unified, the same faces: the kernel cuts its loop with the sphere at the switches about its two turning points (graphs over the height meeting the graphs over the run) and where it crosses the split of the sphere's hemispheres (and the faces' boundaries), where OCCT's edges follow its own seams and splits.",
+      "independent_evidence": "spline_sphere_boolean_reference.py (generate_spline_sphere_boolean_fixtures.py --check): each region's volume and first moments by two slicings (along the caps' normal and along (2, -3, 5)) within 1.8e-41 of the case's size, both inputs against their closed forms within 5.7e-42, every face's classes within 2.8e-41 of its area, the area identity within 8.0e-41, Monte Carlo estimates within 2.8 standard errors. A scratch variant of occt_boolean_oracle.cpp (not the captured probe) measuring each native solid twice more: BRepGProp with an adaptive accuracy of 1e-10, and Green's theorem over OCCT's own faces and pcurves (the inner integral along each surface's v by 24-point Gauss-Legendre, the outer along every pcurve by 2,000 subintervals of 5-point Gauss-Legendre); the better of the two is within 9.2e-7 in volume, 8.5e-8 in area and 9.3e-7 of the size in the centre over the 29 reviewed cases, within 6.0e-9, 7.8e-9 and 8.5e-9 but for the wave's cut and common (its edges' tolerance 3.7e-5) (this case: adaptive 9.9e-11, 3.6e-10, 2.5e-11; Green 1.8e-09, 1.2e-10, 7.7e-10). The kernel's meeting edges counted by a throwaway test: 2 graphs over the height (Curve3::WallMeet with a window) and 4 over the run.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "blob_cap_ball_fuse",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "c9645fbd05caa37a36d42fc833f2effed3fc0d11073f5c685b02f66ed3fa61b5",
+      "differences": [
+        "centre",
+        "measure",
+        "rust_entity_counts"
+      ],
+      "reason": "BRepGProp's default integration on the faces bounded by the Boolean's intersection edges (the sphere and the spline wall) misses the reference by 2.3e-07 in volume (159.667862 against 159.667826), 9.3e-08 in area and 7.2e-08 of the size in the centre. With an adaptive accuracy of 1e-10 (a diagnostic build, not the captured probe) BRepGProp gives 9.2e-13 in volume, 4.1e-09 in area and 4.7e-13 in the centre; Green's theorem over OCCT's own faces and pcurves gives 4.7e-11, 7.0e-11 and 5.0e-11: the better of the two within 7.0e-11, so the native geometry is the reference's and its default measure is not. The result is valid with the reference's solid count. Entity counts: the kernel's solid has 7/20/15 faces, edges and vertices where OCCT's has 7/18/12 unified, the same faces: the kernel cuts its loop with the sphere at the switches about its two turning points (graphs over the height meeting the graphs over the run) and where it crosses the split of the sphere's hemispheres (and the faces' boundaries), where OCCT's edges follow its own seams and splits.",
+      "independent_evidence": "spline_sphere_boolean_reference.py (generate_spline_sphere_boolean_fixtures.py --check): each region's volume and first moments by two slicings (along the caps' normal and along (2, -3, 5)) within 1.8e-41 of the case's size, both inputs against their closed forms within 5.7e-42, every face's classes within 2.8e-41 of its area, the area identity within 8.0e-41, Monte Carlo estimates within 2.8 standard errors. A scratch variant of occt_boolean_oracle.cpp (not the captured probe) measuring each native solid twice more: BRepGProp with an adaptive accuracy of 1e-10, and Green's theorem over OCCT's own faces and pcurves (the inner integral along each surface's v by 24-point Gauss-Legendre, the outer along every pcurve by 2,000 subintervals of 5-point Gauss-Legendre); the better of the two is within 9.2e-7 in volume, 8.5e-8 in area and 9.3e-7 of the size in the centre over the 29 reviewed cases, within 6.0e-9, 7.8e-9 and 8.5e-9 but for the wave's cut and common (its edges' tolerance 3.7e-5) (this case: adaptive 9.2e-13, 4.1e-09, 4.7e-13; Green 4.7e-11, 7.0e-11, 5.0e-11). The kernel's meeting edges counted by a throwaway test: 2 graphs over the height (Curve3::WallMeet with a window) and 5 over the run.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "blob_cap_ball_cut",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "f946a5d14855cbb3cc5aa03d094facbbb044a5b0ddd355f31a0b85bfc59da500",
+      "differences": [
+        "centre",
+        "measure",
+        "rust_entity_counts"
+      ],
+      "reason": "BRepGProp's default integration on the faces bounded by the Boolean's intersection edges (the sphere and the spline wall) misses the reference by 2.5e-07 in volume (155.479075 against 155.479036), 2.3e-07 in area and 8.1e-08 of the size in the centre. With an adaptive accuracy of 1e-10 (a diagnostic build, not the captured probe) BRepGProp gives 2.7e-12 in volume, 4.1e-09 in area and 9.7e-13 in the centre; Green's theorem over OCCT's own faces and pcurves gives 4.8e-11, 7.2e-11 and 5.1e-11: the better of the two within 7.2e-11, so the native geometry is the reference's and its default measure is not. The result is valid with the reference's solid count. Entity counts: the kernel's solid has 7/20/15 faces, edges and vertices where OCCT's has 7/15/10 unified, the same faces: the kernel cuts its loop with the sphere at the switches about its two turning points (graphs over the height meeting the graphs over the run) and where it crosses the split of the sphere's hemispheres (and the faces' boundaries), where OCCT's edges follow its own seams and splits.",
+      "independent_evidence": "spline_sphere_boolean_reference.py (generate_spline_sphere_boolean_fixtures.py --check): each region's volume and first moments by two slicings (along the caps' normal and along (2, -3, 5)) within 1.8e-41 of the case's size, both inputs against their closed forms within 5.7e-42, every face's classes within 2.8e-41 of its area, the area identity within 8.0e-41, Monte Carlo estimates within 2.8 standard errors. A scratch variant of occt_boolean_oracle.cpp (not the captured probe) measuring each native solid twice more: BRepGProp with an adaptive accuracy of 1e-10, and Green's theorem over OCCT's own faces and pcurves (the inner integral along each surface's v by 24-point Gauss-Legendre, the outer along every pcurve by 2,000 subintervals of 5-point Gauss-Legendre); the better of the two is within 9.2e-7 in volume, 8.5e-8 in area and 9.3e-7 of the size in the centre over the 29 reviewed cases, within 6.0e-9, 7.8e-9 and 8.5e-9 but for the wave's cut and common (its edges' tolerance 3.7e-5) (this case: adaptive 2.7e-12, 4.1e-09, 9.7e-13; Green 4.8e-11, 7.2e-11, 5.1e-11). The kernel's meeting edges counted by a throwaway test: 2 graphs over the height (Curve3::WallMeet with a window) and 5 over the run.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "blob_cap_ball_common",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "b96c71914e5b1c1aae2f331c494caed3ccd5c20785690a7a1e6af78b0669f55b",
+      "differences": [
+        "centre",
+        "measure",
+        "rust_entity_counts"
+      ],
+      "reason": "BRepGProp's default integration on the faces bounded by the Boolean's intersection edges (the sphere and the spline wall) misses the reference by 3.1e-06 in volume (1.27096787 against 1.27096391), 1.5e-06 in area and 2.0e-07 of the size in the centre. With an adaptive accuracy of 1e-10 (a diagnostic build, not the captured probe) BRepGProp gives 3.4e-09 in volume, 1.9e-09 in area and 1.4e-10 in the centre; Green's theorem over OCCT's own faces and pcurves gives 5.9e-09, 1.9e-09 and 5.4e-09: the better of the two within 3.4e-09, so the native geometry is the reference's and its default measure is not. The result is valid with the reference's solid count. Entity counts: the kernel's solid has 4/11/9 faces, edges and vertices where OCCT's has 4/6/4 unified, the same faces: the kernel cuts its loop with the sphere at the switches about its two turning points (graphs over the height meeting the graphs over the run) and where it crosses the split of the sphere's hemispheres (and the faces' boundaries), where OCCT's edges follow its own seams and splits.",
+      "independent_evidence": "spline_sphere_boolean_reference.py (generate_spline_sphere_boolean_fixtures.py --check): each region's volume and first moments by two slicings (along the caps' normal and along (2, -3, 5)) within 1.8e-41 of the case's size, both inputs against their closed forms within 5.7e-42, every face's classes within 2.8e-41 of its area, the area identity within 8.0e-41, Monte Carlo estimates within 2.8 standard errors. A scratch variant of occt_boolean_oracle.cpp (not the captured probe) measuring each native solid twice more: BRepGProp with an adaptive accuracy of 1e-10, and Green's theorem over OCCT's own faces and pcurves (the inner integral along each surface's v by 24-point Gauss-Legendre, the outer along every pcurve by 2,000 subintervals of 5-point Gauss-Legendre); the better of the two is within 9.2e-7 in volume, 8.5e-8 in area and 9.3e-7 of the size in the centre over the 29 reviewed cases, within 6.0e-9, 7.8e-9 and 8.5e-9 but for the wave's cut and common (its edges' tolerance 3.7e-5) (this case: adaptive 3.4e-09, 1.9e-09, 1.4e-10; Green 5.9e-09, 1.9e-09, 5.4e-09). The kernel's meeting edges counted by a throwaway test: 2 graphs over the height (Curve3::WallMeet with a window) and 5 over the run.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "knot_tilt_ball_fuse",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "a481537ad581eb5ac6f0fe6c64e7d413e0bb09d1f413142fb4f5585d9472c19b",
+      "differences": [
+        "centre",
+        "measure",
+        "rust_entity_counts"
+      ],
+      "reason": "BRepGProp's default integration on the faces bounded by the Boolean's intersection edges (the sphere and the spline wall) misses the reference by 5.2e-05 in volume (121.09632 against 121.09008), 8.8e-05 in area and 8.5e-06 of the size in the centre. With an adaptive accuracy of 1e-10 (a diagnostic build, not the captured probe) BRepGProp gives 7.9e-04 in volume, 1.2e-03 in area and 1.3e-04 in the centre; Green's theorem over OCCT's own faces and pcurves gives 2.4e-11, 2.3e-11 and 9.6e-12: the better of the two within 2.4e-11, so the native geometry is the reference's and its default measure is not. The result is valid with the reference's solid count. Entity counts: the kernel's solid has 7/21/16 faces, edges and vertices where OCCT's has 7/16/11 unified, the same faces: the kernel cuts its loop with the sphere at the switches about its two turning points (graphs over the height meeting the graphs over the run) and where it crosses the split of the sphere's hemispheres (and the faces' boundaries), where OCCT's edges follow its own seams and splits.",
+      "independent_evidence": "spline_sphere_boolean_reference.py (generate_spline_sphere_boolean_fixtures.py --check): each region's volume and first moments by two slicings (along the caps' normal and along (2, -3, 5)) within 1.8e-41 of the case's size, both inputs against their closed forms within 5.7e-42, every face's classes within 2.8e-41 of its area, the area identity within 8.0e-41, Monte Carlo estimates within 2.8 standard errors. A scratch variant of occt_boolean_oracle.cpp (not the captured probe) measuring each native solid twice more: BRepGProp with an adaptive accuracy of 1e-10, and Green's theorem over OCCT's own faces and pcurves (the inner integral along each surface's v by 24-point Gauss-Legendre, the outer along every pcurve by 2,000 subintervals of 5-point Gauss-Legendre); the better of the two is within 9.2e-7 in volume, 8.5e-8 in area and 9.3e-7 of the size in the centre over the 29 reviewed cases, within 6.0e-9, 7.8e-9 and 8.5e-9 but for the wave's cut and common (its edges' tolerance 3.7e-5) (this case: adaptive 7.9e-04, 1.2e-03, 1.3e-04; Green 2.4e-11, 2.3e-11, 9.6e-12). The kernel's meeting edges counted by a throwaway test: 2 graphs over the height (Curve3::WallMeet with a window) and 4 over the run.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "knot_tilt_ball_cut",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "3f9c7bb7e469f703f34c2f21535c32bb3436f965d898682107b35d05bd590b70",
+      "differences": [
+        "centre",
+        "measure",
+        "rust_entity_counts"
+      ],
+      "reason": "BRepGProp's default integration on the faces bounded by the Boolean's intersection edges (the sphere and the spline wall) misses the reference by 5.5e-05 in volume (119.329451 against 119.322934), 8.8e-05 in area and 9.1e-06 of the size in the centre. With an adaptive accuracy of 1e-10 (a diagnostic build, not the captured probe) BRepGProp gives 8.4e-04 in volume, 1.2e-03 in area and 1.4e-04 in the centre; Green's theorem over OCCT's own faces and pcurves gives 2.4e-11, 7.9e-12 and 9.8e-12: the better of the two within 2.4e-11, so the native geometry is the reference's and its default measure is not. The result is valid with the reference's solid count. Entity counts: the kernel's solid has 7/21/16 faces, edges and vertices where OCCT's has 7/16/11 unified, the same faces: the kernel cuts its loop with the sphere at the switches about its two turning points (graphs over the height meeting the graphs over the run) and where it crosses the split of the sphere's hemispheres (and the faces' boundaries), where OCCT's edges follow its own seams and splits.",
+      "independent_evidence": "spline_sphere_boolean_reference.py (generate_spline_sphere_boolean_fixtures.py --check): each region's volume and first moments by two slicings (along the caps' normal and along (2, -3, 5)) within 1.8e-41 of the case's size, both inputs against their closed forms within 5.7e-42, every face's classes within 2.8e-41 of its area, the area identity within 8.0e-41, Monte Carlo estimates within 2.8 standard errors. A scratch variant of occt_boolean_oracle.cpp (not the captured probe) measuring each native solid twice more: BRepGProp with an adaptive accuracy of 1e-10, and Green's theorem over OCCT's own faces and pcurves (the inner integral along each surface's v by 24-point Gauss-Legendre, the outer along every pcurve by 2,000 subintervals of 5-point Gauss-Legendre); the better of the two is within 9.2e-7 in volume, 8.5e-8 in area and 9.3e-7 of the size in the centre over the 29 reviewed cases, within 6.0e-9, 7.8e-9 and 8.5e-9 but for the wave's cut and common (its edges' tolerance 3.7e-5) (this case: adaptive 8.4e-04, 1.2e-03, 1.4e-04; Green 2.4e-11, 7.9e-12, 9.8e-12). The kernel's meeting edges counted by a throwaway test: 2 graphs over the height (Curve3::WallMeet with a window) and 4 over the run.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "knot_tilt_ball_common",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "d76f6376a7c2bf1055b7001deafde4d7b77349583eba6754c15604ea5bc96504",
+      "differences": [
+        "centre",
+        "measure",
+        "rust_entity_counts"
+      ],
+      "reason": "BRepGProp's default integration on the faces bounded by the Boolean's intersection edges (the sphere and the spline wall) misses the reference by 1.8e-06 in volume (0.677067205 against 0.677065996), 1.1e-06 in area and 2.0e-07 of the size in the centre. With an adaptive accuracy of 1e-10 (a diagnostic build, not the captured probe) BRepGProp gives 5.9e-10 in volume, 9.8e-10 in area and 1.7e-11 in the centre; Green's theorem over OCCT's own faces and pcurves gives 4.2e-09, 8.1e-10 and 9.3e-10: the better of the two within 8.1e-10, so the native geometry is the reference's and its default measure is not. The result is valid with the reference's solid count. Entity counts: the kernel's solid has 2/9/8 faces, edges and vertices where OCCT's has 2/4/3 unified, the same faces: the kernel cuts its loop with the sphere at the switches about its two turning points (graphs over the height meeting the graphs over the run) and where it crosses the split of the sphere's hemispheres (and the faces' boundaries), where OCCT's edges follow its own seams and splits.",
+      "independent_evidence": "spline_sphere_boolean_reference.py (generate_spline_sphere_boolean_fixtures.py --check): each region's volume and first moments by two slicings (along the caps' normal and along (2, -3, 5)) within 1.8e-41 of the case's size, both inputs against their closed forms within 5.7e-42, every face's classes within 2.8e-41 of its area, the area identity within 8.0e-41, Monte Carlo estimates within 2.8 standard errors. A scratch variant of occt_boolean_oracle.cpp (not the captured probe) measuring each native solid twice more: BRepGProp with an adaptive accuracy of 1e-10, and Green's theorem over OCCT's own faces and pcurves (the inner integral along each surface's v by 24-point Gauss-Legendre, the outer along every pcurve by 2,000 subintervals of 5-point Gauss-Legendre); the better of the two is within 9.2e-7 in volume, 8.5e-8 in area and 9.3e-7 of the size in the centre over the 29 reviewed cases, within 6.0e-9, 7.8e-9 and 8.5e-9 but for the wave's cut and common (its edges' tolerance 3.7e-5) (this case: adaptive 5.9e-10, 9.8e-10, 1.7e-11; Green 4.2e-09, 8.1e-10, 9.3e-10). The kernel's meeting edges counted by a throwaway test: 2 graphs over the height (Curve3::WallMeet with a window) and 4 over the run.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "ball_wave_fuse",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "d491b428c88312979cd0ac40ad24aba31349aa946b209aa79e2a9477c072e048",
+      "differences": [
+        "centre",
+        "measure",
+        "rust_entity_counts"
+      ],
+      "reason": "BRepGProp's default integration on the faces bounded by the Boolean's intersection edges (the sphere and the spline wall) misses the reference by 1.0e-03 in volume (199.87549 against 199.676058), 2.9e-04 in area and 2.5e-04 of the size in the centre. With an adaptive accuracy of 1e-10 (a diagnostic build, not the captured probe) BRepGProp gives 1.1e-03 in volume, 1.7e-04 in area and 4.2e-04 in the centre; Green's theorem over OCCT's own faces and pcurves gives 6.0e-09, 3.8e-09 and 8.5e-09: the better of the two within 8.5e-09, so the native geometry is the reference's and its default measure is not. The result is valid with the reference's solid count. Entity counts: the kernel's solid has 7/18/14 faces, edges and vertices where OCCT's has 7/19/13 unified, the same faces: the kernel cuts its loop with the sphere at the switches about its two turning points (graphs over the height meeting the graphs over the run) and where it crosses the split of the sphere's hemispheres (and the faces' boundaries), where OCCT's edges follow its own seams and splits.",
+      "independent_evidence": "spline_sphere_boolean_reference.py (generate_spline_sphere_boolean_fixtures.py --check): each region's volume and first moments by two slicings (along the caps' normal and along (2, -3, 5)) within 1.8e-41 of the case's size, both inputs against their closed forms within 5.7e-42, every face's classes within 2.8e-41 of its area, the area identity within 8.0e-41, Monte Carlo estimates within 2.8 standard errors. A scratch variant of occt_boolean_oracle.cpp (not the captured probe) measuring each native solid twice more: BRepGProp with an adaptive accuracy of 1e-10, and Green's theorem over OCCT's own faces and pcurves (the inner integral along each surface's v by 24-point Gauss-Legendre, the outer along every pcurve by 2,000 subintervals of 5-point Gauss-Legendre); the better of the two is within 9.2e-7 in volume, 8.5e-8 in area and 9.3e-7 of the size in the centre over the 29 reviewed cases, within 6.0e-9, 7.8e-9 and 8.5e-9 but for the wave's cut and common (its edges' tolerance 3.7e-5) (this case: adaptive 1.1e-03, 1.7e-04, 4.2e-04; Green 6.0e-09, 3.8e-09, 8.5e-09). The kernel's meeting edges counted by a throwaway test: 2 graphs over the height (Curve3::WallMeet with a window) and 4 over the run.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "ball_wave_cut",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "b564a1587f66003ee0e72d69429fe7c407af5d33b3670361b4047b9d7a4ba1aa",
+      "differences": [
+        "centre",
+        "measure",
+        "rust_entity_counts"
+      ],
+      "reason": "BRepGProp's default integration on the faces bounded by the Boolean's intersection edges (the sphere and the spline wall) misses the reference by 1.6e-04 in volume (2.42644839 against 2.42605798), 1.8e-04 in area and 1.1e-05 of the size in the centre. With an adaptive accuracy of 1e-10 (a diagnostic build, not the captured probe) BRepGProp gives 8.4e-05 in volume, 1.6e-04 in area and 3.5e-06 in the centre; Green's theorem over OCCT's own faces and pcurves gives 6.7e-07, 1.7e-08 and 6.4e-07: the better of the two within 6.7e-07, within the result's own edge tolerance (up to 3.7e-05: its intersection edges approximated on the wave's three-span quadratic wall), so the native geometry is the reference's and its default measure is not. The result is valid with the reference's solid count. Entity counts: the kernel's solid has 2/6/6 faces, edges and vertices where OCCT's has 2/7/5 unified, the same faces: the kernel cuts its loop with the sphere at the switches about its two turning points (graphs over the height meeting the graphs over the run) and where it crosses the split of the sphere's hemispheres (and the faces' boundaries), where OCCT's edges follow its own seams and splits.",
+      "independent_evidence": "spline_sphere_boolean_reference.py (generate_spline_sphere_boolean_fixtures.py --check): each region's volume and first moments by two slicings (along the caps' normal and along (2, -3, 5)) within 1.8e-41 of the case's size, both inputs against their closed forms within 5.7e-42, every face's classes within 2.8e-41 of its area, the area identity within 8.0e-41, Monte Carlo estimates within 2.8 standard errors. A scratch variant of occt_boolean_oracle.cpp (not the captured probe) measuring each native solid twice more: BRepGProp with an adaptive accuracy of 1e-10, and Green's theorem over OCCT's own faces and pcurves (the inner integral along each surface's v by 24-point Gauss-Legendre, the outer along every pcurve by 2,000 subintervals of 5-point Gauss-Legendre); the better of the two is within 9.2e-7 in volume, 8.5e-8 in area and 9.3e-7 of the size in the centre over the 29 reviewed cases, within 6.0e-9, 7.8e-9 and 8.5e-9 but for the wave's cut and common (its edges' tolerance 3.7e-5) (this case: adaptive 8.4e-05, 1.6e-04, 3.5e-06; Green 6.7e-07, 1.7e-08, 6.4e-07). The kernel's meeting edges counted by a throwaway test: 2 graphs over the height (Curve3::WallMeet with a window) and 4 over the run.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "ball_wave_common",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "49a47cc717c669084371096d8b099230d559dfdd0fdaefbca71e8de44bc5b9ee",
+      "differences": [
+        "centre",
+        "measure",
+        "rust_entity_counts"
+      ],
+      "reason": "BRepGProp's default integration on the faces bounded by the Boolean's intersection edges (the sphere and the spline wall) misses the reference by 2.5e-05 in volume (1.76268856 against 1.76273223), 8.1e-05 in area and 2.0e-06 of the size in the centre. With an adaptive accuracy of 1e-10 (a diagnostic build, not the captured probe) BRepGProp gives 1.4e-04 in volume, 1.9e-04 in area and 5.0e-06 in the centre; Green's theorem over OCCT's own faces and pcurves gives 9.2e-07, 8.5e-08 and 9.3e-07: the better of the two within 9.3e-07, within the result's own edge tolerance (up to 3.7e-05: its intersection edges approximated on the wave's three-span quadratic wall), so the native geometry is the reference's and its default measure is not. The result is valid with the reference's solid count. Entity counts: the kernel's solid has 2/6/6 faces, edges and vertices where OCCT's has 2/3/3 unified, the same faces: the kernel cuts its loop with the sphere at the switches about its two turning points (graphs over the height meeting the graphs over the run) and where it crosses the split of the sphere's hemispheres (and the faces' boundaries), where OCCT's edges follow its own seams and splits.",
+      "independent_evidence": "spline_sphere_boolean_reference.py (generate_spline_sphere_boolean_fixtures.py --check): each region's volume and first moments by two slicings (along the caps' normal and along (2, -3, 5)) within 1.8e-41 of the case's size, both inputs against their closed forms within 5.7e-42, every face's classes within 2.8e-41 of its area, the area identity within 8.0e-41, Monte Carlo estimates within 2.8 standard errors. A scratch variant of occt_boolean_oracle.cpp (not the captured probe) measuring each native solid twice more: BRepGProp with an adaptive accuracy of 1e-10, and Green's theorem over OCCT's own faces and pcurves (the inner integral along each surface's v by 24-point Gauss-Legendre, the outer along every pcurve by 2,000 subintervals of 5-point Gauss-Legendre); the better of the two is within 9.2e-7 in volume, 8.5e-8 in area and 9.3e-7 of the size in the centre over the 29 reviewed cases, within 6.0e-9, 7.8e-9 and 8.5e-9 but for the wave's cut and common (its edges' tolerance 3.7e-5) (this case: adaptive 1.4e-04, 1.9e-04, 5.0e-06; Green 9.2e-07, 8.5e-08, 9.3e-07). The kernel's meeting edges counted by a throwaway test: 2 graphs over the height (Curve3::WallMeet with a window) and 4 over the run.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "dome_ball_cut",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "9620c169ea9f376ca0011aae555a7b82119ad3cdf0a50550ec9dbf031789f90e",
+      "differences": [
+        "measure"
+      ],
+      "reason": "BRepGProp's default integration on the faces bounded by the Boolean's intersection edges (the sphere and the spline wall) misses the reference by 4.4e-08 in volume (7.75919737 against 7.75919771), 7.9e-08 in area and 7.4e-09 of the size in the centre. With an adaptive accuracy of 1e-10 (a diagnostic build, not the captured probe) BRepGProp gives 4.8e-11 in volume, 1.6e-05 in area and 2.0e-11 in the centre; Green's theorem over OCCT's own faces and pcurves gives 1.4e-10, 3.4e-11 and 1.2e-10: the better of the two within 4.8e-11, so the native geometry is the reference's and its default measure is not. The result is valid with the reference's solid count.",
+      "independent_evidence": "spline_sphere_boolean_reference.py (generate_spline_sphere_boolean_fixtures.py --check): each region's volume and first moments by two slicings (along the caps' normal and along (2, -3, 5)) within 1.8e-41 of the case's size, both inputs against their closed forms within 5.7e-42, every face's classes within 2.8e-41 of its area, the area identity within 8.0e-41, Monte Carlo estimates within 2.8 standard errors. A scratch variant of occt_boolean_oracle.cpp (not the captured probe) measuring each native solid twice more: BRepGProp with an adaptive accuracy of 1e-10, and Green's theorem over OCCT's own faces and pcurves (the inner integral along each surface's v by 24-point Gauss-Legendre, the outer along every pcurve by 2,000 subintervals of 5-point Gauss-Legendre); the better of the two is within 9.2e-7 in volume, 8.5e-8 in area and 9.3e-7 of the size in the centre over the 29 reviewed cases, within 6.0e-9, 7.8e-9 and 8.5e-9 but for the wave's cut and common (its edges' tolerance 3.7e-5) (this case: adaptive 4.8e-11, 1.6e-05, 2.0e-11; Green 1.4e-10, 3.4e-11, 1.2e-10).",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "tilt_blob_low_fuse",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "0e43d72380f04019056e65a0df5487e38e0df5312985db91f5decfb704d8a550",
+      "differences": [
+        "centre",
+        "measure"
+      ],
+      "reason": "BRepGProp's default integration on the faces bounded by the Boolean's intersection edges (the sphere and the spline wall) misses the reference by 1.9e-06 in volume (187.493635 against 187.493988), 1.5e-06 in area and 5.1e-07 of the size in the centre. With an adaptive accuracy of 1e-10 (a diagnostic build, not the captured probe) BRepGProp gives 6.7e-11 in volume, 3.4e-09 in area and 2.9e-11 in the centre; Green's theorem over OCCT's own faces and pcurves gives 5.0e-10, 2.5e-10 and 1.2e-10: the better of the two within 2.5e-10, so the native geometry is the reference's and its default measure is not. The result is valid with the reference's solid count.",
+      "independent_evidence": "spline_sphere_boolean_reference.py (generate_spline_sphere_boolean_fixtures.py --check): each region's volume and first moments by two slicings (along the caps' normal and along (2, -3, 5)) within 1.8e-41 of the case's size, both inputs against their closed forms within 5.7e-42, every face's classes within 2.8e-41 of its area, the area identity within 8.0e-41, Monte Carlo estimates within 2.8 standard errors. A scratch variant of occt_boolean_oracle.cpp (not the captured probe) measuring each native solid twice more: BRepGProp with an adaptive accuracy of 1e-10, and Green's theorem over OCCT's own faces and pcurves (the inner integral along each surface's v by 24-point Gauss-Legendre, the outer along every pcurve by 2,000 subintervals of 5-point Gauss-Legendre); the better of the two is within 9.2e-7 in volume, 8.5e-8 in area and 9.3e-7 of the size in the centre over the 29 reviewed cases, within 6.0e-9, 7.8e-9 and 8.5e-9 but for the wave's cut and common (its edges' tolerance 3.7e-5) (this case: adaptive 6.7e-11, 3.4e-09, 2.9e-11; Green 5.0e-10, 2.5e-10, 1.2e-10).",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "tilt_blob_low_cut",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "abd38b74c1931c050f3fc1d9ab904c4f6745c94b8e4ff159cf02cccaeb14a3e0",
+      "differences": [
+        "centre",
+        "measure"
+      ],
+      "reason": "BRepGProp's default integration on the faces bounded by the Boolean's intersection edges (the sphere and the spline wall) misses the reference by 2.2e-06 in volume (153.983325 against 153.983667), 1.5e-06 in area and 7.1e-07 of the size in the centre. With an adaptive accuracy of 1e-10 (a diagnostic build, not the captured probe) BRepGProp gives 1.0e-10 in volume, 4.5e-09 in area and 4.9e-11 in the centre; Green's theorem over OCCT's own faces and pcurves gives 6.1e-10, 3.3e-10 and 1.5e-10: the better of the two within 3.3e-10, so the native geometry is the reference's and its default measure is not. The result is valid with the reference's solid count.",
+      "independent_evidence": "spline_sphere_boolean_reference.py (generate_spline_sphere_boolean_fixtures.py --check): each region's volume and first moments by two slicings (along the caps' normal and along (2, -3, 5)) within 1.8e-41 of the case's size, both inputs against their closed forms within 5.7e-42, every face's classes within 2.8e-41 of its area, the area identity within 8.0e-41, Monte Carlo estimates within 2.8 standard errors. A scratch variant of occt_boolean_oracle.cpp (not the captured probe) measuring each native solid twice more: BRepGProp with an adaptive accuracy of 1e-10, and Green's theorem over OCCT's own faces and pcurves (the inner integral along each surface's v by 24-point Gauss-Legendre, the outer along every pcurve by 2,000 subintervals of 5-point Gauss-Legendre); the better of the two is within 9.2e-7 in volume, 8.5e-8 in area and 9.3e-7 of the size in the centre over the 29 reviewed cases, within 6.0e-9, 7.8e-9 and 8.5e-9 but for the wave's cut and common (its edges' tolerance 3.7e-5) (this case: adaptive 1.0e-10, 4.5e-09, 4.9e-11; Green 6.1e-10, 3.3e-10, 1.5e-10).",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "tilt_blob_low_common",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "decf3d44fa5964b8673b56d0cff49fe3f20cf66e6dbcf7fcae4a64d51d3ceb57",
+      "differences": [
+        "centre",
+        "measure"
+      ],
+      "reason": "BRepGProp's default integration on the faces bounded by the Boolean's intersection edges (the sphere and the spline wall) misses the reference by 3.0e-06 in volume (2.76634145 against 2.76633315), 4.9e-06 in area and 3.9e-07 of the size in the centre. With an adaptive accuracy of 1e-10 (a diagnostic build, not the captured probe) BRepGProp gives 1.7e-10 in volume, 2.2e-09 in area and 7.5e-10 in the centre; Green's theorem over OCCT's own faces and pcurves gives 3.4e-08, 4.1e-09 and 1.1e-08: the better of the two within 2.2e-09, so the native geometry is the reference's and its default measure is not. The result is valid with the reference's solid count.",
+      "independent_evidence": "spline_sphere_boolean_reference.py (generate_spline_sphere_boolean_fixtures.py --check): each region's volume and first moments by two slicings (along the caps' normal and along (2, -3, 5)) within 1.8e-41 of the case's size, both inputs against their closed forms within 5.7e-42, every face's classes within 2.8e-41 of its area, the area identity within 8.0e-41, Monte Carlo estimates within 2.8 standard errors. A scratch variant of occt_boolean_oracle.cpp (not the captured probe) measuring each native solid twice more: BRepGProp with an adaptive accuracy of 1e-10, and Green's theorem over OCCT's own faces and pcurves (the inner integral along each surface's v by 24-point Gauss-Legendre, the outer along every pcurve by 2,000 subintervals of 5-point Gauss-Legendre); the better of the two is within 9.2e-7 in volume, 8.5e-8 in area and 9.3e-7 of the size in the centre over the 29 reviewed cases, within 6.0e-9, 7.8e-9 and 8.5e-9 but for the wave's cut and common (its edges' tolerance 3.7e-5) (this case: adaptive 1.7e-10, 2.2e-09, 7.5e-10; Green 3.4e-08, 4.1e-09, 1.1e-08).",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "hemi_bulge_fuse",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "b1a7a600dbd86b56dd3887457924786baaaab61b85b4a60ba6077a5120f1efd5",
+      "differences": [
+        "measure"
+      ],
+      "reason": "BRepGProp's default integration on the faces bounded by the Boolean's intersection edges (the sphere and the spline wall) misses the reference by 3.9e-08 in volume (197.836367 against 197.836359), 1.2e-08 in area and 1.3e-08 of the size in the centre. With an adaptive accuracy of 1e-10 (a diagnostic build, not the captured probe) BRepGProp gives 2.1e-12 in volume, 1.3e-10 in area and 7.3e-13 in the centre; Green's theorem over OCCT's own faces and pcurves gives 9.9e-12, 1.1e-11 and 9.3e-12: the better of the two within 1.1e-11, so the native geometry is the reference's and its default measure is not. The result is valid with the reference's solid count.",
+      "independent_evidence": "spline_sphere_boolean_reference.py (generate_spline_sphere_boolean_fixtures.py --check): each region's volume and first moments by two slicings (along the caps' normal and along (2, -3, 5)) within 1.8e-41 of the case's size, both inputs against their closed forms within 5.7e-42, every face's classes within 2.8e-41 of its area, the area identity within 8.0e-41, Monte Carlo estimates within 2.8 standard errors. A scratch variant of occt_boolean_oracle.cpp (not the captured probe) measuring each native solid twice more: BRepGProp with an adaptive accuracy of 1e-10, and Green's theorem over OCCT's own faces and pcurves (the inner integral along each surface's v by 24-point Gauss-Legendre, the outer along every pcurve by 2,000 subintervals of 5-point Gauss-Legendre); the better of the two is within 9.2e-7 in volume, 8.5e-8 in area and 9.3e-7 of the size in the centre over the 29 reviewed cases, within 6.0e-9, 7.8e-9 and 8.5e-9 but for the wave's cut and common (its edges' tolerance 3.7e-5) (this case: adaptive 2.1e-12, 1.3e-10, 7.3e-13; Green 9.9e-12, 1.1e-11, 9.3e-12).",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "hemi_bulge_cut",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "ec76e719ef6076177fe1f5902798e7cbb6db3f7a9b373ede58246d77bf035121",
+      "differences": [
+        "measure"
+      ],
+      "reason": "BRepGProp's default integration on the faces bounded by the Boolean's intersection edges (the sphere and the spline wall) misses the reference by 5.6e-08 in volume (190.767787 against 190.767776), 4.4e-08 in area and 1.9e-08 of the size in the centre. With an adaptive accuracy of 1e-10 (a diagnostic build, not the captured probe) BRepGProp gives 3.2e-12 in volume, 1.2e-10 in area and 1.1e-12 in the centre; Green's theorem over OCCT's own faces and pcurves gives 1.0e-11, 8.5e-12 and 9.8e-12: the better of the two within 8.5e-12, so the native geometry is the reference's and its default measure is not. The result is valid with the reference's solid count.",
+      "independent_evidence": "spline_sphere_boolean_reference.py (generate_spline_sphere_boolean_fixtures.py --check): each region's volume and first moments by two slicings (along the caps' normal and along (2, -3, 5)) within 1.8e-41 of the case's size, both inputs against their closed forms within 5.7e-42, every face's classes within 2.8e-41 of its area, the area identity within 8.0e-41, Monte Carlo estimates within 2.8 standard errors. A scratch variant of occt_boolean_oracle.cpp (not the captured probe) measuring each native solid twice more: BRepGProp with an adaptive accuracy of 1e-10, and Green's theorem over OCCT's own faces and pcurves (the inner integral along each surface's v by 24-point Gauss-Legendre, the outer along every pcurve by 2,000 subintervals of 5-point Gauss-Legendre); the better of the two is within 9.2e-7 in volume, 8.5e-8 in area and 9.3e-7 of the size in the centre over the 29 reviewed cases, within 6.0e-9, 7.8e-9 and 8.5e-9 but for the wave's cut and common (its edges' tolerance 3.7e-5) (this case: adaptive 3.2e-12, 1.2e-10, 1.1e-12; Green 1.0e-11, 8.5e-12, 9.8e-12).",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "hemi_bulge_common",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "bd187600bb6a5f8901e4c1daca974d58cb4aec6c5dfdaa62abc2e027fb6ce3f1",
+      "differences": [
+        "centre",
+        "measure"
+      ],
+      "reason": "BRepGProp's default integration on the faces bounded by the Boolean's intersection edges (the sphere and the spline wall) misses the reference by 9.9e-07 in volume (1.23222546 against 1.23222424), 3.3e-07 in area and 3.3e-08 of the size in the centre. With an adaptive accuracy of 1e-10 (a diagnostic build, not the captured probe) BRepGProp gives 4.5e-10 in volume, 1.9e-10 in area and 1.0e-11 in the centre; Green's theorem over OCCT's own faces and pcurves gives 1.6e-09, 3.2e-10 and 9.0e-10: the better of the two within 4.5e-10, so the native geometry is the reference's and its default measure is not. The result is valid with the reference's solid count.",
+      "independent_evidence": "spline_sphere_boolean_reference.py (generate_spline_sphere_boolean_fixtures.py --check): each region's volume and first moments by two slicings (along the caps' normal and along (2, -3, 5)) within 1.8e-41 of the case's size, both inputs against their closed forms within 5.7e-42, every face's classes within 2.8e-41 of its area, the area identity within 8.0e-41, Monte Carlo estimates within 2.8 standard errors. A scratch variant of occt_boolean_oracle.cpp (not the captured probe) measuring each native solid twice more: BRepGProp with an adaptive accuracy of 1e-10, and Green's theorem over OCCT's own faces and pcurves (the inner integral along each surface's v by 24-point Gauss-Legendre, the outer along every pcurve by 2,000 subintervals of 5-point Gauss-Legendre); the better of the two is within 9.2e-7 in volume, 8.5e-8 in area and 9.3e-7 of the size in the centre over the 29 reviewed cases, within 6.0e-9, 7.8e-9 and 8.5e-9 but for the wave's cut and common (its edges' tolerance 3.7e-5) (this case: adaptive 4.5e-10, 1.9e-10, 1.0e-11; Green 1.6e-09, 3.2e-10, 9.0e-10).",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "side_hemi_bulge_fuse",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "b8a47ff26ff03c436bd02f87da02d84c6de3e6686318c660609bc1c586a2919e",
+      "differences": [
+        "measure",
+        "rust_entity_counts"
+      ],
+      "reason": "BRepGProp's default integration on the faces bounded by the Boolean's intersection edges (the sphere and the spline wall) misses the reference by 3.2e-08 in volume (193.216336 against 193.21633), 2.0e-08 in area and 1.2e-08 of the size in the centre. With an adaptive accuracy of 1e-10 (a diagnostic build, not the captured probe) BRepGProp gives 1.4e-11 in volume, 1.1e-10 in area and 5.4e-12 in the centre; Green's theorem over OCCT's own faces and pcurves gives 4.3e-11, 8.0e-12 and 3.6e-11: the better of the two within 1.4e-11, so the native geometry is the reference's and its default measure is not. The result is valid with the reference's solid count. Entity counts: the kernel's solid has 8/21/15 faces, edges and vertices where OCCT's has 8/19/13 unified, the same faces: the kernel cuts its meeting with the sphere at the switches about its one turning point inside the hemisphere (graphs over the height meeting the graphs over the run) and where it crosses the split of the sphere's hemispheres (and the faces' boundaries), where OCCT's edges follow its own seams and splits.",
+      "independent_evidence": "spline_sphere_boolean_reference.py (generate_spline_sphere_boolean_fixtures.py --check): each region's volume and first moments by two slicings (along the caps' normal and along (2, -3, 5)) within 1.8e-41 of the case's size, both inputs against their closed forms within 5.7e-42, every face's classes within 2.8e-41 of its area, the area identity within 8.0e-41, Monte Carlo estimates within 2.8 standard errors. A scratch variant of occt_boolean_oracle.cpp (not the captured probe) measuring each native solid twice more: BRepGProp with an adaptive accuracy of 1e-10, and Green's theorem over OCCT's own faces and pcurves (the inner integral along each surface's v by 24-point Gauss-Legendre, the outer along every pcurve by 2,000 subintervals of 5-point Gauss-Legendre); the better of the two is within 9.2e-7 in volume, 8.5e-8 in area and 9.3e-7 of the size in the centre over the 29 reviewed cases, within 6.0e-9, 7.8e-9 and 8.5e-9 but for the wave's cut and common (its edges' tolerance 3.7e-5) (this case: adaptive 1.4e-11, 1.1e-10, 5.4e-12; Green 4.3e-11, 8.0e-12, 3.6e-11). The kernel's meeting edges counted by a throwaway test: 1 graphs over the height (Curve3::WallMeet with a window) and 3 over the run.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "side_hemi_bulge_cut",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "5bc4b0a853a2b50de31c02b502a11b24804e37632b6ce01053aba84a1be0bd3c",
+      "differences": [
+        "measure",
+        "rust_entity_counts"
+      ],
+      "reason": "BRepGProp's default integration on the faces bounded by the Boolean's intersection edges (the sphere and the spline wall) misses the reference by 3.5e-08 in volume (191.689522 against 191.689516), 1.8e-08 in area and 1.3e-08 of the size in the centre. With an adaptive accuracy of 1e-10 (a diagnostic build, not the captured probe) BRepGProp gives 1.7e-11 in volume, 1.1e-10 in area and 6.2e-12 in the centre; Green's theorem over OCCT's own faces and pcurves gives 4.3e-11, 1.0e-11 and 3.6e-11: the better of the two within 1.7e-11, so the native geometry is the reference's and its default measure is not. The result is valid with the reference's solid count. Entity counts: the kernel's solid has 8/18/13 faces, edges and vertices where OCCT's has 8/16/11 unified, the same faces: the kernel cuts its meeting with the sphere at the switches about its one turning point inside the hemisphere (graphs over the height meeting the graphs over the run) and where it crosses the split of the sphere's hemispheres (and the faces' boundaries), where OCCT's edges follow its own seams and splits.",
+      "independent_evidence": "spline_sphere_boolean_reference.py (generate_spline_sphere_boolean_fixtures.py --check): each region's volume and first moments by two slicings (along the caps' normal and along (2, -3, 5)) within 1.8e-41 of the case's size, both inputs against their closed forms within 5.7e-42, every face's classes within 2.8e-41 of its area, the area identity within 8.0e-41, Monte Carlo estimates within 2.8 standard errors. A scratch variant of occt_boolean_oracle.cpp (not the captured probe) measuring each native solid twice more: BRepGProp with an adaptive accuracy of 1e-10, and Green's theorem over OCCT's own faces and pcurves (the inner integral along each surface's v by 24-point Gauss-Legendre, the outer along every pcurve by 2,000 subintervals of 5-point Gauss-Legendre); the better of the two is within 9.2e-7 in volume, 8.5e-8 in area and 9.3e-7 of the size in the centre over the 29 reviewed cases, within 6.0e-9, 7.8e-9 and 8.5e-9 but for the wave's cut and common (its edges' tolerance 3.7e-5) (this case: adaptive 1.7e-11, 1.1e-10, 6.2e-12; Green 4.3e-11, 1.0e-11, 3.6e-11). The kernel's meeting edges counted by a throwaway test: 1 graphs over the height (Curve3::WallMeet with a window) and 3 over the run.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "side_hemi_bulge_common",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "4d7a61ec104267372ba2e3778b7e1f7a04076403e332d3b3960eed46c50e16bd",
+      "differences": [
+        "measure",
+        "rust_entity_counts"
+      ],
+      "reason": "BRepGProp's default integration on the faces bounded by the Boolean's intersection edges (the sphere and the spline wall) misses the reference by 1.7e-07 in volume (0.31048427 against 0.310484323), 2.1e-08 in area and 4.7e-09 of the size in the centre. With an adaptive accuracy of 1e-10 (a diagnostic build, not the captured probe) BRepGProp gives 2.5e-10 in volume, 4.5e-10 in area and 3.3e-11 in the centre; Green's theorem over OCCT's own faces and pcurves gives 2.7e-08, 4.5e-10 and 1.3e-08: the better of the two within 4.5e-10, so the native geometry is the reference's and its default measure is not. The result is valid with the reference's solid count. Entity counts: the kernel's solid has 3/6/5 faces, edges and vertices where OCCT's has 3/4/3 unified, the same faces: the kernel cuts its meeting with the sphere at the switches about its one turning point inside the hemisphere (graphs over the height meeting the graphs over the run) and where it crosses the split of the sphere's hemispheres (and the faces' boundaries), where OCCT's edges follow its own seams and splits.",
+      "independent_evidence": "spline_sphere_boolean_reference.py (generate_spline_sphere_boolean_fixtures.py --check): each region's volume and first moments by two slicings (along the caps' normal and along (2, -3, 5)) within 1.8e-41 of the case's size, both inputs against their closed forms within 5.7e-42, every face's classes within 2.8e-41 of its area, the area identity within 8.0e-41, Monte Carlo estimates within 2.8 standard errors. A scratch variant of occt_boolean_oracle.cpp (not the captured probe) measuring each native solid twice more: BRepGProp with an adaptive accuracy of 1e-10, and Green's theorem over OCCT's own faces and pcurves (the inner integral along each surface's v by 24-point Gauss-Legendre, the outer along every pcurve by 2,000 subintervals of 5-point Gauss-Legendre); the better of the two is within 9.2e-7 in volume, 8.5e-8 in area and 9.3e-7 of the size in the centre over the 29 reviewed cases, within 6.0e-9, 7.8e-9 and 8.5e-9 but for the wave's cut and common (its edges' tolerance 3.7e-5) (this case: adaptive 2.5e-10, 4.5e-10, 3.3e-11; Green 2.7e-08, 4.5e-10, 1.3e-08). The kernel's meeting edges counted by a throwaway test: 1 graphs over the height (Curve3::WallMeet with a window) and 3 over the run.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "knot_turn_cut",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "76afa54b29918bf77a5ce5bff7b46cc2ee269d3b5b7c4ed30917e952c90e5c4c",
+      "differences": [
+        "centre",
+        "measure"
+      ],
+      "reason": "BRepGProp's default integration on the faces bounded by the Boolean's intersection edges (the sphere and the spline wall) misses the reference by 7.5e-05 in volume (119.992263 against 119.98328), 7.8e-05 in area and 1.2e-05 of the size in the centre. With an adaptive accuracy of 1e-10 (a diagnostic build, not the captured probe) BRepGProp gives 9.2e-04 in volume, 9.5e-04 in area and 1.5e-04 in the centre; Green's theorem over OCCT's own faces and pcurves gives 1.9e-11, 6.8e-12 and 3.2e-12: the better of the two within 1.9e-11, so the native geometry is the reference's and its default measure is not. The result is valid with the reference's solid count.",
+      "independent_evidence": "spline_sphere_boolean_reference.py (generate_spline_sphere_boolean_fixtures.py --check): each region's volume and first moments by two slicings (along the caps' normal and along (2, -3, 5)) within 1.8e-41 of the case's size, both inputs against their closed forms within 5.7e-42, every face's classes within 2.8e-41 of its area, the area identity within 8.0e-41, Monte Carlo estimates within 2.8 standard errors. A scratch variant of occt_boolean_oracle.cpp (not the captured probe) measuring each native solid twice more: BRepGProp with an adaptive accuracy of 1e-10, and Green's theorem over OCCT's own faces and pcurves (the inner integral along each surface's v by 24-point Gauss-Legendre, the outer along every pcurve by 2,000 subintervals of 5-point Gauss-Legendre); the better of the two is within 9.2e-7 in volume, 8.5e-8 in area and 9.3e-7 of the size in the centre over the 29 reviewed cases, within 6.0e-9, 7.8e-9 and 8.5e-9 but for the wave's cut and common (its edges' tolerance 3.7e-5) (this case: adaptive 9.2e-04, 9.5e-04, 1.5e-04; Green 1.9e-11, 6.8e-12, 3.2e-12).",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "knot_turn_common",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "f083fc282f420c6c8bce26ec80e074df0e4571fe524009634707f4d7cb16f225",
+      "differences": [
+        "centre",
+        "measure"
+      ],
+      "reason": "BRepGProp's default integration on the faces bounded by the Boolean's intersection edges (the sphere and the spline wall) misses the reference by 9.4e-06 in volume (0.0167200093 against 0.0167201665), 8.0e-07 in area and 2.8e-07 of the size in the centre. With an adaptive accuracy of 1e-10 (a diagnostic build, not the captured probe) BRepGProp gives 4.6e-09 in volume, 2.5e-09 in area and 1.5e-10 in the centre; Green's theorem over OCCT's own faces and pcurves gives 1.4e-07, 1.8e-09 and 3.5e-08: the better of the two within 4.6e-09, so the native geometry is the reference's and its default measure is not. The result is valid with the reference's solid count.",
+      "independent_evidence": "spline_sphere_boolean_reference.py (generate_spline_sphere_boolean_fixtures.py --check): each region's volume and first moments by two slicings (along the caps' normal and along (2, -3, 5)) within 1.8e-41 of the case's size, both inputs against their closed forms within 5.7e-42, every face's classes within 2.8e-41 of its area, the area identity within 8.0e-41, Monte Carlo estimates within 2.8 standard errors. A scratch variant of occt_boolean_oracle.cpp (not the captured probe) measuring each native solid twice more: BRepGProp with an adaptive accuracy of 1e-10, and Green's theorem over OCCT's own faces and pcurves (the inner integral along each surface's v by 24-point Gauss-Legendre, the outer along every pcurve by 2,000 subintervals of 5-point Gauss-Legendre); the better of the two is within 9.2e-7 in volume, 8.5e-8 in area and 9.3e-7 of the size in the centre over the 29 reviewed cases, within 6.0e-9, 7.8e-9 and 8.5e-9 but for the wave's cut and common (its edges' tolerance 3.7e-5) (this case: adaptive 4.6e-09, 2.5e-09, 1.5e-10; Green 1.4e-07, 1.8e-09, 3.5e-08).",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "cap_turn_cut",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "52309adf7eb6ab2e4ce35783d9199a364ccf0b572b5c068bb318e071fb3d8e40",
+      "differences": [
+        "centre",
+        "measure"
+      ],
+      "reason": "BRepGProp's default integration on the faces bounded by the Boolean's intersection edges (the sphere and the spline wall) misses the reference by 1.1e-07 in volume (190.996194 against 190.996214), 1.2e-07 in area and 4.0e-08 of the size in the centre. With an adaptive accuracy of 1e-10 (a diagnostic build, not the captured probe) BRepGProp gives 1.8e-10 in volume, 1.4e-10 in area and 7.0e-11 in the centre; Green's theorem over OCCT's own faces and pcurves gives 2.7e-09, 7.1e-10 and 2.9e-09: the better of the two within 1.8e-10, so the native geometry is the reference's and its default measure is not. The result is valid with the reference's solid count.",
+      "independent_evidence": "spline_sphere_boolean_reference.py (generate_spline_sphere_boolean_fixtures.py --check): each region's volume and first moments by two slicings (along the caps' normal and along (2, -3, 5)) within 1.8e-41 of the case's size, both inputs against their closed forms within 5.7e-42, every face's classes within 2.8e-41 of its area, the area identity within 8.0e-41, Monte Carlo estimates within 2.8 standard errors. A scratch variant of occt_boolean_oracle.cpp (not the captured probe) measuring each native solid twice more: BRepGProp with an adaptive accuracy of 1e-10, and Green's theorem over OCCT's own faces and pcurves (the inner integral along each surface's v by 24-point Gauss-Legendre, the outer along every pcurve by 2,000 subintervals of 5-point Gauss-Legendre); the better of the two is within 9.2e-7 in volume, 8.5e-8 in area and 9.3e-7 of the size in the centre over the 29 reviewed cases, within 6.0e-9, 7.8e-9 and 8.5e-9 but for the wave's cut and common (its edges' tolerance 3.7e-5) (this case: adaptive 1.8e-10, 1.4e-10, 7.0e-11; Green 2.7e-09, 7.1e-10, 2.9e-09).",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "cap_turn_common",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "e25e4d39856a80426d57b1649e540bb144812186b200b396c9aad80144787bca",
+      "differences": [
+        "centre",
+        "measure"
+      ],
+      "reason": "BRepGProp's default integration on the faces bounded by the Boolean's intersection edges (the sphere and the spline wall) misses the reference by 3.2e-06 in volume (1.00378232 against 1.00378556), 1.9e-06 in area and 1.6e-07 of the size in the centre. With an adaptive accuracy of 1e-10 (a diagnostic build, not the captured probe) BRepGProp gives 5.7e-09 in volume, 7.8e-09 in area and 2.8e-10 in the centre; Green's theorem over OCCT's own faces and pcurves gives 5.2e-07, 2.4e-08 and 3.6e-07: the better of the two within 7.8e-09, so the native geometry is the reference's and its default measure is not. The result is valid with the reference's solid count.",
+      "independent_evidence": "spline_sphere_boolean_reference.py (generate_spline_sphere_boolean_fixtures.py --check): each region's volume and first moments by two slicings (along the caps' normal and along (2, -3, 5)) within 1.8e-41 of the case's size, both inputs against their closed forms within 5.7e-42, every face's classes within 2.8e-41 of its area, the area identity within 8.0e-41, Monte Carlo estimates within 2.8 standard errors. A scratch variant of occt_boolean_oracle.cpp (not the captured probe) measuring each native solid twice more: BRepGProp with an adaptive accuracy of 1e-10, and Green's theorem over OCCT's own faces and pcurves (the inner integral along each surface's v by 24-point Gauss-Legendre, the outer along every pcurve by 2,000 subintervals of 5-point Gauss-Legendre); the better of the two is within 9.2e-7 in volume, 8.5e-8 in area and 9.3e-7 of the size in the centre over the 29 reviewed cases, within 6.0e-9, 7.8e-9 and 8.5e-9 but for the wave's cut and common (its edges' tolerance 3.7e-5) (this case: adaptive 5.7e-09, 7.8e-09, 2.8e-10; Green 5.2e-07, 2.4e-08, 3.6e-07).",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    }
+  ]
+}
