@@ -340,6 +340,49 @@ impl TrigBasis {
     }
 }
 
+/// Mass moments' integrals along a projection kept by their content: the
+/// projection's and the integrands' `Debug` texts (which tell every
+/// binary64 number apart) with their count. A result's edges bound faces
+/// of the other results of one pair too (fuse, cut and common), and an
+/// imported input's faces are its own construction's, so one face's
+/// integrals along one pcurve are asked again and again; `along` is a
+/// function of those (its jets' memo returns what it would compute), so a
+/// kept value is the one computed again. Binary64 tier only.
+fn integrate_along_kept<T: Real>(
+    pr: &crate::topology::Projection,
+    integrands: &dyn Fn() -> String,
+    n: usize,
+    g: super::projection::AlongIntegrands<'_, T>,
+) -> Option<Vec<T>> {
+    type Kept = std::collections::HashMap<String, Option<Vec<crate::certified::Fast>>>;
+    thread_local! {
+        static KEPT: std::cell::RefCell<Kept> = std::cell::RefCell::new(Kept::new());
+    }
+    if T::of_fast(crate::certified::Fast::exact_f64(0.0)).is_none() {
+        return super::projection::integrate_along_many::<T>(pr, n, true, g);
+    }
+    let key = format!("{pr:?}\n{}\n{n}", integrands());
+    if let Some(hit) = KEPT.with(|k| k.borrow().get(&key).cloned()) {
+        return hit.map(|v| {
+            v.into_iter()
+                .map(|x| T::of_fast(x).expect("binary64"))
+                .collect()
+        });
+    }
+    let values = super::projection::integrate_along_many::<T>(pr, n, true, g);
+    let fast = values
+        .as_ref()
+        .map(|v| v.iter().map(|x| x.as_fast().expect("binary64")).collect());
+    KEPT.with(|k| {
+        let mut k = k.borrow_mut();
+        if k.len() >= 1 << 12 {
+            k.clear();
+        }
+        k.insert(key, fast);
+    });
+    values
+}
+
 /// `integral of F dx` of every `F` of `fs` along a projection, `(x, y)` its
 /// `(u, v)` or, `swapped`, its `(v, u)`: the basis's integrals combined.
 fn trig_along<T: Real>(
@@ -350,14 +393,18 @@ fn trig_along<T: Real>(
 ) -> Option<Vec<T>> {
     let basis = TrigBasis::of(fs);
     let coefficients = basis.coefficients(fs, lower)?;
-    let integrals =
-        super::projection::integrate_along_many::<T>(pr, basis.len(), true, &|u, v, du, dv| {
+    let integrals = integrate_along_kept::<T>(
+        pr,
+        &|| format!("trig {} {} {swapped}", basis.kx, basis.ky),
+        basis.len(),
+        &|u, v, du, dv| {
             Some(if swapped {
                 basis.jets(v, u, dv)
             } else {
                 basis.jets(u, v, du)
             })
-        })?;
+        },
+    )?;
     Some(
         coefficients
             .iter()
@@ -1452,10 +1499,10 @@ fn face_integrals<T: Real>(face: &Face, loops: &[Lp], reference: &V3<T>) -> Opti
                     // -∫ F du along a projection onto the plane (S8d.2), every
                     // term from one set of jets.
                     if let Curve2::Projection(pr) = &u.pcurve {
-                        let values = super::projection::integrate_along_many::<T>(
+                        let values = integrate_along_kept::<T>(
                             pr,
+                            &|| format!("planar {anti:?} {ou:?} {ov:?}"),
                             TERMS,
-                            true,
                             &|x, y, dx, _| {
                                 let (x, y) = (x.add_constant(&ou.neg()), y.add_constant(&ov.neg()));
                                 Some(
@@ -1627,10 +1674,10 @@ fn face_integrals<T: Real>(face: &Face, loops: &[Lp], reference: &V3<T>) -> Opti
                             rev_sinusoid(&anti, *start, *sweep, a)?
                         }
                         // -∫ F(u, v) du along a projection (S8d.2), with jets.
-                        Curve2::Projection(pr) => super::projection::integrate_along_many::<T>(
+                        Curve2::Projection(pr) => integrate_along_kept::<T>(
                             pr,
+                            &|| format!("rev {anti:?}"),
                             anti.len(),
-                            true,
                             &|uu, v, du, _| {
                                 Some(
                                     rev_eval_jets(&anti, uu, v)
