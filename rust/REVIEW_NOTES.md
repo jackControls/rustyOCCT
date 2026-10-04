@@ -7192,6 +7192,44 @@ Decisions for S9, recorded before its code (2026-09-28):
     debug assertions: the corpus (1,430 inputs), the 26 regressions, the
     2,304 variants and 605 single-byte mutations of the new input, none
     failing; every comparison unchanged with 0 failures.
+  * **The validator's curve points guarded (2026-10-04).** After the
+    near-parallel audit above, `validate::curve_at` returns `None` where a
+    meeting, a section or a conic has no point in a tier
+    (`projection::conic_point`'s `None`, until now `expect`ed: `a conic or
+    section evaluates`), and each caller reports it instead of panicking.
+    `measure` (`TopologyParts::with_measured_enclosures`, a builder's
+    `measure_enclosures`) leaves that end's vertex without a bound
+    (`root_bound_of`: `None` when neither tier evaluates), so the check
+    reports `enclosure_missing` and a builder fails `Unrepresentable`.
+    `check`'s `curve_ok` also requires the curve to evaluate, in either
+    tier, at each end that has a vertex (`ends_evaluate`), else
+    `degenerate_curve` on the edge, whose vertex and deviation checks are
+    then skipped as for any degenerate curve. A `deviation` sample that
+    does not evaluate leaves the tier undecided (`Unknown`, then the exact
+    tier, then `uncertified_pcurve_off_edge`). No new issue kind: a curve
+    whose parameters pass but which has no point at an end is degenerate,
+    as a `Meet` of axes within `1e-6` of parallel already is. Where every
+    point evaluates, which is every result so far (a failure panicked),
+    nothing changes: the same bounds, verdicts, volumes and enclosures.
+    The other `expect`s and `unwrap`s outside tests in
+    `topology/validate.rs` and `validate/*.rs` are not evaluations that
+    can fail on parameters `curve_valid` accepts: a spline's exact point
+    inside its span's range (`SplineSpan` keeps the range in the domain),
+    `arc_of` on the arcs its match leaves, exact conversions after
+    `finite`, nonempty lists and bases; a projection pcurve's point
+    already widens where it does not evaluate. A unit test
+    (`curves_without_a_point_are_degenerate_not_a_panic`) measures and
+    checks a wire edge on 7567a04b's `Meet` (an ulp's sweep on exactly
+    parallel axes, which `curve_valid` refuses but `measure` panicked on)
+    and, past `curve_valid`, on a `Toric` whose cylinder lies far off the
+    torus and a `Rise` from a cone's apex: no bound on the start vertex,
+    `degenerate_curve` and `enclosure_missing`, and `from_parts` refusing
+    with the same issues (with the `expect` restored, the test panics).
+    Checks: fmt, clippy, the 1.85 check, the release suite (551 tests);
+    unchanged with 0 failures `compare_brep.py` (prisms 44/8, splines
+    10/3, sheets 17/1), `compare_brep_io.py` 6835/7,
+    `compare_turned_boolean.py` 2/13, `compare_given_curved_boolean.py`
+    25/23 and `compare_spline_crossing_boolean.py` 14/37.
   * **S9f.3 refined, before its code (2026-10-03).** Why it is refused
     today: `curved::spline_pairs` refuses a spline prism against a sphere
     or a cone ("a spline prism against a sphere or a cone (S9f.3)");
