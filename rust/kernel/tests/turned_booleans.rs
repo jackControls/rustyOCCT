@@ -169,3 +169,114 @@ fn results_are_deterministic_and_move_rigidly() {
         }
     }
 }
+
+/// A boolean fuzz variant: a square with a round hole in the tilted frame
+/// fused with a torus band, its first solid (the holed prism) given to the
+/// chained stage's turned cylinder, whose frame's normal is the tilted
+/// frame's normalized again, an ulp off it. The cylinders' models crossed
+/// within rounding of parallel, their meeting a piece of an ulp's sweep on
+/// stored axes exactly parallel, which the validator could not evaluate (a
+/// panic). Meeting, such axes are `Degenerate`; certainly apart within the
+/// faces (one within the other, or beyond it), the pair evaluates.
+#[test]
+fn cylinders_within_rounding_of_parallel_are_degenerate_unless_apart() {
+    use rusty_occt::identity::OperationId;
+    use rusty_occt::{Boundary, Error, Frame3, Point2, Point3, Profile, Solid, Tolerance, Vec3};
+    let tol = Tolerance::default();
+    let tilt = Frame3::new(
+        Point3::new(1.0, -2.0, 0.5),
+        Vec3::new(0.0, 3.0, 4.0),
+        Vec3::new(1.0, 0.0, 0.0),
+        tol,
+    )
+    .unwrap();
+    let disc = |r: f64| {
+        Profile::new(
+            Boundary::circle(Point2::new(0.0, 0.0), r, tol).unwrap(),
+            vec![],
+            tol,
+        )
+        .unwrap()
+    };
+    let s = 4.25;
+    let square = Boundary::polygon(
+        vec![
+            Point2::new(-s, -s),
+            Point2::new(s, -s),
+            Point2::new(s, s),
+            Point2::new(-s, s),
+        ],
+        tol,
+    )
+    .unwrap();
+    let hole = Boundary::circle(Point2::new(0.0, 0.0), 1.375, tol).unwrap();
+    let holed = Profile::new(square, vec![hole], tol).unwrap();
+    let h = 2.25;
+    let (prism, _) = Solid::extrude_with(OperationId(1), holed, tilt, 0.0, h).unwrap();
+    let (rod, _) = Solid::extrude_with(OperationId(1), disc(1.375), tilt, 0.0, h).unwrap();
+    let big = 0.75 * 2.75;
+    let (band, _) = Solid::torus_with(
+        OperationId(2),
+        tilt,
+        big,
+        big * 0.5,
+        -2.5,
+        -0.25,
+        std::f64::consts::TAU,
+        tol,
+    )
+    .unwrap();
+    let (fused, _) = prism.fuse(OperationId(3), &band).unwrap();
+    // The chained stage's partner: the tilted frame's normal normalized
+    // again (an ulp off), its x turned.
+    let partner = |r: f64, at: Point2| {
+        let f = Frame3::new(
+            tilt.point(at, h / 3.0),
+            tilt.normal(),
+            tilt.x() * 3.0 + tilt.y() * 4.0,
+            tol,
+        )
+        .unwrap();
+        assert_ne!(f.normal(), tilt.normal(), "an ulp off");
+        Solid::extrude_with(OperationId(7), disc(r), f, 0.0, h)
+            .unwrap()
+            .0
+    };
+    let meeting = partner(1.25, Point2::new(0.5, 0.25));
+    for (stage, a) in [("given", &fused[0]), ("holed", &prism), ("rod", &rod)] {
+        for (op, r) in [
+            ("fuse", a.fuse(OperationId(9), &meeting)),
+            ("cut", a.cut(OperationId(9), &meeting)),
+            ("common", a.common(OperationId(9), &meeting)),
+        ] {
+            assert!(
+                matches!(&r, Err(Error::Degenerate(m)) if m.contains("within rounding of parallel")),
+                "{stage} {op}: {:?}",
+                r.map(|x| x.0.len())
+            );
+        }
+    }
+    // Within the hole or the rod, holding the rod, and beyond them.
+    let volume = |out: &[Solid]| out.iter().map(|s| s.mass_properties().volume).sum::<f64>();
+    let near = |x: f64, y: f64| (x - y).abs() <= 1e-9 * x.abs().max(y.abs()).max(1.0);
+    let third = h - h / 3.0;
+    for (a, r, at, common) in [
+        (&prism, 0.5, Point2::new(0.25, 0.0), 0.0),
+        (&prism, 1.0, Point2::new(0.125, 0.0), 0.0),
+        (&rod, 0.5, Point2::new(0.25, 0.0), 0.25 * third),
+        (&rod, 2.0, Point2::new(0.25, 0.0), 1.890625 * third),
+        (&rod, 0.25, Point2::new(3.0, 0.0), 0.0),
+    ] {
+        let b = partner(r, at);
+        let (va, vb) = (a.mass_properties().volume, b.mass_properties().volume);
+        let (f, _) = a.fuse(OperationId(9), &b).unwrap();
+        let (c, _) = a.cut(OperationId(9), &b).unwrap();
+        let (m, _) = a.common(OperationId(9), &b).unwrap();
+        let (f, c, m) = (volume(&f), volume(&c), volume(&m));
+        assert!(near(f, va + vb - m), "{r}: fuse {f} for {va} + {vb} - {m}");
+        assert!(near(c, va - m), "{r}: cut {c} for {va} - {m}");
+        // The partner's part, or the rod's, over the heights h / 3..h.
+        let want = std::f64::consts::PI * common;
+        assert!(near(m, want), "{r}: common {m} for {want}");
+    }
+}
