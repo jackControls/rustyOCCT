@@ -2,7 +2,9 @@
 //! (REVIEW_NOTES.md, "S9f.2b refined, before its code" and "S9f.2b.2
 //! refined, before its code"); S9f.3a: against spheres, whose function
 //! along a ruling is the same quadratic over the world's three rows
-//! (`spline_sphere.rs`).
+//! (`spline_sphere.rs`); S9f.3b: against cones, the same quadratic with the
+//! radius row of negative sign (`spline_cone.rs`): every row carries its
+//! sign (`terms`).
 //!
 //! Along a spline wall's ruling at the run parameter `tau`, `X = o + S_x(tau)
 //! x + S_y(tau) y + w n` (the spline prism's exact model), the cylinder's
@@ -68,12 +70,13 @@ use num_rational::BigRational as R;
 use std::cmp::Ordering;
 use std::sync::Arc;
 
-/// The quadric a spline wall meets: a cylinder (S9f.2b) or a sphere
-/// (S9f.3a), for the refusals' labels.
+/// The quadric a spline wall meets: a cylinder (S9f.2b), a sphere
+/// (S9f.3a) or a cone (S9f.3b), for the refusals' labels.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(super) enum Partner {
     Cylinder,
     Sphere,
+    Cone,
 }
 
 impl Partner {
@@ -81,6 +84,7 @@ impl Partner {
         Error::Degenerate(match self {
             Partner::Cylinder => "a cylinder tangent to a spline wall",
             Partner::Sphere => "a sphere tangent to a spline wall",
+            Partner::Cone => "a cone tangent to a spline wall",
         })
     }
 
@@ -88,6 +92,7 @@ impl Partner {
         Error::Degenerate(match self {
             Partner::Cylinder => "a spline wall's meeting with a cylinder turning back at a knot",
             Partner::Sphere => "a spline wall's meeting with a sphere turning back at a knot",
+            Partner::Cone => "a spline wall's meeting with a cone turning back at a knot",
         })
     }
 
@@ -96,11 +101,12 @@ impl Partner {
     /// cylinder (S9f.2b.2), a sixty-fourth for a sphere (S9f.3a: its loops'
     /// graphs over the height, as tall as the sphere's section there, cost
     /// ten times more to integrate at a quarter on the slowest fuzz variants,
-    /// the graphs over the run beside them little more).
+    /// the graphs over the run beside them little more); a cone's as a
+    /// sphere's (S9f.3b).
     fn switch(self) -> f64 {
         match self {
             Partner::Cylinder => 0.25,
-            Partner::Sphere => 0.015625,
+            Partner::Sphere | Partner::Cone => 0.015625,
         }
     }
 
@@ -111,6 +117,9 @@ impl Partner {
             }
             Partner::Sphere => {
                 "a spline wall's meeting with a sphere turning back on a face's boundary"
+            }
+            Partner::Cone => {
+                "a spline wall's meeting with a cone turning back on a face's boundary"
             }
         })
     }
@@ -159,21 +168,41 @@ pub(super) fn pscale(a: &[R], k: &R) -> Vec<R> {
     trim(a.iter().map(|x| x * k).collect())
 }
 
-/// The other quadric's rows along a curve over an arc, `w = h0 + h1 S_x +
-/// h2 S_y` (`h = None`: free, the ruling's `w` coefficient kept apart): per
-/// row `P_i + q_i w`, `(P_i(s), q_i)` (a cylinder's two, a sphere's three;
-/// no radius term: a cone's is S9f.3b's).
-fn rows(f: &Affine, arc: &BArc, other: &Other, h: Option<&[R; 3]>) -> Vec<(Vec<R>, R)> {
-    other
+/// The other quadric as signed rows and a constant: `F = c0 + sum_i s_i (g_i
+/// . X - e_i)^2` (a cylinder's two rows or a sphere's three, positive, and
+/// `c0 = -r^2`; S9f.3b: a cone's two positive and its radius row `t h . X -
+/// (t e_h - r)` negative, `c0 = 0`).
+pub(super) fn terms(other: &Other) -> (Vec<(V, R, R)>, R) {
+    let mut rows: Vec<(V, R, R)> = other
         .g
         .iter()
         .zip(&other.e)
-        .map(|(g, e)| {
-            let q = dot(g, &f.n);
-            let (gx, gy) = (dot(g, &f.x), dot(g, &f.y));
-            let c0 = dot(g, &f.o) - e;
+        .map(|(g, e)| (g.clone(), e.clone(), int(1)))
+        .collect();
+    if other.t == zero() {
+        return (rows, -(&other.r * &other.r));
+    }
+    rows.push((
+        scale(&other.h, &other.t),
+        &other.t * &other.eh - &other.r,
+        int(-1),
+    ));
+    (rows, zero())
+}
+
+/// The other quadric's rows along a curve over an arc, `w = h0 + h1 S_x +
+/// h2 S_y` (`h = None`: free, the ruling's `w` coefficient kept apart): per
+/// row `P_i + q_i w`, `(P_i(s), q_i, s_i)` with its sign (`terms`).
+fn rows(f: &Affine, arc: &BArc, other: &Other, h: Option<&[R; 3]>) -> Vec<(Vec<R>, R, R)> {
+    terms(other)
+        .0
+        .into_iter()
+        .map(|(g, e, sign)| {
+            let q = dot(&g, &f.n);
+            let (gx, gy) = (dot(&g, &f.x), dot(&g, &f.y));
+            let c0 = dot(&g, &f.o) - e;
             match h {
-                None => (combine(&c0, &gx, &arc.x, &gy, &arc.y), q),
+                None => (combine(&c0, &gx, &arc.x, &gy, &arc.y), q, sign),
                 Some(h) => (
                     combine(
                         &(&c0 + &q * &h[0]),
@@ -183,24 +212,25 @@ fn rows(f: &Affine, arc: &BArc, other: &Other, h: Option<&[R; 3]>) -> Vec<(Vec<R
                         &arc.y,
                     ),
                     zero(),
+                    sign,
                 ),
             }
         })
         .collect()
 }
 
-/// `A`, `B(s)` and `C(s)` of the cylinder's function along the arc's
+/// `A`, `B(s)` and `C(s)` of the other quadric's function along the arc's
 /// rulings.
 fn ruling_coeffs(f: &Affine, arc: &BArc, other: &Other) -> (R, Vec<R>, Vec<R>) {
     let rs = rows(f, arc, other, None);
-    let a = rs.iter().fold(zero(), |acc, (_, q)| acc + q * q);
-    let b = rs
-        .iter()
-        .fold(Vec::new(), |acc: Vec<R>, (p, q)| padd(&acc, &pscale(p, q)));
+    let a = rs.iter().fold(zero(), |acc, (_, q, s)| acc + s * q * q);
+    let b = rs.iter().fold(Vec::new(), |acc: Vec<R>, (p, q, s)| {
+        padd(&acc, &pscale(p, &(q * s)))
+    });
     let c = rs
         .iter()
-        .fold(vec![-(&other.r * &other.r)], |acc: Vec<R>, (p, _)| {
-            padd(&acc, &pmul(p, p))
+        .fold(vec![terms(other).1], |acc: Vec<R>, (p, _, s)| {
+            padd(&acc, &pscale(&pmul(p, p), s))
         });
     (a, b, c)
 }
@@ -210,20 +240,21 @@ fn ruling_coeffs(f: &Affine, arc: &BArc, other: &Other) -> (R, Vec<R>, Vec<R>) {
 pub(super) fn along_curve(f: &Affine, arc: &BArc, other: &Other, h: &[R; 3]) -> Vec<R> {
     rows(f, arc, other, Some(h))
         .iter()
-        .fold(vec![-(&other.r * &other.r)], |acc: Vec<R>, (p, _)| {
-            padd(&acc, &pmul(p, p))
+        .fold(vec![terms(other).1], |acc: Vec<R>, (p, _, s)| {
+            padd(&acc, &pscale(&pmul(p, p), s))
         })
 }
 
 /// `A`, `B` and `C` at a rational profile point.
 fn coeffs_at(f: &Affine, other: &Other, uv: &[R; 2]) -> (R, R, R) {
     let base = add(&add(&f.o, &scale(&f.x, &uv[0])), &scale(&f.y, &uv[1]));
-    let (mut a, mut b, mut c) = (zero(), zero(), -(&other.r * &other.r));
-    for (g, e) in other.g.iter().zip(&other.e) {
+    let (rows, c0) = terms(other);
+    let (mut a, mut b, mut c) = (zero(), zero(), c0);
+    for (g, e, s) in &rows {
         let (p, q) = (dot(g, &base) - e, dot(g, &f.n));
-        a += &q * &q;
-        b += &q * &p;
-        c += &p * &p;
+        a += s * &q * &q;
+        b += s * &q * &p;
+        c += s * &p * &p;
     }
     (a, b, c)
 }
@@ -298,6 +329,9 @@ impl PartialEq for WallMeetCrv {
             && self.other.g == o.other.g
             && self.other.e == o.other.e
             && self.other.r == o.other.r
+            && self.other.t == o.other.t
+            && self.other.h == o.other.h
+            && self.other.eh == o.other.eh
             && self.plus == o.plus
             && self.window == o.window
             && self.range[0].cmp(&o.range[0]) == Ordering::Equal
@@ -306,14 +340,18 @@ impl PartialEq for WallMeetCrv {
 }
 
 impl WallMeetCrv {
-    /// Half `F`'s derivative in `w` at a point: `sum q_i (g_i . X - e_i)`.
+    /// Half `F`'s derivative in `w` at a point: `sum s_i q_i (g_i . X -
+    /// e_i)`.
     fn slope(&self, x: &QV) -> Qd {
-        self.other
-            .g
+        terms(&self.other)
+            .0
             .iter()
-            .zip(&self.other.e)
-            .fold(Qd::rat(zero()), |acc, (g, e)| {
-                acc.add(&qdot(x, g).add_r(&-e.clone()).scale(&dot(g, &self.f.n)))
+            .fold(Qd::rat(zero()), |acc, (g, e, s)| {
+                acc.add(
+                    &qdot(x, g)
+                        .add_r(&-e.clone())
+                        .scale(&(dot(g, &self.f.n) * s)),
+                )
             })
     }
 
@@ -423,8 +461,8 @@ impl WallMeetCrv {
         let d = self.seg.deriv(&tau);
         let ds = qadd(&qscale(&self.f.x, &d[0]), &qscale(&self.f.y, &d[1]));
         let mut ft = Qd::rat(zero());
-        for (g, e) in self.other.g.iter().zip(&self.other.e) {
-            ft = ft.add(&qdot(x, g).add_r(&-e.clone()).mul(&qdot(&ds, g)));
+        for (g, e, s) in &terms(&self.other).0 {
+            ft = ft.add(&qdot(x, g).add_r(&-e.clone()).mul(&qdot(&ds, g)).scale(s));
         }
         let fw = self.slope(x);
         let t: QV = std::array::from_fn(|k| ds[k].mul(&fw).sub(&ft.scale(&self.f.n[k])));
@@ -444,24 +482,28 @@ impl WallMeetCrv {
     pub(super) fn samples(&self, t0: f64, t1: f64, n: usize) -> Vec<[f64; 3]> {
         let fl = |v: &V| v.clone().map(|x| rational_f64(&x));
         let (o, x, y, nn) = (fl(&self.f.o), fl(&self.f.x), fl(&self.f.y), fl(&self.f.n));
-        let rows: Vec<([f64; 3], f64)> = self
-            .other
-            .g
+        let (signed, c0) = terms(&self.other);
+        let rows: Vec<([f64; 3], f64, f64)> = signed
             .iter()
-            .zip(&self.other.e)
-            .map(|(g, e)| (fl(g), rational_f64(e)))
+            .map(|(g, e, s)| (fl(g), rational_f64(e), rational_f64(s)))
             .collect();
-        let r = rational_f64(&self.other.r);
+        // (`-r^2` in binary64 as before for a cylinder or a sphere.)
+        let c0 = if self.other.t == zero() {
+            let r = rational_f64(&self.other.r);
+            -r * r
+        } else {
+            rational_f64(&c0)
+        };
         // `A`, `B` and `C` at a profile point, and its world point at `w`.
         let abc = |u: f64, v: f64| {
             let base: [f64; 3] = [0, 1, 2].map(|k| o[k] + x[k] * u + y[k] * v);
-            let (mut a, mut b, mut c) = (0.0, 0.0, -r * r);
-            for (g, e) in &rows {
+            let (mut a, mut b, mut c) = (0.0, 0.0, c0);
+            for (g, e, s) in &rows {
                 let p = g[0] * base[0] + g[1] * base[1] + g[2] * base[2] - e;
                 let q = g[0] * nn[0] + g[1] * nn[1] + g[2] * nn[2];
-                a += q * q;
-                b += q * p;
-                c += p * p;
+                a += s * q * q;
+                b += s * q * p;
+                c += s * p * p;
             }
             (base, a, b, c)
         };
@@ -539,7 +581,9 @@ pub(super) fn meeting(
 }
 
 /// A spline wall's meeting with the quadric `other` of face `cf` of `cm`
-/// (a cylinder's on a crossing axis, S9f.2b; a sphere's, S9f.3a).
+/// (a cylinder's on a crossing axis, S9f.2b; a sphere's, S9f.3a; a cone's,
+/// S9f.3b, its `A` nonzero of either sign: for `A < 0` the discriminant
+/// vanishes only where a ruling passes the apex, refused before).
 pub(super) fn meeting_with(
     sm: &Prism,
     sf: usize,
@@ -549,7 +593,6 @@ pub(super) fn meeting_with(
     other: Other,
     partner: Partner,
 ) -> Result<CylPair> {
-    debug_assert!(other.t == zero(), "a cone's radius term is S9f.3b's");
     let f = &sm.f;
     let rs = match seg.roots_of(&|arc: &BArc| {
         let (a, b, cc) = ruling_coeffs(f, arc, &other);
@@ -568,10 +611,10 @@ pub(super) fn meeting_with(
         let uv = seg.point(&root.tau);
         let base = qpoint(f, &uv[0], &uv[1], &Qd::rat(zero()));
         let (mut a, mut b) = (zero(), Qd::rat(zero()));
-        for (g, e) in other.g.iter().zip(&other.e) {
+        for (g, e, s) in &terms(&other).0 {
             let q = dot(g, &f.n);
-            a += &q * &q;
-            b = b.add(&qdot(&base, g).add_r(&-e.clone()).scale(&q));
+            a += s * &q * &q;
+            b = b.add(&qdot(&base, g).add_r(&-e.clone()).scale(&(&q * s)));
         }
         let w = b.scale(&(int(-1) / a));
         let x = qpoint(f, &uv[0], &uv[1], &w);
@@ -668,13 +711,13 @@ pub(super) fn meeting_with(
     })))
 }
 
-/// A binary64 view of the cylinder's function along an arc's rulings: each
-/// row's `P_i(s)`, `P_i'(s)` and `q_i`, `A`, `r^2`, the arc's coordinates'
-/// derivatives and the frame's `x`, `y` and `|n|`.
+/// A binary64 view of the other quadric's function along an arc's rulings:
+/// each row's `P_i(s)`, `P_i'(s)`, `q_i` and sign, `A`, the constant, the
+/// arc's coordinates' derivatives and the frame's `x`, `y` and `|n|`.
 struct View {
-    rows: Vec<(Vec<f64>, Vec<f64>, f64)>,
+    rows: Vec<(Vec<f64>, Vec<f64>, f64, f64)>,
     a: f64,
-    r2: f64,
+    c0: f64,
     dx: Vec<f64>,
     dy: Vec<f64>,
     fx: [f64; 3],
@@ -684,17 +727,24 @@ struct View {
 
 impl View {
     fn new(f: &Affine, arc: &BArc, other: &Other) -> Self {
-        let rows: Vec<(Vec<f64>, Vec<f64>, f64)> = rows(f, arc, other, None)
+        let rows: Vec<(Vec<f64>, Vec<f64>, f64, f64)> = rows(f, arc, other, None)
             .iter()
-            .map(|(p, q)| (floats(p), floats(&derivative(p)), rational_f64(q)))
+            .map(|(p, q, s)| {
+                (
+                    floats(p),
+                    floats(&derivative(p)),
+                    rational_f64(q),
+                    rational_f64(s),
+                )
+            })
             .collect();
-        let a = rows.iter().map(|(_, _, q)| q * q).sum();
+        let a = rows.iter().map(|(_, _, q, s)| s * q * q).sum();
         let fl = |v: &V| v.clone().map(|x| rational_f64(&x));
         let n = fl(&f.n);
         Self {
             rows,
             a,
-            r2: rational_f64(&(&other.r * &other.r)),
+            c0: rational_f64(&terms(other).1),
             dx: floats(&arc.dx),
             dy: floats(&arc.dy),
             fx: fl(&f.x),
@@ -706,13 +756,13 @@ impl View {
     /// The gentler branch's slope at the arc's parameter `s`: `|dw/ds|`
     /// over the profile's speed (infinite where `D <= 0`).
     fn slope(&self, s: f64) -> f64 {
-        let (mut b, mut db, mut c, mut dc) = (0.0, 0.0, -self.r2, 0.0);
-        for (p, dp, q) in &self.rows {
+        let (mut b, mut db, mut c, mut dc) = (0.0, 0.0, self.c0, 0.0);
+        for (p, dp, q, sg) in &self.rows {
             let (pv, dpv) = (horner(p, s), horner(dp, s));
-            b += q * pv;
-            db += q * dpv;
-            c += pv * pv;
-            dc += 2.0 * pv * dpv;
+            b += sg * q * pv;
+            db += sg * q * dpv;
+            c += sg * pv * pv;
+            dc += 2.0 * sg * pv * dpv;
         }
         let d = b * b - self.a * c;
         if d.is_nan() || d <= 0.0 {
@@ -911,8 +961,8 @@ fn height_piece(
 }
 
 /// How far (binary64) a point inside a face lies from the planes of its
-/// caps or rims: a prism wall's heights, a sphere's ends; infinite for
-/// other faces.
+/// caps or rims: a prism wall's heights, a sphere's ends, a cone's rims'
+/// planes (S9f.3b); infinite for other faces.
 fn inner_gap(pr: &Prism, fi: usize, x: &QV) -> f64 {
     match (pr.faces[fi].kind, &pr.ball) {
         (FaceKind::Wall(..), _) if pr.ball.is_none() && pr.funnel.is_none() => {
@@ -929,6 +979,11 @@ fn inner_gap(pr: &Prism, fi: usize, x: &QV) -> f64 {
                 .flatten()
                 .map(|h| (along - rational_f64(h) * nn).abs() / nn.sqrt())
                 .fold(f64::INFINITY, f64::min)
+        }
+        // S9f.3b: a cone's wall, from its rims' planes.
+        (FaceKind::ConeWall, _) => {
+            let w = pr.f.local_q(x)[2].to_f64();
+            w.abs().min((rational_f64(&pr.hi) - w).abs())
         }
         _ => f64::INFINITY,
     }
@@ -1024,16 +1079,35 @@ pub(super) fn conic_wall(
         // none when the plane misses the segment.
         return match seg.roots_of(&|arc: &BArc| combine(&k, &mx, &arc.x, &my, &arc.y))? {
             Roots::At(rs) if rs.is_empty() => Ok(EdgeMeet::None),
-            Roots::At(_) => tower_points(cc, a, b, sf, seg),
+            Roots::At(_) => tower_points(cc, a, b, sf, seg, Partner::Cylinder),
             Roots::Along | Roots::Partly => {
                 Err(Error::OutOfDomain("a spline wall along a plane (S9f)"))
             }
         };
     }
+    conic_crease(&other_of(&cm.f, c, r), cc, a, b, sf, seg)
+}
+
+/// Where a conic `cc + a cos + b sin` meets a spline wall on its plane's
+/// crease, the plane not holding the wall's axis: the roots of the quadric
+/// `other`'s function along the crease (a quadric holding the conic: its
+/// cylinder's, S9f.2b; S9f.3b: a cone's rim's own elliptic cylinder),
+/// each placed by its angle on the conic.
+pub(super) fn conic_crease(
+    other: &Other,
+    cc: &V,
+    a: &V,
+    b: &V,
+    sf: &Affine,
+    seg: &SplineSeg,
+) -> Result<EdgeMeet> {
+    let m = cross(a, b);
+    let mn = dot(&m, &sf.n);
+    let k = dot(&m, &sub(&sf.o, cc));
+    let (mx, my) = (dot(&m, &sf.x), dot(&m, &sf.y));
     let inv = int(-1) / &mn;
     let h = [&k * &inv, &mx * &inv, &my * &inv];
-    let other = other_of(&cm.f, c, r);
-    let rs = match seg.roots_of(&|arc: &BArc| along_curve(sf, arc, &other, &h))? {
+    let rs = match seg.roots_of(&|arc: &BArc| along_curve(sf, arc, other, &h))? {
         Roots::At(rs) => rs,
         Roots::Along | Roots::Partly => return Err(tangent_curve()),
     };
@@ -1078,7 +1152,14 @@ fn rotations() -> Vec<[R; 2]> {
 /// of the tower `Q(alpha)(sqrt(delta))`); a point found on two arcs (a
 /// knot) is kept once. A repeated root on the segment is the circle tangent
 /// to a generatrix there: the meeting's turning point on the cap's rim.
-fn tower_points(cc: &V, a: &V, b: &V, sf: &Affine, seg: &SplineSeg) -> Result<EdgeMeet> {
+pub(super) fn tower_points(
+    cc: &V,
+    a: &V,
+    b: &V,
+    sf: &Affine,
+    seg: &SplineSeg,
+    partner: Partner,
+) -> Result<EdgeMeet> {
     let (l0, la, lb) = (sf.local(cc), sf.local_dir(a), sf.local_dir(b));
     let mut out: Vec<(Pos, QV)> = Vec::new();
     for arc in &seg.arcs {
@@ -1133,7 +1214,7 @@ fn tower_points(cc: &V, a: &V, b: &V, sf: &Affine, seg: &SplineSeg) -> Result<Ed
                     continue;
                 }
                 if repeated {
-                    return Err(Partner::Cylinder.edge());
+                    return Err(partner.edge());
                 }
                 if !out.iter().any(|(_, y)| qv_eq(y, &x)) {
                     out.push((Pos::Ang(cs), x));

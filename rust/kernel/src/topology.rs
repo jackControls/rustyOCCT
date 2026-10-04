@@ -569,6 +569,14 @@ impl Toric {
 /// S9f.3a: with `other_sphere` the other surface is the sphere `|w| =
 /// other_radius` about `other`'s origin (its stored frame's), every row of
 /// the world's axes in the function instead of the cylinder's two.
+///
+/// S9f.3b: with a nonzero `other_half_angle` `a2` the other surface is the
+/// cone `|(w . x2, w . y2)| = other_radius + (w . n2) tan a2` (its stored
+/// base frame, `other_radius` zero at an apex), the function along the
+/// ruling the cylinder's less the radius term's square: `a = m_x^2 +
+/// m_y^2 - (tan m_n)^2`, of either sign, and `b^2 - a c = sum_i (r0 m_i -
+/// rd w_i)^2 - (w_x m_y - w_y m_x)^2` (`r0 = other_radius + tan w_n`, `rd =
+/// tan m_n`; Lagrange's identity with the radius row).
 #[derive(Debug, Clone, PartialEq)]
 pub struct WallMeet {
     pub wall: crate::BSplineSurface3,
@@ -576,6 +584,8 @@ pub struct WallMeet {
     pub other_radius: f64,
     /// The other surface a sphere (S9f.3a): `|w| = other_radius`.
     pub other_sphere: bool,
+    /// The other surface a cone's half angle (S9f.3b), zero otherwise.
+    pub other_half_angle: f64,
     pub sign: f64,
     pub start: f64,
     pub sweep: f64,
@@ -652,10 +662,16 @@ impl WallMeet {
         }
     }
 
+    /// A cone's radius row (S9f.3b): its axis and its half angle's
+    /// tangent; none for a cylinder or a sphere.
+    pub fn radius_row(&self) -> Option<(crate::Vec3, f64)> {
+        (self.other_half_angle != 0.0).then(|| (self.other.normal(), self.other_half_angle.tan()))
+    }
+
     /// The other surface's function along the ruling at `u`, `t` from its
     /// foot.
     pub fn along(&self, u: f64, t: f64) -> f64 {
-        self.along_with(&self.rows(), &self.other_rows(), u, t)
+        self.along_with(&self.rows(), &self.other_rows(), self.radius_row(), u, t)
     }
 
     /// `along` on the wall's and the other surface's rows made once.
@@ -663,13 +679,18 @@ impl WallMeet {
         &self,
         wall: &([Vec<Point3>; 2], [f64; 2], Vec<f64>),
         other: &[crate::Vec3],
+        radial: Option<(crate::Vec3, f64)>,
         u: f64,
         t: f64,
     ) -> f64 {
         let (foot, dir) = self.ruling_with(wall, u);
         let w = foot + dir * t - self.other.origin();
         let sum: f64 = other.iter().map(|e| w.dot(*e).powi(2)).sum();
-        sum - self.other_radius * self.other_radius
+        let r = match radial {
+            Some((n2, tan)) => self.other_radius + tan * w.dot(n2),
+            None => self.other_radius,
+        };
+        sum - r * r
     }
 
     /// A graph over `v` (S9f.2b.2): `u` at `t = v - v0`, the root of
@@ -677,8 +698,8 @@ impl WallMeet {
     /// stay well inside), sampled across the window for a change of sign
     /// where its ends show none.
     pub fn root_at(&self, t: f64) -> f64 {
-        let (wall, other) = (self.rows(), self.other_rows());
-        let along = |u: f64, t: f64| self.along_with(&wall, &other, u, t);
+        let (wall, other, radial) = (self.rows(), self.other_rows(), self.radius_row());
+        let along = |u: f64, t: f64| self.along_with(&wall, &other, radial, u, t);
         let [mut a, mut b] = self.window.unwrap_or([0.0, 1.0]);
         let (mut fa, mut fb) = (along(a, t), along(b, t));
         if fa.signum() == fb.signum() && fa != 0.0 && fb != 0.0 {
@@ -736,11 +757,17 @@ impl WallMeet {
         let w = foot - self.other.origin();
         let rows = self.other_rows();
         let wm: Vec<(f64, f64)> = rows.iter().map(|e| (w.dot(*e), dir.dot(*e))).collect();
-        let a: f64 = wm.iter().map(|(_, m)| m * m).sum();
-        let b: f64 = wm.iter().map(|(w, m)| w * m).sum();
-        let c = wm.iter().map(|(w, _)| w * w).sum::<f64>() - self.other_radius * self.other_radius;
-        // `b^2 - a c` as `a r^2 - |P x M|^2` (Lagrange's identity, over the
-        // rows' pairs).
+        // The radius term along the ruling, `r0 + rd t` (S9f.3b: a cone's).
+        let (r0, rd) = match self.radius_row() {
+            Some((n2, tan)) => (self.other_radius + tan * w.dot(n2), tan * dir.dot(n2)),
+            None => (self.other_radius, 0.0),
+        };
+        let a: f64 = wm.iter().map(|(_, m)| m * m).sum::<f64>() - rd * rd;
+        let b: f64 = wm.iter().map(|(w, m)| w * m).sum::<f64>() - r0 * rd;
+        let c = wm.iter().map(|(w, _)| w * w).sum::<f64>() - r0 * r0;
+        // `b^2 - a c` as `sum_i (r0 m_i - rd w_i)^2 - |P x M|^2` (Lagrange's
+        // identity, over the rows' pairs; `a r^2 - |P x M|^2` without a
+        // radius row).
         let mut cross2 = 0.0;
         for i in 0..wm.len() {
             for j in i + 1..wm.len() {
@@ -748,7 +775,12 @@ impl WallMeet {
                 cross2 += x * x;
             }
         }
-        let d = (a * self.other_radius * self.other_radius - cross2).max(0.0);
+        let lead: f64 = if rd == 0.0 {
+            a * r0 * r0
+        } else {
+            wm.iter().map(|(w, m)| (r0 * m - rd * w).powi(2)).sum()
+        };
+        let d = (lead - cross2).max(0.0);
         let sq = self.sign * d.sqrt();
         let (p, m) = (-b + sq, -b - sq);
         let t = if p.abs() >= m.abs() { p / a } else { c / m };
