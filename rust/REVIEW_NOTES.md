@@ -6264,7 +6264,8 @@ Decisions for S9, recorded before its code (2026-09-28):
     `bfuse_complex/C9`, `E9`, `I6`, `N1`, `N9`), 17 are refused by S9's
     rules (12 faces within the resolution of one plane, 3 edges meeting, 2
     tangencies), 1 by a cylinders' section within the resolution of a node
-    and 6 as S9e.4b.4's (two circles at a joint). Pending: the DRAW survey.
+    and 6 as S9e.4b.4's (two circles at a joint). DRAW survey: that of
+    S9f.2b.2 and S9e.4b.1, below.
     Campaign: the boolean campaign at `788f8861`, with S9e.4b.1, S9e.4b.2,
     S9f.3a, S9f.3b and the near-parallel guards (600 s, a sampled replay,
     `SPLINE_SPHERE` and `SPLINE_CONE` off) clean, 909 runs, the slowest
@@ -6563,7 +6564,9 @@ Decisions for S9, recorded before its code (2026-09-28):
     next Boolean's argument (one solid); `bfuse_complex/D9`, a
     corner the two files share stored 1e-13 apart (`z = 56.5616376719611`
     and `56.561637671961`), a face thinner than the resolution (S9's rule).
-    Pending: the DRAW survey. Campaign: the boolean campaign at `788f8861`,
+    DRAW survey: that of S9e.4b.2, S9f.3a and S9f.3b, below (the trial's 4
+    cases registered, the other 3 refused as it found). Campaign: the
+    boolean campaign at `788f8861`,
     with S9e.4b.1, S9e.4b.2, S9f.3a, S9f.3b and the near-parallel guards
     (600 s, a sampled replay, `SPLINE_SPHERE` and `SPLINE_CONE` off) clean,
     909 runs, the slowest input 45 s under AddressSanitizer at load 3 to 7
@@ -7137,8 +7140,9 @@ Decisions for S9, recorded before its code (2026-09-28):
     on (48 s, `d7599dbe`). Every check of `HANDOFF.md`'s "Verification"
     holds: fmt, clippy, the 1.85 check, the suite, the table's 26 comparisons
     and the four beside it with 0 failures, unittest (296 tests) and the
-    ledger. Pending: the DRAW survey and the speed of the certified
-    integrals beside a loop's turning points before it can be switched on.
+    ledger. DRAW survey: that of S9e.4b.2, S9f.3a and S9f.3b, below (no
+    case reaches it). Pending: the speed of the certified integrals beside
+    a loop's turning points before it can be switched on.
     Campaign: the boolean campaign at `788f8861`, with S9e.4b.1, S9e.4b.2,
     S9f.3a, S9f.3b and the near-parallel guards (600 s, a sampled replay,
     `SPLINE_SPHERE` and `SPLINE_CONE` off) clean, 909 runs, the slowest
@@ -7399,14 +7403,61 @@ Decisions for S9, recorded before its code (2026-09-28):
     failing, with the switch off (the slowest 18 s) and on (16 s). Every
     check asked holds: fmt, clippy, the 1.85 check, the suite, the five
     spline comparisons with 0 failures, the generator's `--check` under
-    Python 3.9 and 3.12 and its unit tests. Pending: the DRAW survey, the
-    Linux record of the capture, and the speed of the loops' certified
+    Python 3.9 and 3.12 and its unit tests. DRAW survey: that of S9e.4b.2,
+    S9f.3a and S9f.3b, below (no case reaches it). Pending: the Linux
+    record of the capture, and the speed of the loops' certified
     integrals before `SPLINE_SPHERE` and `SPLINE_CONE` can be switched on.
     Campaign: the boolean campaign at `788f8861`, with S9e.4b.1, S9e.4b.2,
     S9f.3a, S9f.3b and the near-parallel guards (600 s, a sampled replay,
     `SPLINE_SPHERE` and `SPLINE_CONE` off) clean, 909 runs, the slowest
     input 45 s under AddressSanitizer at load 3 to 7 (`e36969f1`, an
     existing corpus input).
+  * **DRAW survey of S9e.4b.2, S9f.3a and S9f.3b (2026-10-04,
+    `UPSTREAM_TESTS.md`).** At `12b6c176` (`s9c2-kernel` with S9e.4b.2,
+    S9f.3a, S9f.3b and the near-parallel guards merged; the public dataset,
+    120 seconds a case, four at once). The 1,802 self-contained cases of
+    the Boolean group on both backends: every status and every refusal's
+    reason the last survey's (`93e6fcd0`) field for field, 987 evaluating
+    and registered, 592 refused, 223 unsupported on both, none failing or
+    timing out, the sentinels refused as before, `bopfuse_simple/ZP6` and
+    the `gdml_public` tori too. The 1,814 cases restoring a shape for a
+    Boolean on the Rust adapter, and the 171 the import reaches on native
+    DRAW too: only S9e.4b.2's 7 polyhedra move, as its trial found: 4
+    evaluate on both backends with every check (`bugs/modalg_1/buc60803`,
+    `bug102_1`, `bug102_2`: two frustums of a pyramid, the second on the
+    first's top, fused; `bopfuse_complex/K5`: a frustum on a box's top), 2
+    are refused by the adapter as the next Boolean's argument
+    (`bugs/modalg_2/bug578_1`, `_2`: the frustums' bases 6.6e-7 to 2.0e-6
+    apart, their fuse two solids) and 1 by S9's rules (`bfuse_complex/D9`:
+    a corner the two files share stored 1e-13 apart, a face thinner than
+    the resolution). Of the 171: 27 evaluate on both backends, 56 are
+    refused by S9's rules, 77 are bodies none of the kernel's constructions,
+    6 S9e.4b.4's, 3 spline bodies (S9f) and 2 arguments of several solids;
+    24 are unsupported natively too (`checksection`, `bopargcheck`). No other
+    status or reason moves; the same 8 time out at their first restores.
+    S9f.3a's and S9f.3b's spline walls reach no case: the Boolean group's
+    spline solids are the 96 cases converting boxes by `nurbsconvert` (no
+    sphere or cone among them), which neither host runs, and the 3
+    restored spline bodies (`bcut_complex/L9`, `O1`, `bfuse_complex/N7`)
+    are refused as imported spline faces (S9f) before any wall meets a
+    partner. The near-parallel guards (two cylinders, a spline wall and a
+    cylinder, two tori within rounding of parallel or of one surface)
+    refuse no case: none of their reasons appears, and no registered case's
+    status or value moves. The volume audit (`vprops` and `sprops` before
+    each `checkprops`): the 4 new cases' volume, area and centre native
+    DRAW's to its printed digits (`buc60803`'s 805,475,092.02 and
+    18,606,382.71; `K5`'s area 448,769.50, its `checkprops -s` 448,769);
+    the 1,010 registered cases' values the last audit's (`93e6fcd0`'s
+    1,003 and 7) bit for bit on both backends; the same 35 disagreements,
+    native off in each. The 4 are registered (1,100 cases; the contract
+    holds for them on both backends within 30 seconds, Rust 0.4 to 1.1 s);
+    the ledger does not change (no `checknbshapes` among them). A full
+    contract run of the manifest holds on both backends with the dataset
+    (30 seconds a case), the slowest Boolean case 16.9 seconds
+    (`bopcommon_simple/ZK8`, on a host at load 5 to 10; `boptuc_simple/ZK8`
+    16.2 in the last survey, 13.3 here), the restore cases 0.1 to 3.9 s,
+    the rollex 2.1 to 3.0. No case fails, crashes or panics; no kernel
+    change.
   * **Where S9 stands (2026-09-30, paused).** Done and pushed: S9a to S9d
     (every sub-step with its DRAW survey and a clean campaign), S9e.1
     (campaign clean at `51c08edf`) and S9e.2 (`8e060c67`), S9f's decisions

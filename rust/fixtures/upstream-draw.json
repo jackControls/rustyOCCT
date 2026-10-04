@@ -588,6 +588,7 @@
     "tests/boolean/bopcut_simple/ZO9": "2e9ad1a965ee6c3de115c6e7a5e4fec0f93bbf43448892bebc2782500084de8d",
     "tests/boolean/bopcut_simple/ZP1": "9fb21fe11bbd4dad5e06299fade8409ac440fe17e1e42d7f475f4bb8d1b3878a",
     "tests/boolean/bopcut_simple/ZP2": "63be45fc0ab33120318c57577fdca477b28342cae41541981c2ec373c9f27809",
+    "tests/boolean/bopfuse_complex/K5": "1e05207d8bc45683ae508bd8174cee34de2bb9b2d1b24445ec749a5d6a21da12",
     "tests/boolean/bopfuse_simple/A1": "18b1b65a93ab37daba14ac6bdc6c8ca8fb6a8df7b60d865930106057e680f0e1",
     "tests/boolean/bopfuse_simple/A2": "9afd1302c422fa047ff2e05998cfd0b225dba0cd5b0b8046421d3190ca74662c",
     "tests/boolean/bopfuse_simple/A3": "aa0df30c55a6ed18aba46139b66183dc141794ca9a2125aff9953cf558317302",
@@ -1060,6 +1061,9 @@
     "tests/bugs/heal/bug33171_1": "24d4cefea7037e44cc571fe9501c8c220bd16b94e34d63acd886fa63983c47c3",
     "tests/bugs/modalg_1/begin": "16a2a51b965d83e675a1c75b1aed0eb0de88905d9ffdc81d57466305d0cf9c8a",
     "tests/bugs/modalg_1/buc60684": "771b69a7c29a5140a0fd370d0f17a6a27551b67e8fa19233b48c56f90d4245cb",
+    "tests/bugs/modalg_1/buc60803": "b8383c40b500b7ed8ea5fa00fd97609314af9594037936ae72890ba8a3566c7a",
+    "tests/bugs/modalg_1/bug102_1": "23ddacfbe8fa089946067b609567920cbebb0147c3423efa44acd3bf18dc2ff4",
+    "tests/bugs/modalg_1/bug102_2": "dadb33d18974f48c8c8e2ec1f38dc646921e88abfa5949e54d3e29335df7cfae",
     "tests/bugs/modalg_6/begin": "16a2a51b965d83e675a1c75b1aed0eb0de88905d9ffdc81d57466305d0cf9c8a",
     "tests/bugs/modalg_6/bug21427": "36bc85505fe46de0b983ef2562494e63012fc10f17d337054e2410fef829c7c2",
     "tests/bugs/modalg_6/bug27264_1": "ecc5bff3b3d2bea7a6c12b760198e7f669a147d0b94c285d5dc0727cf85eec5d",
@@ -7808,6 +7812,34 @@
       "expected_rust": "viewer_skipped",
       "expected_occt": "viewer_skipped",
       "purpose": "S9e.4b.1: restored solids of the public dataset given to a Boolean, prisms whose arcs' ends round off their circles in their caps' frames, each end taken onto its circle in the exact model: a prism of planes and a cylindrical wall and a cylinder, bfuse; checkprops -s; its checkview is recorded."
+    },
+    {
+      "path": "tests/bugs/modalg_1/buc60803",
+      "data": true,
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9e.4b.2: restored solids of the public dataset given to a Boolean, polyhedra other than prisms decided on their stored vertices: two frustums of a pyramid (buc60803a and b), the second standing on the first's top, fused (bfuse a b); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/bugs/modalg_1/bug102_1",
+      "data": true,
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9e.4b.2: restored solids of the public dataset given to a Boolean, polyhedra other than prisms decided on their stored vertices: two frustums of a pyramid (buc60803a and b), the second standing on the first's top, fused (bfuse sh1 sh2); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/bugs/modalg_1/bug102_2",
+      "data": true,
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9e.4b.2: restored solids of the public dataset given to a Boolean, polyhedra other than prisms decided on their stored vertices: two frustums of a pyramid (buc60803a and b), the second standing on the first's top, fused (bfuse sh2 sh1); checkprops -s and checkshape; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bopfuse_complex/K5",
+      "data": true,
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9e.4b.2: restored solids of the public dataset given to a Boolean, polyhedra other than prisms decided on their stored vertices: a frustum standing on a box's top (pro9481b on pro9481a: an imported prism of lines against an imported polyhedron), bop and bopfuse; checkprops -s; its checkview is recorded."
     }
   ],
   "derived_sources": {

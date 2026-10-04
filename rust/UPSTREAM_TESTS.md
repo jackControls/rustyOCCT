@@ -168,13 +168,13 @@ group, and stale success records are removed before each run.
 | `boolean/bcut_simple/G8` | Unsupported | Viewer skipped | A semi-infinite prism of an exploded face (`explode`, `SemiInf`) |
 
 There are **five original geometry tests passing on both backends** and
-1,014 more evaluated on both with their image commands recorded
+1,018 more evaluated on both with their image commands recorded
 (`buc60769`, S7's `lowalgos/intss` cases `bug23177_1`, `bug23177_2` and
 `bug24648`, 987 Boolean cases of S9a, S9a.2, S9b.1, S9b.2, S9c.1, S9c.2a,
 S9c.2b.2, S9d.1, S9d.2, S9d.3a, S9d.1's pole follow-up, S9d.3b.1,
-S9d.4b.2a and S9e.2, and 23 Booleans of restored solids, 16 of S9e.4a and
-7 of S9e.4b.1; S9c.2b.1, S9e.3a, S9f.1, S9e.3b, S9f.2a, S9f.2b.1 and
-S9f.2b.2 add none).
+S9d.4b.2a and S9e.2, and 27 Booleans of restored solids, 16 of S9e.4a, 7
+of S9e.4b.1 and 4 of S9e.4b.2; S9c.2b.1, S9e.3a, S9f.1, S9e.3b, S9f.2a,
+S9f.2b.1, S9f.2b.2, S9f.3a and S9f.3b add none).
 S8e registers the upstream `bsplit` group as capability sentinels: `boolean/splitter/A5`
 and `B5` and the 22 `bugs` cases that call `bsplit` (with `bug29333_1` and
 `bug29333_2`, registered before). They need S9's general builder: tools that
@@ -1532,6 +1532,56 @@ contract run of the manifest (both backends, the dataset present, 30
 seconds a case) holds for every case, the slowest Boolean case 16.2
 seconds (`boptuc_simple/ZK8`, on a host at load 7 to 31; 12.8 in the last
 survey), the restore cases 0.2 to 5.0, the rollex 4.4.
+
+**S9e.4b.2, S9f.3a and S9f.3b: the Boolean group and the restore cases.**
+Both sets were run again after S9e.4b.2 (imported polyhedra other than
+prisms decided on their stored vertices, `polyhedra/imported.rs`), S9f.3a
+and S9f.3b (spline prisms against spheres, caps and zones, and against
+cones and frustums, in any position, `curved/spline_sphere.rs`,
+`curved/spline_cone.rs`) and the near-parallel guards (two cylinders, a
+spline wall and a cylinder, two tori within rounding of parallel or of one
+surface, `Degenerate`) (2026-10-04, at `12b6c176`, the public dataset, 120
+seconds a case, four at once). The 1,802 self-contained cases of the
+Boolean group on both backends: every status and every refusal's reason
+is the last survey's (`93e6fcd0`) field for field, 987 evaluating, every
+one registered, 592 refused, 223 unsupported on both; none fails or times
+out, the sentinels, `bopfuse_simple/ZP6` and the `gdml_public` tori are
+refused as before. The 1,814 restore cases on the Rust adapter, and the
+171 the import reaches on native DRAW too: only S9e.4b.2's 7 polyhedra
+move, as its trial found. 4 evaluate on both backends with every check
+(`bugs/modalg_1/buc60803`, `bug102_1` and `bug102_2`, two frustums of a
+pyramid, the second on the first's top, fused in either order;
+`bopfuse_complex/K5`, a frustum on a box's top); `bugs/modalg_2/bug578_1`
+and `_2` are refused as the next Boolean's argument (frustums whose bases
+lie 6.6e-7 to 2.0e-6 apart, above the resolution: their fuse is two
+solids) and `bfuse_complex/D9` by S9's rules (a corner the two files share
+stored 1e-13 apart: a face thinner than the resolution). Of the 171 the
+import reaches, 27 now evaluate on both backends, 56 are refused by S9's
+rules, 77 are bodies none of the kernel's constructions, 6 are S9e.4b.4's,
+3 have spline faces (S9f) and 2 give the next Boolean several solids;
+native DRAW does not evaluate 24 of them (`checksection`, `bopargcheck`).
+Every other status and reason is the last survey's, the same 8 timing out
+at their first restores. No case reaches S9f.3a's or S9f.3b's spline
+walls: the group's spline solids are the 96 cases converting boxes by
+`nurbsconvert` (no sphere or cone among them), which neither host runs,
+and the three restored spline bodies (`bcut_complex/L9`, `O1`,
+`bfuse_complex/N7`) are refused before any wall meets a partner. No
+refusal of the near-parallel guards appears in either set.
+
+The volume audit (`vprops` and `sprops` before each `checkprops`, both
+backends): the 4 new cases' volume, area and centre agree with native
+DRAW's to its printed digits; the 1,010 registered cases' values are the
+last audit's bit for bit on both backends (the 1,003 and the 7 of the
+survey at `93e6fcd0`), so neither S9e.4b.2, S9f.3a, S9f.3b nor the
+near-parallel guards move a registered value; the same 35 disagreements
+as before, native off in each. The 4 are registered (`data`,
+`viewer_skipped` on both; 1,100 cases): the contract holds for them on
+both backends within 30 seconds (Rust 0.4 to 1.1 s). The ledger does not
+change. A full contract run of the manifest (both backends, the dataset
+present, 30 seconds a case) holds for every case, the slowest Boolean case
+16.9 seconds (`bopcommon_simple/ZK8`, on a host at load 5 to 10;
+`boptuc_simple/ZK8` 16.2 in the last survey, 13.3 here), the restore cases
+0.1 to 3.9, the rollex 2.1 to 3.0.
 
 Three more `intss` cases run on the Rust adapter but are not registered,
 because the contract admits no failing status: `bug23178`, `bug28222_2` and
