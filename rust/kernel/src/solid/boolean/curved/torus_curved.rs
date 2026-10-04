@@ -87,7 +87,7 @@ impl Bi {
             return;
         }
         let t = self.terms.entry(e).or_insert_with(zero);
-        *t += k;
+        *t = crate::rational::add(t, k);
         if *t == zero() {
             self.terms.remove(&e);
         }
@@ -104,7 +104,7 @@ impl Bi {
     fn scale(&self, k: &R) -> Self {
         let mut out = Self::default();
         for (e, x) in &self.terms {
-            out.add_term(*e, &(x * k));
+            out.add_term(*e, &crate::rational::mul(x, k));
         }
         out
     }
@@ -118,7 +118,7 @@ impl Bi {
         for (a, x) in &self.terms {
             for (b, y) in &o.terms {
                 let e = [a[0] + b[0], a[1] + b[1], a[2] + b[2], a[3] + b[3]];
-                out.add_term(e, &(x * y));
+                out.add_term(e, &crate::rational::mul(x, y));
             }
         }
         out.reduce()
@@ -183,12 +183,14 @@ impl Bi {
     /// (`of_v` false) or of `v`: of degree two (four for two tori in frames
     /// not exactly orthonormal).
     fn at(&self, of_v: bool, cs: &[R; 2]) -> Form {
-        let pow = |x: &R, n: u32| (0..n).fold(int(1), |acc, _| acc * x);
+        use crate::rational::{add, mul};
+        let pow = |x: &R, n: u32| (0..n).fold(int(1), |acc, _| mul(&acc, x));
         let (i, j, k, l) = if of_v { (2, 3, 0, 1) } else { (0, 1, 2, 3) };
         let mut terms: BTreeMap<(u32, u32), R> = BTreeMap::new();
         for (e, x) in &self.terms {
-            let c = x * pow(&cs[0], e[i]) * pow(&cs[1], e[j]);
-            *terms.entry((e[k], e[l])).or_insert_with(zero) += c;
+            let c = mul(&mul(x, &pow(&cs[0], e[i])), &pow(&cs[1], e[j]));
+            let t = terms.entry((e[k], e[l])).or_insert_with(zero);
+            *t = add(t, &c);
         }
         Form::from_terms(terms, self.degree(!of_v).max(2))
     }
@@ -1256,9 +1258,69 @@ fn h_coefficients(g: &Bi, cu: &Chart, cv: &Chart) -> [Poly; 5] {
     out
 }
 
-/// The discriminant of the binary quartic `sum h_j s^j` (coefficients
-/// polynomials in `t`).
+/// A positive multiple of the discriminant of the binary quartic `sum h_j
+/// s^j` (coefficients polynomials in `t`): its roots and degree, all its
+/// callers take. The discriminant is homogeneous of degree six in the
+/// coefficients, so with them over one common denominator it is computed
+/// in integers (that denominator's sixth power the multiple).
 pub(super) fn quartic_discriminant(h: &[Poly; 5]) -> Poly {
+    use num_bigint::BigInt;
+    let den = h.iter().flatten().fold(BigInt::from(1), |l, c| {
+        let g = crate::rational::gcd(&l, c.denom());
+        l / g * c.denom()
+    });
+    let ints: Vec<Vec<BigInt>> = h
+        .iter()
+        .map(|p| p.iter().map(|c| c.numer() * (&den / c.denom())).collect())
+        .collect();
+    let imul = |x: &[BigInt], y: &[BigInt]| -> Vec<BigInt> {
+        if x.is_empty() || y.is_empty() {
+            return Vec::new();
+        }
+        let mut out = vec![BigInt::from(0); x.len() + y.len() - 1];
+        for (i, p) in x.iter().enumerate() {
+            for (j, q) in y.iter().enumerate() {
+                out[i + j] += p * q;
+            }
+        }
+        out
+    };
+    let (a, b, c, d, e) = (&ints[4], &ints[3], &ints[2], &ints[1], &ints[0]);
+    let mut acc: Vec<BigInt> = Vec::new();
+    let mut term = |k: i64, fs: &[&Vec<BigInt>]| {
+        let p = fs
+            .iter()
+            .fold(vec![BigInt::from(k)], |acc, q| imul(&acc, q));
+        if acc.len() < p.len() {
+            acc.resize(p.len(), BigInt::from(0));
+        }
+        for (x, y) in acc.iter_mut().zip(p) {
+            *x += y;
+        }
+    };
+    term(256, &[a, a, a, e, e, e]);
+    term(-192, &[a, a, b, d, e, e]);
+    term(-128, &[a, a, c, c, e, e]);
+    term(144, &[a, a, c, d, d, e]);
+    term(-27, &[a, a, d, d, d, d]);
+    term(144, &[a, b, b, c, e, e]);
+    term(-6, &[a, b, b, d, d, e]);
+    term(-80, &[a, b, c, c, d, e]);
+    term(18, &[a, b, c, d, d, d]);
+    term(16, &[a, c, c, c, c, e]);
+    term(-4, &[a, c, c, c, d, d]);
+    term(-27, &[b, b, b, b, e, e]);
+    term(18, &[b, b, b, c, d, e]);
+    term(-4, &[b, b, b, d, d, d]);
+    term(-4, &[b, b, c, c, c, e]);
+    term(1, &[b, b, c, c, d, d]);
+    trim(acc.into_iter().map(R::from_integer).collect())
+}
+
+/// The discriminant of the binary quartic `sum h_j s^j` term by term in
+/// rationals (`quartic_discriminant` times a positive constant).
+#[cfg(test)]
+fn quartic_discriminant_rational(h: &[Poly; 5]) -> Poly {
     let (a, b, c, d, e) = (&h[4], &h[3], &h[2], &h[1], &h[0]);
     let term = |k: i64, fs: &[&Poly]| {
         pscale(
@@ -2180,5 +2242,35 @@ pub(super) fn circ_torus(circ: &super::sphere::Circ, t: &Prism, res: f64) -> Res
                 .collect(),
         )),
         other => Ok(other),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn r(a: i64, b: i64) -> R {
+        R::new(a.into(), b.into())
+    }
+
+    /// The discriminant in integers over a common denominator is the
+    /// rational one times one positive constant.
+    #[test]
+    fn integer_discriminant_is_a_positive_multiple() {
+        let h: [Poly; 5] = [
+            vec![r(3, 7), r(-5, 11), r(2, 3)],
+            vec![r(-1, 2), zero(), r(7, 5), r(1, 13)],
+            vec![r(9, 4), r(-2, 9)],
+            vec![r(1, 6), r(5, 3), r(-4, 7), zero(), r(3, 2)],
+            vec![r(-8, 5), r(1, 1)],
+        ];
+        let fast = quartic_discriminant(&h);
+        let slow = quartic_discriminant_rational(&h);
+        assert_eq!(fast.len(), slow.len());
+        let k = fast.last().unwrap() / slow.last().unwrap();
+        assert!(k > zero());
+        for (f, s) in fast.iter().zip(&slow) {
+            assert_eq!(f, &(s * &k));
+        }
     }
 }

@@ -315,25 +315,48 @@ impl MeetCrv {
     /// Whether a point lies on the piece (on both cylinders, on its branch
     /// and within its run, ends included).
     pub(super) fn on(&self, x: &QV) -> bool {
+        // The carrier's local `(u, v)` and its radius there `rho` (a cone's
+        // `r + k w`): `place` is `(u, v) / rho`, and every test below is one
+        // of `rho (u, v)`'s direction, so none divides (S9e.3b: an inverse
+        // in a field of degree eight for every test of a vertex).
+        let d = qsub(x, &qv(&self.o));
+        let (u, v) = (qdot(&d, &self.k[0]), qdot(&d, &self.k[1]));
+        let rho = if self.slope == zero() {
+            Qd::rat(self.r.clone())
+        } else {
+            qdot(&d, &self.k[2]).scale(&self.slope).add_r(&self.r)
+        };
         // A cone carrier's apex height, where its circle is the apex alone
         // (never a meeting's point: an apex on the other is refused before;
         // S9d.3c's replays: a sphere's pole there).
-        if self.slope != zero() {
-            let d = qsub(x, &qv(&self.o));
-            let rho = qdot(&d, &self.k[2]).scale(&self.slope).add_r(&self.r);
-            if rho.sign() == Ordering::Equal {
-                return false;
-            }
+        let s = rho.sign();
+        if s == Ordering::Equal {
+            return false;
         }
-        let cs = self.place(x);
-        let unit = cs[0].mul(&cs[0]).add(&cs[1].mul(&cs[1])).add_r(&int(-1));
+        // `cos^2 + sin^2 = 1`, times `rho^2`.
+        let unit = u.mul(&u).add(&v.mul(&v)).sub(&rho.mul(&rho));
         if unit.sign() != Ordering::Equal {
             return false;
         }
         if self.other().value(x).sign() != Ordering::Equal {
             return false;
         }
-        let branch = qqdot(&self.grad_other(x), &self.dir(&cs)).sign();
+        // `(cos, sin)` scaled by `|rho|`, and the ruling's direction by
+        // `rho`: `rho n + k (u x + v y)`.
+        let cs = if s == Ordering::Less {
+            [u.neg(), v.neg()]
+        } else {
+            [u.clone(), v.clone()]
+        };
+        let radial = qadd(&qscale(&self.x, &u), &qscale(&self.y, &v));
+        let dir = qadd(
+            &qscale(&self.n, &rho),
+            &radial.map(|c| c.scale(&self.slope)),
+        );
+        let mut branch = qqdot(&self.grad_other(x), &dir).sign();
+        if s == Ordering::Less {
+            branch = branch.reverse();
+        }
         let want = if self.plus {
             Ordering::Greater
         } else {
