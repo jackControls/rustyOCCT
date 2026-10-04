@@ -5165,6 +5165,14 @@ Decisions for S9, recorded before its code (2026-09-28):
     Campaign: the boolean campaign at `b0b9adc6` (600 s, a sampled
     replay) clean, 995 runs, the slowest input 21 s under
     AddressSanitizer (`GIVEN_MET` off).
+    Amendment (the parallel track "The degree-eight arrangement's
+    arithmetic", branch `given-met-speed`): `GIVEN_MET` is on, the
+    corpus's slowest chained operations reaching a given meeting about a
+    third of their time before; the 8 "points not separated by a
+    projection" of the replay with it on (two cylinders with parallel axes
+    meeting in two rulings a sphere crosses at equal heights) are separated
+    by a projection along a ruled surface's place sheared by its angle's
+    chart, tried after the ones above.
   * **S9f.2a refined, before its code (2026-10-03).** Why it is refused
     today: `curved::spline_pairs` refuses a spline prism against a prism
     holding arcs or circles ("a spline prism against a prism with arcs in
@@ -7709,6 +7717,124 @@ Decisions for S9, recorded before its code (2026-09-28):
   these inputs near the target's 60 s, as the corpus's slowest inputs
   already are; the moved result's second validation and the validator's
   exact spline points are the next levers.
+* **The degree-eight arrangement's arithmetic (S9e.3b, S9d.4b.2), done:
+  `GIVEN_MET` on.** The fuzz target's chained partners centred on a given
+  result's meeting of two curved faces were off for time: the corpus's
+  slowest chained operations reaching one took 60 to 71 s an input under
+  AddressSanitizer, 100 to 230 s on a host at load 7 to 31 (`41833cc4`,
+  `487e8cac`, `972c8678`, `0fbd6914`, `442d4917`: 122.8, 112.5, 106.8, 97.2
+  and 92.1 G instructions with debug assertions, 12.3, 23.8, 13.2, 4.7 and
+  7.4 G with the switch off). Profiles (macOS `sample` of the replay with
+  debug assertions and of the sanitizer's target; instructions retired as
+  the load-free measure): `0fbd6914` spent 32% in the exact signs of a
+  field's numbers (`Gen::sign_of`), 1,126 Sturm-Tarski queries every one of
+  them nonzero: the binary64 filter's interval held zero where an element's
+  coefficients of 600 to 1,500 bits cancel, and some isolators were still
+  `1e66` wide after their 96 bisections (an eliminant's root isolated over
+  its root bound); 29% of it hashing the kept signs' rational keys
+  (`num_rational` hashes a rational by its continued fraction, a division
+  per partial quotient); 29% a torus meeting (`torus_far`, S9d.4b.2's
+  discriminants of degree 24 and their roots). `41833cc4`: the signs 39%,
+  binary64 views of field numbers 13% (`Qd::to_f64`: a rational interval
+  Horner, then the value at isolators bisected up to 1,280 times).
+  `487e8cac`: a cone carrier's place on its meeting 49% (an inverse in the
+  field by Euclid's algorithm over the rationals at every test of a vertex),
+  the rationals' gcds 53% of all. `972c8678`: the arrangement's direction
+  tests (`cross2`, the exact products of a dot product in the field) 32%.
+  Under AddressSanitizer the same, and `num_rational`'s reductions by
+  Stein's binary gcd, whose every comparison libFuzzer's instrumentation
+  traces, 19%; and libFuzzer runs again any input whose run ends with more
+  allocations than frees (the kernel's kept arrangements and meetings), so a
+  wall time is about two runs. Changes, every decision exact as before: (a)
+  each generator's root as a dyadic point `x / 2^b` within `2^-b` of it
+  (Newton's iteration in integers from the isolator narrowed to `2^-24`,
+  certified by the polynomial's opposite signs at `(x -+ 1) / 2^b` inside
+  the isolator), and an element's sign from its exact value at that point
+  with the absolute coefficients' derivative bounding the rest, at three
+  precisions from its size, before Sturm-Tarski (a zero still goes the exact
+  way); the binary64 filters' interval about that point, or the isolator
+  narrowed by its width's bits too; the kept signs keyed by integers; (b)
+  inverses kept per generator, and found by the extended Euclid of integer
+  pseudo-divisions; (c) binary64 views rounded to nearest from dyadic
+  enclosures at 96, 384 and 1,536 bits after the point (both ends rounding
+  alike), the isolator's view where they do not (a rational root, zero); (d)
+  a field's numbers as integer numerators over one denominator, a product
+  reduced by its content once (the old way a gcd per coefficient and
+  operation), a sum not at all (compared by value, keyed by its one form),
+  in one vector so an element is no larger beside a rational; (e) a dot
+  product's sign in a field (the arrangement's `cross2`, `dot2`), a surd's
+  and a tower's, from the dyadic enclosures before the exact products; (f) a
+  given meeting's fibre of two quadratics by their combination without the
+  leading terms and the point homogenized at its root (one inverse where
+  Euclid's algorithm over the field took four), and a cone carrier's `on`
+  test on the direction its radius scales (no inverse); (g) rational
+  arithmetic in lowest terms by the crate's Lehmer gcd where
+  `num_rational`'s operators reduced by Stein's (S9d.4b.2's charts, forms,
+  polynomial sums and remainders, the nearest binary64 of a rational, an
+  isolator's ends after bisection), products of polynomials in integers over
+  their denominators, and a quartic's discriminant in integers over one
+  common denominator (a positive multiple: its roots); (h) coprime integer
+  polynomials certified modulo `2^61 - 1` before the subresultant chain, and
+  a polynomial's gcd with its derivative where it is a chart's `(1 + t^2)^m`
+  times a part certainly square-free that way (`(1 + t^2)^(m - 1)`, the
+  chain's). Every sign, inverse, gcd and point is the one the exact path
+  gives; a binary64 view is now the number rounded to nearest (before, the
+  middle of a narrow interval, or a value at a bisected isolator: one ulp
+  off in 30 of 1,458 views on `972c8678`, each checked against the isolator
+  narrowed by 400 bisections more). Tried and dropped: integer products of a
+  one-term operand or of denominators far apart (slower: term by term
+  there), the isolators' bisections jumped by Newton's iteration to the same
+  intervals (1 to 3% fewer instructions, not worth its code). Results,
+  instructions retired with debug assertions (`41833cc4`, `487e8cac`,
+  `972c8678`, `0fbd6914`, `442d4917`, and `e36969f1`, the corpus's slowest,
+  which the switch reaches too): 122.8, 112.5, 106.8, 97.2, 92.1 and 112.1 G
+  before; 69.2, 109.6, 73.2, 60.9, 58.7 and 109.7 with (a)'s signs; 66.3,
+  65.8, 63.3, 60.8, 58.7 and 109.6 with the inverses kept; 50.1, 58.9, 52.1,
+  59.2, 56.6 and 102.3 with (c); 48.2, 60.7, 51.0, 51.5, 49.1 and 88.5 with
+  the integer products and (f); 42.9, 51.4, 43.5, 45.2, 42.5 and 82.5 with
+  (d)'s integer form; 38.6, 51.0, 40.3, 36.1, 34.3 and 56.2 with (g); 37.0,
+  47.1, 36.2, 33.4, 31.9 and 55.2 with (e) and the integer inverses; 35.8,
+  47.0, 35.2, 31.9, 31.1 and 53.8 with (a)'s Newton start; 34.0, 47.0, 33.3,
+  27.4, 26.7 and 47.7 with (h); 30.0, 42.0, 29.6, 24.0, 24.0 and 43.6 with
+  the sums unreduced: 4.1, 2.7, 3.6, 4.1, 3.8 and 2.6 times fewer. The
+  corpus (1,432 inputs) and the 26 regressions replay with debug assertions
+  and the switch on without a failure, 9.71 T instructions to 7.22 T in all,
+  the slowest 43.6 G (`e36969f1`; 112.1 G before, 90.8 G with the switch
+  off). Under AddressSanitizer with the target's own options (wall and CPU,
+  user plus system, time), on a host at load 25 to 50 (other agents' builds
+  and replays): the inputs the switch reaches 33 to 62 s wall and 28 to 40 s
+  CPU (`41833cc4`, `487e8cac`, `1745232e` 62, 51 and 59 s wall, 32, 34 and
+  40 s CPU; 186, 142 and 120 s wall, 158, 125 and 105 s CPU before),
+  `e36969f1` 87 and 54 s (225 and 192 s before); at an intermediate commit
+  (`32297b78`, 10 to 20% heavier than the last) on a host at load 6 to 7, 21
+  to 35 s wall, `e36969f1` 50 s (52 s in the last campaign, with the switch
+  off). Each of these is two runs: libFuzzer runs an input again, its leak
+  detection on, when a run ends with more allocations than frees (the
+  kernel's kept arrangements and meetings): `1745232e` 20 s CPU with
+  `-detect_leaks=0` against 40 s; the target's per-run limit sees one. The
+  "points not separated by a projection" limits: the corpus's 8 were two
+  cylinders with parallel axes, meeting in two rulings a sphere crosses at
+  equal heights (each point shares its ruling with one and its height with
+  another, so no ruling's angle or height separates them); `triple.rs` now
+  projects along each ruled surface's place sheared by its angle's chart
+  (the place plus `c` times the chart's variable, `c` = 1, -1, 2 and 1/2),
+  after the projections before: 4 of their chained operations evaluate, 4
+  are refused as degenerate (thin pieces, two meetings within rounding),
+  none as a limit (`triple.rs`'s test of the four points `(3, +-4, +-3)`).
+  Checks: fmt, clippy, the 1.85 check, the release suite (555 tests), the
+  fuzz crate's fmt and check; every comparison unchanged with 0 failures
+  (`compare_given_met_boolean.py` 8/42, `compare_given_curved_boolean.py`
+  25/23, `compare_given_boolean.py` 36/0, `compare_chained_boolean.py` 24/6,
+  `compare_torus_boolean.py` 11/24, `compare_torus_segment_boolean.py`
+  15/14, `compare_torus_curved_boolean.py` 15/29,
+  `compare_torus_parts_boolean.py` 16/37, `compare_cones_loops_boolean.py`
+  5/26, `compare_spheres_turned_boolean.py` 0/18). Open: a campaign with the
+  switch on; the leak-check rerun (clearing the kernel's kept arrangements
+  at an input's end would halve the sanitizer's wall time on curved inputs);
+  the certified integrals along a cone carrier's meetings (`487e8cac`: 58%
+  of its instructions in `projection::along`); the torus meetings' root
+  sampling (`e36969f1`'s `all_roots`, 72 bisections a root at each of 17 to
+  49 samples).
 * **The DRAW adapter's curved primitives (S9d.4b.2b), done in S9d.4b's
   survey.** It built every `ptorus`, `psphere` and `pcone` with the same
   ids, so two tori (and two spheres or cones) were refused as solids

@@ -16,8 +16,10 @@ then for the near-parallel audit (branch `near-parallel-audit`), S9e.4b.2
 (branch `s9e4b2`) and S9f.3b (branch `s9f3b`), each over `s9c2-kernel` at
 `b903f3fa`, then for the DRAW survey of S9e.4b.2, S9f.3a and S9f.3b (branch
 `s9-draw-5`) and the loops' certified integrals (branch `loop-integrals`),
-each over `s9c2-kernel` at `12b6c176`, and a Linux fix of prism walls'
-frames (branch `linux-imported-arcs`).
+each over `s9c2-kernel` at `12b6c176`, a Linux fix of prism walls'
+frames (branch `linux-imported-arcs`), and the arithmetic of fields of
+degree eight (branch `given-met-speed`, over `s9c2-kernel` at
+`abebe31c`).
 
 ## Where things stand
 
@@ -127,7 +129,11 @@ frames (branch `linux-imported-arcs`).
   changes, the volume audit's values bit for bit). Campaign clean at
   `b0b9adc6`.
   A given `WallMeet` edge never reaches it (a given result with spline
-  walls is refused before, S9f).
+  walls is refused before, S9f). Its fuzz switch `GIVEN_MET` is on since
+  the arithmetic of fields of degree eight was sped up (branch
+  `given-met-speed`; REVIEW_NOTES.md's "The degree-eight arrangement's
+  arithmetic"), and a given meeting's points on two rulings at equal
+  heights are separated by a sheared projection there.
 - **S9e.4a implemented** (branch `s9e4`, pushed at `b032c1be`): imported solids
   (a `.brep` or STEP body without a construction, `Solid::imported_with`)
   whose stored topology is a prism of lines, arcs and circles, a sphere,
@@ -193,17 +199,26 @@ frames (branch `linux-imported-arcs`).
 
 ## What is open, in order
 
-1. **`GIVEN_MET` in the fuzz target** (S9e.3b is done: its DRAW survey,
-   with S9f.2a's and S9f.2b.1's, changed nothing, and its campaign at
-   `b0b9adc6` is clean). The switch is off: the corpus's slowest
-   chained operations reaching a given meeting take 60 to 71 s an input
-   under AddressSanitizer. The next lever is the degree-eight
-   arrangement arithmetic (the second arrangement's predicates on vertices
-   in fields of degree eight), after which `GIVEN_MET` can be switched on
-   and a campaign run with it. Of the chained operations the debug replay
-   with it on reaches, the "points not separated by a projection" limits
-   (`triple.rs`'s retries exhausted: a fibre of two points under every
-   shear tried) are the one open refusal worth a closer look.
+1. **A campaign with `GIVEN_MET` on** (branch `given-met-speed`, not yet
+   merged or pushed). The switch is on: the arithmetic of fields of degree
+   eight was sped up (REVIEW_NOTES.md's "The degree-eight arrangement's
+   arithmetic": signs from a certified dyadic point before Sturm-Tarski,
+   numbers as integers over one denominator, fewer inverses, rational
+   reductions by the crate's Lehmer gcd, coprimality modulo a prime), the
+   corpus's slowest chained operations reaching a given meeting 24 to 42 G
+   instructions with debug assertions (92 to 123 G before), under
+   AddressSanitizer 21 to 35 s at load 6 to 7 (60 to 71 s before), each two
+   runs (libFuzzer's leak check); the corpus and its regressions replay
+   with debug assertions and the switch on without a failure. The "points
+   not separated by a projection" limits were two cylinders with parallel
+   axes and a sphere crossing their two common rulings at equal heights; a
+   sheared projection separates them now (4 evaluate, 4 degenerate). Next:
+   merge, push, CI, and the boolean campaign with the switch on. Open
+   levers, in REVIEW_NOTES.md: libFuzzer's leak-check rerun (an input whose
+   run keeps the kernel's cached arrangements runs twice under the
+   sanitizer), the certified integrals along a cone carrier's meetings, the
+   torus meetings' root sampling (`e36969f1`, the corpus's slowest input,
+   43.6 G).
 2. **The Linux records and reviews** of the recaptured
    `occt-boolean-spline-crossing-preimplementation` and of the
    spline-sphere, spline-cone, imported-polyhedra and imported-arcs
@@ -244,7 +259,9 @@ torus among three curved surfaces or two tori in one plane at a given
 meeting (S9e.3b, by cost).
 
 Parallel tracks (`REVIEW_NOTES.md`, "Parallel tracks"): the degree-eight
-arrangement arithmetic (the next lever for speed); the fuzz switches below.
+arrangement's arithmetic is done (`GIVEN_MET` on); its open levers (the
+leak-check rerun, the integrals along a cone carrier's meetings, the torus
+meetings' root sampling); the fuzz switches below.
 
 ## Open user decisions
 
@@ -345,7 +362,7 @@ changes, every generator importing it runs with `--check --workers 4`. Then:
 - a replay with debug assertions of every boolean corpus input and every
   `rust/fuzz/regressions/boolean*` file, one process per file: build with
   `CARGO_INCREMENTAL=0 RUSTFLAGS="-C debug-assertions" cargo +nightly-2026-09-22 build --release --example replay_boolean` in `rust/fuzz`;
-  for a switch that is off (`GIVEN_MET`, `TORUS_PAIRS`, ...), replay once
+  for a switch that is off (`TORUS_PAIRS`, `CONE_PAIRS`, ...), replay once
   more with it switched on in the source, which reaches the paths it gates;
 - `target/math-oracle-venv/bin/python -m unittest discover -s rust/tools -p 'test_*.py'` (the system Python lacks mpmath);
 - `python3 rust/tools/run_upstream_tests.py --ledger`;
@@ -370,11 +387,11 @@ changes, every generator importing it runs with `--check --workers 4`. Then:
   on the exact arithmetic, and Linux runners about 2.6 times this host; the
   boolean target's limit is 60 s an input. Configurations too slow for it are
   switched off in `rust/fuzz/src/boolean.rs` (`TORUS_PAIRS`, `CONE_PAIRS`,
-  `TURNED_PARTS`, `GIVEN_MET`; `GIVEN_CURVED`, `GIVEN_ROUND`, `GIVEN_BALL`,
+  `TURNED_PARTS`; `GIVEN_CURVED`, `GIVEN_ROUND`, `GIVEN_BALL`, `GIVEN_MET`,
   `SPLINE_WALLS`, `SPLINE_PARALLEL`, `SPLINE_CROSSING`, `SPLINE_SPHERE`,
-  `SPLINE_CONE` and `IMPORTED` are on; the four off switches on
-  at once make corpus input `6fab9d41` fail `vertex_off_curve`, each alone
-  clean, open). A heavily loaded
+  `SPLINE_CONE` and `IMPORTED` are on; the three off switches and
+  `GIVEN_MET` on at once make corpus input `6fab9d41` fail
+  `vertex_off_curve`, each alone clean, open). A heavily loaded
   host makes campaigns time out spuriously; run them on a quiet machine.
 - **Keep debug-assertion tests optimized.** CI runs them with
   `CARGO_PROFILE_DEV_OPT_LEVEL=2`; time new test files that way.
