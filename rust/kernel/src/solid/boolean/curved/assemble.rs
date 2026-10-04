@@ -568,6 +568,23 @@ pub(super) fn assemble_made(arr: &Arr, op: Op2) -> Result<Vec<(Component, Made)>
     Ok(out)
 }
 
+/// A pcurve moved by `k` in `u` (a turn of a periodic surface's lift).
+fn shift_u(pcurve: &mut Curve2, k: f64) {
+    match pcurve {
+        Curve2::Projection(pr) => {
+            for lift in &mut pr.lifts {
+                lift.x += k;
+            }
+        }
+        Curve2::LineSegment { start, end } => {
+            start.x += k;
+            end.x += k;
+        }
+        Curve2::Sinusoid { start, .. } => *start += k,
+        _ => {}
+    }
+}
+
 #[allow(clippy::too_many_arguments)]
 fn build_component(
     arr: &Arr,
@@ -736,20 +753,7 @@ fn build_component(
                     continue;
                 };
                 for f in fins.clone() {
-                    let k = TAU * turns;
-                    match &mut p.fins[f.0].pcurve {
-                        Curve2::Projection(pr) => {
-                            for lift in &mut pr.lifts {
-                                lift.x += k;
-                            }
-                        }
-                        Curve2::LineSegment { start, end } => {
-                            start.x += k;
-                            end.x += k;
-                        }
-                        Curve2::Sinusoid { start, .. } => *start += k,
-                        _ => {}
-                    }
+                    shift_u(&mut p.fins[f.0].pcurve, TAU * turns);
                 }
             }
         }
@@ -765,31 +769,48 @@ fn build_component(
                     Loop::Vertex(_) => 0,
                 })
                 .sum();
-            // S9e.4b.3a: a loop through a pole (a meridian circle, an
-            // imported piece's plane through the axis) turns half a turn
-            // there either way: it winds none, the face closing on it.
+            // S9e.4b.3a: a loop through the pole it would close at (a
+            // meridian circle, an imported piece's plane through the axis)
+            // turns half a turn there either way: it winds none, the face
+            // closing on it. Its pcurves from that pole on are lifted by
+            // the turn, so the half turn there is the face's (`u` gaps at
+            // a pole are free; the closing fin's are not).
+            let north = (total == 1) == (sense == Orientation::Forward);
+            let at = frame.point(Point2::default(), if north { *radius } else { -*radius });
             let tol = arr.models[0].tolerance.linear();
-            let ends = [*radius, -*radius].map(|h| frame.point(Point2::default(), h));
-            let through = loop_ids.iter().copied().find(|l| match &p.loops[l.0] {
-                Loop::Edges { fins, winding } => {
-                    winding[0] == total
-                        && fins.iter().any(|f| {
-                            let e = &p.edges[p.fins[f.0].edge.0];
-                            [e.start, e.end].into_iter().flatten().any(|v| {
-                                ends.iter()
-                                    .any(|&q| (p.vertices[v.0].position - q).length() <= tol)
-                            })
-                        })
-                }
-                Loop::Vertex(_) => false,
+            let through = loop_ids.iter().find_map(|&l| match &p.loops[l.0] {
+                Loop::Edges { fins, winding } if winding[0] == total => fins
+                    .iter()
+                    .position(|f| {
+                        let fin = &p.fins[f.0];
+                        let e = &p.edges[fin.edge.0];
+                        let start = match fin.sense {
+                            Orientation::Forward => e.start,
+                            Orientation::Reversed => e.end,
+                        };
+                        start.is_some_and(|v| (p.vertices[v.0].position - at).length() <= tol)
+                    })
+                    // Closing at the pole (its first fin's start), no lift.
+                    .map(|k| {
+                        (
+                            l,
+                            if k > 0 {
+                                fins[k..].to_vec()
+                            } else {
+                                Vec::new()
+                            },
+                        )
+                    }),
+                _ => None,
             });
-            if let (1, Some(l)) = (total.abs(), through) {
+            if let (1, Some((l, after))) = (total.abs(), through) {
+                for f in after {
+                    shift_u(&mut p.fins[f.0].pcurve, -TAU * f64::from(total));
+                }
                 if let Loop::Edges { winding, .. } = &mut p.loops[l.0] {
                     winding[0] -= total;
                 }
             } else if total.abs() == 1 {
-                let north = (total == 1) == (sense == Orientation::Forward);
-                let at = frame.point(Point2::default(), if north { *radius } else { -*radius });
                 let vid = VertexId(p.vertices.len());
                 p.vertices.push(Vertex {
                     position: at,
