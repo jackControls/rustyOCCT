@@ -94,9 +94,9 @@ frames (branch `linux-imported-arcs`).
   6 degenerate cases. Its fuzz switch `SPLINE_SPHERE` is on since the
   loops' certified integrals were sped up (the corpus's `d7599dbe` 472 s
   under AddressSanitizer before, 24 to 38 s on a host at load 8 to 22).
-  Campaign clean at `788f8861` with the switch off; its DRAW survey done
-  (that of S9e.4b.2, S9f.3a and S9f.3b: no case reaches it, the group's
-  spline solids boxes by `nurbsconvert`).
+  Campaign clean at `788f8861` with the switch off and at `cfeab65d`
+  with it on; its DRAW survey done (that of S9e.4b.2, S9f.3a and S9f.3b:
+  no case reaches it, the group's spline solids boxes by `nurbsconvert`).
 - **S9f.3b implemented** (branch `s9f3b`, merged into `s9c2-kernel`): spline prisms
   against cones and frustums in any position, either the object
   (`curved/spline_cone.rs`): S9f.2b's meeting with the cone's radius row of
@@ -114,8 +114,9 @@ frames (branch `linux-imported-arcs`).
   21 results and refusing the 6 degenerate cases. Its fuzz switch
   `SPLINE_CONE` is on since the loops' certified integrals were sped up
   (the slowest variant 97 s under AddressSanitizer before, 23 to 33 s on a
-  host at load 8 to 22). Campaign clean at `788f8861` with the switch off;
-  its DRAW survey done (as S9f.3a's: no case reaches it).
+  host at load 8 to 22). Campaign clean at `788f8861` with the switch off
+  and at `cfeab65d` with it on; its DRAW survey done (as S9f.3a's: no
+  case reaches it).
 - **S9e.3b implemented** (branch `s9e3b`, over `507b8054`, with
   `s9c2-kernel` at `c8e37abe` merged in; not yet pushed): a given result's
   meeting of two curved faces (`Meet`, `Rise`, `Toric`) or a cone's or
@@ -203,28 +204,17 @@ frames (branch `linux-imported-arcs`).
    with it on reaches, the "points not separated by a projection" limits
    (`triple.rs`'s retries exhausted: a fibre of two points under every
    shear tried) are the one open refusal worth a closer look.
-2. **A campaign with `SPLINE_SPHERE` and `SPLINE_CONE` on** (both on since
-   the loops' certified integrals were sped up, branch `loop-integrals`;
-   REVIEW_NOTES.md's "Certified integrals beside spline walls' loops": the
-   corpus's own `d7599dbe` took 472 s under AddressSanitizer against a
-   sphere and a cone across a lens hole 97 s; with the loops' polynomials
-   over a range in centred form, the wall pieces' jets shared, constants
-   made once and halves' remainders from their parents' coefficients, the
-   heaviest of 879 variants and of the corpus's 215 inputs reaching either
-   take 16 to 38 s on a host at load 8 to 22, where the corpus's slowest
-   input, unrelated, takes 87 to 138 s; the Linux runners' 2.6 times puts
-   their heaviest near the target's 60 s, as the corpus's slowest inputs
-   already are). The DRAW survey of S9e.4b.2, S9f.3a and S9f.3b is done at
-   `12b6c176`, branch `s9-draw-5`: S9e.4b.2's 4 restore cases registered
-   with native DRAW's volumes, `bug578_1`, `_2` and `bfuse_complex/D9`
-   refused as its trial found, no other status moving, no case reaching
-   S9f.3a's or S9f.3b's spline walls, the near-parallel guards refusing
-   none; their campaign with the switches off, with S9e.4b.1's and the
-   near-parallel guards', is clean at `788f8861`. Also the Linux records
-   and reviews of the recaptured
+2. **The Linux records and reviews** of the recaptured
    `occt-boolean-spline-crossing-preimplementation` and of the
-   spline-sphere, spline-cone and imported-polyhedra captures from CI's
-   run, as every capture's.
+   spline-sphere, spline-cone, imported-polyhedra and imported-arcs
+   captures from CI's run, as every capture's. `SPLINE_SPHERE` and
+   `SPLINE_CONE` are on since the loops' certified integrals were sped up
+   (branch `loop-integrals`; REVIEW_NOTES.md's "Certified integrals beside
+   spline walls' loops"), and the campaign with both on is clean at
+   `cfeab65d` (803 runs, the slowest input 52 s under AddressSanitizer, an
+   existing corpus input reaching neither). The DRAW survey of S9e.4b.2,
+   S9f.3a and S9f.3b is done at `12b6c176` (branch `s9-draw-5`: S9e.4b.2's
+   4 restore cases registered, no case reaching the spline walls).
 3. **S9e.4b**, split in "S9e.4b refined": S9e.4b.1 (arcs rounded off
    their circles) is implemented (above, its DRAW survey and campaign done); **S9e.4b.2**, polyhedra other than prisms, is
    implemented on their stored vertices (above; its DRAW survey and

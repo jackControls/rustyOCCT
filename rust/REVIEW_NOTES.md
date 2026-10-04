@@ -7701,11 +7701,14 @@ Decisions for S9, recorded before its code (2026-09-28):
   22/16, `compare_boolean.py --splines` 33/13). The corpus (1,432 inputs)
   and the 26 regressions replay with debug assertions and both switches
   on without a failure, the slowest 19 s on a host at load 20 to 27 (91 G,
-  inputs unrelated to the switches). Open: a campaign with both switches
-  on; the Linux runners' 2.6 times puts the heaviest of these inputs near
-  the target's 60 s, as the corpus's slowest inputs already are; the
-  moved result's second validation and the validator's exact spline
-  points are the next levers.
+  inputs unrelated to the switches). Campaign: the boolean campaign at
+  `cfeab65d` with both switches on (600 s, a sampled replay) clean, 803
+  runs, the slowest input 52 s under AddressSanitizer at load 5 to 8
+  (`e36969f1`, an existing corpus input reaching neither switch), the next
+  28 s (`a46b4614`). Open: the Linux runners' 2.6 times puts the heaviest of
+  these inputs near the target's 60 s, as the corpus's slowest inputs
+  already are; the moved result's second validation and the validator's
+  exact spline points are the next levers.
 * **The DRAW adapter's curved primitives (S9d.4b.2b), done in S9d.4b's
   survey.** It built every `ptorus`, `psphere` and `pcone` with the same
   ids, so two tori (and two spheres or cones) were refused as solids
