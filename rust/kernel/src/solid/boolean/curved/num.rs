@@ -112,11 +112,25 @@ pub(super) struct Gen {
 /// with one content reduction, not a gcd per coefficient and operation.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub(super) struct Ip {
-    num: Vec<BigInt>,
-    den: BigInt,
+    /// The numerators, then the denominator (one vector: an element of a
+    /// field as small as before beside a rational).
+    v: Vec<BigInt>,
 }
 
 impl Ip {
+    fn raw(mut num: Vec<BigInt>, den: BigInt) -> Self {
+        num.push(den);
+        Ip { v: num }
+    }
+
+    fn num(&self) -> &[BigInt] {
+        &self.v[..self.v.len() - 1]
+    }
+
+    fn den(&self) -> &BigInt {
+        self.v.last().expect("a denominator")
+    }
+
     /// `num / den` (`den` nonzero) in its one form.
     fn new(mut num: Vec<BigInt>, mut den: BigInt) -> Self {
         while num
@@ -126,10 +140,7 @@ impl Ip {
             num.pop();
         }
         if num.is_empty() {
-            return Ip {
-                num,
-                den: BigInt::from(1),
-            };
+            return Ip::raw(num, BigInt::from(1));
         }
         if den.sign() == num_bigint::Sign::Minus {
             den = -den;
@@ -153,7 +164,7 @@ impl Ip {
             }
             den /= &g;
         }
-        Ip { num, den }
+        Ip::raw(num, den)
     }
 
     fn from_rats(p: &[R]) -> Self {
@@ -163,26 +174,26 @@ impl Ip {
 
     /// The rational coefficients.
     fn rats(&self) -> Vec<R> {
-        self.num
+        self.num()
             .iter()
-            .map(|c| ratio(c.clone(), &self.den))
+            .map(|c| ratio(c.clone(), self.den()))
             .collect()
     }
 
     fn len(&self) -> usize {
-        self.num.len()
+        self.num().len()
     }
 
     /// `a + s b`, `s` one or minus one.
     fn add(&self, o: &Self, minus: bool) -> Self {
-        let n = self.num.len().max(o.num.len());
+        let n = self.num().len().max(o.num().len());
         let zero = BigInt::from(0);
-        if self.den == o.den {
+        if self.den() == o.den() {
             let num = (0..n)
                 .map(|i| {
                     let (x, y) = (
-                        self.num.get(i).unwrap_or(&zero),
-                        o.num.get(i).unwrap_or(&zero),
+                        self.num().get(i).unwrap_or(&zero),
+                        o.num().get(i).unwrap_or(&zero),
                     );
                     if minus {
                         x - y
@@ -191,14 +202,14 @@ impl Ip {
                     }
                 })
                 .collect();
-            return Ip::new(num, self.den.clone());
+            return Ip::new(num, self.den().clone());
         }
-        let g = crate::rational::gcd(&self.den, &o.den);
-        let (ka, kb) = (&o.den / &g, &self.den / &g);
+        let g = crate::rational::gcd(self.den(), o.den());
+        let (ka, kb) = (o.den() / &g, self.den() / &g);
         let num = (0..n)
             .map(|i| {
-                let x = self.num.get(i).unwrap_or(&zero) * &ka;
-                let y = o.num.get(i).unwrap_or(&zero) * &kb;
+                let x = self.num().get(i).unwrap_or(&zero) * &ka;
+                let y = o.num().get(i).unwrap_or(&zero) * &kb;
                 if minus {
                     x - y
                 } else {
@@ -206,21 +217,18 @@ impl Ip {
                 }
             })
             .collect();
-        Ip::new(num, &self.den * &ka)
+        Ip::new(num, self.den() * &ka)
     }
 
     fn scale(&self, k: &R) -> Self {
         Ip::new(
-            self.num.iter().map(|c| c * k.numer()).collect(),
-            &self.den * k.denom(),
+            self.num().iter().map(|c| c * k.numer()).collect(),
+            self.den() * k.denom(),
         )
     }
 
     fn neg(&self) -> Self {
-        Ip {
-            num: self.num.iter().map(|c| -c).collect(),
-            den: self.den.clone(),
-        }
+        Ip::raw(self.num().iter().map(|c| -c).collect(), self.den().clone())
     }
 
     fn zero() -> Self {
@@ -229,32 +237,32 @@ impl Ip {
 
     /// The product as polynomials (no reduction by a field's polynomial).
     fn mul(&self, o: &Self) -> Self {
-        if self.num.is_empty() || o.num.is_empty() {
+        if self.num().is_empty() || o.num().is_empty() {
             return Ip::zero();
         }
-        let mut out = vec![BigInt::from(0); self.num.len() + o.num.len() - 1];
-        for (i, x) in self.num.iter().enumerate() {
+        let mut out = vec![BigInt::from(0); self.num().len() + o.num().len() - 1];
+        for (i, x) in self.num().iter().enumerate() {
             if x.sign() == num_bigint::Sign::NoSign {
                 continue;
             }
-            for (j, y) in o.num.iter().enumerate() {
+            for (j, y) in o.num().iter().enumerate() {
                 out[i + j] += x * y;
             }
         }
-        Ip::new(out, &self.den * &o.den)
+        Ip::new(out, self.den() * o.den())
     }
 
     /// Quotient and remainder by `b` (nonzero), by pseudo-division of the
     /// numerators: `L^e A = Q B + R` for `B`'s leading `L`, so `a = (Q d_b /
     /// (L^e d_a)) b + R / (L^e d_a)`.
     fn divmod(&self, b: &Self) -> (Self, Self) {
-        let bn = &b.num;
+        let bn = b.num();
         debug_assert!(!bn.is_empty(), "a nonzero divisor");
-        if self.num.len() < bn.len() {
+        if self.num().len() < bn.len() {
             return (Ip::zero(), self.clone());
         }
         let lead = bn.last().expect("a nonzero divisor");
-        let mut r = self.num.clone();
+        let mut r = self.num().to_vec();
         let mut q = vec![BigInt::from(0); r.len() - bn.len() + 1];
         let mut scale = BigInt::from(1);
         while r.len() >= bn.len() {
@@ -278,9 +286,9 @@ impl Ip {
                 r.pop();
             }
         }
-        let den = &scale * &self.den;
+        let den = &scale * self.den();
         (
-            Ip::new(q.into_iter().map(|c| c * &b.den).collect(), den.clone()),
+            Ip::new(q.into_iter().map(|c| c * b.den()).collect(), den.clone()),
             Ip::new(r, den),
         )
     }
@@ -341,13 +349,13 @@ impl Gen {
     /// operands' denominators, the high terms by `powers`, one content
     /// reduction (the same polynomial as `pmod(pmul(p, q))`).
     fn mul_mod(&self, p: &Ip, q: &Ip) -> Ip {
-        if p.num.is_empty() || q.num.is_empty() {
+        if p.num().is_empty() || q.num().is_empty() {
             return Ip::new(Vec::new(), BigInt::from(1));
         }
         let n = self.poly.len() - 1;
         debug_assert!(p.len() <= n && q.len() <= n, "reduced operands");
-        let (pi, dp) = (&p.num, &p.den);
-        let (qi, dq) = (&q.num, &q.den);
+        let (pi, dp) = (p.num(), p.den());
+        let (qi, dq) = (q.num(), q.den());
         let mut prod = vec![BigInt::from(0); pi.len() + qi.len() - 1];
         for (i, x) in pi.iter().enumerate() {
             if x.sign() == num_bigint::Sign::NoSign {
@@ -435,9 +443,12 @@ impl Gen {
     fn sign_of(&self, p: &Ip) -> Ordering {
         // A few ulps' enclosures of the rationals (no exact comparisons).
         let v = self.fast_root(SIGN_STEPS).and_then(|x| {
-            p.num.iter().rev().try_fold(Fast::exact_f64(0.0), |acc, c| {
-                Some(acc.mul(&x).add(&Fast::near_parts(c, &p.den)?))
-            })
+            p.num()
+                .iter()
+                .rev()
+                .try_fold(Fast::exact_f64(0.0), |acc, c| {
+                    Some(acc.mul(&x).add(&Fast::near_parts(c, p.den())?))
+                })
         });
         match v.and_then(|v| v.sign()) {
             Some(s @ (Ordering::Less | Ordering::Greater)) => s,
@@ -469,7 +480,7 @@ impl Gen {
                 }
                 {
                     let root = self.narrowed(self.filter_steps(SIGN_STEPS));
-                    let ip = IntPolynomial::new(p.num.clone());
+                    let ip = IntPolynomial::new(p.num().to_vec());
                     let s = root.sign_polynomial(&ip);
                     self.exact
                         .lock()
@@ -601,9 +612,9 @@ impl Gen {
         if p.len() < 2 {
             return None;
         }
-        let t = self.size_bits(&p.num, &p.den)?;
+        let t = self.size_bits(p.num(), p.den())?;
         for want in [t + 96, 2 * t + 384, 4 * t + 1536] {
-            let (v, bound, _) = self.near_value(&p.num, want)?;
+            let (v, bound, _) = self.near_value(p.num(), want)?;
             if v.magnitude() > bound.magnitude() {
                 return Some(if v.sign() == num_bigint::Sign::Minus {
                     Ordering::Less
@@ -881,7 +892,7 @@ impl K {
     fn of_ip(g: &Arc<Gen>, p: Ip) -> Self {
         match p.len() {
             0 => K::Rat(zero()),
-            1 => K::Rat(ratio(p.num[0].clone(), &p.den)),
+            1 => K::Rat(ratio(p.num()[0].clone(), p.den())),
             _ => K::Alg(g.clone(), p),
         }
     }
@@ -1032,7 +1043,7 @@ impl K {
             }
             if r0.len() == 1 {
                 // `s0 / r0`.
-                let k = R::new(r0.den.clone(), r0.num[0].clone());
+                let k = R::new(r0.den().clone(), r0.num()[0].clone());
                 return Some(K::of_ip(g, s0.scale(&k).divmod(&Ip::from_rats(&g.poly)).1));
             }
             // A common factor: zero at alpha, or alpha is a root of the
@@ -1050,7 +1061,7 @@ impl K {
         match self {
             K::Rat(a) => Some(Dy::ratio(a.numer(), a.denom(), e)),
             K::Alg(g, p) => {
-                let (num, den) = (&p.num, &p.den);
+                let (num, den) = (p.num(), p.den());
                 let t = g.size_bits(num, den)?;
                 let (v, bound, b) = g.near_value(num, e as u64 + t + 16)?;
                 let s = den << (b as usize * (num.len() - 1));
@@ -1075,7 +1086,7 @@ impl K {
                 // Horner in integers over one denominator, reduced once:
                 // `sum n_i a^i b^(d - i) / (D b^d)` for `m = a / b` and the
                 // coefficients `n_i / D` (the same value).
-                let (n, den) = (&p.num, p.den.clone());
+                let (n, den) = (p.num(), p.den().clone());
                 let (a, b) = (m.numer(), m.denom());
                 let mut b_power = BigInt::from(1);
                 let mut acc = BigInt::from(0);
@@ -1098,9 +1109,12 @@ impl K {
             K::Rat(a) => Fast::near_r(a),
             K::Alg(g, p) => {
                 let x = g.fast_root(steps)?;
-                p.num.iter().rev().try_fold(Fast::exact_f64(0.0), |acc, c| {
-                    Some(acc.mul(&x).add(&Fast::near_parts(c, &p.den)?))
-                })
+                p.num()
+                    .iter()
+                    .rev()
+                    .try_fold(Fast::exact_f64(0.0), |acc, c| {
+                        Some(acc.mul(&x).add(&Fast::near_parts(c, p.den())?))
+                    })
             }
         }
     }
@@ -1658,7 +1672,7 @@ mod tests {
         );
         let exact = g
             .narrowed(SIGN_STEPS)
-            .sign_polynomial(&IntPolynomial::new(xy.ip().num));
+            .sign_polynomial(&IntPolynomial::new(xy.ip().num().to_vec()));
         assert_eq!(xy.sign(), exact);
         // The filters agree with Sturm-Tarski on the elements' signs, and
         // the dyadic enclosure holds the value the isolator does.
@@ -1666,7 +1680,7 @@ mod tests {
             let p = k.ip();
             let exact = g
                 .narrowed(SIGN_STEPS)
-                .sign_polynomial(&IntPolynomial::new(p.num.clone()));
+                .sign_polynomial(&IntPolynomial::new(p.num().to_vec()));
             assert_eq!(g.sign_near(&p), Some(exact));
             assert_eq!(k.sign(), exact);
             let d = k.dy(80).unwrap();
