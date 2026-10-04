@@ -633,8 +633,20 @@ impl WallMeet {
         while k + 1 < n && flat[k + 1] <= u {
             k += 1;
         }
-        let eval = |row: &[Point3]| -> Point3 {
-            let mut d: Vec<[f64; 3]> = (0..=p).map(|j| row[k - p + j].to_array()).collect();
+        // De Boor's points on the stack up to degree 15 (S9f.3's loops find
+        // a graph over `v`'s root at every node of its integrals).
+        let mut stack = [[0.0f64; 3]; 16];
+        let mut heap = Vec::new();
+        let mut eval = |row: &[Point3]| -> Point3 {
+            let d: &mut [[f64; 3]] = if p < stack.len() {
+                &mut stack[..=p]
+            } else {
+                heap.resize(p + 1, [0.0f64; 3]);
+                &mut heap[..]
+            };
+            for (j, x) in d.iter_mut().enumerate() {
+                *x = row[k - p + j].to_array();
+            }
             for r in 1..=p {
                 for j in (r..=p).rev() {
                     let i = k - p + j;

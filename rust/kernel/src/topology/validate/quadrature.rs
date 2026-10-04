@@ -16,7 +16,7 @@
 //! (`spline_face`).
 use super::bernstein::{c, derivative, pcurve_arcs, piece_of, r, ratio, span_arcs, Bern};
 use super::Lp;
-use crate::certified::{Interval as I, Real};
+use crate::certified::{Fast, Interval as I, Real};
 use crate::surface::ExactBezierSurface3;
 use crate::topology::Curve2;
 use crate::BSplineSurface3;
@@ -79,6 +79,10 @@ pub(super) trait Num<T: Real>: Clone {
     fn coefficient_at(&self, k: usize) -> T;
     /// The same number with coefficient `k` (below `terms`) set to `x`.
     fn with_coefficient(&self, k: usize, x: T) -> Self;
+    /// The number cut to its first `terms` coefficients (at least one):
+    /// every operation's coefficient `k` takes its operands' first `k + 1`
+    /// only, so a coefficient below the cut is the same value.
+    fn truncated(&self, terms: usize) -> Self;
 }
 
 fn middle<T: Real>(x: &T) -> f64 {
@@ -155,6 +159,9 @@ impl<T: Real> Num<T> for Point<T> {
         debug_assert_eq!(k, 0);
         Point(x)
     }
+    fn truncated(&self, _terms: usize) -> Self {
+        self.clone()
+    }
 }
 
 /// Taylor jets (`crate::jet`) as the integrands' numbers (S9f.2b: a spline
@@ -209,6 +216,11 @@ impl<T: Real> Num<T> for crate::jet::Jet<T> {
         let mut out = self.clone();
         out.c[k] = x;
         out
+    }
+    fn truncated(&self, terms: usize) -> Self {
+        Self {
+            c: self.c[..terms.clamp(1, self.c.len())].to_vec(),
+        }
     }
 }
 
@@ -406,6 +418,13 @@ impl<T: Real> Num<T> for Series<T> {
         out.c[k] = x;
         out
     }
+    fn truncated(&self, terms: usize) -> Self {
+        let len = terms.clamp(1, self.len);
+        Self {
+            c: self.c[..self.c.len().min(len)].to_vec(),
+            len,
+        }
+    }
 }
 
 /// A Bernstein polynomial on `[0, 1]` with `Num` coefficients at `t`, by
@@ -540,12 +559,34 @@ struct Rule<T> {
 
 fn rule<T: Real>() -> Rule<T> {
     static EXACT: OnceLock<ExactRule> = OnceLock::new();
+    // The binary64 tier's rule, lifted once (each integral lifted it
+    // again: a spline wall's loops integrate hundreds of pieces).
+    static FAST: OnceLock<Rule<Fast>> = OnceLock::new();
     let exact = EXACT.get_or_init(exact_rule);
-    let hull = |[lo, hi]: &[R; 2]| c::<T>(lo).union(&c(hi));
+    let lift = || {
+        let hull = |[lo, hi]: &[R; 2]| c::<T>(lo).union(&c(hi));
+        Rule {
+            nodes: exact.nodes.iter().map(hull).collect(),
+            weights: exact.weights.iter().map(hull).collect(),
+            remainder: c(&exact.remainder),
+        }
+    };
+    if T::of_fast(Fast::exact_f64(0.0)).is_none() {
+        return lift();
+    }
+    let fast = FAST.get_or_init(|| {
+        let hull = |[lo, hi]: &[R; 2]| c::<Fast>(lo).union(&c(hi));
+        Rule {
+            nodes: exact.nodes.iter().map(hull).collect(),
+            weights: exact.weights.iter().map(hull).collect(),
+            remainder: c(&exact.remainder),
+        }
+    });
+    let of = |x: &Fast| T::of_fast(*x).expect("the binary64 tier");
     Rule {
-        nodes: exact.nodes.iter().map(hull).collect(),
-        weights: exact.weights.iter().map(hull).collect(),
-        remainder: c(&exact.remainder),
+        nodes: fast.nodes.iter().map(of).collect(),
+        weights: fast.weights.iter().map(of).collect(),
+        remainder: of(&fast.remainder),
     }
 }
 
@@ -691,7 +732,10 @@ fn integrate_1d<T: Real, F: Integrand1<T>>(f: &F) -> Option<Vec<T>> {
 }
 
 /// `∫_0^1 ∫_0^1` of every component of `f(τ, σ)`, enclosed by the tensor
-/// rule and its two remainders.
+/// rule and its two remainders. A halved box's remainder coefficients,
+/// enclosed over it, hold over its halves too: a half whose remainders they
+/// already bound within its budget takes them without series of its own
+/// (S9f.3's loops).
 fn integrate_2d<T: Real, F: Integrand2<T>>(f: &F) -> Option<Vec<T>> {
     type Box2 = [[f64; 2]; 2];
     let rule = rule::<T>();
@@ -708,30 +752,52 @@ fn integrate_2d<T: Real, F: Integrand2<T>>(f: &F) -> Option<Vec<T>> {
         });
         sum_nodes(pairs)
     };
-    // The remainders along τ and along σ, per component.
-    let remainders = |[[a, b], [c0, d]]: Box2| -> Option<(Vec<T>, Vec<T>)> {
+    // The remainders' factors along τ and along σ over a box.
+    let factors = |[[a, b], [c0, d]]: Box2| -> (T, T) {
+        (
+            rule.remainder
+                .mul(&power(b - a, 2 * NODES + 1))
+                .mul(&T::exact_f64(d - c0)),
+            rule.remainder
+                .mul(&T::exact_f64(b - a))
+                .mul(&power(d - c0, 2 * NODES + 1)),
+        )
+    };
+    // The remainders along τ and along σ, per component, and the series'
+    // last coefficients' magnitudes (for the box's halves).
+    type Rest<T> = (Vec<T>, Vec<T>, Vec<f64>, Vec<f64>);
+    let remainders = |bx: Box2| -> Option<Rest<T>> {
+        let [[a, b], [c0, d]] = bx;
         let (x, y) = (
             T::exact_f64(a).union(&T::exact_f64(b)),
             T::exact_f64(c0).union(&T::exact_f64(d)),
         );
-        let along_tau = rule
-            .remainder
-            .mul(&power(b - a, 2 * NODES + 1))
-            .mul(&T::exact_f64(d - c0));
-        let along_sigma = rule
-            .remainder
-            .mul(&T::exact_f64(b - a))
-            .mul(&power(d - c0, 2 * NODES + 1));
+        let (along_tau, along_sigma) = factors(bx);
         let tau = f.at(
             &Series::variable(x.clone(), LENGTH),
             &Series::constant(y.clone(), LENGTH),
         )?;
         let sigma = f.at(&Series::constant(x, LENGTH), &Series::variable(y, LENGTH))?;
         let last = |s: &Series<T>, k: &T| s.coefficient(2 * NODES).mul(k);
+        let size = |s: &Series<T>| magnitude(&s.coefficient(2 * NODES));
         Some((
             tau.iter().map(|s| last(s, &along_tau)).collect(),
             sigma.iter().map(|s| last(s, &along_sigma)).collect(),
+            tau.iter().map(size).collect(),
+            sigma.iter().map(size).collect(),
         ))
+    };
+    // The remainders from a parent box's coefficients' magnitudes.
+    let inherited = |bx: Box2, sizes: &(Vec<f64>, Vec<f64>)| -> (Vec<T>, Vec<T>) {
+        let (along_tau, along_sigma) = factors(bx);
+        let bound = |size: &f64, k: &T| {
+            let e = magnitude(&T::exact_f64(*size).mul(k));
+            T::exact_f64(-e).union(&T::exact_f64(e))
+        };
+        (
+            sizes.0.iter().map(|x| bound(x, &along_tau)).collect(),
+            sizes.1.iter().map(|x| bound(x, &along_sigma)).collect(),
+        )
     };
     let whole: Box2 = [[0.0, 1.0], [0.0, 1.0]];
     let (first, absolute) = nodes(whole)?;
@@ -741,9 +807,10 @@ fn integrate_2d<T: Real, F: Integrand2<T>>(f: &F) -> Option<Vec<T>> {
         .map(|(s, q)| (*s, width(q)))
         .collect();
     let mut total: Vec<T> = vec![zero(); first.len()];
-    let mut stack = vec![(whole, [0_u32; 2])];
+    type Sizes = std::rc::Rc<(Vec<f64>, Vec<f64>)>;
+    let mut stack: Vec<(Box2, [u32; 2], Option<Sizes>)> = vec![(whole, [0_u32; 2], None)];
     let mut work = 0;
-    while let Some((bx, depth)) = stack.pop() {
+    while let Some((bx, depth, parent)) = stack.pop() {
         work += 1;
         if work > WORK {
             return None;
@@ -752,7 +819,30 @@ fn integrate_2d<T: Real, F: Integrand2<T>>(f: &F) -> Option<Vec<T>> {
         // A series undefined over the whole box (an enclosure too wide to
         // exclude a zero) is retried on halves across the less divided
         // side; the node sum is formed only for accepted boxes.
-        let rest = remainders(bx);
+        let budget = |et: &[T], es: &[T]| {
+            let both: Vec<f64> = et
+                .iter()
+                .zip(es)
+                .map(|(a, b)| magnitude(a) + magnitude(b))
+                .collect();
+            within(&both, area, &scale)
+        };
+        if let Some(sizes) = &parent {
+            let (et, es) = inherited(bx, sizes);
+            if budget(&et, &es) {
+                let sum = nodes(bx)?.0;
+                for (t, ((q, a), b)) in total.iter_mut().zip(sum.iter().zip(&et).zip(&es)) {
+                    *t = t.add(&q.add(a).add(b));
+                }
+                continue;
+            }
+        }
+        let own = remainders(bx);
+        let sizes = own.as_ref().and_then(|(_, _, st, ss)| {
+            (st.iter().chain(ss).all(|x| x.is_finite()))
+                .then(|| std::rc::Rc::new((st.clone(), ss.clone())))
+        });
+        let rest = own.map(|(et, es, _, _)| (et, es));
         if rest.is_none() && depth[0] + depth[1] >= SINGULAR {
             return None;
         }
@@ -795,8 +885,8 @@ fn integrate_2d<T: Real, F: Integrand2<T>>(f: &F) -> Option<Vec<T>> {
         left[axis] = [lo, m];
         right[axis] = [m, hi];
         next[axis] += 1;
-        stack.push((left, next));
-        stack.push((right, next));
+        stack.push((left, next, sizes.clone()));
+        stack.push((right, next, sizes));
     }
     Some(total)
 }
@@ -1076,24 +1166,103 @@ impl WallPiece<'_> {
     }
 }
 
-impl<T: Real> PieceAt<T> for WallPiece<'_> {
-    fn at<N: Num<T>>(&self, t: &N) -> Option<[N; 3]> {
-        let g = t.scale(&c(&self.len)).shift(&c(&self.ga));
-        let f = if self.reversed {
+/// A wall piece's affine maps enclosed once in the tier (S9f.3's loops:
+/// made again from rationals at every evaluation, a quarter of a sweep):
+/// the fraction's `len` and `ga`, the knot span's `-u0`, `1 / (u1 - u0)`,
+/// `-v0` and `1 / (v1 - v0)`, and the pcurve's slope factor, `sweep len
+/// (±1) / (u1 - u0)`.
+struct Placed<'a, T, P> {
+    piece: &'a P,
+    len: T,
+    ga: T,
+    u0: T,
+    iu: T,
+    v0: T,
+    iv: T,
+    slope: T,
+}
+
+impl<'a, T: Real> Placed<'a, T, WallPiece<'a>> {
+    fn wall(piece: &'a WallPiece<'a>) -> Option<Self> {
+        Self::new(
+            piece,
+            piece.m,
+            piece.span,
+            &piece.ga,
+            &piece.len,
+            piece.reversed,
+        )
+    }
+}
+
+impl<'a, T: Real> Placed<'a, T, HeightPiece<'a>> {
+    fn height(piece: &'a HeightPiece<'a>) -> Option<Self> {
+        Self::new(
+            piece,
+            piece.m,
+            piece.span,
+            &piece.ga,
+            &piece.len,
+            piece.reversed,
+        )
+    }
+
+    /// The piece's local `ū` enclosed at its fraction's ends.
+    fn ends(&self) -> Option<[T; 2]> {
+        let at = |t: i64| -> Option<T> {
+            let [u, _, _] = PieceAt::<T>::at(self, &Point(T::from_r(&ratio(t, 1))))?;
+            Some(u.0)
+        };
+        Some([at(0)?, at(1)?])
+    }
+}
+
+impl<'a, T: Real, P> Placed<'a, T, P> {
+    fn new(
+        piece: &'a P,
+        m: &crate::topology::WallMeet,
+        span: &super::wall_meet::Span,
+        ga: &R,
+        len: &R,
+        reversed: bool,
+    ) -> Option<Self> {
+        let ([u0, u1], [v0, v1]) = (&span.u, &span.v);
+        let sense = if reversed { -1 } else { 1 };
+        let slope = R::from_float(m.sweep)? * len * ratio(sense, 1) / (u1 - u0);
+        Some(Self {
+            piece,
+            len: c(len),
+            ga: c(ga),
+            u0: c(&-u0),
+            iu: c(&(ratio(1, 1) / (u1 - u0))),
+            v0: c(&-v0),
+            iv: c(&(ratio(1, 1) / (v1 - v0))),
+            slope: c(&slope),
+        })
+    }
+
+    /// The wall's parameter (`u`, or `v` for a graph over it) at the
+    /// piece's `τ`.
+    fn parameter<N: Num<T>>(&self, t: &N, m: &crate::topology::WallMeet, reversed: bool) -> N {
+        let g = t.scale(&self.len).shift(&self.ga);
+        let f = if reversed {
             g.neg().shift(&T::exact_f64(1.0))
         } else {
             g
         };
-        let u = f
-            .scale(&T::exact_f64(self.m.sweep))
-            .shift(&T::exact_f64(self.m.start));
-        let (v, _) = super::wall_meet::eval(self.m, self.span, &u)?;
-        let ([u0, u1], [v0, v1]) = (&self.span.u, &self.span.v);
-        let ub = u.shift(&c(&-u0)).scale(&c(&(ratio(1, 1) / (u1 - u0))));
-        let vb = v.shift(&c(&-v0)).scale(&c(&(ratio(1, 1) / (v1 - v0))));
-        let sense = if self.reversed { -1 } else { 1 };
-        let slope = R::from_float(self.m.sweep)? * &self.len * ratio(sense, 1) / (u1 - u0);
-        Some([ub, vb, t.lift(&c(&slope))])
+        f.scale(&T::exact_f64(m.sweep))
+            .shift(&T::exact_f64(m.start))
+    }
+}
+
+impl<T: Real> PieceAt<T> for Placed<'_, T, WallPiece<'_>> {
+    fn at<N: Num<T>>(&self, t: &N) -> Option<[N; 3]> {
+        let p = self.piece;
+        let u = self.parameter(t, p.m, p.reversed);
+        let (v, _) = super::wall_meet::eval(p.m, p.span, &u)?;
+        let ub = u.shift(&self.u0).scale(&self.iu);
+        let vb = v.shift(&self.v0).scale(&self.iv);
+        Some([ub, vb, t.lift(&self.slope)])
     }
 }
 
@@ -1109,36 +1278,15 @@ struct HeightPiece<'a> {
     reversed: bool,
 }
 
-impl HeightPiece<'_> {
-    /// The piece's local `ū` enclosed at its fraction's ends.
-    fn ends<T: Real>(&self) -> Option<[T; 2]> {
-        let at = |t: i64| -> Option<T> {
-            let [u, _, _] = PieceAt::<T>::at(self, &Point(T::from_r(&ratio(t, 1))))?;
-            Some(u.0)
-        };
-        Some([at(0)?, at(1)?])
-    }
-}
-
-impl<T: Real> PieceAt<T> for HeightPiece<'_> {
+impl<T: Real> PieceAt<T> for Placed<'_, T, HeightPiece<'_>> {
     fn at<N: Num<T>>(&self, t: &N) -> Option<[N; 3]> {
-        let g = t.scale(&c(&self.len)).shift(&c(&self.ga));
-        let f = if self.reversed {
-            g.neg().shift(&T::exact_f64(1.0))
-        } else {
-            g
-        };
-        let v = f
-            .scale(&T::exact_f64(self.m.sweep))
-            .shift(&T::exact_f64(self.m.start));
-        let ([u0, u1], [v0, v1]) = (&self.span.u, &self.span.v);
-        let tt = v.shift(&c(&-v0));
-        let (u, du, _) = super::wall_meet::eval_height(self.m, self.span, &tt)?;
-        let ub = u.shift(&c(&-u0)).scale(&c(&(ratio(1, 1) / (u1 - u0))));
-        let vb = tt.scale(&c(&(ratio(1, 1) / (v1 - v0))));
-        let sense = if self.reversed { -1 } else { 1 };
-        let dv = R::from_float(self.m.sweep)? * &self.len * ratio(sense, 1) / (u1 - u0);
-        Some([ub, vb, du.scale(&c(&dv))])
+        let p = self.piece;
+        let v = self.parameter(t, p.m, p.reversed);
+        let tt = v.shift(&self.v0);
+        let (u, du, _) = super::wall_meet::eval_height(p.m, p.span, &tt)?;
+        let ub = u.shift(&self.u0).scale(&self.iu);
+        let vb = tt.scale(&self.iv);
+        Some([ub, vb, du.scale(&self.slope)])
     }
 }
 
@@ -1154,7 +1302,8 @@ fn sweep_height<T: Real>(
     depth: usize,
 ) -> Option<Vec<T>> {
     let mut local = vec![zero::<T>(); count];
-    if sweep_piece(nets, at, piece, piece.ends()?, rest, third, &mut local).is_some() {
+    let placed = Placed::height(piece)?;
+    if sweep_piece(nets, at, &placed, placed.ends()?, rest, third, &mut local).is_some() {
         return Some(local);
     }
     if depth >= WALL_SPLITS {
@@ -1211,7 +1360,17 @@ fn sweep_wall<T: Real>(
     if graded || depth >= WALL_SPLITS {
         let ends = [c(&ua), c(&ub)];
         let mut local = vec![zero::<T>(); count];
-        if sweep_piece(nets, at, piece, ends, rest, third, &mut local).is_some() {
+        if sweep_piece(
+            nets,
+            at,
+            &Placed::wall(piece)?,
+            ends,
+            rest,
+            third,
+            &mut local,
+        )
+        .is_some()
+        {
             return Some(local);
         }
     }

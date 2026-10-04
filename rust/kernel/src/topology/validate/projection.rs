@@ -1043,7 +1043,14 @@ struct JetMemo {
     ids: std::collections::HashMap<String, u64>,
     next: u64,
     jets: std::collections::HashMap<PieceKey, Option<[Jet<Fast>; 2]>>,
+    /// A spline wall's meeting's pieces' jets (`wall_piece_jet`), keyed by
+    /// the knot span too.
+    walls: std::collections::HashMap<WallKey, Option<[Jet<Fast>; 2]>>,
 }
+
+/// A wall piece's key: the projection's id, the knot span, the variable's
+/// base's bits and the order.
+type WallKey = (u64, usize, u64, u64, usize);
 
 /// A memo entry's key: the projection's id, a piece's bounds' bits and
 /// the jets' order.
@@ -1059,6 +1066,7 @@ thread_local! {
         ids: std::collections::HashMap::new(),
         next: 0,
         jets: std::collections::HashMap::new(),
+        walls: std::collections::HashMap::new(),
     });
 }
 
@@ -1077,6 +1085,7 @@ pub(super) fn memo_id(p: &Projection) -> Option<u64> {
         if m.ids.len() >= MEMO_PROJECTIONS {
             m.ids.clear();
             m.jets.clear();
+            m.walls.clear();
         }
         let id = m.next;
         m.next += 1;
@@ -1192,6 +1201,7 @@ pub(super) fn wall_pieces<T: Real>(
         return None;
     }
     let one = num_rational::BigRational::from_integer(1.into());
+    let id = memo_id(p);
     for (fa, fb, k) in super::wall_meet::pieces(m)? {
         let (ga, gb) = if p.reversed {
             (&one - &fb, &one - &fa)
@@ -1204,7 +1214,7 @@ pub(super) fn wall_pieces<T: Real>(
         let integrand = |tau: &Jet<T>| {
             let t1 = Jet::variable(tau.c[0].clone(), tau.order() + 1);
             let at = t1.scale(&scale).add_constant(&start);
-            let [u, v] = projection_jet_pinned(p, &at, Some(k))?;
+            let [u, v] = wall_piece_jet(p, id, k, &tau.c[0], tau.order(), &at)?;
             let (du, dv) = (u.derivative().scale(&per), v.derivative().scale(&per));
             let cut = |j: &Jet<T>| Jet {
                 c: j.c[..=tau.order()].to_vec(),
@@ -1227,6 +1237,59 @@ pub(super) fn wall_pieces<T: Real>(
         }
     }
     Some(())
+}
+
+/// A spline wall's meeting's projection's jets on knot span `k`'s piece at
+/// `at` (the piece's fraction, the variable about `base` to `order`),
+/// through the memo in the binary64 tier: the validator's signs and areas
+/// and the mass's moments and fluxes integrate along the same pieces, each
+/// to its own width, and visit the same dyadic parts of them.
+fn wall_piece_jet<T: Real>(
+    p: &Projection,
+    id: Option<u64>,
+    k: usize,
+    base: &T,
+    order: usize,
+    at: &Jet<T>,
+) -> Option<[Jet<T>; 2]> {
+    let fresh = || projection_jet_pinned(p, at, Some(k));
+    let (Some(id), Some(fast)) = (id, base.as_fast()) else {
+        return fresh();
+    };
+    let (lo, hi) = fast.bounds_f64();
+    let key = (id, k, lo.to_bits(), hi.to_bits(), order);
+    let to_t = |j: &Jet<Fast>| -> Option<Jet<T>> {
+        Some(Jet {
+            c: j.c.iter().map(|x| T::of_fast(*x)).collect::<Option<_>>()?,
+        })
+    };
+    if let Some(hit) = MEMO.with(|m| m.borrow().walls.get(&key).cloned()) {
+        let [u, v] = hit?;
+        return Some([to_t(&u)?, to_t(&v)?]);
+    }
+    let value = fresh();
+    let to_fast = |j: &Jet<T>| -> Option<Jet<Fast>> {
+        Some(Jet {
+            c: j.c.iter().map(|x| x.as_fast()).collect::<Option<_>>()?,
+        })
+    };
+    let stored = match &value {
+        None => Some(None),
+        Some([u, v]) => match (to_fast(u), to_fast(v)) {
+            (Some(u), Some(v)) => Some(Some([u, v])),
+            _ => None,
+        },
+    };
+    if let Some(stored) = stored {
+        MEMO.with(|m| {
+            let mut m = m.borrow_mut();
+            if m.walls.len() >= MEMO_LIMIT {
+                m.walls.clear();
+            }
+            m.walls.insert(key, stored);
+        });
+    }
+    value
 }
 
 /// Crossings of the `+u` ray from `p` with a projection pcurve (half-open

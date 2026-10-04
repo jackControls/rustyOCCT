@@ -2676,8 +2676,22 @@ the last place of the coefficients and not with the levels: near a turning
 point, where the curve's `t` is `d`'s square root and its enclosure `d`'s
 over `2 a sqrt(d)`, `d` formed from enclosed factors was a hundred times
 wider. Over a range (the remainder boxes of the quadrature and the jets'
-integrals) the factors are evaluated by `a + ū (b - a)` and combined,
-which overestimates less than the products' higher degrees.
+integrals) every polynomial is taken in centred form: with `m` the
+range's binary64 middle and `q_j = P^(j)(m) / j!` enclosed at that point
+(de Casteljau's point form on the exact Taylor polynomials `C(n, j) sum_i
+(Δ^j b)_i B_i^(n-j)`), `P^(k)(x) / k! = sum_(j >= k) C(j, k) q_j (x -
+m)^(j - k)` exactly for every `x` of the range (a polynomial has no
+remainder), so its width is about the range's times `P'` and not the
+coefficients' size. A cone's tiers (`a0 + tan^2 a2`, ...) are combined at
+the point first, `q_j = sum_i tan^i q_j^(i)`, so they cancel before the
+range's width enters. Near a turning point `d` is far below its terms:
+evaluating its factors over the range and combining them (S9f.2b's form)
+overestimated it by their size, and its square root's series was
+undefined over pieces a hundred times shorter than the centred form
+needs (S9f.3's loops, the certified-integrals track of REVIEW_NOTES.md).
+A graph over `v`'s root `u(t)` expands every row's polynomials once about
+its base and solves for coefficient `k` on series cut to `k + 1` terms
+(each operation's coefficient `k` takes its operands' first `k + 1` only).
 
 **Across a knot.** The wall is `C^k` there (`k = p - m`, `m` the knot's
 multiplicity); a jet of order `n` about a base whose enclosure meets the
@@ -2956,7 +2970,15 @@ cos k v, sin k v` (the exact Fourier expansions, `C` scalar enclosures), so
 the fourteen moments along a projection are the scalars `C` times the
 integrals of `A_i B_j du`, one set of jets for all of them (each to
 `1e-12` of its own scale); their enclosures widen by the combination's
-magnitudes, within the fixtures' `1e-9`.
+magnitudes, within the fixtures' `1e-9`; (e) a bisected piece's next
+coefficients, enclosed over it, hold over its halves (each lies in it),
+so a half whose remainder they already bound within its share is
+integrated without a jet over it of its own, and the tensor rule's halved
+boxes likewise take their parent's series coefficients where those bound
+their remainders within budget (S9f.3's loops); (f) a spline wall's
+meeting's projections' jets on a piece are kept as (b)'s, by the knot
+span too, so the wall's moments, the validator's areas and fluxes and the
+other face's moments along it share them.
 
 **A torus's plane section (S8d.3).** With `alpha = a cos u + b sin u`, the
 plane on the torus is `F = C + W cos(v - psi)`, `C = R alpha + d`, `(W cos
