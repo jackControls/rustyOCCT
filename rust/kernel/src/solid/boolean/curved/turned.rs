@@ -278,7 +278,13 @@ pub(super) fn roots_repeated(p: &Poly) -> Result<(Poly, Vec<(AlgebraicRoot, bool
     // `g` and `ip` primitive, so `h = ip / g` is in integers (Gauss's
     // lemma): exactly, and `p / g` is `h` times `p`'s positive multiple of
     // `ip`, each coefficient reduced once (the same as in rationals).
-    let ig = ip.gcd(&ip.derivative());
+    // Square-free (the usual case) decided modulo a prime first: the
+    // subresultants' gcd only where that leaves it open.
+    let ig = if coprime_mod_p(&ip.0, &ip.derivative().0) {
+        IntPolynomial::new(vec![BigInt::from(1)])
+    } else {
+        ip.gcd(&ip.derivative())
+    };
     let g = &ig.0;
     let lead = g.last().expect("a nonzero gcd");
     let mut r = ip.0.clone();
@@ -321,6 +327,64 @@ pub(super) fn roots_repeated(p: &Poly) -> Result<(Poly, Vec<(AlgebraicRoot, bool
         })
         .collect();
     Ok((sf, out))
+}
+
+/// Whether two integer polynomials are coprime over the rationals, shown
+/// modulo the prime `2^61 - 1` (false: undecided). Where neither leading
+/// coefficient vanishes there, a common factor of positive degree (taken
+/// primitive, its leading coefficient dividing both) stays one of the same
+/// degree modulo the prime: a constant gcd there is a constant gcd.
+fn coprime_mod_p(a: &[BigInt], b: &[BigInt]) -> bool {
+    const P: u64 = (1 << 61) - 1;
+    let modp = |v: &[BigInt]| -> Vec<u64> {
+        let p = BigInt::from(P);
+        v.iter()
+            .map(|c| {
+                let r = c.mod_floor(&p);
+                r.to_u64_digits().1.first().copied().unwrap_or(0)
+            })
+            .collect()
+    };
+    let mul = |x: u64, y: u64| ((u128::from(x) * u128::from(y)) % u128::from(P)) as u64;
+    let inv = |x: u64| {
+        // x^(P - 2).
+        let (mut acc, mut base, mut e) = (1u64, x, P - 2);
+        while e > 0 {
+            if e & 1 == 1 {
+                acc = mul(acc, base);
+            }
+            base = mul(base, base);
+            e >>= 1;
+        }
+        acc
+    };
+    let (mut x, mut y) = (modp(a), modp(b));
+    if x.last().is_none_or(|c| *c == 0) || y.last().is_none_or(|c| *c == 0) {
+        return false;
+    }
+    // Euclid's remainders in the field.
+    while !y.is_empty() {
+        if y.len() == 1 {
+            return true;
+        }
+        let lead = inv(*y.last().expect("nonempty"));
+        while x.len() >= y.len() {
+            let shift = x.len() - y.len();
+            let k = mul(*x.last().expect("nonempty"), lead);
+            for (i, c) in y.iter().enumerate() {
+                let t = mul(k, *c);
+                x[i + shift] = (x[i + shift] + P - t) % P;
+            }
+            while x.last() == Some(&0) {
+                x.pop();
+            }
+            if x.is_empty() {
+                break;
+            }
+        }
+        std::mem::swap(&mut x, &mut y);
+    }
+    false
 }
 
 /// A root's midpoint, rational.
@@ -1069,6 +1133,11 @@ mod tests {
             if p.len() < 2 {
                 continue;
             }
+            let ip = int_poly(&p);
+            assert_eq!(
+                coprime_mod_p(&ip.0, &ip.derivative().0),
+                ip.gcd(&ip.derivative()).is_constant()
+            );
             let (sf, rs) = roots_repeated(&p).expect("roots");
             let (sf2, rs2) = roots_repeated_rational(&p);
             assert_eq!(sf, sf2);

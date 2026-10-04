@@ -48,6 +48,16 @@ pub(super) struct Vx {
     pub(super) key: VKey,
     /// The faces it lies on: (operand, face).
     pub(super) faces: BTreeSet<(usize, usize)>,
+    /// Its point's binary64 view (`qv_f64`), once asked: each operation's
+    /// assembly asks again.
+    pub(super) view: std::sync::OnceLock<[f64; 3]>,
+}
+
+impl Vx {
+    /// The point's binary64 view, `qv_f64` of it.
+    pub(super) fn view(&self) -> [f64; 3] {
+        *self.view.get_or_init(|| qv_f64(&self.p))
+    }
 }
 
 /// The curve an arrangement edge lies on.
@@ -71,6 +81,9 @@ pub(super) struct GEdge {
     /// A point strictly inside it, and its place.
     pub(super) mid: QV,
     pub(super) mid_pos: Pos,
+    /// Its binary64 points along its run (`Arr::samples` forward), once
+    /// asked: every face along it and each operation's assembly ask again.
+    pub(super) samples: std::sync::OnceLock<Vec<[f64; 3]>>,
 }
 
 /// Two faces' meeting: A's face `fa`, B's face `fb`, its branches.
@@ -611,6 +624,7 @@ pub(super) fn arrange_shared(models: [Prism; 2]) -> Result<Arr> {
                 p: v.p.clone(),
                 key: VKey::Input(o, i),
                 faces: BTreeSet::new(),
+                view: Default::default(),
             });
         }
         for (ei, e) in m.edges.iter().enumerate() {
@@ -814,6 +828,7 @@ pub(super) fn arrange_shared(models: [Prism; 2]) -> Result<Arr> {
                                         p: x.clone(),
                                         key: VKey::Pierce(o, ei, g, k),
                                         faces: BTreeSet::new(),
+                                        view: Default::default(),
                                     });
                                     (vx.len() - 1, pos, fpos)
                                 }
@@ -857,6 +872,7 @@ pub(super) fn arrange_shared(models: [Prism; 2]) -> Result<Arr> {
                         p: x,
                         key: VKey::Pierce(o, ei, g, k),
                         faces,
+                        view: Default::default(),
                     });
                     on_edge.entry((o, ei)).or_default().push((id, pos));
                 }
@@ -880,6 +896,7 @@ pub(super) fn arrange_shared(models: [Prism; 2]) -> Result<Arr> {
                         p: x.clone(),
                         key: VKey::Cross(*fa, *fb, k),
                         faces: BTreeSet::from([(0, *fa), (1, *fb)]),
+                        view: Default::default(),
                     });
                 }
                 (Loc::Out, _) | (_, Loc::Out) => {}
@@ -928,6 +945,7 @@ pub(super) fn arrange_shared(models: [Prism; 2]) -> Result<Arr> {
                 with: ccw,
                 mid,
                 mid_pos,
+                samples: Default::default(),
             });
             half.entry((*o, e.faces[0])).or_default().push((gid, true));
             half.entry((*o, e.faces[1])).or_default().push((gid, false));
@@ -1061,6 +1079,7 @@ pub(super) fn arrange_shared(models: [Prism; 2]) -> Result<Arr> {
                                     p: at,
                                     key: VKey::Pole(si, k),
                                     faces: BTreeSet::new(),
+                                    view: Default::default(),
                                 });
                                 vx.len() - 1
                             }
@@ -1082,7 +1101,7 @@ pub(super) fn arrange_shared(models: [Prism; 2]) -> Result<Arr> {
                         views.resize(v + 1, None);
                     }
                     if views[v].is_none() {
-                        views[v] = Some(qv_f64(&vx[v].p));
+                        views[v] = Some(vx[v].view());
                     }
                 }
             }
@@ -1175,6 +1194,7 @@ pub(super) fn arrange_shared(models: [Prism; 2]) -> Result<Arr> {
                                     p: x.clone(),
                                     key: VKey::Ring(si, bi),
                                     faces: BTreeSet::from([(0, fa), (1, fb)]),
+                                    view: Default::default(),
                                 });
                                 list.push((v, place(crv, &x)));
                                 vec![(0, 0)]
@@ -1213,6 +1233,7 @@ pub(super) fn arrange_shared(models: [Prism; 2]) -> Result<Arr> {
                         with: true,
                         mid,
                         mid_pos,
+                        samples: Default::default(),
                     });
                     for key in [(0, fa), (1, fb)] {
                         let h = half.entry(key).or_default();
@@ -1232,9 +1253,11 @@ pub(super) fn arrange_shared(models: [Prism; 2]) -> Result<Arr> {
         pieces: Vec::new(),
         coinc,
     };
-    // Pieces.
+    // Pieces. A half-edge's travel at its start is asked at every arrival
+    // there, in each face along it: kept.
+    let travels = Travels::default();
     for ((o, f), hs) in &half {
-        let loops = arr.trace(*o, *f, hs)?;
+        let loops = arr.trace(*o, *f, hs, &travels)?;
         let pieces = arr.group(*o, *f, loops)?;
         for loops in pieces {
             let sides = arr.sides(*o, *f, &loops[0])?;
@@ -1634,6 +1657,10 @@ fn on_curve(crv: &Crv, x: &QV) -> bool {
     }
 }
 
+/// Half-edges' travels at their starts (`Arr::trace`).
+#[derive(Default)]
+struct Travels(std::cell::RefCell<BTreeMap<(usize, bool), QV>>);
+
 impl Arr {
     /// A half-edge's direction of travel at a place (unit-free).
     fn travel(&self, gid: usize, fwd: bool, pos: &Pos, x: &QV) -> QV {
@@ -1665,7 +1692,13 @@ impl Arr {
 
     /// The face's loops: from each half-edge, the next is the first
     /// clockwise (about the face's outward normal) from the way back.
-    fn trace(&self, o: usize, f: usize, hs: &[(usize, bool)]) -> Result<Vec<Vec<(usize, bool)>>> {
+    fn trace(
+        &self,
+        o: usize,
+        f: usize,
+        hs: &[(usize, bool)],
+        travels: &Travels,
+    ) -> Result<Vec<Vec<(usize, bool)>>> {
         let mut out_of: BTreeMap<usize, Vec<(usize, bool)>> = BTreeMap::new();
         for &h in hs {
             out_of.entry(self.start_of(h)).or_default().push(h);
@@ -1681,7 +1714,8 @@ impl Arr {
             let mut h = h0;
             loop {
                 let v = self.end_of(h);
-                let next = self.next_on(o, f, v, h, out_of.get(&v).map_or(&[][..], |x| x))?;
+                let outs = out_of.get(&v).map_or(&[][..], |x| x);
+                let next = self.next_on_kept(o, f, v, h, outs, Some(travels))?;
                 if next == h0 {
                     break;
                 }
@@ -1705,6 +1739,19 @@ impl Arr {
         h: (usize, bool),
         outs: &[(usize, bool)],
     ) -> Result<(usize, bool)> {
+        self.next_on_kept(o, f, v, h, outs, None)
+    }
+
+    /// `next_on` with the half-edges' travels at their starts kept.
+    fn next_on_kept(
+        &self,
+        o: usize,
+        f: usize,
+        v: usize,
+        h: (usize, bool),
+        outs: &[(usize, bool)],
+        travels: Option<&Travels>,
+    ) -> Result<(usize, bool)> {
         let back = (h.0, !h.1);
         let cands: Vec<(usize, bool)> = outs.iter().copied().filter(|&c| c != back).collect();
         if cands.is_empty() {
@@ -1719,10 +1766,22 @@ impl Arr {
         }
         let p = &self.vx[v].p;
         let n = self.models[o].normal_at(f, p);
-        let r = self.travel(back.0, back.1, self.pos_at_start(back), p);
+        // Each half-edge here starts at `v`: its travel there is its own.
+        let travel = |c: (usize, bool)| -> QV {
+            let Some(kept) = travels else {
+                return self.travel(c.0, c.1, self.pos_at_start(c), p);
+            };
+            if let Some(t) = kept.0.borrow().get(&c) {
+                return t.clone();
+            }
+            let t = self.travel(c.0, c.1, self.pos_at_start(c), p);
+            kept.0.borrow_mut().insert(c, t.clone());
+            t
+        };
+        let r = travel(back);
         let nr = qcross(&n, &r);
         let coords = |c: (usize, bool)| -> [Qd; 2] {
-            let t = self.travel(c.0, c.1, self.pos_at_start(c), p);
+            let t = travel(c);
             [qqdot(&r, &t), qqdot(&nr, &t)]
         };
         let zero_dir = [Qd::rat(int(1)), Qd::rat(zero())];
@@ -1748,10 +1807,22 @@ impl Arr {
 
     /// Points of a half-edge in binary64, along its run.
     pub(super) fn samples(&self, h: (usize, bool)) -> Vec<[f64; 3]> {
+        let forward = self.edges[h.0]
+            .samples
+            .get_or_init(|| self.samples_made((h.0, true)));
+        let mut pts = forward.clone();
+        if !h.1 {
+            pts.reverse();
+        }
+        pts
+    }
+
+    /// `samples`, made.
+    fn samples_made(&self, h: (usize, bool)) -> Vec<[f64; 3]> {
         let e = &self.edges[h.0];
         match &e.crv {
             Crv::Line { .. } => {
-                let (a, b) = (qv_f64(&self.vx[e.ends[0]].p), qv_f64(&self.vx[e.ends[1]].p));
+                let (a, b) = (self.vx[e.ends[0]].view(), self.vx[e.ends[1]].view());
                 if h.1 {
                     vec![a, b]
                 } else {

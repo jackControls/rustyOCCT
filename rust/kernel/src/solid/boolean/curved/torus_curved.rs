@@ -182,14 +182,36 @@ impl Bi {
     /// The form in the other angle at a rational `(cos, sin)` of `u`
     /// (`of_v` false) or of `v`: of degree two (four for two tori in frames
     /// not exactly orthonormal).
+    /// In integers over one denominator (`(cos, sin)` over theirs, the
+    /// coefficients over theirs), each coefficient reduced once: the same
+    /// form as in rationals reduced at every product.
     fn at(&self, of_v: bool, cs: &[R; 2]) -> Form {
-        let pow = |x: &R, n: u32| (0..n).fold(int(1), |acc, _| acc * x);
+        use num_bigint::BigInt;
         let (i, j, k, l) = if of_v { (2, 3, 0, 1) } else { (0, 1, 2, 3) };
-        let mut terms: BTreeMap<(u32, u32), R> = BTreeMap::new();
+        let d = num_integer::Integer::lcm(cs[0].denom(), cs[1].denom());
+        let (c, s) = (
+            cs[0].numer() * (&d / cs[0].denom()),
+            cs[1].numer() * (&d / cs[1].denom()),
+        );
+        let den = self.terms.values().fold(BigInt::from(1), |m, x| {
+            num_integer::Integer::lcm(&m, x.denom())
+        });
+        let top = self.terms.keys().map(|e| e[i] + e[j]).max().unwrap_or(0);
+        let mut sums: BTreeMap<(u32, u32), BigInt> = BTreeMap::new();
         for (e, x) in &self.terms {
-            let c = x * pow(&cs[0], e[i]) * pow(&cs[1], e[j]);
-            *terms.entry((e[k], e[l])).or_insert_with(zero) += c;
+            // `x c^a s^b` over `den d^top`.
+            let v = x.numer()
+                * (&den / x.denom())
+                * c.pow(e[i])
+                * s.pow(e[j])
+                * d.pow(top - e[i] - e[j]);
+            *sums.entry((e[k], e[l])).or_insert_with(|| BigInt::from(0)) += v;
         }
+        let total = den * d.pow(top);
+        let terms = sums
+            .into_iter()
+            .map(|(key, v)| (key, R::new(v, total.clone())))
+            .collect();
         Form::from_terms(terms, self.degree(!of_v).max(2))
     }
 
@@ -2282,6 +2304,48 @@ mod tests {
                 )
             });
             assert_eq!(quartic_discriminant(&h), quartic_discriminant_rational(&h));
+        }
+    }
+
+    #[test]
+    fn integer_form_at_is_the_rational_one() {
+        let mut seed = 0xd1b5_4a32_d192_ed03u64;
+        let mut next = || {
+            seed = seed
+                .wrapping_mul(6_364_136_223_846_793_005)
+                .wrapping_add(1_442_695_040_888_963_407);
+            (seed >> 33) as i64
+        };
+        for case in 0..40 {
+            let mut g = Bi::default();
+            for a in 0..3u32 {
+                for c in 0..3u32 {
+                    for (b, d) in [(0, 0), (1, 0), (0, 1), (1, 1)] {
+                        if (a + c + b + d + case) % 3 == 0 {
+                            continue;
+                        }
+                        let k = int(next() % 2001 - 1000) / int(1 + next() % 97);
+                        g.add_term([a, b, c, d], &k);
+                    }
+                }
+            }
+            let cs = super::super::model::circle_point(
+                &[zero(), zero()],
+                &int(1),
+                &(int(next() % 201 - 100) / int(1 + next() % 53)),
+            );
+            for of_v in [false, true] {
+                let pow = |x: &R, n: u32| (0..n).fold(int(1), |acc, _| acc * x);
+                let (i, j, k, l) = if of_v { (2, 3, 0, 1) } else { (0, 1, 2, 3) };
+                let mut terms: BTreeMap<(u32, u32), R> = BTreeMap::new();
+                for (e, x) in &g.terms {
+                    let c = x * pow(&cs[0], e[i]) * pow(&cs[1], e[j]);
+                    *terms.entry((e[k], e[l])).or_insert_with(zero) += c;
+                }
+                let want = Form::from_terms(terms, g.degree(!of_v).max(2));
+                let got = g.at(of_v, &cs);
+                assert_eq!(format!("{got:?}"), format!("{want:?}"));
+            }
         }
     }
 }

@@ -331,7 +331,7 @@ pub(super) fn assemble_made(arr: &Arr, op: Op2) -> Result<Vec<(Component, Made)>
         // So does any vertex at a pole of a sphere face it bounds (S9e.3b's
         // replays: a given result's meridian split at the pole there).
         let res = arr.models[0].tolerance.linear();
-        let p = qv_f64(&arr.vx[v].p);
+        let p = arr.vx[v].view();
         let at_pole = gs.iter().flat_map(|&g| faces_of(g)).any(|fi| {
             let rf = &faces[fi];
             let crate::topology::Surface::Sphere { frame, radius } =
@@ -488,7 +488,7 @@ pub(super) fn assemble_made(arr: &Arr, op: Op2) -> Result<Vec<(Component, Made)>
     let points: BTreeMap<usize, Point3> = shell_of_vertex
         .keys()
         .map(|&v| {
-            let p = qv_f64(&arr.vx[v].p);
+            let p = arr.vx[v].view();
             (v, Point3::new(p[0], p[1], p[2]))
         })
         .collect();
