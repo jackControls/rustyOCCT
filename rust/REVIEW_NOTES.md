@@ -6264,8 +6264,12 @@ Decisions for S9, recorded before its code (2026-09-28):
     `bfuse_complex/C9`, `E9`, `I6`, `N1`, `N9`), 17 are refused by S9's
     rules (12 faces within the resolution of one plane, 3 edges meeting, 2
     tangencies), 1 by a cylinders' section within the resolution of a node
-    and 6 as S9e.4b.4's (two circles at a joint). Pending: the DRAW survey,
-    the campaign.
+    and 6 as S9e.4b.4's (two circles at a joint). Pending: the DRAW survey.
+    Campaign: the boolean campaign at `788f8861`, with S9e.4b.1, S9e.4b.2,
+    S9f.3a, S9f.3b and the near-parallel guards (600 s, a sampled replay,
+    `SPLINE_SPHERE` and `SPLINE_CONE` off) clean, 909 runs, the slowest
+    input 45 s under AddressSanitizer at load 3 to 7 (`e36969f1`, an
+    existing corpus input).
   * **DRAW survey of S9f.2b.2 and S9e.4b.1 (2026-10-03,
     `UPSTREAM_TESTS.md`).** At `93e6fcd0` (`s9c2-kernel` with S9e.4a,
     S9f.2b.2 and S9e.4b.1 merged; the public dataset, 120 seconds a case,
@@ -6559,7 +6563,11 @@ Decisions for S9, recorded before its code (2026-09-28):
     next Boolean's argument (one solid); `bfuse_complex/D9`, a
     corner the two files share stored 1e-13 apart (`z = 56.5616376719611`
     and `56.561637671961`), a face thinner than the resolution (S9's rule).
-    Pending: the DRAW survey, the campaign.
+    Pending: the DRAW survey. Campaign: the boolean campaign at `788f8861`,
+    with S9e.4b.1, S9e.4b.2, S9f.3a, S9f.3b and the near-parallel guards
+    (600 s, a sampled replay, `SPLINE_SPHERE` and `SPLINE_CONE` off) clean,
+    909 runs, the slowest input 45 s under AddressSanitizer at load 3 to 7
+    (`e36969f1`, an existing corpus input).
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces
@@ -7128,10 +7136,14 @@ Decisions for S9, recorded before its code (2026-09-28):
     regressions, none failing, with the switch off (the slowest 12.6 s) and
     on (48 s, `d7599dbe`). Every check of `HANDOFF.md`'s "Verification"
     holds: fmt, clippy, the 1.85 check, the suite, the table's 26 comparisons
-    and the four beside it with 0 failures, unittest (296 tests) and the ledger. Pending: the DRAW
-    survey, the campaign (with `SPLINE_SPHERE` off), and the speed of the
-    certified integrals beside a loop's turning points before it can be
-    switched on.
+    and the four beside it with 0 failures, unittest (296 tests) and the
+    ledger. Pending: the DRAW survey and the speed of the certified
+    integrals beside a loop's turning points before it can be switched on.
+    Campaign: the boolean campaign at `788f8861`, with S9e.4b.1, S9e.4b.2,
+    S9f.3a, S9f.3b and the near-parallel guards (600 s, a sampled replay,
+    `SPLINE_SPHERE` and `SPLINE_CONE` off) clean, 909 runs, the slowest
+    input 45 s under AddressSanitizer at load 3 to 7 (`e36969f1`, an
+    existing corpus input).
   * **S9f.3b refined, before its code (2026-10-04).** Why it is refused
     today: `curved::spline_pairs` refuses a spline prism against a cone or
     frustum ("a spline prism against a cone (S9f.3b)"); behind it
@@ -7388,9 +7400,13 @@ Decisions for S9, recorded before its code (2026-09-28):
     check asked holds: fmt, clippy, the 1.85 check, the suite, the five
     spline comparisons with 0 failures, the generator's `--check` under
     Python 3.9 and 3.12 and its unit tests. Pending: the DRAW survey, the
-    campaign (with `SPLINE_CONE` off), the Linux record of the capture, and
-    the speed of the loops' certified integrals before `SPLINE_SPHERE` and
-    `SPLINE_CONE` can be switched on.
+    Linux record of the capture, and the speed of the loops' certified
+    integrals before `SPLINE_SPHERE` and `SPLINE_CONE` can be switched on.
+    Campaign: the boolean campaign at `788f8861`, with S9e.4b.1, S9e.4b.2,
+    S9f.3a, S9f.3b and the near-parallel guards (600 s, a sampled replay,
+    `SPLINE_SPHERE` and `SPLINE_CONE` off) clean, 909 runs, the slowest
+    input 45 s under AddressSanitizer at load 3 to 7 (`e36969f1`, an
+    existing corpus input).
   * **Where S9 stands (2026-09-30, paused).** Done and pushed: S9a to S9d
     (every sub-step with its DRAW survey and a clean campaign), S9e.1
     (campaign clean at `51c08edf`) and S9e.2 (`8e060c67`), S9f's decisions
