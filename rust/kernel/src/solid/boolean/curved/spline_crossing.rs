@@ -296,9 +296,9 @@ fn near_parallel_apart(
     let signed = |arc: &BArc, k: &R, want: Ordering| {
         let g = rows(f, arc, other, None)
             .iter()
-            .fold(vec![-(k * k)], |acc: Vec<R>, (p, q)| {
+            .fold(vec![-(k * k)], |acc: Vec<R>, (p, q, s)| {
                 let x = padd(p, &[q * &wm]);
-                padd(&acc, &pmul(&x, &x))
+                padd(&acc, &pscale(&pmul(&x, &x), s))
             });
         let g = trim(g);
         matches!(roots_within(&g, &zero_r, &one), Some(r) if r.is_empty())
