@@ -213,8 +213,7 @@ pub(super) fn cyl_pair(
     // the stored axes perhaps exactly parallel), as a plane within rounding
     // of a cylinder's direction does. Apart where certainly apart within
     // the faces' boxes, `Degenerate` otherwise.
-    let w = cross(&fx.n, &fy.n);
-    if dot(&w, &w) * int(10).pow(24) <= dot(&fx.n, &fx.n) * dot(&fy.n, &fy.n) {
+    if within_rounding_of_parallel(&fx.n, &fy.n) {
         if near_parallel_apart(fx, cx, rx, fy, cy, ry, boxes) {
             return Ok(CylPair::Apart);
         }
@@ -256,6 +255,31 @@ pub(super) fn cyl_pair(
     Ok(CylPair::Crossing(Box::new(Crossing { planes, points })))
 }
 
+/// Whether two axes lie within rounding of parallel: the sine of their
+/// angle at most `10^-12` (exactly parallel too).
+pub(super) fn within_rounding_of_parallel(a: &V, b: &V) -> bool {
+    let w = cross(a, b);
+    dot(&w, &w) * int(10).pow(24) <= dot(a, a) * dot(b, b)
+}
+
+/// The middle and the half range of the local heights in `f` over the
+/// overlap of two faces' boxes (where a meeting of both lies): extreme at
+/// its corners, an affine map's.
+pub(super) fn overlap_heights(f: &Affine, boxes: [&([f64; 3], [f64; 3]); 2]) -> Option<(R, R)> {
+    use crate::solid::split::q;
+    let lo: [f64; 3] = std::array::from_fn(|k| boxes[0].0[k].max(boxes[1].0[k]));
+    let hi: [f64; 3] = std::array::from_fn(|k| boxes[0].1[k].min(boxes[1].1[k]));
+    let heights: Vec<R> = (0..8)
+        .map(|m| {
+            let p: V = std::array::from_fn(|k| q(if m >> k & 1 == 1 { hi[k] } else { lo[k] }));
+            f.local(&p)[2].clone()
+        })
+        .collect();
+    let (wlo, whi) = (heights.iter().min()?, heights.iter().max()?);
+    let two = int(2);
+    Some(((wlo + whi) / &two, (whi - wlo) / &two))
+}
+
 /// Whether two cylinders whose axes lie within rounding of parallel are
 /// certainly apart where both faces' boxes overlap (a meeting lies in
 /// both): in the first frame's `(u, v)` at a height `w` of the overlap, the
@@ -275,21 +299,10 @@ fn near_parallel_apart(
     boxes: [&([f64; 3], [f64; 3]); 2],
 ) -> bool {
     use crate::certified::Interval as I;
-    use crate::solid::split::q;
-    let lo: [f64; 3] = std::array::from_fn(|k| boxes[0].0[k].max(boxes[1].0[k]));
-    let hi: [f64; 3] = std::array::from_fn(|k| boxes[0].1[k].min(boxes[1].1[k]));
-    // The overlap's local heights: extreme at its corners (an affine map).
-    let heights: Vec<R> = (0..8)
-        .map(|m| {
-            let p: V = std::array::from_fn(|k| q(if m >> k & 1 == 1 { hi[k] } else { lo[k] }));
-            fx.local(&p)[2].clone()
-        })
-        .collect();
-    let (Some(wlo), Some(whi)) = (heights.iter().min(), heights.iter().max()) else {
+    let Some((wm, half)) = overlap_heights(fx, boxes) else {
         return false;
     };
     let two = int(2);
-    let (wm, half) = ((wlo + whi) / &two, (whi - wlo) / &two);
     // The other axis in the first frame, and its centre at `wm`.
     let l = fx.local(&fy.point(&cy[0], &cy[1], &zero()));
     let dl = fx.local_dir(&fy.n);

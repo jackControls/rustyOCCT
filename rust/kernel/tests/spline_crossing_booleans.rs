@@ -543,3 +543,136 @@ fn a_turning_point_within_rounding_of_a_cap_is_degenerate() {
         );
     }
 }
+
+/// A boolean fuzz variant: the square with the fuzz target's lens hole (two
+/// cubics) in the tilted frame, the cut's first result (the prism itself),
+/// given to the chained stage's turned cylinder, whose frame's normal is
+/// the tilted frame's normalized again, an ulp off it. The cylinder crosses
+/// the lens's walls on an axis within rounding of theirs, its meeting a
+/// sliver of the run no binary64 edge holds (`degenerate_curve` in the
+/// validator before, or its projections unpinned, `PrecisionLoss`).
+/// Meeting, such axes are `Degenerate`; certainly apart within the faces
+/// (the cylinder inside the profile, holding it or beyond it) each
+/// operation is the same cylinder's on the wall's own frame.
+#[test]
+fn a_spline_wall_and_a_cylinder_within_rounding_of_parallel_are_degenerate_unless_apart() {
+    let tilt = frame((1.0, -2.0, 0.5), (0.0, 3.0, 4.0), (1.0, 0.0, 0.0));
+    let (a, h) = (1.25, 1.25);
+    let lens = Boundary::path(
+        vec![Point2::new(-a, 0.0), Point2::new(a, 0.0)],
+        vec![
+            spline_segment(
+                &[(-a, 0.0), (-a / 2.0, -h), (a / 2.0, -h), (a, 0.0)],
+                vec![0.0, 1.0],
+                vec![4, 4],
+            ),
+            spline_segment(
+                &[(a, 0.0), (a / 2.0, h), (-a / 2.0, h), (-a, 0.0)],
+                vec![0.0, 1.0],
+                vec![4, 4],
+            ),
+        ],
+        tol(),
+    )
+    .expect("the lens");
+    let holed = Profile::new(square(2.5), vec![lens], tol()).expect("a profile");
+    let height = 0.5;
+    let object = prism(1, holed, tilt, 0.0, height);
+    // The chained stage's partner: the tilted frame's normal normalized
+    // again (an ulp off here; on a platform whose `hypot` keeps it, turned
+    // by an ulp first), its x turned.
+    let partner = |r: f64, at: (f64, f64), w: f64, lo: f64, hi: f64| {
+        let f = ulp_off(
+            tilt,
+            tilt.point(Point2::new(at.0, at.1), w),
+            tilt.x() * 3.0 + tilt.y() * 4.0,
+        );
+        prism(7, disc(0.0, 0.0, r), f, lo, hi)
+    };
+    let meeting = partner(1.25, (0.5, 0.25), height / 3.0, 0.0, height);
+    for r in [
+        object.fuse(OperationId(9), &meeting),
+        object.cut(OperationId(9), &meeting),
+        object.common(OperationId(9), &meeting),
+    ] {
+        assert!(
+            matches!(&r, Err(Error::Degenerate(m)) if m.contains("within rounding of parallel")),
+            "{:?}",
+            r.map(|x| x.0.len())
+        );
+    }
+    // A lens of two parabolic arcs (no line wall) against cylinders inside
+    // it, holding it and beyond it, each as the same cylinder on the lens's
+    // own frame; and crossing it.
+    let lens = Boundary::path(
+        vec![Point2::new(0.0, 0.0), Point2::new(4.0, 0.0)],
+        vec![
+            spline_segment(
+                &[(0.0, 0.0), (2.0, -4.0), (4.0, 0.0)],
+                vec![0.0, 1.0],
+                vec![3, 3],
+            ),
+            spline_segment(
+                &[(4.0, 0.0), (2.0, 4.0), (0.0, 0.0)],
+                vec![0.0, 1.0],
+                vec![3, 3],
+            ),
+        ],
+        tol(),
+    )
+    .expect("the lens");
+    let lens = Profile::new(lens, vec![], tol()).expect("a profile");
+    let walls = prism(1, lens, tilt, 0.0, 3.0);
+    let volume = |r: &[Solid]| r.iter().map(|s| s.mass_properties().volume).sum::<f64>();
+    for (at, r) in [((2.0, 1.0), 0.25), ((2.0, 0.5), 3.0), ((2.0, 3.0), 0.5)] {
+        let near = partner(r, at, 1.0, 0.0, 1.5);
+        let exact = prism(7, disc(at.0, at.1, r), tilt, 1.0, 2.5);
+        for op in 0..3 {
+            let run = |b: &Solid| match op {
+                0 => walls.fuse(OperationId(9), b),
+                1 => walls.cut(OperationId(9), b),
+                _ => walls.common(OperationId(9), b),
+            };
+            match (run(&near), run(&exact)) {
+                (Ok((x, _)), Ok((y, _))) => {
+                    let (x, y) = (volume(&x), volume(&y));
+                    assert!(
+                        (x - y).abs() <= 1e-9 * x.abs().max(1.0),
+                        "{r} {op}: {x} {y}"
+                    );
+                }
+                // The cylinder inside: its cut a cavity left undecided.
+                (Err(x), Err(y)) => assert_eq!(x, y, "{r} {op}"),
+                (x, y) => panic!(
+                    "{r} {op}: {:?} {:?}",
+                    x.map(|s| s.0.len()),
+                    y.map(|s| s.0.len())
+                ),
+            }
+        }
+    }
+    for (at, r) in [((2.0, 2.0), 0.75), ((4.0, 0.0), 1.0), ((0.5, 0.5), 0.75)] {
+        let near = partner(r, at, 1.0, 0.0, 1.5);
+        let r = walls.common(OperationId(9), &near);
+        assert!(
+            matches!(&r, Err(Error::Degenerate(m)) if m.contains("within rounding of parallel")),
+            "{:?}",
+            r.map(|x| x.0.len())
+        );
+    }
+}
+
+/// A frame at `at` whose normal is `base`'s normalized again, an ulp off it
+/// (or, where this platform's `hypot` keeps it, turned by an ulp first).
+fn ulp_off(base: Frame3, at: Point3, hint: Vec3) -> Frame3 {
+    let n = base.normal();
+    let up = |x: f64, k: i64| f64::from_bits(x.to_bits().wrapping_add_signed(k));
+    [(0, 0), (1, 0), (0, 1), (-1, 0), (0, -1), (2, 0), (0, 2)]
+        .into_iter()
+        .map(|(ky, kz)| {
+            let turned = Vec3::new(n.x, up(n.y, ky), up(n.z, kz));
+            Frame3::new(at, turned, hint, tol()).expect("a frame")
+        })
+        .find(|f| f.normal() != n)
+        .expect("a frame an ulp off")
+}

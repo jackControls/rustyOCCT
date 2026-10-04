@@ -1239,7 +1239,15 @@ knot; a turning point on a face's boundary, at a segment's end, or outside
 the faces within the resolution of both (a rounding away from turning back
 on a cap's edge, or a loop's on a cap's rim); a vertex's polynomial with a
 multiple root (an edge tangent to the other's face; a cap circle tangent to
-the wall's generatrix, the meeting turning back on the rim).
+the wall's generatrix, the meeting turning back on the rim); a cylinder
+whose axis is within rounding of the wall's without being parallel (the
+sine of their angle at most `10^-12`, as a frame's normal normalized again
+is: `A` within rounding of zero, the meeting within the faces a sliver of
+the run no binary64 edge holds), as two such cylinders are, unless they
+are certainly apart within their faces' bounds: on every Bézier arc the
+wall's points at the overlap's middle height lie beyond the cylinder's
+radius, or within it, by more than the ruling's drift over half the
+overlap's heights (`|X|^2 - (r +- m)^2` of one sign on the arc, exactly).
 `ComputationLimit`: a graph over the height whose window does not verify
 after twenty halvings. Spline walls against spline walls on crossing axes
 stay refused (S9f).

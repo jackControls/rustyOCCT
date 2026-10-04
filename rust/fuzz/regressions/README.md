@@ -1288,3 +1288,29 @@ is incidental: the holed prism alone against the cylinder panicked too.
 It replays in 0.6 s with debug assertions, and 363 single-byte mutations
 of it (every value of the chained byte among them) replay without a
 failure.
+
+## Boolean: a spline wall's and a cylinder's axes within rounding of parallel
+
+`boolean/crash-a3fb9da3e3d83ef1cc3b272a30e6716eed8145b2.bin` was found by
+an audit of the other pair kinds after the input above, decoding variants
+of the boolean target with its shipped switches; at `b903f3fa` it failed
+(`unexpected error invalid topology: degenerate_curve`), as did 15 more of
+the 2,304 searched (the object's spline profile, its sizes, its height and
+the chained operation varied; two of them with `PrecisionLoss`), none
+since. It decodes a square
+`5` by `5` with the split target's lens hole (two cubics reaching `x =
++-1.25`, `y = +-0.9375`) over heights `0..0.5` in the tilted frame, and a
+rectangle tool above it (`1.5..2.5`), so the cut's first result is the
+prism itself; the chained byte gives it to the `GIVEN_ROUND` cylinder of
+radius 1.25, whose frame's normal is the tilted frame's normalized again,
+an ulp off it. The cylinder crosses the lens's spline walls on an axis
+within rounding of theirs: along the walls' rulings its function's `w^2`
+coefficient is within rounding of zero, and the meeting within the faces a
+sliver of the run no binary64 edge holds. A spline wall and a cylinder
+whose axes are within `10^-12` of parallel without being parallel are now
+`Degenerate` unless certainly apart within their faces' bounds, as two such
+cylinders are (`spline_crossing::meeting_with`;
+`tests/spline_crossing_booleans.rs`,
+`a_spline_wall_and_a_cylinder_within_rounding_of_parallel_are_degenerate_unless_apart`).
+It replays in 0.1 s with debug assertions, and 605 single-byte mutations of
+it (every value of the chained byte among them) replay without a failure.
