@@ -6377,6 +6377,54 @@ Decisions for S9, recorded before its code (2026-09-28):
     and `spline_crossing.rs` (the partner's rows), its tests, and the
     `boolean` fuzz target's spline prisms against its sphere, cap and zone
     tools (`SPLINE_SPHERE`).
+    * **S9f.3a evidence (2026-10-03), before its code.**
+      `spline_sphere_boolean_reference.py`, an independent reference of its
+      own: the pair sliced by planes, each slice's sections exact regions
+      of the profile's plane (the profile cut by the caps' lines; the
+      sphere's circle projected along the prism's axis, an ellipse
+      parameterised by the circle's own angle, cut by a hemisphere's line),
+      their Boolean pieces by Green's theorem on the cut boundaries in
+      closed form; breakpoints at every vertex's slice and every edge's
+      extremes (the meeting's from `F` and its tangent condition, linear in
+      `w`, eliminated exactly); the walls swept along their generatrices,
+      the sphere's face by Archimedes' area element, a hemisphere's disc in
+      its plane (by the profile's chords where it holds the axis); solids by
+      the slices' union-find. `generate_spline_sphere_boolean_fixtures.py
+      --check` writes 33 cases (9 fuses, 12 cuts, 12 commons; 27 solid, 6
+      degenerate): loops (spheres straddling the bulge's wall, the lens's
+      lower cubic, `knot`'s second span in `TILT`, the blob's wall under its
+      top cap, and a sphere object across the wave's knot), branches over
+      the run (a large sphere over the dome, its top cap inside it; a
+      sphere under the blob in `TILT`, arches from its bottom cap's edge
+      back to it), hemispheres (`hemi_bulge` through the bulge's bottom cap
+      on its axis, its split great circle on the wall in a tower field;
+      `side_hemi_bulge` on its side, its rim's plane holding the wall's
+      axis, one turning point inside the hemisphere and one beyond its
+      rim), and `degenerate` a sphere touching the dome's apex, a turning
+      point at `knot`'s knot and a loop turning back on the bulge's top
+      cap's edge. Checks: the two slicings (along the caps' normal and
+      along `(2, -3, 5)`) within 1.8e-41 of the size, both inputs' closed
+      forms 5.7e-42, faces' classes 2.8e-41, the area identity 8.0e-41,
+      Monte Carlo (100,000 points a pair) within 2.8 standard errors;
+      margins outside the declared pairs at least 0.023 (a vertex of the
+      prism from the sphere; crossings at caps and the rim 0.071, turning
+      points 0.27 outside a face and loops 0.34 inside both), the declared
+      pairs' zero; Python 3.9 and 3.12 the same files;
+      `test_spline_sphere_boolean_reference.py` (a sphere across a straight
+      spline wall: its common, moments, areas and turning points in closed
+      form; a rim's tower points in closed form); the CI group
+      `spline-sphere`. The capture `occt-boolean-spline-sphere-preimplementation`
+      (`compare_spline_sphere_boolean.py`, keyed on
+      `solid/boolean/curved/spline_sphere.rs`; the probe `unsupported` on all
+      33, refused by `spline_pairs`): every result valid with the
+      reference's solids, 4 matches, 29 reviewed (BRepGProp's default
+      integration up to 4.1e-5, the wave's up to 1.0e-3; a diagnostic
+      build's adaptive BRepGProp and Green's theorem over OCCT's own faces
+      and pcurves, the better within 6.0e-9 in volume, 7.8e-9 in area and
+      8.5e-9 in the centre but on the wave's cut and common, 9.3e-7 within
+      its edges' own tolerance of 3.7e-5); two solids' counts change when
+      unified. No correction to the decisions from the evidence. S9f.3a's
+      kernel next.
   * **Where S9 stands (2026-09-30, paused).** Done and pushed: S9a to S9d
     (every sub-step with its DRAW survey and a clean campaign), S9e.1
     (campaign clean at `51c08edf`) and S9e.2 (`8e060c67`), S9f's decisions
