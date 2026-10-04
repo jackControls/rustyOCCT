@@ -514,6 +514,14 @@ fn exact_green<T: Real>(
                 let points: Vec<(R, R)> = (0..piece[3].len())
                     .map(|i| (&piece[0][i] / &piece[3][i], &piece[1][i] / &piece[3][i]))
                     .collect();
+                // Constant u: `du = 0` along the piece, nothing to
+                // integrate (as the quadrature's `spline_face`: a piece
+                // along a ruling whose rounded end lies an ulp past the
+                // wall's `v` domain, which no patch holds, sent the whole
+                // face to the strips, S9f.3's slowest inputs).
+                if points.iter().all(|p| p.0 == points[0].0) {
+                    continue;
+                }
                 let (patch, extra) = match locate(&patches, &points, &piece) {
                     Some(patch) => (patch, None),
                     None => {
@@ -684,6 +692,18 @@ fn tensor_jets<T: Real>(gs: &[Tensor<T>], u: &Jet<T>, v: &Jet<T>) -> Vec<Jet<T>>
             };
             let bu = &bases_u[find(&bases_u, g.len() - 1)].1;
             let bv = &bases_v[find(&bases_v, g[0].len() - 1)].1;
+            if bv.len() < bu.len() {
+                // Fewer columns than rows (a wall's moments, of degree up
+                // to `5 p` in `ū` and a few in `v̄`): one product per
+                // column, `sum_j b_j(v̄) sum_i g_ij B_i(ū)`.
+                return bv.iter().enumerate().fold(zero.clone(), |acc, (j, b)| {
+                    let r = g
+                        .iter()
+                        .zip(bu.iter())
+                        .fold(zero.clone(), |a, (row, bi)| a.add(&bi.scale(&row[j])));
+                    acc.add(&b.mul(&r))
+                });
+            }
             g.iter().zip(bu).fold(zero.clone(), |acc, (row, b)| {
                 let r = row
                     .iter()

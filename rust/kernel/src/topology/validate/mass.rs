@@ -370,29 +370,51 @@ fn trig_along<T: Real>(
     )
 }
 
-/// `rev_eval_jet` of several integrands at once, sharing the powers.
+/// `rev_eval_jet` of several integrands at once, sharing the powers: each
+/// grouped by the powers of `cos u` and `sin u`, one product each, every
+/// group's polynomial in `v` summed coefficient by coefficient in place
+/// (the same operations in the same order as jets' scales and sums, without
+/// a jet made per term: S9f.3b's cones integrate along their walls'
+/// meetings at a thousand pieces a result).
 fn rev_eval_jets<T: Real>(fs: &[Rev<T>], u: &Jet<T>, v: &Jet<T>) -> Vec<Jet<T>> {
     let (co, si) = u.cos_sin();
-    let (mut pc, mut ps, mut pv) = (Powers::new(&co), Powers::new(&si), Powers::new(v));
+    let (mut pc, mut ps) = (Powers::new(&co), Powers::new(&si));
     let n = u.order();
+    // The powers of `v` every integrand needs, made once.
+    let top = fs
+        .iter()
+        .flat_map(|f| f.keys().map(|(k, _, _)| usize::from(*k)))
+        .max()
+        .unwrap_or(0);
+    let mut pv: Vec<Jet<T>> = vec![Jet::constant(c::<T>(1.0), n)];
+    while pv.len() <= top {
+        let next = pv[pv.len() - 1].mul(v);
+        pv.push(next);
+    }
     let mut uv: BTreeMap<(u8, u8), Jet<T>> = BTreeMap::new();
     fs.iter()
         .map(|f| {
-            // Grouped by the powers of `cos u` and `sin u`: one product each.
-            let mut groups: BTreeMap<(u8, u8), Jet<T>> = BTreeMap::new();
+            let mut groups: Vec<((u8, u8), Vec<T>)> = Vec::new();
             for ((k, a, b), x) in f {
-                let entry = groups
-                    .entry((*a, *b))
-                    .or_insert_with(|| Jet::constant(c::<T>(0.0), n));
-                *entry = entry.add(&pv.get(*k).scale(x));
+                let at = match groups.iter().position(|(key, _)| *key == (*a, *b)) {
+                    Some(at) => at,
+                    None => {
+                        groups.push(((*a, *b), vec![c::<T>(0.0); n + 1]));
+                        groups.len() - 1
+                    }
+                };
+                let power = &pv[usize::from(*k)];
+                for (acc, p) in groups[at].1.iter_mut().zip(&power.c) {
+                    *acc = acc.add(&p.mul(x));
+                }
             }
+            groups.sort_by_key(|(key, _)| *key);
             let mut total = Jet::constant(c::<T>(0.0), n);
             for ((a, b), w) in groups {
                 let along_u = uv
                     .entry((a, b))
-                    .or_insert_with(|| pc.get(a).mul(&ps.get(b)))
-                    .clone();
-                total = total.add(&along_u.mul(&w));
+                    .or_insert_with(|| pc.get(a).mul(&ps.get(b)));
+                total = total.add(&along_u.mul(&Jet { c: w }));
             }
             total
         })
