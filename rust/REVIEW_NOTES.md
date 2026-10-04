@@ -6787,6 +6787,93 @@ Decisions for S9, recorded before its code (2026-09-28):
     keeps as 2 solids sharing the point where the reference's rays count 1
     (its volume and area the reference's as printed); 6 results' counts
     change when unified. S9e.4b.3a's kernel next.
+  * **S9e.4b.3a implemented** (`solid/boolean/curved/pieces.rs`,
+    `imported::Recognized::Piece`, `model.rs`'s hull faces and edges,
+    `given::built`), as the refined decisions describe: an imported body
+    of one sphere, cylinder or cone face and plane faces that is none of
+    S9e.4a's constructions is a plane piece, its primitive (the whole
+    sphere on its stored frame and radius, or a cylinder or a cone on the
+    curved face's stored frame reaching a quarter of the body's span past
+    its ends, a cone clamped at its apex) common the half-spaces of its
+    plane faces' stored planes; the model is S9e.1's given model of that
+    Boolean, its second input a hull leaf model (the planes' convex
+    polygons bounded by a cube about the primitive, their corners three
+    planes' rational points, membership every half-space), the arrangement
+    tried at the seams in turn as a whole sphere's, matched to the stored
+    topology on import (S9e.2's match), its history over the stored ids
+    directly; it classifies by the model and moves with its stored
+    topology, read off it again. All 45 fixtures as declared (33 within the
+    kernel's enclosures, each at most `1e-9` wide; `tilt_flush` refused as
+    `Degenerate("two faces within the resolution of one plane")`,
+    `half_touch` as a tangency; the octant against `octant_low`
+    `OutOfDomain("faces of both inputs on one sphere (S9e.4b.3c)")`, the
+    bitten ball refused on import as S9e.4b.3c's), every history complete
+    over the imported bodies' stored ids and none from a primitive or a
+    hull, results deterministic and moved rigidly, both inputs translated
+    and turned keeping the reference's volumes, every body a piece (its
+    volume its closed form, a point in it inside and its mirror in the
+    centre outside, its stored vertices on its boundary), the kernel's own
+    split pieces of a cylinder and a frustum by oblique planes and a zone's
+    halves imported as pieces, their Booleans with a box and a ball obeying
+    the pair identities, the octant against a whole torus, the stored
+    frames the reference's bit for bit (`tests/imported_piece_booleans.rs`,
+    40 s at `opt-level` 2 with debug
+    assertions on a host at load 27 to 41, 19 s in release). `compare_imported_pieces_boolean.py` 32 matches and 13
+    reviewed (the 10 captured; with the kernel, entity counts in 6:
+    `lune_ball_fuse`, the cone's three and the chain's fuse and cut, the
+    same faces as OCCT's unified result, each splitting its sections at its
+    own points and seams), every enclosure within the reference with
+    S9e.4a's `1e-12` slack; every other comparison unchanged
+    (`compare_imported_boolean.py` 54/15, `compare_imported_arcs_boolean.py`
+    27/9, `compare_imported_polyhedra_boolean.py` 47/1, given 36/0, given
+    curved 25/23, given met 8/42, chained 24/6, and the rest of HANDOFF's
+    table and `compare_step.py` 23/6 on STEP-b's SDK), the suite and the
+    tools' unit tests (318) passing and the ledger unchanged. Amendments, from the
+    implementation: (a) a section within the resolution of a stored
+    sphere's pole takes a vertex of both faces already within the
+    resolution of the pole as its pole vertex (`graph.rs`): two planes'
+    line through a turned frame's pole meets it at a rounded point, and the
+    arrangement made a second vertex there (`so6`'s and `so7`'s shape
+    refused as a result thinner than the resolution); (b) a
+    sphere face's loop through a pole whose pcurves turn half a turn there
+    (a meridian circle through both poles, the half ball's plane) winds
+    none, the face closing on it without a pole vertex loop beside it
+    (`assemble.rs`); (c) a given model's circle matched to a stored circle
+    or arc whose frame turns against it is read the other way
+    (`Given::flip`, S9e.2's rule for lines, now for circles too: the
+    pieces' rims); (d) faces of both inputs on one sphere where either is a
+    piece are refused before the arrangement, `OutOfDomain` as
+    S9e.4b.3c's (two pieces of one sphere meet along their whole common
+    sphere, which the arrangement does not decide); (e) a piece is never
+    S9b.2's substitution of a stored polyhedron (`polyhedra.rs`), its model
+    the curved engine's; (f) evidence correction (a): only spheres' pieces
+    come from `.brep` files, the cylinder's and the cone's tested on the
+    kernel's own split pieces. The `boolean` fuzz target's `IMPORTED`
+    stage also imports the chained stage's first result of one sphere,
+    cylinder or cone face and plane faces (a piece) and cuts it by the
+    turned box again, its volume the chained cut's within `1e-9`: replaying
+    the corpus (1,432 inputs) and the 26 regressions with debug
+    assertions, no failure, the slowest 13.5 s on a host at load 24 to 41;
+    90 such first results reach it, 17 imported and cut within the chained
+    cut's volume, 63 not written by the kernel's writer (a projection or
+    sinusoid pcurve of a section by the turned box), 6 read back with
+    pcurves off their edges and 4 refused on import as S9e.4b.3c's (2 not
+    their primitive common their planes, 2 with two faces on one plane).
+    A trial of the DRAW survey's 39 S9e.4b.3 restore cases (not the
+    survey: nothing registered), on the Rust adapter: none evaluates, each
+    refused as declared, S9e.4b.3c's or S9's: 18 (every case restoring
+    `so1` or `so4`, whose rims OCCT split at the seam) as a piece other
+    than its primitive common its planes' half-spaces, 20
+    (pairs of `so2`, `so3`, `so5`, `so6` and `so7`) as faces of both
+    inputs on one sphere, and `buc60926` `Degenerate("a
+    plane through a cone's apex")` (`shading_132`, a three-quarter frustum
+    whose planes pass through its virtual apex); native DRAW passes all 39
+    (`viewer_skipped`), and before S9e.4b.3a all 39 were refused as an
+    imported solid other than a prism, a sphere, a cone or a torus.
+    Pending: S9e.4b.3b (S9e.2's `Clipped` and `Half` on this model) and
+    S9e.4b.3c (pieces of one sphere, split rims, pieces not convex in their
+    planes), the Linux record of the capture, the campaign and the DRAW
+    survey.
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces
