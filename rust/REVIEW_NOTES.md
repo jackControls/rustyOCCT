@@ -7523,6 +7523,96 @@ Decisions for S9, recorded before its code (2026-09-28):
   2.6-fold). Open: the arrangement's exact arithmetic for fields of degree
   eight (a rational interval Horner per binary64 view, `Qd::to_f64`), and
   the moved result's second validation.
+* **Certified integrals beside spline walls' loops (S9f.3a, S9f.3b), done:
+  `SPLINE_SPHERE` and `SPLINE_CONE` on.** The fuzz target's spline prisms
+  against its sphere and cone tools were off for time: the corpus's own
+  `d7599dbe` took 472 s under AddressSanitizer, a sphere variant
+  (`e2fbf381`) 297 s, three cone variants 97, 76 and 49 s. Profiles (macOS
+  `sample` of the replay with debug assertions and of the sanitizer's
+  target; instructions retired as the load-free measure): `d7599dbe`, 472
+  G, spent 83% in its results' mass. 70% was the quadrature of the spline
+  walls' four `|N|` integrals over the meetings' pieces
+  (`quadrature::spline_face`'s sweeps: 93 tensor-rule integrals examined
+  9,747 boxes, 4,594 of them with a series undefined over the box, since
+  near a turning point the discriminant `d` is far below its terms, and its
+  factors' products over a range, combined, overestimated it by their own
+  size, so its square root failed until a piece was a hundred times
+  shorter than it needed; such a box was halved across its less divided
+  side, nearly half the time `σ`, along which the integrand is linear),
+  and a quarter of those sweeps was rational arithmetic made again at every
+  evaluation (the pieces' affine maps, their brackets and gcds). 27% was
+  the jets along the meetings' pieces (`jet::integrate_many` through
+  `projection::wall_pieces`: the wall's ten Green moment tensors, the
+  sphere's moments, the validator's areas and fluxes), each integral
+  computing the pieces' wall jets again (72% of them repeats). Under
+  AddressSanitizer the same integrals cost most in allocations (jets of
+  order zero at every de Casteljau step of every Taylor coefficient, a jet
+  per term of a cone's moment integrands, de Boor's points at every node of
+  a graph over `v`), in the comparison tracing libFuzzer's instrumentation
+  adds to every integer test and to every shadow check, and in rational
+  arithmetic outside the integrals (the validator's exact spline points;
+  the strips, where Green's exact route refused a wall for a segment along
+  a ruling an ulp past its domain). Changes (`MATHEMATICS.md`, the
+  certified evaluation of `WallMeet` and certified quadrature's (e) and
+  (f)): (a) every polynomial of a spline wall's meeting taken over a range
+  in centred form (`wall_meet::Centre`: the Taylor coefficients at the
+  range's binary64 middle, enclosed at that point, shifted over the range
+  exactly; a cone's tiers combined at the point first), `a`, `b`, `c` and
+  `d` from the polynomials over a range too, the Taylor coefficients about
+  a point in the tier (not as jets of order zero), and a graph over `v`'s
+  rows expanded once about the root's base and solved for on series cut to
+  `k + 1` terms; (b) the wall pieces' jets kept in the projections' memo by
+  the knot span too; (c) constants made once instead of at every
+  evaluation: a wall piece's affine maps (`quadrature::Placed`), the Green
+  tensors' patch maps, the binary64 Gauss–Legendre rule, de Boor's points
+  on the stack; (d) a bisected piece's halves' remainders bounded by its
+  own next coefficients where they suffice (`jet::integrate_many`, and the
+  tensor rule's boxes likewise); (e) the binary64 tier's rounding errors
+  kept as binary64 values and its products' corners decided by
+  floating-point tests (the same bounds bit for bit, no integer comparison
+  to trace); (f) Green's exact route integrates nothing along a constant-`u`
+  piece, a wall's moment tensors take one product of jets per column, and a
+  cone's or cylinder's moment integrands are summed in place. Tried and
+  dropped: the tiers centred one by one (the cone variants slower: their
+  terms no longer cancelled, 710 boxes against 250) and the polynomials
+  over a range by de Casteljau's range form (over ten minutes on a cone
+  variant). Results, instructions retired with debug assertions
+  (`d7599dbe`, `e2fbf381` and `ab0e5716` spheres, `2dddfe21` and
+  `bb24e50b` cones): 472, 200, 107, 87.7 and 74.4 G before; 58, 47, 36, 87
+  and 48 with (a) but the tiers and (b); 58, 47, 36, 42 and 43 with the
+  tiers combined; 52, 41, 34, 41 and 40 with (c)'s maps and rule; 46, 36,
+  28, 36 and 34 with the tensors' columns and the point coefficients in
+  the tier; 43, 33, 22, 33 and
+  31 with (e), the graph over `v`'s expansions, de Boor's points and the
+  constant-`u` pieces; 37, 30, 21, 29 and 27 with (d); 36.8, 29.2, 21.1,
+  27.1 and 25.5 with the cones' integrands: 12.8, 6.9, 5.1, 3.2 and 2.9
+  times fewer. The 879 variants of every third corpus input (S9f.3a's 477
+  spheres, S9f.3b's 402 cones), none failing: spheres 5.5 to 4.9 G at the
+  median, 14.2 to 11.1 G at the ninth decile and 472 to 36.8 G at the
+  heaviest, cones 3.5 to 3.3, 11.7 to 8.6 and 87.7 to 27.1 G; none
+  heavier than before. Under AddressSanitizer with the target's own
+  options (the allocator feature, a 64 MB quarantine, five-frame stacks)
+  on a host at load 8 to 22, which made the corpus's slowest input
+  `e36969f1`, unrelated to the switches, take 87 to 138 s (45 s in the last
+  campaign at load 3 to 7): `d7599dbe` 24 to 38 s (472 s before),
+  `2dddfe21` 23 to 33 s (97 s), `bb24e50b` 21 s (76 s), the 25 heaviest
+  variants 16 to 33 s, and the six heaviest of the corpus's 215 inputs
+  reaching either switch 19 to 38 s (`d7599dbe` and `85659e3a` 422 G, then
+  four of 337 to 391 G, against `e36969f1`'s 1,100 G). Both switches are
+  on. Enclosures: every fixture test passes within its `1e-9` enclosures;
+  the release suite (548 tests), fmt, clippy and the 1.85 check pass; every
+  spline comparison unchanged with 0 failures (`compare_spline_sphere_boolean.py`
+  4/29, `compare_spline_cone_boolean.py` 4/23,
+  `compare_spline_crossing_boolean.py` 14/37,
+  `compare_spline_parallel_boolean.py` 31/12, `compare_spline_any_boolean.py`
+  22/16, `compare_boolean.py --splines` 33/13). The corpus (1,432 inputs)
+  and the 26 regressions replay with debug assertions and both switches
+  on without a failure, the slowest 19 s on a host at load 20 to 27 (91 G,
+  inputs unrelated to the switches). Open: a campaign with both switches
+  on; the Linux runners' 2.6 times puts the heaviest of these inputs near
+  the target's 60 s, as the corpus's slowest inputs already are; the
+  moved result's second validation and the validator's exact spline
+  points are the next levers.
 * **The DRAW adapter's curved primitives (S9d.4b.2b), done in S9d.4b's
   survey.** It built every `ptorus`, `psphere` and `pcone` with the same
   ids, so two tori (and two spheres or cones) were refused as solids

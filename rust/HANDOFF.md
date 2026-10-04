@@ -14,7 +14,8 @@ then for S9f.3a (branch `s9f3`, over `s9c2-kernel` at `7199e06a`) and a
 fix of two cylinders within rounding of parallel (branch `fix-conic-eval`),
 then for the near-parallel audit (branch `near-parallel-audit`), S9e.4b.2
 (branch `s9e4b2`) and S9f.3b (branch `s9f3b`), each over `s9c2-kernel` at
-`b903f3fa`.
+`b903f3fa`, then for the loops' certified integrals (branch
+`loop-integrals`, over `s9c2-kernel` at `12b6c176`).
 
 ## Where things stand
 
@@ -88,9 +89,11 @@ then for the near-parallel audit (branch `near-parallel-audit`), S9e.4b.2
   S9f.3b), 33 cases referenced by an independent reference of its own
   (`spline_sphere_boolean_reference.py`) and captured before the kernel
   code, the kernel within the reference on all 27 results and refusing the
-  6 degenerate cases. Its fuzz switch `SPLINE_SPHERE` is off (the corpus's
-  `d7599dbe` 472 s under AddressSanitizer). Campaign clean at `788f8861`;
-  pending its DRAW survey.
+  6 degenerate cases. Its fuzz switch `SPLINE_SPHERE` is on since the
+  loops' certified integrals were sped up (the corpus's `d7599dbe` 472 s
+  under AddressSanitizer before, 24 to 38 s on a host at load 8 to 22).
+  Campaign clean at `788f8861` with the switch off; pending its DRAW
+  survey and a campaign with it on.
 - **S9f.3b implemented** (branch `s9f3b`, not merged): spline prisms
   against cones and frustums in any position, either the object
   (`curved/spline_cone.rs`): S9f.2b's meeting with the cone's radius row of
@@ -106,9 +109,10 @@ then for the near-parallel audit (branch `near-parallel-audit`), S9e.4b.2
   extension of S9f.3a's reference (`spline_cone_boolean_reference.py`) and
   captured before the kernel code, the kernel within the reference on all
   21 results and refusing the 6 degenerate cases. Its fuzz switch
-  `SPLINE_CONE` is off (the slowest variants 97 s under
-  AddressSanitizer). Campaign clean at `788f8861`; pending its DRAW
-  survey.
+  `SPLINE_CONE` is on since the loops' certified integrals were sped up
+  (the slowest variant 97 s under AddressSanitizer before, 23 to 33 s on a
+  host at load 8 to 22). Campaign clean at `788f8861` with the switch off;
+  pending its DRAW survey and a campaign with it on.
 - **S9e.3b implemented** (branch `s9e3b`, over `507b8054`, with
   `s9c2-kernel` at `c8e37abe` merged in; not yet pushed): a given result's
   meeting of two curved faces (`Meet`, `Rise`, `Toric`) or a cone's or
@@ -203,10 +207,17 @@ then for the near-parallel audit (branch `near-parallel-audit`), S9e.4b.2
    the recaptured `occt-boolean-spline-crossing-preimplementation` and of
    the spline-sphere, spline-cone and imported-polyhedra captures from
    CI's run, as every capture's. `SPLINE_SPHERE` and `SPLINE_CONE` are
-   off: the corpus's own `d7599dbe` takes 472 s under AddressSanitizer
-   against a sphere, a cone across a lens hole 97 s; the certified
-   integrals over a spline wall's pieces beside a loop's turning points
-   are the cost and the next lever before either can be switched on.
+   on (branch `loop-integrals`; REVIEW_NOTES.md's "Certified integrals
+   beside spline walls' loops"): the corpus's own `d7599dbe` took 472 s
+   under AddressSanitizer against a sphere and a cone across a lens hole
+   97 s; with the loops' polynomials over a range in centred form, the
+   wall pieces' jets shared, constants made once and halves' remainders
+   from their parents' coefficients, the heaviest of 879 variants and of
+   the corpus's 215 inputs reaching either take 16 to 38 s on a host at
+   load 8 to 22, where the corpus's slowest input, unrelated, takes 87 to
+   138 s. A campaign with both on is the next step for them (the Linux
+   runners' 2.6 times puts their heaviest near the target's 60 s, as the
+   corpus's slowest inputs already are).
 3. **S9e.4b**, split in "S9e.4b refined": S9e.4b.1 (arcs rounded off
    their circles) is implemented (above, its DRAW survey and campaign done); **S9e.4b.2**, polyhedra other than prisms, is
    implemented on their stored vertices (above; campaign clean, pending its DRAW
@@ -362,9 +373,9 @@ changes, every generator importing it runs with `--check --workers 4`. Then:
   on the exact arithmetic, and Linux runners about 2.6 times this host; the
   boolean target's limit is 60 s an input. Configurations too slow for it are
   switched off in `rust/fuzz/src/boolean.rs` (`TORUS_PAIRS`, `CONE_PAIRS`,
-  `TURNED_PARTS`, `GIVEN_MET`, `SPLINE_SPHERE`, `SPLINE_CONE`; `GIVEN_CURVED`,
-  `GIVEN_ROUND`, `GIVEN_BALL`, `SPLINE_WALLS`, `SPLINE_PARALLEL`,
-  `SPLINE_CROSSING` and `IMPORTED` are on; the first four off switches on
+  `TURNED_PARTS`, `GIVEN_MET`; `GIVEN_CURVED`, `GIVEN_ROUND`, `GIVEN_BALL`,
+  `SPLINE_WALLS`, `SPLINE_PARALLEL`, `SPLINE_CROSSING`, `SPLINE_SPHERE`,
+  `SPLINE_CONE` and `IMPORTED` are on; the four off switches on
   at once make corpus input `6fab9d41` fail `vertex_off_curve`, each alone
   clean, open). A heavily loaded
   host makes campaigns time out spuriously; run them on a quiet machine.
