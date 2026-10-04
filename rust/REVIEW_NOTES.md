@@ -6773,8 +6773,20 @@ Decisions for S9, recorded before its code (2026-09-28):
     tangent to the zone's sphere, two balls were internally tangent (the
     pieces' pair) and a rod's or a pair's result was a sliver whose rays'
     counts disagreed between resolutions (the turned octant moved and its
-    frame changed; the pair the octant and the turned octant). S9e.4b.3a's
-    native capture next.
+    frame changed; the pair the octant and the turned octant). The capture
+    `occt-boolean-imported-pieces-preimplementation`
+    (`compare_imported_pieces_boolean.py`, keyed on
+    `solid/boolean/curved/pieces.rs`; the kernel's probe `unsupported` on
+    all 45, S9e.4a refusing every body): every result valid, 35 matching
+    (within 1.6e-8 of the reference, the worst the chain's cut, its faces
+    bounded by OCCT's approximated sections), 10 reviewed: the rod's and the
+    cone's meetings with a piece's sphere (`tilt_rod`, `lune_cone`,
+    `half_rod`, 9 cases, volumes up to 5.4e-7 relative off by BRepGProp's
+    default integration, within 3.2e-9 measured adaptively at 1e-10 and
+    1e-12 by a diagnostic build) and the declared touching fuse, which OCCT
+    keeps as 2 solids sharing the point where the reference's rays count 1
+    (its volume and area the reference's as printed); 6 results' counts
+    change when unified. S9e.4b.3a's kernel next.
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces
