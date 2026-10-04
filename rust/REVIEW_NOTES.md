@@ -6139,6 +6139,66 @@ Decisions for S9, recorded before its code (2026-09-28):
     and its tests (`tests/imported_arc_booleans.rs`: enclosures within
     `1e-9` of the reference, degenerate cases refused, histories over the
     stored ids, determinism, rigid motion).
+  * **S9e.4b.1 evidence (2026-10-03).** Five bodies OCCT wrote
+    (`boolean-imported-arcs-bodies.txt`, `MakePrism` of profiles whose
+    world coordinates are their turned frames' roundings, written by
+    `compare_imported_arcs_boolean.py --write-bodies` to
+    `rust/fixtures/imported/`): `slot`, a stadium (lines tangent to its
+    arcs) in the `TILT` frame; `halves_turn`, a circle as two arcs (a
+    joint of two arcs of one circle) in the `TURN30` frame; `rounded`, a
+    rectangle with four fillets in the `R125` frame; `notch`, an arc
+    meeting its lines at an angle in the `TURN30` frame; `lens`, two arcs
+    of different circles meeting, in the `TURN30` frame.
+    `generate_imported_arcs_boolean_fixtures.py --check`: 36 cases of 12
+    groups (27 solid, 6 declared `degenerate`, 3 `unsupported`; 30 of
+    class `prism`, 3 `both`, 3 `chain`): the slot against a box across its
+    arc end, as object and as tool, a vertical rod through it and a ball
+    across its arc wall (a sphere's meeting with its cylinder); the split
+    circle against a box across its seam; the rounded rectangle against a
+    `TILT` slab (two solids cut); the notch against a box across its
+    arc's crossing joint; the notch and the slot both imported (two solids
+    cut); the slot less the rod, then with the box; declared `degenerate`
+    a `TILT` box on the plane of the slot's flat wall (coplanar in the
+    construction) and a `TILT` box whose wall touches the slot's arc wall
+    along a generatrix; declared `unsupported` the lens against a box
+    (S9e.4b.4). The reference is the constructions OCCT was given through
+    S9e.3a's chained reference with S9e.4a's checks
+    (`generate_imported_boolean_fixtures.evaluate_chain`), relative to the
+    case's size: the two families within 4.1e-32, each solid's closed
+    form 1.5e-40, the pair identities 4.4e-38 and the area identity
+    1.5e-40, Monte Carlo 3.2 standard errors, solid counts by rays at two
+    resolutions, every meeting's sine at least 0.30 and events at least
+    3.2e-3 of their range apart outside the declared cases, quadrature
+    estimates 9.1e-33. Every file read independently (`stored_records`):
+    its faces' kinds the construction's, every stored vertex within
+    3.9e-17 of the size on the construction's surfaces, and its arcs'
+    ends, their stored vertices' local coordinates in the construction's
+    frame (the exact affine map of its stored binary64 axes, of which the
+    cap's stored frame the kernel reads is a rounding) rounded once, off
+    their circles exactly: 4 of the slot's 8, all of the others' (4, 16,
+    4 and 4).
+    `test_imported_arcs_boolean_reference.py` checks the constructions'
+    arcs ending on their circles exactly, the slot's volume and area
+    against its closed form (the volume times the stored axes'
+    determinant), the slot less the box by a quadrature of its sections,
+    the off-circle test, and the case list and its protocol rows. The
+    generator's check is a CI group of its own (`imported-arcs`); Python
+    3.9 and 3.12 write the same files. Corrections from the evidence: the
+    plan's off-circle check is made in the construction's frame (the
+    cap's stored frame is the converter's normalization again of OCCT's
+    17 digits, which the reference does not emulate); the lens was moved
+    from the `TILT` frame, where its joints' coordinates round back onto
+    both circles (S9e.4a would take it), to `TURN30`; the split circle
+    likewise from `TILT` to `TURN30` (in `TILT` its ends, off its circle
+    in the construction's frame, round back onto it in the cap's stored
+    frame, and S9e.4a's kernel took it: found by the capture's check that
+    the kernel refuses every case before this step's code); and the notch
+    from `(2, 0, -1/2)` to `(9/4, 1/8, -1/2)`: its vertical edge at `x = 0`
+    touched the slot's arc wall along its generatrix there, an edge
+    tangent to a face that the reference's events, the same height found
+    twice within 1e-25 and counted once, did not flag (a trial run of the
+    cases on a draft of the step's code, not committed, refused it as two
+    result vertices within the resolution).
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces
