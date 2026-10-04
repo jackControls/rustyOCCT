@@ -6890,6 +6890,257 @@ Decisions for S9, recorded before its code (2026-09-28):
     corpus input reaching none of S9e.4's or S9f's code, 91 G instructions
     with debug assertions; 45 and 52 s in the last two campaigns at lower
     load), at the target's limit.
+  * **S9e.4b.3b refined, before its code (2026-10-04).** Why it is refused
+    today: a split piece (S8a.2's `Clipped`, a prism of lines, arcs and
+    circles split by a plane oblique to its axis; S8c.2's and S8d.2's
+    `Half`, a cone, frustum, cap or zone split by a plane through its axis
+    or across it; S8d.1's and S8d.3's `Half`, a whole torus's piece) given
+    to a Boolean reaches `polyhedra::build`, since `curved::applies` takes
+    none: `stored_model` refuses its curved faces ("a Boolean of a solid
+    with curved faces or edges in any position (S9e.4)") and `prism_model`
+    a partner's arcs ("a Boolean of a prism with arcs and a solid other
+    than a prism (S9e.4)"); a result of one given to another Boolean is
+    refused by `given.rs` ("a Boolean's result of a plane's piece given to
+    another Boolean (S9e.4)"), one beside a given result by
+    `curved::build`. Decisions. (1) *Which.* A split piece where either
+    input has a face other than a plane, against a prism, a sphere, a cone,
+    a torus, an imported piece (S9e.4b.3a), another split piece or a given
+    result, as object or tool, and a result of one given to another Boolean
+    (S9e.3a's chain, its leaf the piece's model). A `Clipped` of a prism of
+    lines against a polyhedral partner stays S9b.2's stored model (exact on
+    planar faces, as now). (2) *The model: S9e.4b.3a's, from the split.* The
+    given model of the piece's primitive common the half-spaces of its
+    planes, read off its construction (no recognition): a `Clipped`'s
+    primitive the prism (its profile on the piece's frame between its
+    heights) and its plane the split's `a u + b v + c w + d` in that frame,
+    the piece's side by its stored sign; a `Half`'s primitive the cone or
+    frustum on its frame, for a zone or cap the whole sphere on its frame
+    with its ends' parallels' planes `w = start` and `w = end` (S9e.4b.3a's
+    model of a sphere's piece: a plane through the axis then meets the
+    sphere through its stored poles as an imported half's does, where the
+    cap's own model would take that section through its pole vertex), a
+    torus's the whole torus; its plane the one the split built it on (a
+    plane within a quarter of the resolution of holding the axis taken
+    through it, as S8c.2 builds its halves about the trace; a torus's
+    within the resolution of normal to its axis at the band's rounded
+    height, S8d.1's), the side by its index (the first below). Each plane
+    enters the world exactly through the frame's stored axes, `F(X) = m .
+    (X - o) + d` with `m` the coefficients through the inverse of the
+    axes' matrix (where the split took them from a plane's frame, its
+    stored normal exactly); the hull (`pieces.rs`'s `Hull`, given its planes
+    exactly) bounds them by the cube about the primitive, its faces'
+    parameters the piece's stored faces' frames. A profile not convex across
+    the plane leaves several pieces on a side: the arrangement's several
+    solids, the piece the one S9e.2's match finds (its whole construction
+    given, `keep_solid`). No new field or degree: the planes' points are
+    rationals, their sections the engine's. (3) *Match.* S9e.2's geometric
+    match of the arrangement's assembly to the piece's stored topology,
+    whose ids name the model, so a Boolean's history is over the piece's
+    ids directly (`ComputationLimit("a given result rebuilt differently")`
+    where they differ, which a fixture shows first). (4) *Degenerate and
+    refused.* S9's rules in both arrangements, unchanged: a cone's or
+    frustum's half by a plane through its axis passes through its apex,
+    real or virtual, `Degenerate("a plane through a cone's apex")` (S9d.3a's
+    rule, as the S9e.4b.3a trial's `buc60926`); faces within the resolution
+    of one plane (a box on a piece's cut face); tangencies; a vertex on a
+    face; a closed section's own vertex in the model (at its conic's angle
+    zero, no stored vertex of the piece's) on the other input's face, a
+    seam conflict no seam of the second arrangement moves, `Degenerate("a
+    meeting at every seam tried")` as for S9e.4b.3a's pieces. Refused: a
+    torus's piece by a plane oblique to its axis (S8d.3's spiric pieces,
+    their sections the split's procedural curves, which no rule of S9e.2's
+    match takes) `OutOfDomain("a torus's piece by a plane oblique to its
+    axis against curved faces (refused, S9e.4b.3b)")`; a spline prism's
+    piece `OutOfDomain("a spline prism's split piece against curved faces
+    (S9f)")`; a split zone and a sphere, zone or piece of the same sphere
+    `OutOfDomain("faces of both inputs on one sphere (S9e.4b.3c)")`
+    (S9e.4b.3a's rule). (5) *Its other queries*: unchanged, S8's
+    (classification, mass, bounds, rigid motion); the model is built again
+    from a moved piece (its key the construction, frame and topology). (6)
+    *Fuzzing.* No fuzz target gives a split piece to a Boolean: the
+    `split` target's oblique pieces of prisms with arcs and its revolved
+    pieces are each given to a Boolean with a box holding the solid (the
+    piece's own volume) and a turned box through its centroid (the pair
+    identities), a switch of their own (`PIECE_BOOLEANS`). (7) *Evidence
+    first.* A row `split ox oy oz nx ny nz xx xy xz below|above` after a
+    solid's rows (`identity_reference.Case.split`, both protocols): the
+    kernel splits the solid by the plane through the frame's origin normal
+    to its normal and takes the one piece on that side; the oracle takes
+    the solid common `BRepPrimAPI_MakeHalfSpace` of the plane on that side.
+    The reference is the construction through S9e.3a's chained reference, a
+    piece `P common H` with `H` a box on the plane's frame on the kept side
+    reaching past the solid (`generate_split_pieces_boolean_fixtures.py
+    --check`, a CI group `split-pieces`,
+    `test_split_pieces_boolean_reference.py`): a cylinder's piece below a
+    leaning plane (closed form), a prism of lines and an arc and a box cut
+    across both caps, a frustum's and a zone's piece across their walls, a
+    zone's half through its axis, a torus's band, against boxes, balls,
+    rods, a cone and another piece, as object and as tool, and a chain;
+    declared `degenerate` a frustum's half through its axis and a box on a
+    piece's cut plane, `unsupported` a zone's half against its own ball. A
+    native capture before `curved/splits.rs` exists
+    (`compare_split_pieces_boolean.py` keyed on it, the kernel's probe
+    refusing every case); then the kernel and its tests
+    (`tests/split_piece_booleans.rs`).
+  * **S9e.4b.3b evidence (2026-10-04).** The protocols take a split piece:
+    after a solid's rows a row `split ox oy oz nx ny nz xx xy xz
+    below|above` (`identity_reference.Case.split` in `encode_case` and
+    `native_case`; `tests/support/identity_protocol.rs`'s `CaseSpec.split`,
+    `build` keeping the one piece `Solid::split_by_plane` leaves on that
+    side). `generate_split_pieces_boolean_fixtures.py --check`: 48 cases of
+    16 groups (39 solid, 6 declared `degenerate`, 3 `unsupported`; 21 of
+    class `prism`, 21 `revolved`, 3 `both`, 3 `chain`) on 8 pieces: a
+    cylinder of radius 3 below a leaning plane across its wall
+    (`cyl_low`, its closed form), S9e.4a's `dee` below a tilted plane across
+    both caps, a box above a leaning plane across both caps (plane faces
+    only, against curved partners), a frustum below a tilted plane across its
+    wall (an ellipse), a zone on `SKEW2` on one side of the plane through its
+    axis (S8c.2's half), a zone on `SKEW` above a tilted plane (a circle
+    across its wall), a whole torus above a plane normal to its axis (S8d.1's
+    band) and a frustum's half by a plane through its axis; each against
+    boxes, balls, rods along the world's `y` and upright, a cone along the
+    zone's axis inside its band, as object and as tool, the cylinder's and
+    the dee's pieces together, and a chain (the cylinder's piece less a rod,
+    then with a level slab across it); declared `degenerate` the frustum's
+    half through its axis against a box (its virtual apex) and a box on the
+    cylinder piece's cut plane, `unsupported` (S9e.4b.3c) the zone's half
+    against its own whole ball. Each split is checked to be the kernel's
+    piece of its class (`split_class`, exactly on the stored axes: a
+    prism's plane oblique to its axis, a revolved solid's within a quarter
+    of the resolution of its axis or not, a torus's normal to its axis).
+    The reference is the construction OCCT is given through S9e.3a's
+    chained reference, each piece `P common H`, `H` a box on the plane's
+    frame on the kept side reaching past the solid (each solid within four
+    fifths of its reach), a zone's piece its whole sphere common `H` common
+    the slab between its ends' parallels at the heights the kernel stores
+    (`r sin(lat)`, the sine and the product each rounded once: the chained
+    reference takes whole spheres): the two families within 6.2e-36 of the
+    case's size, each solid's closed form 9.7e-36, the cylinder's piece's
+    closed form 1.9e-41 (its volume the disc's area times the plane's height
+    over the axis, its area the disc, the wall and the ellipse `pi r^2 |m| /
+    |m_z|`, `m` its box's face's normal), the pair identities on the last
+    Boolean's arguments 2.6e-38 and the area identity 3.8e-41, Monte Carlo
+    2.8 standard errors (50,000 points a group), quadrature estimates
+    1.9e-32, solid counts by rays at two resolutions and each piece one
+    solid, every meeting's sine at least 0.083 and events at least 1.3e-5 of
+    their range apart outside the declared groups.
+    `test_split_pieces_boolean_reference.py` checks the cylinder's piece's
+    closed form against a direct integration (a plane normal to the axis
+    the cylinder's own), the chained reference on the piece against it, the
+    splits' classes (a plane normal to a prism's axis, off a zone's centre
+    or oblique to a torus's axis not that class), the half-space boxes and
+    the case list and its protocol rows. The generator's check is a CI group
+    of its own (`split-pieces`, 15 to 27 minutes on four workers locally); Python
+    3.9 and 3.12 write the same files. Corrections from the evidence,
+    amending the refined decisions' plan (7): (a) the chained reference
+    takes whole spheres only, so a zone's piece is its sphere common two
+    boxes (above); (b) half-space boxes reaching far past the solids made a
+    group take up to 50 minutes (the chain's), so each box reaches just past
+    its piece's solid and the chain's slab is level, and Monte Carlo takes
+    50,000 points a group; (c) partners moved where a ball's pole touched a
+    frustum's cap's plane, the chain's slab's plane met the cut plane on the
+    cylinder's wall, a ray count's resolution split a thin neck (a box
+    lowered, a cone along the zone's axis, the band's torus on the world's
+    axes and its ball smaller), and the pair is the cylinder's and the dee's
+    pieces (a zone's half beside them took the longest of all). The oracle
+    takes the `split` row as the solid common `BRepPrimAPI_MakeHalfSpace` of
+    the plane's face on the kept side (its reference point the origin a unit
+    along or against the normal). The capture
+    `occt-boolean-split-pieces-preimplementation`
+    (`compare_split_pieces_boolean.py`, keyed on
+    `solid/boolean/curved/splits.rs`, S9e.4a's slack; the kernel's probe
+    `unsupported` on all 48, every split piece refused as S9e.4's): every
+    result valid with the reference's solid count, 33 matching, 15 reviewed
+    (BRepGProp's default integration on faces bounded by the approximated
+    sections of the ball and the rods with the cylinder's piece, the ball
+    with the frustum's, the rod with the zone's, the ball with the band
+    and the chain's common: volumes up to 3.6e-6 relative off, within
+    1.4e-8 measured adaptively at 1e-10 and at 1e-12 by a diagnostic
+    build); 20 results' counts change when unified. S9e.4b.3b's kernel
+    next.
+  * **S9e.4b.3b implemented** (`solid/boolean/curved/splits.rs`,
+    `curved::applies` and `model_of`, `pieces.rs`'s hull of exact planes,
+    `given.rs`'s chains, `split::Clipped::parts`, `split::Half::parts` and
+    `built_plane`), as the refined decisions describe: a split piece where
+    either input has a curved face is the given model of its split's
+    primitive common the half-spaces of its planes, read off the split (a
+    prism's oblique piece its prism and plane; a cone's piece its cone, a
+    zone's or cap's its whole sphere and its ends' parallels' planes, a
+    torus's band its whole torus, each with the plane it was built on),
+    each plane taken exactly into the world through the frame's axes, the
+    hull's faces on the piece's stored faces' frames, matched to the piece's
+    stored topology, the history over its ids. All 48 fixtures as declared
+    (39 within the kernel's enclosures, each at most `1e-9` wide;
+    `cone_axis` refused as `Degenerate("a plane through a cone's apex")`,
+    `cyl_flush` as two faces within the resolution of one plane,
+    `one_sphere` `OutOfDomain("faces of both inputs on one sphere
+    (S9e.4b.3c)")`), every history complete over the pieces' ids and none
+    from a primitive or a hull, results deterministic and moved rigidly,
+    both inputs translated and turned keeping the reference's volumes (a
+    plane exactly along a rod's axis, `cyl_rod`'s and `block_rod`'s, is
+    within rounding of it once turned: S9's `Degenerate`, so those are not
+    moved), the stored frames and the splits' planes the reference's bit for
+    bit, every fixture's piece its vertices on its boundary and its common
+    with a box holding it itself; beside the fixtures, a U profile's two
+    pieces above one plane (each one solid of several of its construction,
+    S9e.2's sorting) against a rod, a hemisphere's halves through its pole
+    against a box (their commons the cap's), a cylinder's piece against
+    S9e.4a's imported octant and a given result as object and tool, a
+    torus's spiric piece refused (`tests/split_piece_booleans.rs`, 29 s at
+    `opt-level` 2 with debug assertions, 31 s in release with debug
+    assertions under the emulated correctly rounded `hypot` on a host at
+    load 10 to 20). `compare_split_pieces_boolean.py` 26 matches and 22
+    reviewed (the 15 captured; with the kernel, entity counts in 14, the same
+    faces as OCCT's unified result, each splitting its sections at its own
+    points and seams), every enclosure within the reference with S9e.4a's
+    `1e-12` slack; every other comparison unchanged
+    (`compare_imported_pieces_boolean.py` 32/13,
+    `compare_imported_boolean.py` 54/15, `compare_imported_arcs_boolean.py`
+    27/9, `compare_imported_polyhedra_boolean.py` 47/1, given 36/0, given
+    curved 25/23, chained 24/6), the suite and the tools' unit tests (323)
+    passing. Amendments, from the implementation and the split target's new
+    stage (its replay found the last three, each an imported piece's too):
+    (a) a zone's or cap's piece is its whole sphere with its ends' planes
+    (S9e.4b.3a's model), not the cap: a plane through the cap's axis meets
+    it through its stored pole, which the cap's own model took as a seam
+    conflict at every seam; (b) a loop through a stored sphere's pole that
+    winds none (S9e.4b.3a's rule) but does not start there has its fins from
+    the pole on lifted by the turn it made, and the face's other loops
+    lifted again to lie with it (`assemble.rs`'s `pole_lift`: a cap's half
+    against a box across the seam, the last pcurve not closing on the
+    first, `uv_gap`, or a hole on the wrong sheet, `inner_loop_outside`);
+    (c) a stored circle matched as a ring runs the result's way, turned over
+    where it runs the other (`given_arc`: a zone's rim as a parallel's plane's
+    section of the whole sphere, that plane's normal out of the piece,
+    `loop_winding`); (d) a cone's section stored as a ring runs the result's
+    way about the cone's axis (`ring_about`: a frustum's oblique piece, its
+    wall's loops winding the same way, "a cone's wall winding without an
+    apex"); (e) a closed section's own vertex in a model (at its conic's
+    angle zero) on the other input's face is a seam conflict no seam of the
+    second arrangement moves: `Degenerate("a meeting at every seam
+    tried")`, as for S9e.4b.3a's pieces (a box's face through the frustum's
+    section's angle-zero point; no fixture). The `split` fuzz target gives
+    each oblique piece of a prism with arcs and each piece of a cone, zone
+    or cap by a plane not normal to its axis to Booleans
+    (`PIECE_BOOLEANS`, on): its common with a box holding it is itself, and
+    the first piece's fuse, cut and common with a box turned about its
+    centroid obey the pair identities (a torus's pieces are not given, their
+    arrangements taking seconds; the second piece not turned, for time: the
+    corpus's slowest input took 62 s under AddressSanitizer with both; with
+    the first only the five slowest others take 13 to 18 s and an existing
+    slow regression 28 s, at load 10 to 19). Replaying the split corpus and
+    its regressions (3,563 inputs; two failing inputs now regressions) with
+    debug assertions, no failure: 890 inputs reach the stage with 1,718 pieces,
+    1,404 commons with the holding box and the identities of 699 of the 868
+    turned boxes evaluate, the rest refused as documented (a vertex of one
+    input on the other's face, a spline prism's piece, S9f's, a plane
+    through or within the resolution of a cone's apex, meetings within
+    rounding, pieces or results thinner than the resolution, tangencies),
+    the slowest input 3.8 s on a host at load 10 to 20; the boolean
+    target's corpus and regressions (1,459 inputs) replayed with debug
+    assertions, no failure, the slowest 15.6 s. Pending: the capture's
+    Linux record, the campaigns of the `split` and `boolean` targets and
+    the DRAW survey.
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces

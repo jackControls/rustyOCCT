@@ -2027,6 +2027,12 @@ impl Clipped {
         self.profile.tolerance()
     }
 
+    /// The prism's profile, the plane in its frame and the sign of the
+    /// plane's function inside the piece (S9e.4b.3b's model).
+    pub(crate) fn parts(&self) -> (&Profile, &[R; 4], i8) {
+        (&self.profile, &self.plane, self.sign)
+    }
+
     /// The same piece of the same split in another frame, its ids external
     /// (the caller restores them).
     pub(crate) fn rebuilt(

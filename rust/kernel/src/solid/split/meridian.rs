@@ -617,6 +617,43 @@ impl Half {
         self.tolerance
     }
 
+    /// The primitive, the plane in its frame and the piece's index (the
+    /// first below the plane: S9e.4b.3b's model).
+    pub(crate) fn parts(&self) -> (&Primitive, &[R; 4], usize) {
+        (&self.primitive, &self.plane, self.index)
+    }
+
+    /// The plane the piece was built on, in its frame (S9e.4b.3b's model):
+    /// one within the resolution of holding the axis through it (S8c.2's
+    /// halves about the trace), one within it of normal to a torus's axis
+    /// at the rounded height (S8d.1's bands), any other as stored.
+    pub(crate) fn built_plane(&self) -> [R; 4] {
+        let [a, b, c, d] = &self.plane;
+        match self.primitive {
+            Primitive::Torus { major, minor } => {
+                let ab2 = a * a + b * b;
+                let tol = q(self.tolerance.linear());
+                let widest = q(major + minor);
+                let normal = ab2 == zero()
+                    || &ab2 * &widest * &widest * R::from_integer(16.into()) <= &tol * &tol * c * c;
+                if normal {
+                    let h = q(rational_f64(&(-d / c)));
+                    return [zero(), zero(), c.clone(), -(c * h)];
+                }
+                let _ = minor;
+                self.plane.clone()
+            }
+            _ => {
+                let [bottom, top] = ends(&self.primitive);
+                if contains_axis(&self.plane, bottom.w, top.w, self.tolerance) {
+                    [a.clone(), b.clone(), zero(), zero()]
+                } else {
+                    self.plane.clone()
+                }
+            }
+        }
+    }
+
     /// The same half in another frame, its ids external (the caller
     /// restores them).
     pub(crate) fn rebuilt(&self, operation: OperationId, frame: Frame3) -> Result<Solid> {

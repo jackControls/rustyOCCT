@@ -187,6 +187,15 @@ pub(super) struct ConeSec {
 }
 
 impl ConeSec {
+    /// Its cone's axis, the direction its parameter turns about
+    /// counter-clockwise (rounded).
+    pub(super) fn axis(&self) -> [f64; 3] {
+        self.f
+            .n
+            .clone()
+            .map(|x| crate::solid::split::rational_f64(&x))
+    }
+
     fn along(&self, cs: &[Qd; 2]) -> Qd {
         cs[0]
             .scale(&self.plane[0])

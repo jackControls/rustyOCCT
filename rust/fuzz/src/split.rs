@@ -18,7 +18,13 @@
 //! wire the outer boundary), split by a plane through a dyadic point,
 //! through a vertex, along an edge, tangent, parallel to the body or in its
 //! plane, or at an angle: the measures (areas or lengths) add up, each piece
-//! lies on its side and moves rigidly with its ids.
+//! lies on its side and moves rigidly with its ids. S9e.4b.3b: each oblique
+//! piece of a prism with arcs and each piece of a cone, zone or cap by a
+//! plane not normal to its axis is given to Booleans (`PIECE_BOOLEANS`): its
+//! common with a box holding it is itself, and the first piece's fuse, cut
+//! and common with a box turned about its centroid obey the pair identities
+//! when all three evaluate; a refusal names a later step's or S9's rule,
+//! never S9e.4's.
 use crate::analytic_intersections::Bytes;
 use rusty_occt::identity::OperationId;
 use rusty_occt::topology::SplineSpan;
@@ -26,6 +32,95 @@ use rusty_occt::{
     BSplineCurve2, Boundary, Error, Frame3, Point2, Point3, Profile, Segment, Side, Solid,
     Tolerance, Vec3,
 };
+
+/// Whether split pieces with curved faces are given to Booleans (S9e.4b.3b:
+/// the given model of the split's primitive common its planes'
+/// half-spaces): the prisms' oblique pieces and the cones', zones' and
+/// caps' pieces by planes not normal to their axes. On; a torus's pieces
+/// are not given (their arrangements take seconds, too long under the
+/// sanitizer).
+const PIECE_BOOLEANS: bool = true;
+
+/// S9e.4b.3b: a split piece with a curved face given to Booleans: its common
+/// with a box holding it is itself; with a box turned about its centroid
+/// (`turned`: the first piece only, for time), the pair identities where
+/// fuse, cut and common evaluate. A refusal is
+/// documented (`Degenerate`, `ComputationLimit`, or `OutOfDomain` of a later
+/// step), never S9e.4's refusal of a plane's piece.
+fn piece_booleans(piece: &Solid, turned: bool) {
+    use rusty_occt::history::History;
+    let curved = piece
+        .topology()
+        .faces()
+        .iter()
+        .any(|f| !matches!(f.surface, rusty_occt::topology::Surface::Plane(_)));
+    if !PIECE_BOOLEANS || !curved {
+        return;
+    }
+    let tolerance = Tolerance::default();
+    let volume = |r: rusty_occt::Result<(Vec<Solid>, History)>| -> Option<f64> {
+        match r {
+            Ok((out, _)) => Some(out.iter().map(|s| s.mass_properties().volume).sum()),
+            Err(Error::Degenerate(_) | Error::ComputationLimit(_)) => None,
+            Err(Error::OutOfDomain(m)) => {
+                assert!(!m.ends_with("(S9e.4)"), "a split piece refused: {m}");
+                None
+            }
+            Err(e) => panic!("unexpected error {e}"),
+        }
+    };
+    let own = piece.mass_properties().volume;
+    let bounds = piece.bounds();
+    let reach = (bounds.max - bounds.min).length().max(1.0);
+    let corner = bounds.min + Vec3::new(-reach, -reach, -reach);
+    let Ok(holder) = Solid::box_at(
+        corner,
+        Vec3::new(3.0 * reach, 3.0 * reach, 3.0 * reach),
+        tolerance,
+    ) else {
+        return;
+    };
+    if let Some(v) = volume(piece.common(OperationId(4), &holder)) {
+        assert!((v - own).abs() <= 1e-9 * own.max(1.0), "{v} for {own}");
+    }
+    if !turned {
+        return;
+    }
+    let c = piece.mass_properties().centroid;
+    let Ok(turned) = Frame3::new(
+        c,
+        Vec3::new(1.0, 2.0, 2.0),
+        Vec3::new(2.0, 1.0, -2.0),
+        tolerance,
+    ) else {
+        return;
+    };
+    let side = 0.5 * reach;
+    let square =
+        [(0.0, 0.0), (side, 0.0), (side, side), (0.0, side)].map(|(x, y)| Point2::new(x, y));
+    let Ok(profile) = Boundary::polygon(square.to_vec(), tolerance)
+        .and_then(|b| Profile::new(b, vec![], tolerance))
+    else {
+        return;
+    };
+    let Ok((other, _)) = Solid::extrude_with(OperationId(5), profile, turned, 0.0, side) else {
+        return;
+    };
+    let vb = other.mass_properties().volume;
+    let (f, k, m) = (
+        volume(piece.fuse(OperationId(6), &other)),
+        volume(piece.cut(OperationId(6), &other)),
+        volume(piece.common(OperationId(6), &other)),
+    );
+    if let (Some(f), Some(k), Some(m)) = (f, k, m) {
+        let size = own + vb;
+        assert!(
+            (f + m - own - vb).abs() <= 1e-9 * size,
+            "{f} + {m} for {own} + {vb}"
+        );
+        assert!((k - (own - m)).abs() <= 1e-9 * size, "{k} for {own} - {m}");
+    }
+}
 
 /// A nonrational spline segment over its whole domain.
 fn spline(
@@ -520,6 +615,10 @@ fn check_prism(data: &[u8], splined: bool) {
             moved.mass_properties().volume,
         );
         assert!((v0 - v1).abs() <= 1e-9 * v0.max(1.0), "{v0} moved to {v1}");
+        // S8a.2's oblique pieces (the other modes' pieces are prisms).
+        if mode >= 6 {
+            piece_booleans(piece, std::ptr::eq(piece, &pieces[0].1));
+        }
     }
 }
 
@@ -709,5 +808,11 @@ fn check_revolved(data: &[u8]) {
             .expect("a piece moves rigidly");
         let ids = |s: &Solid| s.topology().ids().map(|(id, _)| id).collect::<Vec<_>>();
         assert_eq!(ids(piece), ids(&moved), "a moved piece keeps its ids");
+        // S8c.2's and S8d.2's halves of a cone, zone or cap (a whole
+        // sphere's pieces and those normal to the axis are caps, zones and
+        // frusta; a torus's are slow).
+        if matches!(kind, 0 | 2 | 3) && mode >= 2 {
+            piece_booleans(piece, std::ptr::eq(piece, &pieces[0].1));
+        }
     }
 }

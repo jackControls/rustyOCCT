@@ -1,0 +1,558 @@
+case cyl_box_fuse 1e-07
+op 91
+frame 5.0 5.0 -1.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 8.0
+boundary C 0.0 0.0 3.0
+split 5.0 5.0 3.0 3.0 0.0 4.0 0.0 1.0 0.0 below
+boolean fuse 93
+op 92
+frame 0.0 0.0 -0.25 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 3.0
+boundary P 4 6.25 3.5 9.5 3.5 9.5 6.75 6.25 6.75
+end
+case cyl_box_cut 1e-07
+op 91
+frame 5.0 5.0 -1.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 8.0
+boundary C 0.0 0.0 3.0
+split 5.0 5.0 3.0 3.0 0.0 4.0 0.0 1.0 0.0 below
+boolean cut 93
+op 92
+frame 0.0 0.0 -0.25 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 3.0
+boundary P 4 6.25 3.5 9.5 3.5 9.5 6.75 6.25 6.75
+end
+case cyl_box_common 1e-07
+op 91
+frame 5.0 5.0 -1.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 8.0
+boundary C 0.0 0.0 3.0
+split 5.0 5.0 3.0 3.0 0.0 4.0 0.0 1.0 0.0 below
+boolean common 93
+op 92
+frame 0.0 0.0 -0.25 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 3.0
+boundary P 4 6.25 3.5 9.5 3.5 9.5 6.75 6.25 6.75
+end
+case box_cyl_fuse 1e-07
+op 91
+frame 0.0 0.0 -0.25 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 3.0
+boundary P 4 6.25 3.5 9.5 3.5 9.5 6.75 6.25 6.75
+boolean fuse 93
+op 92
+frame 5.0 5.0 -1.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 8.0
+boundary C 0.0 0.0 3.0
+split 5.0 5.0 3.0 3.0 0.0 4.0 0.0 1.0 0.0 below
+end
+case box_cyl_cut 1e-07
+op 91
+frame 0.0 0.0 -0.25 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 3.0
+boundary P 4 6.25 3.5 9.5 3.5 9.5 6.75 6.25 6.75
+boolean cut 93
+op 92
+frame 5.0 5.0 -1.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 8.0
+boundary C 0.0 0.0 3.0
+split 5.0 5.0 3.0 3.0 0.0 4.0 0.0 1.0 0.0 below
+end
+case box_cyl_common 1e-07
+op 91
+frame 0.0 0.0 -0.25 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 3.0
+boundary P 4 6.25 3.5 9.5 3.5 9.5 6.75 6.25 6.75
+boolean common 93
+op 92
+frame 5.0 5.0 -1.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 8.0
+boundary C 0.0 0.0 3.0
+split 5.0 5.0 3.0 3.0 0.0 4.0 0.0 1.0 0.0 below
+end
+case cyl_ball_fuse 1e-07
+op 91
+frame 5.0 5.0 -1.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 8.0
+boundary C 0.0 0.0 3.0
+split 5.0 5.0 3.0 3.0 0.0 4.0 0.0 1.0 0.0 below
+boolean fuse 93
+op 92
+frame 3.25 6.5 3.75 8.0 4.0 1.0 -1.0 4.0 -8.0
+sphere 2.0 -1.5707963267948966 1.5707963267948966
+end
+case cyl_ball_cut 1e-07
+op 91
+frame 5.0 5.0 -1.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 8.0
+boundary C 0.0 0.0 3.0
+split 5.0 5.0 3.0 3.0 0.0 4.0 0.0 1.0 0.0 below
+boolean cut 93
+op 92
+frame 3.25 6.5 3.75 8.0 4.0 1.0 -1.0 4.0 -8.0
+sphere 2.0 -1.5707963267948966 1.5707963267948966
+end
+case cyl_ball_common 1e-07
+op 91
+frame 5.0 5.0 -1.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 8.0
+boundary C 0.0 0.0 3.0
+split 5.0 5.0 3.0 3.0 0.0 4.0 0.0 1.0 0.0 below
+boolean common 93
+op 92
+frame 3.25 6.5 3.75 8.0 4.0 1.0 -1.0 4.0 -8.0
+sphere 2.0 -1.5707963267948966 1.5707963267948966
+end
+case cyl_rod_fuse 1e-07
+op 91
+frame 5.0 5.0 -1.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 8.0
+boundary C 0.0 0.0 3.0
+split 5.0 5.0 3.0 3.0 0.0 4.0 0.0 1.0 0.0 below
+boolean fuse 93
+op 92
+frame 0.0 0.0 0.0 0.0 1.0 0.0 1.0 0.0 0.0
+offsets 0.0 12.0
+boundary C 6.5 -2.25 0.875
+end
+case cyl_rod_cut 1e-07
+op 91
+frame 5.0 5.0 -1.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 8.0
+boundary C 0.0 0.0 3.0
+split 5.0 5.0 3.0 3.0 0.0 4.0 0.0 1.0 0.0 below
+boolean cut 93
+op 92
+frame 0.0 0.0 0.0 0.0 1.0 0.0 1.0 0.0 0.0
+offsets 0.0 12.0
+boundary C 6.5 -2.25 0.875
+end
+case cyl_rod_common 1e-07
+op 91
+frame 5.0 5.0 -1.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 8.0
+boundary C 0.0 0.0 3.0
+split 5.0 5.0 3.0 3.0 0.0 4.0 0.0 1.0 0.0 below
+boolean common 93
+op 92
+frame 0.0 0.0 0.0 0.0 1.0 0.0 1.0 0.0 0.0
+offsets 0.0 12.0
+boundary C 6.5 -2.25 0.875
+end
+case dee_rod_fuse 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 4.0
+boundary S 4 0.0 0.0 L 10.0 0.0 A 10.0 5.0 5.0 1 10.0 10.0 L 0.0 10.0 L
+split 7.0 5.0 2.0 0.0 3.0 4.0 1.0 0.0 0.0 below
+boolean fuse 93
+op 92
+frame 0.0 0.0 -1.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 6.0
+boundary C 14.0 6.5 1.25
+end
+case dee_rod_cut 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 4.0
+boundary S 4 0.0 0.0 L 10.0 0.0 A 10.0 5.0 5.0 1 10.0 10.0 L 0.0 10.0 L
+split 7.0 5.0 2.0 0.0 3.0 4.0 1.0 0.0 0.0 below
+boolean cut 93
+op 92
+frame 0.0 0.0 -1.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 6.0
+boundary C 14.0 6.5 1.25
+end
+case dee_rod_common 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 4.0
+boundary S 4 0.0 0.0 L 10.0 0.0 A 10.0 5.0 5.0 1 10.0 10.0 L 0.0 10.0 L
+split 7.0 5.0 2.0 0.0 3.0 4.0 1.0 0.0 0.0 below
+boolean common 93
+op 92
+frame 0.0 0.0 -1.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 6.0
+boundary C 14.0 6.5 1.25
+end
+case block_rod_fuse 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 5.0
+boundary P 4 1.0 1.0 9.0 1.0 9.0 7.0 1.0 7.0
+split 5.0 4.0 2.5 3.0 0.0 4.0 0.0 1.0 0.0 above
+boolean fuse 93
+op 92
+frame 0.0 0.0 0.0 0.0 1.0 0.0 1.0 0.0 0.0
+offsets -1.0 9.0
+boundary C 6.25 -3.25 1.0
+end
+case block_rod_cut 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 5.0
+boundary P 4 1.0 1.0 9.0 1.0 9.0 7.0 1.0 7.0
+split 5.0 4.0 2.5 3.0 0.0 4.0 0.0 1.0 0.0 above
+boolean cut 93
+op 92
+frame 0.0 0.0 0.0 0.0 1.0 0.0 1.0 0.0 0.0
+offsets -1.0 9.0
+boundary C 6.25 -3.25 1.0
+end
+case block_rod_common 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 5.0
+boundary P 4 1.0 1.0 9.0 1.0 9.0 7.0 1.0 7.0
+split 5.0 4.0 2.5 3.0 0.0 4.0 0.0 1.0 0.0 above
+boolean common 93
+op 92
+frame 0.0 0.0 0.0 0.0 1.0 0.0 1.0 0.0 0.0
+offsets -1.0 9.0
+boundary C 6.25 -3.25 1.0
+end
+case frustum_ball_fuse 1e-07
+op 91
+frame 5.0 5.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+cone 3.0 1.5 6.0
+split 5.0 5.0 3.0 0.0 3.0 4.0 1.0 0.0 0.0 below
+boolean fuse 93
+op 92
+frame 6.375 3.3125 4.1875 8.0 4.0 1.0 -1.0 4.0 -8.0
+sphere 1.75 -1.5707963267948966 1.5707963267948966
+end
+case frustum_ball_cut 1e-07
+op 91
+frame 5.0 5.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+cone 3.0 1.5 6.0
+split 5.0 5.0 3.0 0.0 3.0 4.0 1.0 0.0 0.0 below
+boolean cut 93
+op 92
+frame 6.375 3.3125 4.1875 8.0 4.0 1.0 -1.0 4.0 -8.0
+sphere 1.75 -1.5707963267948966 1.5707963267948966
+end
+case frustum_ball_common 1e-07
+op 91
+frame 5.0 5.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+cone 3.0 1.5 6.0
+split 5.0 5.0 3.0 0.0 3.0 4.0 1.0 0.0 0.0 below
+boolean common 93
+op 92
+frame 6.375 3.3125 4.1875 8.0 4.0 1.0 -1.0 4.0 -8.0
+sphere 1.75 -1.5707963267948966 1.5707963267948966
+end
+case zone_box_fuse 1e-07
+op 91
+frame 5.0 5.0 5.0 4.0 4.0 7.0 1.0 -8.0 4.0
+sphere 4.0 -0.5 0.75
+split 5.0 5.0 5.0 1.0 -8.0 4.0 4.0 4.0 7.0 above
+boolean fuse 93
+op 92
+frame 0.0 0.0 3.25 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 3.25
+boundary P 4 5.75 1.5 9.25 1.5 9.25 4.75 5.75 4.75
+end
+case zone_box_cut 1e-07
+op 91
+frame 5.0 5.0 5.0 4.0 4.0 7.0 1.0 -8.0 4.0
+sphere 4.0 -0.5 0.75
+split 5.0 5.0 5.0 1.0 -8.0 4.0 4.0 4.0 7.0 above
+boolean cut 93
+op 92
+frame 0.0 0.0 3.25 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 3.25
+boundary P 4 5.75 1.5 9.25 1.5 9.25 4.75 5.75 4.75
+end
+case zone_box_common 1e-07
+op 91
+frame 5.0 5.0 5.0 4.0 4.0 7.0 1.0 -8.0 4.0
+sphere 4.0 -0.5 0.75
+split 5.0 5.0 5.0 1.0 -8.0 4.0 4.0 4.0 7.0 above
+boolean common 93
+op 92
+frame 0.0 0.0 3.25 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 3.25
+boundary P 4 5.75 1.5 9.25 1.5 9.25 4.75 5.75 4.75
+end
+case zone_cone_fuse 1e-07
+op 91
+frame 5.0 5.0 5.0 4.0 4.0 7.0 1.0 -8.0 4.0
+sphere 4.0 -0.5 0.75
+split 5.0 5.0 5.0 1.0 -8.0 4.0 4.0 4.0 7.0 above
+boolean fuse 93
+op 92
+frame 7.875 3.4375 3.0 4.0 4.0 7.0 1.0 -8.0 4.0
+cone 1.25 1.0 3.0
+end
+case zone_cone_cut 1e-07
+op 91
+frame 5.0 5.0 5.0 4.0 4.0 7.0 1.0 -8.0 4.0
+sphere 4.0 -0.5 0.75
+split 5.0 5.0 5.0 1.0 -8.0 4.0 4.0 4.0 7.0 above
+boolean cut 93
+op 92
+frame 7.875 3.4375 3.0 4.0 4.0 7.0 1.0 -8.0 4.0
+cone 1.25 1.0 3.0
+end
+case zone_cone_common 1e-07
+op 91
+frame 5.0 5.0 5.0 4.0 4.0 7.0 1.0 -8.0 4.0
+sphere 4.0 -0.5 0.75
+split 5.0 5.0 5.0 1.0 -8.0 4.0 4.0 4.0 7.0 above
+boolean common 93
+op 92
+frame 7.875 3.4375 3.0 4.0 4.0 7.0 1.0 -8.0 4.0
+cone 1.25 1.0 3.0
+end
+case cut_rod_fuse 1e-07
+op 91
+frame 5.0 5.0 4.0 8.0 4.0 1.0 -1.0 4.0 -8.0
+sphere 4.5 -0.75 1.0
+split 5.0 5.0 5.0 0.0 3.0 4.0 1.0 0.0 0.0 above
+boolean fuse 93
+op 92
+frame 0.0 0.0 0.0 0.0 1.0 0.0 1.0 0.0 0.0
+offsets -1.0 11.0
+boundary C 4.5 -5.25 1.0
+end
+case cut_rod_cut 1e-07
+op 91
+frame 5.0 5.0 4.0 8.0 4.0 1.0 -1.0 4.0 -8.0
+sphere 4.5 -0.75 1.0
+split 5.0 5.0 5.0 0.0 3.0 4.0 1.0 0.0 0.0 above
+boolean cut 93
+op 92
+frame 0.0 0.0 0.0 0.0 1.0 0.0 1.0 0.0 0.0
+offsets -1.0 11.0
+boundary C 4.5 -5.25 1.0
+end
+case cut_rod_common 1e-07
+op 91
+frame 5.0 5.0 4.0 8.0 4.0 1.0 -1.0 4.0 -8.0
+sphere 4.5 -0.75 1.0
+split 5.0 5.0 5.0 0.0 3.0 4.0 1.0 0.0 0.0 above
+boolean common 93
+op 92
+frame 0.0 0.0 0.0 0.0 1.0 0.0 1.0 0.0 0.0
+offsets -1.0 11.0
+boundary C 4.5 -5.25 1.0
+end
+case band_ball_fuse 1e-07
+op 91
+frame 5.0 5.0 4.0 0.0 0.0 1.0 1.0 0.0 0.0
+torus 3.0 1.25 0.0 6.283185307179586 6.283185307179586
+split 5.0 5.0 4.5 0.0 0.0 1.0 1.0 0.0 0.0 above
+boolean fuse 93
+op 92
+frame 7.875 5.25 5.125 8.0 4.0 1.0 -1.0 4.0 -8.0
+sphere 0.75 -1.5707963267948966 1.5707963267948966
+end
+case band_ball_cut 1e-07
+op 91
+frame 5.0 5.0 4.0 0.0 0.0 1.0 1.0 0.0 0.0
+torus 3.0 1.25 0.0 6.283185307179586 6.283185307179586
+split 5.0 5.0 4.5 0.0 0.0 1.0 1.0 0.0 0.0 above
+boolean cut 93
+op 92
+frame 7.875 5.25 5.125 8.0 4.0 1.0 -1.0 4.0 -8.0
+sphere 0.75 -1.5707963267948966 1.5707963267948966
+end
+case band_ball_common 1e-07
+op 91
+frame 5.0 5.0 4.0 0.0 0.0 1.0 1.0 0.0 0.0
+torus 3.0 1.25 0.0 6.283185307179586 6.283185307179586
+split 5.0 5.0 4.5 0.0 0.0 1.0 1.0 0.0 0.0 above
+boolean common 93
+op 92
+frame 7.875 5.25 5.125 8.0 4.0 1.0 -1.0 4.0 -8.0
+sphere 0.75 -1.5707963267948966 1.5707963267948966
+end
+case pair_fuse 1e-07
+op 91
+frame 5.0 5.0 -1.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 8.0
+boundary C 0.0 0.0 3.0
+split 5.0 5.0 3.0 3.0 0.0 4.0 0.0 1.0 0.0 below
+boolean fuse 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 4.0
+boundary S 4 0.0 0.0 L 10.0 0.0 A 10.0 5.0 5.0 1 10.0 10.0 L 0.0 10.0 L
+split 7.0 5.0 2.0 0.0 3.0 4.0 1.0 0.0 0.0 below
+end
+case pair_cut 1e-07
+op 91
+frame 5.0 5.0 -1.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 8.0
+boundary C 0.0 0.0 3.0
+split 5.0 5.0 3.0 3.0 0.0 4.0 0.0 1.0 0.0 below
+boolean cut 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 4.0
+boundary S 4 0.0 0.0 L 10.0 0.0 A 10.0 5.0 5.0 1 10.0 10.0 L 0.0 10.0 L
+split 7.0 5.0 2.0 0.0 3.0 4.0 1.0 0.0 0.0 below
+end
+case pair_common 1e-07
+op 91
+frame 5.0 5.0 -1.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 8.0
+boundary C 0.0 0.0 3.0
+split 5.0 5.0 3.0 3.0 0.0 4.0 0.0 1.0 0.0 below
+boolean common 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 4.0
+boundary S 4 0.0 0.0 L 10.0 0.0 A 10.0 5.0 5.0 1 10.0 10.0 L 0.0 10.0 L
+split 7.0 5.0 2.0 0.0 3.0 4.0 1.0 0.0 0.0 below
+end
+case chain_cyl_fuse 1e-07
+op 91
+frame 5.0 5.0 -1.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 8.0
+boundary C 0.0 0.0 3.0
+split 5.0 5.0 3.0 3.0 0.0 4.0 0.0 1.0 0.0 below
+boolean cut 93
+op 92
+frame 0.0 0.0 0.0 0.0 1.0 0.0 1.0 0.0 0.0
+offsets 0.0 12.0
+boundary C 6.5 -2.25 0.875
+then fuse 95
+op 94
+frame 0.0 0.0 0.875 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 1.25
+boundary P 4 1.5 1.0 9.0 1.0 9.0 9.5 1.5 9.5
+end
+case chain_cyl_cut 1e-07
+op 91
+frame 5.0 5.0 -1.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 8.0
+boundary C 0.0 0.0 3.0
+split 5.0 5.0 3.0 3.0 0.0 4.0 0.0 1.0 0.0 below
+boolean cut 93
+op 92
+frame 0.0 0.0 0.0 0.0 1.0 0.0 1.0 0.0 0.0
+offsets 0.0 12.0
+boundary C 6.5 -2.25 0.875
+then cut 95
+op 94
+frame 0.0 0.0 0.875 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 1.25
+boundary P 4 1.5 1.0 9.0 1.0 9.0 9.5 1.5 9.5
+end
+case chain_cyl_common 1e-07
+op 91
+frame 5.0 5.0 -1.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 8.0
+boundary C 0.0 0.0 3.0
+split 5.0 5.0 3.0 3.0 0.0 4.0 0.0 1.0 0.0 below
+boolean cut 93
+op 92
+frame 0.0 0.0 0.0 0.0 1.0 0.0 1.0 0.0 0.0
+offsets 0.0 12.0
+boundary C 6.5 -2.25 0.875
+then common 95
+op 94
+frame 0.0 0.0 0.875 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 1.25
+boundary P 4 1.5 1.0 9.0 1.0 9.0 9.5 1.5 9.5
+end
+case cone_axis_fuse 1e-07
+op 91
+frame 5.0 5.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+cone 3.0 1.5 6.0
+split 5.0 5.0 3.0 1.0 0.0 0.0 0.0 1.0 0.0 above
+boolean fuse 93
+op 92
+frame 0.0 0.0 1.25 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 2.5
+boundary P 4 3.5 4.25 6.75 4.25 6.75 7.5 3.5 7.5
+end
+case cone_axis_cut 1e-07
+op 91
+frame 5.0 5.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+cone 3.0 1.5 6.0
+split 5.0 5.0 3.0 1.0 0.0 0.0 0.0 1.0 0.0 above
+boolean cut 93
+op 92
+frame 0.0 0.0 1.25 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 2.5
+boundary P 4 3.5 4.25 6.75 4.25 6.75 7.5 3.5 7.5
+end
+case cone_axis_common 1e-07
+op 91
+frame 5.0 5.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+cone 3.0 1.5 6.0
+split 5.0 5.0 3.0 1.0 0.0 0.0 0.0 1.0 0.0 above
+boolean common 93
+op 92
+frame 0.0 0.0 1.25 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 2.5
+boundary P 4 3.5 4.25 6.75 4.25 6.75 7.5 3.5 7.5
+end
+case cyl_flush_fuse 1e-07
+op 91
+frame 5.0 5.0 -1.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 8.0
+boundary C 0.0 0.0 3.0
+split 5.0 5.0 3.0 3.0 0.0 4.0 0.0 1.0 0.0 below
+boolean fuse 93
+op 92
+frame 5.0 5.0 3.0 3.0 0.0 4.0 0.0 1.0 0.0
+offsets 0.0 2.0
+boundary P 4 -1.5 -1.25 1.75 -1.25 1.75 1.5 -1.5 1.5
+end
+case cyl_flush_cut 1e-07
+op 91
+frame 5.0 5.0 -1.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 8.0
+boundary C 0.0 0.0 3.0
+split 5.0 5.0 3.0 3.0 0.0 4.0 0.0 1.0 0.0 below
+boolean cut 93
+op 92
+frame 5.0 5.0 3.0 3.0 0.0 4.0 0.0 1.0 0.0
+offsets 0.0 2.0
+boundary P 4 -1.5 -1.25 1.75 -1.25 1.75 1.5 -1.5 1.5
+end
+case cyl_flush_common 1e-07
+op 91
+frame 5.0 5.0 -1.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 8.0
+boundary C 0.0 0.0 3.0
+split 5.0 5.0 3.0 3.0 0.0 4.0 0.0 1.0 0.0 below
+boolean common 93
+op 92
+frame 5.0 5.0 3.0 3.0 0.0 4.0 0.0 1.0 0.0
+offsets 0.0 2.0
+boundary P 4 -1.5 -1.25 1.75 -1.25 1.75 1.5 -1.5 1.5
+end
+case one_sphere_fuse 1e-07
+op 91
+frame 5.0 5.0 5.0 4.0 4.0 7.0 1.0 -8.0 4.0
+sphere 4.0 -0.5 0.75
+split 5.0 5.0 5.0 1.0 -8.0 4.0 4.0 4.0 7.0 above
+boolean fuse 93
+op 92
+frame 5.0 5.0 5.0 4.0 4.0 7.0 1.0 -8.0 4.0
+sphere 4.0 -1.5707963267948966 1.5707963267948966
+end
+case one_sphere_cut 1e-07
+op 91
+frame 5.0 5.0 5.0 4.0 4.0 7.0 1.0 -8.0 4.0
+sphere 4.0 -0.5 0.75
+split 5.0 5.0 5.0 1.0 -8.0 4.0 4.0 4.0 7.0 above
+boolean cut 93
+op 92
+frame 5.0 5.0 5.0 4.0 4.0 7.0 1.0 -8.0 4.0
+sphere 4.0 -1.5707963267948966 1.5707963267948966
+end
+case one_sphere_common 1e-07
+op 91
+frame 5.0 5.0 5.0 4.0 4.0 7.0 1.0 -8.0 4.0
+sphere 4.0 -0.5 0.75
+split 5.0 5.0 5.0 1.0 -8.0 4.0 4.0 4.0 7.0 above
+boolean common 93
+op 92
+frame 5.0 5.0 5.0 4.0 4.0 7.0 1.0 -8.0 4.0
+sphere 4.0 -1.5707963267948966 1.5707963267948966
+end

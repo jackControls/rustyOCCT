@@ -154,8 +154,26 @@ pub(super) fn hull_model(
     operation: OperationId,
     tolerance: crate::Tolerance,
 ) -> Result<Prism> {
-    let mut all: Vec<(V, V)> = planes.iter().map(|(f, s)| exact_plane(f, *s)).collect();
-    let mut frames: Vec<Frame3> = planes.iter().map(|(f, _)| *f).collect();
+    let exact: Vec<((V, V), Frame3)> = planes
+        .iter()
+        .map(|(f, s)| (exact_plane(f, *s), *f))
+        .collect();
+    hull_of(&exact, centre, half, op, operation, tolerance)
+}
+
+/// [`hull_model`] of exact planes (a point and the outward normal), each
+/// with a frame on it for its face's parameters (S9e.4b.3b: a split's
+/// plane in its solid's frame).
+pub(super) fn hull_of(
+    planes: &[((V, V), Frame3)],
+    centre: [f64; 3],
+    half: f64,
+    op: Operand,
+    operation: OperationId,
+    tolerance: crate::Tolerance,
+) -> Result<Prism> {
+    let mut all: Vec<(V, V)> = planes.iter().map(|(p, _)| p.clone()).collect();
+    let mut frames: Vec<Frame3> = planes.iter().map(|(_, f)| *f).collect();
     for k in 0..3 {
         for s in [-1.0, 1.0] {
             let mut o = centre;
@@ -354,7 +372,7 @@ pub(super) fn hull_model(
 }
 
 /// The hull's entities' operation: the primitive's, its bits turned.
-fn hull_operation(primitive: &Solid) -> OperationId {
+pub(super) fn hull_operation(primitive: &Solid) -> OperationId {
     OperationId(!primitive.operation.0 ^ 0x5a5a)
 }
 
@@ -362,18 +380,31 @@ fn hull_operation(primitive: &Solid) -> OperationId {
 /// seam (and a whole sphere's split) tried at several rational points.
 fn arranged(piece: &Piece, tolerance: crate::Tolerance) -> Result<(Arr, Vec<(Component, Made)>)> {
     let p = &piece.primitive;
-    let b = p.bounds;
-    let (lo, hi) = (b.min.to_array(), b.max.to_array());
-    let centre = [0, 1, 2].map(|i| (lo[i] + hi[i]) / 2.0);
-    let reach = (0..3).map(|i| hi[i] - lo[i]).fold(1.0, f64::max);
+    let (centre, half) = cube(p);
     let hull = hull_model(
         &piece.planes,
         centre,
-        2.0 * reach,
+        half,
         Operand::B,
         hull_operation(p),
         tolerance,
     )?;
+    common(p, &hull)
+}
+
+/// The cube about a primitive the hull is bounded by: its centre and half
+/// side.
+pub(super) fn cube(p: &Solid) -> ([f64; 3], f64) {
+    let b = p.bounds;
+    let (lo, hi) = (b.min.to_array(), b.max.to_array());
+    let centre = [0, 1, 2].map(|i| (lo[i] + hi[i]) / 2.0);
+    let reach = (0..3).map(|i| hi[i] - lo[i]).fold(1.0, f64::max);
+    (centre, 2.0 * reach)
+}
+
+/// A primitive common a hull, arranged and assembled, a full circle's seam
+/// (and a whole sphere's split) tried at several rational points.
+pub(super) fn common(p: &Solid, hull: &Prism) -> Result<(Arr, Vec<(Component, Made)>)> {
     let seams = super::SEAMS;
     let r = |(n, d): (i64, i64)| R::new(n.into(), d.into());
     for &seam in &seams[..seams.len() - 1] {
@@ -440,6 +471,9 @@ pub(super) fn model(s: &Solid, op: Operand) -> Result<Prism> {
 /// A solid's sphere, its centre and radius: a sphere's, cap's or zone's, or
 /// an imported piece's primitive's.
 fn ball_of(s: &Solid) -> Option<(Point3, f64)> {
+    if let Some(ball) = super::splits::ball_of(s) {
+        return Some(ball);
+    }
     let s = match &s.construction {
         Construction::Imported(i) => match &i.recognized {
             crate::solid::imported::Recognized::Piece(p) => &p.primitive,
@@ -453,10 +487,12 @@ fn ball_of(s: &Solid) -> Option<(Point3, f64)> {
     }
 }
 
-/// Faces of both inputs on one sphere where either is an imported piece:
-/// S9e.4b.3c's (two pieces of one sphere, the DRAW survey's `so1` to `so7`).
+/// Faces of both inputs on one sphere where either is an imported piece
+/// (S9e.4b.3b: or a split zone): S9e.4b.3c's (two pieces of one sphere, the
+/// DRAW survey's `so1` to `so7`).
 pub(super) fn one_sphere(a: &Solid, b: &Solid) -> Result<()> {
-    if !(is_piece(a) || is_piece(b)) {
+    let split = |s: &Solid| super::splits::ball_of(s).is_some();
+    if !(is_piece(a) || is_piece(b) || split(a) || split(b)) {
         return Ok(());
     }
     match (ball_of(a), ball_of(b)) {

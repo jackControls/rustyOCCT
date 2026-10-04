@@ -1,0 +1,287 @@
+{
+  "note": "Reviewed BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut and BRepAlgoAPI_Common differences from the S9e.4b.3b reference and the kernel.",
+  "reviews": [
+    {
+      "case": "cyl_box_common",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "f416873f289d02d282b0f6ef24a31d8506a25b85404570ebdf6c127e5580aa02",
+      "differences": [
+        "rust_entity_counts"
+      ],
+      "reason": "The kernel's result has OCCT's unified faces (6) with 12 edges and 8 vertices where OCCT's unified result has 13 and 9 (as built 7 faces, 15 edges, 10 vertices): each splits the sections at its own points and seams (the kernel's closed sections at their own vertices, OCCT's at its surfaces' seams), and the kernel's volume and area enclosures lie within the reference's.",
+      "independent_evidence": "chained_curved_boolean_reference.py's rows on the constructions OCCT was given (generate_split_pieces_boolean_fixtures.py --check, identical under Python 3.9 and 3.12; each split piece its solid common a half-space box on the plane's frame, a zone's its whole sphere common that box and the slab between its parallels) agree two ways (each face swept by two independent families of curves) within 6.2e-36, every solid's measures from its faces within 9.7e-36 of its closed form, the cylinder's piece's within 1.9e-41 of its own (the disc's area times the plane's height over the axis), the pair identities within 2.6e-38, the area identity within 3.8e-41, and Monte Carlo within 2.8 standard errors; its solid counts are the declared ones by rays at two resolutions.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "box_cyl_cut",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "c0610309d385d13d796d430d03e80b8f2a47464c62c6331b8c49b61bf0010be5",
+      "differences": [
+        "rust_entity_counts"
+      ],
+      "reason": "The kernel's result has OCCT's unified faces (8) with 18 edges and 12 vertices where OCCT's unified result has 19 and 13 (as built 9 faces, 21 edges, 14 vertices): each splits the sections at its own points and seams (the kernel's closed sections at their own vertices, OCCT's at its surfaces' seams), and the kernel's volume and area enclosures lie within the reference's.",
+      "independent_evidence": "chained_curved_boolean_reference.py's rows on the constructions OCCT was given (generate_split_pieces_boolean_fixtures.py --check, identical under Python 3.9 and 3.12; each split piece its solid common a half-space box on the plane's frame, a zone's its whole sphere common that box and the slab between its parallels) agree two ways (each face swept by two independent families of curves) within 6.2e-36, every solid's measures from its faces within 9.7e-36 of its closed form, the cylinder's piece's within 1.9e-41 of its own (the disc's area times the plane's height over the axis), the pair identities within 2.6e-38, the area identity within 3.8e-41, and Monte Carlo within 2.8 standard errors; its solid counts are the declared ones by rays at two resolutions.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "box_cyl_common",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "22b7c46322822e8812a7ef1f5efb135b89c0322fc8847e2cd6628dce5b1dc472",
+      "differences": [
+        "rust_entity_counts"
+      ],
+      "reason": "The kernel's result has OCCT's unified faces (6) with 12 edges and 8 vertices where OCCT's unified result has 13 and 9 (as built 7 faces, 15 edges, 10 vertices): each splits the sections at its own points and seams (the kernel's closed sections at their own vertices, OCCT's at its surfaces' seams), and the kernel's volume and area enclosures lie within the reference's.",
+      "independent_evidence": "chained_curved_boolean_reference.py's rows on the constructions OCCT was given (generate_split_pieces_boolean_fixtures.py --check, identical under Python 3.9 and 3.12; each split piece its solid common a half-space box on the plane's frame, a zone's its whole sphere common that box and the slab between its parallels) agree two ways (each face swept by two independent families of curves) within 6.2e-36, every solid's measures from its faces within 9.7e-36 of its closed form, the cylinder's piece's within 1.9e-41 of its own (the disc's area times the plane's height over the axis), the pair identities within 2.6e-38, the area identity within 3.8e-41, and Monte Carlo within 2.8 standard errors; its solid counts are the declared ones by rays at two resolutions.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "cyl_ball_fuse",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "ef7867e4131e0a40b8efffae3dab562db3ed51d45575739b7173f1805c070803",
+      "differences": [
+        "centre",
+        "measure",
+        "rust_entity_counts"
+      ],
+      "reason": "BRepGProp's default integration on faces bounded by the Boolean's approximated sections (the ball's meeting with the cylinder's piece's wall and cut face, a sphere's and a cylinder's curve): the native result is valid with the reference's solid count, 4 faces, 12 edges and 8 vertices unified, its volume 3.0e-07 and area 3.5e-07 relative and its centre 4.5e-08 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe) is within 1.1e-09 in volume, 9.7e-10 in area (relative) and 2.9e-10 in centre, at 1e-12 within 1.1e-09, 9.7e-10 and 2.9e-10: what remains is the approximated sections themselves (B-splines within their edges' tolerance). The geometry agrees with the reference within the sections' approximation; the default measure does not reach the allowance. The kernel's result has OCCT's unified faces (4) with 8 edges and 6 vertices where OCCT's unified result has 12 and 8 (as built 4 faces, 12 edges, 8 vertices): each splits the sections at its own points and seams (the kernel's closed sections at their own vertices, OCCT's at its surfaces' seams), and the kernel's volume and area enclosures lie within the reference's.",
+      "independent_evidence": "chained_curved_boolean_reference.py's rows on the constructions OCCT was given (generate_split_pieces_boolean_fixtures.py --check, identical under Python 3.9 and 3.12; each split piece its solid common a half-space box on the plane's frame, a zone's its whole sphere common that box and the slab between its parallels) agree two ways (each face swept by two independent families of curves) within 6.2e-36, every solid's measures from its faces within 9.7e-36 of its closed form, the cylinder's piece's within 1.9e-41 of its own (the disc's area times the plane's height over the axis), the pair identities within 2.6e-38, the area identity within 3.8e-41, and Monte Carlo within 2.8 standard errors; its solid counts are the declared ones by rays at two resolutions.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "cyl_ball_cut",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "2646649830104a02120319876b0e6506b0e6bfe77eb869a95c2c4432d4661edc",
+      "differences": [
+        "centre",
+        "measure",
+        "rust_entity_counts"
+      ],
+      "reason": "BRepGProp's default integration on faces bounded by the Boolean's approximated sections (the ball's meeting with the cylinder's piece's wall and cut face, a sphere's and a cylinder's curve): the native result is valid with the reference's solid count, 4 faces, 7 edges and 5 vertices unified, its volume 3.5e-07 and area 3.0e-07 relative and its centre 7.2e-08 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe) is within 5.2e-10 in volume, 5.4e-10 in area (relative) and 1.8e-10 in centre, at 1e-12 within 5.2e-10, 5.4e-10 and 1.8e-10: what remains is the approximated sections themselves (B-splines within their edges' tolerance). The geometry agrees with the reference within the sections' approximation; the default measure does not reach the allowance. The kernel's result has OCCT's unified faces (4) with 8 edges and 6 vertices where OCCT's unified result has 7 and 5 (as built 5 faces, 9 edges, 6 vertices): each splits the sections at its own points and seams (the kernel's closed sections at their own vertices, OCCT's at its surfaces' seams), and the kernel's volume and area enclosures lie within the reference's.",
+      "independent_evidence": "chained_curved_boolean_reference.py's rows on the constructions OCCT was given (generate_split_pieces_boolean_fixtures.py --check, identical under Python 3.9 and 3.12; each split piece its solid common a half-space box on the plane's frame, a zone's its whole sphere common that box and the slab between its parallels) agree two ways (each face swept by two independent families of curves) within 6.2e-36, every solid's measures from its faces within 9.7e-36 of its closed form, the cylinder's piece's within 1.9e-41 of its own (the disc's area times the plane's height over the axis), the pair identities within 2.6e-38, the area identity within 3.8e-41, and Monte Carlo within 2.8 standard errors; its solid counts are the declared ones by rays at two resolutions.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "cyl_ball_common",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "03768df76222a6ca6417aa48c4087984b374157e961841e542143f2fd41b25e9",
+      "differences": [
+        "centre",
+        "measure",
+        "rust_entity_counts"
+      ],
+      "reason": "BRepGProp's default integration on faces bounded by the Boolean's approximated sections (the ball's meeting with the cylinder's piece's wall and cut face, a sphere's and a cylinder's curve): the native result is valid with the reference's solid count, 3 faces, 4 edges and 3 vertices unified, its volume 6.6e-07 and area 7.3e-07 relative and its centre 3.8e-08 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe) is within 8.3e-10 in volume, 9.9e-10 in area (relative) and 1.8e-10 in centre, at 1e-12 within 8.3e-10, 9.9e-10 and 1.8e-10: what remains is the approximated sections themselves (B-splines within their edges' tolerance). The geometry agrees with the reference within the sections' approximation; the default measure does not reach the allowance. The kernel's result has OCCT's unified faces (3) with 5 edges and 4 vertices where OCCT's unified result has 4 and 3 (as built 4 faces, 6 edges, 4 vertices): each splits the sections at its own points and seams (the kernel's closed sections at their own vertices, OCCT's at its surfaces' seams), and the kernel's volume and area enclosures lie within the reference's.",
+      "independent_evidence": "chained_curved_boolean_reference.py's rows on the constructions OCCT was given (generate_split_pieces_boolean_fixtures.py --check, identical under Python 3.9 and 3.12; each split piece its solid common a half-space box on the plane's frame, a zone's its whole sphere common that box and the slab between its parallels) agree two ways (each face swept by two independent families of curves) within 6.2e-36, every solid's measures from its faces within 9.7e-36 of its closed form, the cylinder's piece's within 1.9e-41 of its own (the disc's area times the plane's height over the axis), the pair identities within 2.6e-38, the area identity within 3.8e-41, and Monte Carlo within 2.8 standard errors; its solid counts are the declared ones by rays at two resolutions.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "cyl_rod_fuse",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "68a1cedd1cdc4e93d54b90f83b5d1a01eff65f9a7c01ed65061743440a093f50",
+      "differences": [
+        "centre",
+        "measure"
+      ],
+      "reason": "BRepGProp's default integration on faces bounded by the Boolean's approximated sections (the rod's meeting with the cylinder's piece's wall, two cylinders' curve): the native result is valid with the reference's solid count, 7 faces, 12 edges and 8 vertices unified, its volume 1.1e-06 and area 9.2e-07 relative and its centre 6.8e-08 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe) is within 1.5e-10 in volume, 7.3e-12 in area (relative) and 1.1e-10 in centre, at 1e-12 within 1.5e-10, 7.3e-12 and 1.1e-10: what remains is the approximated sections themselves (B-splines within their edges' tolerance). The geometry agrees with the reference within the sections' approximation; the default measure does not reach the allowance.",
+      "independent_evidence": "chained_curved_boolean_reference.py's rows on the constructions OCCT was given (generate_split_pieces_boolean_fixtures.py --check, identical under Python 3.9 and 3.12; each split piece its solid common a half-space box on the plane's frame, a zone's its whole sphere common that box and the slab between its parallels) agree two ways (each face swept by two independent families of curves) within 6.2e-36, every solid's measures from its faces within 9.7e-36 of its closed form, the cylinder's piece's within 1.9e-41 of its own (the disc's area times the plane's height over the axis), the pair identities within 2.6e-38, the area identity within 3.8e-41, and Monte Carlo within 2.8 standard errors; its solid counts are the declared ones by rays at two resolutions.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "cyl_rod_cut",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "ef5ab0aa79c3a00a04c5e1327d7a433c85ef7e6f117d4586c61f1ef32294b3f4",
+      "differences": [
+        "centre",
+        "measure"
+      ],
+      "reason": "BRepGProp's default integration on faces bounded by the Boolean's approximated sections (the rod's meeting with the cylinder's piece's wall, two cylinders' curve): the native result is valid with the reference's solid count, 5 faces, 9 edges and 6 vertices unified, its volume 1.4e-06 and area 6.5e-07 relative and its centre 5.3e-08 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe) is within 2.1e-10 in volume, 7.2e-11 in area (relative) and 1.4e-10 in centre, at 1e-12 within 2.1e-10, 7.2e-11 and 1.4e-10: what remains is the approximated sections themselves (B-splines within their edges' tolerance). The geometry agrees with the reference within the sections' approximation; the default measure does not reach the allowance.",
+      "independent_evidence": "chained_curved_boolean_reference.py's rows on the constructions OCCT was given (generate_split_pieces_boolean_fixtures.py --check, identical under Python 3.9 and 3.12; each split piece its solid common a half-space box on the plane's frame, a zone's its whole sphere common that box and the slab between its parallels) agree two ways (each face swept by two independent families of curves) within 6.2e-36, every solid's measures from its faces within 9.7e-36 of its closed form, the cylinder's piece's within 1.9e-41 of its own (the disc's area times the plane's height over the axis), the pair identities within 2.6e-38, the area identity within 3.8e-41, and Monte Carlo within 2.8 standard errors; its solid counts are the declared ones by rays at two resolutions.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "cyl_rod_common",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "c88e4be069b3ff4606440a011e30f835ffbc59efbd7b27ac9cb88b6d7febaede",
+      "differences": [
+        "centre",
+        "measure"
+      ],
+      "reason": "BRepGProp's default integration on faces bounded by the Boolean's approximated sections (the rod's meeting with the cylinder's piece's wall, two cylinders' curve): the native result is valid with the reference's solid count, 4 faces, 6 edges and 4 vertices unified, its volume 5.4e-08 and area 7.6e-07 relative and its centre 5.3e-07 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe) is within 6.1e-09 in volume, 1.4e-09 in area (relative) and 8.1e-10 in centre, at 1e-12 within 6.1e-09, 1.4e-09 and 8.1e-10: what remains is the approximated sections themselves (B-splines within their edges' tolerance). The geometry agrees with the reference within the sections' approximation; the default measure does not reach the allowance.",
+      "independent_evidence": "chained_curved_boolean_reference.py's rows on the constructions OCCT was given (generate_split_pieces_boolean_fixtures.py --check, identical under Python 3.9 and 3.12; each split piece its solid common a half-space box on the plane's frame, a zone's its whole sphere common that box and the slab between its parallels) agree two ways (each face swept by two independent families of curves) within 6.2e-36, every solid's measures from its faces within 9.7e-36 of its closed form, the cylinder's piece's within 1.9e-41 of its own (the disc's area times the plane's height over the axis), the pair identities within 2.6e-38, the area identity within 3.8e-41, and Monte Carlo within 2.8 standard errors; its solid counts are the declared ones by rays at two resolutions.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "frustum_ball_fuse",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "8fa59e1d6e8287c82e1b2037d23cded432bed7811fe757292a8b13cbe9f63d58",
+      "differences": [
+        "measure",
+        "rust_entity_counts"
+      ],
+      "reason": "BRepGProp's default integration on faces bounded by the Boolean's approximated sections (the ball's meeting with the frustum's piece's wall, a sphere's and a cone's curve): the native result is valid with the reference's solid count, 4 faces, 12 edges and 8 vertices unified, its volume 5.1e-08 and area 5.8e-08 relative and its centre 1.0e-08 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe) is within 6.7e-10 in volume, 8.0e-10 in area (relative) and 6.5e-11 in centre, at 1e-12 within 6.7e-10, 8.0e-10 and 6.5e-11: what remains is the approximated sections themselves (B-splines within their edges' tolerance). The geometry agrees with the reference within the sections' approximation; the default measure does not reach the allowance. The kernel's result has OCCT's unified faces (4) with 8 edges and 6 vertices where OCCT's unified result has 12 and 8 (as built 4 faces, 12 edges, 8 vertices): each splits the sections at its own points and seams (the kernel's closed sections at their own vertices, OCCT's at its surfaces' seams), and the kernel's volume and area enclosures lie within the reference's.",
+      "independent_evidence": "chained_curved_boolean_reference.py's rows on the constructions OCCT was given (generate_split_pieces_boolean_fixtures.py --check, identical under Python 3.9 and 3.12; each split piece its solid common a half-space box on the plane's frame, a zone's its whole sphere common that box and the slab between its parallels) agree two ways (each face swept by two independent families of curves) within 6.2e-36, every solid's measures from its faces within 9.7e-36 of its closed form, the cylinder's piece's within 1.9e-41 of its own (the disc's area times the plane's height over the axis), the pair identities within 2.6e-38, the area identity within 3.8e-41, and Monte Carlo within 2.8 standard errors; its solid counts are the declared ones by rays at two resolutions.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "frustum_ball_common",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "09d2b4c36655dce315bf759592bc85e4ae557527a6de961285a7824eb4fc3fb5",
+      "differences": [
+        "measure"
+      ],
+      "reason": "BRepGProp's default integration on faces bounded by the Boolean's approximated sections (the ball's meeting with the frustum's piece's wall, a sphere's and a cone's curve): the native result is valid with the reference's solid count, 3 faces, 5 edges and 4 vertices unified, its volume 3.3e-08 and area 3.5e-08 relative and its centre 1.9e-09 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe) is within 7.1e-09 in volume, 4.6e-09 in area (relative) and 1.9e-10 in centre, at 1e-12 within 7.1e-09, 4.6e-09 and 1.9e-10: what remains is the approximated sections themselves (B-splines within their edges' tolerance). The geometry agrees with the reference within the sections' approximation; the default measure does not reach the allowance.",
+      "independent_evidence": "chained_curved_boolean_reference.py's rows on the constructions OCCT was given (generate_split_pieces_boolean_fixtures.py --check, identical under Python 3.9 and 3.12; each split piece its solid common a half-space box on the plane's frame, a zone's its whole sphere common that box and the slab between its parallels) agree two ways (each face swept by two independent families of curves) within 6.2e-36, every solid's measures from its faces within 9.7e-36 of its closed form, the cylinder's piece's within 1.9e-41 of its own (the disc's area times the plane's height over the axis), the pair identities within 2.6e-38, the area identity within 3.8e-41, and Monte Carlo within 2.8 standard errors; its solid counts are the declared ones by rays at two resolutions.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "zone_cone_fuse",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "45f94d3e5b25021b8bd77f661b24768d6d1e2c346675498e691a75f79b2fc2f8",
+      "differences": [
+        "rust_entity_counts"
+      ],
+      "reason": "The kernel's result has OCCT's unified faces (7) with 17 edges and 12 vertices where OCCT's unified result has 15 and 10 (as built 9 faces, 21 edges, 14 vertices): each splits the sections at its own points and seams (the kernel's closed sections at their own vertices, OCCT's at its surfaces' seams), and the kernel's volume and area enclosures lie within the reference's.",
+      "independent_evidence": "chained_curved_boolean_reference.py's rows on the constructions OCCT was given (generate_split_pieces_boolean_fixtures.py --check, identical under Python 3.9 and 3.12; each split piece its solid common a half-space box on the plane's frame, a zone's its whole sphere common that box and the slab between its parallels) agree two ways (each face swept by two independent families of curves) within 6.2e-36, every solid's measures from its faces within 9.7e-36 of its closed form, the cylinder's piece's within 1.9e-41 of its own (the disc's area times the plane's height over the axis), the pair identities within 2.6e-38, the area identity within 3.8e-41, and Monte Carlo within 2.8 standard errors; its solid counts are the declared ones by rays at two resolutions.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "zone_cone_cut",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "0141c33d313d34cd828f8feb63aaafe95721f11ac757c2fc3824fb3674845105",
+      "differences": [
+        "rust_entity_counts"
+      ],
+      "reason": "The kernel's result has OCCT's unified faces (7) with 17 edges and 12 vertices where OCCT's unified result has 15 and 10 (as built 8 faces, 18 edges, 12 vertices): each splits the sections at its own points and seams (the kernel's closed sections at their own vertices, OCCT's at its surfaces' seams), and the kernel's volume and area enclosures lie within the reference's.",
+      "independent_evidence": "chained_curved_boolean_reference.py's rows on the constructions OCCT was given (generate_split_pieces_boolean_fixtures.py --check, identical under Python 3.9 and 3.12; each split piece its solid common a half-space box on the plane's frame, a zone's its whole sphere common that box and the slab between its parallels) agree two ways (each face swept by two independent families of curves) within 6.2e-36, every solid's measures from its faces within 9.7e-36 of its closed form, the cylinder's piece's within 1.9e-41 of its own (the disc's area times the plane's height over the axis), the pair identities within 2.6e-38, the area identity within 3.8e-41, and Monte Carlo within 2.8 standard errors; its solid counts are the declared ones by rays at two resolutions.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "zone_cone_common",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "a8871e5a4756182745e3f53a6319e6d6ce8246ee609963ef12863a60fa54acf1",
+      "differences": [
+        "rust_entity_counts"
+      ],
+      "reason": "The kernel's result has OCCT's unified faces (5) with 11 edges and 8 vertices where OCCT's unified result has 9 and 6 (as built 5 faces, 9 edges, 6 vertices): each splits the sections at its own points and seams (the kernel's closed sections at their own vertices, OCCT's at its surfaces' seams), and the kernel's volume and area enclosures lie within the reference's.",
+      "independent_evidence": "chained_curved_boolean_reference.py's rows on the constructions OCCT was given (generate_split_pieces_boolean_fixtures.py --check, identical under Python 3.9 and 3.12; each split piece its solid common a half-space box on the plane's frame, a zone's its whole sphere common that box and the slab between its parallels) agree two ways (each face swept by two independent families of curves) within 6.2e-36, every solid's measures from its faces within 9.7e-36 of its closed form, the cylinder's piece's within 1.9e-41 of its own (the disc's area times the plane's height over the axis), the pair identities within 2.6e-38, the area identity within 3.8e-41, and Monte Carlo within 2.8 standard errors; its solid counts are the declared ones by rays at two resolutions.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "cut_rod_fuse",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "871251b665acfaf1adeac38f2af2f3eb1fe6626b60766fe54060d57e471a8b38",
+      "differences": [
+        "measure"
+      ],
+      "reason": "BRepGProp's default integration on faces bounded by the Boolean's approximated sections (the rod's meeting with the zone's piece's sphere, a sphere's and a cylinder's curve): the native result is valid with the reference's solid count, 8 faces, 12 edges and 8 vertices unified, its volume 5.9e-08 and area 3.7e-08 relative and its centre 1.1e-08 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe) is within 2.2e-11 in volume, 5.8e-12 in area (relative) and 7.1e-12 in centre, at 1e-12 within 2.2e-11, 5.8e-12 and 7.2e-12: what remains is the approximated sections themselves (B-splines within their edges' tolerance). The geometry agrees with the reference within the sections' approximation; the default measure does not reach the allowance.",
+      "independent_evidence": "chained_curved_boolean_reference.py's rows on the constructions OCCT was given (generate_split_pieces_boolean_fixtures.py --check, identical under Python 3.9 and 3.12; each split piece its solid common a half-space box on the plane's frame, a zone's its whole sphere common that box and the slab between its parallels) agree two ways (each face swept by two independent families of curves) within 6.2e-36, every solid's measures from its faces within 9.7e-36 of its closed form, the cylinder's piece's within 1.9e-41 of its own (the disc's area times the plane's height over the axis), the pair identities within 2.6e-38, the area identity within 3.8e-41, and Monte Carlo within 2.8 standard errors; its solid counts are the declared ones by rays at two resolutions.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "cut_rod_cut",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "559c33f287a159e643e407394502c7d20188edf4f2de6b2200717147a8d7f58d",
+      "differences": [
+        "measure"
+      ],
+      "reason": "BRepGProp's default integration on faces bounded by the Boolean's approximated sections (the rod's meeting with the zone's piece's sphere, a sphere's and a cylinder's curve): the native result is valid with the reference's solid count, 5 faces, 9 edges and 6 vertices unified, its volume 7.3e-08 and area 3.7e-08 relative and its centre 1.3e-08 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe) is within 2.5e-11 in volume, 2.7e-11 in area (relative) and 8.6e-12 in centre, at 1e-12 within 2.5e-11, 2.7e-11 and 8.7e-12: what remains is the approximated sections themselves (B-splines within their edges' tolerance). The geometry agrees with the reference within the sections' approximation; the default measure does not reach the allowance.",
+      "independent_evidence": "chained_curved_boolean_reference.py's rows on the constructions OCCT was given (generate_split_pieces_boolean_fixtures.py --check, identical under Python 3.9 and 3.12; each split piece its solid common a half-space box on the plane's frame, a zone's its whole sphere common that box and the slab between its parallels) agree two ways (each face swept by two independent families of curves) within 6.2e-36, every solid's measures from its faces within 9.7e-36 of its closed form, the cylinder's piece's within 1.9e-41 of its own (the disc's area times the plane's height over the axis), the pair identities within 2.6e-38, the area identity within 3.8e-41, and Monte Carlo within 2.8 standard errors; its solid counts are the declared ones by rays at two resolutions.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "cut_rod_common",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "67395d967ae3e00c4ec49ee3fac51249b9bb136d4fbca7bb3c436d821de1fbcb",
+      "differences": [
+        "centre",
+        "measure"
+      ],
+      "reason": "BRepGProp's default integration on faces bounded by the Boolean's approximated sections (the rod's meeting with the zone's piece's sphere, a sphere's and a cylinder's curve): the native result is valid with the reference's solid count, 3 faces, 3 edges and 2 vertices unified, its volume 2.7e-07 and area 1.4e-07 relative and its centre 3.0e-08 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe) is within 2.2e-10 in volume, 5.2e-11 in area (relative) and 4.0e-11 in centre, at 1e-12 within 2.2e-10, 5.2e-11 and 4.0e-11: what remains is the approximated sections themselves (B-splines within their edges' tolerance). The geometry agrees with the reference within the sections' approximation; the default measure does not reach the allowance.",
+      "independent_evidence": "chained_curved_boolean_reference.py's rows on the constructions OCCT was given (generate_split_pieces_boolean_fixtures.py --check, identical under Python 3.9 and 3.12; each split piece its solid common a half-space box on the plane's frame, a zone's its whole sphere common that box and the slab between its parallels) agree two ways (each face swept by two independent families of curves) within 6.2e-36, every solid's measures from its faces within 9.7e-36 of its closed form, the cylinder's piece's within 1.9e-41 of its own (the disc's area times the plane's height over the axis), the pair identities within 2.6e-38, the area identity within 3.8e-41, and Monte Carlo within 2.8 standard errors; its solid counts are the declared ones by rays at two resolutions.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "band_ball_fuse",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "a99b4d30978ac95e5083921d718af9268ebe922a4fa80139eb40995f88be860f",
+      "differences": [
+        "centre",
+        "measure",
+        "rust_entity_counts"
+      ],
+      "reason": "BRepGProp's default integration on faces bounded by the Boolean's approximated sections (the ball's meeting with the band's torus, a sphere's and a torus's curve): the native result is valid with the reference's solid count, 4 faces, 14 edges and 9 vertices unified, its volume 2.6e-06 and area 9.1e-07 relative and its centre 1.0e-07 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe) is within 1.1e-11 in volume, 2.6e-11 in area (relative) and 8.8e-13 in centre, at 1e-12 within 1.1e-11, 2.6e-11 and 8.9e-13: what remains is the approximated sections themselves (B-splines within their edges' tolerance). The geometry agrees with the reference within the sections' approximation; the default measure does not reach the allowance. The kernel's result has OCCT's unified faces (4) with 8 edges and 7 vertices where OCCT's unified result has 14 and 9 (as built 5 faces, 15 edges, 10 vertices): each splits the sections at its own points and seams (the kernel's closed sections at their own vertices, OCCT's at its surfaces' seams), and the kernel's volume and area enclosures lie within the reference's.",
+      "independent_evidence": "chained_curved_boolean_reference.py's rows on the constructions OCCT was given (generate_split_pieces_boolean_fixtures.py --check, identical under Python 3.9 and 3.12; each split piece its solid common a half-space box on the plane's frame, a zone's its whole sphere common that box and the slab between its parallels) agree two ways (each face swept by two independent families of curves) within 6.2e-36, every solid's measures from its faces within 9.7e-36 of its closed form, the cylinder's piece's within 1.9e-41 of its own (the disc's area times the plane's height over the axis), the pair identities within 2.6e-38, the area identity within 3.8e-41, and Monte Carlo within 2.8 standard errors; its solid counts are the declared ones by rays at two resolutions.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "band_ball_cut",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "1ad72c7585c7dcf776698ee64a5a47f8d323a24a519b30e00e7111fcc83e19db",
+      "differences": [
+        "centre",
+        "measure",
+        "rust_entity_counts"
+      ],
+      "reason": "BRepGProp's default integration on faces bounded by the Boolean's approximated sections (the ball's meeting with the band's torus, a sphere's and a torus's curve): the native result is valid with the reference's solid count, 3 faces, 10 edges and 7 vertices unified, its volume 2.1e-06 and area 1.7e-06 relative and its centre 6.6e-08 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe) is within 1.2e-11 in volume, 3.4e-11 in area (relative) and 1.0e-12 in centre, at 1e-12 within 1.2e-11, 3.4e-11 and 1.0e-12: what remains is the approximated sections themselves (B-splines within their edges' tolerance). The geometry agrees with the reference within the sections' approximation; the default measure does not reach the allowance. The kernel's result has OCCT's unified faces (3) with 8 edges and 7 vertices where OCCT's unified result has 10 and 7 (as built 4 faces, 12 edges, 8 vertices): each splits the sections at its own points and seams (the kernel's closed sections at their own vertices, OCCT's at its surfaces' seams), and the kernel's volume and area enclosures lie within the reference's.",
+      "independent_evidence": "chained_curved_boolean_reference.py's rows on the constructions OCCT was given (generate_split_pieces_boolean_fixtures.py --check, identical under Python 3.9 and 3.12; each split piece its solid common a half-space box on the plane's frame, a zone's its whole sphere common that box and the slab between its parallels) agree two ways (each face swept by two independent families of curves) within 6.2e-36, every solid's measures from its faces within 9.7e-36 of its closed form, the cylinder's piece's within 1.9e-41 of its own (the disc's area times the plane's height over the axis), the pair identities within 2.6e-38, the area identity within 3.8e-41, and Monte Carlo within 2.8 standard errors; its solid counts are the declared ones by rays at two resolutions.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "band_ball_common",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "e3f91b033b9546b2a6bacdd750c588213132ee568bd8bd18110f71188369349b",
+      "differences": [
+        "centre",
+        "measure",
+        "rust_entity_counts"
+      ],
+      "reason": "BRepGProp's default integration on faces bounded by the Boolean's approximated sections (the ball's meeting with the band's torus, a sphere's and a torus's curve): the native result is valid with the reference's solid count, 3 faces, 6 edges and 5 vertices unified, its volume 2.6e-06 and area 1.5e-06 relative and its centre 1.5e-07 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe) is within 1.8e-10 in volume, 4.9e-10 in area (relative) and 6.8e-11 in centre, at 1e-12 within 1.8e-10, 4.9e-10 and 6.8e-11: what remains is the approximated sections themselves (B-splines within their edges' tolerance). The geometry agrees with the reference within the sections' approximation; the default measure does not reach the allowance. The kernel's result has OCCT's unified faces (3) with 5 edges and 5 vertices where OCCT's unified result has 6 and 5 (as built 5 faces, 9 edges, 6 vertices): each splits the sections at its own points and seams (the kernel's closed sections at their own vertices, OCCT's at its surfaces' seams), and the kernel's volume and area enclosures lie within the reference's.",
+      "independent_evidence": "chained_curved_boolean_reference.py's rows on the constructions OCCT was given (generate_split_pieces_boolean_fixtures.py --check, identical under Python 3.9 and 3.12; each split piece its solid common a half-space box on the plane's frame, a zone's its whole sphere common that box and the slab between its parallels) agree two ways (each face swept by two independent families of curves) within 6.2e-36, every solid's measures from its faces within 9.7e-36 of its closed form, the cylinder's piece's within 1.9e-41 of its own (the disc's area times the plane's height over the axis), the pair identities within 2.6e-38, the area identity within 3.8e-41, and Monte Carlo within 2.8 standard errors; its solid counts are the declared ones by rays at two resolutions.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "pair_common",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "3433616355dee6827807fc8160a885110cb1b5a93e8f5f603d6ecfc18beb9b7b",
+      "differences": [
+        "rust_entity_counts"
+      ],
+      "reason": "The kernel's result has OCCT's unified faces (5) with 9 edges and 6 vertices where OCCT's unified result has 10 and 7 (as built 6 faces, 12 edges, 8 vertices): each splits the sections at its own points and seams (the kernel's closed sections at their own vertices, OCCT's at its surfaces' seams), and the kernel's volume and area enclosures lie within the reference's.",
+      "independent_evidence": "chained_curved_boolean_reference.py's rows on the constructions OCCT was given (generate_split_pieces_boolean_fixtures.py --check, identical under Python 3.9 and 3.12; each split piece its solid common a half-space box on the plane's frame, a zone's its whole sphere common that box and the slab between its parallels) agree two ways (each face swept by two independent families of curves) within 6.2e-36, every solid's measures from its faces within 9.7e-36 of its closed form, the cylinder's piece's within 1.9e-41 of its own (the disc's area times the plane's height over the axis), the pair identities within 2.6e-38, the area identity within 3.8e-41, and Monte Carlo within 2.8 standard errors; its solid counts are the declared ones by rays at two resolutions.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "chain_cyl_common",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "a7fcda39ba20dc896419ed9cb914921f0750b523f7e956ad9e95ae84aa531c26",
+      "differences": [
+        "centre",
+        "measure"
+      ],
+      "reason": "BRepGProp's default integration on faces bounded by the Boolean's approximated sections (the rod's meeting with the cylinder's piece's wall, two cylinders' curve): the native result is valid with the reference's solid count, 5 faces, 9 edges and 6 vertices unified, its volume 3.6e-06 and area 9.8e-07 relative and its centre 1.3e-07 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe) is within 1.4e-08 in volume, 2.9e-09 in area (relative) and 3.3e-10 in centre, at 1e-12 within 1.4e-08, 2.9e-09 and 3.3e-10: what remains is the approximated sections themselves (B-splines within their edges' tolerance). The geometry agrees with the reference within the sections' approximation; the default measure does not reach the allowance.",
+      "independent_evidence": "chained_curved_boolean_reference.py's rows on the constructions OCCT was given (generate_split_pieces_boolean_fixtures.py --check, identical under Python 3.9 and 3.12; each split piece its solid common a half-space box on the plane's frame, a zone's its whole sphere common that box and the slab between its parallels) agree two ways (each face swept by two independent families of curves) within 6.2e-36, every solid's measures from its faces within 9.7e-36 of its closed form, the cylinder's piece's within 1.9e-41 of its own (the disc's area times the plane's height over the axis), the pair identities within 2.6e-38, the area identity within 3.8e-41, and Monte Carlo within 2.8 standard errors; its solid counts are the declared ones by rays at two resolutions.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    }
+  ]
+}
