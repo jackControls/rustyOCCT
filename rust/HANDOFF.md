@@ -6,8 +6,9 @@ bullets are authoritative, and this page only summarizes them and says
 where to pick up. Written 2026-10-01, brought up to date 2026-10-03 for
 S9f.2a, S9f.2b.1 and S9e.3b (branch `s9e3b`, `s9c2-kernel` merged in),
 their DRAW survey (branch `s9-draw-3`), then for S9e.4a (branch `s9e4`,
-over `s9c2-kernel` at `e80e2fd9`) and S9f.2b.2 (branch `s9f2b2`, over
-`s9c2-kernel` at `f3362b50`).
+over `s9c2-kernel` at `e80e2fd9`), S9f.2b.2 (branch `s9f2b2`, over
+`s9c2-kernel` at `f3362b50`) and S9f.3a (branch `s9f3`, over `s9c2-kernel`
+at `7199e06a`).
 
 ## Where things stand
 
@@ -66,6 +67,22 @@ over `s9c2-kernel` at `e80e2fd9`) and S9f.2b.2 (branch `s9f2b2`, over
   and the whole set captured again before the kernel code, the kernel
   within the reference on all 45 results of S9f.2b and refusing the 6
   degenerate cases. Pending: its DRAW survey and campaign.
+- **S9f.3a implemented** (branch `s9f3`, over `s9c2-kernel` at `7199e06a`):
+  spline prisms against spheres, caps and zones in any position, either
+  the object (`curved/spline_sphere.rs`): S9f.2b's meeting along the wall's
+  rulings over the sphere's three rows (`A = n . n` for every ruling), its
+  branches over the run, loops' graphs over the height and switches
+  unchanged; a sphere's circle (a rim, the split's great circle) on a wall
+  along its crease or, in a plane holding the wall's axis, by a primitive
+  element from the arc's implicit equation reduced by the circle's;
+  `Curve3::WallMeet`'s `other_sphere` and `wall_meet.rs`'s spans over the
+  partner's rows. Decisions ("S9f.3 refined": spheres S9f.3a, cones
+  S9f.3b), 33 cases referenced by an independent reference of its own
+  (`spline_sphere_boolean_reference.py`) and captured before the kernel
+  code, the kernel within the reference on all 27 results and refusing the
+  6 degenerate cases. Its fuzz switch `SPLINE_SPHERE` is off (the corpus's
+  `d7599dbe` 472 s under AddressSanitizer). Pending: its DRAW survey and
+  campaign.
 - **S9e.3b implemented** (branch `s9e3b`, over `507b8054`, with
   `s9c2-kernel` at `c8e37abe` merged in; not yet pushed): a given result's
   meeting of two curved faces (`Meet`, `Rise`, `Toric`) or a cone's or
@@ -113,8 +130,15 @@ over `s9c2-kernel` at `e80e2fd9`) and S9f.2b.2 (branch `s9f2b2`, over
    imported operations through `IMPORTED` and the crossing variants' loops
    and towers through `SPLINE_CROSSING`; after the push, the recaptured
    `occt-boolean-spline-crossing-preimplementation`'s Linux record and
-   reviews from CI's run, as every capture's), then **S9f.3** (spheres and
-   cones; "S9f refined" gives the degrees).
+   reviews from CI's run, as every capture's), the same for **S9f.3a**
+   (the Linux record of `occt-boolean-spline-sphere-preimplementation`;
+   `SPLINE_SPHERE` is off: the corpus's own `d7599dbe` takes 472 s under
+   AddressSanitizer, the certified integrals over a spline wall's pieces
+   beside a loop's turning points the cost, the next lever before it can
+   be switched on), then **S9f.3b** (cones
+   and frustums against spline prisms: "S9f.3 refined" lists what differs
+   from the sphere: the radius term's `A` of either sign, the other nappe,
+   the apex, the stored half angle's tangent).
 3. **S9e.4b**: imported bodies other than the kernel's constructions
    (results of other Booleans, general polyhedra and curved bodies) on
    their stored surfaces (the S9e text's plan: edges as their faces'
@@ -222,6 +246,7 @@ Each comparison takes `--occt-root target/spline-linear-preflight/pinned-sdk/ins
 | `compare_spline_crossing_boolean.py` | 14 / 37 (the kernel within the reference on all 45 results, the 6 degenerate refused, none `unsupported`) |
 | `compare_given_met_boolean.py` | 8 / 42 (the kernel within the reference on all 42 solid cases, the 8 degenerate refused) |
 | `compare_imported_boolean.py` | 54 / 15 (the kernel within the reference on all 57 solid cases, the 9 degenerate refused, the 3 turned profiles `unsupported`) |
+| `compare_spline_sphere_boolean.py` | 4 / 29 (the kernel within the reference on all 27 results, the 6 degenerate refused, none `unsupported`) |
 
 Every one must report 0 failures; since S9f.1 also `compare_split.py`
 (72 / 56) and `compare_brep.py --family spline` (10 / 3), which share its
@@ -261,10 +286,11 @@ changes, every generator importing it runs with `--check --workers 4`. Then:
   on the exact arithmetic, and Linux runners about 2.6 times this host; the
   boolean target's limit is 60 s an input. Configurations too slow for it are
   switched off in `rust/fuzz/src/boolean.rs` (`TORUS_PAIRS`, `CONE_PAIRS`,
-  `TURNED_PARTS`, `GIVEN_MET`; `GIVEN_CURVED`, `GIVEN_ROUND`, `GIVEN_BALL`,
-  `SPLINE_WALLS`, `SPLINE_PARALLEL`, `SPLINE_CROSSING` and `IMPORTED` are
-  on; all four off switches on at once make corpus input `6fab9d41` fail
-  `vertex_off_curve`, each alone clean, open). A heavily loaded
+  `TURNED_PARTS`, `GIVEN_MET`, `SPLINE_SPHERE`; `GIVEN_CURVED`,
+  `GIVEN_ROUND`, `GIVEN_BALL`, `SPLINE_WALLS`, `SPLINE_PARALLEL`,
+  `SPLINE_CROSSING` and `IMPORTED` are on; the first four off switches on
+  at once make corpus input `6fab9d41` fail `vertex_off_curve`, each alone
+  clean, open). A heavily loaded
   host makes campaigns time out spuriously; run them on a quiet machine.
 - **Keep debug-assertion tests optimized.** CI runs them with
   `CARGO_PROFILE_DEV_OPT_LEVEL=2`; time new test files that way.

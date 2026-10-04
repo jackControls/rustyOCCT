@@ -6425,6 +6425,69 @@ Decisions for S9, recorded before its code (2026-09-28):
       its edges' own tolerance of 3.7e-5); two solids' counts change when
       unified. No correction to the decisions from the evidence. S9f.3a's
       kernel next.
+  * **S9f.3a implemented** (`solid/boolean/curved/spline_sphere.rs`;
+    `spline_crossing.rs`'s `meeting_with` over the partner's rows and
+    labels, `wallcrv_quadric`; `mod.rs`'s `spline_pairs`, `graph.rs`'s pairs
+    pass, `meet.rs`'s sections and edge meetings, `assemble.rs`'s curves,
+    `spline_parallel.rs`'s `Implicit::terms`; the topology's
+    `Curve3::WallMeet::other_sphere` with `topology/validate/wall_meet.rs`'s
+    spans over the other surface's rows and the validity rule): spline
+    prisms against spheres, caps and zones in any position as the refined
+    decisions describe, cones refused as S9f.3b's ("a spline prism against
+    a cone (S9f.3b)"). The meeting is S9f.2b's over the sphere's three rows,
+    found once per pair of a spline wall and a hemisphere; a sphere's circle
+    meets a wall along its crease or, in a plane holding the wall's axis,
+    at the roots of `E^2 - rho O^2` with `dy = -E / O`, the roles of `dx` and
+    `dy` swapped where `O` vanishes (the hemispheres' great circles on the
+    prism's axis, whose `x` is that axis, take the swapped order). All 33
+    fixtures as the reference (the 27 results within the kernel's
+    enclosures of volume, area and centre, each at most `1e-9` wide; the 6
+    degenerate refused with the decisions' reasons); every history
+    complete, results deterministic and moved rigidly
+    (`tests/spline_sphere_booleans.rs`, 7 tests, 38 to 51 s in release on
+    a host at load 15 to 50, 42 s at `opt-level` 2 with debug assertions: also the loops' graphs over `v` each in one knot span, a
+    rim's tower vertices on the bulge, zones and caps in turned frames by
+    inclusion and exclusion, a cone refused; the module's sixth test: a
+    graph over `u` and one over `v` on a sphere with jets over points and
+    ranges enclosing its points and slopes). `compare_spline_sphere_boolean.py`
+    4 matches and 29 reviewed, the kernel within the reference on all 27
+    results and none `unsupported` (the 18 loop cases' reviews name their
+    counts: the kernel cuts each loop at its switches and at the
+    hemispheres' split, OCCT's edges follow its own seams); every other
+    comparison unchanged, `compare_split.py` 72/56, `compare_brep.py
+    --family spline` 10/3, `compare_brep_io.py` 6835/7, `compare_step.py`
+    23/6. Amendments to the decisions, from the implementation: (a) a
+    sphere's loop switches a sixty-fourth of the way from its turning point
+    to where the gentler branch's slope has fallen to one (a cylinder's
+    stays a quarter): its graph over the height spans the sphere's section
+    there, and at a quarter the slowest fuzz variants (spheres larger than
+    a thin prism) spent ten times longer in the certified integrals over
+    it, at a sixty-fourth and a two-hundred-fifty-sixth alike, the
+    fixtures' tests no slower; (b) a turning point inside both faces but
+    within the resolution of a prism wall's cap plane or a sphere's rim
+    plane is `Degenerate` like one on it (a sphere about a turned prism's
+    frame origin: a loop turning back `1e-17` above the cap, its graphs
+    over the height cut there); (c) the binary64 root of a graph over `v`
+    (`WallMeet::root_at`) builds the wall's pole rows once instead of at
+    each of its bisection's steps; (d) the cone pairs' pass never sees a
+    spline wall (`spline_pairs` refuses a cone first). The `boolean` fuzz
+    target decodes a spline prism object against its sphere, cap or zone
+    tool through S9f.3a (`SPLINE_SPHERE`), switched off for time: of 477
+    variants of every third corpus input (the spline byte from 192 with its
+    low bit, the flags' bits 5 and 6 clear) replayed with debug assertions,
+    none failing, the median took 0.55 s, the ninth decile 1.5 s and the
+    slowest 37 s (`d7599dbe`, a lens hole under a leaning sphere whose
+    loops turn back near the lens's tips: the graphs over the run halved
+    toward the turning points, sweep after sweep), 472 s under
+    AddressSanitizer, another 297 s; the corpus holds `d7599dbe` itself.
+    Replays with debug assertions of the corpus (1,430 inputs) and the 24
+    regressions, none failing, with the switch off (the slowest 12.6 s) and
+    on (48 s, `d7599dbe`). Every check of `HANDOFF.md`'s "Verification"
+    holds: fmt, clippy, the 1.85 check, the suite, the table's 26 comparisons
+    and the four beside it with 0 failures, unittest (296 tests) and the ledger. Pending: the DRAW
+    survey, the campaign (with `SPLINE_SPHERE` off), and the speed of the
+    certified integrals beside a loop's turning points before it can be
+    switched on.
   * **Where S9 stands (2026-09-30, paused).** Done and pushed: S9a to S9d
     (every sub-step with its DRAW survey and a clean campaign), S9e.1
     (campaign clean at `51c08edf`) and S9e.2 (`8e060c67`), S9f's decisions

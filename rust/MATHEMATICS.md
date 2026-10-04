@@ -2701,6 +2701,37 @@ turning point outside the faces but within the resolution of both is
 back, where `d` and the square root's slope are as large as the rounding
 allows.
 
+## Spline walls against spheres (S9f.3a)
+
+**The meeting.** A sphere `|X - c|^2 = r^2` is the quadric of the world's
+three rows `e_i` with `e_i . X - c_i`, so along a ruling `X = P(tau) + w n`
+its function is `A w^2 + 2 B w + C` with `A = |n|^2`, `B = n . (P - c)`,
+`C = |P - c|^2 - r^2`, and `D = B^2 - A C = |n|^2 r^2 - |(P - c) x n|^2` by
+Lagrange's identity `(u . v)^2 = |u|^2 |v|^2 - |u x v|^2`. `A` is positive
+whatever the axes, so every ruling meets the sphere in two points, one or
+none, the turning points (`D = 0`) are the rulings tangent to it, and every
+argument of S9f.2b and S9f.2b.2 (branches, verified windows over the height,
+switches) holds with three rows in place of two. In the certified
+evaluation the rows are the world's axes, exact, and `d = a r^2 - sum_{i<j}
+(w_i m_j - w_j m_i)^2` over the three pairs.
+
+**A circle of a surd radius in a plane holding the wall's axis.** A
+sphere's circle `c + dx x + dy y` (`x`, `y` rational and orthogonal, `dx^2
+|x|^2 + dy^2 |y|^2 = r2`) has no rational chart when `r2 / |x|^2` is not a
+square, so S9f.2b.2's half-angle tangent does not apply. Its projection
+along the wall's axis is `l0 + dx lx + dy ly`, and an arc's implicit
+equation there is a polynomial `g(dx, dy)` of total degree `p`. Writing `g =
+E(dx) + dy O(dx)` with `dy^2` replaced by `rho(dx) = (r2 - |x|^2 dx^2) /
+|y|^2`, a point of the circle on the arc's curve has `E = -dy O`, so `R =
+E^2 - rho O^2 = 0` (degree at most `2 p`), and at a root with `O != 0`, `dy
+= -E / O` is the one point of the circle there: `(dx, dy)` in `Q(dx)`, a
+primitive element of the tower `Q(alpha)(sqrt(delta))`. Where `O` vanishes
+at a root, `E` does too and both `(dx, +-dy)` satisfy `g`: two of the
+circle's points share `dx` (a great circle whose `x` is the wall's axis, its
+points on one generatrix), and the same elimination in `dy` is used. A
+repeated root of `R` with `O != 0` on the segment is the circle tangent to
+the generatrix there.
+
 ## Tessellation bounds (T-a)
 
 A mesh triangle has nodes `X_i` and parameter points `p_i` on its face's
