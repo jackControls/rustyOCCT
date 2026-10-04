@@ -6495,6 +6495,71 @@ Decisions for S9, recorded before its code (2026-09-28):
     frames keep two apart (its volume the reference's, its area less twice
     the base square); 2 results' counts change when unified (the drafted
     prism and the ridge). S9e.4b.2's kernel next.
+  * **S9e.4b.2 implemented** (`solid/boolean/polyhedra/imported.rs`,
+    `imported::Recognized`, `polyhedra.rs`'s stored model for an imported
+    polyhedron, `given.rs`'s refusal), as the refined decisions describe:
+    an imported body of planes and lines is S9e.4a's prism where its
+    recognition, construction and match succeed, else a polyhedron decided
+    on its stored vertices (S9b.2's stored model: each face's outward
+    normal from the region behind it, its polygon of stored vertices cut
+    into exactly planar triangles, each edge between its stored vertices,
+    membership by parity), its history over its stored ids directly; it
+    classifies `Boundary` within the resolution of a face's triangle and
+    by parity off them, and moves with its stored topology. All 48
+    fixtures as declared (40 within the kernel's enclosures, each at most
+    `1e-9` wide, and 4 empty; the flush fuse refused, `Degenerate("a
+    face using an edge both ways")`; the cavity `OutOfDomain` as
+    S9e.4b.4's), every history complete over the imported bodies' stored
+    ids, results deterministic and moved rigidly, both inputs translated
+    and turned keeping the reference's volumes (the cases without exact
+    contacts, which a turn's rounding breaks), every body its
+    construction (its exact volume within `1e-9`, points classified, its
+    stored vertices on its boundary), a pyramid against a cylinder and a
+    result of it given with a cylinder `OutOfDomain` as S9e.4b.4's, the
+    stored frames the reference's bit for bit
+    (`tests/imported_polyhedra_booleans.rs`, 10 s at `opt-level` 2 with debug
+    assertions on a host at load 12 to 21).
+    `compare_imported_polyhedra_boolean.py` 47 matches and 1 reviewed (the
+    flush fuse, as captured), every enclosure within the reference with
+    S9e.4a's `1e-12` slack, every entity count OCCT's after unifying;
+    `compare_imported_boolean.py` 54/15 and
+    `compare_imported_arcs_boolean.py` 27/9 unchanged (and `compare_step.py`
+    23/6 on STEP-b's SDK, polyhedral 43/2, given 36/0, chained 24/6,
+    boolean 45/0), the tools' unit tests (308) and the ledger unchanged.
+    Amendments, from
+    the implementation: (a) an imported face whose stored vertices are
+    coplanar exactly is decided on that plane, its fragments joined with
+    any face's on it (a construction's or another import's), as a
+    construction's are: S9b.2 joins a stored face's fragments by the face
+    alone, which left the drafted prism's walls apart from the ridge's on
+    their shared planes in the fuse (17 faces where OCCT's unified result
+    has 12; a kernel result given again keeps S9b.2's rule); (b) an
+    imported prism of lines against an imported polyhedron is decided on
+    its stored vertices too, not S9e.4a's construction, whose corners,
+    re-derived from its rounded local coordinates, can miss the vertices
+    the two files share by an ulp (`bopfuse_complex/K5`, a frustum on an
+    imported box's top, refused as a face thinner than the resolution
+    before; found by the trial below; the fixtures' `draft_ridge`
+    exercises the path, every result unchanged). The `boolean` fuzz
+    target's `IMPORTED` stage also writes the chained stage's first result
+    of plane faces, reads it back, imports it and cuts it by the turned box
+    again, its volume the chained cut's within `1e-9`: replaying the corpus
+    (1,430 inputs) and the 25 regressions with debug assertions, no
+    failure, the slowest 23.5 s on a host at load 28 to 37; 189 such first
+    results reach it, 188 cut within the chained cut's volume and 1
+    refused (a cylinder partner, S9e.4b.4's). A trial of the DRAW survey's
+    7 restore cases with such polyhedra (not the survey: no volume audit,
+    nothing registered), on the Rust adapter and native DRAW: 4 evaluate on
+    both with every check (`bugs/modalg_1/buc60803`, `bug102_1`,
+    `bug102_2`, two frustums sharing a face, fused; `bopfuse_complex/K5`
+    since amendment (b)); 3 are refused: `bugs/modalg_2/bug578_1` and `_2`,
+    whose frustums `OCC578_w1` and `w2` are turned about 1.3e-6 and 4.0e-6
+    from right angles, so their bases lie 6.6e-7 to 2.0e-6 apart, above the
+    resolution: their fuse is two solids, which the adapter refuses as the
+    next Boolean's argument (one solid); `bfuse_complex/D9`, a
+    corner the two files share stored 1e-13 apart (`z = 56.5616376719611`
+    and `56.561637671961`), a face thinner than the resolution (S9's rule).
+    Pending: the DRAW survey, the campaign.
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces
