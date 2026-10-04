@@ -222,6 +222,68 @@ impl Ip {
             den: self.den.clone(),
         }
     }
+
+    fn zero() -> Self {
+        Ip::new(Vec::new(), BigInt::from(1))
+    }
+
+    /// The product as polynomials (no reduction by a field's polynomial).
+    fn mul(&self, o: &Self) -> Self {
+        if self.num.is_empty() || o.num.is_empty() {
+            return Ip::zero();
+        }
+        let mut out = vec![BigInt::from(0); self.num.len() + o.num.len() - 1];
+        for (i, x) in self.num.iter().enumerate() {
+            if x.sign() == num_bigint::Sign::NoSign {
+                continue;
+            }
+            for (j, y) in o.num.iter().enumerate() {
+                out[i + j] += x * y;
+            }
+        }
+        Ip::new(out, &self.den * &o.den)
+    }
+
+    /// Quotient and remainder by `b` (nonzero), by pseudo-division of the
+    /// numerators: `L^e A = Q B + R` for `B`'s leading `L`, so `a = (Q d_b /
+    /// (L^e d_a)) b + R / (L^e d_a)`.
+    fn divmod(&self, b: &Self) -> (Self, Self) {
+        let bn = &b.num;
+        debug_assert!(!bn.is_empty(), "a nonzero divisor");
+        if self.num.len() < bn.len() {
+            return (Ip::zero(), self.clone());
+        }
+        let lead = bn.last().expect("a nonzero divisor");
+        let mut r = self.num.clone();
+        let mut q = vec![BigInt::from(0); r.len() - bn.len() + 1];
+        let mut scale = BigInt::from(1);
+        while r.len() >= bn.len() {
+            let shift = r.len() - bn.len();
+            let t = r.last().expect("nonempty").clone();
+            for c in r.iter_mut() {
+                *c *= lead;
+            }
+            for c in q.iter_mut() {
+                *c *= lead;
+            }
+            scale *= lead;
+            q[shift] += &t;
+            for (i, x) in bn.iter().enumerate() {
+                r[i + shift] -= &t * x;
+            }
+            while r
+                .last()
+                .is_some_and(|c| c.sign() == num_bigint::Sign::NoSign)
+            {
+                r.pop();
+            }
+        }
+        let den = &scale * &self.den;
+        (
+            Ip::new(q.into_iter().map(|c| c * &b.den).collect(), den.clone()),
+            Ip::new(r, den),
+        )
+    }
 }
 
 /// The bisections of the isolator a sign query starts from (those of
@@ -719,23 +781,7 @@ fn pmod(a: &[R], m: &[R]) -> Vec<R> {
     r
 }
 
-/// `(quotient, remainder)` of `a` by `b` (`b` nonzero).
-fn pdivmod(a: &[R], b: &[R]) -> (Vec<R>, Vec<R>) {
-    let mut r = ptrim(a.to_vec());
-    let lead = b.last().expect("a divisor").clone();
-    let mut q = vec![zero(); r.len().saturating_sub(b.len()) + 1];
-    while r.len() >= b.len() && !r.is_empty() {
-        let shift = r.len() - b.len();
-        let c = rdiv(r.last().expect("nonempty"), &lead);
-        for (i, x) in b.iter().enumerate() {
-            r[i + shift] = rsub(&r[i + shift], &rmul(&c, x));
-        }
-        q[shift] = c;
-        r = ptrim(r);
-    }
-    (ptrim(q), r)
-}
-
+#[cfg(test)]
 fn pmul(a: &[R], b: &[R]) -> Vec<R> {
     product(a, b)
 }
@@ -779,6 +825,7 @@ pub(super) fn product(a: &[R], b: &[R]) -> Vec<R> {
     ptrim(out.into_iter().map(|c| ratio(c, &den)).collect())
 }
 
+#[cfg(test)]
 fn psub(a: &[R], b: &[R]) -> Vec<R> {
     let n = a.len().max(b.len());
     ptrim(
@@ -924,7 +971,7 @@ impl K {
                 {
                     return known.as_ref().map(|q| K::Alg(g.clone(), q.clone()));
                 }
-                let inv = Self::inverse(g, &p.rats());
+                let inv = Self::inverse(g, p);
                 let mut kept = g.inverses.lock().unwrap_or_else(|e| e.into_inner());
                 if kept.len() >= 4096 {
                     kept.clear();
@@ -944,29 +991,33 @@ impl K {
     }
 
     /// `recip`'s extended Euclid in `Q[x]` modulo the generator's
-    /// polynomial (or a factor of it vanishing at the root).
-    fn inverse(g: &Arc<Gen>, p: &[R]) -> Option<Self> {
-        let mut m = g.poly.clone();
+    /// polynomial (or a factor of it vanishing at the root), in the
+    /// integer form: pseudo-divisions, one content reduction per quotient,
+    /// remainder and cofactor (the inverse modulo `m` is one polynomial of
+    /// lower degree, whatever the algorithm).
+    fn inverse(g: &Arc<Gen>, p: &Ip) -> Option<Self> {
+        let mut m = Ip::from_rats(&g.poly);
         loop {
             // Extended Euclid: s p = gcd (mod m).
-            let (mut r0, mut r1) = (m.clone(), pmod(p, &m));
-            let (mut s0, mut s1): (Vec<R>, Vec<R>) = (Vec::new(), vec![int(1)]);
-            while !r1.is_empty() {
-                let (quo, rem) = pdivmod(&r0, &r1);
-                let s2 = psub(&s0, &pmul(&quo, &s1));
+            let (mut r0, mut r1) = (m.clone(), p.divmod(&m).1);
+            let (mut s0, mut s1) = (Ip::zero(), Ip::new(vec![BigInt::from(1)], BigInt::from(1)));
+            while r1.len() > 0 {
+                let (quo, rem) = r0.divmod(&r1);
+                let s2 = s0.add(&quo.mul(&s1), true);
                 (r0, r1) = (r1, rem);
                 (s0, s1) = (s1, s2);
             }
             if r0.len() == 1 {
-                let k = int(1) / &r0[0];
-                return Some(K::norm(g, s0.iter().map(|x| x * &k).collect()));
+                // `s0 / r0`.
+                let k = R::new(r0.den.clone(), r0.num[0].clone());
+                return Some(K::of_ip(g, s0.scale(&k).divmod(&Ip::from_rats(&g.poly)).1));
             }
             // A common factor: zero at alpha, or alpha is a root of the
             // cofactor.
-            if g.sign_of(&Ip::from_rats(&r0)) == Ordering::Equal {
+            if g.sign_of(&r0) == Ordering::Equal {
                 return None;
             }
-            m = pdivmod(&m, &r0).0;
+            m = m.divmod(&r0).0;
         }
     }
 
