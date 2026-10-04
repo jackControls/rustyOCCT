@@ -6697,6 +6697,84 @@ Decisions for S9, recorded before its code (2026-09-28):
     tests (`tests/imported_piece_booleans.rs`: enclosures within `1e-9` of
     the reference, degenerate cases refused, histories over the stored ids,
     determinism, rigid motion).
+  * **S9e.4b.3a evidence (2026-10-04).** Eight bodies OCCT wrote
+    (`boolean-imported-pieces-bodies.txt`, `write` blocks of a sphere's row,
+    `boolean common` (`bitten`: `cut`) and a box's or prism's rows, written
+    by `compare_imported_pieces_boolean.py --write-bodies` to
+    `rust/fixtures/imported/`), every one a sphere's piece: `octant`, the
+    ball of radius 5 about `(5, 5, 4)` common the corner of its frame's
+    axes (three planes through the centre); `octant_tilt`, the same in
+    another frame; `upper`, the wedge above a parallel's plane between two
+    meridian planes (`so5`'s); `lune`, the ball between two meridian
+    planes; `half`, the ball on one side of a meridian plane; `zone_wedge`,
+    between two meridian planes and two parallels' planes; declared
+    S9e.4b.3c's: `octant_low`, the ball of `octant` below a parallel's plane
+    (S9e.4a's cap) and `bitten`, a ball less a box's corner. The frames are
+    rational rotations (`SKEW` to `SKEW4`: normals `(8, 4, 1)`, `(4, 4, 7)`,
+    `(10, 11, 2)`, `(4, 1, 8)` over 9 or 15), each plane a meridian plane or
+    a parallel's plane of its sphere's stored frame.
+    `generate_imported_pieces_boolean_fixtures.py --check`: 45 cases of 15
+    groups (33 solid, 6 declared `degenerate`, 6 `unsupported`; 33 of class
+    `sphere`, 9 `both`, 3 `chain`): each piece against boxes, a `TILT` slab,
+    rods upright and along `y`, a ball and an upright cone across its sphere
+    face, as object and as tool, two pieces of two spheres, a piece and
+    S9e.4a's imported box, and a chain (the octant less a rod, then with a
+    `TILT` slab); declared `degenerate` a box in the turned octant's frame on
+    its base plane (within the resolution of one plane in the file) and a
+    box touching the half ball's sphere inside its face; declared
+    `unsupported` (S9e.4b.3c) the octant and `octant_low` (one sphere) and
+    the bitten ball. The reference is the constructions OCCT was given
+    through S9e.3a's chained reference, each piece its first Boolean (`(P
+    common B) op C`, swapped, `(P common B) op (Q common D)`, chained), with
+    S9e.4a's checks relative to the case's size: the two families within
+    7.5e-37, each solid's closed form 2.0e-40, the pair identities on the
+    last Boolean's arguments 4.4e-38 and the area identity 9.9e-41, each
+    piece's closed form 1.3e-41 (the corners' solid angles by Van Oosterom
+    and Strackee, the lune's dihedral angle, the half), Monte Carlo 3.5
+    standard errors, quadrature estimates 1.7e-32, solid counts by rays at
+    two resolutions and each piece one solid, every meeting's sine at least
+    0.31 and events at least 9.2e-6 of their range apart outside the
+    declared groups. Every file read independently (`stored_records`): its
+    faces one sphere and planes, every stored vertex within 7.6e-16 of the
+    size on the construction's surfaces, and every construction no S9e.4a
+    construction (a plane not normal to its sphere's axis) but `octant_low`.
+    `test_imported_pieces_boolean_reference.py` checks the closed forms
+    (exact axes against an eighth, a quarter and a half of the ball; turned
+    axes' solid angles against the faces' spherical excess), the octant on
+    the chained reference against its closed form, the S9e.4a test and the
+    case list and its protocol rows. The generator's check is a CI group of
+    its own (`imported-pieces`); Python 3.9 and 3.12 write the same files.
+    Corrections from the evidence, amending the refined decisions' plan (7):
+    (a) only spheres' pieces can be written and read: OCCT writes a
+    sphere's section by a plane other than a meridian plane or a parallel's
+    plane of its stored frame with a B-spline pcurve the converter does not
+    certify on the sphere (`UncertifiedPcurveOffEdge`: a ball cut by one
+    tilted plane, a band between two), and a cylinder's or a cone's oblique
+    section as an ellipse record the `.brep` reader does not read
+    (`Ellipse`, left to the import track: four such bodies written and
+    refused before any check), so the planned cylinder's and cone's pieces
+    are the kernel's own split pieces' topologies imported in the kernel's
+    tests instead (no reference); (b) the reference sweeps a sphere by
+    meridians about the world's `z` and its parallels, and a plane holding
+    the world's `z` through the centre lies along a whole meridian there:
+    the first bodies, on the world's axes, kept their groups running for
+    over an hour each, so every body is on a turned rational frame (none of
+    whose axes is a world axis or normal to one, nor one of the kernel's
+    whole sphere's own axes, whose split would run through the planes'
+    line); (c) a frame normalized differently by macOS's `hypot` than by a
+    correctly rounded one (a first `SKEW3` of normal `(2, 10, 11)`) cannot
+    carry a kernel-built partner (`frames.tsv`'s bits), so the frames are
+    chosen among those both round alike; (d) OCCT splits a sphere face its
+    seam crosses into two faces (two faces on one sphere, S9e.4b.3c's), so
+    the half ball's sphere has its frame's `x` reversed; (e) the zone's
+    wedge was symmetric about its centre, its walls' generatrices leaving
+    the sphere at both ends at one parameter (two events 1.9e-18 apart),
+    now between `-3/2` and `5/2`; (f) partners moved where a box's face was
+    tangent to the zone's sphere, two balls were internally tangent (the
+    pieces' pair) and a rod's or a pair's result was a sliver whose rays'
+    counts disagreed between resolutions (the turned octant moved and its
+    frame changed; the pair the octant and the turned octant). S9e.4b.3a's
+    native capture next.
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces
