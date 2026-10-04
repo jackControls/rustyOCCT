@@ -720,7 +720,12 @@ on the pieces. Pieces, their verification and `Curve3::Toric` (its
 `other_minor` the other torus's minor radius, `TOPOLOGY_MODEL.md`) are
 S9d.4b.2a's with forms of either degree; the tori's seams are circles
 (`conic_torus`). Coaxial tori meet in circles, tori tangent along one
-refused (`tori_kiss`). Parallel tori whose top or bottom circles lie at
+refused (`tori_kiss`). Two tori of equal radii whose centres lie within
+`10^-12` of their size of each other and whose axes are within rounding of
+parallel (a frame's normal normalized again, or one normal with the axes
+turned and rounded) are one surface within rounding, `Degenerate`, as one
+surface exactly is (their meeting's projections were left unpinned,
+`PrecisionLoss`, before). Parallel tori whose top or bottom circles lie at
 one height and cross are tangent there (both normals along the axes), a
 singular point of the meeting, `Degenerate`; with their equators at one
 height they cross transversally (the normals along the two radii) and the
@@ -1239,7 +1244,15 @@ knot; a turning point on a face's boundary, at a segment's end, or outside
 the faces within the resolution of both (a rounding away from turning back
 on a cap's edge, or a loop's on a cap's rim); a vertex's polynomial with a
 multiple root (an edge tangent to the other's face; a cap circle tangent to
-the wall's generatrix, the meeting turning back on the rim).
+the wall's generatrix, the meeting turning back on the rim); a cylinder
+whose axis is within rounding of the wall's without being parallel (the
+sine of their angle at most `10^-12`, as a frame's normal normalized again
+is: `A` within rounding of zero, the meeting within the faces a sliver of
+the run no binary64 edge holds), as two such cylinders are, unless they
+are certainly apart within their faces' bounds: on every Bézier arc the
+wall's points at the overlap's middle height lie beyond the cylinder's
+radius, or within it, by more than the ruling's drift over half the
+overlap's heights (`|X|^2 - (r +- m)^2` of one sign on the arc, exactly).
 `ComputationLimit`: a graph over the height whose window does not verify
 after twenty halvings. Spline walls against spline walls on crossing axes
 stay refused (S9f).

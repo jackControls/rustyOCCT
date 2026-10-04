@@ -1988,6 +1988,21 @@ pub(super) fn torus_quadric(k: usize, t: &Prism, other: &Other) -> Result<CylPai
 /// carrier, `o` the other's.
 pub(super) fn torus_torus(k: usize, t: &Prism, o: &Prism) -> Result<CylPair> {
     let ring = o.ring.as_ref().expect("a torus");
+    // Equal radii, centres within rounding and axes within rounding of
+    // parallel (a frame's normal normalized again, or one normal with the
+    // axes turned, rounded): one surface within rounding, whose meeting is
+    // no binary64 curve (its projections were left unpinned), as one
+    // surface exactly is.
+    let own = t.ring.as_ref().expect("a torus");
+    let d = sub(&t.f.o, &o.f.o);
+    let size = &own.big + &own.small;
+    if own.big == ring.big
+        && own.small == ring.small
+        && dot(&d, &d) * int(10).pow(24) <= &size * &size
+        && super::meet::within_rounding_of_parallel(&t.f.n, &o.f.n)
+    {
+        return Err(Error::Degenerate("two tori within rounding of one surface"));
+    }
     let far = Far::Torus {
         f: Box::new(o.f.clone()),
         big: ring.big.clone(),

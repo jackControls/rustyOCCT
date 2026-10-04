@@ -6561,7 +6561,68 @@ Decisions for S9, recorded before its code (2026-09-28):
     `tests/turned_booleans.rs`). Replays with debug assertions: the corpus
     (1,430 inputs), the 25 regressions, 477 variants beside the input and
     363 single-byte mutations of it, none failing; every comparison
-    unchanged with 0 failures.
+    unchanged with 0 failures. An audit of the other pair kinds for the
+    same class (two surfaces whose axes, centres or planes lie within
+    rounding of a special relation without holding it) then ran each
+    candidate through fuse, cut and common in the kernel, on frames built
+    from another's normal normalized again or turned by an ulp (about 250
+    chosen cases and 259 random ones in three tilted frames), and 2,304
+    boolean variants with the shipped switches. One kind failed: a spline
+    wall against a cylinder (S9f.2b). `spline_parallel::map2` takes only
+    exactly parallel axes, so axes an ulp apart went to S9f.2b.1's
+    crossing meeting, whose `A` (the `w^2` coefficient along the rulings)
+    is then within rounding of zero and whose meeting within the faces is a
+    sliver of the run: usually refused (`a wall's meeting's piece within
+    rounding`), but 16 of the variants failed at `b903f3fa`
+    (`degenerate_curve` from the validator, two `PrecisionLoss` where a
+    projection's lift was left unpinned): a square with the lens hole, the
+    cut's first result, given to the `GIVEN_ROUND` cylinder. Such a pair is
+    now `Degenerate` in `spline_crossing::meeting_with` unless certainly
+    apart within the faces' bounds (on every Bézier arc `|X|^2 - (r +-
+    m)^2` of one sign at the overlap's middle height, `m` a rational bound
+    of the ruling's drift over half the overlap's heights, by exact root
+    isolation), where each operation is the same cylinder's on the wall's
+    own frame (`fuzz/regressions/boolean/crash-a3fb9da3e3d83ef1cc3b272a30e6716eed8145b2.bin`,
+    `tests/spline_crossing_booleans.rs`). Two whole tori of equal radii
+    about centres within rounding, their axes within rounding of parallel
+    or one normal's axes turned, gave `PrecisionLoss` (not a panic; two
+    tori are off in the target, `TORUS_PAIRS`): they are now one surface,
+    `Degenerate` (`torus_curved::torus_torus`, `tests/torus_curved_booleans.rs`).
+    Found safe, each with its near cases evaluating or refused as
+    documented: a spline wall against a sphere, cap or zone (a sphere's `A`
+    is `|n|^2`; a rim's plane nearly normal to the wall's axis meets it in
+    a crease, one nearly holding it is refused before); a cylinder against
+    a cone nearly coaxial or parallel (the cylinder the carrier, its `A`
+    within rounding of minus the cone's slope squared, rings over the
+    turn; a cylinder within rounding of a ruling refused by `a_bound`) and
+    two cones (unequal slopes: `A` within rounding of a nonzero constant;
+    equal slopes: `A` within rounding of zero with simple roots, S9d.3b.2's
+    split there, the far branch past `10^16` and the near one cancel-free
+    in `meet_jet`); spheres centred within rounding of a cylinder's or a
+    cone's axis (rings; a cylinder's equal radius within the resolution of
+    a node); a torus against a cylinder, cone, sphere or torus nearly
+    coaxial (`G` depending on `u` by rounding only, traced and verified
+    exactly); planes nearly normal to a cylinder's, cone's, torus's or
+    spline wall's axis, nearly through a cone's apex (refused, `a plane
+    within the resolution of a cone's apex` or `a piece thinner than the
+    resolution`, or the cone's own volumes) or nearly holding a torus's
+    axis. The near coaxial results are the coaxial ones' (a cylinder in a
+    frustum 4.97419, a torus's inner half in its major radius's cylinder
+    9.33616 by Pappus, nested tori 12.33701). Of the `expect`s on a
+    geometric evaluation, the validator's `curve_at` (`a conic or section
+    evaluates`) is the one a near-degenerate edge reaches unguarded:
+    `measure` (`TopologyParts::with_measured_enclosures`, before
+    validation) takes every edge's end gaps, and the checks after it test
+    only `curve_valid`'s parameters (a `Meet` of axes within `1e-6` of
+    parallel is `degenerate_curve`, but a `Meet`, `Rise`, `Toric` or
+    `WallMeet` that fails to evaluate elsewhere is not caught), so the
+    kernel's refusals above keep it unreached; the engine's `recip`s off an
+    apex or an axis (`cone.rs`, `procedural.rs`, `torus.rs`) are exact and
+    guarded by exact refusals (a plane through the apex, the apex on the
+    other's surface; a ring torus's points off its axis). Replays with
+    debug assertions: the corpus (1,430 inputs), the 26 regressions, the
+    2,304 variants and 605 single-byte mutations of the new input, none
+    failing; every comparison unchanged with 0 failures.
   * **S9f.3 refined, before its code (2026-10-03).** Why it is refused
     today: `curved::spline_pairs` refuses a spline prism against a sphere
     or a cone ("a spline prism against a sphere or a cone (S9f.3)");

@@ -51,7 +51,9 @@
 //! S9f.1's `line_wall` (degree `p`), the spline prism's the cylinder at
 //! quadratic surds. So every vertex on the wall lies in `Q(alpha)` of degree
 //! at most `2 p` or in `Q(sqrt(d))`.
-use super::meet::{conic_angle, CylPair, EdgeMeet, Pos};
+use super::meet::{
+    conic_angle, overlap_heights, within_rounding_of_parallel, CylPair, EdgeMeet, Pos,
+};
 use super::model::{Affine, Crv, FaceKind, Loc, Prism, Seg, P2};
 use super::num::*;
 use super::procedural::{other_of, Other};
@@ -226,6 +228,56 @@ fn coeffs_at(f: &Affine, other: &Other, uv: &[R; 2]) -> (R, R, R) {
         c += &p * &p;
     }
     (a, b, c)
+}
+
+/// Whether a spline wall and a cylinder whose axes lie within rounding of
+/// parallel are certainly apart where both faces' boxes overlap (a meeting
+/// lies in both): over each arc, at the overlap's middle height `wm` in the
+/// wall's frame, the wall's point in the cylinder's rows `X(s) = P(s) + q
+/// wm` lies beyond the cylinder's radius, or within it, by more than `m >=
+/// |q| half` (the ruling's drift over half the overlap's heights), exactly:
+/// `|X|^2 - (r +- m)^2` of one sign on `[0, 1]` (no root there, isolated).
+fn near_parallel_apart(
+    sm: &Prism,
+    sf: usize,
+    seg: &SplineSeg,
+    cm: &Prism,
+    cf: usize,
+    other: &Other,
+) -> bool {
+    let f = &sm.f;
+    let Some((wm, half)) = overlap_heights(f, [&sm.boxes[sf], &cm.boxes[cf]]) else {
+        return false;
+    };
+    let drift2 = other
+        .g
+        .iter()
+        .fold(zero(), |acc, g| acc + dot(g, &f.n) * dot(g, &f.n))
+        * &half
+        * &half;
+    // A rational bound of the drift: its binary64 root, widened, checked.
+    let mut m = crate::solid::split::q(rational_f64(&drift2).sqrt() * (1.0 + 1e-6) + 1e-300);
+    while &m * &m < drift2 {
+        m = &m * int(2);
+    }
+    let (zero_r, one) = (zero(), int(1));
+    // `|X|^2 - k^2` of the sign `want` all over the arc.
+    let signed = |arc: &BArc, k: &R, want: Ordering| {
+        let g = rows(f, arc, other, None)
+            .iter()
+            .fold(vec![-(k * k)], |acc: Vec<R>, (p, q)| {
+                let x = padd(p, &[q * &wm]);
+                padd(&acc, &pmul(&x, &x))
+            });
+        let g = trim(g);
+        matches!(roots_within(&g, &zero_r, &one), Some(r) if r.is_empty())
+            && g.first().map_or(zero(), R::clone).cmp(&zero()) == want
+    };
+    let (beyond, within) = (&other.r + &m, &other.r - &m);
+    seg.arcs.iter().all(|arc| {
+        signed(arc, &beyond, Ordering::Greater)
+            || (within > zero() && signed(arc, &within, Ordering::Less))
+    })
 }
 
 /// The distinct real roots of a polynomial strictly inside `(lo, hi)`;
@@ -551,6 +603,20 @@ pub(super) fn meeting_with(
 ) -> Result<CylPair> {
     debug_assert!(other.t == zero(), "a cone's radius term is S9f.3b's");
     let f = &sm.f;
+    // Axes within rounding of parallel (a frame's normal normalized again,
+    // an ulp off the wall's): a meeting within the faces runs along a
+    // sliver of the run no binary64 edge holds (its heights' turn rate past
+    // 10^12 per unit of the run, the stored axes perhaps exactly parallel),
+    // as two such cylinders' does (`meet::cyl_pair`). Apart where certainly
+    // apart within the faces' boxes, `Degenerate` otherwise.
+    if partner == Partner::Cylinder && within_rounding_of_parallel(&f.n, &cm.f.n) {
+        if near_parallel_apart(sm, sf, seg, cm, cf, &other) {
+            return Ok(CylPair::Apart);
+        }
+        return Err(Error::Degenerate(
+            "a spline wall's and a cylinder's axes within rounding of parallel",
+        ));
+    }
     let rs = match seg.roots_of(&|arc: &BArc| {
         let (a, b, cc) = ruling_coeffs(f, arc, &other);
         padd(&pmul(&b, &b), &pscale(&cc, &-a))
