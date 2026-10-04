@@ -1089,9 +1089,11 @@ sides within the resolution and moves with its stored topology, read off it
 again. Two rules of the engine were widened by it: a section within the
 resolution of a stored sphere's pole takes a vertex of both faces already
 within the resolution of the pole as its pole vertex (two planes' line
-through a turned frame's pole, rounded); and a loop through a pole whose
-pcurves turn half a turn there (a meridian circle through both poles) winds
-none, the face closing on it (no pole vertex loop beside it). A given
+through a turned frame's pole, rounded); and a loop through the pole its
+face would close at, whose pcurves turn half a turn there (a meridian
+circle through both poles, or a wall through the axis), winds none, its
+pcurves from that pole on lifted by the turn, the face closing on it (no
+pole vertex loop beside it). A given
 model's circle matched to a stored circle whose frame turns against it is
 read the other way (`Given::flip`, S9e.2's rule, for spheres' circles too).
 Only spheres' pieces come from `.brep` files today: a cylinder's or cone's

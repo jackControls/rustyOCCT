@@ -7243,6 +7243,53 @@ Decisions for S9, recorded before its code (2026-09-28):
     10/3, sheets 17/1), `compare_brep_io.py` 6835/7,
     `compare_turned_boolean.py` 2/13, `compare_given_curved_boolean.py`
     25/23 and `compare_spline_crossing_boolean.py` 14/37.
+  * **A loop through one pole lifted at it (2026-10-04).** The merge of
+    S9e.4b.3a's kernel with `GIVEN_MET` switched on (`86b1d834`) failed
+    the boolean target's debug-assertion replay on corpus input
+    `21928984` (`unexpected error invalid topology: uv_gap`), which passed
+    at either parent (`GIVEN_MET` off at the one with S9e.4b.3a, whose
+    kernel fails the same operations called directly). A bar in the tilted
+    frame less a torus band; the cut's first result given to the
+    `GIVEN_BALL` sphere about the middle of its first torus section, which
+    lies on the bar's wall, so the wall holds the sphere's axis and its
+    section is a meridian through the north pole inside the bar: the
+    sphere face's loop runs up the meridian, through the pole, down the
+    other side and back along the bar's bottom circle, its pcurves turning
+    half a turn at the pole and the loop once in all. S9e.4b.3a's
+    amendment (b) set such a loop's winding to none without lifting its
+    pcurves, so its closing fin was a turn off its first unless the loop
+    happened to start at the pole (as the pieces' fixtures' do), and the
+    chained cut failed `uv_gap`; before it the face closed at a pole
+    vertex loop beside the loop's own pole vertex. Not the validator's
+    change and not the rounding: a box `4 x 2 x 2` with a ball of radius
+    1.25 about a point of its wall `y = 0`, its axis along `z`, fails
+    alike in 76 of 80 frames and operations at `86b1d834` (none at
+    S9e.4b.3a's parent). The rule now takes only the pole the face would
+    close at (`(total == 1) == forward`, as the pole vertex loop's), finds
+    the loop's fin starting there and lifts that fin and the ones after it
+    by the turn (`assemble::shift_u`, the loops' lift shared), so the half
+    turn at the pole is the face's and the loop closes on its first fin;
+    a loop starting at the pole is unchanged. The face is the one the pole
+    vertex loop gave (its sector at the pole the same), one vertex fewer:
+    the chained cut's volumes and areas those at `d82ffe24` (the merge's
+    other parent, without S9e.4b.3a) within `3e-15`. A loop through the other pole only (the face holding the pole
+    it closes at) keeps the pole vertex loop, as before S9e.4b.3a.
+    `tests/sphere_booleans.rs`
+    (`a_meridian_loop_through_one_pole_closes_on_its_first_fin`: the box
+    and the ball about either pole, five reference directions, the four
+    operations' volumes the closed forms' and the histories complete) and
+    `tests/given_met_booleans.rs`
+    (`a_ball_about_a_section_on_a_wall_through_its_axis`: the input's
+    chain, the three operations' identities), and the input kept
+    (`fuzz/regressions/boolean/replay-21928984a54f016cf7e3e987dcdd3f07df37c15c.bin`).
+    Checks: fmt, clippy, the 1.85 check, the release suite (567 tests);
+    replays with debug assertions of the corpus (1,432 inputs), the 27
+    regressions and 540 single-byte mutations of the input (every value of
+    the chained byte among them), none failing; the 30 boolean comparisons
+    of `HANDOFF.md`'s table unchanged with 0 failures
+    (`compare_imported_pieces_boolean.py` 32/13, `compare_sphere_boolean.py`
+    30/0, `compare_spheres_boolean.py` 12/21, `compare_given_met_boolean.py`
+    8/42 and the rest).
   * **S9f.3 refined, before its code (2026-10-03).** Why it is refused
     today: `curved::spline_pairs` refuses a spline prism against a sphere
     or a cone ("a spline prism against a sphere or a cone (S9f.3)");
