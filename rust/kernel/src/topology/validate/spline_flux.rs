@@ -565,19 +565,35 @@ fn wall_green<T: Real>(
     let spans = super::wall_meet::spans(m)?;
     let count = patches.first()?.g.len();
     let mut totals = vec![T::exact_f64(0.0); count];
+    // Each knot span's patch and its local coordinates' maps, enclosed once
+    // (S9f.3's loops: made again at every evaluation, rational divisions and
+    // their brackets).
+    let local: Vec<Option<(&Patch<T>, [T; 4])>> = spans
+        .spans
+        .iter()
+        .map(|span| {
+            let patch = patches.iter().find(|q| q.domain[0] == span.u)?;
+            let [[u0, u1], [v0, v1]] = &patch.domain;
+            Some((
+                patch,
+                [
+                    c::<T>(&-u0),
+                    c::<T>(&(ratio(1, 1) / (u1 - u0))),
+                    c::<T>(&-v0),
+                    c::<T>(&(ratio(1, 1) / (v1 - v0))),
+                ],
+            ))
+        })
+        .collect();
     super::projection::wall_pieces(
         pr,
         count,
         true,
         &|k, u, v, du, _| {
-            let span = spans.spans.get(k)?;
-            let patch = patches.iter().find(|q| q.domain[0] == span.u)?;
-            let [[u0, u1], [v0, v1]] = &patch.domain;
-            let iu = c::<T>(&(ratio(1, 1) / (u1 - u0)));
-            let iv = c::<T>(&(ratio(1, 1) / (v1 - v0)));
-            let ub = u.add_constant(&c::<T>(&-u0)).scale(&iu);
-            let vb = v.add_constant(&c::<T>(&-v0)).scale(&iv);
-            let dub = du.scale(&iu);
+            let (patch, [u0, iu, v0, iv]) = local.get(k)?.as_ref()?;
+            let ub = u.add_constant(u0).scale(iu);
+            let vb = v.add_constant(v0).scale(iv);
+            let dub = du.scale(iu);
             Some(
                 tensor_jets(&patch.g, &ub, &vb)
                     .iter()
