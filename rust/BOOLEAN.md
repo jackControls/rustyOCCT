@@ -37,7 +37,9 @@ stored surfaces give, S9e.4b.1's imported prisms with their arcs' ends
 taken onto their circles (`curved/snapped.rs`), S9e.4b.2's imported
 polyhedra on their stored vertices (`polyhedra/imported.rs`), S9e.4b.3a's
 imported plane pieces of a sphere, cylinder or cone as their primitive
-common their planes' half-spaces (`curved/pieces.rs`).
+common their planes' half-spaces (`curved/pieces.rs`), and S9e.4b.3b's
+split pieces (S8's `Clipped` and `Half`) against curved faces on the same
+model (`curved/splits.rs`).
 
 ## Contract
 
@@ -946,8 +948,9 @@ In scope besides S9e.1's and S9e.2's: results of spheres, cones and tori
 with prisms, spheres, cones and tori; results with procedural edges the
 partner does not reach; deeper chains to three Booleans; given results
 against spheres, cones and tori. Refused until S9e.3b: its meetings.
-Refused: deeper trees; a plane's piece (S9e.4); splines (S9f); every S9d
-degeneracy in the second arrangement. DRAW's `bcut_simple/G9` and `H3` are such a degeneracy: the
+Refused: deeper trees; splines (S9f); every S9d degeneracy in the second
+arrangement (a plane's piece, refused here until S9e.4, is given on since
+S9e.4b.3b: below). DRAW's `bcut_simple/G9` and `H3` are such a degeneracy: the
 rod of radius 1 about `(5, 0)` touches the frustum's top circle of radius 6
 at `(6, 0, 4)`, a tangency between the inputs.
 
@@ -1099,6 +1102,30 @@ oblique section is an ellipse record the reader does not read, and a
 sphere's section other than a meridian or a parallel of its stored frame
 carries an approximated pcurve the converter does not certify; the
 kernel's own split pieces' topologies are pieces too.
+
+The kernel's own plane pieces, S8's split pieces (`Clipped`: a prism of
+lines, arcs and circles split by a plane oblique to its axis; `Half`: a
+cone's, frustum's, zone's or cap's piece by a plane through its axis or
+across it, a whole torus's band by a plane normal to its axis), are
+S9e.4b.3b's (`curved/splits.rs`) where either input has a curved face: the
+same model read off the split itself, its primitive the split's own (the
+prism on its frame between its heights, the cone, the whole torus; a
+zone's or cap's whole sphere with its ends' parallels' planes) common the
+half-space of the plane the piece was built on, taken exactly into the
+world through the frame's axes (a plane within the resolution of the axis
+through it, a torus's band's at its rounded height), matched to the piece's
+stored topology so the history is over its ids; a profile not convex
+across the plane leaves several pieces on a side, each one solid of its
+construction (S9e.2's sorting by solid). A `Clipped` prism of lines against
+a polyhedral partner stays S9b.2's stored model. A cone's half by a plane
+through its axis is `Degenerate` (S9's apex rule); a torus's spiric piece
+(S8d.3) and a spline prism's piece are refused (`OutOfDomain`). Three rules
+of the assembly were widened by it, each an imported piece's too: a loop
+through a stored sphere's pole that winds none has its fins from the pole
+on lifted by the turn it made and the face's holes lifted with it; a stored
+circle matched as a ring runs the result's way (turned over where it runs
+the other); a cone's section stored as a ring likewise about the cone's
+axis.
 
 Refused: a joint of two arcs of different circles off either
 (`OutOfDomain`, S9e.4b.4: their common point is a quadratic surd); an
@@ -3189,6 +3216,39 @@ multiple root; and the engine's rules.
   sections at its own points and seams). A trial of the DRAW survey's 39
   S9e.4b.3 restore cases: none evaluates, 38 pairs of pieces of one sphere
   S9e.4b.3c's and `buc60926` a plane through a cone's apex.
+* **S9e.4b.3b evidence (split pieces), before its kernel code.** A
+  `split` row in both protocols (the piece `Solid::split_by_plane` leaves
+  on one side; natively the solid common `BRepPrimAPI_MakeHalfSpace`).
+  `generate_split_pieces_boolean_fixtures.py --check` writes
+  `boolean-split-pieces-cases.txt`, `-expected.tsv` and `-frames.tsv`: 48
+  cases (16 groups; 39 solid, 6 degenerate, 3 unsupported) on 8 split
+  pieces (a cylinder's, a dee's and a box's oblique pieces, a frustum's and
+  a zone's across their walls, a zone's half, a torus's band, a frustum's
+  half through its axis) against boxes, balls, rods, a cone, each other and
+  in a chain, from S9e.3a's chained reference on the constructions OCCT is
+  given (each piece its solid common a half-space box, a zone's its whole
+  sphere and the slab between its parallels; two families within 6.2e-36,
+  closed forms of each solid and the cylinder's piece, the pair and area
+  identities, Monte Carlo 2.8 standard errors).
+  `compare_split_pieces_boolean.py` reproduces
+  `occt-boolean-split-pieces-preimplementation` (keyed on
+  `curved/splits.rs`, the probe `unsupported` on all 48 before it): every
+  result valid, 33 match, 15 reviewed (BRepGProp's default integration on
+  the balls' and rods' meetings with the pieces, adaptively within 1.4e-8).
+* **Kernel (S9e.4b.3b).** `tests/split_piece_booleans.rs`: all 48 fixtures
+  as the reference (39 within the kernel's enclosures, each at most `1e-9`
+  wide; the frustum's half through its axis refused at its apex, the box on
+  the cut plane as two faces within the resolution of one plane, the zone's
+  half against its own ball `OutOfDomain` as S9e.4b.3c's), every history
+  complete over the pieces' ids, results deterministic and moved rigidly,
+  moved inputs keeping the reference's volumes, the stored frames and
+  planes the reference's bit for bit, a U profile's two pieces above one
+  plane, a hemisphere's halves through its pole, pieces against an imported
+  piece and a given result, a torus's spiric piece refused, and three
+  pieces the split target found (a zone's ring, a cap's half's hole, a
+  frustum's ring), split and imported. `compare_split_pieces_boolean.py`:
+  26 matches and 22 reviewed (the native measures, and entity counts: each
+  splits its sections at its own points and seams).
 * **Fuzzing.** The `boolean` target (`FUZZING.md`): the split target's line
   and arc profiles, the tool offset exactly in the axis-aligned frame or
   sharing the tilted one's origin, heights equal, spanning, overlapping,
