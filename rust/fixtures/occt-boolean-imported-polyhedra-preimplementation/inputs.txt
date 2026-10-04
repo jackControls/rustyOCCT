@@ -1,0 +1,336 @@
+case tetra_box_fuse
+brep imported/tetra.brep
+boolean fuse
+plane 0.0 0.0 1.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire P 4 5.0 -2.0 1.0 12.0 -2.0 1.0 12.0 5.0 1.0 5.0 5.0 1.0
+prism 0.0 0.0 3.0
+end
+case tetra_box_cut
+brep imported/tetra.brep
+boolean cut
+plane 0.0 0.0 1.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire P 4 5.0 -2.0 1.0 12.0 -2.0 1.0 12.0 5.0 1.0 5.0 5.0 1.0
+prism 0.0 0.0 3.0
+end
+case tetra_box_common
+brep imported/tetra.brep
+boolean common
+plane 0.0 0.0 1.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire P 4 5.0 -2.0 1.0 12.0 -2.0 1.0 12.0 5.0 1.0 5.0 5.0 1.0
+prism 0.0 0.0 3.0
+end
+case box_tetra_fuse
+plane 0.0 0.0 1.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire P 4 5.0 -2.0 1.0 12.0 -2.0 1.0 12.0 5.0 1.0 5.0 5.0 1.0
+prism 0.0 0.0 3.0
+boolean fuse
+brep imported/tetra.brep
+end
+case box_tetra_cut
+plane 0.0 0.0 1.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire P 4 5.0 -2.0 1.0 12.0 -2.0 1.0 12.0 5.0 1.0 5.0 5.0 1.0
+prism 0.0 0.0 3.0
+boolean cut
+brep imported/tetra.brep
+end
+case box_tetra_common
+plane 0.0 0.0 1.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire P 4 5.0 -2.0 1.0 12.0 -2.0 1.0 12.0 5.0 1.0 5.0 5.0 1.0
+prism 0.0 0.0 3.0
+boolean common
+brep imported/tetra.brep
+end
+case octa_slab_fuse
+brep imported/octa.brep
+boolean fuse
+plane 0.0 2.6999999999999997 3.6 0.0 0.6 0.8 1.0 -0.0 0.0
+wire P 4 -4.0 -9.3 12.6 14.0 -9.3 12.6 14.0 14.7 -5.4 -4.0 14.7 -5.4
+prism 0.0 0.6 0.8
+end
+case octa_slab_cut
+brep imported/octa.brep
+boolean cut
+plane 0.0 2.6999999999999997 3.6 0.0 0.6 0.8 1.0 -0.0 0.0
+wire P 4 -4.0 -9.3 12.6 14.0 -9.3 12.6 14.0 14.7 -5.4 -4.0 14.7 -5.4
+prism 0.0 0.6 0.8
+end
+case octa_slab_common
+brep imported/octa.brep
+boolean common
+plane 0.0 2.6999999999999997 3.6 0.0 0.6 0.8 1.0 -0.0 0.0
+wire P 4 -4.0 -9.3 12.6 14.0 -9.3 12.6 14.0 14.7 -5.4 -4.0 14.7 -5.4
+prism 0.0 0.6 0.8
+end
+case pyramid_box_fuse
+brep imported/pyramid.brep
+boolean fuse
+plane 0.0 0.0 3.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire P 4 2.0 4.5 3.0 8.0 4.5 3.0 8.0 10.5 3.0 2.0 10.5 3.0
+prism 0.0 0.0 4.0
+end
+case pyramid_box_cut
+brep imported/pyramid.brep
+boolean cut
+plane 0.0 0.0 3.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire P 4 2.0 4.5 3.0 8.0 4.5 3.0 8.0 10.5 3.0 2.0 10.5 3.0
+prism 0.0 0.0 4.0
+end
+case pyramid_box_common
+brep imported/pyramid.brep
+boolean common
+plane 0.0 0.0 3.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire P 4 2.0 4.5 3.0 8.0 4.5 3.0 8.0 10.5 3.0 2.0 10.5 3.0
+prism 0.0 0.0 4.0
+end
+case truncated_box_fuse
+brep imported/truncated.brep
+boolean fuse
+plane 0.0 0.0 2.5 0.0 0.0 1.0 1.0 0.0 0.0
+wire P 4 -1.5 3.5 2.5 2.5 3.5 2.5 2.5 7.5 2.5 -1.5 7.5 2.5
+prism 0.0 0.0 3.0
+end
+case truncated_box_cut
+brep imported/truncated.brep
+boolean cut
+plane 0.0 0.0 2.5 0.0 0.0 1.0 1.0 0.0 0.0
+wire P 4 -1.5 3.5 2.5 2.5 3.5 2.5 2.5 7.5 2.5 -1.5 7.5 2.5
+prism 0.0 0.0 3.0
+end
+case truncated_box_common
+brep imported/truncated.brep
+boolean common
+plane 0.0 0.0 2.5 0.0 0.0 1.0 1.0 0.0 0.0
+wire P 4 -1.5 3.5 2.5 2.5 3.5 2.5 2.5 7.5 2.5 -1.5 7.5 2.5
+prism 0.0 0.0 3.0
+end
+case wedge_slab_fuse
+brep imported/wedge.brep
+boolean fuse
+plane 0.0 0.0 2.25 0.0 0.6 0.8 1.0 -0.0 0.0
+wire P 4 -4.0 -12.0 11.25 14.0 -12.0 11.25 14.0 12.0 -6.75 -4.0 12.0 -6.75
+prism 0.0 0.8999999999999999 1.2000000000000002
+end
+case wedge_slab_cut
+brep imported/wedge.brep
+boolean cut
+plane 0.0 0.0 2.25 0.0 0.6 0.8 1.0 -0.0 0.0
+wire P 4 -4.0 -12.0 11.25 14.0 -12.0 11.25 14.0 12.0 -6.75 -4.0 12.0 -6.75
+prism 0.0 0.8999999999999999 1.2000000000000002
+end
+case wedge_slab_common
+brep imported/wedge.brep
+boolean common
+plane 0.0 0.0 2.25 0.0 0.6 0.8 1.0 -0.0 0.0
+wire P 4 -4.0 -12.0 11.25 14.0 -12.0 11.25 14.0 12.0 -6.75 -4.0 12.0 -6.75
+prism 0.0 0.8999999999999999 1.2000000000000002
+end
+case notched_rod_fuse
+brep imported/notched.brep
+boolean fuse
+plane 0.0 2.2 1.5999999999999996 0.0 0.6 0.8 1.0 -0.0 0.0
+wire P 4 7.0 -5.0 6.999999999999998 9.0 -5.0 6.999999999999998 9.0 12.600000000000001 -6.2 7.0 12.600000000000001 -6.2
+prism 0.0 2.4 3.2
+end
+case notched_rod_cut
+brep imported/notched.brep
+boolean cut
+plane 0.0 2.2 1.5999999999999996 0.0 0.6 0.8 1.0 -0.0 0.0
+wire P 4 7.0 -5.0 6.999999999999998 9.0 -5.0 6.999999999999998 9.0 12.600000000000001 -6.2 7.0 12.600000000000001 -6.2
+prism 0.0 2.4 3.2
+end
+case notched_rod_common
+brep imported/notched.brep
+boolean common
+plane 0.0 2.2 1.5999999999999996 0.0 0.6 0.8 1.0 -0.0 0.0
+wire P 4 7.0 -5.0 6.999999999999998 9.0 -5.0 6.999999999999998 9.0 12.600000000000001 -6.2 7.0 12.600000000000001 -6.2
+prism 0.0 2.4 3.2
+end
+case ell_slab_fuse
+brep imported/ell.brep
+boolean fuse
+plane 0.0 0.0 2.25 0.0 0.6 0.8 1.0 -0.0 0.0
+wire P 4 -4.0 -12.0 11.25 14.0 -12.0 11.25 14.0 12.0 -6.75 -4.0 12.0 -6.75
+prism 0.0 0.8999999999999999 1.2000000000000002
+end
+case ell_slab_cut
+brep imported/ell.brep
+boolean cut
+plane 0.0 0.0 2.25 0.0 0.6 0.8 1.0 -0.0 0.0
+wire P 4 -4.0 -12.0 11.25 14.0 -12.0 11.25 14.0 12.0 -6.75 -4.0 12.0 -6.75
+prism 0.0 0.8999999999999999 1.2000000000000002
+end
+case ell_slab_common
+brep imported/ell.brep
+boolean common
+plane 0.0 0.0 2.25 0.0 0.6 0.8 1.0 -0.0 0.0
+wire P 4 -4.0 -12.0 11.25 14.0 -12.0 11.25 14.0 12.0 -6.75 -4.0 12.0 -6.75
+prism 0.0 0.8999999999999999 1.2000000000000002
+end
+case tetra_octa_fuse
+brep imported/tetra.brep
+boolean fuse
+brep imported/octa.brep
+end
+case tetra_octa_cut
+brep imported/tetra.brep
+boolean cut
+brep imported/octa.brep
+end
+case tetra_octa_common
+brep imported/tetra.brep
+boolean common
+brep imported/octa.brep
+end
+case steps_fuse
+brep imported/steps_low.brep
+boolean fuse
+brep imported/steps_high.brep
+end
+case steps_cut
+brep imported/steps_low.brep
+boolean cut
+brep imported/steps_high.brep
+end
+case steps_common
+brep imported/steps_low.brep
+boolean common
+brep imported/steps_high.brep
+end
+case pedestal_box_fuse
+plane 0.0 0.0 -31.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire P 4 -12.7239959266648 -9.76227793225116 -31.0 9.94168505699231 -9.76227793225116 -31.0 9.94168505699231 12.61096837757 -31.0 -12.7239959266648 12.61096837757 -31.0
+prism 0.0 0.0 31.0
+boolean fuse
+brep imported/pedestal.brep
+end
+case pedestal_box_cut
+plane 0.0 0.0 -31.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire P 4 -12.7239959266648 -9.76227793225116 -31.0 9.94168505699231 -9.76227793225116 -31.0 9.94168505699231 12.61096837757 -31.0 -12.7239959266648 12.61096837757 -31.0
+prism 0.0 0.0 31.0
+boolean cut
+brep imported/pedestal.brep
+end
+case pedestal_box_common
+plane 0.0 0.0 -31.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire P 4 -12.7239959266648 -9.76227793225116 -31.0 9.94168505699231 -9.76227793225116 -31.0 9.94168505699231 12.61096837757 -31.0 -12.7239959266648 12.61096837757 -31.0
+prism 0.0 0.0 31.0
+boolean common
+brep imported/pedestal.brep
+end
+case draft_ridge_fuse
+brep imported/draft.brep
+boolean fuse
+brep imported/ridge.brep
+end
+case draft_ridge_cut
+brep imported/draft.brep
+boolean cut
+brep imported/ridge.brep
+end
+case draft_ridge_common
+brep imported/draft.brep
+boolean common
+brep imported/ridge.brep
+end
+case chain_vanes_fuse
+brep imported/vane_up.brep
+boolean fuse
+brep imported/vane_down.brep
+then fuse swapped
+plane 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire P 4 0.0 0.0 0.0 10.0 0.0 0.0 10.0 10.0 0.0 0.0 10.0 0.0
+prism 0.0 0.0 5.0
+end
+case chain_vanes_cut
+brep imported/vane_up.brep
+boolean fuse
+brep imported/vane_down.brep
+then cut swapped
+plane 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire P 4 0.0 0.0 0.0 10.0 0.0 0.0 10.0 10.0 0.0 0.0 10.0 0.0
+prism 0.0 0.0 5.0
+end
+case chain_vanes_common
+brep imported/vane_up.brep
+boolean fuse
+brep imported/vane_down.brep
+then common swapped
+plane 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire P 4 0.0 0.0 0.0 10.0 0.0 0.0 10.0 10.0 0.0 0.0 10.0 0.0
+prism 0.0 0.0 5.0
+end
+case chain_notched_fuse
+brep imported/notched.brep
+boolean cut
+plane 0.0 0.0 -1.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire P 4 4.0 3.5 -1.0 9.5 3.5 -1.0 9.5 6.5 -1.0 4.0 6.5 -1.0
+prism 0.0 0.0 7.0
+then fuse
+plane 0.0 0.0 2.25 0.0 0.6 0.8 1.0 -0.0 0.0
+wire P 4 -4.0 -12.0 11.25 14.0 -12.0 11.25 14.0 12.0 -6.75 -4.0 12.0 -6.75
+prism 0.0 0.8999999999999999 1.2000000000000002
+end
+case chain_notched_cut
+brep imported/notched.brep
+boolean cut
+plane 0.0 0.0 -1.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire P 4 4.0 3.5 -1.0 9.5 3.5 -1.0 9.5 6.5 -1.0 4.0 6.5 -1.0
+prism 0.0 0.0 7.0
+then cut
+plane 0.0 0.0 2.25 0.0 0.6 0.8 1.0 -0.0 0.0
+wire P 4 -4.0 -12.0 11.25 14.0 -12.0 11.25 14.0 12.0 -6.75 -4.0 12.0 -6.75
+prism 0.0 0.8999999999999999 1.2000000000000002
+end
+case chain_notched_common
+brep imported/notched.brep
+boolean cut
+plane 0.0 0.0 -1.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire P 4 4.0 3.5 -1.0 9.5 3.5 -1.0 9.5 6.5 -1.0 4.0 6.5 -1.0
+prism 0.0 0.0 7.0
+then common
+plane 0.0 0.0 2.25 0.0 0.6 0.8 1.0 -0.0 0.0
+wire P 4 -4.0 -12.0 11.25 14.0 -12.0 11.25 14.0 12.0 -6.75 -4.0 12.0 -6.75
+prism 0.0 0.8999999999999999 1.2000000000000002
+end
+case pyramid_flush_fuse
+brep imported/pyramid.brep
+boolean fuse
+plane 1.0 1.0 0.0 0.0 -0.8 0.6 1.0 0.0 0.0
+wire P 4 -1.0 -0.19999999999999996 -1.6 11.0 -0.19999999999999996 -1.6 11.0 7.0 8.0 -1.0 7.0 8.0
+prism 0.0 -1.6 1.2
+end
+case pyramid_flush_cut
+brep imported/pyramid.brep
+boolean cut
+plane 1.0 1.0 0.0 0.0 -0.8 0.6 1.0 0.0 0.0
+wire P 4 -1.0 -0.19999999999999996 -1.6 11.0 -0.19999999999999996 -1.6 11.0 7.0 8.0 -1.0 7.0 8.0
+prism 0.0 -1.6 1.2
+end
+case pyramid_flush_common
+brep imported/pyramid.brep
+boolean common
+plane 1.0 1.0 0.0 0.0 -0.8 0.6 1.0 0.0 0.0
+wire P 4 -1.0 -0.19999999999999996 -1.6 11.0 -0.19999999999999996 -1.6 11.0 7.0 8.0 -1.0 7.0 8.0
+prism 0.0 -1.6 1.2
+end
+case hollow_slab_fuse
+brep imported/hollow.brep
+boolean fuse
+plane 0.0 0.0 2.25 0.0 0.6 0.8 1.0 -0.0 0.0
+wire P 4 -4.0 -12.0 11.25 14.0 -12.0 11.25 14.0 12.0 -6.75 -4.0 12.0 -6.75
+prism 0.0 0.8999999999999999 1.2000000000000002
+end
+case hollow_slab_cut
+brep imported/hollow.brep
+boolean cut
+plane 0.0 0.0 2.25 0.0 0.6 0.8 1.0 -0.0 0.0
+wire P 4 -4.0 -12.0 11.25 14.0 -12.0 11.25 14.0 12.0 -6.75 -4.0 12.0 -6.75
+prism 0.0 0.8999999999999999 1.2000000000000002
+end
+case hollow_slab_common
+brep imported/hollow.brep
+boolean common
+plane 0.0 0.0 2.25 0.0 0.6 0.8 1.0 -0.0 0.0
+wire P 4 -4.0 -12.0 11.25 14.0 -12.0 11.25 14.0 12.0 -6.75 -4.0 12.0 -6.75
+prism 0.0 0.8999999999999999 1.2000000000000002
+end

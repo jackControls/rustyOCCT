@@ -158,6 +158,15 @@ fn construction(s: &Solid) -> Result<(Polyhedron, bool)> {
                 Some((sub, _)) => sub,
                 None => poly.as_ref().clone(),
             };
+            // S9e.4b.2: an imported polyhedron has no construction to re-run.
+            if [&poly.a, &poly.b]
+                .iter()
+                .any(|x| crate::solid::boolean::polyhedra::imported::is_imported(x))
+            {
+                return Err(out_of_domain(
+                    "an imported polyhedron's result given to a Boolean of curved faces (S9e.4b.4)",
+                ));
+            }
             let direct = super::applies(&poly);
             Ok((poly, direct))
         }

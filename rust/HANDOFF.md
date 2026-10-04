@@ -11,7 +11,8 @@ over `s9c2-kernel` at `e80e2fd9`) and S9f.2b.2 (branch `s9f2b2`, over
 `s9c2-kernel` at `7199e06a`), then for the DRAW survey of S9f.2b.2 and
 S9e.4b.1 (branch `s9-draw-4`, over `s9c2-kernel` at `93e6fcd0`),
 then for S9f.3a (branch `s9f3`, over `s9c2-kernel` at `7199e06a`) and a
-fix of two cylinders within rounding of parallel (branch `fix-conic-eval`).
+fix of two cylinders within rounding of parallel (branch `fix-conic-eval`),
+then for S9e.4b.2 (branch `s9e4b2`, over `s9c2-kernel` at `b903f3fa`).
 
 ## Where things stand
 
@@ -130,6 +131,31 @@ fix of two cylinders within rounding of parallel (branch `fix-conic-eval`).
   and native DRAW's volumes (`bcut_complex/H3`, `K8`, `bfuse_complex/C9`,
   `E9`, `I6`, `N1`, `N9`), registered (1,096 cases), 18 refused by S9's
   rules, 6 S9e.4b.4's; nothing else moves. Pending: the campaign.
+- **S9e.4b.2 implemented** (branch `s9e4b2`, not merged): imported
+  polyhedra other than prisms (pyramids, frustums of them, slanted wedges,
+  results of boxes in different frames) decided on their stored vertices,
+  not their planes' common points (a vertex of four planes has none once
+  rounded; two files sharing a face, the survey's `buc60803a` and `b`, meet
+  at their planes' points 5.3e-15 to 7.2e-15 apart where their stored
+  points agree): S9b.2's stored model, each face's polygon of stored
+  vertices in exactly planar triangles, an exactly coplanar face joined
+  with a partner's on its plane, membership by parity, the history over
+  the stored ids (`solid/boolean/polyhedra/imported.rs`). Decisions
+  ("S9e.4b.2 refined"), 48 cases on 15 bodies OCCT wrote (wedges, sewn
+  polyhedra, results of boxes, the survey's shapes from exact points)
+  referenced by an exact reference of convex cells
+  (`imported_polyhedra_boolean_reference.py`) and captured before the
+  kernel (47 matching, the flush fuse reviewed), the kernel within the
+  reference on all 44 solid and empty cases, the flush fuse refused, the
+  cavity S9e.4b.4's; against curved faces S9e.4b.4's. The fuzz target's
+  `IMPORTED` stage imports the chained stage's planar first result too.
+  A trial of the survey's 7 restore cases: 4 evaluate on both backends
+  with every check (`buc60803`, `bug102_1`, `bug102_2`, `bopfuse_complex/K5`,
+  the last since an imported prism of lines against an imported
+  polyhedron is decided on its stored vertices too), `bug578_1` and `_2`
+  refused (the frustums' bases 6.6e-7 to 2.0e-6 apart: their fuse two
+  solids) and `bfuse_complex/D9` (a shared corner stored 1e-13 apart).
+  Pending: its DRAW survey and campaign.
 - **CI.** Both workflows ("Rust kernel", "Rust geometry fuzzing") were green
   at `6c221525`. They had been red from S7 until 2026-09-29, unnoticed;
   check them after every push (see "Working rules").
@@ -164,12 +190,15 @@ fix of two cylinders within rounding of parallel (branch `fix-conic-eval`).
    apex, the stored half angle's tangent).
 3. **S9e.4b**, split in "S9e.4b refined": S9e.4b.1 (arcs rounded off
    their circles) is implemented (above, its DRAW survey done, pending
-   its campaign); next **S9e.4b.2**, polyhedra other than prisms on their
-   stored planes (7 DRAW cases), then **S9e.4b.3**, a plane's pieces of a
-   sphere, cylinder or cone and S9e.2's deferred `Clipped` and `Half`
-   against curved faces (39 cases), then **S9e.4b.4**, the S9e text's plan
-   in full (joints of two circles, prisms with walls of two directions,
-   bodies of several curved surfaces: 21 cases). The reader's header check
+   its campaign); **S9e.4b.2**, polyhedra other than prisms, is
+   implemented on their stored vertices (above; pending its DRAW survey,
+   registering the trial's cases, and campaign); next **S9e.4b.3**, a
+   plane's pieces of a sphere, cylinder or cone and S9e.2's deferred
+   `Clipped` and `Half` against curved faces (39 cases), then
+   **S9e.4b.4**, the S9e text's plan in full (joints of two circles, prisms
+   with walls of two directions, bodies of several curved surfaces: 21
+   cases; an imported polyhedron against curved faces, or with a cavity).
+   The reader's header check
    refuses OCCT 8.1's version-3 `.brep` (`(c) Open Cascade`; 27 dataset
    files, none among the surveyed restore cases): widening it needs a
    survey of the restores it opens.
@@ -274,6 +303,7 @@ Each comparison takes `--occt-root target/spline-linear-preflight/pinned-sdk/ins
 | `compare_imported_boolean.py` | 54 / 15 (the kernel within the reference on all 57 solid cases, the 12 degenerate refused: since S9e.4b.1 the 3 turned profiles' corner on the box's) |
 | `compare_imported_arcs_boolean.py` | 27 / 9 (the kernel within the reference on all 27 solid cases, the 6 degenerate refused, the 3 lens cases `unsupported`, S9e.4b.4's) |
 | `compare_spline_sphere_boolean.py` | 4 / 29 (the kernel within the reference on all 27 results, the 6 degenerate refused, none `unsupported`) |
+| `compare_imported_polyhedra_boolean.py` | 47 / 1 (the kernel within the reference on all 44 solid and empty cases, the flush fuse refused, the cavity `unsupported`, S9e.4b.4's) |
 
 Every one must report 0 failures; since S9f.1 also `compare_split.py`
 (72 / 56) and `compare_brep.py --family spline` (10 / 3), which share its

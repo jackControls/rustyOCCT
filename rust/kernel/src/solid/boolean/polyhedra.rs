@@ -40,6 +40,8 @@ use num_integer::Integer;
 use num_rational::BigRational as R;
 use std::collections::{BTreeMap, BTreeSet};
 
+pub(crate) mod imported;
+
 type V = [R; 3];
 
 fn sub(a: &V, b: &V) -> V {
@@ -967,8 +969,15 @@ fn zipped(polys: &[Vec<P2>]) -> Vec<[P2; 3]> {
 /// each face as the triangles of its trapezoids in its projection on the
 /// normal's largest coordinate plane (their corners exact points of the
 /// face's straight edges), so each triangle is planar exactly; a face's
-/// fragments join back by the face. Its side by exact ray parity.
+/// fragments join back by the face. Its side by exact ray parity. S9e.4b.2:
+/// an imported polyhedron's likewise (and an imported prism of lines'
+/// against one, `substituted`), each face's outward normal from the
+/// region behind it, each edge between its stored vertices (its stored
+/// line's ends are roundings of its own), a face whose triangles do not all
+/// face its way `Degenerate` (folded by its stored vertices), and a face
+/// whose stored vertices are coplanar exactly joined by its plane.
 fn stored_model(solid: &Solid, op: Operand) -> Result<Model> {
+    let imported = matches!(&solid.construction, Construction::Imported(_));
     // S9f.1: a spline prism in any position is the curved engine's against
     // a prism of lines; against a plane's piece it is S9f's still.
     if super::curved::applies_splines(solid) {
@@ -993,7 +1002,11 @@ fn stored_model(solid: &Solid, op: Operand) -> Result<Model> {
         let Surface::Plane(frame) = &face.surface else {
             return Err(other());
         };
-        let normal = frame.normal() * face.sense.sign();
+        let normal = if imported {
+            crate::solid::imported::outward(t, fi).ok_or_else(other)?
+        } else {
+            frame.normal() * face.sense.sign()
+        };
         let nv = vq(normal);
         // Loops as cycles of exact points.
         let mut cycles: Vec<Vec<V>> = Vec::new();
@@ -1066,12 +1079,16 @@ fn stored_model(solid: &Solid, op: Operand) -> Result<Model> {
             Some(tris) => tris,
             None => zipped(&polys),
         };
+        let first = faces.len();
         for t2 in tris {
             let mut tri: Vec<V> = t2.iter().map(lifted).collect();
             if flip {
                 tri.reverse();
             }
             let n = area2(&tri);
+            if imported && dot(&n, &nv) <= zero() {
+                return Err(imported::folded());
+            }
             faces.push(MFace {
                 plane: Plane::through(n, &tri[0]),
                 pieces: vec![tri.clone()],
@@ -1080,11 +1097,31 @@ fn stored_model(solid: &Solid, op: Operand) -> Result<Model> {
             });
             triangles.push(tri);
         }
+        // S9e.4b.2: an imported face whose stored vertices are coplanar
+        // exactly is that plane, its fragments joined with any other face's
+        // on it (a shared plane of the partner's) as a construction's are.
+        let planes: BTreeSet<(V, R)> = faces[first..]
+            .iter()
+            .map(|f| f.plane.canonical(true))
+            .collect();
+        if imported && planes.len() == 1 {
+            for f in &mut faces[first..] {
+                f.stored = false;
+            }
+        }
     }
     let mut edges = Vec::new();
     for (ei, e) in t.edges().iter().enumerate() {
         let Curve3::LineSegment { start, end } = e.curve else {
             return Err(other());
+        };
+        let (start, end) = match (imported, e.start, e.end) {
+            (true, Some(a), Some(b)) => (
+                t.vertices()[a.index()].position,
+                t.vertices()[b.index()].position,
+            ),
+            (true, ..) => return Err(other()),
+            _ => (start, end),
         };
         edges.push((point(start), point(end), id_of(Slot::Edge(EdgeId(ei)))?));
     }
@@ -1341,11 +1378,18 @@ struct Frag {
 pub(super) fn substituted(
     poly: &Polyhedron,
 ) -> Result<Option<(Polyhedron, BTreeMap<EntityId, EntityId>)>> {
-    let imported = |s: &Solid| match &s.construction {
-        Construction::Imported(i) => Some(i.clone()),
+    // S9e.4b.2: an imported polyhedron stands as itself (its stored model),
+    // and so does an imported prism of lines against one: two files' shared
+    // vertices agree exactly where a construction's corners, re-derived from
+    // its rounded local coordinates, may miss them by an ulp (the DRAW
+    // survey's `bopfuse_complex/K5`, a frustum on an imported box's top).
+    let stored =
+        |s: &Solid, other: &Solid| imported::is_imported(other) && imported::planar(&s.topology);
+    let imported = |s: &Solid, other: &Solid| match &s.construction {
+        Construction::Imported(i) if !i.polyhedron() && !stored(s, other) => Some(i.clone()),
         _ => None,
     };
-    let (ia, ib) = (imported(&poly.a), imported(&poly.b));
+    let (ia, ib) = (imported(&poly.a, &poly.b), imported(&poly.b, &poly.a));
     if ia.is_none() && ib.is_none() {
         return Ok(None);
     }
@@ -1357,7 +1401,10 @@ pub(super) fn substituted(
             return Box::new(s.clone());
         };
         names.extend(i.names.iter().map(|(k, v)| (*k, *v)));
-        i.recognized
+        match i.recognized {
+            crate::solid::imported::Recognized::Construction(c) => c,
+            crate::solid::imported::Recognized::Polyhedron => Box::new(s.clone()),
+        }
     };
     let a = stand(&poly.a, ia);
     let b = stand(&poly.b, ib);
@@ -1399,8 +1446,11 @@ pub(super) fn build(poly: &Polyhedron) -> Result<Vec<Component>> {
         }
         return Ok(out);
     }
+    // S9e.4b.2: an imported polyhedron on its stored model, against a
+    // body of plane faces and line edges only.
+    let polyhedral = imported::involved(poly)?;
     // S9c.1: prisms with arcs in any position.
-    if super::curved::applies(poly) {
+    if !polyhedral && super::curved::applies(poly) {
         return super::curved::build(poly);
     }
     let tolerance = poly.tolerance();

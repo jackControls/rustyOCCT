@@ -6308,6 +6308,258 @@ Decisions for S9, recorded before its code (2026-09-28):
     the slowest Boolean case 16.2 seconds (`boptuc_simple/ZK8`, 12.8 in
     the last survey, on a host at load 7 to 31), the restore cases 0.2 to
     5.0 s. No case fails, crashes or panics; no kernel change.
+  * **S9e.4b.2 refined, before its code (2026-10-04).** Why it is refused
+    today: `imported::recognize` takes a body of plane faces and line
+    edges only as S9e.4a's prism (a first pair of opposite planes, every
+    other face along their normal), so a pyramid, a pyramid's frustum, a
+    wedge with slanted faces or a result of boxes in different frames is
+    `OutOfDomain("an imported solid other than a prism, a sphere, a cone
+    or a torus (S9e.4b)")`: the DRAW survey's 7 cases (`bugs/modalg_1/
+    buc60803`, `bug102_1`, `bug102_2`: `buc60803a` and `b`, two frustums
+    of a pyramid, the second standing on the first's top, fused;
+    `bugs/modalg_2/bug578_1`, `_2`: `OCC578_w1` and `w2`, frustums turned
+    by about a right angle about `x` on either side of `z = 0.5`, fused
+    and cut from a box; `bopfuse_complex/K5`: `pro9481b`, a frustum on
+    the box `pro9481a`'s top; `bfuse_complex/D9`: `CTO900_pro12559a`, a
+    prism along `x` with some walls drafted by 2 degrees, fused with the
+    prism `CTO900_pro12559b` on its cap). What the files store: every face
+    a plane, every edge a line between two vertices (15 or 17 digits for
+    surfaces, 15 for vertices); every vertex has three faces, and lies off
+    their planes' common point by up to 3.0e-13 (`CTO900_pro12559a`);
+    where two bodies were built to share a face (`buc60803a`'s top is
+    `b`'s base, `pro9481a`'s top `pro9481b`'s base, `CTO900_pro12559a`'s
+    cap holds `b`'s), the shared vertices are the same binary64 points in
+    both files, but each file's planes meet near them at points 5.3e-15 to
+    7.2e-15 apart (`buc60803`; a scratch measurement, the dataset not
+    committed). Decisions. (1) *The exact polyhedron is its stored
+    vertices*, not its planes' common points (S9e.4b refined's plan,
+    amended): each vertex its stored binary64 point as a rational, each
+    edge the segment between its two stored vertices, each face the
+    polygon of its loops' stored vertices, exactly planar where they are
+    coplanar (an axis-aligned face, a triangle, a face OCCT built from
+    exact points), else the triangles of that polygon in its projection on
+    the stored normal's largest coordinate plane (ears clipped, holes
+    bridged; S9b.2's stored model of a Boolean's result, which decides
+    such faces already: each triangle exactly planar, within the
+    resolution of the stored plane, the face's fragments joined back by
+    the face), and the solid's membership by an exact ray's parity over
+    those triangles. Why not the planes: a vertex of four or more faces (a
+    pyramid's apex) has no common point of its rounded planes in general,
+    and where two bodies share a face their planes' points differ though
+    their stored points agree, so a Boolean of the two would leave a
+    sliver along every shared edge (refused by S9b's rule as a face
+    thinner than the resolution) where the stored data meet exactly; the
+    stored points keep every coincidence the files store, and lie within
+    the resolution of their faces' stored planes (the converter's
+    validation), so the model is the body within its resolution. Numbers:
+    rationals of binary64 (S9b.2's), no new field or degree. (2)
+    *Recognition.* A body whose faces are all planes and edges all lines,
+    of one solid region and one shell, is S9e.4a's prism where its
+    recognition, construction and match succeed (a box or a prism of
+    lines, unchanged), else a polyhedron (this step), decided on its
+    stored topology: no construction and no match, its entities its stored
+    ones, so the Boolean's history is over the stored ids directly. (3)
+    *Degenerate.* A face whose stored vertices fold it (a triangle of its
+    clipping facing against the stored plane's outward normal, or none
+    found of the polygon's area: a sliver face rounded over)
+    `Degenerate("an imported face folded by its stored vertices")`; S9's
+    rules unchanged in the Boolean (S9b's exact arrangement: a partner's
+    face within the resolution of an imported face and not on it exactly,
+    as a box in a turned frame flush with a face whose stored corners are
+    roundings, leaves a face thinner than the resolution; solids touching
+    at a point or along an edge; a face meeting itself). An ill-conditioned
+    vertex (three planes nearly dependent) needs no rule: its stored point
+    is taken, not computed. (4) *Its other queries.* Classification
+    `Boundary` within the resolution of a face's triangles (in binary64),
+    else by the exact parity; mass the stored topology's certified
+    enclosure (S9e.4a's); bounds the stored edges'; a rigid motion moves
+    the stored topology (as S9b's results), the model its moved vertices.
+    A result with an imported polyhedron given to another polyhedral
+    Boolean is S9b.2's stored model of that result. (5) *Refused.* An
+    imported polyhedron against a solid with curved faces or edges (a
+    prism with arcs or circles, a sphere, a cone, a torus, a spline prism
+    or a result of them) and a result of one given to a Boolean of curved
+    faces: `OutOfDomain("an imported polyhedron against curved faces
+    (S9e.4b.4)")` (the curved engine decides on constructions; a general
+    body's faces in its arrangement are the S9e text's plan, S9e.4b.4); a
+    polyhedron with a cavity or several shells (none among the surveyed
+    cases) `OutOfDomain("an imported polyhedron with a cavity or several
+    shells (S9e.4b.4)")`. (6) *Fuzzing.* The `IMPORTED` stage imports the
+    object, always a construction; the chained stage's first result (at
+    most 12 plane faces, a polyhedron in any position) is written, read
+    back, imported and cut by the chained box too, its volume the chained
+    cut's. (7) *Evidence first.* `occt_boolean_oracle.cpp` takes rows
+    `wedge` (`BRepPrimAPI_MakeWedge(gp_Ax2, DX, DY, DZ, XMIN, ZMIN, XMAX,
+    ZMAX)`: a pyramid where its top is a point, a frustum) and
+    `polyhedron` (faces of given points sewn into a solid), and a `write`
+    block taking a Boolean of two solids (its result's one solid written).
+    Bodies OCCT writes under `rust/fixtures/imported/`: a tetrahedron and
+    an octahedron (points, rounded in a turned frame or exact), a pyramid
+    (its apex of four faces), a frustum and a wedge with slanted faces in
+    turned frames, results of boxes (a box less a tilted box, a box fused
+    with a turned box over other heights), and the survey's shapes from
+    exact points (two frustums sharing a face, a frustum on a box's top, a
+    partly drafted prism with a prism on its cap, two frustums at right
+    angles fused and cut from a box); cases against boxes and slabs,
+    another imported body, as object and tool, and chains; declared
+    `degenerate` a slab in the pyramid's frame on its base's plane;
+    declared `unsupported` a box with a cavity. The reference
+    (`imported_polyhedra_boolean_reference.py`, independent of the
+    kernel): each body the construction OCCT was given as convex cells
+    (hulls of exact points: a wedge's local corners on the frame's stored
+    axes, a polyhedron's binary64 points, a Boolean's cells by S9b's
+    polyhedral reference), its Booleans' volumes three ways (inclusion
+    and exclusion, the result's cells, the divergence over its boundary),
+    areas two ways (the inputs' faces classified, the result's cells'
+    boundary), prismatoid closed forms, Monte Carlo against the inputs'
+    half-spaces, solid counts by cells meeting in area, clearances
+    outside the declared cases; `generate_imported_polyhedra_boolean_
+    fixtures.py --check` (a CI group `imported-polyhedra`, each file's
+    stored vertices on the construction's boundary and the body no prism),
+    `test_imported_polyhedra_boolean_reference.py`; a native capture before
+    `solid/boolean/polyhedra/imported.rs` exists
+    (`compare_imported_polyhedra_boolean.py` keyed on it, the kernel's
+    probe refusing every case); then the kernel and its tests
+    (`tests/imported_polyhedra_booleans.rs`).
+  * **S9e.4b.2 evidence (2026-10-04).** `occt_boolean_oracle.cpp` takes the
+    rows `wedge` and `polyhedron` and a `write` block of two solids about a
+    `boolean` row (its result's one solid written). Fifteen bodies OCCT
+    wrote (`boolean-imported-polyhedra-bodies.txt`, written by
+    `compare_imported_polyhedra_boolean.py --write-bodies` to
+    `rust/fixtures/imported/`): `tetra`, a tetrahedron of points rounded in
+    the `TURN30` frame; `octa`, an octahedron of exact points (every vertex
+    of four faces); `pyramid` (`MakeWedge` in the `TILT` frame, its apex of
+    four faces), `truncated` (a pyramid's frustum in the `TURN30` frame)
+    and `wedge` (slanted on three sides, in the `R125` frame); `notched`, a
+    box less a box in a skew frame, and `ell`, a box fused with a turned box
+    over other heights (results OCCT computed); `hollow`, a box with a
+    cavity; and the survey's shapes from exact points: `steps_low` and
+    `steps_high` (`buc60803a`, `b`: the second's base the first's top),
+    `pedestal` (`pro9481b`: a frustum on a kernel box's top, its corners
+    decimals of 15 digits), `draft` (`CTO900_pro12559a`: a prism along `x`
+    of a profile with a reflex corner, two walls drafted) with `ridge`
+    (`CTO900_pro12559b`, `MakePrism` on part of its far cap, S9e.4a's
+    prism), `vane_up` and `vane_down` (`OCC578_w1`, `w2`: frustums in frames
+    turned by right angles about `x`, their bases one square). The
+    reference (`imported_polyhedra_boolean_reference.py`): every solid as
+    convex cells in exact Fractions (a hull of each construction's points:
+    a wedge's corners on the frame's stored axes, a polyhedron's binary64
+    points; a Boolean's cells by S9b's polyhedral reference), a Boolean's
+    result as S9b's cells. `generate_imported_polyhedra_boolean_fixtures.py
+    --check`: 48 cases of 16 groups (40 solid, 4 empty, 1 `degenerate`, 3
+    `unsupported`; 33 of class `polyhedron`, 9 `both`, 6 `chain`), each body
+    against boxes, slabs and rods in the `XY`, `TILT` and `TILTX` frames or
+    another imported body, as object and tool, and two chains (the vanes
+    fused, then a box with them, swapped; the notched box less a rod, then a
+    `TILT` slab); declared `degenerate` the fuse of a `TILTX` slab on the
+    pyramid's base's plane (its cut and common the construction's: two
+    stored base corners on the slab's plane, two off it on the pyramid's
+    side by 7e-16), `unsupported` the box with a cavity against a slab.
+    Checks, relative to the case's size: volumes three ways (inclusion and
+    exclusion, the result's cells, the divergence over its boundary) and
+    the pair identities on the cells' volumes exactly equal, areas two ways
+    within 1.8e-40 and the area identity 6.0e-40, every imported body's
+    closed form (prismatoid, a tetrahedron's determinant, an octahedron's
+    diagonals) exactly, Monte Carlo 3.3 standard errors, solid counts by
+    cells meeting in area; outside the declared group every vertex and edge
+    of one input at least 4.0e-3 of the size from the other's faces and
+    edges where not on them (196 exact contacts, all between bodies whose
+    stored points are their construction's exactly: the shared faces), and
+    crossing faces at sines of at least 0.36. Every file read
+    independently (`stored_records`): its faces planes, every stored vertex
+    within 6.6e-16 of the size of the construction's boundary (the exact
+    bodies' stored points their construction's bit for bit), and no
+    construction a prism (but `ridge`'s). `test_imported_polyhedra_
+    boolean_reference.py` checks hulls, a wedge's corners and volumes, cubes'
+    Booleans and a union's boundary in closed form, the margins on contacts
+    made on purpose, the prism test and the case list and its protocol
+    rows; the generator's check is a CI group of its own
+    (`imported-polyhedra`); Python 3.9 and 3.12 write the same files.
+    Corrections from the evidence: the pyramid's frustum named `truncated`
+    (S9e.4a's cone body is `frustum.brep`, found by the files' check); the
+    skew box moved off `(8, 8, 2.5)`, where its edge passed exactly through
+    the rods' edges (found once the margins measured edges too: a trial of
+    the cases on a draft of the step's code, not committed, refused it as a
+    face thinner than the resolution and a non-manifold vertex), the
+    octahedron's slab and the tetrahedron moved off vertices within
+    rounding of the other's faces; the flush slab's cut and common, which
+    the same trial evaluated within the reference, declared as such. The
+    capture `occt-boolean-imported-polyhedra-preimplementation`
+    (`compare_imported_polyhedra_boolean.py`, keyed on
+    `solid/boolean/polyhedra/imported.rs`; the kernel's probe `unsupported`
+    on all 48, S9e.4a refusing every body but `ridge` and the pairs with
+    it): every result valid, 47 matching (volumes within 8.9e-16, areas
+    5.5e-16, centres 2.5e-16 of the size: plane faces, BRepGProp exact), 1
+    reviewed: the declared flush fuse, which OCCT makes one solid sharing
+    the pyramid's base within its tolerance where the reference's rounded
+    frames keep two apart (its volume the reference's, its area less twice
+    the base square); 2 results' counts change when unified (the drafted
+    prism and the ridge). S9e.4b.2's kernel next.
+  * **S9e.4b.2 implemented** (`solid/boolean/polyhedra/imported.rs`,
+    `imported::Recognized`, `polyhedra.rs`'s stored model for an imported
+    polyhedron, `given.rs`'s refusal), as the refined decisions describe:
+    an imported body of planes and lines is S9e.4a's prism where its
+    recognition, construction and match succeed, else a polyhedron decided
+    on its stored vertices (S9b.2's stored model: each face's outward
+    normal from the region behind it, its polygon of stored vertices cut
+    into exactly planar triangles, each edge between its stored vertices,
+    membership by parity), its history over its stored ids directly; it
+    classifies `Boundary` within the resolution of a face's triangle and
+    by parity off them, and moves with its stored topology. All 48
+    fixtures as declared (40 within the kernel's enclosures, each at most
+    `1e-9` wide, and 4 empty; the flush fuse refused, `Degenerate("a
+    face using an edge both ways")`; the cavity `OutOfDomain` as
+    S9e.4b.4's), every history complete over the imported bodies' stored
+    ids, results deterministic and moved rigidly, both inputs translated
+    and turned keeping the reference's volumes (the cases without exact
+    contacts, which a turn's rounding breaks), every body its
+    construction (its exact volume within `1e-9`, points classified, its
+    stored vertices on its boundary), a pyramid against a cylinder and a
+    result of it given with a cylinder `OutOfDomain` as S9e.4b.4's, the
+    stored frames the reference's bit for bit
+    (`tests/imported_polyhedra_booleans.rs`, 10 s at `opt-level` 2 with debug
+    assertions on a host at load 12 to 21).
+    `compare_imported_polyhedra_boolean.py` 47 matches and 1 reviewed (the
+    flush fuse, as captured), every enclosure within the reference with
+    S9e.4a's `1e-12` slack, every entity count OCCT's after unifying;
+    `compare_imported_boolean.py` 54/15 and
+    `compare_imported_arcs_boolean.py` 27/9 unchanged (and `compare_step.py`
+    23/6 on STEP-b's SDK, polyhedral 43/2, given 36/0, chained 24/6,
+    boolean 45/0), the tools' unit tests (308) and the ledger unchanged.
+    Amendments, from
+    the implementation: (a) an imported face whose stored vertices are
+    coplanar exactly is decided on that plane, its fragments joined with
+    any face's on it (a construction's or another import's), as a
+    construction's are: S9b.2 joins a stored face's fragments by the face
+    alone, which left the drafted prism's walls apart from the ridge's on
+    their shared planes in the fuse (17 faces where OCCT's unified result
+    has 12; a kernel result given again keeps S9b.2's rule); (b) an
+    imported prism of lines against an imported polyhedron is decided on
+    its stored vertices too, not S9e.4a's construction, whose corners,
+    re-derived from its rounded local coordinates, can miss the vertices
+    the two files share by an ulp (`bopfuse_complex/K5`, a frustum on an
+    imported box's top, refused as a face thinner than the resolution
+    before; found by the trial below; the fixtures' `draft_ridge`
+    exercises the path, every result unchanged). The `boolean` fuzz
+    target's `IMPORTED` stage also writes the chained stage's first result
+    of plane faces, reads it back, imports it and cuts it by the turned box
+    again, its volume the chained cut's within `1e-9`: replaying the corpus
+    (1,430 inputs) and the 25 regressions with debug assertions, no
+    failure, the slowest 23.5 s on a host at load 28 to 37; 189 such first
+    results reach it, 188 cut within the chained cut's volume and 1
+    refused (a cylinder partner, S9e.4b.4's). A trial of the DRAW survey's
+    7 restore cases with such polyhedra (not the survey: no volume audit,
+    nothing registered), on the Rust adapter and native DRAW: 4 evaluate on
+    both with every check (`bugs/modalg_1/buc60803`, `bug102_1`,
+    `bug102_2`, two frustums sharing a face, fused; `bopfuse_complex/K5`
+    since amendment (b)); 3 are refused: `bugs/modalg_2/bug578_1` and `_2`,
+    whose frustums `OCC578_w1` and `w2` are turned about 1.3e-6 and 4.0e-6
+    from right angles, so their bases lie 6.6e-7 to 2.0e-6 apart, above the
+    resolution: their fuse is two solids, which the adapter refuses as the
+    next Boolean's argument (one solid); `bfuse_complex/D9`, a
+    corner the two files share stored 1e-13 apart (`z = 56.5616376719611`
+    and `56.561637671961`), a face thinner than the resolution (S9's rule).
+    Pending: the DRAW survey, the campaign.
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces

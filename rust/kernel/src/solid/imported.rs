@@ -17,7 +17,12 @@
 //! surface kinds. The body is decided on the construction's exact model: a
 //! Boolean takes the construction in its place (`polyhedra::build`) and
 //! names the result over the stored ids through the match; it classifies
-//! and moves with it. Every other body is S9e.4b's.
+//! and moves with it. S9e.4b.2: a body of plane faces and line edges that is
+//! no such prism is a polyhedron decided on its stored vertices
+//! (`boolean::polyhedra::imported`: S9b.2's stored model, each face the
+//! polygon of its stored vertices, cut into exactly planar triangles where
+//! they are not coplanar), its entities its stored ones. Every other body is
+//! S9e.4b's.
 use super::{replayable, Construction, Context, Solid};
 use crate::history::{History, Relation};
 use crate::identity::{
@@ -39,11 +44,39 @@ use std::collections::BTreeMap;
 /// An imported solid's construction and names (S9e.4a).
 #[derive(Debug, Clone, PartialEq)]
 pub(crate) struct Imported {
-    /// The construction its stored surfaces give, with ids of its own.
-    pub(crate) recognized: Box<Solid>,
-    /// Each construction entity's stored entity (the match).
+    /// How it is decided: the construction its stored surfaces give, or its
+    /// stored vertices (S9e.4b.2).
+    pub(crate) recognized: Recognized,
+    /// Each construction entity's stored entity (the match; empty for a
+    /// polyhedron, whose entities are its stored ones).
     pub(crate) names: BTreeMap<EntityId, EntityId>,
     pub(crate) tolerance: Tolerance,
+}
+
+/// What an imported solid is decided on.
+#[derive(Debug, Clone, PartialEq)]
+pub(crate) enum Recognized {
+    /// S9e.4a: the construction its stored surfaces give, with ids of its
+    /// own.
+    Construction(Box<Solid>),
+    /// S9e.4b.2: a polyhedron other than a prism, on its stored vertices.
+    Polyhedron,
+}
+
+impl Imported {
+    /// Whether it is a polyhedron decided on its stored vertices (S9e.4b.2).
+    pub(crate) fn polyhedron(&self) -> bool {
+        self.recognized == Recognized::Polyhedron
+    }
+
+    /// A point's location: its construction's (within the resolution), or
+    /// the polyhedron's stored model's (S9e.4b.2).
+    pub(crate) fn classify(&self, solid: &Solid, point: Point3) -> Result<crate::Location> {
+        match &self.recognized {
+            Recognized::Construction(s) => s.classify(point),
+            Recognized::Polyhedron => super::boolean::polyhedra::imported::classify(solid, point),
+        }
+    }
 }
 
 fn general() -> Error {
@@ -62,7 +95,8 @@ impl Solid {
     /// its ordinal: the import's input). The solid must be one of the kernel's
     /// constructions read off its stored surfaces (a prism of lines, arcs
     /// and circles, a sphere, cap or zone, a cone or frustum, a whole
-    /// torus), within the resolution of every stored vertex and edge;
+    /// torus), within the resolution of every stored vertex and edge, or
+    /// (S9e.4b.2) a polyhedron of one shell, decided on its stored vertices;
     /// otherwise `OutOfDomain` (S9e.4b; spline faces or edges S9f).
     pub fn imported_with(
         operation: OperationId,
@@ -92,21 +126,38 @@ impl Solid {
         let (level, operation) = (context.level, context.operation);
         replayable(level)?;
         let topology = renamed(topology, operation)?;
-        let recognized = recognize(&topology, resolution, construction_operation(operation))?;
-        let names = names(&recognized, &topology, resolution)?;
+        // S9e.4a's construction where its recognition and match succeed,
+        // else (S9e.4b.2) a polyhedron of one shell on its stored vertices.
+        let construction = recognize(&topology, resolution, construction_operation(operation))
+            .and_then(|r| names(&r, &topology, resolution).map(|n| (r, n)));
+        let (recognized, names) = match construction {
+            Ok((r, n)) => (Recognized::Construction(Box::new(r)), n),
+            Err(e) if planar(&topology) => {
+                if !one_shell(&topology) {
+                    return Err(match e {
+                        Error::OutOfDomain(_) => Error::OutOfDomain(
+                            "an imported polyhedron with a cavity or several shells (S9e.4b.4)",
+                        ),
+                        e => e,
+                    });
+                }
+                (Recognized::Polyhedron, BTreeMap::new())
+            }
+            Err(e) => return Err(e),
+        };
         let mass = topology
             .mass_enclosure()
             .ok_or(Error::Unrepresentable(
                 "an imported solid's mass properties",
             ))?
             .midpoints();
-        let bounds = widened(recognized.bounds, &topology);
+        let (frame, start, end, bounds) = placed(&recognized, &topology);
         let solid = Self {
-            frame: recognized.frame,
-            start: recognized.start,
-            end: recognized.end,
+            frame,
+            start,
+            end,
             construction: Construction::Imported(Box::new(Imported {
-                recognized: Box::new(recognized),
+                recognized,
                 names,
                 tolerance: resolution,
             })),
@@ -115,6 +166,12 @@ impl Solid {
             bounds,
             operation,
         };
+        // S9e.4b.2: a polyhedron's stored model builds (no face folded).
+        if let Construction::Imported(i) = &solid.construction {
+            if i.polyhedron() {
+                super::boolean::polyhedra::imported::check(&solid)?;
+            }
+        }
         // Each entity generated from its slot in the file's cells (the
         // import's input), a label of its kind and ordinal.
         let t = &solid.topology;
@@ -161,17 +218,19 @@ impl Imported {
                 )
             })?;
         let moved = moved.with_identity_of(topology);
-        let recognized = self
-            .recognized
-            .transform_with(self.recognized.operation, motion)?
-            .0;
-        let bounds = widened(recognized.bounds, &moved);
+        let recognized = match &self.recognized {
+            Recognized::Construction(r) => {
+                Recognized::Construction(Box::new(r.transform_with(r.operation, motion)?.0))
+            }
+            Recognized::Polyhedron => Recognized::Polyhedron,
+        };
+        let (frame, start, end, bounds) = placed(&recognized, &moved);
         Ok(Solid {
-            frame: recognized.frame,
-            start: recognized.start,
-            end: recognized.end,
+            frame,
+            start,
+            end,
             construction: Construction::Imported(Box::new(Imported {
-                recognized: Box::new(recognized),
+                recognized,
                 names: self.names.clone(),
                 tolerance,
             })),
@@ -221,6 +280,39 @@ fn renamed(topology: Topology, operation: OperationId) -> Result<Topology> {
         )
         .collect();
     topology.renamed(d(EntityKind::Body, 0), slots)
+}
+
+/// The solid's frame, heights and bounds: its construction's, the bounds
+/// widened by the stored edges'; a polyhedron's the world's frame, its
+/// stored edges' bounds and their heights.
+fn placed(recognized: &Recognized, t: &Topology) -> (Frame3, f64, f64, crate::Bounds3) {
+    match recognized {
+        Recognized::Construction(r) => (r.frame, r.start, r.end, widened(r.bounds, t)),
+        Recognized::Polyhedron => {
+            let b = super::split::edge_bounds(t);
+            (Frame3::xy(), b.min.z, b.max.z, b)
+        }
+    }
+}
+
+/// Whether every face is a plane and every edge a line (S9e.4b.2).
+fn planar(t: &Topology) -> bool {
+    t.faces()
+        .iter()
+        .all(|f| matches!(f.surface, Surface::Plane(_)))
+        && t.edges()
+            .iter()
+            .all(|e| matches!(e.curve, Curve3::LineSegment { .. }))
+}
+
+/// One solid region with one shell (no cavity), as `recognize` requires.
+fn one_shell(t: &Topology) -> bool {
+    let solids: Vec<_> = t
+        .regions()
+        .iter()
+        .filter(|r| r.kind == RegionKind::Solid)
+        .collect();
+    solids.len() == 1 && solids[0].shells.len() == 1
 }
 
 /// The construction's bounds widened by the stored edges'.
@@ -328,7 +420,7 @@ fn point2(l: &[R; 3]) -> Point2 {
 
 /// The face's outward normal at a point of its surface's frame (a plane's
 /// normal; the solid region behind the oriented normal's front).
-fn outward(t: &Topology, fi: usize) -> Option<Vec3> {
+pub(crate) fn outward(t: &Topology, fi: usize) -> Option<Vec3> {
     let f = &t.faces()[fi];
     let Surface::Plane(frame) = &f.surface else {
         return None;

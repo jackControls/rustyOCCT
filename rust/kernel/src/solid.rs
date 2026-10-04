@@ -901,7 +901,8 @@ impl Solid {
             }
             Construction::Polyhedron(poly) => return poly.classify(point, self.bounds, tolerance),
             // S9e.4a: its construction's (within the resolution).
-            Construction::Imported(imported) => return imported.recognized.classify(point),
+            // S9e.4b.2: a polyhedron's by its stored model.
+            Construction::Imported(imported) => return imported.classify(self, point),
             Construction::Cone { bottom, top, .. } => {
                 let z = finite(z, "axial coordinate")?;
                 let local = [finite(x, "coordinate")?, finite(y, "coordinate")?, z];
