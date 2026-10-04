@@ -1030,35 +1030,45 @@ impl Fast {
         if !finite(self) || !finite(o) {
             return None;
         }
-        // Positive, negative, or zero strictly inside.
-        let sign = |x: &Self| {
-            if x.lo > 0.0 {
-                Some(Ordering::Greater)
-            } else if x.hi < 0.0 {
-                Some(Ordering::Less)
-            } else if x.lo < 0.0 && x.hi > 0.0 {
-                Some(Ordering::Equal)
-            } else {
-                None
-            }
-        };
+        // Positive, negative, or zero strictly inside: floating-point
+        // tests only (`product`'s note).
         let (a, b) = (self, o);
-        use Ordering::{Equal as Z, Greater as P, Less as N};
-        Some(match (sign(a)?, sign(b)?) {
-            (P, P) => ([a.lo, b.lo], [a.hi, b.hi]),
-            (N, N) => ([a.hi, b.hi], [a.lo, b.lo]),
-            (P, N) => ([a.hi, b.lo], [a.lo, b.hi]),
-            (N, P) => ([a.lo, b.hi], [a.hi, b.lo]),
-            (Z, P) => ([a.lo, b.hi], [a.hi, b.hi]),
-            (Z, N) => ([a.hi, b.lo], [a.lo, b.lo]),
-            (P, Z) => ([a.hi, b.lo], [a.hi, b.hi]),
-            (N, Z) => ([a.lo, b.hi], [a.lo, b.lo]),
-            (Z, Z) => return None,
+        let inside = |x: &Self| x.lo < 0.0 && x.hi > 0.0;
+        Some(if a.lo > 0.0 {
+            if b.lo > 0.0 {
+                ([a.lo, b.lo], [a.hi, b.hi])
+            } else if b.hi < 0.0 {
+                ([a.hi, b.lo], [a.lo, b.hi])
+            } else if inside(b) {
+                ([a.hi, b.lo], [a.hi, b.hi])
+            } else {
+                return None;
+            }
+        } else if a.hi < 0.0 {
+            if b.lo > 0.0 {
+                ([a.lo, b.hi], [a.hi, b.lo])
+            } else if b.hi < 0.0 {
+                ([a.hi, b.hi], [a.lo, b.lo])
+            } else if inside(b) {
+                ([a.lo, b.hi], [a.lo, b.lo])
+            } else {
+                return None;
+            }
+        } else if inside(a) {
+            if b.lo > 0.0 {
+                ([a.lo, b.hi], [a.hi, b.hi])
+            } else if b.hi < 0.0 {
+                ([a.hi, b.lo], [a.lo, b.lo])
+            } else {
+                return None;
+            }
+        } else {
+            return None;
         })
     }
 
-    /// Rounded values with their exact error signs, as lower and upper bounds.
-    fn bounds(lo: (f64, i8), hi: (f64, i8)) -> Self {
+    /// Rounded values with their exact errors, as lower and upper bounds.
+    fn bounds(lo: (f64, f64), hi: (f64, f64)) -> Self {
         if lo.0.is_nan() || hi.0.is_nan() {
             return Self {
                 lo: f64::NEG_INFINITY,
@@ -1078,44 +1088,49 @@ impl Fast {
     }
 }
 
-/// Rounded a + b and the sign of the exact error (TwoSum), or 2 when the sum
-/// overflowed and the error is unknown.
-fn sum(a: f64, b: f64) -> (f64, i8) {
+/// Rounded a + b and its exact error (TwoSum), NaN when the sum overflowed
+/// and the error is unknown, zero when an input is not finite.
+fn sum(a: f64, b: f64) -> (f64, f64) {
     let s = a + b;
     if !s.is_finite() {
-        return (s, if a.is_finite() && b.is_finite() { 2 } else { 0 });
+        return (
+            s,
+            if a.is_finite() && b.is_finite() {
+                f64::NAN
+            } else {
+                0.0
+            },
+        );
     }
     let bb = s - a;
     let err = (a - (s - bb)) + (b - bb);
-    (s, sign_of(err))
+    (s, err)
 }
 
-/// Rounded a * b and the sign of the exact error. The fused multiply-add
-/// error is exact away from underflow; near it the sign is unknown (2).
-fn product(a: f64, b: f64) -> (f64, i8) {
+/// Rounded a * b and its exact error (the fused multiply-add's, exact away
+/// from underflow), NaN where it is unknown (overflow or near underflow),
+/// zero when a factor is zero or not finite. The errors are binary64 values
+/// and every test on them a floating-point comparison: the fuzz targets'
+/// comparison tracing (`-sanitizer-coverage-trace-compares`) instruments
+/// integer comparisons only, and the integer sign codes these helpers kept
+/// before cost a traced comparison or two per bound (S9f.3's loops, whose
+/// integrals are binary64 interval arithmetic throughout).
+fn product(a: f64, b: f64) -> (f64, f64) {
     let p = a * b;
     if a == 0.0 || b == 0.0 || !a.is_finite() || !b.is_finite() {
-        return (p, 0);
+        return (p, 0.0);
     }
     if !p.is_finite() || p.abs() < f64::powi(2.0, -960) {
-        return (p, 2);
+        return (p, f64::NAN);
     }
-    (p, sign_of(a.mul_add(b, -p)))
+    (p, a.mul_add(b, -p))
 }
 
-fn sign_of(err: f64) -> i8 {
-    if err > 0.0 {
-        1
-    } else if err < 0.0 {
-        -1
-    } else {
-        0
-    }
-}
-
-/// Lower bound of the exact value behind a rounded result.
-fn down((x, err): (f64, i8)) -> f64 {
-    if err == 0 || err == 1 {
+/// Lower bound of the exact value behind a rounded result: the result
+/// itself where its error is zero or positive, the next number down where
+/// it is negative or unknown (NaN).
+fn down((x, err): (f64, f64)) -> f64 {
+    if err >= 0.0 {
         x
     } else {
         next_down(x)
@@ -1123,8 +1138,8 @@ fn down((x, err): (f64, i8)) -> f64 {
 }
 
 /// Upper bound of the exact value behind a rounded result.
-fn up((x, err): (f64, i8)) -> f64 {
-    if err == 0 || err == -1 {
+fn up((x, err): (f64, f64)) -> f64 {
+    if err <= 0.0 {
         x
     } else {
         next_up(x)
