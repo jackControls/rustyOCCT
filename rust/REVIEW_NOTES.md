@@ -6266,6 +6266,48 @@ Decisions for S9, recorded before its code (2026-09-28):
     tangencies), 1 by a cylinders' section within the resolution of a node
     and 6 as S9e.4b.4's (two circles at a joint). Pending: the DRAW survey,
     the campaign.
+  * **DRAW survey of S9f.2b.2 and S9e.4b.1 (2026-10-03,
+    `UPSTREAM_TESTS.md`).** At `93e6fcd0` (`s9c2-kernel` with S9e.4a,
+    S9f.2b.2 and S9e.4b.1 merged; the public dataset, 120 seconds a case,
+    four at once). The 1,802 self-contained cases of the Boolean group on
+    both backends: every status and every refusal's reason the last
+    survey's (`b0b9adc6`), 987 evaluating and registered, 592 refused, 223
+    unsupported on both, none failing or timing out, the sentinels refused
+    as before, `bopfuse_simple/ZP6` and the `gdml_public` tori too. The
+    1,814 cases restoring a shape for a Boolean on the Rust adapter, and
+    the 171 the import reaches on native DRAW too: against S9e.4a's survey
+    only the 31 prisms whose arcs round off their circles move, as S9e.4b.1's
+    trial found: 7 evaluate on both backends with every check
+    (`bcut_complex/H3`, `K8`, `bfuse_complex/C9`, `E9`, `I6`, `N1`, `N9`:
+    prisms of the `CTO9xx`, `cts` and `pro` series with one or two
+    cylindrical walls fused with or cut by cylinders, boxes and prisms of
+    planes), 18 are refused by S9's rules (12 faces within the resolution of
+    one plane, 3 edges meeting, 2 tangencies, `bug29807_b1` a cylinders'
+    section within the resolution of a node) and 6 as S9e.4b.4's (two
+    circles at a joint: `bcut_complex/E8`, `P4`, `bfuse_complex/D5`, `E1`,
+    `bug4993_1`, `_2`); `bcut_complex/I6`, failing in S9e.4a's run, is
+    refused as S9e.4b's (that survey's amendment). Of the 171: 23 evaluate
+    on both backends, 55 are refused by S9's rules, 84 are bodies none of
+    the kernel's constructions, 6 S9e.4b.4's and 3 spline bodies (S9f); 24
+    are unsupported natively too (`checksection`, `bopargcheck`). No other
+    status or reason moves; the same 8 time out at their first restores.
+    S9f.2b.2's loops and towers reach no case: the Boolean group's spline
+    solids come from `nurbsconvert`, which the adapter does not run, and the
+    3 restored spline bodies (`bcut_complex/L9`, `O1`, `bfuse_complex/N7`)
+    are refused as imported spline faces (S9f) before any wall meets a
+    cylinder. The volume audit (`vprops` and `sprops` before each
+    `checkprops`): the 7 new cases' volume, area and centre native DRAW's to
+    its printed digits; the 1,003 registered cases' values the last audits'
+    (`b0b9adc6`'s 987, S9e.4a's 16) bit for bit on both backends, so
+    S9e.4b.1's snapped arcs and S9f.2b.2's kernel move no registered value;
+    the same 35 disagreements, native off in each. The 7 are registered
+    (1,096 cases; the contract holds for them on both backends within 30
+    seconds, Rust 1.8 to 6.5 s on a host at load 25 to 31); the ledger does
+    not change (no `checknbshapes` among them). A full contract run of the
+    manifest holds on both backends with the dataset (30 seconds a case),
+    the slowest Boolean case 16.2 seconds (`boptuc_simple/ZK8`, 12.8 in
+    the last survey, on a host at load 7 to 31), the restore cases 0.2 to
+    5.0 s. No case fails, crashes or panics; no kernel change.
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces
