@@ -45,7 +45,17 @@
 // takes: its header check knows version 3 only under the older copyright
 // line, `Matra-Datavision`, and OCCT 8.1 writes `Open Cascade` there) and
 // prints `NAME written` (`NAME failure` if it cannot be built or written):
-// the imported bodies' files are OCCT's own output.
+// the imported bodies' files are OCCT's own output. S9e.4b.2: a row `wedge
+// ox oy oz nx ny nz xx xy xz DX DY DZ XMIN ZMIN XMAX ZMAX`,
+// BRepPrimAPI_MakeWedge(gp_Ax2(origin, normal, x), DX, DY, DZ, XMIN, ZMIN,
+// XMAX, ZMAX) (its face at DY the rectangle XMIN..XMAX by ZMIN..ZMAX, a point
+// for a pyramid); a row `polyhedron NV x y z ... NF k i1 .. ik ...`, a solid
+// of NV points and NF faces, each the polygon of k points by their indices
+// (BRepBuilderAPI_MakePolygon on shared vertices, BRepBuilderAPI_MakeFace on
+// its plane), sewn (BRepBuilderAPI_Sewing) into a shell made a solid and
+// oriented (BRepLib::OrientClosedSolid); and a `write` block may hold two
+// solids' rows about a `boolean fuse|cut|common` row: the Boolean's result,
+// its one solid (else `failure`), is written.
 //
 // Output: `NAME done N valid warnings` (N solids in the result, the result
 // checked by BRepCheck_Analyzer, 1 if the operation reported warnings), then
@@ -58,6 +68,10 @@
 #include <BRepAlgoAPI_Common.hxx>
 #include <BRepAlgoAPI_Cut.hxx>
 #include <BRepAlgoAPI_Fuse.hxx>
+#include <BRepBuilderAPI_MakePolygon.hxx>
+#include <BRepBuilderAPI_MakeSolid.hxx>
+#include <BRepBuilderAPI_Sewing.hxx>
+#include <BRepLib.hxx>
 #include <BRepBuilderAPI_MakeEdge.hxx>
 #include <BRepBuilderAPI_MakeFace.hxx>
 #include <BRepBuilderAPI_MakeVertex.hxx>
@@ -72,6 +86,7 @@
 #include <BRepPrimAPI_MakePrism.hxx>
 #include <BRepPrimAPI_MakeSphere.hxx>
 #include <BRepPrimAPI_MakeTorus.hxx>
+#include <BRepPrimAPI_MakeWedge.hxx>
 #include <BRepTools.hxx>
 #include <GProp_GProps.hxx>
 #include <Geom_BSplineCurve.hxx>
@@ -84,6 +99,8 @@
 #include <TopExp_Explorer.hxx>
 #include <TopTools_ShapeMapHasher.hxx>
 #include <TopoDS.hxx>
+#include <TopoDS_Shell.hxx>
+#include <TopoDS_Solid.hxx>
 #include <TopoDS_Wire.hxx>
 #include <gp_Ax3.hxx>
 #include <gp_Circ.hxx>
@@ -167,6 +184,48 @@ struct Prism {
         ++solids;
       }
       if (solids != 1) throw Standard_Failure("a brep file of one solid");
+    } else if (kind == "wedge") {
+      auto v = numbers(in, 16);
+      gp_Ax2 axis(gp_Pnt(v[0], v[1], v[2]), gp_Dir(v[3], v[4], v[5]), gp_Dir(v[6], v[7], v[8]));
+      primitive = BRepPrimAPI_MakeWedge(axis, v[9], v[10], v[11], v[12], v[13], v[14], v[15]).Shape();
+    } else if (kind == "polyhedron") {
+      int n;
+      if (!(in >> n) || n < 4) throw Standard_Failure("polyhedron points");
+      std::vector<TopoDS_Vertex> vs;
+      for (int j = 0; j < n; ++j) {
+        auto p = numbers(in, 3);
+        vs.push_back(BRepBuilderAPI_MakeVertex(gp_Pnt(p[0], p[1], p[2])));
+      }
+      int faces;
+      if (!(in >> faces) || faces < 4) throw Standard_Failure("polyhedron faces");
+      BRepBuilderAPI_Sewing sewing(1e-6);
+      for (int f = 0; f < faces; ++f) {
+        int k;
+        if (!(in >> k) || k < 3) throw Standard_Failure("polyhedron face");
+        BRepBuilderAPI_MakePolygon polygon;
+        for (int j = 0; j < k; ++j) {
+          int i;
+          if (!(in >> i) || i < 0 || i >= n) throw Standard_Failure("polyhedron index");
+          polygon.Add(vs[i]);
+        }
+        polygon.Close();
+        BRepBuilderAPI_MakeFace face(polygon.Wire(), true);
+        if (!face.IsDone()) throw Standard_Failure("polyhedron face plane");
+        sewing.Add(face.Face());
+      }
+      sewing.Perform();
+      TopoDS_Shell shell;
+      int shells = 0;
+      for (TopExp_Explorer e(sewing.SewedShape(), TopAbs_SHELL); e.More(); e.Next()) {
+        shell = TopoDS::Shell(e.Current());
+        ++shells;
+      }
+      if (shells != 1) throw Standard_Failure("polyhedron shell");
+      BRepBuilderAPI_MakeSolid solid(shell);
+      if (!solid.IsDone()) throw Standard_Failure("polyhedron solid");
+      TopoDS_Solid made = solid.Solid();
+      BRepLib::OrientClosedSolid(made);
+      primitive = made;
     } else if (kind == "box") {
       auto v = numbers(in, 12);
       gp_Ax2 axis(gp_Pnt(v[0], v[1], v[2]), gp_Dir(v[3], v[4], v[5]), gp_Dir(v[6], v[7], v[8]));
@@ -293,15 +352,43 @@ int main() {
       // S9e.4: one solid written by BRepTools::Write.
       std::string path;
       head >> path;
-      Prism body;
+      // S9e.4b.2: two solids about a `boolean` row, their result's one
+      // solid.
+      Prism body, other;
+      std::string operation;
       try {
         while (std::getline(std::cin, line) && line != "end") {
           std::istringstream in(line);
           std::string kind;
           in >> kind;
-          body.row(kind, in);
+          if (kind == "boolean") {
+            if (!operation.empty() || !(in >> operation)) throw Standard_Failure("boolean row");
+          } else if (operation.empty()) {
+            body.row(kind, in);
+          } else {
+            other.row(kind, in);
+          }
         }
-        if (path.empty() || !BRepTools::Write(body.shape(), fixture(path).c_str(), false, false,
+        TopoDS_Shape written = body.shape();
+        if (!operation.empty()) {
+          std::unique_ptr<BRepAlgoAPI_BooleanOperation> op;
+          if (operation == "fuse")
+            op.reset(new BRepAlgoAPI_Fuse(written, other.shape()));
+          else if (operation == "cut")
+            op.reset(new BRepAlgoAPI_Cut(written, other.shape()));
+          else if (operation == "common")
+            op.reset(new BRepAlgoAPI_Common(written, other.shape()));
+          else
+            throw Standard_Failure("unknown operation");
+          if (!op->IsDone() || op->HasErrors()) throw Standard_Failure("boolean");
+          int solids = 0;
+          for (TopExp_Explorer e(op->Shape(), TopAbs_SOLID); e.More(); e.Next()) {
+            written = e.Current();
+            ++solids;
+          }
+          if (solids != 1) throw Standard_Failure("a written result of one solid");
+        }
+        if (path.empty() || !BRepTools::Write(written, fixture(path).c_str(), false, false,
                                               TopTools_FormatVersion_VERSION_1))
           throw Standard_Failure("write");
         std::cout << name << " written\n" << std::flush;

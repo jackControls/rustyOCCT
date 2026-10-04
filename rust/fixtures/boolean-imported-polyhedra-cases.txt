@@ -1,0 +1,438 @@
+case tetra_box_fuse 1e-07
+op 91
+brep imported/tetra.brep
+boolean fuse 93
+op 92
+frame 0.0 0.0 1.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 3.0
+boundary P 4 5.0 -2.0 12.0 -2.0 12.0 5.0 5.0 5.0
+end
+case tetra_box_cut 1e-07
+op 91
+brep imported/tetra.brep
+boolean cut 93
+op 92
+frame 0.0 0.0 1.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 3.0
+boundary P 4 5.0 -2.0 12.0 -2.0 12.0 5.0 5.0 5.0
+end
+case tetra_box_common 1e-07
+op 91
+brep imported/tetra.brep
+boolean common 93
+op 92
+frame 0.0 0.0 1.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 3.0
+boundary P 4 5.0 -2.0 12.0 -2.0 12.0 5.0 5.0 5.0
+end
+case box_tetra_fuse 1e-07
+op 91
+frame 0.0 0.0 1.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 3.0
+boundary P 4 5.0 -2.0 12.0 -2.0 12.0 5.0 5.0 5.0
+boolean fuse 93
+op 92
+brep imported/tetra.brep
+end
+case box_tetra_cut 1e-07
+op 91
+frame 0.0 0.0 1.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 3.0
+boundary P 4 5.0 -2.0 12.0 -2.0 12.0 5.0 5.0 5.0
+boolean cut 93
+op 92
+brep imported/tetra.brep
+end
+case box_tetra_common 1e-07
+op 91
+frame 0.0 0.0 1.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 3.0
+boundary P 4 5.0 -2.0 12.0 -2.0 12.0 5.0 5.0 5.0
+boolean common 93
+op 92
+brep imported/tetra.brep
+end
+case octa_slab_fuse 1e-07
+op 91
+brep imported/octa.brep
+boolean fuse 93
+op 92
+frame 0.0 0.0 0.0 0.0 3.0 4.0 1.0 0.0 0.0
+offsets 4.5 5.5
+boundary P 4 -4.0 -15.0 14.0 -15.0 14.0 15.0 -4.0 15.0
+end
+case octa_slab_cut 1e-07
+op 91
+brep imported/octa.brep
+boolean cut 93
+op 92
+frame 0.0 0.0 0.0 0.0 3.0 4.0 1.0 0.0 0.0
+offsets 4.5 5.5
+boundary P 4 -4.0 -15.0 14.0 -15.0 14.0 15.0 -4.0 15.0
+end
+case octa_slab_common 1e-07
+op 91
+brep imported/octa.brep
+boolean common 93
+op 92
+frame 0.0 0.0 0.0 0.0 3.0 4.0 1.0 0.0 0.0
+offsets 4.5 5.5
+boundary P 4 -4.0 -15.0 14.0 -15.0 14.0 15.0 -4.0 15.0
+end
+case pyramid_box_fuse 1e-07
+op 91
+brep imported/pyramid.brep
+boolean fuse 93
+op 92
+frame 0.0 0.0 3.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 4.0
+boundary P 4 2.0 4.5 8.0 4.5 8.0 10.5 2.0 10.5
+end
+case pyramid_box_cut 1e-07
+op 91
+brep imported/pyramid.brep
+boolean cut 93
+op 92
+frame 0.0 0.0 3.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 4.0
+boundary P 4 2.0 4.5 8.0 4.5 8.0 10.5 2.0 10.5
+end
+case pyramid_box_common 1e-07
+op 91
+brep imported/pyramid.brep
+boolean common 93
+op 92
+frame 0.0 0.0 3.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 4.0
+boundary P 4 2.0 4.5 8.0 4.5 8.0 10.5 2.0 10.5
+end
+case truncated_box_fuse 1e-07
+op 91
+brep imported/truncated.brep
+boolean fuse 93
+op 92
+frame 0.0 0.0 2.5 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 3.0
+boundary P 4 -1.5 3.5 2.5 3.5 2.5 7.5 -1.5 7.5
+end
+case truncated_box_cut 1e-07
+op 91
+brep imported/truncated.brep
+boolean cut 93
+op 92
+frame 0.0 0.0 2.5 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 3.0
+boundary P 4 -1.5 3.5 2.5 3.5 2.5 7.5 -1.5 7.5
+end
+case truncated_box_common 1e-07
+op 91
+brep imported/truncated.brep
+boolean common 93
+op 92
+frame 0.0 0.0 2.5 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 3.0
+boundary P 4 -1.5 3.5 2.5 3.5 2.5 7.5 -1.5 7.5
+end
+case wedge_slab_fuse 1e-07
+op 91
+brep imported/wedge.brep
+boolean fuse 93
+op 92
+frame 0.0 0.0 2.25 0.0 3.0 4.0 1.0 0.0 0.0
+offsets 0.0 1.5
+boundary P 4 -4.0 -15.0 14.0 -15.0 14.0 15.0 -4.0 15.0
+end
+case wedge_slab_cut 1e-07
+op 91
+brep imported/wedge.brep
+boolean cut 93
+op 92
+frame 0.0 0.0 2.25 0.0 3.0 4.0 1.0 0.0 0.0
+offsets 0.0 1.5
+boundary P 4 -4.0 -15.0 14.0 -15.0 14.0 15.0 -4.0 15.0
+end
+case wedge_slab_common 1e-07
+op 91
+brep imported/wedge.brep
+boolean common 93
+op 92
+frame 0.0 0.0 2.25 0.0 3.0 4.0 1.0 0.0 0.0
+offsets 0.0 1.5
+boundary P 4 -4.0 -15.0 14.0 -15.0 14.0 15.0 -4.0 15.0
+end
+case notched_rod_fuse 1e-07
+op 91
+brep imported/notched.brep
+boolean fuse 93
+op 92
+frame 0.0 4.0 4.0 0.0 3.0 4.0 1.0 0.0 0.0
+offsets -3.0 1.0
+boundary P 4 7.0 -9.0 9.0 -9.0 9.0 13.0 7.0 13.0
+end
+case notched_rod_cut 1e-07
+op 91
+brep imported/notched.brep
+boolean cut 93
+op 92
+frame 0.0 4.0 4.0 0.0 3.0 4.0 1.0 0.0 0.0
+offsets -3.0 1.0
+boundary P 4 7.0 -9.0 9.0 -9.0 9.0 13.0 7.0 13.0
+end
+case notched_rod_common 1e-07
+op 91
+brep imported/notched.brep
+boolean common 93
+op 92
+frame 0.0 4.0 4.0 0.0 3.0 4.0 1.0 0.0 0.0
+offsets -3.0 1.0
+boundary P 4 7.0 -9.0 9.0 -9.0 9.0 13.0 7.0 13.0
+end
+case ell_slab_fuse 1e-07
+op 91
+brep imported/ell.brep
+boolean fuse 93
+op 92
+frame 0.0 0.0 2.25 0.0 3.0 4.0 1.0 0.0 0.0
+offsets 0.0 1.5
+boundary P 4 -4.0 -15.0 14.0 -15.0 14.0 15.0 -4.0 15.0
+end
+case ell_slab_cut 1e-07
+op 91
+brep imported/ell.brep
+boolean cut 93
+op 92
+frame 0.0 0.0 2.25 0.0 3.0 4.0 1.0 0.0 0.0
+offsets 0.0 1.5
+boundary P 4 -4.0 -15.0 14.0 -15.0 14.0 15.0 -4.0 15.0
+end
+case ell_slab_common 1e-07
+op 91
+brep imported/ell.brep
+boolean common 93
+op 92
+frame 0.0 0.0 2.25 0.0 3.0 4.0 1.0 0.0 0.0
+offsets 0.0 1.5
+boundary P 4 -4.0 -15.0 14.0 -15.0 14.0 15.0 -4.0 15.0
+end
+case tetra_octa_fuse 1e-07
+op 91
+brep imported/tetra.brep
+boolean fuse 93
+op 92
+brep imported/octa.brep
+end
+case tetra_octa_cut 1e-07
+op 91
+brep imported/tetra.brep
+boolean cut 93
+op 92
+brep imported/octa.brep
+end
+case tetra_octa_common 1e-07
+op 91
+brep imported/tetra.brep
+boolean common 93
+op 92
+brep imported/octa.brep
+end
+case steps_fuse 1e-07
+op 91
+brep imported/steps_low.brep
+boolean fuse 93
+op 92
+brep imported/steps_high.brep
+end
+case steps_cut 1e-07
+op 91
+brep imported/steps_low.brep
+boolean cut 93
+op 92
+brep imported/steps_high.brep
+end
+case steps_common 1e-07
+op 91
+brep imported/steps_low.brep
+boolean common 93
+op 92
+brep imported/steps_high.brep
+end
+case pedestal_box_fuse 1e-07
+op 91
+frame 0.0 0.0 -31.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 31.0
+boundary P 4 -12.7239959266648 -9.76227793225116 9.94168505699231 -9.76227793225116 9.94168505699231 12.61096837757 -12.7239959266648 12.61096837757
+boolean fuse 93
+op 92
+brep imported/pedestal.brep
+end
+case pedestal_box_cut 1e-07
+op 91
+frame 0.0 0.0 -31.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 31.0
+boundary P 4 -12.7239959266648 -9.76227793225116 9.94168505699231 -9.76227793225116 9.94168505699231 12.61096837757 -12.7239959266648 12.61096837757
+boolean cut 93
+op 92
+brep imported/pedestal.brep
+end
+case pedestal_box_common 1e-07
+op 91
+frame 0.0 0.0 -31.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 31.0
+boundary P 4 -12.7239959266648 -9.76227793225116 9.94168505699231 -9.76227793225116 9.94168505699231 12.61096837757 -12.7239959266648 12.61096837757
+boolean common 93
+op 92
+brep imported/pedestal.brep
+end
+case draft_ridge_fuse 1e-07
+op 91
+brep imported/draft.brep
+boolean fuse 93
+op 92
+brep imported/ridge.brep
+end
+case draft_ridge_cut 1e-07
+op 91
+brep imported/draft.brep
+boolean cut 93
+op 92
+brep imported/ridge.brep
+end
+case draft_ridge_common 1e-07
+op 91
+brep imported/draft.brep
+boolean common 93
+op 92
+brep imported/ridge.brep
+end
+case chain_vanes_fuse 1e-07
+op 91
+brep imported/vane_up.brep
+boolean fuse 93
+op 92
+brep imported/vane_down.brep
+then fuse 95 swapped
+op 94
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 5.0
+boundary P 4 0.0 0.0 10.0 0.0 10.0 10.0 0.0 10.0
+end
+case chain_vanes_cut 1e-07
+op 91
+brep imported/vane_up.brep
+boolean fuse 93
+op 92
+brep imported/vane_down.brep
+then cut 95 swapped
+op 94
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 5.0
+boundary P 4 0.0 0.0 10.0 0.0 10.0 10.0 0.0 10.0
+end
+case chain_vanes_common 1e-07
+op 91
+brep imported/vane_up.brep
+boolean fuse 93
+op 92
+brep imported/vane_down.brep
+then common 95 swapped
+op 94
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 5.0
+boundary P 4 0.0 0.0 10.0 0.0 10.0 10.0 0.0 10.0
+end
+case chain_notched_fuse 1e-07
+op 91
+brep imported/notched.brep
+boolean cut 93
+op 92
+frame 0.0 0.0 -1.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 7.0
+boundary P 4 4.0 3.5 9.5 3.5 9.5 6.5 4.0 6.5
+then fuse 95
+op 94
+frame 0.0 0.0 2.25 0.0 3.0 4.0 1.0 0.0 0.0
+offsets 0.0 1.5
+boundary P 4 -4.0 -15.0 14.0 -15.0 14.0 15.0 -4.0 15.0
+end
+case chain_notched_cut 1e-07
+op 91
+brep imported/notched.brep
+boolean cut 93
+op 92
+frame 0.0 0.0 -1.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 7.0
+boundary P 4 4.0 3.5 9.5 3.5 9.5 6.5 4.0 6.5
+then cut 95
+op 94
+frame 0.0 0.0 2.25 0.0 3.0 4.0 1.0 0.0 0.0
+offsets 0.0 1.5
+boundary P 4 -4.0 -15.0 14.0 -15.0 14.0 15.0 -4.0 15.0
+end
+case chain_notched_common 1e-07
+op 91
+brep imported/notched.brep
+boolean cut 93
+op 92
+frame 0.0 0.0 -1.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 7.0
+boundary P 4 4.0 3.5 9.5 3.5 9.5 6.5 4.0 6.5
+then common 95
+op 94
+frame 0.0 0.0 2.25 0.0 3.0 4.0 1.0 0.0 0.0
+offsets 0.0 1.5
+boundary P 4 -4.0 -15.0 14.0 -15.0 14.0 15.0 -4.0 15.0
+end
+case pyramid_flush_fuse 1e-07
+op 91
+brep imported/pyramid.brep
+boolean fuse 93
+op 92
+frame 1.0 1.0 0.0 0.0 -4.0 3.0 1.0 0.0 0.0
+offsets 0.0 2.0
+boundary P 4 -2.0 -2.0 10.0 -2.0 10.0 10.0 -2.0 10.0
+end
+case pyramid_flush_cut 1e-07
+op 91
+brep imported/pyramid.brep
+boolean cut 93
+op 92
+frame 1.0 1.0 0.0 0.0 -4.0 3.0 1.0 0.0 0.0
+offsets 0.0 2.0
+boundary P 4 -2.0 -2.0 10.0 -2.0 10.0 10.0 -2.0 10.0
+end
+case pyramid_flush_common 1e-07
+op 91
+brep imported/pyramid.brep
+boolean common 93
+op 92
+frame 1.0 1.0 0.0 0.0 -4.0 3.0 1.0 0.0 0.0
+offsets 0.0 2.0
+boundary P 4 -2.0 -2.0 10.0 -2.0 10.0 10.0 -2.0 10.0
+end
+case hollow_slab_fuse 1e-07
+op 91
+brep imported/hollow.brep
+boolean fuse 93
+op 92
+frame 0.0 0.0 2.25 0.0 3.0 4.0 1.0 0.0 0.0
+offsets 0.0 1.5
+boundary P 4 -4.0 -15.0 14.0 -15.0 14.0 15.0 -4.0 15.0
+end
+case hollow_slab_cut 1e-07
+op 91
+brep imported/hollow.brep
+boolean cut 93
+op 92
+frame 0.0 0.0 2.25 0.0 3.0 4.0 1.0 0.0 0.0
+offsets 0.0 1.5
+boundary P 4 -4.0 -15.0 14.0 -15.0 14.0 15.0 -4.0 15.0
+end
+case hollow_slab_common 1e-07
+op 91
+brep imported/hollow.brep
+boolean common 93
+op 92
+frame 0.0 0.0 2.25 0.0 3.0 4.0 1.0 0.0 0.0
+offsets 0.0 1.5
+boundary P 4 -4.0 -15.0 14.0 -15.0 14.0 15.0 -4.0 15.0
+end

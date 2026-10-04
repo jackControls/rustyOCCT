@@ -6421,6 +6421,70 @@ Decisions for S9, recorded before its code (2026-09-28):
     (`compare_imported_polyhedra_boolean.py` keyed on it, the kernel's
     probe refusing every case); then the kernel and its tests
     (`tests/imported_polyhedra_booleans.rs`).
+  * **S9e.4b.2 evidence (2026-10-04).** `occt_boolean_oracle.cpp` takes the
+    rows `wedge` and `polyhedron` and a `write` block of two solids about a
+    `boolean` row (its result's one solid written). Fifteen bodies OCCT
+    wrote (`boolean-imported-polyhedra-bodies.txt`, written by
+    `compare_imported_polyhedra_boolean.py --write-bodies` to
+    `rust/fixtures/imported/`): `tetra`, a tetrahedron of points rounded in
+    the `TURN30` frame; `octa`, an octahedron of exact points (every vertex
+    of four faces); `pyramid` (`MakeWedge` in the `TILT` frame, its apex of
+    four faces), `truncated` (a pyramid's frustum in the `TURN30` frame)
+    and `wedge` (slanted on three sides, in the `R125` frame); `notched`, a
+    box less a box in a skew frame, and `ell`, a box fused with a turned box
+    over other heights (results OCCT computed); `hollow`, a box with a
+    cavity; and the survey's shapes from exact points: `steps_low` and
+    `steps_high` (`buc60803a`, `b`: the second's base the first's top),
+    `pedestal` (`pro9481b`: a frustum on a kernel box's top, its corners
+    decimals of 15 digits), `draft` (`CTO900_pro12559a`: a prism along `x`
+    of a profile with a reflex corner, two walls drafted) with `ridge`
+    (`CTO900_pro12559b`, `MakePrism` on part of its far cap, S9e.4a's
+    prism), `vane_up` and `vane_down` (`OCC578_w1`, `w2`: frustums in frames
+    turned by right angles about `x`, their bases one square). The
+    reference (`imported_polyhedra_boolean_reference.py`): every solid as
+    convex cells in exact Fractions (a hull of each construction's points:
+    a wedge's corners on the frame's stored axes, a polyhedron's binary64
+    points; a Boolean's cells by S9b's polyhedral reference), a Boolean's
+    result as S9b's cells. `generate_imported_polyhedra_boolean_fixtures.py
+    --check`: 48 cases of 16 groups (40 solid, 4 empty, 1 `degenerate`, 3
+    `unsupported`; 33 of class `polyhedron`, 9 `both`, 6 `chain`), each body
+    against boxes, slabs and rods in the `XY`, `TILT` and `TILTX` frames or
+    another imported body, as object and tool, and two chains (the vanes
+    fused, then a box with them, swapped; the notched box less a rod, then a
+    `TILT` slab); declared `degenerate` the fuse of a `TILTX` slab on the
+    pyramid's base's plane (its cut and common the construction's: two
+    stored base corners on the slab's plane, two off it on the pyramid's
+    side by 7e-16), `unsupported` the box with a cavity against a slab.
+    Checks, relative to the case's size: volumes three ways (inclusion and
+    exclusion, the result's cells, the divergence over its boundary) and
+    the pair identities on the cells' volumes exactly equal, areas two ways
+    within 1.8e-40 and the area identity 6.0e-40, every imported body's
+    closed form (prismatoid, a tetrahedron's determinant, an octahedron's
+    diagonals) exactly, Monte Carlo 3.3 standard errors, solid counts by
+    cells meeting in area; outside the declared group every vertex and edge
+    of one input at least 4.0e-3 of the size from the other's faces and
+    edges where not on them (196 exact contacts, all between bodies whose
+    stored points are their construction's exactly: the shared faces), and
+    crossing faces at sines of at least 0.36. Every file read
+    independently (`stored_records`): its faces planes, every stored vertex
+    within 6.6e-16 of the size of the construction's boundary (the exact
+    bodies' stored points their construction's bit for bit), and no
+    construction a prism (but `ridge`'s). `test_imported_polyhedra_
+    boolean_reference.py` checks hulls, a wedge's corners and volumes, cubes'
+    Booleans and a union's boundary in closed form, the margins on contacts
+    made on purpose, the prism test and the case list and its protocol
+    rows; the generator's check is a CI group of its own
+    (`imported-polyhedra`); Python 3.9 and 3.12 write the same files.
+    Corrections from the evidence: the pyramid's frustum named `truncated`
+    (S9e.4a's cone body is `frustum.brep`, found by the files' check); the
+    skew box moved off `(8, 8, 2.5)`, where its edge passed exactly through
+    the rods' edges (found once the margins measured edges too: a trial of
+    the cases on a draft of the step's code, not committed, refused it as a
+    face thinner than the resolution and a non-manifold vertex), the
+    octahedron's slab and the tetrahedron moved off vertices within
+    rounding of the other's faces; the flush slab's cut and common, which
+    the same trial evaluated within the reference, declared as such. S9e.4b.2's
+    native capture next.
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces
