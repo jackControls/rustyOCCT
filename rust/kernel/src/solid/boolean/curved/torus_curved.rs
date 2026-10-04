@@ -1180,6 +1180,12 @@ fn clear_over(form: &Form, lo: &[Qd; 2], hi: &[Qd; 2]) -> bool {
     let Ok((sf, _)) = super::turned::roots_repeated(&poly) else {
         return false;
     };
+    // In integers at the rational ends (each member a positive multiple of
+    // the rational chain's: the same changes).
+    if let (Some(a), Some(b)) = (t0.rational(), t1.rational()) {
+        let chain = super::turned::sturm_int(&sf);
+        return super::turned::changes_int(&chain, a) == super::turned::changes_int(&chain, b);
+    }
     let chain = sturm(&sf);
     changes(&chain, &t0) == changes(&chain, &t1)
 }
@@ -1258,7 +1264,72 @@ fn h_coefficients(g: &Bi, cu: &Chart, cv: &Chart) -> [Poly; 5] {
 
 /// The discriminant of the binary quartic `sum h_j s^j` (coefficients
 /// polynomials in `t`).
+/// In integers: the coefficients over their common denominator `D`, the
+/// discriminant (of degree six in them) over `D^6`, each coefficient
+/// reduced once: the same polynomial as in rationals reduced at every
+/// product.
 pub(super) fn quartic_discriminant(h: &[Poly; 5]) -> Poly {
+    use num_bigint::BigInt;
+    type IPoly = Vec<BigInt>;
+    let den = h.iter().flatten().fold(BigInt::from(1), |m, x| {
+        num_integer::Integer::lcm(&m, x.denom())
+    });
+    let scaled: Vec<IPoly> = h
+        .iter()
+        .map(|p| p.iter().map(|x| x.numer() * (&den / x.denom())).collect())
+        .collect();
+    let mul = |p: &IPoly, q: &IPoly| -> IPoly {
+        if p.is_empty() || q.is_empty() {
+            return Vec::new();
+        }
+        let mut out = vec![BigInt::from(0); p.len() + q.len() - 1];
+        for (i, x) in p.iter().enumerate() {
+            for (j, y) in q.iter().enumerate() {
+                out[i + j] += x * y;
+            }
+        }
+        out
+    };
+    let (a, b, c, d, e) = (&scaled[4], &scaled[3], &scaled[2], &scaled[1], &scaled[0]);
+    // Products shared by the terms.
+    let (aa, bb, cc, dd, ee) = (mul(a, a), mul(b, b), mul(c, c), mul(d, d), mul(e, e));
+    let (ae, bd) = (mul(a, e), mul(b, d));
+    let terms: [(i64, Vec<&IPoly>); 16] = [
+        (256, vec![&aa, a, e, &ee]),
+        (-192, vec![&aa, &bd, &ee]),
+        (-128, vec![&aa, &cc, &ee]),
+        (144, vec![&aa, c, &dd, e]),
+        (-27, vec![&aa, &dd, &dd]),
+        (144, vec![&ae, &bb, c, e]),
+        (-6, vec![&ae, &bb, &dd]),
+        (-80, vec![&ae, &bd, &cc]),
+        (18, vec![a, &bd, c, &dd]),
+        (16, vec![&ae, &cc, &cc]),
+        (-4, vec![a, &cc, c, &dd]),
+        (-27, vec![&bb, &bb, &ee]),
+        (18, vec![&bb, &bd, c, e]),
+        (-4, vec![&bb, &bd, &dd]),
+        (-4, vec![&bb, &cc, c, e]),
+        (1, vec![&bb, &cc, &dd]),
+    ];
+    let mut sum: IPoly = Vec::new();
+    for (k, fs) in &terms {
+        let p = fs[1..].iter().fold(fs[0].clone(), |acc, f| mul(&acc, f));
+        if sum.len() < p.len() {
+            sum.resize(p.len(), BigInt::from(0));
+        }
+        for (s, x) in sum.iter_mut().zip(p) {
+            *s += x * *k;
+        }
+    }
+    let d6 = den.pow(6);
+    trim(sum.into_iter().map(|x| R::new(x, d6.clone())).collect())
+}
+
+/// The same in rationals, product by product (the reference of the test
+/// below).
+#[cfg(test)]
+fn quartic_discriminant_rational(h: &[Poly; 5]) -> Poly {
     let (a, b, c, d, e) = (&h[4], &h[3], &h[2], &h[1], &h[0]);
     let term = |k: i64, fs: &[&Poly]| {
         pscale(
@@ -2180,5 +2251,37 @@ pub(super) fn circ_torus(circ: &super::sphere::Circ, t: &Prism, res: f64) -> Res
                 .collect(),
         )),
         other => Ok(other),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn integer_discriminant_is_the_rational_one() {
+        // Coefficient polynomials of mixed degrees and denominators (a
+        // small linear congruential stream), zero ones among them.
+        let mut seed = 0x9e37_79b9_7f4a_7c15u64;
+        let mut next = || {
+            seed = seed
+                .wrapping_mul(6_364_136_223_846_793_005)
+                .wrapping_add(1_442_695_040_888_963_407);
+            (seed >> 33) as i64
+        };
+        for case in 0..40 {
+            let h: [Poly; 5] = std::array::from_fn(|j| {
+                if (case + j) % 7 == 3 {
+                    return Vec::new();
+                }
+                let len = 1 + (next() % 5) as usize;
+                trim(
+                    (0..len)
+                        .map(|_| int(next() % 2001 - 1000) / int(1 + next() % 97))
+                        .collect(),
+                )
+            });
+            assert_eq!(quartic_discriminant(&h), quartic_discriminant_rational(&h));
+        }
     }
 }

@@ -526,6 +526,9 @@ pub(crate) fn piece_ordinal(k: usize, local: usize) -> u32 {
 
 /// A rational's nearest binary64.
 pub(crate) fn rational_f64(x: &R) -> f64 {
+    if let Some(f) = nearest_f64(x) {
+        return f;
+    }
     let lo = I::exact(x.clone()).bounds_f64();
     if lo.0 == lo.1 {
         return lo.0;
@@ -537,6 +540,57 @@ pub(crate) fn rational_f64(x: &R) -> f64 {
     } else {
         lo.1
     }
+}
+
+/// `rational_f64` in the comfortably normal range by one integer division:
+/// the quotient's leading 55 or 56 bits and its remainder decide the
+/// nearest binary64, a tie the lower of the two (as the bounds' comparison
+/// above); `None` elsewhere. The same number, without the bounds' exact
+/// comparisons and the two rational differences (a gcd each).
+fn nearest_f64(x: &R) -> Option<f64> {
+    use num_bigint::Sign;
+    use num_integer::Integer;
+    let (n, d) = (x.numer(), x.denom());
+    if n.sign() == Sign::NoSign {
+        return Some(0.0);
+    }
+    if d.sign() != Sign::Plus {
+        return None;
+    }
+    let (nm, dm) = (n.magnitude(), d.magnitude());
+    let e = nm.bits() as i64 - dm.bits() as i64;
+    if !(-800..=800).contains(&e) {
+        return None;
+    }
+    // `|x| 2^k` in [2^54, 2^56).
+    let k = 55 - e;
+    let (q, r) = if k >= 0 {
+        (nm << k as usize).div_rem(dm)
+    } else {
+        nm.div_rem(&(dm << (-k) as usize))
+    };
+    let shift = q.bits() as i64 - 53;
+    let digits = q.to_u64_digits();
+    let q = digits.first().copied()?;
+    if digits.len() != 1 || !(2..=3).contains(&shift) {
+        return None;
+    }
+    let mut m = q >> shift;
+    let rest = q & ((1u64 << shift) - 1);
+    let half = 1u64 << (shift - 1);
+    let negative = n.sign() == Sign::Minus;
+    let exact = r.bits() == 0;
+    // Away from zero in magnitude: past the half, or at it with more below,
+    // or a tie of a negative number (its lower neighbour is the larger).
+    if rest > half || (rest == half && (!exact || negative)) {
+        m += 1;
+    }
+    let p = shift - k;
+    if !(-1000..=1000).contains(&p) {
+        return None;
+    }
+    let f = m as f64 * f64::from_bits(((1023 + p) as u64) << 52);
+    Some(if negative { -f } else { f })
 }
 
 // ------------------------------------------------------------------ section
@@ -1634,4 +1688,65 @@ fn boundary_of(
         items.iter().map(|i| i.2).collect(),
         items.iter().map(|i| i.0).collect(),
     ))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use num_bigint::BigInt;
+
+    /// The nearest binary64 by the bounds' comparisons alone.
+    fn by_bounds(x: &R) -> f64 {
+        let lo = I::exact(x.clone()).bounds_f64();
+        if lo.0 == lo.1 {
+            return lo.0;
+        }
+        let (a, b) = (q(lo.0), q(lo.1));
+        if x - &a <= &b - x {
+            lo.0
+        } else {
+            lo.1
+        }
+    }
+
+    #[test]
+    fn nearest_f64_is_the_bounds_nearest() {
+        // Exact values, ties, their neighbours and long rationals (a small
+        // linear congruential stream), of either sign.
+        let mut xs: Vec<R> = Vec::new();
+        for f in [1.0, 0.1, 3.0, 1e-200, 7.5e180, 1.0 + f64::EPSILON] {
+            let r = R::from_float(f).expect("finite");
+            let ulp = R::from_float(f * f64::EPSILON).expect("finite");
+            let half = &ulp / BigInt::from(2);
+            let tiny = &ulp / BigInt::from(1i64 << 40);
+            for x in [
+                r.clone(),
+                &r + &half,
+                &r - &half / BigInt::from(2),
+                &r + &half + &tiny,
+                &r + &half - &tiny,
+            ] {
+                xs.push(x.clone());
+                xs.push(-x);
+            }
+        }
+        let mut seed = 0x2545_f491_4f6c_dd1du64;
+        let mut next = || {
+            seed = seed
+                .wrapping_mul(6_364_136_223_846_793_005)
+                .wrapping_add(1_442_695_040_888_963_407);
+            seed >> 11
+        };
+        for _ in 0..2000 {
+            let words = 1 + next() % 6;
+            let n = (0..words).fold(BigInt::from(next()), |acc, _| (acc << 53) + next());
+            let d = (0..(next() % 6)).fold(BigInt::from(next() | 1), |acc, _| (acc << 53) + next());
+            let x = R::new(n, d);
+            xs.push(x.clone());
+            xs.push(-x);
+        }
+        for x in &xs {
+            assert_eq!(rational_f64(x).to_bits(), by_bounds(x).to_bits(), "{x}");
+        }
+    }
 }

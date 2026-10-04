@@ -20,6 +20,8 @@ use crate::polynomial::real::{isolate, AlgebraicRoot, Budget, IntPolynomial};
 use crate::polynomial::RootIsolationOptions;
 use crate::solid::split::{q, rational_f64, zero};
 use crate::{Error, Result};
+use num_bigint::{BigInt, Sign};
+use num_integer::Integer;
 use num_rational::BigRational as R;
 use std::cmp::Ordering;
 use std::collections::BTreeMap;
@@ -108,6 +110,93 @@ pub(super) fn sturm(p: &Poly) -> Vec<Poly> {
     chain
 }
 
+/// A polynomial with integer coefficients, ascending powers.
+pub(super) type IPoly = Vec<BigInt>;
+
+/// `sturm` in integers: each member a positive multiple of `sturm(p)`'s
+/// (positively scaled pseudo-remainders, contents removed), so the sign
+/// changes at every point are the same.
+pub(super) fn sturm_int(p: &Poly) -> Vec<IPoly> {
+    let primitive = |mut v: IPoly| -> IPoly {
+        while v.last().is_some_and(|c| c.sign() == Sign::NoSign) {
+            v.pop();
+        }
+        let g = v.iter().fold(BigInt::from(0), |g, c| g.gcd(c));
+        if g > BigInt::from(1) {
+            for c in &mut v {
+                *c /= &g;
+            }
+        }
+        v
+    };
+    let first = primitive(IntPolynomial::from_rationals(p).0);
+    let second = primitive(
+        first
+            .iter()
+            .enumerate()
+            .skip(1)
+            .map(|(i, c)| c * BigInt::from(i))
+            .collect(),
+    );
+    let mut chain = vec![first, second];
+    while !chain.last().expect("a chain").is_empty() {
+        let n = chain.len();
+        let (a, b) = (&chain[n - 2], &chain[n - 1]);
+        // `|lead|^k a` reduced by `b`: a positive multiple of the remainder.
+        let lead = b.last().expect("a nonzero divisor");
+        let (magnitude, negative) = (
+            BigInt::from(lead.magnitude().clone()),
+            lead.sign() == Sign::Minus,
+        );
+        let mut r = a.clone();
+        while r.len() >= b.len() && !r.is_empty() {
+            let shift = r.len() - b.len();
+            let top = r.last().expect("nonempty").clone();
+            let m = if negative { -top } else { top };
+            for c in &mut r {
+                *c *= &magnitude;
+            }
+            for (i, c) in b.iter().enumerate() {
+                r[i + shift] -= &m * c;
+            }
+            while r.last().is_some_and(|c| c.sign() == Sign::NoSign) {
+                r.pop();
+            }
+        }
+        if r.is_empty() {
+            break;
+        }
+        let r = primitive(r);
+        chain.push(r.into_iter().map(|c| -c).collect());
+    }
+    chain.retain(|x| !x.is_empty());
+    chain
+}
+
+/// Sign changes of an integer chain at a rational (zeros skipped): the
+/// values homogenized by a positive power of its denominator.
+pub(super) fn changes_int(chain: &[IPoly], x: &R) -> usize {
+    let (n, d) = (x.numer(), x.denom());
+    let signs: Vec<Sign> = chain
+        .iter()
+        .map(|p| {
+            let mut it = p.iter().rev();
+            let Some(last) = it.next() else {
+                return Sign::NoSign;
+            };
+            let mut value = last.clone();
+            let mut den = BigInt::from(1);
+            for c in it {
+                den *= d;
+                value = value * n + c * &den;
+            }
+            value.sign()
+        })
+        .filter(|s| *s != Sign::NoSign)
+        .collect();
+    signs.windows(2).filter(|w| w[0] != w[1]).count()
+}
+
 /// A polynomial's exact value at a surd.
 fn eval(p: &Poly, x: &Qd) -> Qd {
     let mut acc = Qd::rat(zero());
@@ -186,32 +275,40 @@ pub(super) fn roots_repeated(p: &Poly) -> Result<(Poly, Vec<(AlgebraicRoot, bool
     if ip.is_zero() || ip.is_constant() {
         return Err(tangency());
     }
-    let g = ip.gcd(&ip.derivative());
-    let g: Poly = trim(g.0.iter().map(|c| R::from_integer(c.clone())).collect());
-    // p / g, exactly.
-    let mut r = p.clone();
-    let lead = g.last().expect("a nonzero gcd").clone();
-    let mut quot = vec![zero(); r.len().saturating_sub(g.len()) + 1];
+    // `g` and `ip` primitive, so `h = ip / g` is in integers (Gauss's
+    // lemma): exactly, and `p / g` is `h` times `p`'s positive multiple of
+    // `ip`, each coefficient reduced once (the same as in rationals).
+    let ig = ip.gcd(&ip.derivative());
+    let g = &ig.0;
+    let lead = g.last().expect("a nonzero gcd");
+    let mut r = ip.0.clone();
+    let mut h = vec![BigInt::from(0); r.len().saturating_sub(g.len()) + 1];
     while r.len() >= g.len() && !r.is_empty() {
         let shift = r.len() - g.len();
-        let c = r.last().expect("nonempty") / &lead;
+        let (c, rest) = r.last().expect("nonempty").div_rem(lead);
+        debug_assert!(rest.sign() == Sign::NoSign, "an exact quotient");
         for (i, x) in g.iter().enumerate() {
             r[i + shift] -= &c * x;
         }
-        quot[shift] = c;
-        r = trim(r);
+        h[shift] = c;
+        while r.last().is_some_and(|c| c.sign() == Sign::NoSign) {
+            r.pop();
+        }
     }
-    let sf = trim(quot);
-    let ig = int_poly(&g);
-    let abs = |x: &R| if *x < zero() { -x.clone() } else { x.clone() };
-    let lead = abs(sf.last().expect("nonzero"));
-    let bound = sf[..sf.len() - 1]
+    while h.last().is_some_and(|c| c.sign() == Sign::NoSign) {
+        h.pop();
+    }
+    let top = p.iter().rev().find(|c| **c != zero()).expect("nonzero");
+    let scale = top / R::from_integer(ip.0.last().expect("nonzero").clone());
+    let sf: Poly = h.iter().map(|c| &scale * c).collect();
+    let lead = R::from_integer(h.last().expect("nonzero").magnitude().clone().into());
+    let bound = h[..h.len() - 1]
         .iter()
-        .map(|c| abs(c) / &lead)
+        .map(|c| R::from_integer(c.magnitude().clone().into()) / &lead)
         .fold(zero(), |m, x| if x > m { x } else { m })
         + int(1);
     let rs = isolate(
-        &int_poly(&sf),
+        &IntPolynomial::new(h),
         -bound.clone(),
         bound,
         &mut Budget::new(RootIsolationOptions::default()),
@@ -252,10 +349,22 @@ impl Chart {
         ]
     }
 
+    /// The direction at `t`: over one denominator in integers, reduced once
+    /// (the same rationals as each operation reduced in turn).
     pub(super) fn at(&self, t: &R) -> [R; 2] {
-        let den = int(1) + t * t;
-        let (c, s) = ((int(1) - t * t) / &den, int(2) * t / &den);
-        [&self.c0 * &c - &self.s0 * &s, &self.s0 * &c + &self.c0 * &s]
+        let (n, d) = (t.numer(), t.denom());
+        let (nn, dd) = (n * n, d * d);
+        // `(cos, sin)` of the turn: `(d^2 - n^2, 2 n d) / (d^2 + n^2)`.
+        let (c, s, w) = (&dd - &nn, (n * d) << 1usize, &dd + &nn);
+        // The base over its own denominator.
+        let lcm = num_integer::Integer::lcm(self.c0.denom(), self.s0.denom());
+        let a = self.c0.numer() * (&lcm / self.c0.denom());
+        let b = self.s0.numer() * (&lcm / self.s0.denom());
+        let den = w * lcm;
+        [
+            R::new(&a * &c - &b * &s, den.clone()),
+            R::new(&b * &c + &a * &s, den),
+        ]
     }
 
     /// The chart's `t` of a direction (`None` at the antipode).
@@ -404,18 +513,58 @@ impl Form {
         })
     }
 
-    /// Times `(1 + t^2)^deg` in a chart: a polynomial in `t`.
+    /// Times `(1 + t^2)^deg` in a chart: a polynomial in `t`. In integers
+    /// over one denominator, each coefficient reduced once (the same
+    /// polynomial as in rationals reduced at every product).
     pub(super) fn poly(&self, chart: &Chart) -> Poly {
-        let [cn, sn] = chart.numerators();
-        let w = vec![int(1), zero(), int(1)];
-        let pw = |p: &Poly, n: u32| (0..n).fold(vec![int(1)], |acc, _| pmul(&acc, p));
-        let mut out: Poly = Vec::new();
+        let mul = |p: &IPoly, q: &IPoly| -> IPoly {
+            if p.is_empty() || q.is_empty() {
+                return Vec::new();
+            }
+            let mut out = vec![BigInt::from(0); p.len() + q.len() - 1];
+            for (i, x) in p.iter().enumerate() {
+                for (j, y) in q.iter().enumerate() {
+                    out[i + j] += x * y;
+                }
+            }
+            out
+        };
+        let pw = |p: &IPoly, n: u32| (0..n).fold(vec![BigInt::from(1)], |acc, _| mul(&acc, p));
+        // The chart's numerators over the base's denominator `l`, each
+        // power of a numerator over `l` once more: `cn^i sn^j w^rest` over
+        // `l^(i + j)`, brought to the largest such power.
+        let (c0, s0) = (&chart.c0, &chart.s0);
+        let l = c0.denom().lcm(s0.denom());
+        let (a, b) = (
+            c0.numer() * (&l / c0.denom()),
+            s0.numer() * (&l / s0.denom()),
+        );
+        let cn: IPoly = vec![a.clone(), -(&b << 1usize), -a.clone()];
+        let sn: IPoly = vec![b.clone(), &a << 1usize, -b];
+        let w: IPoly = vec![BigInt::from(1), BigInt::from(0), BigInt::from(1)];
+        let den = self
+            .terms
+            .values()
+            .fold(BigInt::from(1), |m, x| m.lcm(x.denom()));
+        let top = self
+            .terms
+            .keys()
+            .map(|(i, j)| i + j)
+            .fold(self.deg, u32::max);
+        let mut out: IPoly = Vec::new();
         for ((i, j), x) in &self.terms {
             let rest = self.deg.saturating_sub(i + j);
-            let term = pmul(&pmul(&pw(&cn, *i), &pw(&sn, *j)), &pw(&w, rest));
-            out = padd(&out, &pscale(&term, x));
+            let k = x.numer() * (&den / x.denom()) * l.pow(top - i - j);
+            let term = mul(&mul(&pw(&cn, *i), &pw(&sn, *j)), &pw(&w, rest));
+            if out.len() < term.len() {
+                out.resize(term.len(), BigInt::from(0));
+            }
+            for (o, t) in out.iter_mut().zip(term) {
+                *o += t * &k;
+            }
         }
-        out
+        let total = den * l.pow(top);
+        trim(out.into_iter().map(|c| R::new(c, total.clone())).collect())
     }
 }
 
@@ -824,4 +973,153 @@ fn verify(p: &Poly, chart: &Chart, range: &[[Qd; 2]; 2]) -> Result<()> {
         return Err(limit("a turning point inside a piece"));
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// A small linear congruential stream.
+    fn stream(mut seed: u64) -> impl FnMut() -> i64 {
+        move || {
+            seed = seed
+                .wrapping_mul(6_364_136_223_846_793_005)
+                .wrapping_add(1_442_695_040_888_963_407);
+            (seed >> 33) as i64
+        }
+    }
+
+    /// `Form::poly` product by product in rationals.
+    fn poly_rational(f: &Form, chart: &Chart) -> Poly {
+        let [cn, sn] = chart.numerators();
+        let w = vec![int(1), zero(), int(1)];
+        let pw = |p: &Poly, n: u32| (0..n).fold(vec![int(1)], |acc, _| pmul(&acc, p));
+        let mut out: Poly = Vec::new();
+        for ((i, j), x) in &f.terms {
+            let rest = f.deg.saturating_sub(i + j);
+            let term = pmul(&pmul(&pw(&cn, *i), &pw(&sn, *j)), &pw(&w, rest));
+            out = padd(&out, &pscale(&term, x));
+        }
+        out
+    }
+
+    /// `roots_repeated` with its quotient in rationals.
+    fn roots_repeated_rational(p: &Poly) -> (Poly, Vec<(AlgebraicRoot, bool)>) {
+        let ip = int_poly(p);
+        let g = ip.gcd(&ip.derivative());
+        let g: Poly = trim(g.0.iter().map(|c| R::from_integer(c.clone())).collect());
+        let mut r = p.clone();
+        let lead = g.last().expect("a nonzero gcd").clone();
+        let mut quot = vec![zero(); r.len().saturating_sub(g.len()) + 1];
+        while r.len() >= g.len() && !r.is_empty() {
+            let shift = r.len() - g.len();
+            let c = r.last().expect("nonempty") / &lead;
+            for (i, x) in g.iter().enumerate() {
+                r[i + shift] -= &c * x;
+            }
+            quot[shift] = c;
+            r = trim(r);
+        }
+        let sf = trim(quot);
+        let ig = int_poly(&g);
+        let abs = |x: &R| if *x < zero() { -x.clone() } else { x.clone() };
+        let lead = abs(sf.last().expect("nonzero"));
+        let bound = sf[..sf.len() - 1]
+            .iter()
+            .map(|c| abs(c) / &lead)
+            .fold(zero(), |m, x| if x > m { x } else { m })
+            + int(1);
+        let rs = isolate(
+            &int_poly(&sf),
+            -bound.clone(),
+            bound,
+            &mut Budget::new(RootIsolationOptions::default()),
+        )
+        .expect("isolated");
+        let out = rs
+            .into_iter()
+            .map(|r| {
+                let repeated = !ig.is_constant() && r.vanishes_polynomial(&ig);
+                (r, repeated)
+            })
+            .collect();
+        (sf, out)
+    }
+
+    #[test]
+    fn integer_square_free_part_is_the_rational_one() {
+        let mut next = stream(0x1405_7b7e_f767_814f);
+        for case in 0..60 {
+            let mut r = |m: i64| int(next() % (2 * m + 1) - m) / int(1 + next() % 61);
+            // Products of linear and quadratic factors, some repeated, over
+            // a rational multiple.
+            let mut p: Poly = vec![r(9) + int(1) / int(7)];
+            for k in 0..(1 + case % 4) {
+                let f = if k % 2 == 0 {
+                    vec![r(20), int(1)]
+                } else {
+                    vec![r(20), r(9), r(9) + int(10)]
+                };
+                p = pmul(&p, &f);
+                if (case + k) % 3 == 0 {
+                    p = pmul(&p, &f);
+                }
+            }
+            let p = trim(p);
+            if p.len() < 2 {
+                continue;
+            }
+            let (sf, rs) = roots_repeated(&p).expect("roots");
+            let (sf2, rs2) = roots_repeated_rational(&p);
+            assert_eq!(sf, sf2);
+            assert_eq!(rs.len(), rs2.len());
+            for ((a, x), (b, y)) in rs.iter().zip(&rs2) {
+                assert_eq!((a.isolator(), x), (b.isolator(), y));
+            }
+        }
+    }
+
+    #[test]
+    fn integer_chart_arithmetic_is_the_rational_one() {
+        let mut next = stream(0x5851_f42d_4c95_7f2d);
+        for case in 0..60 {
+            let mut r = |m: i64| int(next() % (2 * m + 1) - m) / int(1 + next() % 89);
+            let base = super::super::model::circle_point(&[zero(), zero()], &int(1), &r(40));
+            let chart = Chart {
+                c0: base[0].clone(),
+                s0: base[1].clone(),
+            };
+            let deg = 1 + case % 4;
+            let mut terms = BTreeMap::new();
+            for i in 0..=deg {
+                for j in 0..=(deg - i) {
+                    if (i + j + case) % 3 != 1 {
+                        terms.insert((i, j), r(500));
+                    }
+                }
+            }
+            let f = Form::from_terms(terms, deg);
+            assert_eq!(f.poly(&chart), poly_rational(&f, &chart));
+            let t = r(30);
+            let den = int(1) + &t * &t;
+            let (c, s) = ((int(1) - &t * &t) / &den, int(2) * &t / &den);
+            assert_eq!(
+                chart.at(&t),
+                [
+                    &chart.c0 * &c - &chart.s0 * &s,
+                    &chart.s0 * &c + &chart.c0 * &s
+                ]
+            );
+            // The chains' sign changes at rational points.
+            let p = f.poly(&chart);
+            if p.len() > 1 {
+                let (a, b) = (sturm(&p), sturm_int(&p));
+                assert_eq!(a.len(), b.len());
+                for _ in 0..8 {
+                    let x = r(5);
+                    assert_eq!(changes(&a, &Qd::rat(x.clone())), changes_int(&b, &x));
+                }
+            }
+        }
+    }
 }
