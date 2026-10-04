@@ -6875,8 +6875,13 @@ Decisions for S9, recorded before its code (2026-09-28):
     imported solid other than a prism, a sphere, a cone or a torus.
     Pending: S9e.4b.3b (S9e.2's `Clipped` and `Half` on this model) and
     S9e.4b.3c (pieces of one sphere, split rims, pieces not convex in their
-    planes), the Linux record of the capture, the campaign and the DRAW
-    survey.
+    planes), the Linux record of the capture and the DRAW survey. Campaign:
+    the boolean campaign at `dd51af05` (600 s, a sampled replay, `IMPORTED`,
+    `SPLINE_SPHERE` and `SPLINE_CONE` on) clean, 838 runs, the slowest input
+    60 s under AddressSanitizer at load 6 to 8 (`e36969f1`, an existing
+    corpus input reaching none of S9e.4's or S9f's code, 91 G instructions
+    with debug assertions; 45 and 52 s in the last two campaigns at lower
+    load), at the target's limit.
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces

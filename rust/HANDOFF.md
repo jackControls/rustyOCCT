@@ -242,8 +242,9 @@ then for S9e.4b.3a (branch `s9e4b3`, over `s9c2-kernel` at `12b6c176`).
    implemented on their stored vertices (above; its DRAW survey and
    campaign done, 4 restore cases registered); **S9e.4b.3**, split in
    "S9e.4b.3 refined": S9e.4b.3a, plane pieces as their primitive common
-   their planes' half-spaces, is implemented (above; pending its campaign,
-   the capture's Linux record and the DRAW survey); next **S9e.4b.3b**,
+   their planes' half-spaces, is implemented (above; campaign clean at
+   `dd51af05`; pending the capture's Linux record and the DRAW survey);
+   next **S9e.4b.3b**,
    S9e.2's deferred `Clipped` and `Half` against curved faces on that
    model, and **S9e.4b.3c**, two pieces of one sphere (the survey's `so1`
    to `so7`, 38 cases), rims split by stored vertices and pieces not
