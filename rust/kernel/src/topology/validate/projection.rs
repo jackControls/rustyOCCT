@@ -604,6 +604,37 @@ fn toric_jet<T: Real>(m: &Toric, fraction: &Jet<T>) -> Option<ToricJet<T>> {
     if let Some((kc, _)) = torus {
         ss.push(sums(&ls, 0).0.add(kc));
     }
+    // The order-zero quantities every step's linear part takes: each
+    // functional's `v_s = C L2 - S L1` (`e`) and `G`'s derivative in it
+    // (`w`: `+-2 v` against a quadric, `v (4 S - 2 four)` against another
+    // torus, `four` only on the first two), `alpha = sum w L1`, `beta =
+    // sum w L2` and `K = alpha C + beta S`; then `G_s = beta C - alpha S`.
+    let two = T::exact_f64(2.0);
+    let e: Vec<T> = fs
+        .iter()
+        .map(|(l, _)| l[2].c[0].mul(&c0).sub(&l[1].c[0].mul(&si0)))
+        .collect();
+    let w: Vec<T> = fs
+        .iter()
+        .zip(&ls)
+        .enumerate()
+        .map(|(j, ((_, plus), x))| match torus {
+            Some((_, four)) => {
+                let f = ss[0].mul(&T::exact_f64(4.0));
+                x[0].mul(&if j < 2 { f.sub(&four.mul(&two)) } else { f })
+            }
+            None if *plus => x[0].mul(&two),
+            None => x[0].mul(&two).neg(),
+        })
+        .collect();
+    let (alpha, beta) = fs
+        .iter()
+        .zip(&w)
+        .fold((zero(), zero()), |(a, b), ((l, _), wj)| {
+            (a.add(&wj.mul(&l[1].c[0])), b.add(&wj.mul(&l[2].c[0])))
+        });
+    let ks = alpha.mul(&c0).add(&beta.mul(&si0)).div(&slope)?;
+    let (cks, sks) = (c0.add(&si0.mul(&ks)), si0.sub(&c0.mul(&ks)));
     for k in 1..=n {
         let kk = T::exact_f64(k as f64);
         // cos and sin continued with s_k = 0: k S_k = sum C_i d_{k-1-i},
@@ -615,39 +646,97 @@ fn toric_jet<T: Real>(m: &Toric, fraction: &Jet<T>) -> Option<ToricJet<T>> {
             a_s = a_s.add(&co[i].mul(&d));
             a_c = a_c.add(&sn[i].mul(&d));
         }
-        co.push(a_c.neg().div(&kk)?);
-        sn.push(a_s.div(&kk)?);
-        let mut g = zero();
-        for ((l, plus), series) in fs.iter().zip(ls.iter_mut()) {
-            let x = l[0].c[k]
-                .add(&cauchy(&l[1].c, &co, k))
-                .add(&cauchy(&l[2].c, &sn, k));
-            series.push(x);
-            if torus.is_none() {
-                let sq = cauchy(series, series, k);
-                g = if *plus { g.add(&sq) } else { g.sub(&sq) };
+        let (ca, sb) = (a_c.neg().div(&kk)?, a_s.div(&kk)?);
+        // Each functional's series without its terms in `C_k` and `S_k`
+        // (`Y`), and `G`'s terms of order `k` without the series' (`H`):
+        // `G_k = H + sum w Y + alpha C_k' + beta S_k'` for the provisional
+        // `C_k'`, `S_k'` above, and the step's every output a linear form
+        // in `Y`, `H`, `C_k'` and `S_k'`, each taken once (the same values;
+        // the provisional ones corrected after `s_k`, as the plain
+        // recurrence does, count them twice, and that interval widening
+        // compounded order by order, to a thousand pieces a meeting).
+        let ys: Vec<T> = fs
+            .iter()
+            .map(|(l, _)| {
+                (1..=k).fold(l[0].c[k].clone(), |y, i| {
+                    y.add(&l[1].c[i].mul(&co[k - i]))
+                        .add(&l[2].c[i].mul(&sn[k - i]))
+                })
+            })
+            .collect();
+        let low = |x: &[T]| (1..k).fold(zero(), |acc, i| acc.add(&x[i].mul(&x[k - i])));
+        let h = match torus {
+            Some((_, four)) => {
+                let lows: Vec<T> = ls.iter().map(|x| low(x)).collect();
+                let p_low = lows[0].add(&lows[1]);
+                let s_low = p_low.add(&lows[2]);
+                let mid = (1..k).fold(zero(), |acc, i| acc.add(&ss[i].mul(&ss[k - i])));
+                ss[0].mul(&s_low).mul(&two).add(&mid).sub(&four.mul(&p_low))
             }
-        }
-        if let Some((_, four)) = torus {
-            let (sk, pk) = sums(&ls, k);
-            ss.push(sk);
-            g = cauchy(&ss, &ss, k).sub(&four.mul(&pk));
-        }
-        // The first coefficient's rest is `G_f` along the meeting times
-        // the base variable's own first coefficient (`-1` reversed).
-        let g = match (&first, k) {
-            (Some(mv), 1) => narrower(g, mv.mul(&fraction.c[1])),
-            _ => g,
+            None => fs.iter().zip(&ls).fold(zero(), |acc, ((_, plus), x)| {
+                if *plus {
+                    acc.add(&low(x))
+                } else {
+                    acc.sub(&low(x))
+                }
+            }),
         };
-        let sk = g.div(&slope)?.neg();
-        co[k] = co[k].sub(&si0.mul(&sk));
-        sn[k] = sn[k].add(&c0.mul(&sk));
-        for ((l, _), series) in fs.iter().zip(ls.iter_mut()) {
-            let fix = l[2].c[0].mul(&c0).sub(&l[1].c[0].mul(&si0)).mul(&sk);
-            series[k] = series[k].add(&fix);
+        let z = ys
+            .iter()
+            .zip(&w)
+            .fold(h.clone(), |acc, (y, wj)| acc.add(&wj.mul(y)));
+        // The first coefficient's rest is `G_f` along the meeting times
+        // the base variable's own first coefficient (`-1` reversed); `C_1'`
+        // and `S_1'` are zero.
+        let z = match (&first, k) {
+            (Some(mv), 1) => narrower(z, mv.mul(&fraction.c[1])),
+            _ => z,
+        };
+        let zs = z.div(&slope)?;
+        // `P = C C_k + S S_k`, the same before and after `s_k` (also
+        // `-1/2 sum (C_i C_{k-i} + S_i S_{k-i})`: `C^2 + S^2 = 1`), and
+        // `s_k = -(G_k' / G_s)`, `C_k = C P - S (Q + s_k)`, `S_k = S P + C
+        // (Q + s_k)` with `Q = C S_k' - S C_k'`.
+        let pp = narrower(
+            c0.mul(&ca).add(&si0.mul(&sb)),
+            (1..k)
+                .fold(zero(), |acc, i| {
+                    acc.add(&co[i].mul(&co[k - i])).add(&sn[i].mul(&sn[k - i]))
+                })
+                .mul(&T::exact_f64(-0.5)),
+        );
+        let sk = narrower(
+            ca.mul(&sks).sub(&sb.mul(&cks)).sub(&zs),
+            c0.mul(&sb)
+                .sub(&si0.mul(&ca))
+                .neg()
+                .sub(&zs)
+                .sub(&ks.mul(&pp)),
+        );
+        let cok = narrower(pp.mul(&cks).add(&si0.mul(&zs)), ca.sub(&si0.mul(&sk)));
+        let snk = narrower(pp.mul(&sks).sub(&c0.mul(&zs)), sb.add(&c0.mul(&sk)));
+        // Each functional's series: `Y + L1 C_k + L2 S_k`, and as the form
+        // `Y (1 - w e / G_s) - (e / G_s) (H + sum_{i != j} w_i Y_i) + P m`.
+        for (j, ((l, _), series)) in fs.iter().zip(ls.iter_mut()).enumerate() {
+            let direct = ys[j].add(&l[1].c[0].mul(&cok)).add(&l[2].c[0].mul(&snk));
+            let es = e[j].div(&slope)?;
+            let rest = ys
+                .iter()
+                .zip(&w)
+                .enumerate()
+                .filter(|(i, _)| *i != j)
+                .fold(h.clone(), |acc, (_, (y, wi))| acc.add(&wi.mul(y)));
+            let m = l[1].c[0].mul(&cks).add(&l[2].c[0].mul(&sks));
+            let form = ys[j]
+                .mul(&c::<T>(1.0).sub(&w[j].mul(&es)))
+                .sub(&es.mul(&rest))
+                .add(&pp.mul(&m));
+            series.push(narrower(direct, form));
         }
+        co.push(cok);
+        sn.push(snk);
         if torus.is_some() {
-            ss[k] = sums(&ls, k).0;
+            ss.push(sums(&ls, k).0);
         }
         s.push(sk);
     }
@@ -726,6 +815,21 @@ fn section_jet<T: Real>(s: &Spiric, fraction: &Jet<T>) -> Option<[Jet<T>; 3]> {
 /// A meeting's `(u, v)` on its carrier and its world point, as jets.
 type MeetJet<T> = ([Jet<T>; 2], [Jet<T>; 3]);
 
+/// The product of two affine forms `k0 + kc cos u + ks sin u` as a form of
+/// degree two: its constants of `1`, `cos u`, `sin u`, `cos 2u`, `sin 2u`.
+fn trig_product<T: Real>(p: &[T; 3], q: &[T; 3]) -> [T; 5] {
+    let half = c::<T>(0.5);
+    let (cc, ss) = (p[1].mul(&q[1]), p[2].mul(&q[2]));
+    let (cs, sc) = (p[1].mul(&q[2]), p[2].mul(&q[1]));
+    [
+        p[0].mul(&q[0]).add(&cc.add(&ss).mul(&half)),
+        p[0].mul(&q[1]).add(&p[1].mul(&q[0])),
+        p[0].mul(&q[2]).add(&p[2].mul(&q[0])),
+        cc.sub(&ss).mul(&half),
+        cs.add(&sc).mul(&half),
+    ]
+}
+
 /// The jets of two cylinders' meeting (S9c.2) in the fraction: the
 /// carrier's angle and ruling height, and the world point.
 fn meet_jet<T: Real>(m: &Meet, fraction: &Jet<T>) -> Option<MeetJet<T>> {
@@ -752,48 +856,145 @@ fn meet_jet<T: Real>(m: &Meet, fraction: &Jet<T>) -> Option<MeetJet<T>> {
             .scale(&t)
             .add_constant(&c(n[k]))
     });
-    // w = foot - o2 and the direction along an axis.
-    let along = |v: &[Jet<T>; 3], axis: &[f64; 3], shift: bool| {
-        let mut out = Jet::constant(c::<T>(0.0), u.order());
-        for k in 0..3 {
-            let vk = if shift {
-                v[k].add_constant(&c::<T>(o2[k]).neg())
-            } else {
-                v[k].clone()
-            };
-            out = out.add(&vk.scale(&c(axis[k])));
-        }
-        out
+    // `foot - o2` and the direction along an axis, as affine forms in the
+    // angle, `k0 + kc cos u + ks sin u` (interval constants); `a`, `b` and
+    // `c` are sums of their products, forms of degree two in `u` whose
+    // constants are combined before any jet: the same functions, but a
+    // jet of `cos^2 + sin^2` over a piece is wider than one, and a coaxial
+    // pair's forms (constant in `u`) took thousands of pieces a turn.
+    let o1 = m.frame.origin().to_array();
+    let dot = |p: &[f64; 3], e: &[f64; 3]| {
+        (0..3).fold(c::<T>(0.0), |acc, k| acc.add(&c::<T>(p[k]).mul(&c(e[k]))))
     };
+    let foot_on = |e: &[f64; 3]| -> [T; 3] {
+        let k0 = (0..3).fold(c::<T>(0.0), |acc, k| {
+            acc.add(&c::<T>(o1[k]).sub(&c(o2[k])).mul(&c(e[k])))
+        });
+        [k0, r.mul(&dot(&x, e)), r.mul(&dot(&y, e))]
+    };
+    let dir_on = |e: &[f64; 3]| -> [T; 3] { [dot(&n, e), t.mul(&dot(&x, e)), t.mul(&dot(&y, e))] };
     let axes: Vec<[f64; 3]> = if m.other_sphere {
         vec![[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]]
     } else {
         vec![m.other.x().to_array(), m.other.y().to_array()]
     };
-    let ws: Vec<Jet<T>> = axes.iter().map(|a| along(&foot, a, true)).collect();
-    let ns: Vec<Jet<T>> = axes.iter().map(|a| along(&dir, a, false)).collect();
-    let zero = || Jet::constant(c::<T>(0.0), u.order());
-    let mut a = ns.iter().fold(zero(), |acc, x| acc.add(&x.square()));
-    let mut b = ws
-        .iter()
-        .zip(&ns)
-        .fold(zero(), |acc, (w, x)| acc.add(&w.mul(x)));
-    let mut cc = ws.iter().fold(zero(), |acc, w| acc.add(&w.square()));
+    let zero = || [0; 5].map(|_| c::<T>(0.0));
+    let (mut a, mut b, mut cc) = (zero(), zero(), zero());
+    let add = |acc: &mut [T; 5], p: [T; 5], plus: bool| {
+        for (x, y) in acc.iter_mut().zip(p) {
+            *x = if plus { x.add(&y) } else { x.sub(&y) };
+        }
+    };
+    for e in &axes {
+        let (w, d) = (foot_on(e), dir_on(e));
+        add(&mut a, trig_product(&d, &d), true);
+        add(&mut b, trig_product(&w, &d), true);
+        add(&mut cc, trig_product(&w, &w), true);
+    }
     if m.other_sphere {
-        cc = cc.add_constant(&c::<T>(m.other_radius).mul(&c(m.other_radius)).neg());
+        cc[0] = cc[0].sub(&c::<T>(m.other_radius).mul(&c(m.other_radius)));
     } else {
         // The other's radius along its axis: `r2 + t2 (w . n2)` (a cone).
         let n2 = m.other.normal().to_array();
         let t2 = tan(m.other_half_angle)?;
-        let r0 = along(&foot, &n2, true)
-            .scale(&t2)
-            .add_constant(&c(m.other_radius));
-        let rd = along(&dir, &n2, false).scale(&t2);
-        a = a.sub(&rd.square());
-        b = b.sub(&r0.mul(&rd));
-        cc = cc.sub(&r0.square());
+        let [k0, kc, ks] = foot_on(&n2).map(|k| k.mul(&t2));
+        let r0 = [k0.add(&c(m.other_radius)), kc, ks];
+        let rd = dir_on(&n2).map(|k| k.mul(&t2));
+        add(&mut a, trig_product(&rd, &rd), false);
+        add(&mut b, trig_product(&r0, &rd), false);
+        add(&mut cc, trig_product(&r0, &r0), false);
     }
-    let d = b.square().sub(&cc.mul(&a));
+    let (co2, si2) = u.scale(&c(2.0)).cos_sin();
+    let jet = |k: &[T; 5]| {
+        co.scale(&k[1])
+            .add(&si.scale(&k[2]))
+            .add(&co2.scale(&k[3]))
+            .add(&si2.scale(&k[4]))
+            .add_constant(&k[0])
+    };
+    // `d = b^2 - a c` over a piece also in its mean-value form about the
+    // angle's middle, from the forms' values there and their derivatives
+    // over the piece (the natural extension's terms cancel: wide by their
+    // own size, which the square root's recurrence amplified to millions of
+    // times the coefficients' size).
+    let (ulo, uhi) = u.c[0].bounds_f64();
+    let d_mid = if ulo < uhi {
+        let um = 0.5 * ulo + 0.5 * uhi;
+        let value = |k: &[T; 5], x: &T| {
+            let ((c1, s1), (c2, s2)) = (T::cos_sin(x), T::cos_sin(&x.mul(&c(2.0))));
+            k[0].add(&k[1].mul(&c1))
+                .add(&k[2].mul(&s1))
+                .add(&k[3].mul(&c2))
+                .add(&k[4].mul(&s2))
+        };
+        let slope = |k: &[T; 5], x: &T| {
+            let ((c1, s1), (c2, s2)) = (T::cos_sin(x), T::cos_sin(&x.mul(&c(2.0))));
+            k[2].mul(&c1)
+                .sub(&k[1].mul(&s1))
+                .add(&k[4].mul(&c2).sub(&k[3].mul(&s2)).mul(&c(2.0)))
+        };
+        let (m, whole) = (c::<T>(um), u.c[0].clone());
+        let d_at = value(&b, &m)
+            .square()
+            .sub(&value(&a, &m).mul(&value(&cc, &m)));
+        let (bw, aw, cw) = (value(&b, &whole), value(&a, &whole), value(&cc, &whole));
+        let d_u = bw
+            .mul(&slope(&b, &whole))
+            .mul(&c(2.0))
+            .sub(&slope(&a, &whole).mul(&cw))
+            .sub(&aw.mul(&slope(&cc, &whole)));
+        Some(d_at.add(&d_u.mul(&whole.sub(&m))))
+    } else {
+        None
+    };
+    // The same functions as the plain products of the dot products' jets
+    // too (narrower where the forms' constants are wide against their
+    // values: near a loop's turning point), each coefficient the narrower.
+    let (a, b, cc) = {
+        let along = |v: &[Jet<T>; 3], e: &[f64; 3], shift: bool| {
+            (0..3).fold(Jet::constant(c::<T>(0.0), u.order()), |acc, k| {
+                let vk = if shift {
+                    v[k].add_constant(&c::<T>(o2[k]).neg())
+                } else {
+                    v[k].clone()
+                };
+                acc.add(&vk.scale(&c(e[k])))
+            })
+        };
+        let zero = || Jet::constant(c::<T>(0.0), u.order());
+        let (mut pa, mut pb, mut pc) = (zero(), zero(), zero());
+        for e in &axes {
+            let (w, d) = (along(&foot, e, true), along(&dir, e, false));
+            pa = pa.add(&d.square());
+            pb = pb.add(&w.mul(&d));
+            pc = pc.add(&w.square());
+        }
+        if m.other_sphere {
+            pc = pc.add_constant(&c::<T>(m.other_radius).mul(&c(m.other_radius)).neg());
+        } else {
+            let n2 = m.other.normal().to_array();
+            let t2 = tan(m.other_half_angle)?;
+            let r0 = along(&foot, &n2, true)
+                .scale(&t2)
+                .add_constant(&c(m.other_radius));
+            let rd = along(&dir, &n2, false).scale(&t2);
+            pa = pa.sub(&rd.square());
+            pb = pb.sub(&r0.mul(&rd));
+            pc = pc.sub(&r0.square());
+        }
+        let pick = |x: Jet<T>, y: Jet<T>| Jet {
+            c: x.c
+                .into_iter()
+                .zip(y.c)
+                .map(|(p, q)| narrower(p, q))
+                .collect(),
+        };
+        (pick(jet(&a), pa), pick(jet(&b), pb), pick(jet(&cc), pc))
+    };
+    let mut d = b.square().sub(&cc.mul(&a));
+    if let Some(at) = d_mid {
+        d.c[0] = narrower(d.c[0].clone(), at);
+    }
     // `(-b + s sqrt(d)) / a`, or `c / (-b - s sqrt(d))` where that cancels
     // less (the binary64 curve's own choice, by its midpoints).
     let sq = d.sqrt()?.scale(&c(m.sign));
@@ -1658,6 +1859,102 @@ mod tests {
                 assert!(lo - 1e-14 <= p[i] && p[i] <= hi + 1e-14, "{f} {i}");
             }
         }
+    }
+
+    /// Two tori on parallel axes, the fuzz target's in its tilted frame
+    /// (S9d.4b.2b): to order 13 at a point the meeting's jets stay narrow
+    /// (each step's linear forms in its provisional terms, each taken
+    /// once; the plain recurrence's corrections counted them twice, a
+    /// width growing twentyfold an order, `+-7e4` at the top), and they
+    /// enclose the binary64 points over an interval base.
+    #[test]
+    fn toric_jets_stay_narrow_to_high_orders() {
+        let m = Toric {
+            frame: frame([1.0, -2.0, 0.5], [0.0, 3.0, 4.0], [1.0, 0.0, 0.0]),
+            major: 1.3125,
+            minor: 0.8203125,
+            other: frame(
+                [1.0416666666666667, -2.125, 0.9],
+                [0.0, 3.0, 4.0],
+                [1.0, 0.0, 0.0],
+            ),
+            other_radius: 1.5,
+            other_sphere: false,
+            other_half_angle: 0.0,
+            other_minor: 0.5625,
+            over_v: false,
+            window: [-1.007081089716003, 1.9214080444695982],
+            start: 0.9550889022507751,
+            sweep: 1.4751893912374456,
+        };
+        let width = |x: &Fast| {
+            let (lo, hi) = x.bounds_f64();
+            hi - lo
+        };
+        for f in [0.25, 0.5, 0.75] {
+            let ([_, v], point) = toric_jet(&m, &Jet::variable(Fast::exact_f64(f), 13)).unwrap();
+            let p = m.point(f).to_array();
+            for (i, j) in point.iter().enumerate() {
+                let (lo, hi) = j.c[0].bounds_f64();
+                assert!(lo - 1e-14 <= p[i] && p[i] <= hi + 1e-14, "{f} {i}");
+            }
+            if f == 0.5 {
+                assert!(width(&v.c[13]) < 100.0 && width(&point[0].c[13]) < 100.0);
+            }
+        }
+        let base = Fast::exact_f64(0.5).union(&Fast::exact_f64(0.5 + 1.0 / 128.0));
+        let (_, jet) = toric_jet(&m, &Jet::variable(base, 13)).unwrap();
+        for f in [0.5, 0.503, 0.5078125] {
+            let p = m.point(f).to_array();
+            for (i, j) in jet.iter().enumerate() {
+                let (lo, hi) = j.c[0].bounds_f64();
+                assert!(lo - 1e-14 <= p[i] && p[i] <= hi + 1e-14, "{f} {i}");
+            }
+        }
+    }
+
+    /// Two coaxial cones' meeting, a circle (S9d.3c's pair in one frame):
+    /// over a piece its quadratic's coefficients are forms of degree two in
+    /// the angle, constant here, and its discriminant's natural extension
+    /// over the piece is replaced by its mean-value form, so the jets stay
+    /// narrow to order 13 over a sixty-fourth of a turn (the plain
+    /// products of the dot products' jets took thousands of pieces a turn);
+    /// they enclose the binary64 points.
+    #[test]
+    fn coaxial_meetings_stay_narrow_over_a_piece() {
+        let axis = frame([0.0, 0.0, 0.0], [0.0, 3.0, 4.0], [1.0, 0.0, 0.0]);
+        let below = frame([0.0, -0.6, -0.8], [0.0, 3.0, 4.0], [1.0, 0.0, 0.0]);
+        let width = |x: &Fast| {
+            let (lo, hi) = x.bounds_f64();
+            hi - lo
+        };
+        // The ring `1 - w / 2 = 0.8 (w + 1)` at `w = 2 / 13` (the other
+        // root's branch on the other nappe).
+        let m = Meet {
+            frame: axis,
+            radius: 1.0,
+            half_angle: (-0.5f64).atan(),
+            other: below,
+            other_radius: 0.0,
+            other_sphere: false,
+            other_half_angle: 0.8f64.atan(),
+            sign: -1.0,
+            start: 0.0,
+            sweep: std::f64::consts::TAU,
+        };
+        let base = Fast::exact_f64(0.3).union(&Fast::exact_f64(0.3 + 1.0 / 64.0));
+        let (_, jet) = meet_jet(&m, &Jet::variable(base, 13)).unwrap();
+        for f in [0.3, 0.31, 0.3 + 1.0 / 64.0] {
+            let p = m.point(f);
+            let height = p.y * 0.6 + p.z * 0.8;
+            assert!((height - 2.0 / 13.0).abs() < 1e-14, "{p:?}");
+            for (i, j) in jet.iter().enumerate() {
+                let (lo, hi) = j.c[0].bounds_f64();
+                let at = p.to_array()[i];
+                assert!(lo - 1e-14 <= at && at <= hi + 1e-14, "{f} {i}");
+            }
+        }
+        assert!(jet.iter().all(|j| width(&j.c[13]) < 1.0));
     }
 
     /// A torus of radii 1.25 and 0.5 about x ringing the tube of one of
