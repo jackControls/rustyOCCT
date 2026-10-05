@@ -1,0 +1,231 @@
+case hemi_wedge_fuse
+brep imported/incidence_hemi.brep
+boolean fuse
+brep imported/incidence_wedge45.brep
+end
+case hemi_wedge_cut
+brep imported/incidence_hemi.brep
+boolean cut
+brep imported/incidence_wedge45.brep
+end
+case hemi_wedge_common
+brep imported/incidence_hemi.brep
+boolean common
+brep imported/incidence_wedge45.brep
+end
+case wedge_hemi_cut
+brep imported/incidence_wedge45.brep
+boolean cut
+brep imported/incidence_hemi.brep
+end
+case wedge_wedge_fuse
+brep imported/incidence_wedge45.brep
+boolean fuse
+brep imported/incidence_wedge23.brep
+end
+case wedge_wedge_cut
+brep imported/incidence_wedge45.brep
+boolean cut
+brep imported/incidence_wedge23.brep
+end
+case wedge_wedge_common
+brep imported/incidence_wedge45.brep
+boolean common
+brep imported/incidence_wedge23.brep
+end
+case wedge_back_cut
+brep imported/incidence_wedge23.brep
+boolean cut
+brep imported/incidence_wedge45.brep
+end
+case high_wedge_fuse
+brep imported/incidence_high23.brep
+boolean fuse
+brep imported/incidence_wedge45.brep
+end
+case high_wedge_cut
+brep imported/incidence_high23.brep
+boolean cut
+brep imported/incidence_wedge45.brep
+end
+case high_wedge_common
+brep imported/incidence_high23.brep
+boolean common
+brep imported/incidence_wedge45.brep
+end
+case wedge_high_cut
+brep imported/incidence_wedge45.brep
+boolean cut
+brep imported/incidence_high23.brep
+end
+case half_octant_fuse
+brep imported/incidence_half.brep
+boolean fuse
+brep imported/incidence_octant.brep
+end
+case half_octant_cut
+brep imported/incidence_half.brep
+boolean cut
+brep imported/incidence_octant.brep
+end
+case half_octant_common
+brep imported/incidence_half.brep
+boolean common
+brep imported/incidence_octant.brep
+end
+case octant_half_cut
+brep imported/incidence_octant.brep
+boolean cut
+brep imported/incidence_half.brep
+end
+case x_wedges_fuse
+brep imported/incidence_x45.brep
+boolean fuse
+brep imported/incidence_x23.brep
+end
+case x_wedges_cut
+brep imported/incidence_x45.brep
+boolean cut
+brep imported/incidence_x23.brep
+end
+case x_wedges_common
+brep imported/incidence_x45.brep
+boolean common
+brep imported/incidence_x23.brep
+end
+case same_wedge_fuse
+brep imported/incidence_wedge45.brep
+boolean fuse
+brep imported/incidence_wedge45.brep
+end
+case same_wedge_cut
+brep imported/incidence_wedge45.brep
+boolean cut
+brep imported/incidence_wedge45.brep
+end
+case same_wedge_common
+brep imported/incidence_wedge45.brep
+boolean common
+brep imported/incidence_wedge45.brep
+end
+case cap_cap_fuse
+sphere 5.0 5.0 4.0 0.0 0.0 1.0 1.0 0.0 0.0 5.0 0.25 1.5707963267948966
+boolean fuse
+sphere 5.0 5.0 4.0 0.0 0.0 1.0 1.0 0.0 0.0 5.0 0.5 1.5707963267948966
+end
+case cap_cap_cut
+sphere 5.0 5.0 4.0 0.0 0.0 1.0 1.0 0.0 0.0 5.0 0.25 1.5707963267948966
+boolean cut
+sphere 5.0 5.0 4.0 0.0 0.0 1.0 1.0 0.0 0.0 5.0 0.5 1.5707963267948966
+end
+case cap_cap_common
+sphere 5.0 5.0 4.0 0.0 0.0 1.0 1.0 0.0 0.0 5.0 0.25 1.5707963267948966
+boolean common
+sphere 5.0 5.0 4.0 0.0 0.0 1.0 1.0 0.0 0.0 5.0 0.5 1.5707963267948966
+end
+case cap_back_cut
+sphere 5.0 5.0 4.0 0.0 0.0 1.0 1.0 0.0 0.0 5.0 0.5 1.5707963267948966
+boolean cut
+sphere 5.0 5.0 4.0 0.0 0.0 1.0 1.0 0.0 0.0 5.0 0.25 1.5707963267948966
+end
+case cap_wedge_fuse
+sphere 5.0 5.0 4.0 0.0 0.0 1.0 1.0 0.0 0.0 5.0 0.5 1.5707963267948966
+boolean fuse
+brep imported/incidence_wedge45.brep
+end
+case cap_wedge_cut
+sphere 5.0 5.0 4.0 0.0 0.0 1.0 1.0 0.0 0.0 5.0 0.5 1.5707963267948966
+boolean cut
+brep imported/incidence_wedge45.brep
+end
+case cap_wedge_common
+sphere 5.0 5.0 4.0 0.0 0.0 1.0 1.0 0.0 0.0 5.0 0.5 1.5707963267948966
+boolean common
+brep imported/incidence_wedge45.brep
+end
+case wedge_cap_cut
+brep imported/incidence_wedge45.brep
+boolean cut
+sphere 5.0 5.0 4.0 0.0 0.0 1.0 1.0 0.0 0.0 5.0 0.5 1.5707963267948966
+end
+case chain_zone_fuse
+brep imported/incidence_wedge45.brep
+boolean fuse
+brep imported/incidence_wedge23.brep
+then fuse
+sphere 5.0 5.0 4.0 0.0 0.0 1.0 1.0 0.0 0.0 5.0 0.25 0.5
+end
+case chain_zone_cut
+brep imported/incidence_wedge45.brep
+boolean fuse
+brep imported/incidence_wedge23.brep
+then cut
+sphere 5.0 5.0 4.0 0.0 0.0 1.0 1.0 0.0 0.0 5.0 0.25 0.5
+end
+case chain_zone_common
+brep imported/incidence_wedge45.brep
+boolean fuse
+brep imported/incidence_wedge23.brep
+then common
+sphere 5.0 5.0 4.0 0.0 0.0 1.0 1.0 0.0 0.0 5.0 0.25 0.5
+end
+case quadrants_fuse
+brep imported/incidence_octant.brep
+boolean fuse
+brep imported/incidence_back.brep
+end
+case quadrants_cut
+brep imported/incidence_octant.brep
+boolean cut
+brep imported/incidence_back.brep
+end
+case quadrants_common
+brep imported/incidence_octant.brep
+boolean common
+brep imported/incidence_back.brep
+end
+case half_wedge_fuse
+brep imported/incidence_half.brep
+boolean fuse
+brep imported/incidence_wedge45.brep
+end
+case half_wedge_cut
+brep imported/incidence_half.brep
+boolean cut
+brep imported/incidence_wedge45.brep
+end
+case half_wedge_common
+brep imported/incidence_half.brep
+boolean common
+brep imported/incidence_wedge45.brep
+end
+case near_turned_fuse
+brep imported/incidence_wedge45.brep
+boolean fuse
+brep imported/incidence_turned45.brep
+end
+case near_turned_cut
+brep imported/incidence_wedge45.brep
+boolean cut
+brep imported/incidence_turned45.brep
+end
+case near_turned_common
+brep imported/incidence_wedge45.brep
+boolean common
+brep imported/incidence_turned45.brep
+end
+case near_lifted_fuse
+brep imported/incidence_hemi.brep
+boolean fuse
+brep imported/incidence_lifted45.brep
+end
+case near_lifted_cut
+brep imported/incidence_hemi.brep
+boolean cut
+brep imported/incidence_lifted45.brep
+end
+case near_lifted_common
+brep imported/incidence_hemi.brep
+boolean common
+brep imported/incidence_lifted45.brep
+end

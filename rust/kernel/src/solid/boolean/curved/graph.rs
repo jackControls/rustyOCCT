@@ -7,7 +7,12 @@
 //! normal), each loop's orientation and nesting from its binary64 image in
 //! the face's parameters. Each piece is classified at a point of one of
 //! its edges pushed into it and then off the face either way (the other
-//! solid's exact membership), and kept as S9b.1 keeps fragments.
+//! solid's exact membership), and kept as S9b.1 keeps fragments. Where the
+//! inputs have faces on one sphere (S9e.4b.3c.2), their exact incidences are
+//! the arrangement's own: a vertex of both one vertex (`VKey::Both`), a
+//! vertex of one inside a line or circle edge of the other splitting it, and
+//! an edge of both one arrangement edge in both inputs' faces
+//! (`Arr::shared`).
 use super::meet::*;
 use super::model::*;
 use super::num::*;
@@ -24,15 +29,6 @@ pub(super) const SEAM: &str = "a meeting at a circle's seam";
 
 fn seam() -> Error {
     Error::ComputationLimit(SEAM)
-}
-
-/// Inputs on one sphere meeting at a vertex of either or along one circle
-/// (S9e.4b.3c.2's exact incidences).
-pub(super) const ONE_SPHERE_INCIDENCE: &str =
-    "a vertex or a circle of both inputs on one sphere (S9e.4b.3c.2)";
-
-fn one_sphere_incidence() -> Error {
-    Error::OutOfDomain(ONE_SPHERE_INCIDENCE)
 }
 
 /// What a vertex is.
@@ -56,6 +52,9 @@ pub(super) enum VKey {
     /// own arrangement: the section and the stored vertex (S9e.4b.3c.1, a
     /// rim OCCT split at its sphere's seam).
     Stored(usize, usize),
+    /// A model vertex of both operands at one point (S9e.4b.3c.2's exact
+    /// incidences on one sphere): A's vertex, B's.
+    Both(usize, usize),
 }
 
 #[derive(Debug, Clone)]
@@ -139,6 +138,10 @@ pub(super) struct Arr {
     pub(super) pieces: Vec<Piece>,
     /// Faces on one surface: (A's, B's).
     pub(super) coinc: BTreeSet<(usize, usize)>,
+    /// Edges of both inputs (S9e.4b.3c.2): an arrangement edge on a model
+    /// edge of A (its `curve`) that is also a part of B's edge `eb`, run
+    /// with it where `with` (the arrangement edge, B's faces' half-edges).
+    pub(super) shared: BTreeMap<usize, (usize, bool)>,
 }
 
 fn boxes_meet(a: &([f64; 3], [f64; 3]), b: &([f64; 3], [f64; 3])) -> bool {
@@ -633,6 +636,15 @@ pub(super) fn arrange_shared(models: [Prism; 2]) -> Result<Arr> {
             }
         }
     }
+    // Inputs on one sphere (S9e.4b.3c.2): their exact incidences (a vertex,
+    // a circle or a line of both, plane faces on one plane with overlapping
+    // edges) are one arrangement's: a vertex of both one vertex, a vertex of
+    // one inside an edge of the other splitting it, an edge of both one
+    // arrangement edge of both inputs' faces.
+    let one_sphere = coinc.iter().any(|&(fa, _)| {
+        let (va, ia) = models[0].view(fa);
+        matches!(va.faces[ia].surf, Surf::Sphere { .. })
+    });
     let in_coinc: [BTreeSet<usize>; 2] = [
         coinc.iter().map(|x| x.0).collect(),
         coinc.iter().map(|x| x.1).collect(),
@@ -657,6 +669,9 @@ pub(super) fn arrange_shared(models: [Prism; 2]) -> Result<Arr> {
     // so the face holds the edge's parts inside it and meets the walls
     // there, not in generatrices of its own: (operand, edge, other's face).
     let (along, touching) = joint_edges_on_planes(&models)?;
+    // Edges of one input along a face of the other on one line or circle
+    // with an edge of it (S9e.4b.3c.2): (operand, edge, other's face).
+    let mut along_edges: Vec<(usize, usize, usize)> = Vec::new();
     // Vertices: the inputs'.
     let mut vx: Vec<Vx> = Vec::new();
     // Vertices' binary64 views where computed (`qv_f64`; a vertex's point
@@ -666,6 +681,22 @@ pub(super) fn arrange_shared(models: [Prism; 2]) -> Result<Arr> {
     let mut input_vx: [Vec<usize>; 2] = [Vec::new(), Vec::new()];
     for (o, m) in models.iter().enumerate() {
         for (i, v) in m.verts.iter().enumerate() {
+            // A vertex of both inputs on one sphere is one vertex
+            // (S9e.4b.3c.2), a split's own (without an id) too.
+            if one_sphere && o == 1 {
+                let at = qv_f64(&v.p);
+                let both = (0..models[0].verts.len()).find(|&ia| {
+                    let w = vx[input_vx[0][ia]].view();
+                    (0..3).all(|k| (w[k] - at[k]).abs() <= res)
+                        && qv_eq(&vx[input_vx[0][ia]].p, &v.p)
+                });
+                if let Some(ia) = both {
+                    let id = input_vx[0][ia];
+                    vx[id].key = VKey::Both(ia, i);
+                    input_vx[1].push(id);
+                    continue;
+                }
+            }
             input_vx[o].push(vx.len());
             vx.push(Vx {
                 p: v.p.clone(),
@@ -685,6 +716,41 @@ pub(super) fn arrange_shared(models: [Prism; 2]) -> Result<Arr> {
                 .entry((o, ei))
                 .or_default()
                 .extend([(s, ps), (t, pt)]);
+        }
+    }
+    // A vertex of one input strictly inside a line or circle edge of the
+    // other on one sphere (S9e.4b.3c.2: a wedge's equator end on the other's
+    // rim, a corner on the other's axis) splits that edge there, a vertex of
+    // its faces too (a split's own, without an id, alike).
+    if one_sphere {
+        for o in 0..2 {
+            let other = &models[1 - o];
+            for &id in &input_vx[o] {
+                let at = vx[id].view();
+                for (ei, e) in other.edges.iter().enumerate() {
+                    if !matches!(e.curve, Crv::Line { .. } | Crv::Circle(_)) {
+                        continue;
+                    }
+                    let b = intersect(&other.boxes[e.faces[0]], &other.boxes[e.faces[1]]);
+                    if !(0..3).all(|k| b.0[k] - res <= at[k] && at[k] <= b.1[k] + res)
+                        || !on_curve(&e.curve, &vx[id].p)
+                    {
+                        continue;
+                    }
+                    let pos = place(&e.curve, &vx[id].p);
+                    let (s, t, with) = edge_places(other, ei);
+                    if strictly_within(&pos, &s, &t, with) != Some(true) {
+                        continue;
+                    }
+                    for &f in &e.faces {
+                        vx[id].faces.insert((1 - o, f));
+                    }
+                    let list = on_edge.entry((1 - o, ei)).or_default();
+                    if !list.iter().any(|(v, _)| *v == id) {
+                        list.push((id, pos));
+                    }
+                }
+            }
         }
     }
     // Circles of both inputs on one sphere (S9e.4b.3c.1): where an edge of
@@ -716,7 +782,9 @@ pub(super) fn arrange_shared(models: [Prism; 2]) -> Result<Arr> {
                         seamy = true;
                         continue;
                     }
-                    Ok(None) => return Err(one_sphere_incidence()),
+                    // One circle of both (S9e.4b.3c.2): each arc's ends split
+                    // the other (above), their common parts one edge (below).
+                    Ok(None) => continue,
                     Err(e) => return Err(e),
                 };
                 for (k, e) in places.into_iter().enumerate() {
@@ -733,27 +801,10 @@ pub(super) fn arrange_shared(models: [Prism; 2]) -> Result<Arr> {
                     ) {
                         (Some(false), _) | (_, Some(false)) => continue,
                         (Some(true), Some(true)) => {}
-                        (ia, ib) => {
-                            // At an end of either: a vertex of one on the
-                            // other's edge or vertex, an incidence of the
-                            // inputs where both are their own (a vertex or
-                            // an edge with an id), else a split's seam.
-                            let own =
-                                |m: &Prism, e: &MEdge, inside: Option<bool>, p: &Pos, s: &Pos| {
-                                    if inside == Some(true) {
-                                        e.id.is_some()
-                                    } else {
-                                        let v = if same_end(p, s) { e.start } else { e.end };
-                                        m.verts[v].id.is_some()
-                                    }
-                                };
-                            if own(&models[0], a, ia, &pa, &sa) && own(&models[1], b, ib, &pb, &sb)
-                            {
-                                return Err(one_sphere_incidence());
-                            }
-                            seamy = true;
-                            continue;
-                        }
+                        // At an end of either: a vertex of one on the
+                        // other's edge, or of both, found above
+                        // (S9e.4b.3c.2).
+                        _ => continue,
                     }
                     let id = match vx.iter().position(|v| qv_eq(&v.p, &x)) {
                         Some(id) => id,
@@ -895,6 +946,19 @@ pub(super) fn arrange_shared(models: [Prism; 2]) -> Result<Arr> {
                         {
                             continue;
                         }
+                        // On one sphere, along an edge of the face on one
+                        // line or circle (S9e.4b.3c.2: two wedges' axis
+                        // edges): its parts are that edge's or outside the
+                        // face (checked once split, below).
+                        if one_sphere
+                            && other
+                                .edges
+                                .iter()
+                                .any(|f| f.faces.contains(&g) && same_carrier(&f.curve, &e.curve))
+                        {
+                            along_edges.push((o, ei, g));
+                            continue;
+                        }
                         return Err(if virtual_edge {
                             seam()
                         } else {
@@ -916,6 +980,22 @@ pub(super) fn arrange_shared(models: [Prism; 2]) -> Result<Arr> {
                     } else {
                         input_vx[o][e.end]
                     };
+                    // On one sphere, at a vertex of the face already on the
+                    // edge (S9e.4b.3c.2: a vertex of both, or of one inside
+                    // the other's edge).
+                    if one_sphere {
+                        let known = match inside {
+                            None => Some(end_vertex),
+                            Some(true) => on_edge[&(o, ei)]
+                                .iter()
+                                .map(|(v, _)| *v)
+                                .find(|&v| qv_eq(&vx[v].p, &x)),
+                            Some(false) => None,
+                        };
+                        if known.is_some_and(|v| vx[v].faces.contains(&(1 - o, g))) {
+                            continue;
+                        }
+                    }
                     match (inside, region) {
                         (_, Loc::Out) | (Some(false), _) => continue,
                         (None, Loc::In)
@@ -1051,7 +1131,10 @@ pub(super) fn arrange_shared(models: [Prism; 2]) -> Result<Arr> {
             }
         }
     }
-    // Model edges split at their vertices.
+    // Model edges split at their vertices; on one sphere, a part of B's
+    // edge alike a part of A's (the same ends and carrier, over the same
+    // arc) is that edge of both (S9e.4b.3c.2).
+    let mut shared: BTreeMap<usize, (usize, bool)> = BTreeMap::new();
     let mut edges: Vec<GEdge> = Vec::new();
     let mut parts_of: BTreeMap<(usize, usize), Vec<usize>> = BTreeMap::new();
     let mut half: BTreeMap<(usize, usize), Vec<(usize, bool)>> = BTreeMap::new();
@@ -1082,6 +1165,25 @@ pub(super) fn arrange_shared(models: [Prism; 2]) -> Result<Arr> {
         chain.push(last);
         for w in chain.windows(2) {
             let (mid, mid_pos) = midpoint(&e.curve, &w[0].1, &w[1].1, ccw)?;
+            if one_sphere && *o == 1 {
+                let alike = (0..edges.len()).find(|&g| {
+                    let ge = &edges[g];
+                    matches!(ge.curve, CurveRef::Edge(0, _))
+                        && ge.ends[0] != ge.ends[1]
+                        && (ge.ends == [w[0].0, w[1].0] || ge.ends == [w[1].0, w[0].0])
+                        && same_carrier(&ge.crv, &e.curve)
+                        && strictly_within(&place(&ge.crv, &mid), &ge.pos[0], &ge.pos[1], ge.with)
+                            == Some(true)
+                });
+                if let Some(g) = alike {
+                    let with = edges[g].ends[0] == w[0].0;
+                    parts_of.entry((*o, *ei)).or_default().push(g);
+                    half.entry((*o, e.faces[0])).or_default().push((g, with));
+                    half.entry((*o, e.faces[1])).or_default().push((g, !with));
+                    shared.insert(g, (*ei, with));
+                    continue;
+                }
+            }
             let gid = edges.len();
             parts_of.entry((*o, *ei)).or_default().push(gid);
             edges.push(GEdge {
@@ -1118,7 +1220,25 @@ pub(super) fn arrange_shared(models: [Prism; 2]) -> Result<Arr> {
             }
         }
     }
-    // Faces on one surface: each holds the other's edges within it.
+    // An edge of one input along a face of the other on one sphere
+    // (S9e.4b.3c.2): each part an edge of both bounding the face, or outside
+    // it.
+    for &(o, ei, g) in &along_edges {
+        for &gid in parts_of.get(&(o, ei)).map_or(&[][..], |x| x) {
+            let bounds = match (shared.get(&gid), edges[gid].curve) {
+                (Some(&(eb, _)), _) if o == 0 => models[1].edges[eb].faces.contains(&g),
+                (Some(_), CurveRef::Edge(0, ea)) => models[0].edges[ea].faces.contains(&g),
+                _ => false,
+            };
+            if !bounds && models[1 - o].in_face(g, &edges[gid].mid) != Loc::Out {
+                return Err(Error::Degenerate(
+                    "an edge of one input on a face of the other",
+                ));
+            }
+        }
+    }
+    // Faces on one surface: each holds the other's edges within it (an
+    // edge of both bounds them already, S9e.4b.3c.2).
     for &(fa, fb) in &coinc {
         for (o, own, other) in [(0, fa, fb), (1, fb, fa)] {
             let (me, them) = (&models[o], &models[1 - o]);
@@ -1127,6 +1247,9 @@ pub(super) fn arrange_shared(models: [Prism; 2]) -> Result<Arr> {
                     continue;
                 }
                 for &gid in parts_of.get(&(1 - o, ei)).map_or(&[][..], |x| x) {
+                    if shared.contains_key(&gid) {
+                        continue;
+                    }
                     match me.in_face(own, &edges[gid].mid) {
                         Loc::In => {
                             // Once, though it bounds several faces on the
@@ -1369,6 +1492,16 @@ pub(super) fn arrange_shared(models: [Prism; 2]) -> Result<Arr> {
                         // Along an edge of a face on the other's surface:
                         // that face holds it.
                         _ if in_coinc[0].contains(&fa) || in_coinc[1].contains(&fb) => continue,
+                        // Along an edge of both (S9e.4b.3c.2): its faces
+                        // hold it.
+                        _ if shared.keys().any(|&g| {
+                            let ge = &edges[g];
+                            (ge.ends == [a.0, b.0] || ge.ends == [b.0, a.0])
+                                && on_curve(&ge.crv, &mid)
+                        }) =>
+                        {
+                            continue
+                        }
                         _ => return Err(seam()),
                     }
                     // A plane within the resolution of a cone's apex: its
@@ -1411,6 +1544,7 @@ pub(super) fn arrange_shared(models: [Prism; 2]) -> Result<Arr> {
         secs,
         pieces: Vec::new(),
         coinc,
+        shared,
     };
     // Pieces. A half-edge's travel at its start is asked at every arrival
     // there, in each face along it: kept.
@@ -1434,6 +1568,16 @@ pub(super) fn arrange_shared(models: [Prism; 2]) -> Result<Arr> {
 }
 
 impl Arr {
+    /// The model edge of operand `o` an arrangement edge lies on: its own
+    /// curve's, or B's of an edge of both (S9e.4b.3c.2).
+    pub(super) fn model_edge(&self, g: usize, o: usize) -> Option<usize> {
+        match self.edges[g].curve {
+            CurveRef::Edge(eo, ei) if eo == o => Some(ei),
+            _ if o == 1 => self.shared.get(&g).map(|&(eb, _)| eb),
+            _ => None,
+        }
+    }
+
     /// S9e.4b.3c.1: each stored vertex `points[k]` within the resolution of
     /// a section circle's edge strictly inside it, and of no vertex,
     /// splits that edge at the circle's point in the direction of its
@@ -1455,7 +1599,13 @@ impl Arr {
                     continue;
                 };
                 let pl = c.place(&xq);
-                let y = c.at(&[q(pl[0].to_f64()), q(pl[1].to_f64())]);
+                let d = [q(pl[0].to_f64()), q(pl[1].to_f64())];
+                // A point on the circle's axis (a pole above a rim's
+                // centre) has no direction on it, nor lies near it.
+                if d.iter().all(|t| *t == zero()) {
+                    continue;
+                }
+                let y = c.at(&d);
                 if !near(qv_f64(&y)) {
                     continue;
                 }
@@ -1861,6 +2011,20 @@ fn midpoint(crv: &Crv, a: &Pos, b: &Pos, ccw: bool) -> Result<(QV, Pos)> {
             ))
         }
         _ => unreachable!("places of the curve's kind"),
+    }
+}
+
+/// Whether two curves are one line or one circle (exactly; S9e.4b.3c.2's
+/// edges of both inputs).
+fn same_carrier(a: &Crv, b: &Crv) -> bool {
+    match (a, b) {
+        (Crv::Line { p, d }, Crv::Line { p: p2, d: d2 }) => {
+            is_zero(&cross(d, d2)) && on_line(p, d, p2)
+        }
+        (Crv::Circle(x), Crv::Circle(y)) => {
+            x.c == y.c && x.r2 == y.r2 && is_zero(&cross(&x.normal(), &y.normal()))
+        }
+        _ => false,
     }
 }
 

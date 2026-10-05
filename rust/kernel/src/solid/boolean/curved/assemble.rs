@@ -158,11 +158,10 @@ fn given_parts(arr: &Arr) -> Result<BTreeMap<usize, EntityId>> {
             let mut named: BTreeMap<usize, EntityId> = BTreeMap::new();
             for (k, &pi) in ps.iter().enumerate() {
                 for &(gid, _) in arr.pieces[pi].loops.iter().flatten() {
-                    if let CurveRef::Edge(eo, ei) = arr.edges[gid].curve {
-                        if let (true, Some(id)) = (eo == o, g.sides.get(&(ei, f))) {
-                            let r = find(&mut parent, k);
-                            named.entry(r).or_insert(*id);
-                        }
+                    // Its own edge, or an edge of both (S9e.4b.3c.2).
+                    if let Some(id) = arr.model_edge(gid, o).and_then(|ei| g.sides.get(&(ei, f))) {
+                        let r = find(&mut parent, k);
+                        named.entry(r).or_insert(*id);
                     }
                 }
             }
@@ -954,11 +953,15 @@ fn build_component(
         for &(g, _) in &redges[ri].parts {
             match arr.edges[g].curve {
                 CurveRef::Edge(o, ei) => {
-                    let me = &arr.models[o].edges[ei];
-                    match me.id {
-                        Some(id) if tool(o) => t.push(id),
-                        Some(id) => c.push(id),
-                        None => t.extend(me.faces.iter().map(|&f| names.by_edge(o, f, g))),
+                    // An edge of both inputs continues both (S9e.4b.3c.2).
+                    let both = arr.shared.get(&g).map(|&(eb, _)| (1, eb));
+                    for (o, ei) in std::iter::once((o, ei)).chain(both) {
+                        let me = &arr.models[o].edges[ei];
+                        match me.id {
+                            Some(id) if tool(o) => t.push(id),
+                            Some(id) => c.push(id),
+                            None => t.extend(me.faces.iter().map(|&f| names.by_edge(o, f, g))),
+                        }
                     }
                 }
                 CurveRef::Section(si, _) => {
@@ -1021,6 +1024,22 @@ fn build_component(
                     }
                 }
             },
+            // A vertex of both inputs continues both (S9e.4b.3c.2).
+            VKey::Both(ia, ib) => {
+                for (o, i) in [(0, *ia), (1, *ib)] {
+                    match arr.models[o].verts[i].id {
+                        Some(id) if tool(o) => t.push(id),
+                        Some(id) => c.push(id),
+                        None => t.extend(
+                            arr.vx[v]
+                                .faces
+                                .iter()
+                                .filter(|f| f.0 == o)
+                                .map(|&(o2, f)| names.by_vertex(o2, f, v)),
+                        ),
+                    }
+                }
+            }
             VKey::Pierce(o, ei, g, _) => {
                 let me = &arr.models[*o].edges[*ei];
                 match me.id {

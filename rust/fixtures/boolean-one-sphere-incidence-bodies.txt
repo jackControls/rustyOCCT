@@ -1,0 +1,56 @@
+write incidence_hemi imported/incidence_hemi.brep
+sphere 5.0 5.0 4.0 0.0 0.0 1.0 1.0 0.0 0.0 5.0 -1.5707963267948966 1.5707963267948966
+boolean common
+box -3.0 -3.0 4.0 0.0 0.0 1.0 1.0 0.0 0.0 16.0 16.0 8.0
+divide
+end
+write incidence_wedge45 imported/incidence_wedge45.brep
+sphere 5.0 5.0 4.0 0.0 0.0 1.0 1.0 0.0 0.0 5.0 -1.5707963267948966 1.5707963267948966
+boolean common
+box 5.0 5.0 4.0 0.0 0.0 1.0 1.0 1.0 0.0 8.0 8.0 8.0
+end
+write incidence_wedge23 imported/incidence_wedge23.brep
+sphere 5.0 5.0 4.0 0.0 0.0 1.0 1.0 0.0 0.0 5.0 -1.5707963267948966 1.5707963267948966
+boolean common
+box 5.0 5.0 4.0 0.0 0.0 1.0 12.0 5.0 0.0 8.0 8.0 8.0
+end
+write incidence_high23 imported/incidence_high23.brep
+sphere 5.0 5.0 4.0 0.0 0.0 1.0 1.0 0.0 0.0 5.0 -1.5707963267948966 1.5707963267948966
+boolean common
+box 5.0 5.0 6.5 0.0 0.0 1.0 12.0 5.0 0.0 8.0 8.0 8.0
+end
+write incidence_half imported/incidence_half.brep
+sphere 5.0 5.0 4.0 0.0 0.0 1.0 1.0 0.0 0.0 5.0 -1.5707963267948966 1.5707963267948966
+boolean common
+box -3.0 5.0 4.0 0.0 0.0 1.0 1.0 0.0 0.0 16.0 8.0 8.0
+end
+write incidence_octant imported/incidence_octant.brep
+sphere 5.0 5.0 4.0 0.0 0.0 1.0 1.0 0.0 0.0 5.0 -1.5707963267948966 1.5707963267948966
+boolean common
+box 5.0 5.0 4.0 0.0 0.0 1.0 1.0 0.0 0.0 8.0 8.0 8.0
+end
+write incidence_back imported/incidence_back.brep
+sphere 5.0 5.0 4.0 0.0 0.0 1.0 1.0 0.0 0.0 5.0 -1.5707963267948966 1.5707963267948966
+boolean common
+box 5.0 5.0 4.0 0.0 0.0 1.0 -1.0 0.0 0.0 8.0 8.0 8.0
+end
+write incidence_turned45 imported/incidence_turned45.brep
+sphere 5.0 5.0 4.0 0.0 0.0 1.0 1.0 0.0 0.0 5.0 -1.5707963267948966 1.5707963267948966
+boolean common
+box 5.0 5.0 4.0 0.0 0.0 1.0 1.0 1.000000000014552 0.0 8.0 8.0 8.0
+end
+write incidence_lifted45 imported/incidence_lifted45.brep
+sphere 5.0 5.0 4.0 0.0 0.0 1.0 1.0 0.0 0.0 5.0 -1.5707963267948966 1.5707963267948966
+boolean common
+box 5.0 5.0 4.0000000000009095 0.0 0.0 1.0 1.0 1.0 0.0 8.0 8.0 8.0
+end
+write incidence_x45 imported/incidence_x45.brep
+sphere 5.0 5.0 4.0 1.0 0.0 0.0 0.0 1.0 0.0 5.0 -1.5707963267948966 1.5707963267948966
+boolean common
+box 5.0 5.0 4.0 1.0 0.0 0.0 0.0 1.0 1.0 8.0 8.0 8.0
+end
+write incidence_x23 imported/incidence_x23.brep
+sphere 5.0 5.0 4.0 1.0 0.0 0.0 0.0 1.0 0.0 5.0 -1.5707963267948966 1.5707963267948966
+boolean common
+box 5.0 5.0 4.0 1.0 0.0 0.0 0.0 12.0 5.0 8.0 8.0 8.0
+end

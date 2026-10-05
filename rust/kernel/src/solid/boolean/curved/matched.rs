@@ -14,7 +14,7 @@
 //! sorted by solid once it is built, by adjacency (`keep_solid`): pieces of
 //! the other solids' faces are dropped, and the other input's pieces inside
 //! another solid are outside the given one.
-use super::graph::{Arr, CurveRef};
+use super::graph::Arr;
 use crate::topology::{Curve3, Loop, Topology, TopologyParts, VertexId};
 use crate::{Error, Point3, Result};
 use std::collections::{BTreeMap, BTreeSet};
@@ -215,12 +215,11 @@ fn given_pieces(arr: &Arr, o: usize, solids: &[usize]) -> Result<BTreeMap<usize,
         let mut named: BTreeMap<usize, usize> = BTreeMap::new();
         for (k, &pi) in ps.iter().enumerate() {
             for &(g, _) in arr.pieces[pi].loops.iter().flatten() {
-                if let CurveRef::Edge(eo, ei) = arr.edges[g].curve {
-                    if eo == o {
-                        let r = find(&mut parent, k);
-                        if *named.entry(r).or_insert(solids[ei]) != solids[ei] {
-                            return Err(Error::Degenerate("solids of a given result touching"));
-                        }
+                // Its own edge, or an edge of both (S9e.4b.3c.2).
+                if let Some(ei) = arr.model_edge(g, o) {
+                    let r = find(&mut parent, k);
+                    if *named.entry(r).or_insert(solids[ei]) != solids[ei] {
+                        return Err(Error::Degenerate("solids of a given result touching"));
                     }
                 }
             }
@@ -278,7 +277,7 @@ pub(super) fn keep_solid(arr: &mut Arr) -> Result<()> {
         let mut users: BTreeMap<usize, Vec<usize>> = BTreeMap::new();
         for (k, &pi) in inside.iter().enumerate() {
             for &(e, _) in arr.pieces[pi].loops.iter().flatten() {
-                if matches!(arr.edges[e].curve, CurveRef::Edge(eo, _) if eo == other) {
+                if arr.model_edge(e, other).is_some() {
                     users.entry(e).or_default().push(k);
                 }
             }

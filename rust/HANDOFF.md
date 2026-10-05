@@ -28,7 +28,8 @@ then for the DRAW survey of S9e.4b.3a, S9e.4b.3b and the fuzz fixes
 (branch `s9-draw-6`, over `s9c2-kernel` at `d665df29`),
 then for S9e.4b.3c.1 (branch `s9e4b3c`, over `s9c2-kernel` at `d665df29`),
 then for the DRAW survey of S9e.4b.3c.1 and the switches' speed-up (branch
-`s9-draw-7`, over `s9c2-kernel` at `f4b584f7`).
+`s9-draw-7`, over `s9c2-kernel` at `f4b584f7`),
+then for S9e.4b.3c.2 (branch `s9e4b3c2`, over `s9c2-kernel` at `f4b584f7`).
 
 ## Where things stand
 
@@ -281,6 +282,28 @@ then for the DRAW survey of S9e.4b.3c.1 and the switches' speed-up (branch
   native DRAW's volumes and are registered (1,114 cases), the other 24
   and `I6` are refused as it found; no other status or reason moves but
   two restores ending within the survey's 120 s by the host's load.
+- **S9e.4b.3c.2 implemented** (branch `s9e4b3c2`): exact incidences of two
+  inputs on one sphere (the survey's `so1` and `so2`, `so2` and `so3`,
+  `so5` and `so2`): model vertices of both at one exact point one vertex
+  (`VKey::Both`), a vertex of one inside a line or circle edge of the other
+  splitting it, a part of B's edge alike a part of A's one arrangement edge
+  in both inputs' faces (`Arr::shared`), sections and edges along it taken
+  by it, plane faces on one plane as faces on one surface, the splits'
+  great circles alike (`curved/graph.rs`). Decisions ("S9e.4b.3c.2
+  refined"), 45 cases on 11 pieces OCCT wrote on the world's axes (in
+  turned frames an exact incidence along a line holds only between planes
+  stored bit for bit alike) with an exact reference of their own (the ball
+  cut into cells by the inputs' heights and half-planes about the common
+  axis, `generate_one_sphere_incidence_boolean_fixtures.py`) captured
+  before the kernel (42 matching, 3 reviewed), the kernel within the
+  reference on all 33 solid and empty cases, the 12 degenerate refused by
+  S9's rules; S9e.4b.3c.1's `hemi_octant` solid. A panic on importing a
+  piece whose stored pole lies exactly above its rim's centre (S9e.4b.3c.1's
+  `Arr::split_at`) fixed before the capture. `PIECE_BOOLEANS` gives a
+  zone's or cap's piece to the solid it was split from too. A trial of the
+  survey's restore cases: the 13 evaluate on both backends with every
+  check (27 of the 38 `so` cases in all; `so6` and `so7`'s 11 `Degenerate`
+  as before).
 - **CI.** Both workflows ("Rust kernel", "Rust geometry fuzzing") were green
   at `6c221525`. They had been red from S7 until 2026-09-29, unnoticed;
   check them after every push (see "Working rules").
@@ -303,7 +326,7 @@ then for the DRAW survey of S9e.4b.3c.1 and the switches' speed-up (branch
 2. **The Linux records and reviews** of the recaptured
    `occt-boolean-spline-crossing-preimplementation` and of the
    spline-sphere, spline-cone, imported-polyhedra, imported-arcs,
-   imported-pieces, split-pieces and one-sphere
+   imported-pieces, split-pieces, one-sphere and one-sphere-incidence
    captures from CI's run, as every capture's. `SPLINE_SPHERE` and
    `SPLINE_CONE` are on since the loops' certified integrals were sped up
    (branch `loop-integrals`; REVIEW_NOTES.md's "Certified integrals beside
@@ -331,11 +354,12 @@ then for the DRAW survey of S9e.4b.3c.1 and the switches' speed-up (branch
    tool or `G4`'s boss refused on import as S9e.4b.3c's) is implemented
    with its DRAW survey (`s9-draw-7` at `f4b584f7`: the 14 registered,
    1,114 cases) and a clean campaign at `59d0c57b` (pending its capture's
-   Linux record);
-   next **S9e.4b.3c.2**, exact incidences on one sphere (a vertex of both,
-   a circle of both, a line of both, plane faces on one plane with
-   overlapping edges: `so1` and `so2`, `so2` and `so3`, `so5` and `so2`,
-   13 cases), then **S9e.4b.3c.3**, pieces not convex in their planes
+   Linux record); **S9e.4b.3c.2**, exact incidences on one sphere (a
+   vertex of both, a circle of both, a line of both, plane faces on one
+   plane with overlapping edges: `so1` and `so2`, `so2` and `so3`, `so5`
+   and `so2`, 13 cases, all evaluating in its trial) is implemented
+   (pending its capture's Linux record, the DRAW survey and the
+   campaigns); next **S9e.4b.3c.3**, pieces not convex in their planes
    (`shading_132`, grooves) and two plane faces on one plane; then
    **S9e.4b.4**, the S9e text's plan in full
    (joints of two circles, prisms with walls of two directions, bodies of
@@ -459,7 +483,8 @@ Each comparison takes `--occt-root target/spline-linear-preflight/pinned-sdk/ins
 | `compare_spline_cone_boolean.py` | 4 / 23 (the kernel within the reference on all 21 results, the 6 degenerate refused, none `unsupported`) |
 | `compare_imported_pieces_boolean.py` | 32 / 13 (the kernel within the reference on all 36 solid cases, the 6 degenerate refused, the 3 bitten cases `unsupported`, S9e.4b.3c's; the one-sphere cases solid since S9e.4b.3c.1) |
 | `compare_split_pieces_boolean.py` | 26 / 22 (the kernel within the reference on all 42 solid and empty cases, the 6 degenerate refused; the one-sphere cases solid since S9e.4b.3c.1) |
-| `compare_one_sphere_boolean.py` | 8 / 14 (the kernel within the reference on all 17 solid and empty cases, the 2 degenerate refused, the 3 exact incidences `unsupported`, S9e.4b.3c.2's) |
+| `compare_one_sphere_boolean.py` | 8 / 14 (the kernel within the reference on all 20 solid and empty cases, the 2 degenerate refused; the 3 exact incidences solid since S9e.4b.3c.2) |
+| `compare_one_sphere_incidence_boolean.py` | 42 / 3 (the kernel within the reference on all 33 solid and empty cases, the 12 degenerate refused) |
 
 Every one must report 0 failures; since S9f.1 also `compare_split.py`
 (72 / 56) and `compare_brep.py --family spline` (10 / 3), which share its

@@ -7559,6 +7559,268 @@ Decisions for S9, recorded before its code (2026-09-28):
     6.0 in the last survey), the restore cases 0.2 to 4.1 s
     (`bfuse_complex/N9`), the rollex 0.6 to 0.7. No case fails, crashes or
     panics; no kernel change.
+  * **S9e.4b.3c.2 refined, before its code (2026-10-05).** Why the
+    survey's 13 exact incidences on one sphere are refused today:
+    `graph.rs`'s pass over the circles of both inputs on one sphere
+    (S9e.4b.3c.1) refuses two arcs of one circle (their planes one,
+    `Circ::meet_plane` none) and a crossing at an end of either where both
+    are the inputs' own (`OutOfDomain("a vertex or a circle of both inputs
+    on one sphere (S9e.4b.3c.2)")`), found before the pierces; past it the
+    arrangement keeps each input's vertices and edges apart, so a vertex of
+    one on the other's edge or vertex would be `Degenerate("a vertex of one
+    input on the other's face")`, edges of both on one curve
+    `Degenerate("edges of both inputs overlapping")`, an axis edge of one
+    along the other's half-plane `Degenerate("an edge of one input on a
+    face of the other")`, and a section along an edge of both faces a
+    seam's conflict at every seam. The 13: `so1` and `so2` (5:
+    `bcommon_complex/B3`, `bcut_complex/C7`, `C8`, `bfuse_complex/B6`,
+    `bugs/moddata_1/bug183_4`: the wedge's equator arc on the hemisphere's
+    rim circle, its base on the hemisphere's base, its corner inside that
+    base, its pole the hemisphere's stored pole), `so2` and `so3` (4:
+    `bcommon_complex/B4`, `bcut_complex/C9`, `D1`, `bfuse_complex/B7`: the
+    corner, the pole and the axis edge of both, the bases on one plane with
+    overlapping edges, each equator arc's end inside the other's arc, the
+    meridian half-planes crossing along the axis) and `so5` and `so2` (4:
+    `bcommon_complex/B6`, `bcut_complex/D4`, `D5`, `bfuse_complex/B9`: the
+    higher wedge's axis edge inside the other's, its corner on it, the pole
+    of both). The survey's files are on the world's axes: their planes'
+    stored normals keep exact zeros (`gp_Dir`'s normalization and
+    `Frame3::new`'s keep a zero component zero), so a meridian half-plane
+    holds the world's `z` exactly and two inputs' half-planes cross exactly
+    along it. Decisions. (1) *Scope.* An arrangement whose inputs have faces
+    on one sphere (S9e.4b.3c.1's faces on one surface: equal exact centres
+    and radii), exact incidences only: points equal in the exact models
+    (rationals and quadratic surds of the stored binary64 data), never
+    within a tolerance. Off one sphere S9's rules are unchanged (prisms
+    touching at a vertex or along an edge stay `Degenerate`). (2) *A vertex
+    of both.* Model vertices of the two inputs at one exact point are one
+    arrangement vertex (`VKey::Both`), on every face of both at it; it
+    continues both vertices (the tool's generated in a cut, S9a's rule).
+    (3) *A vertex of one inside an edge of the other.* A model vertex of
+    either strictly inside a line or circle edge of the other (exactly on
+    its curve, its place strictly between the ends) splits that edge there
+    and lies on its two faces; it keeps its own name. (4) *An edge of
+    both.* Each input's edges split at every vertex of both on them, a part
+    of B's edge with the same two ends as a part of A's, on one line or one
+    circle and over the same arc (its middle strictly inside A's part), is
+    A's arrangement edge, its half-edges in B's two faces with B's run
+    (`Arr::shared`); it continues both edges. A face on one surface with
+    the other's face has it as its own boundary already (not as the other's
+    interior edge); a section of two faces along it (the half-planes of two
+    wedges crossing along their axis, neither on the other's surface) is
+    taken by it; and an edge of one along the other's face, on one line or
+    circle with an edge of that face, is an edge of both where they
+    overlap and outside the face elsewhere (else `Degenerate("an edge of one
+    input on a face of the other")`). (5) *Plane faces on one plane* are
+    S9c.1's faces on one surface, each holding the other's edges strictly
+    inside it, their overlapping edges edges of both by (4), the kept pieces
+    of both facing one way joined as before. (6) *Circles of both, pierces
+    at known vertices.* Two arcs of one circle meet only at the vertices (2)
+    and (3) give them; a crossing at an end of either circle's edge is such a
+    vertex; an edge's pierce of a face at a vertex of that face already on
+    the edge is taken. (7) *Splits alike.* A whole sphere's or a piece's
+    split great circles (the second arrangement's seams, edges and vertices
+    without ids) take part in (2) to (4) as the inputs' own edges do: a
+    split's vertex on the other's edge or vertex is no longer a seam's
+    conflict (in `so1` and `so2` a split great circle's end on the
+    hemisphere's rim lies on the wedge's equator arc at every seam tried); a
+    split great circle on another input's circle (one plane) stays one,
+    retried. (8) *Degenerate and refused.* An incidence within the
+    resolution and not exact is S9's: two faces within the resolution of
+    one plane, a piece or result thinner than it, two meetings within
+    rounding (the survey's `so6` and `so7` pairs, OCCT's turned copies whose
+    corners are within `1e-15` of each other; any exact incidence moved by
+    a turn that rounds its frames); curves tangent at a vertex of both
+    (`next_on`); a result touching itself along an edge of both or at a
+    vertex; spheres within the resolution of one. S9's near-plane guard
+    (planes within the resolution of each other over their faces' boxes'
+    overlap) stays as it is, so two inputs' faces meeting only along a line
+    or at a point (two octants about one axis) are `Degenerate` with it.
+    S9e.4b.3c.3's refusals (a piece not convex in its planes, two plane
+    faces on one plane of one piece) unchanged. (9) *Fuzzing.* Where the
+    new cases become reachable (a split piece against its own primitive on
+    one frame: the stored pole and rims of both), the `split` target's
+    `PIECE_BOOLEANS` takes them. (10) *Evidence first.* Bodies OCCT writes
+    on the world's axes (in turned rational frames an exact incidence of two
+    inputs' planes along a line holds only where both planes are stored bit
+    for bit alike), each the ball common `MakeBox` on a frame whose normal
+    is the axis and whose origin lies on it, reproducing `so1`, `so2`,
+    `so3` and `so5` and further incidences (a half and an octant, wedges
+    about another world axis, caps on one frame, a chain), declared
+    `degenerate` the near ones; their reference of its own, exact (the
+    chained reference's sweeps follow the world's meridians and parallels,
+    which these faces lie on): the ball cut into cells by every input's
+    heights along the common axis and half-planes about it, closed forms per
+    cell (`generate_one_sphere_incidence_boolean_fixtures.py --check`, a CI
+    group `one-sphere-incidence`,
+    `test_one_sphere_incidence_boolean_reference.py`); a native capture
+    keyed on the refusal it removes
+    (`compare_one_sphere_incidence_boolean.py`); then the kernel and its
+    tests (`tests/one_sphere_incidence_booleans.rs`). S9e.4b.3c.1's
+    `hemi_octant` (the hemisphere and the octant on one turned frame)
+    becomes a solid case of its set.
+  * **S9e.4b.3c.2 evidence (2026-10-05).** Eleven bodies OCCT wrote
+    (`boolean-one-sphere-incidence-bodies.txt`, `write` blocks of a
+    sphere's row, `boolean common` and a `box` row, `BRepPrimAPI_MakeBox`
+    on a frame whose normal is the axis and whose origin lies on it, written
+    by `compare_one_sphere_incidence_boolean.py --write-bodies` to
+    `rust/fixtures/imported/`), every one a piece of the ball of radius 5
+    about `(5, 5, 4)` on the world's axes: about `z`, `incidence_hemi`, above
+    the centre's parallel, its rim divided as `so1`'s; `incidence_wedge45`,
+    between the half-planes at 45 and 135 degrees (`so2`'s);
+    `incidence_wedge23`, from `atan2(5, 12)` a quarter turn on (`so3`'s);
+    `incidence_high23`, the same above the parallel at `5/2` (`so5`'s);
+    `incidence_half`, on one side of the meridian plane along `x`;
+    `incidence_octant` and `incidence_back`, the quarters at 0 and 180
+    degrees; the near ones `incidence_turned45` (the wedge's frame's `x`
+    turned by about `2^-36`) and `incidence_lifted45` (its box `2^-40`
+    above the centre); about `x`, `incidence_x45` and `incidence_x23`.
+    `generate_one_sphere_incidence_boolean_fixtures.py --check`: 45 cases
+    of 19 groups (29 solid, 4 empty, 12 declared `degenerate`; 34 of class
+    `pieces`, 8 `sphere`, 3 `chain`): `hemi_wedge`, `wedge_hemi` (`so1` and
+    `so2`), `wedge_wedge`, `wedge_back` (`so2` and `so3`), `high_wedge`,
+    `wedge_high` (`so5` and `so2`), `half_octant`, `octant_half` (a vertex
+    of both on the rim, the octant's corner inside the half's diameter, its
+    pole inside the half's semicircle), `x_wedges`, `same_wedge` (the wedge
+    and itself), `cap_cap`, `cap_back` (two of S9d.1's caps on one frame:
+    the stored pole of both), `cap_wedge`, `wedge_cap`, `chain_zone` (the
+    wedges' fuse, then with a zone of the sphere: its cut two solids);
+    declared `degenerate`: `quadrants` (two octants about one axis touching
+    along it only), `half_wedge` (the wedge's axis edge inside the half's
+    meridian face, off its edges), `near_turned` and `near_lifted` (two
+    faces within the resolution of one plane). The reference is exact and
+    of its own: each input read off its rows as the ball cut to heights
+    along the common axis and to the half-turns of its half-planes through
+    the axis (each box face asserted, in the rows' rationals, to hold the
+    axis, to be normal to it or to miss the ball), the ball cut into cells
+    by every input's heights and half-planes, each cell kept by the set
+    function at its middle, its volume, moments and sphere area in closed
+    form and the faces between kept and dropped cells added (parallels'
+    sectors, half-planes' pieces); checks relative to the size: the volume
+    again by the divergence theorem over those faces within 4.7e-41, the
+    pair identities 4.7e-41, every Monte-Carlo point's membership by the
+    rows' own inequalities that of its cell (100,000 points a group, none
+    differing), Monte Carlo 2.5 standard errors, the solid counts by the
+    kept cells' adjacency (kept cells about the axis apart: a result
+    touching itself, declared `degenerate`); each file read independently:
+    its faces one sphere and planes, every stored vertex within 3.5e-17 of
+    the size on the construction's surfaces, every stored plane (its normal
+    the cross product of its stored axes, in rationals) holding the axis,
+    normal to it or apart from the ball exactly, the divided rim two arcs.
+    `test_one_sphere_incidence_boolean_reference.py` checks the cells'
+    closed forms against quadrature, a wedge's measures against their
+    textbook values, the hemisphere and the wedge's common and fuse, the
+    octants' touching, the bodies read as axial pieces, the case list and
+    its protocol rows. The generator's check is a CI group of its own
+    (`one-sphere-incidence`, under a minute on four workers locally);
+    Python 3.9 and 3.12 write the same files. Corrections from the evidence,
+    amending the refined decisions: (a) bodies in turned rational frames
+    hold an exact incidence along a line only between planes stored bit for
+    bit alike, so the bodies are on the world's axes, as the survey's files
+    are, and the chained reference (whose sphere families are the world's
+    meridians and parallels, along these faces) gives way to the cells; (b)
+    importing `incidence_hemi` panicked: S9e.4b.3c.1's `Arr::split_at`
+    scaled a stored vertex's place onto a section circle without testing
+    it, and the stored pole above the hemisphere's rim, exactly on the
+    rim's axis on the world's axes, has none (in turned frames it rounds
+    off the axis); fixed before the capture, its own commit; (c) two
+    octants about one axis are `Degenerate` all three ways by S9's
+    near-plane guard (their faces meet only along the axis, their boxes'
+    overlap thinner than the resolution); (d) caps of one frame on one
+    sphere (their stored pole of both, `cap_cap`) are refused today as this
+    step's incidence, as the refined decisions' S9e.4b.3c parent said.
+    The capture `occt-boolean-one-sphere-incidence-preimplementation`
+    (`compare_one_sphere_incidence_boolean.py`, keyed on the refusal the
+    step removes, `graph.rs`'s `OutOfDomain("a vertex or a circle of both
+    inputs on one sphere (S9e.4b.3c.2)")`; the kernel's probe `unsupported`
+    on the 36 solid, empty and `half_wedge` cases, every one by that
+    refusal, and `refused` on the 9 near and touching ones by S9's
+    near-plane guard, raised first, which `compare_boolean`'s
+    `Set.refused_before_code` admits for a declared `degenerate` case): 42
+    matching, 3 reviewed. OCCT leaves the hemisphere less the wedge (`so1`
+    and `so2`'s `bcut_complex/C7`) invalid under BRepCheck_Analyzer, its
+    measures within 3.8e-15 of the reference; of the declared near cases
+    it drops the slivers thinner than its tolerance (the wedge less its
+    turned copy empty where the reference's sliver is 3.0e-10 in volume;
+    the hemisphere less the lifted wedge without its sliver under the
+    wedge, invalid). S9e.4b.3c.2's kernel next.
+  * **S9e.4b.3c.2 implemented** (`curved/graph.rs`: an arrangement of
+    inputs with faces on one sphere merges their exact incidences;
+    `assemble.rs`: the merged entities' names; `matched.rs`,
+    `assemble.rs`: a given model's face pieces named by edges of both), as
+    the refined decisions describe: model vertices of both inputs at one
+    exact point one vertex (`VKey::Both`, on every face of both, continuing
+    both vertices), a model vertex of either strictly inside a line or circle
+    edge of the other splitting it (on that edge's faces), and, each input's
+    edges split at every vertex of both on them, a part of B's edge with the
+    ends, the line or circle and the arc of a part of A's that arrangement
+    edge (`Arr::shared`: its half-edges in B's faces with B's run,
+    continuing both edges; `Arr::model_edge` gives either input's edge of
+    it); two arcs of one circle meet only at those vertices, a crossing at
+    an end of either circle's edge is one of them, a pierce at a vertex of
+    the face already on the edge is taken, a section of two faces along an
+    edge of both is taken by it, an edge of one along the other's face on
+    one line or circle with an edge of that face is an edge of both where
+    they overlap and outside the face elsewhere (else `Degenerate("an edge
+    of one input on a face of the other")`), and a face on one surface with
+    the other's has an edge of both as its own boundary, not as the
+    other's interior edge. The splits' own great circles take part alike.
+    The refusal `OutOfDomain("a vertex or a circle of both inputs on one
+    sphere (S9e.4b.3c.2)")` is gone. All 45 fixtures as declared (33 solid
+    and empty within the kernel's enclosures, each at most `1e-9` wide; the
+    12 degenerate refused with S9's reasons: two faces within the resolution
+    of one plane for the near copies and the two octants about one axis, an
+    edge of one input on a face of the other for the half and the wedge),
+    every history complete over the imported bodies' stored ids, an edge or
+    vertex of both continuing both inputs' (the two wedges' axis edges,
+    corners and poles one result edge and two vertices; the higher wedge's
+    axis edge inside the other's), results deterministic and moved rigidly,
+    both inputs moved by exact motions (a dyadic translation, a quarter turn
+    about a world axis: the stored zeros kept) keeping the reference's
+    volumes and turned by a rotation that rounds their frames refused as
+    `Degenerate` or within the reference (`tests/one_sphere_incidence_booleans.rs`,
+    4 s in release and 6 s at `opt-level` 2 with debug assertions on a host
+    at load 18, 8 s in release with debug assertions under the emulated
+    correctly rounded `hypot`, where S9e.4b.3c.1's and the pieces' test
+    files pass too). S9e.4b.3c.1's `hemi_octant` (the hemisphere and the
+    octant on one turned frame), declared `unsupported` until now, is solid
+    within its reference, its margins those of any solid case (its
+    generator, unit test and `tests/one_sphere_booleans.rs` declare it so).
+    `compare_one_sphere_incidence_boolean.py` 42 matches and 3 reviewed,
+    every enclosure within the reference; `compare_one_sphere_boolean.py`
+    8 and 14 unchanged (now all 20 solid and empty cases within the
+    reference); every other comparison of `HANDOFF.md`'s table unchanged
+    with 0 failures; the release suite (613 tests) and the tools' unit
+    tests (333) passing, the ledger unchanged. Amendments, from the
+    implementation: (a) a split's vertex on the other's edge or vertex, a
+    seam's conflict in S9e.4b.3c.1's pass over the circles, is merged as the
+    inputs' own are (decision (7)): in `so1` and `so2` the hemisphere's
+    split great circle's end on its rim lay on the wedge's equator arc at
+    every seam tried, so a first version of this step keeping those
+    conflicts refused every case as a meeting at every seam tried;
+    (b) a given model's face pieces named by its edges (a face of several
+    stored faces, a result of several solids) take an edge of both as B's
+    too (`Arr::model_edge`); (c) the `split` target's `PIECE_BOOLEANS`
+    gives a zone's or cap's first piece also to the zone or cap it was split
+    from, built again under other ids on its frame (a Boolean's inputs
+    never share ids): their common the piece, their fuse the solid, the
+    solid less the piece the rest, within `1e-9` of the solid: of the split
+    corpus and its regressions 265 inputs reach it, all three evaluate for
+    134, 127 are refused as two faces within the resolution of one plane and
+    4 as pieces or results thinner than the resolution (S9's rules).
+    Replays with debug assertions, one process an input, natively and under
+    the emulated correctly rounded `hypot`: the split corpus and its
+    regressions (3,569 inputs) and the boolean corpus and its regressions
+    (1,466), no failure, the slowest 2.7 s and 7.3 s (2.3 s and 6.6 s
+    emulated). A trial of the DRAW survey's restore cases on the Rust
+    adapter and natively (not the survey: nothing registered): the 13
+    targeted (`bcommon_complex/B3`, `B4`, `B6`, `bcut_complex/C7`, `C8`,
+    `C9`, `D1`, `D4`, `D5`, `bfuse_complex/B6`, `B7`, `B9`,
+    `bugs/moddata_1/bug183_4`) evaluate on both backends with every check;
+    of the 38 `so` cases 27 evaluate (S9e.4b.3c.1's 14 and these 13), the
+    11 with `so6` or `so7` `Degenerate` by S9's rules as before;
+    `bcut_complex/I6` and `G4` refused as S9e.4b.3c's as before. Pending:
+    the capture's Linux record, the DRAW survey and the campaigns.
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces

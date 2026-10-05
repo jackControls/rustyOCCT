@@ -67,7 +67,7 @@ class OneSphereReferenceTests(unittest.TestCase):
         fixtures.validate(listed)
         self.assertEqual(len(listed), 22)
         kinds = {k: sum(1 for c in listed if c.kind == k) for k in ('solid', 'empty', 'degenerate', 'unsupported')}
-        self.assertEqual(kinds, {'solid': 16, 'empty': 1, 'degenerate': 2, 'unsupported': 3})
+        self.assertEqual(kinds, {'solid': 19, 'empty': 1, 'degenerate': 2, 'unsupported': 0})
         for klass in fixtures.CLASSES:
             self.assertTrue(any(c.klass == klass for c in listed), klass)
         for name in ('hemi_cap_fuse', 'cap_octant_cut', 'ball_cap_common', 'chain_cap_cut'):
