@@ -7147,6 +7147,115 @@ Decisions for S9, recorded before its code (2026-09-28):
     arrangement through `PIECE_BOOLEANS` (both fixed, notes below); at
     `cc7ea7ff`, with those fixes and `CONE_PAIRS` on, both clean: `boolean`
     996 runs, the slowest 13 s, `split` 1,731 runs, the slowest 19 s.
+  * **S9e.4b.3c refined, before its code (2026-10-05).** Why the survey's
+    38 restore cases of `so1` to `so7` are refused today, read off the
+    files by the converter (the dataset is not committed): every one is a
+    Boolean of two pieces of the sphere of radius 10 about the origin, its
+    stored frame's origin and radius bit for bit alike in all seven files.
+    The 20 pairs of `so2`, `so3`, `so5`, `so6` and `so7` reach
+    `pieces::one_sphere` (`OutOfDomain("faces of both inputs on one sphere
+    (S9e.4b.3c)")`, ahead of S9d.2's `Degenerate("two spheres about one
+    centre")` in `sphere_sphere` and `circ_sphere`); the 18 with `so1` or
+    `so4` are refused on import (`OutOfDomain("an imported plane piece
+    other than its primitive common its planes' half-spaces (S9e.4b.3c)")`):
+    OCCT split each one's rim into two half circles at the stored sphere's
+    seam and opposite it (vertices at `x = +-10`, `+-8.66`), where the
+    re-run's rim is one ring, so S9e.2's match by counts fails. What each
+    pair needs beyond that: `so1` and `so4` (8 cases: `bcommon_complex/B2`,
+    `bcut_complex/C5`, `C6`, `bfuse_complex/B5`, `bugs/modalg_2/bug413_1`,
+    `_2`, `bugs/moddata_1/bug183_2`, `_3`) and `so4` and `so2` (5: `B5`,
+    `D2`, `D3`, `B8`, `bug183_5`) meet in general position on the sphere:
+    their circles cross or nest, no vertex of either lies on the other's
+    circles or vertices, the wedge's pole vertex inside the cap's sphere
+    face (at its stored pole); `so1` and `so2` (5), `so2` and `so3` (4) and
+    `so5` and `so2` (4) are exact incidences on one sphere and one frame:
+    the wedges' equator arcs on the hemisphere's rim circle, both wedges'
+    base faces on `z = 0`, their corners at the centre and their pole
+    vertices one point, `so5`'s and `so2`'s axis edges along one line; the
+    12 with `so6` or `so7` (OCCT's turned copies of `so2` and `so3`) put
+    each wedge's corner within `1e-15` of the other's at the centre (three
+    rounded planes' rational point, not on it), so slivers thinner than the
+    resolution. Decisions. (1) *Sub-steps*, by what unlocks the most cases
+    and by the machinery each takes: **S9e.4b.3c.1** (this step): faces of
+    both inputs on one sphere in general position, and an imported sphere
+    piece's rim split by stored vertices (13 cases); **S9e.4b.3c.2**: exact
+    incidences on one sphere, a vertex of both (a corner at the centre, a
+    pole), a circle of both (an arc on the other's rim), a line of both
+    (two wedges' axis edges) and plane faces on one plane with overlapping
+    edges, the arrangement's vertices merged across the inputs and an edge
+    of both one arrangement edge of both inputs' faces, as S9a's polygons
+    on one plane (13 cases); **S9e.4b.3c.3**: a piece not convex in its
+    planes (`shading_132`, the bitten ball) and two plane faces on one
+    plane. The 12 with `so6` or `so7` stay refused by S9's rules (a result
+    or piece thinner than the resolution, two faces within the resolution
+    of one plane): a corner of each within rounding of the other's is not
+    one vertex. (2) *Faces on one sphere: S9c.1's faces on one surface.*
+    Two inputs' spheres are one when their exact models' centres and radii
+    are equal rationals (the stored frames' origins and radii); their
+    sphere faces are then faces on one surface as equal cylinders' and
+    coplanar planes' are (`Arr::coinc`): each holds the other's edges that
+    lie inside it, a piece of either is classified by the other's
+    membership pushed off the sphere both ways, and the kept pieces of both
+    facing one way join (the assembly unchanged). Each hemisphere keeps its
+    stereographic chart (S9d.1), where both inputs' edges are traced; no
+    new field or degree. What the arrangement lacks for spheres: where two
+    circles of the inputs cross on the sphere. A rim crossing the other's
+    rim is found as now (its pierce of the other's plane face, on that
+    face's boundary), but a whole sphere's split great circle bounds no
+    plane face, so every circle of one input on a face on the sphere is
+    met with every such circle of the other: the first circle's points in
+    the second's plane (`Circ::meet_plane`: its place a quadratic surd, the
+    point in one quadratic field), a vertex of both where strictly inside
+    both edges (`VKey::Circles`, named by both edges). Two pieces whose
+    primitives are whole spheres would split them along one great circle
+    (each piece's own first seam), so a piece's or a split zone's model
+    under a partner on its sphere is built from the second arrangement's
+    seam first, and the two great circles differ and move with its retried
+    seams. A sphere, cap or zone (S9d.1) and an imported or split piece of
+    its sphere are taken alike (any two inputs on one sphere). (3) *Rims
+    split by stored vertices.* An imported sphere piece's stored vertex
+    within the resolution of a section circle's edge of its own first
+    arrangement, strictly inside it, and of none of its vertices splits
+    that edge at the circle's point in the direction of the vertex's place
+    rounded once (`Circ::at`, scaled onto the circle: a point of one
+    quadratic field within the resolution of the stored one), a vertex the
+    assembly keeps, as a pole (`VKey::Stored`); the re-run's rim is then the
+    stored arcs and S9e.2's match takes it, the history over the stored
+    ids. A stored vertex within the resolution of two edges is `Degenerate`.
+    (4) *Degenerate and refused.* S9's rules unchanged off the sphere;
+    circles of the inputs tangent on the sphere (`meet_plane`'s double
+    root) and spheres within the resolution of one and not one
+    (`Degenerate("two spheres within the resolution of one sphere")`) are
+    `Degenerate`; concentric spheres of different radii stay S9d.2's
+    `Degenerate("two spheres about one centre")`. An exact incidence on one
+    sphere, a circle of both or a vertex of one at an end of the other's
+    circle, is `OutOfDomain("a vertex or a circle of both inputs on one
+    sphere (S9e.4b.3c.2)")`, found before the pierces so that a split great
+    circle in it (retried at another seam) never hides it; S9e.4b.3c.3's
+    refusals unchanged. Caps and zones on one frame meet at their stored
+    poles (both splits hold the axis): S9e.4b.3c.2's. (5) *Its other
+    queries* unchanged. S9e.4b.3a's `one_sphere` (the octant and
+    `octant_low`) and S9e.4b.3b's (the zone's half and its own whole ball)
+    become solid cases. (6) *Fuzzing.* The `split` target's
+    `PIECE_BOOLEANS` gives a zone's or cap's piece also to a whole ball on
+    its sphere in a turned frame: their common is the piece, their fuse the
+    ball. (7) *Evidence first.* Bodies OCCT writes on one sphere in turned
+    rational frames (the reference's families are the world's meridians):
+    the hemisphere and the cap above a parallel's plane with their rims
+    split as `so1`'s and `so4`'s (a `write` block's row `divide`,
+    `ShapeUpgrade_ShapeDivideClosedEdges` on the written solid: each closed
+    edge divided in two), and S9e.4b.3a's octant (`so2`'s wedge) in the
+    cap's frame; cases of two pieces of one sphere (the hemisphere and the
+    cap either way, the cap and the octant, a ball and the cap, the cap and
+    a wedge above a parallel's plane in another frame, a chain), declared
+    `degenerate` a ball within the resolution of the cap's sphere, declared
+    `unsupported` (S9e.4b.3c.2) the hemisphere and the octant on one frame
+    and two octants about one centre; S9e.3a's chained reference with each
+    piece's closed form, its shared surfaces leaving the area identity
+    (`generate_one_sphere_boolean_fixtures.py --check`, a CI group
+    `one-sphere`, `test_one_sphere_boolean_reference.py`); a native capture
+    keyed on the refusal it removes (`compare_one_sphere_boolean.py`); then
+    the kernel and its tests (`tests/one_sphere_booleans.rs`).
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces
