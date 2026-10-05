@@ -136,6 +136,51 @@ pub enum RealRoots {
 struct RootPolynomial {
     polynomial: IntPolynomial,
     sturm: Vec<IntPolynomial>,
+    /// Whether `polynomial` certainly has no rational root (`rational_free`),
+    /// once.
+    rational_free: std::sync::OnceLock<bool>,
+}
+
+impl RootPolynomial {
+    fn new(polynomial: IntPolynomial, sturm: Vec<IntPolynomial>) -> Self {
+        Self {
+            polynomial,
+            sturm,
+            rational_free: std::sync::OnceLock::new(),
+        }
+    }
+
+    /// Whether the polynomial certainly has no rational root: none modulo
+    /// some small prime not dividing its leading coefficient (a root `a /
+    /// b` in lowest terms has `b` dividing the leading coefficient, so `b`
+    /// is invertible modulo such a prime and `a b^-1` a root there).
+    /// `false` where no prime tried shows it.
+    fn rational_free(&self) -> bool {
+        *self.rational_free.get_or_init(|| {
+            let c = &self.polynomial.0;
+            if c.len() < 3 {
+                return false;
+            }
+            const PRIMES: [u64; 30] = [
+                3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79,
+                83, 89, 97, 101, 103, 107, 109, 113, 127,
+            ];
+            PRIMES.iter().any(|&m| {
+                let big = BigInt::from(m);
+                let r: Vec<u64> = c
+                    .iter()
+                    .map(|x| {
+                        let y = num_integer::Integer::mod_floor(x, &big);
+                        y.to_u64_digits().1.first().copied().unwrap_or(0)
+                    })
+                    .collect();
+                if r.last() == Some(&0) {
+                    return false;
+                }
+                (0..m).all(|x| r.iter().rev().fold(0, |acc, k| (acc * x + k) % m) != 0)
+            })
+        })
+    }
 }
 
 /// An exact root identity: square-free polynomial and rational isolating
@@ -152,10 +197,10 @@ impl AlgebraicRoot {
     pub(crate) fn rational(value: R) -> Self {
         let polynomial = IntPolynomial::new(vec![-value.numer(), value.denom().clone()]);
         Self {
-            defining: Arc::new(RootPolynomial {
-                sturm: vec![polynomial.clone(), polynomial.derivative()],
-                polynomial,
-            }),
+            defining: Arc::new(RootPolynomial::new(
+                polynomial.clone(),
+                vec![polynomial.clone(), polynomial.derivative()],
+            )),
             lower: value.clone(),
             upper: value,
             multiplicity: 1,
@@ -188,7 +233,11 @@ impl AlgebraicRoot {
     /// Verified rational candidates can collapse the interval exactly. This
     /// is only an exact fast-filter aid: undecided signs still use Sturm-Tarski.
     pub(crate) fn refine_for_signs(&mut self, steps: usize) {
-        if self.lower == self.upper || self.recognize_rational() {
+        // A polynomial certainly free of rational roots: no rational root
+        // test, which could only fail, and the ends reduced at the end
+        // alone (the same rationals).
+        let free = self.defining.rational_free();
+        if self.lower == self.upper || (!free && self.recognize_rational()) {
             return;
         }
         let defining = self.defining.clone();
@@ -200,23 +249,45 @@ impl AlgebraicRoot {
         // `(lower + upper) / 2`, reduced only where they are read (every
         // 16 steps, for the rational root test, and at the end).
         let mut done = 0;
+        // Once the binary64 filter leaves a midpoint's sign undecided (the
+        // value cancels below its terms' rounding), the polynomial taken
+        // onto the isolator then (`Shifted`): the same signs, by the filter
+        // again rather than the exact Horner at every later midpoint.
+        let mut local: Option<Shifted> = None;
         while done < steps {
-            let stop = steps.min((done / 16 + 1) * 16);
+            let stop = if free {
+                steps
+            } else {
+                steps.min((done / 16 + 1) * 16)
+            };
             let (ld, ud) = (self.lower.denom(), self.upper.denom());
             let mut den = ld / gcd_integer(ld.clone(), ud.clone()) * ud;
             let mut lo = self.lower.numer() * (&den / ld);
             let mut hi = self.upper.numer() * (&den / ud);
             while done < stop {
                 let middle = &lo + &hi;
+                let sign = match &mut local {
+                    Some(shifted) => shifted.sign_at_middle(),
+                    None => match p.sign_filter(&middle, &(&den << 1usize)) {
+                        Some(sign) => sign,
+                        None => {
+                            let shifted = local.insert(Shifted::new(p, &lo, &(&hi - &lo), &den));
+                            shifted.sign_at_middle()
+                        }
+                    },
+                };
                 den <<= 1;
-                let sign = p.sign_at_fraction(&middle, &den);
                 if sign == Ordering::Equal {
                     let middle = R::new(middle, den);
                     self.lower = middle.clone();
                     self.upper = middle;
                     return;
                 }
-                if sign == left {
+                let upper_half = sign == left;
+                if let Some(shifted) = &mut local {
+                    shifted.halve(upper_half);
+                }
+                if upper_half {
                     lo = middle;
                     hi <<= 1;
                 } else {
@@ -227,7 +298,7 @@ impl AlgebraicRoot {
             }
             self.lower = lowest(lo, den.clone());
             self.upper = lowest(hi, den);
-            if done % 16 == 0 && self.recognize_rational() {
+            if !free && done % 16 == 0 && self.recognize_rational() {
                 break;
             }
         }
@@ -987,11 +1058,18 @@ pub(crate) fn isolate_with_gcd(
     if p.is_constant() {
         return Ok(vec![]);
     }
-    let square_free = p.quotient_exact(&common).positive();
-    let defining = Arc::new(RootPolynomial {
-        sturm: sequence(square_free.clone(), square_free.derivative()),
-        polynomial: square_free,
-    });
+    // A constant gcd leaves `p`'s primitive part with a positive leading
+    // coefficient, the exact quotient's one form (without its rational
+    // division).
+    let square_free = if common.is_constant() {
+        IntPolynomial::new(p.0.clone()).positive()
+    } else {
+        p.quotient_exact(&common).positive()
+    };
+    let defining = Arc::new(RootPolynomial::new(
+        square_free.clone(),
+        sequence(square_free.clone(), square_free.derivative()),
+    ));
     let root = |lower: R, upper: R| AlgebraicRoot {
         defining: defining.clone(),
         lower,
@@ -1091,6 +1169,73 @@ pub(crate) fn isolate_with_gcd(
     }
     Ok(roots)
 }
+/// A polynomial taken onto an interval `[a, a + w] / D` (`w`, `D > 0`):
+/// `q(y) = D^d p((a + y w) / D)` (its content kept: no gcd), whose
+/// sign at every `y` in `[0, 1]` is `p`'s at that point; and a bisection's
+/// current interval there, `[jl, jh] / 2^t`. Near a root the binary64
+/// filter's terms are `q`'s, of the interval's own scale, where `p`'s were
+/// of the whole line's and cancelled.
+struct Shifted {
+    q: IntPolynomial,
+    jl: BigInt,
+    jh: BigInt,
+    t: usize,
+}
+
+impl Shifted {
+    fn new(p: &IntPolynomial, a: &BigInt, w: &BigInt, d: &BigInt) -> Self {
+        debug_assert!(w.sign() == Sign::Plus && d.sign() == Sign::Plus);
+        // Horner's rule homogenized, in polynomials of `y`: `acc (a + y w)
+        // + c_i D^(d - i)`.
+        let mut acc: Vec<BigInt> = Vec::new();
+        let mut power = BigInt::from(1);
+        for (k, c) in p.0.iter().rev().enumerate() {
+            if k > 0 {
+                power *= d;
+            }
+            let mut next = vec![BigInt::from(0); acc.len() + 1];
+            for (j, x) in acc.iter().enumerate() {
+                next[j] += x * a;
+                next[j + 1] += x * w;
+            }
+            next[0] += c * &power;
+            acc = next;
+        }
+        Self {
+            q: IntPolynomial(acc),
+            jl: BigInt::from(0),
+            jh: BigInt::from(1),
+            t: 0,
+        }
+    }
+
+    /// The sign at the current interval's middle: by the filter, else by
+    /// the filter or exactly with `q` taken onto the current interval.
+    fn sign_at_middle(&mut self) -> Ordering {
+        let one = BigInt::from(1);
+        let middle = &self.jl + &self.jh;
+        if let Some(sign) = self.q.sign_filter(&middle, &(&one << (self.t + 1))) {
+            return sign;
+        }
+        let w = &self.jh - &self.jl;
+        *self = Self::new(&self.q, &self.jl, &w, &(&one << self.t));
+        self.q.sign_at_fraction(&one, &BigInt::from(2))
+    }
+
+    /// The current interval's upper or lower half.
+    fn halve(&mut self, upper: bool) {
+        let middle = &self.jl + &self.jh;
+        if upper {
+            self.jl = middle;
+            self.jh <<= 1usize;
+        } else {
+            self.jh = middle;
+            self.jl <<= 1usize;
+        }
+        self.t += 1;
+    }
+}
+
 /// Nonnegative gcd of nonnegative integers. Stein's binary algorithm avoids a
 /// multiprecision division per Euclidean step, but it removes only about one
 /// bit per step from the larger operand. One initial division balances the
@@ -1375,5 +1520,140 @@ mod tests {
                 R::new(actual.numer().clone(), actual.denom().clone())
             );
         }
+    }
+
+    /// `refine_for_signs` as it bisected before its shifted polynomials
+    /// and its rational-root certificate: the exact Horner at every
+    /// undecided midpoint, the ends reduced and the rational root test every
+    /// 16 steps.
+    fn refine_reference(r: &mut AlgebraicRoot, steps: usize) {
+        if r.lower == r.upper || r.recognize_rational() {
+            return;
+        }
+        let defining = r.defining.clone();
+        let p = &defining.polynomial;
+        let left = p.sign_at(&r.lower);
+        let mut done = 0;
+        while done < steps {
+            let stop = steps.min((done / 16 + 1) * 16);
+            let (ld, ud) = (r.lower.denom(), r.upper.denom());
+            let mut den = ld / gcd_integer(ld.clone(), ud.clone()) * ud;
+            let mut lo = r.lower.numer() * (&den / ld);
+            let mut hi = r.upper.numer() * (&den / ud);
+            while done < stop {
+                let middle = &lo + &hi;
+                den <<= 1;
+                let sign = p.sign_at_fraction(&middle, &den);
+                if sign == Ordering::Equal {
+                    let middle = R::new(middle, den);
+                    r.lower = middle.clone();
+                    r.upper = middle;
+                    return;
+                }
+                if sign == left {
+                    lo = middle;
+                    hi <<= 1;
+                } else {
+                    hi = middle;
+                    lo <<= 1;
+                }
+                done += 1;
+            }
+            r.lower = lowest(lo, den.clone());
+            r.upper = lowest(hi, den);
+            if done % 16 == 0 && r.recognize_rational() {
+                break;
+            }
+        }
+    }
+
+    /// The roots of products of linear factors (rational roots, some a
+    /// few ulps of `2^-200` apart) and of `x^2 - k` (irrational, close to
+    /// them), with coefficients of a few to a thousand bits: every
+    /// refinement's isolator is the plain bisection's, rational roots
+    /// recognized alike.
+    #[test]
+    fn refining_keeps_the_plain_bisections_isolators() {
+        let mut state = 0x2545_f491_4f6c_dd1d_u64;
+        let mut next = move || {
+            state ^= state << 13;
+            state ^= state >> 7;
+            state ^= state << 17;
+            state
+        };
+        let times = |c: &[BigInt], f: &[BigInt]| {
+            let mut out = vec![BigInt::from(0); c.len() + f.len() - 1];
+            for (i, x) in c.iter().enumerate() {
+                for (j, y) in f.iter().enumerate() {
+                    out[i + j] += x * y;
+                }
+            }
+            out
+        };
+        let (mut compared, mut free) = (0, 0);
+        for round in 0..60u32 {
+            let scale = [4usize, 60, 200, 1000][round as usize % 4];
+            let mut c = vec![BigInt::from(1)];
+            let base = BigInt::from(next() >> 1) << scale;
+            let den = (BigInt::from(1) << scale) + BigInt::from(next() % 1000);
+            // Rational roots `base / den` and one a hair above it, maybe.
+            if round % 3 != 2 {
+                c = times(&c, &[-&base, den.clone()]);
+            }
+            if round % 3 == 1 {
+                let hair = (BigInt::from(1) << (scale + 200)) + BigInt::from(next() % 7);
+                let near: BigInt = &base * &hair + 1;
+                c = times(&c, &[-near, &den * &hair]);
+            }
+            // `x^2 - k` and `(den x)^2 - (base^2 + j)`: irrational, near.
+            let k = BigInt::from(2 + next() % 1000);
+            c = times(&c, &[-k, BigInt::from(0), BigInt::from(1)]);
+            if round % 2 == 0 {
+                let j = BigInt::from(1 + next() % 5);
+                c = times(&c, &[-(&base * &base + j), BigInt::from(0), &den * &den]);
+            }
+            let p = IntPolynomial::new(c);
+            let bound = R::from_integer(BigInt::from(1) << (scale + 80));
+            let roots = isolate(
+                &p,
+                -bound.clone(),
+                bound,
+                &mut Budget::new(RootIsolationOptions::default()),
+            )
+            .expect("isolated");
+            for root in roots {
+                free += usize::from(root.defining.rational_free());
+                for steps in [16, 72, 160, 250] {
+                    let (mut a, mut b) = (root.clone(), root.clone());
+                    a.refine_for_signs(steps);
+                    refine_reference(&mut b, steps);
+                    assert_eq!((a.lower, a.upper), (b.lower, b.upper), "{steps}");
+                    compared += 1;
+                }
+            }
+        }
+        assert!(compared > 400 && free > 20, "{compared} {free}");
+    }
+
+    /// No rational root where a small prime shows none; never claimed of a
+    /// polynomial with one.
+    #[test]
+    fn rational_freedom_is_certified_by_a_prime() {
+        let root = |c: Vec<i64>| {
+            RootPolynomial::new(
+                IntPolynomial::new(c.into_iter().map(BigInt::from).collect()),
+                Vec::new(),
+            )
+        };
+        // x^2 - 2, x^3 - 3 x - 1, 9 x^4 + 1.
+        assert!(root(vec![-2, 0, 1]).rational_free());
+        assert!(root(vec![-1, -3, 0, 1]).rational_free());
+        assert!(root(vec![1, 0, 0, 0, 9]).rational_free());
+        // (2 x - 1)(x^2 + 1) and (3 x + 5)(x^2 - 2): a rational root.
+        assert!(!root(vec![-1, 2, -1, 2]).rational_free());
+        assert!(!root(vec![-10, -6, 5, 3]).rational_free());
+        // (x^2 - 2)(x^2 - 3)(x^2 - 6) has a root modulo every prime: not
+        // shown free, though it is.
+        assert!(!root(vec![-36, 0, 36, 0, -11, 0, 1]).rational_free());
     }
 }

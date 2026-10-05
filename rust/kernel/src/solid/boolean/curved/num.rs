@@ -95,6 +95,14 @@ pub(super) struct Gen {
     /// by its defining polynomial's signs at `(x -+ 1) / 2^bits` inside the
     /// isolator; the finest found is kept.
     tight: Mutex<Option<(u64, BigInt)>>,
+    /// The precisions `tight` failed to reach from no point kept (Newton's
+    /// iteration from the isolator's narrowings never certified): the same
+    /// failure again, not its iteration.
+    failed: Mutex<Vec<u64>>,
+    /// A dyadic point for signs alone (`sign_near`) where `tight` finds
+    /// none: Newton's iteration from narrower isolators (roots so close
+    /// that `tight`'s starts lie outside its convergence), the finest kept.
+    sign_point: Mutex<Option<(u64, BigInt)>>,
     /// Inverses found (`K::recip`), by the element's coefficients: a
     /// point's coordinates are divided by the same numbers again and again
     /// (S9e.3b: a meeting's place on its curve at every test of a vertex).
@@ -381,7 +389,7 @@ impl Ip {
 
 /// The bisections of the isolator a sign query starts from (those of
 /// `Qd::interval`'s enclosure, so the two share it).
-const SIGN_STEPS: usize = 96;
+pub(super) const SIGN_STEPS: usize = 96;
 
 impl Gen {
     pub(super) fn new(poly: Vec<R>, root: AlgebraicRoot) -> Self {
@@ -393,6 +401,8 @@ impl Gen {
             exact: Mutex::new(std::collections::HashMap::new()),
             divisor: Mutex::new(None),
             tight: Mutex::new(None),
+            failed: Mutex::new(Vec::new()),
+            sign_point: Mutex::new(None),
             inverses: Mutex::new(std::collections::HashMap::new()),
             above: OnceLock::new(),
         }
@@ -606,6 +616,15 @@ impl Gen {
         if self.root.rational_value().is_some() || self.root.defining().0.len() < 2 {
             return None;
         }
+        if kept.is_none()
+            && self
+                .failed
+                .lock()
+                .unwrap_or_else(|e| e.into_inner())
+                .contains(&want)
+        {
+            return None;
+        }
         let start = |steps: usize| {
             let root = self.narrowed(self.filter_steps(steps));
             let (lo, hi) = root.isolator();
@@ -618,11 +637,53 @@ impl Gen {
             Some((b, x)) => self.newton(x.clone(), *b, want + 16),
             None => {
                 let (x, b) = start(24);
-                self.newton(x, b, want + 16).or_else(|| {
+                let found = self.newton(x, b, want + 16).or_else(|| {
                     let (x, b) = start(SIGN_STEPS);
                     self.newton(x, b, want + 16)
-                })
+                });
+                if found.is_none() {
+                    self.failed
+                        .lock()
+                        .unwrap_or_else(|e| e.into_inner())
+                        .push(want);
+                }
+                found
             }
+        }?;
+        *kept = Some((found.1, found.0.clone()));
+        Some(found)
+    }
+
+    /// A point for signs alone where `tight` has none (`sign_point`):
+    /// Newton's iteration from the isolator narrowed by 192, 384, 768 and
+    /// 1,536 bisections more than its width's bits, each certified as
+    /// `tight`'s. Only `sign_near` takes it, and `tight` is not asked again
+    /// for it: `tight`'s point (the binary64 views', from the isolator where
+    /// it has none) is the one it was.
+    fn sign_point(&self, want: u64) -> Option<(BigInt, u64)> {
+        if self.root.rational_value().is_some() || self.root.defining().0.len() < 2 {
+            return None;
+        }
+        let mut kept = self.sign_point.lock().unwrap_or_else(|e| e.into_inner());
+        if let Some((b, x)) = kept.as_ref() {
+            if *b >= want {
+                return Some((x.clone(), *b));
+            }
+        }
+        let start = |steps: usize| {
+            let root = self.narrowed(self.filter_steps(steps));
+            let (lo, hi) = root.isolator();
+            let w = hi - lo;
+            let b = (w.denom().bits() as i64 - w.numer().bits() as i64).clamp(16, 1 << 20) as u64;
+            let m = (lo + hi) * R::from_integer(BigInt::from(1) << (b - 1) as usize);
+            (m.floor().to_integer(), b)
+        };
+        let found = match kept.as_ref() {
+            Some((b, x)) => self.newton(x.clone(), *b, want + 16),
+            None => [192, 384, 768, 1536].iter().find_map(|&steps| {
+                let (x, b) = start(steps);
+                self.newton(x, b, (want + 16).max(b))
+            }),
         }?;
         *kept = Some((found.1, found.0.clone()));
         Some(found)
@@ -697,9 +758,22 @@ impl Gen {
         if p.len() < 2 {
             return None;
         }
-        let t = self.size_bits(p.num(), p.den())?;
+        // `tight`'s point where it has one; else (roots so close its
+        // Newton starts fail) the point for signs alone.
+        let tight = self.size_bits(p.num(), p.den());
+        let point = |want: u64| {
+            if tight.is_some() {
+                self.tight(want)
+            } else {
+                self.sign_point(want)
+            }
+        };
+        let t = match tight {
+            Some(t) => t,
+            None => self.size_bits_at(p.num(), p.den(), point)?,
+        };
         for want in [t + 96, 2 * t + 384, 4 * t + 1536] {
-            let (v, bound, _) = self.near_value(p.num(), want)?;
+            let (v, bound, _) = self.near_value_at(p.num(), want, point)?;
             if v.magnitude() > bound.magnitude() {
                 return Some(if v.sign() == num_bigint::Sign::Minus {
                     Ordering::Less
@@ -715,8 +789,18 @@ impl Gen {
     /// (`num / den` its coefficients): its derivative's size there, which
     /// the dyadic point's precision must pass.
     fn size_bits(&self, num: &[BigInt], den: &BigInt) -> Option<u64> {
+        self.size_bits_at(num, den, |want| self.tight(want))
+    }
+
+    /// `size_bits` with the dyadic point `point` gives.
+    fn size_bits_at(
+        &self,
+        num: &[BigInt],
+        den: &BigInt,
+        point: impl Fn(u64) -> Option<(BigInt, u64)>,
+    ) -> Option<u64> {
         let top = num.iter().map(|c| c.bits()).max().unwrap_or(0) as i64 - den.bits() as i64;
-        let (x, b) = self.tight(128)?;
+        let (x, b) = point(128)?;
         let mag = (x.bits() as i64 - b as i64).max(0) * (num.len() as i64 - 1);
         Some((top + mag).max(0) as u64)
     }
@@ -727,8 +811,18 @@ impl Gen {
     /// `v = num(m) 2^(b k)` exactly, `bound` the absolute coefficients'
     /// derivative over `|t| <= (|x| + 1) / 2^b` times `2^(b (k - 1))`.
     fn near_value(&self, num: &[BigInt], want: u64) -> Option<(BigInt, BigInt, u64)> {
+        self.near_value_at(num, want, |want| self.tight(want))
+    }
+
+    /// `near_value` at the dyadic point `point` gives.
+    fn near_value_at(
+        &self,
+        num: &[BigInt],
+        want: u64,
+        point: impl Fn(u64) -> Option<(BigInt, u64)>,
+    ) -> Option<(BigInt, BigInt, u64)> {
         let k = num.len() - 1;
-        let (x, b) = self.tight(want)?;
+        let (x, b) = point(want)?;
         let shift = |c: &BigInt, n: usize| c << (b as usize * n);
         let mut v = num[k].clone();
         for i in (0..k).rev() {
@@ -1478,7 +1572,7 @@ impl Qd {
     }
 
     /// `enclose` in binary64 (`K::enclose_fast`).
-    fn enclose_fast(&self, n: usize) -> Option<Fast> {
+    pub(super) fn enclose_fast(&self, n: usize) -> Option<Fast> {
         let a = self.a.enclose_fast(n)?;
         if self.b.is_zero() {
             return Some(a);
@@ -1619,11 +1713,7 @@ pub(super) fn mixed_dot_sign(a: &[Qd], b: &[Qd]) -> Ordering {
     }
     if let (Some(g), Some(h)) = (ga, gb) {
         if !Arc::ptr_eq(g, h) {
-            return approx_sign(|n| {
-                a.iter().zip(b).fold(I::exact(zero()), |acc, (x, y)| {
-                    acc.add(&x.enclose(n).mul(&y.enclose(n)))
-                })
-            });
+            return approx_dot_sign(a, b);
         }
     }
     // Dyadic enclosures from the generator's dyadic point next: certain
@@ -1635,6 +1725,65 @@ pub(super) fn mixed_dot_sign(a: &[Qd], b: &[Qd]) -> Ordering {
         }
     }
     mixed_dot_exact(a, b)
+}
+
+/// A part of a number in a key of the kept approximate signs: a rational
+/// by its integers, an element of a field by its generator's identity (the
+/// memo keeps the generator alive while the key is kept) and its integers.
+#[derive(Debug, PartialEq, Eq, Hash)]
+enum Part {
+    Rat(BigInt, BigInt),
+    Alg(usize, Ip),
+}
+
+/// Approximate signs kept before the memo starts again.
+const APPROX_LIMIT: usize = 1024;
+
+/// The kept approximate signs, with the generators their keys name.
+type Approx = std::collections::HashMap<Vec<Part>, (Ordering, Vec<Arc<Gen>>)>;
+
+thread_local! {
+    /// The signs of dot products of numbers of two different fields by
+    /// enclosures (`approx_dot_sign`), by their numbers: the arrangement
+    /// asks one direction's order against another's again and again (a
+    /// vertex's every edge, every face). A hit is the value the enclosures
+    /// give (the same generators narrowed the same way).
+    static APPROX: std::cell::RefCell<Approx> = std::cell::RefCell::new(Approx::new());
+}
+
+/// The sign of `sum a_i b_i` over two different fields, by enclosures
+/// (`approx_sign`), kept (`APPROX`).
+fn approx_dot_sign(a: &[Qd], b: &[Qd]) -> Ordering {
+    let mut key = vec![Part::Rat(BigInt::from(a.len()), BigInt::from(b.len()))];
+    let mut gens = Vec::new();
+    for x in a.iter().chain(b) {
+        for k in [&x.a, &x.b] {
+            key.push(match k {
+                K::Rat(r) => Part::Rat(r.numer().clone(), r.denom().clone()),
+                K::Alg(g, p) => {
+                    gens.push(g.clone());
+                    Part::Alg(Arc::as_ptr(g) as usize, p.clone())
+                }
+            });
+        }
+        key.push(Part::Rat(x.d.numer().clone(), x.d.denom().clone()));
+    }
+    if let Some(s) = APPROX.with(|m| m.borrow().get(&key).map(|(s, _)| *s)) {
+        return s;
+    }
+    let s = approx_sign(|n| {
+        a.iter().zip(b).fold(I::exact(zero()), |acc, (x, y)| {
+            acc.add(&x.enclose(n).mul(&y.enclose(n)))
+        })
+    });
+    APPROX.with(|m| {
+        let mut m = m.borrow_mut();
+        if m.len() >= APPROX_LIMIT {
+            m.clear();
+        }
+        m.insert(key, (s, gens));
+    });
+    s
 }
 
 /// The sign of `sum a_i b_i` from dyadic enclosures 128 bits after the
@@ -1799,6 +1948,75 @@ mod tests {
             let inv = k.recip().unwrap();
             assert_eq!(k.mul(&inv).sub(&K::Rat(int(1))).sign(), Ordering::Equal);
             assert_eq!(inv, k.recip().unwrap());
+        }
+    }
+
+    /// `sqrt 2` beside a complex pair `c +- 2^-66 i`, `c` within `1e-19`
+    /// of it: the real root's isolator need not be narrow, `tight`'s Newton
+    /// starts lie outside its convergence and it finds no point (nor is it
+    /// asked again), while the point for signs alone, from narrower
+    /// isolators, decides the signs Sturm-Tarski gives; `tight` keeps none.
+    #[test]
+    fn close_roots_decide_signs_without_tight_points() {
+        let c = R::new(
+            BigInt::from(14_142_135_623_730_950_488u128),
+            BigInt::from(10u64).pow(19),
+        );
+        let eps = R::new(BigInt::from(1), BigInt::from(1) << 132usize);
+        let two = int(2);
+        // (x^2 - 2)(x^2 - 2 c x + c^2 + 2^-132).
+        let quad = [&c * &c + &eps, -(int(2) * &c), int(1)];
+        let poly: Vec<R> = (0..5)
+            .map(|k| {
+                let mut sum = zero();
+                for (i, q) in quad.iter().enumerate() {
+                    if k >= i && k - i <= 2 {
+                        let f = [-two.clone(), zero(), int(1)][k - i].clone();
+                        sum += q * f;
+                    }
+                }
+                sum
+            })
+            .collect();
+        let ip = IntPolynomial::from_rationals(&poly);
+        let roots = crate::polynomial::real::isolate(
+            &ip,
+            int(1),
+            int(2),
+            &mut crate::polynomial::real::Budget::new(
+                crate::polynomial::RootIsolationOptions::default(),
+            ),
+        )
+        .unwrap();
+        assert_eq!(roots.len(), 1);
+        for root in roots {
+            let g = Gen::new(poly.clone(), root);
+            assert!(g.tight(128).is_none());
+            // Values near the roots and their gap's size, and products
+            // with coefficients of a few hundred bits.
+            let near = R::new(
+                BigInt::from(1_414_213_562_373_095_049u64),
+                BigInt::from(10u64).pow(18),
+            );
+            let cases: Vec<Vec<R>> = vec![
+                vec![-near.clone(), int(1)],
+                vec![-(&near * &near), zero(), int(1)],
+                vec![-(&c * &c), zero(), int(1)],
+                vec![r(-3, 7), int(1), r(5, 11)],
+            ];
+            for c in cases {
+                let p = Ip::from_rats(&c);
+                let big = g.mul_mod(&g.mul_mod(&p, &p), &g.mul_mod(&p, &p));
+                for p in [p, big] {
+                    let exact = g
+                        .narrowed(SIGN_STEPS)
+                        .sign_polynomial(&IntPolynomial::new(p.num().to_vec()));
+                    assert_ne!(exact, Ordering::Equal);
+                    assert_eq!(g.sign_near(&p), Some(exact));
+                }
+            }
+            assert!(g.tight.lock().unwrap().is_none());
+            assert!(g.tight(128).is_none());
         }
     }
 

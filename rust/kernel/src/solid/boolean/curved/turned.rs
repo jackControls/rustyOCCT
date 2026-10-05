@@ -215,9 +215,45 @@ fn int_poly(p: &Poly) -> IntPolynomial {
     IntPolynomial::from_rationals(p)
 }
 
+/// The polynomials whose roots are kept, at most, before the memo starts
+/// again.
+const KEPT_ROOTS: usize = 512;
+
+thread_local! {
+    /// The roots of the last polynomials, by their coefficients' numerators
+    /// and denominators: a curve's meetings with one surface are found again
+    /// for each face on it, and for each seam tried, each operation and an
+    /// imported input on the same numbers (S9d.4c: a cap's circle's
+    /// resultants with a torus part's faces, a crossing's counts with the
+    /// torus offset either way). A hit is the value the isolation gives,
+    /// its isolators and errors alike.
+    static ROOTS: std::cell::RefCell<std::collections::HashMap<Vec<BigInt>, Result<Vec<AlgebraicRoot>>>> =
+        std::cell::RefCell::new(std::collections::HashMap::new());
+}
+
 /// The real roots of a nonzero polynomial, exactly isolated in increasing
 /// order; a repeated root is a tangency.
 pub(super) fn roots(p: &Poly) -> Result<Vec<AlgebraicRoot>> {
+    let key: Vec<BigInt> = p
+        .iter()
+        .flat_map(|c| [c.numer().clone(), c.denom().clone()])
+        .collect();
+    if let Some(hit) = ROOTS.with(|m| m.borrow().get(&key).cloned()) {
+        return hit;
+    }
+    let out = isolated(p);
+    ROOTS.with(|m| {
+        let mut m = m.borrow_mut();
+        if m.len() >= KEPT_ROOTS {
+            m.clear();
+        }
+        m.insert(key, out.clone());
+    });
+    out
+}
+
+/// `roots` without the memo.
+fn isolated(p: &Poly) -> Result<Vec<AlgebraicRoot>> {
     let ip = int_poly(p);
     if ip.is_zero() {
         return Err(tangency());

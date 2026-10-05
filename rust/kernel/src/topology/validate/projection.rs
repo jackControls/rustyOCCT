@@ -428,6 +428,120 @@ fn narrower<T: Real>(a: T, b: T) -> T {
 /// A torus's meeting's angles and world point, as jets.
 type ToricJet<T> = ([Jet<T>; 2], [Jet<T>; 3]);
 
+/// A torus meeting's jets kept in the binary64 tier: the meeting's bits, and
+/// the variable's base's bits and order.
+type ToricKey = (Vec<u64>, u64, u64, usize);
+
+/// Torus meetings' jets kept before the memo starts again.
+const TORIC_LIMIT: usize = 1 << 15;
+
+thread_local! {
+    /// The jets of torus meetings (`toric_jet_of`) in the binary64 tier, of
+    /// the variable `B + s` about a base `B`, by the meeting's every binary64
+    /// number and flag and the base's bits and the order: an edge's two
+    /// faces' pcurves (on its own torus and on the other surface), the
+    /// validator's signs, areas and fluxes, its measures and the mass's
+    /// moments integrate along the same edge and visit the same pieces of
+    /// its fraction. A hit is the value the evaluation gives.
+    static TORIC: std::cell::RefCell<std::collections::HashMap<ToricKey, Option<ToricJet<Fast>>>> =
+        std::cell::RefCell::new(std::collections::HashMap::new());
+}
+
+/// A torus meeting's binary64 numbers' and flags' bits.
+fn toric_bits(m: &Toric) -> Vec<u64> {
+    let mut out = Vec::with_capacity(34);
+    for f in [&m.frame, &m.other] {
+        for v in [
+            f.origin().to_array(),
+            f.x().to_array(),
+            f.y().to_array(),
+            f.normal().to_array(),
+        ] {
+            out.extend(v.iter().map(|x| x.to_bits()));
+        }
+    }
+    out.extend(
+        [
+            m.major,
+            m.minor,
+            m.other_radius,
+            m.other_half_angle,
+            m.other_minor,
+            m.window[0],
+            m.window[1],
+            m.start,
+            m.sweep,
+        ]
+        .iter()
+        .map(|x| x.to_bits()),
+    );
+    out.push(u64::from(m.other_sphere) | (u64::from(m.over_v) << 1));
+    out
+}
+
+/// `toric_jet_of` in the binary64 tier through its memo (`TORIC`), of a
+/// variable `B + s` or `B - s` about a base `B` (a pcurve's fraction on a
+/// reversed use: `1 - f`): the latter's jets are the former's in `-s`, each
+/// odd coefficient negated. Binary64 intervals round outward to nearest on
+/// both sides alike, so the recurrences give the same values to the same
+/// bits with every odd term negated: the evaluation's own result (the two
+/// fins of an edge on its two faces run opposite ways). Any other jet, or
+/// another tier, is evaluated as it is.
+fn toric_jet<T: Real>(m: &Toric, fraction: &Jet<T>) -> Option<ToricJet<T>> {
+    let exact = |x: &T, v: f64| {
+        x.as_fast().is_some_and(|x| {
+            let (lo, hi) = x.bounds_f64();
+            lo == v && hi == v
+        })
+    };
+    let (Some(base), true) = (
+        fraction.c[0].as_fast(),
+        fraction.order() >= 1 && fraction.c[2..].iter().all(|x| exact(x, 0.0)),
+    ) else {
+        return toric_jet_of(m, fraction);
+    };
+    let reflected = if exact(&fraction.c[1], 1.0) {
+        false
+    } else if exact(&fraction.c[1], -1.0) {
+        true
+    } else {
+        return toric_jet_of(m, fraction);
+    };
+    let order = fraction.order();
+    let (lo, hi) = base.bounds_f64();
+    let key = (toric_bits(m), lo.to_bits(), hi.to_bits(), order);
+    let hit = TORIC.with(|t| t.borrow().get(&key).cloned());
+    let value = match hit {
+        Some(value) => value,
+        None => {
+            let value = toric_jet_of(m, &Jet::variable(base, order));
+            TORIC.with(|t| {
+                let mut t = t.borrow_mut();
+                if t.len() >= TORIC_LIMIT {
+                    t.clear();
+                }
+                t.insert(key, value.clone());
+            });
+            value
+        }
+    };
+    let to_t = |j: &Jet<Fast>| -> Option<Jet<T>> {
+        Some(Jet {
+            c: j.c
+                .iter()
+                .enumerate()
+                .map(|(k, x)| T::of_fast(if reflected && k % 2 == 1 { x.neg() } else { *x }))
+                .collect::<Option<_>>()?,
+        })
+    };
+    let ([u, v], p) = value.as_ref()?;
+    let out = (
+        [to_t(u)?, to_t(v)?],
+        [to_t(&p[0])?, to_t(&p[1])?, to_t(&p[2])?],
+    );
+    Some(out)
+}
+
 /// The jets of a torus's meeting with a quadric (S9d.4b.2) in the fraction:
 /// the other angle `s` enclosed over the base by interval Newton inside the
 /// window (a unique root of `G` there), then its coefficients by the implicit
@@ -436,7 +550,7 @@ type ToricJet<T> = ([Jet<T>; 2], [Jet<T>; 3]);
 /// coefficient (with `s_k` zero, `cos s`, `sin s` and the functionals
 /// continued by their recurrences) over the slope, each an enclosure at every
 /// point of the base (inclusion isotone).
-fn toric_jet<T: Real>(m: &Toric, fraction: &Jet<T>) -> Option<ToricJet<T>> {
+fn toric_jet_of<T: Real>(m: &Toric, fraction: &Jet<T>) -> Option<ToricJet<T>> {
     let n = fraction.order();
     let t = fraction.scale(&c(m.sweep)).add_constant(&c(m.start));
     let (p, fs, torus) = toric_parts(m, &t)?;
@@ -1909,6 +2023,59 @@ mod tests {
             for (i, j) in jet.iter().enumerate() {
                 let (lo, hi) = j.c[0].bounds_f64();
                 assert!(lo - 1e-14 <= p[i] && p[i] <= hi + 1e-14, "{f} {i}");
+            }
+        }
+    }
+
+    /// A reversed use's variable `B - s` (a pcurve's `1 - f`): the memo's
+    /// jets, the ones in `B + s` with every odd coefficient negated, are
+    /// the evaluation's own bit for bit (zeros aside, whose signs no bound
+    /// takes), over points and pieces, to order 13.
+    #[test]
+    fn toric_jets_of_a_reversed_variable_are_the_reflected_ones() {
+        let m = Toric {
+            frame: frame([1.0, -2.0, 0.5], [0.0, 3.0, 4.0], [1.0, 0.0, 0.0]),
+            major: 1.3125,
+            minor: 0.8203125,
+            other: frame(
+                [1.0416666666666667, -2.125, 0.9],
+                [0.0, 3.0, 4.0],
+                [1.0, 0.0, 0.0],
+            ),
+            other_radius: 1.5,
+            other_sphere: false,
+            other_half_angle: 0.0,
+            other_minor: 0.5625,
+            over_v: false,
+            window: [-1.007081089716003, 1.9214080444695982],
+            start: 0.9550889022507751,
+            sweep: 1.4751893912374456,
+        };
+        let bits = |j: &Jet<Fast>| -> Vec<u64> {
+            j.c.iter()
+                .flat_map(|x| {
+                    let (lo, hi) = x.bounds_f64();
+                    [(lo + 0.0).to_bits(), (hi + 0.0).to_bits()]
+                })
+                .collect()
+        };
+        let bases = [
+            Fast::exact_f64(0.375),
+            Fast::exact_f64(0.5).union(&Fast::exact_f64(0.5 + 1.0 / 128.0)),
+            Fast::exact_f64(0.75).union(&Fast::exact_f64(0.75 + 1.0 / 1024.0)),
+        ];
+        for base in bases {
+            for order in [0, 1, 12, 13] {
+                let reversed = Jet::variable(base, order)
+                    .neg()
+                    .add_constant(&Fast::exact_f64(1.0));
+                let ([u, v], point) = toric_jet(&m, &reversed).unwrap();
+                let ([du, dv], dpoint) = toric_jet_of(&m, &reversed).unwrap();
+                assert_eq!(bits(&u), bits(&du), "{order}");
+                assert_eq!(bits(&v), bits(&dv), "{order}");
+                for i in 0..3 {
+                    assert_eq!(bits(&point[i]), bits(&dpoint[i]), "{order} {i}");
+                }
             }
         }
     }
