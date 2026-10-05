@@ -2709,18 +2709,13 @@ impl Topology {
             Slot::Region(RegionId(1)),
             derive(EntityKind::Region, Role::Region, 0, cap_parents),
         ));
-        let bottom_frame = Frame3::new(
-            frame.point(Point2::default(), low),
-            -frame.normal(),
-            frame.x(),
-            tolerance,
-        )?;
-        let top_frame = Frame3::new(
-            frame.point(Point2::default(), high),
-            frame.normal(),
-            frame.x(),
-            tolerance,
-        )?;
+        // The caps take the prism's axes bit for bit (`Frame3::at`, the
+        // bottom turned over exactly), as its walls do: normalized again,
+        // a cap's normal could lie an ulp off the walls' axis, and once
+        // written and imported its cap and cylinders, each normalized
+        // once more, an ulp apart with the platform's `hypot`.
+        let bottom_frame = frame.at(frame.point(Point2::default(), low)).flipped();
+        let top_frame = frame.at(frame.point(Point2::default(), high));
         // One solid region bounded by shell 0 (every front side) inside the
         // infinite void bounded by shell 1 (every back side).
         let cap = |surface| Face {

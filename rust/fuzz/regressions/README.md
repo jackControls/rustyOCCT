@@ -1460,3 +1460,31 @@ apex")`, the refusal `cone_curve3` gave (`ConeSec::rounds_as_rulings`,
 with debug assertions; of 645 single-byte mutations of it (every value of
 the mode byte among them), 337 failed alike before and none now, nor any of
 500 random cones, zones and caps cut by the target's planes.
+
+## Boolean: an imported prism's caps an ulp off its walls on Linux
+
+`boolean/replay-26c72abf2f24213912aa6c5455e5c8dd9e01c467.bin` (the cone
+with its apex at its base above) crashed the per-push "Fuzz / boolean" job
+on Linux at `dd51af05`, in the Boolean's debug history check (two
+`split_support_differs`); it passed on macOS. It decodes a stadium (sides
+`4.75` long, arcs of radius `2` about `(0, 0)` and `(4.75, 0)`) over heights
+`0..1.75` in the tilted frame, and the cone tool from its apex at height
+`0.4375` on the frame's axis to radius `2.4375` at `1.3125`; the three
+operations and the chained stage pass, and S9e.4a's stage (`IMPORTED`)
+writes the object, reads it back, imports it and cuts it by the cone,
+which crosses its wall about the origin. Since `e961e477` a prism's walls
+take its frame's axes bit for bit, but its caps still normalized its
+normal again, `(0, 0.6, 0.8)` to `(0, 0.5999999999999999, 0.8)` on every
+host; the import normalizes each stored frame once more, which glibc's
+correctly rounded `hypot` turns to `(0, 0.6, 0.8000000000000002)` for the
+caps and `(0, 0.5999999999999999, 0.8)` for the walls. The imported
+prism's construction is on its bottom cap's frame, so the Boolean's split
+walls lay an ulp off the stored cylinders. A prism's caps now take its
+axes bit for bit too (`Topology`'s prism; `imported::tests`,
+`imported_caps_and_walls_share_their_axis_on_either_platforms_frames`, on
+`(0, 3, 4)`'s normalization, which glibc's `hypot` turns again, and on
+`(0, 2, 3)`'s, which macOS's does). Under emulated glibc rounding
+(`Vec3::length` correctly rounded in a local patch) it failed alike before,
+with the same ids, as did 6 more of the corpus's distinct inputs and 3,103
+of its 4,080 single-byte mutations; none now. It replays in 0.5 s with
+debug assertions.

@@ -8583,6 +8583,52 @@ Decisions for S9, recorded before its code (2026-09-28):
     debug assertions at `opt-level` 2, the release suite;
     `compare_imported_boolean.py` 54/15, `compare_imported_arcs_boolean.py`
     27/9 and `compare_imported_polyhedra_boolean.py` 47/1, none failing.
+  * **CI on the boolean target's imported stage (2026-10-05).** The
+    per-push "Fuzz / boolean" job on Linux crashed at `dd51af05` replaying
+    `regressions/boolean/replay-26c72abf…` (a corpus input): two
+    `split_support_differs` at the Boolean's debug history check. It passed
+    on macOS and failed alike at `ff8c914f` under the emulated rounding of
+    the note above (`Vec3::length` correctly rounded in a local patch),
+    with the same ids. It is the note above's kind again, at the caps: a
+    stadium prism in the tilted frame is written, read back, imported
+    (S9e.4a's stage, `IMPORTED`) and cut by the target's cone, which
+    crosses its wall about the origin. Since `e961e477` a prism's walls
+    take its frame's axes bit for bit, but `Topology`'s prism still built
+    its caps by `Frame3::new` on its normal, normalizing it again:
+    `(0, 0.6, 0.8)` to `(0, 0.5999999999999999, 0.8)` on every host, so the
+    caps were written an ulp off the walls' axis. The import normalizes
+    each stored frame once more: glibc's `hypot` turns the caps' to
+    `(0, 0.6, 0.8000000000000002)` and keeps the walls' at
+    `(0, 0.5999999999999999, 0.8)`, and the imported prism's construction,
+    on its bottom cap's frame, split the walls an ulp off the stored
+    cylinders. macOS's `hypot` keeps that axis, but turns `(0, 2, 3)`'s
+    normalization again where glibc's keeps it, so the same failure was
+    there for such frames on macOS. Fix: a prism's caps take its axes bit
+    for bit (`Frame3::at`, the bottom `flipped`), so its caps and walls are
+    written on one axis up to sign and imported on one, whatever the
+    platform's `hypot`. `history::check` is unchanged. Regression, failing
+    on macOS without the fix on its second frame and under the emulated
+    rounding on its first, both frames run on any host:
+    `imported::tests::imported_caps_and_walls_share_their_axis_on_either_platforms_frames`
+    (the input's stadium on frames whose normals are `(0, 3, 4)`'s and
+    `(0, 2, 3)`'s normalizations bit for bit, written, read back, imported,
+    fused with, cut by and in common with the cone, and its caps' normals
+    and walls' axes one bit pattern up to sign); `fuzz/regressions/README.md`
+    describes the input. Sweep under the emulated rounding with debug
+    assertions and overflow checks, one process per input: before the fix 7
+    distinct boolean corpus inputs failed alike (12 files with the
+    regression and duplicates), and 3,103 of the input's 4,080 single-byte
+    mutations; after it none of the 1,466 boolean corpus inputs and
+    regressions, the 3,569 split ones or the 4,080 mutations fails, and the
+    kernel suite passes but `properties_baseline` (macOS's baseline, as
+    above). Natively the suite passes with `properties_baseline` too: the
+    caps' frames move no mass property. Checks: fmt, clippy, the 1.85
+    check, the release suite (606 tests); every comparison of
+    `HANDOFF.md`'s table with its matches and reviews unchanged, none
+    failing, and `compare_split.py` 72/56, `compare_brep.py --family spline`
+    10/3, `compare_brep_io.py` 6,835/7 and `compare_step.py` 23/6; the
+    native replays with debug assertions of both corpora and their
+    regressions, none failing.
   * **Where S9 stands (2026-09-30, paused).** Done and pushed: S9a to S9d
     (every sub-step with its DRAW survey and a clean campaign), S9e.1
     (campaign clean at `51c08edf`) and S9e.2 (`8e060c67`), S9f's decisions

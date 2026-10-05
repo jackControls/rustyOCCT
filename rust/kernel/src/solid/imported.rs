@@ -963,3 +963,93 @@ fn piece_bounds(p: &Piece, t: &Topology) -> crate::Bounds3 {
         max: Point3::new(hi[0], hi[1], hi[2]),
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::identity::OperationId;
+    use crate::topology::Surface;
+    use crate::{Boundary, Frame3, Point2, Point3, Profile, Segment, Solid, Tolerance, Vec3};
+
+    /// A stadium prism written, read back and imported, on frames whose
+    /// normal is the first normalization of `(0, 3, 4)` or of `(0, 2, 3)`
+    /// (the same bits on every host), given bit for bit. Normalized again,
+    /// the first stays under macOS's `hypot` and turns by an ulp under
+    /// glibc's (correctly rounded), the second the other way round. A cap
+    /// built on the prism's normal normalized again was written an ulp off
+    /// the walls' axis on one platform or the other, and the import,
+    /// normalizing each stored frame once more, put the construction's
+    /// cylinders (on its bottom cap's frame) an ulp off the stored ones: a
+    /// Boolean's split walls failed the history's exactly parallel axes
+    /// (the boolean target's `crash-26c72abf`, the second frame its
+    /// counterpart on macOS). The caps take the prism's axes bit for bit,
+    /// so the imported caps and cylinders share their axis on any host.
+    #[test]
+    fn imported_caps_and_walls_share_their_axis_on_either_platforms_frames() {
+        let tol = Tolerance::default();
+        let stadium = || {
+            let (s, t) = (4.75, 2.0);
+            let arc = |x: f64| Segment::Arc {
+                center: Point2::new(x, 0.0),
+                radius: t,
+                ccw: true,
+            };
+            let points = [(0.0, -t), (s, -t), (s, t), (0.0, t)]
+                .map(|(x, y)| Point2::new(x, y))
+                .to_vec();
+            let segments = vec![Segment::Line, arc(s), Segment::Line, arc(0.0)];
+            let outer = Boundary::path(points, segments, tol).unwrap();
+            Profile::new(outer, Vec::new(), tol).unwrap()
+        };
+        let axis = |y: u64, z: u64| Vec3::new(0.0, f64::from_bits(y), f64::from_bits(z));
+        // Turned again by glibc's `hypot`, by macOS's.
+        for n in [
+            axis(0x3fe3_3333_3333_3333, 0x3fe9_9999_9999_999a),
+            axis(0x3fe1_c01a_a03b_e895, 0x3fea_a027_f059_dce1),
+        ] {
+            let x = Vec3::new(1.0, 0.0, 0.0);
+            let frame = Frame3::from_axes(Point3::new(1.0, -2.0, 0.5), x, n.cross(x), n);
+            let (a, _) = Solid::extrude_with(OperationId(1), stadium(), frame, 0.0, 1.75).unwrap();
+            let text = crate::occt_brep::write(a.topology(), a.resolution().linear()).unwrap();
+            let doc = crate::occt_brep::read(&text).unwrap();
+            let [solid] = <[_; 1]>::try_from(crate::occt_brep::import(&doc).solids).unwrap();
+            let (stored, resolution) = (solid.result.unwrap(), solid.tolerance);
+            let (imported, _) = Solid::imported_with(OperationId(11), stored, resolution).unwrap();
+            // The crash's tool: a cone from its apex up the axis, crossing
+            // both walls.
+            let base = Frame3::new(frame.point(Point2::new(0.0, 0.0), 0.4375), n, x, tol).unwrap();
+            let (cone, _) =
+                Solid::cone_with(OperationId(2), base, 0.0, 2.4375, 0.875, tol).unwrap();
+            for (out, history) in [
+                imported.fuse(OperationId(3), &cone).unwrap(),
+                imported.cut(OperationId(4), &cone).unwrap(),
+                imported.common(OperationId(5), &cone).unwrap(),
+            ] {
+                let ins = [
+                    imported.topology().entity_set(imported.resolution()),
+                    cone.topology().entity_set(cone.resolution()),
+                ];
+                let outs: Vec<_> = out
+                    .iter()
+                    .map(|s| s.topology().entity_set(s.resolution()))
+                    .collect();
+                let issues = crate::history::check(&ins, &outs, &history);
+                assert!(issues.is_empty(), "{n:?}: {issues:?}");
+            }
+            // The imported caps' normals and walls' axes one direction, up
+            // to sign, bit for bit.
+            let axes: Vec<Vec3> = imported
+                .topology()
+                .faces()
+                .iter()
+                .filter_map(|f| match &f.surface {
+                    Surface::Cylinder { frame, .. } => Some(frame.normal()),
+                    Surface::Plane(p) if p.normal().cross(n).length() < 1e-12 => Some(p.normal()),
+                    _ => None,
+                })
+                .map(|m| if m.dot(n) > 0.0 { m } else { -m })
+                .collect();
+            assert_eq!(axes.len(), 4, "{n:?}");
+            assert!(axes.iter().all(|m| *m == axes[0]), "{n:?}: {axes:?}");
+        }
+    }
+}
