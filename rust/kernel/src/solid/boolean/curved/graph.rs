@@ -1455,7 +1455,13 @@ impl Arr {
                     continue;
                 };
                 let pl = c.place(&xq);
-                let y = c.at(&[q(pl[0].to_f64()), q(pl[1].to_f64())]);
+                let d = [q(pl[0].to_f64()), q(pl[1].to_f64())];
+                // A point on the circle's axis (a pole above a rim's
+                // centre) has no direction on it, nor lies near it.
+                if d.iter().all(|t| *t == zero()) {
+                    continue;
+                }
+                let y = c.at(&d);
                 if !near(qv_f64(&y)) {
                     continue;
                 }

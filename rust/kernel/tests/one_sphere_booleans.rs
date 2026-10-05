@@ -365,6 +365,28 @@ fn divided_rims_import_as_pieces() {
     }
 }
 
+/// A stored vertex on a section circle's axis (the stored pole above a
+/// hemisphere's rim on the world's axes, exactly) has no place on the
+/// circle: the divided rim's split passes it by (it divided by zero, a
+/// panic on import, before S9e.4b.3c.2's evidence found it).
+#[test]
+fn a_stored_pole_above_its_rim_imports() {
+    use std::f64::consts::PI;
+    let s = body("incidence_hemi", 91).unwrap();
+    let t = s.topology();
+    assert_eq!(
+        (t.faces().len(), t.edges().len(), t.vertices().len()),
+        (2, 2, 3)
+    );
+    let volume = 2.0 * PI * 125.0 / 3.0;
+    let m = s.mass_properties();
+    assert!((m.volume - volume).abs() <= 1e-9 * volume, "{}", m.volume);
+    assert_eq!(
+        s.classify(Point3::new(5.0, 5.0, 9.0)).unwrap(),
+        Location::Boundary
+    );
+}
+
 /// A block less a leaning rod across its back face (a groove: its one
 /// curved face's material outside the cylinder) is no piece of its
 /// primitive common its planes,
