@@ -386,3 +386,39 @@ fn a_loop_through_a_spheres_pole_winds_by_its_ends() {
     assert!((cut - (va - common)).abs() <= 1e-9 * va);
     assert!(common > 0.0 && common < vt);
 }
+
+/// A frustum against a torus band in the tilted frame and its offset (a
+/// `TURNED_PARTS` variant of the fuzz replay): on the frustum's wall a hole
+/// whose point no piece's 24-sided polygon holds, near one of them, is
+/// refused as a sliver within the resolution, as before the wall's loops
+/// were sampled again where a hole's point lies near another loop's (finer
+/// polygons nested it in the wall's piece, and the result was open).
+#[test]
+fn a_hole_no_piece_holds_is_refused() {
+    use rusty_occt::identity::OperationId;
+    use rusty_occt::{Frame3, Point3, Solid, Tolerance, Vec3};
+    let tol = Tolerance::default();
+    let (n, x) = (Vec3::new(0.0, 3.0, 4.0), Vec3::new(1.0, 0.0, 0.0));
+    let f = Frame3::new(Point3::new(1.0, -2.0, 0.5), n, x, tol).unwrap();
+    let g = Frame3::new(
+        Point3::new(1.0 + 1.0 / 3.0, -2.0 + 1.0 / 3.0, 0.5 + 2.25 / 5.0),
+        n,
+        x,
+        tol,
+    )
+    .unwrap();
+    let (a, _) = Solid::cone_with(OperationId(1), f, 3.5625, 1.78125, 2.25, tol).unwrap();
+    let turn = std::f64::consts::TAU;
+    let (b, _) =
+        Solid::torus_with(OperationId(2), g, 3.5625, 2.2265625, -2.5, -0.25, turn, tol).unwrap();
+    for r in [
+        a.fuse(OperationId(3), &b),
+        a.cut(OperationId(4), &b),
+        a.common(OperationId(5), &b),
+    ] {
+        match r {
+            Err(Error::Degenerate(m)) => assert!(m.contains("thinner"), "{m}"),
+            other => panic!("{:?}", other.map(|r| r.0.len())),
+        }
+    }
+}

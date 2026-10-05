@@ -1388,7 +1388,10 @@ circle, a few hundredths of the radius off it, so the top rim's polygon
 crossed the ring's and the rim was nested in the band below the ring. A
 hole's point near another loop's polygon (within a twentieth of its
 longest side) now has the loops sampled again, four times as finely, up to
-64 times (`Arr::group`; `tests/cones_booleans.rs`,
+64 times, where some piece's polygon holds it (a hole none holds is refused
+as a sliver, as before: finer polygons nested one in a frustum's wall in a
+`TURNED_PARTS` variant, and its result was open; `tests/torus_parts_booleans.rs`,
+`a_hole_no_piece_holds_is_refused`) (`Arr::group`; `tests/cones_booleans.rs`,
 `coaxial_cones_meeting_near_a_rim_nest_their_rings`, the pair's volumes the
 integral of the smaller disc over the height). The second, a frustum of
 radii `0.75` and `0.375` over `0..0.5` and a cone from radius `0.75` at

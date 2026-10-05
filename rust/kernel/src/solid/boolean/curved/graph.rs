@@ -2252,9 +2252,11 @@ impl Arr {
                         best = Some((k, a));
                     }
                 }
-                if !near || mult >= 64 {
-                    // A hole no piece holds: a loop whose binary64 image
-                    // turned the wrong way (a sliver within the resolution).
+                // A hole no piece holds, at first or finer: a loop whose
+                // binary64 image turned the wrong way (a sliver within the
+                // resolution), refused as before; finer polygons only choose
+                // among the pieces that may hold it.
+                if !near || mult >= 64 || best.is_none() {
                     break best
                         .ok_or(Error::Degenerate("a piece thinner than the resolution"))?
                         .0;
