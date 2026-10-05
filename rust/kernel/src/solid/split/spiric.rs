@@ -337,11 +337,15 @@ fn cap_edges(g: &Geometry, about_max: bool, tol: f64) -> Result<Vec<SectionEdge>
     // through the turning point.
     for (end, uend) in [(0usize, ul), (1usize, ur)] {
         let (up, um) = (switches[0][end], switches[1][end]);
+        // Each branch's `v_of` is continuous over the cap's `u` (`W > 0`
+        // there), so the + end lies on the lift of the + branch's turning
+        // point and the - end on the - branch's, which meet there up to a
+        // turn (both `psi`, or `psi + pi` and `psi - pi`). Either half may
+        // sweep more than half a turn in v (a long cap round the tube), so
+        // neither end is lifted to the nearest turn of the turning point.
         let (vp, vm) = (g.v_of(up, 1.0), g.v_of(um, -1.0));
-        // The turning point's v, and the lifts of the two ends about it.
-        let vt = g.v_of(uend, 1.0);
-        let near = |x: f64| x + TAU * ((vt - x) / TAU).round();
-        let (vp, vm) = (near(vp), near(vm));
+        let turn = (g.v_of(uend, 1.0) - g.v_of(uend, -1.0)) / TAU;
+        let vm = vm + TAU * turn.round();
         let sign = if (uend - phi + PI).rem_euclid(TAU) - PI >= 0.0 {
             1.0
         } else {
