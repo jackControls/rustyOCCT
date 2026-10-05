@@ -43,7 +43,10 @@ model (`curved/splits.rs`), S9e.4b.3c.1's two inputs on one sphere
 in general position and sphere pieces with their rims split by stored
 vertices (`curved/graph.rs`, `curved/pieces.rs`), and S9e.4b.3c.2's exact
 incidences of two inputs on one sphere (a vertex, a circle or a line of
-both, plane faces on one plane with overlapping edges: `curved/graph.rs`).
+both, plane faces on one plane with overlapping edges: `curved/graph.rs`),
+and S9e.4b.3c.3a's imported bodies of one curved face and planes that are
+another Boolean of their primitive and the hull of their other planes (a
+groove, a bite, a boss: `solid/imported.rs`'s `Form`, `curved/pieces.rs`).
 
 ## Contract
 
@@ -1169,9 +1172,28 @@ conflict). Incidences within the resolution and not exact stay S9's
 a rotation that rounds its frames), as do a result touching itself along
 an edge of both and faces meeting only along a line (S9's near-plane
 guard: two octants about one axis).
-A body of one curved face and planes whose material lies outside its
-quadric (a groove or notch) is refused on import as S9e.4b.3c's before its
-model is built.
+A body of one curved face and planes that is no common of its primitive
+and its planes is S9e.4b.3c.3a's: one Boolean of its primitive and the
+convex hull of its other planes (`imported::Form`), the hull less the
+primitive where its curved face's material lies outside its quadric (a
+hole, groove, slot or dimple; the hull the first input), else the common,
+the primitive less the hull of its planes turned over (a bite) and their
+fuse (a boss) in turn, the first whose given model matches the stored
+topology the body. A cylinder's or cone's primitive spans its curved face's
+own axial range, past each end by a quarter of it but ending at a cap (a
+plane face normal to its axis at an end of that range, its outward normal
+away from the range, or into it for the hull less the primitive), the caps'
+planes not the hull's; two faces on one plane facing one way are one plane
+of the hull (facing apart `Degenerate`); a stored vertex loop at a pole of
+its sphere face (OCCT writes one at every pole inside a face) the re-run
+lacks stays unmatched, deleted in a Boolean's history. A tangency in the
+piece's own arrangement is its curved face's with its own planes:
+`Degenerate("an imported plane piece whose curved face is tangent to its
+plane faces")` (the DRAW survey's `bcut_complex/I6` tool). A body no form
+matches is S9e.4b.3c.3b's (`OutOfDomain`). A given piece's edge along its
+cylinder's section by a plane along its axis (a slot's rim, its base a
+quadratic surd) meets another cylinder only where it is apart from it (no
+real root); elsewhere it stays `ComputationLimit`.
 
 Refused: a joint of two arcs of different circles off either
 (`OutOfDomain`, S9e.4b.4: their common point is a quadratic surd); an
@@ -3366,6 +3388,43 @@ multiple root; and the engine's rules.
   and `so2`, `so2` and `so3`, `so5` and `so2` evaluate on both backends
   with every check, 27 of the 38 `so` cases in all, the other 11 (`so6`
   and `so7`) `Degenerate`.
+* **S9e.4b.3c.3a evidence (plane pieces of another Boolean), before its
+  kernel code.** `generate_piece_forms_boolean_fixtures.py --check` writes
+  `boolean-piece-forms-cases.txt`, `-expected.tsv`, `-frames.tsv` and
+  `-bodies.txt`: 39 cases (13 groups; 33 solid, 6 degenerate) on nine
+  bodies OCCT wrote, every section a circle or a line (`form_boss`, the
+  survey's `bcut_complex/G4` part on the world's axes: a box with a
+  cylindrical boss; a scoop with its top face in two faces on one plane, a
+  slot ending at its floor, a dimple, a ball's boss, a conical hole, a
+  cylinder bitten between its caps; declared `degenerate` `I6`'s notched
+  tool and `shading_132`'s three-quarter frustum) against rods, slabs,
+  balls and boxes, as the tool, two imported, in a chain and in `G4`'s
+  configuration, from S9e.3a's chained reference on the constructions OCCT
+  was given (two families within 3.4e-36, each body's closed form 3.7e-38,
+  the pair identities, Monte Carlo 2.6 standard errors, solid counts by
+  rays joined within two grid spacings).
+  `compare_piece_forms_boolean.py` reproduces
+  `occt-boolean-piece-forms-preimplementation` (keyed on `imported.rs`'s
+  refusal of a piece other than its primitive common its planes, the probe
+  `unsupported` on the 36 solid and notch cases before it, the frustum's 3
+  refused at its apex): 26 match, 13 reviewed (BRepGProp's default
+  integration, within 1.4e-9 adaptively).
+* **Kernel (S9e.4b.3c.3a).** `tests/piece_form_booleans.rs`: all 39
+  fixtures as the reference (33 within the kernel's enclosures, each at
+  most `1e-9` wide; the notch refused for its wall tangent to its own
+  faces, the frustum for its planes through its apex), every history
+  complete over the imported bodies' stored ids, faces on one plane keeping
+  their ids, results deterministic and moved rigidly, moved inputs keeping
+  the reference's volumes, every body in its form, and the kernel's own
+  grooves, bosses and bites written, read back and imported. S9e.4b.3a's
+  bitten ball is a bite (`bitten_box` solid within its reference).
+  `compare_piece_forms_boolean.py`: 20 matches and 19 reviewed (the native
+  measures and, with the kernel, entity counts: OCCT splits its cylinders'
+  and spheres' faces at its seams); `compare_imported_pieces_boolean.py` 30
+  and 15. A trial of the DRAW survey's restore cases: `bcut_complex/G4`
+  evaluates on both backends with every check, `I6` is refused for its
+  tool's own tangency (its part tangent to the tool besides),
+  `buc60926` at its frustum's apex as before.
 * **Fuzzing.** The `boolean` target (`FUZZING.md`): the split target's line
   and arc profiles, the tool offset exactly in the axis-aligned frame or
   sharing the tilted one's origin, heights equal, spanning, overlapping,

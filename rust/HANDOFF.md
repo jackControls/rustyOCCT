@@ -29,7 +29,8 @@ then for the DRAW survey of S9e.4b.3a, S9e.4b.3b and the fuzz fixes
 then for S9e.4b.3c.1 (branch `s9e4b3c`, over `s9c2-kernel` at `d665df29`),
 then for the DRAW survey of S9e.4b.3c.1 and the switches' speed-up (branch
 `s9-draw-7`, over `s9c2-kernel` at `f4b584f7`),
-then for S9e.4b.3c.2 (branch `s9e4b3c2`, over `s9c2-kernel` at `f4b584f7`).
+then for S9e.4b.3c.2 (branch `s9e4b3c2`, over `s9c2-kernel` at `f4b584f7`),
+then for S9e.4b.3c.3a (branch `s9e4b3c3`, over `s9c2-kernel` at `8a55a3e6`).
 
 ## Where things stand
 
@@ -304,6 +305,28 @@ then for S9e.4b.3c.2 (branch `s9e4b3c2`, over `s9c2-kernel` at `f4b584f7`).
   survey's restore cases: the 13 evaluate on both backends with every
   check (27 of the 38 `so` cases in all; `so6` and `so7`'s 11 `Degenerate`
   as before).
+- **S9e.4b.3c.3a implemented** (branch `s9e4b3c3`): an imported body of one
+  sphere, cylinder or cone face and plane faces that is another Boolean of
+  its primitive and the convex hull of its other planes than a common
+  (`solid/imported.rs`'s `Form`, `curved/pieces.rs`): the hull less the
+  primitive (a hole, groove, slot or dimple: its curved face's material
+  outside its quadric), the primitive less the hull of its planes turned
+  over (a bite) and their fuse (a boss: the survey's `bcut_complex/G4`
+  part), tried in turn with S9e.2's match the arbiter; a cylinder's or
+  cone's primitive over its curved face's range ending at its caps, two
+  faces on one plane facing one way one plane of the hull, OCCT's vertex
+  loops at a sphere's poles left unmatched, a tangency in the piece's own
+  arrangement named for the body (`I6`'s tool). Decisions ("S9e.4b.3c.3
+  refined", with the split S9e.4b.3c.3a and S9e.4b.3c.3b), 39 cases on 9
+  bodies OCCT wrote (`generate_piece_forms_boolean_fixtures.py`, the
+  chained reference with each body's closed form) captured before the
+  kernel (26 matching, 13 reviewed), the kernel within the reference on
+  all 33 solid cases, the 6 degenerate refused (the notch's tangency, the
+  three-quarter frustum's apex); S9e.4b.3a's `bitten_box` solid. A trial
+  of the survey's restore cases: `G4` evaluates on both backends with every
+  check, `I6` refused for its tool's own tangency (its part tangent to the
+  tool besides), `buc60926` at its frustum's apex as before, the 38 `so`
+  cases as before.
 - **CI.** Both workflows ("Rust kernel", "Rust geometry fuzzing") were green
   at `6c221525`. They had been red from S7 until 2026-09-29, unnoticed;
   check them after every push (see "Working rules").
@@ -326,8 +349,8 @@ then for S9e.4b.3c.2 (branch `s9e4b3c2`, over `s9c2-kernel` at `f4b584f7`).
 2. **The Linux records and reviews** of the recaptured
    `occt-boolean-spline-crossing-preimplementation` and of the
    spline-sphere, spline-cone, imported-polyhedra, imported-arcs,
-   imported-pieces, split-pieces, one-sphere and one-sphere-incidence
-   captures from CI's run, as every capture's. `SPLINE_SPHERE` and
+   imported-pieces, split-pieces, one-sphere, one-sphere-incidence and
+   piece-forms captures from CI's run, as every capture's. `SPLINE_SPHERE` and
    `SPLINE_CONE` are on since the loops' certified integrals were sped up
    (branch `loop-integrals`; REVIEW_NOTES.md's "Certified integrals beside
    spline walls' loops"), and the campaign with both on is clean at
@@ -359,8 +382,15 @@ then for S9e.4b.3c.2 (branch `s9e4b3c2`, over `s9c2-kernel` at `f4b584f7`).
    plane with overlapping edges: `so1` and `so2`, `so2` and `so3`, `so5`
    and `so2`, 13 cases, all evaluating in its trial) is implemented
    (pending its capture's Linux record, the DRAW survey and the
-   campaigns); next **S9e.4b.3c.3**, pieces not convex in their planes
-   (`shading_132`, grooves) and two plane faces on one plane; then
+   campaigns); **S9e.4b.3c.3**, split in "S9e.4b.3c.3 refined":
+   **S9e.4b.3c.3a** (a body of one curved face and planes as one Boolean of
+   its primitive and the hull of its other planes: grooves, bites, bosses,
+   two faces on one plane; `bcut_complex/G4` evaluating in its trial) is
+   implemented (pending its capture's Linux record, the DRAW survey and the
+   campaigns); next **S9e.4b.3c.3b**, bodies of one curved face needing
+   more than one hull (a groove in a body not convex in its planes, a
+   primitive bitten twice, a sphere's ends with another form: the fuzz
+   target's 4 remaining refusals); then
    **S9e.4b.4**, the S9e text's plan in full
    (joints of two circles, prisms with walls of two directions, bodies of
    several curved surfaces: 21 cases; an imported polyhedron against
@@ -481,10 +511,11 @@ Each comparison takes `--occt-root target/spline-linear-preflight/pinned-sdk/ins
 | `compare_spline_sphere_boolean.py` | 4 / 29 (the kernel within the reference on all 27 results, the 6 degenerate refused, none `unsupported`) |
 | `compare_imported_polyhedra_boolean.py` | 47 / 1 (the kernel within the reference on all 44 solid and empty cases, the flush fuse refused, the cavity `unsupported`, S9e.4b.4's) |
 | `compare_spline_cone_boolean.py` | 4 / 23 (the kernel within the reference on all 21 results, the 6 degenerate refused, none `unsupported`) |
-| `compare_imported_pieces_boolean.py` | 32 / 13 (the kernel within the reference on all 36 solid cases, the 6 degenerate refused, the 3 bitten cases `unsupported`, S9e.4b.3c's; the one-sphere cases solid since S9e.4b.3c.1) |
+| `compare_imported_pieces_boolean.py` | 30 / 15 (the kernel within the reference on all 39 solid cases, the 6 degenerate refused; the one-sphere cases solid since S9e.4b.3c.1, the bitten ball's since S9e.4b.3c.3a, two of them reviewed for OCCT's seam and pole edges) |
 | `compare_split_pieces_boolean.py` | 26 / 22 (the kernel within the reference on all 42 solid and empty cases, the 6 degenerate refused; the one-sphere cases solid since S9e.4b.3c.1) |
 | `compare_one_sphere_boolean.py` | 8 / 14 (the kernel within the reference on all 20 solid and empty cases, the 2 degenerate refused; the 3 exact incidences solid since S9e.4b.3c.2) |
 | `compare_one_sphere_incidence_boolean.py` | 42 / 3 (the kernel within the reference on all 33 solid and empty cases, the 12 degenerate refused) |
+| `compare_piece_forms_boolean.py` | 20 / 19 (the kernel within the reference on all 33 solid cases, the 6 degenerate refused) |
 
 Every one must report 0 failures; since S9f.1 also `compare_split.py`
 (72 / 56) and `compare_brep.py --family spline` (10 / 3), which share its

@@ -8047,6 +8047,92 @@ Decisions for S9, recorded before its code (2026-09-28):
     planes and a cylinder), within 1.4e-9 measured adaptively at 1e-10 and
     1e-12 by a diagnostic build. G4's configuration matches. S9e.4b.3c.3a's
     kernel next.
+  * **S9e.4b.3c.3a implemented** (`solid/imported.rs`'s `Form`: the forms
+    tried in turn, a cylinder's or cone's primitive over its curved face's own
+    axial range ending at its caps, the classification by the form;
+    `curved/pieces.rs`: the form's first Boolean, the hull the first input of
+    the hull less the primitive, two faces on one plane facing one way one
+    plane of the hull, a tangency in the piece's own arrangement named for the
+    body; `curved/given.rs` and `curved/matched.rs`: the given model's frame
+    its primitive leaf's, a stored pole's vertex loop the re-run lacks left
+    unmatched for an imported piece), as the refined decisions describe: a
+    body of one sphere, cylinder or cone face and plane faces is tried as the
+    hull less the primitive where its curved face's material lies outside its
+    quadric, else as S9e.4b.3a's common, the primitive less the hull of its
+    planes turned over and their fuse, the first whose given model matches its
+    stored topology the body, none matching `OutOfDomain("an imported plane
+    piece other than one Boolean of its primitive and its planes' hull
+    (S9e.4b.3c.3b)")`. All 39 fixtures as declared (33 within the kernel's
+    enclosures, each at most `1e-9` wide; the notch's 3 refused as
+    `Degenerate("an imported plane piece whose curved face is tangent to its
+    plane faces")`, the three-quarter frustum's 3 as `Degenerate("a plane
+    through a cone's apex")`), every history complete over the imported
+    bodies' stored ids, the scoop's two faces on its top plane each continuing
+    apart, results deterministic and moved rigidly, both inputs translated and
+    turned keeping the reference's volumes, every body in its form (its volume
+    its closed form, points in and off it classified, its stored vertices on
+    its boundary, `bitten` a bite through OCCT's pole vertex loop), and the
+    kernel's own dimple, ball boss, rod boss and bitten rod written by its
+    writer, read back and imported, their Booleans with a turned box the
+    kernel's own results' (`tests/piece_form_booleans.rs`, 7.8 s in release on
+    a host at load 8 to 14, 5.8 s at `opt-level` 2 with debug assertions, 6.2
+    s in release with debug assertions under the emulated correctly rounded
+    `hypot`, where the pieces' earlier test files pass too). S9e.4b.3a's
+    `bitten_box`, declared `unsupported` until now, is solid within its
+    reference (its generator declares it so, its margins unchecked: its box's
+    edge runs through the ball's stored pole within rounding, the reference's
+    events there 6.2e-18 of their range apart; its unit test and
+    `tests/imported_piece_booleans.rs` declare it so), and S9e.4b.3c.1's notch
+    (a block less a leaning rod) imports as its hull less its rod.
+    `compare_piece_forms_boolean.py` 20 matches and 19 reviewed (the 13
+    captured, with the kernel the boss's slab, the bitten cylinder's box and
+    the dimple's fuse in entity counts: OCCT's unified results split their
+    cylinders' and spheres' faces and sections at its seams and keep its pole
+    edges, where the kernel's faces close over their periods), every enclosure
+    within the reference; `compare_imported_pieces_boolean.py` 30 and 15 (the
+    bitten ball's fuse and cut in entity counts likewise); every other
+    comparison of `HANDOFF.md`'s table unchanged with 0 failures (and
+    `compare_split.py` 72/56, `compare_brep.py --family spline` 10/3,
+    `compare_brep_io.py` 6,835/7, `compare_step.py` 23/6 on STEP-b's SDK); the
+    release suite (621 tests) and the tools' unit tests (338) passing, the
+    ledger unchanged. Amendments, from the implementation: (a) a given piece's
+    edge along its cylinder's section by a plane along its axis (the slot's
+    rims, their bases quadratic surds) met another cylinder as
+    `ComputationLimit("an irrational line against a cylinder")` (S9c's
+    line-cylinder meeting took a generatrix's base rational, true of edges
+    until now); where the quadratic's discriminant, in the base's field, is
+    negative the line is apart from the cylinder and meets it nowhere
+    (`meet.rs`; the slot's rod), elsewhere the limit stands; (b) the given
+    model's frame, which places its faces' cylinders' angles, is its primitive
+    leaf's where the hull is its first input; (c) the forms' refusals other
+    than a mismatch are reported in the order tried, the first's (the
+    three-quarter frustum's apex from the common, a notch's tangency from the
+    hull less the primitive); (d) the kernel's own rods given to the roundtrip
+    are on the world's axes: in a turned frame a bite's plane along a rod's
+    axis, written and read back, its frame normalized again, is within
+    rounding of the axis under one platform's `hypot` or the other's (S9's
+    refusal; reproduced under the emulation). The `boolean` fuzz target's
+    `IMPORTED` stage reaches the forms through the chained stage's first
+    results of one curved face and planes (no new stage): replayed with debug
+    assertions, 92 such first results of the corpus's 1,466 inputs and
+    regressions reach it, 19 imported and cut within the chained cut's volume
+    (17 before), 63 not written by the kernel's writer, 6 read back with
+    pcurves off their edges, 4 refused as S9e.4b.3c.3b's (a ball's groove in a
+    U prism, not convex in its planes; a box fused with a ball's half, a
+    sphere's end with another form). Replays with debug assertions, one
+    process an input, natively and under the emulated correctly rounded
+    `hypot`: the boolean corpus and its regressions (1,466 inputs) and the
+    split corpus and its regressions (3,569), no failure, the slowest 7.0 s
+    and 2.1 s (5.2 s and 2.1 s emulated). A trial of the DRAW survey's restore
+    cases on the Rust adapter and natively (not the survey: nothing
+    registered): `bcut_complex/G4` evaluates on both backends with every check
+    (its area 193,593.0 on the Rust adapter, native DRAW's printed 193593);
+    `bcut_complex/I6` is refused for its tool alone, `Degenerate("an imported
+    plane piece whose curved face is tangent to its plane faces")` (its part
+    is tangent to the tool too); `bugs/modalg_1/buc60926` stays `Degenerate("a
+    plane through a cone's apex")`; the 38 `so` cases as before (27
+    evaluating, 11 `Degenerate`). Pending: the capture's Linux record, the
+    DRAW survey and the campaigns.
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces
