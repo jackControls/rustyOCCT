@@ -6883,7 +6883,9 @@ Decisions for S9, recorded before its code (2026-09-28):
     imported solid other than a prism, a sphere, a cone or a torus.
     Pending: S9e.4b.3b (S9e.2's `Clipped` and `Half` on this model) and
     S9e.4b.3c (pieces of one sphere, split rims, pieces not convex in their
-    planes), the Linux record of the capture and the DRAW survey. Campaign:
+    planes) and the Linux record of the capture. DRAW survey: that of
+    S9e.4b.3a, S9e.4b.3b and the fuzz fixes, below (the 39 refused as the
+    trial found, none evaluating). Campaign:
     the boolean campaign at `dd51af05` (600 s, a sampled replay, `IMPORTED`,
     `SPLINE_SPHERE` and `SPLINE_CONE` on) clean, 838 runs, the slowest input
     60 s under AddressSanitizer at load 6 to 8 (`e36969f1`, an existing
@@ -7139,7 +7141,8 @@ Decisions for S9, recorded before its code (2026-09-28):
     the slowest input 3.8 s on a host at load 10 to 20; the boolean
     target's corpus and regressions (1,459 inputs) replayed with debug
     assertions, no failure, the slowest 15.6 s. Pending: the capture's Linux
-    record and the DRAW survey. Campaigns: at `6d26886d` the `boolean`
+    record. DRAW survey: that of S9e.4b.3a, S9e.4b.3b and the fuzz fixes,
+    below (no case's status or reason moves with it). Campaigns: at `6d26886d` the `boolean`
     target's clean (886 runs, the slowest input 28 s under AddressSanitizer
     at load about 20), the `split` target's found a torus cap's round end
     lifted the wrong way (S8d.3's, latent since `d7049aac`) and, after its
@@ -7147,6 +7150,68 @@ Decisions for S9, recorded before its code (2026-09-28):
     arrangement through `PIECE_BOOLEANS` (both fixed, notes below); at
     `cc7ea7ff`, with those fixes and `CONE_PAIRS` on, both clean: `boolean`
     996 runs, the slowest 13 s, `split` 1,731 runs, the slowest 19 s.
+  * **DRAW survey of S9e.4b.3a, S9e.4b.3b and the fuzz fixes (2026-10-05,
+    `UPSTREAM_TESTS.md`).** At `d665df29` (`s9c2-kernel` with S9e.4b.3a,
+    S9e.4b.3b, the loops' certified integrals, the validator's curve points
+    guarded, the degree-eight arithmetic and the sheared projections, the
+    slowest inputs' speedup, the prism walls' frames (`Frame3::at`), the
+    loop through one pole and S9e.4b.3b's pole lift, the three cone-pair
+    fixes, the narrower `Meet` and `Toric` integrals, a torus cap's round
+    ends and a plane within rounding of a cone's apex; the public dataset,
+    120 seconds a case, four at once). The 1,802 self-contained cases of the
+    Boolean group on both backends: every status, every refusal's reason
+    and every error the last survey's (`12b6c176`) field for field, 987
+    evaluating and registered, 592 refused, 223 unsupported on both, none
+    failing or timing out, the sentinels, `bopfuse_simple/ZP6` and the
+    `gdml_public` tori refused as before: the new guards (a ring on a
+    floor, a plane within rounding of a cone's apex) refuse no case that
+    evaluated, and no case meets the "points not separated by a
+    projection" limits, as before. The
+    1,814 cases restoring a shape for a Boolean on the Rust adapter, and
+    the 171 the import reaches on native DRAW too: no status moves, and 41
+    refusals' reasons move, each from "an imported solid other than a
+    prism, a sphere, a cone or a torus (S9e.4b)", native DRAW evaluating
+    every one (`viewer_skipped`). S9e.4b.3a's 39 are refused as its trial
+    found: 18 (every case restoring `so1` or `so4`) as a piece other than
+    its primitive common its planes' half-spaces, 20 (pairs of `so2`,
+    `so3`, `so5`, `so6`, `so7`) as faces of both inputs on one sphere, both
+    S9e.4b.3c's, and `bugs/modalg_1/buc60926` as a plane through a cone's
+    apex. Two CTO parts beyond the trial now reach the pieces' recognition:
+    `bcut_complex/G4` (the part a box with a cylindrical boss, radius 52.93
+    over 100, one cylinder face and plane faces: refused as a piece other
+    than its primitive common its planes, S9e.4b.3c's) and
+    `bcut_complex/I6` (the tool a block less a half cylinder, radius 35,
+    whose wall is tangent to the block's own faces `y = 0` and `y = 70`:
+    `Degenerate("a tangency between the inputs (S9c)")`, raised in the
+    piece's own first arrangement, the cylinder primitive against its hull,
+    not between the case's inputs: the tool alone against a box 1,000 away
+    is refused alike; the reason names the wrong pair, the refusal stands).
+    Of the 171: 27 evaluate on both backends, 58 are refused by S9's rules,
+    39 as S9e.4b.3c's, 36 are bodies none of the kernel's constructions, 6
+    S9e.4b.4's, 3 spline bodies (S9f) and 2 arguments of several solids;
+    24 are unsupported natively too. The same 8 time out at their first
+    restores. S9e.4b.3b's split pieces move no status or reason. The
+    volume audit (`vprops` and `sprops` before each `checkprops`): native
+    DRAW's values the last audit's bit for bit on all 1,014 registered
+    cases; the Rust adapter's statuses the same, and 115 cases' values
+    moved, 49 volumes, 34 areas and 250 centre coordinates, every one
+    within rounding (volumes and areas at most 6.6e-16 relative, a centre
+    at most 1.6e-15 of the solid's size): 113 cases at the loops' certified
+    integrals' merge (`cfeab65d`: 30 volumes, 2 areas, 218 coordinates)
+    and 60 at the off switches' merge, its narrower `Meet` integrals
+    (`f87d150d`: 36 volumes, 33 areas, 154 coordinates; two cylinders or a
+    cylinder and a cone, `bop*_simple/ZE3` to `ZE6`, `ZI8` to `ZJ3`, `ZK5`
+    to `ZL1`), 58 in both (a Rust audit at `770bcdbc`, and the merges
+    between on five cases, locate them). None crosses native DRAW's printed
+    digits: 81 of the 115 agree to them as before, the other 34 are among
+    the same 35 disagreements, each flagging the same fields, native off in
+    each. No case evaluates newly, so none is registered (1,100 cases) and
+    the ledger does not change. A full contract run of the manifest holds
+    on both backends with the dataset (30 seconds a case), the slowest
+    Boolean case 6.0 seconds (`bopfuse_simple/ZK8`, on a host at load 5 to
+    10; `bopcommon_simple/ZK8` 16.9 in the last survey), the restore cases
+    0.1 to 2.6 s, the rollex 0.4 to 0.7. No case fails, crashes or panics;
+    no kernel change.
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces

@@ -174,7 +174,7 @@ There are **five original geometry tests passing on both backends** and
 S9c.2b.2, S9d.1, S9d.2, S9d.3a, S9d.1's pole follow-up, S9d.3b.1,
 S9d.4b.2a and S9e.2, and 27 Booleans of restored solids, 16 of S9e.4a, 7
 of S9e.4b.1 and 4 of S9e.4b.2; S9c.2b.1, S9e.3a, S9f.1, S9e.3b, S9f.2a,
-S9f.2b.1, S9f.2b.2, S9f.3a and S9f.3b add none).
+S9f.2b.1, S9f.2b.2, S9f.3a, S9f.3b, S9e.4b.3a and S9e.4b.3b add none).
 S8e registers the upstream `bsplit` group as capability sentinels: `boolean/splitter/A5`
 and `B5` and the 22 `bugs` cases that call `bsplit` (with `bug29333_1` and
 `bug29333_2`, registered before). They need S9's general builder: tools that
@@ -1582,6 +1582,66 @@ present, 30 seconds a case) holds for every case, the slowest Boolean case
 16.9 seconds (`bopcommon_simple/ZK8`, on a host at load 5 to 10;
 `boptuc_simple/ZK8` 16.2 in the last survey, 13.3 here), the restore cases
 0.1 to 3.9, the rollex 2.1 to 3.0.
+
+**S9e.4b.3a, S9e.4b.3b and the fuzz fixes: the Boolean group and the
+restore cases.** Both sets were run again after S9e.4b.3a (imported plane
+pieces, a body of one sphere, cylinder or cone face and plane faces as its
+primitive common its planes' half-spaces, `curved/pieces.rs`), S9e.4b.3b
+(the kernel's own split pieces against curved faces, `curved/splits.rs`)
+and the fixes and speedups that landed with them: the loops' certified
+integrals, the validator's curve points guarded, the degree-eight
+arithmetic (and a sheared projection for points no ruling separates), the
+slowest inputs' speedup, prism walls' frames taking their axes bit for bit
+(`Frame3::at`), a loop through one pole lifted at it, the three cone-pair
+fixes (`ConeSec::lies_on`, coaxial rings nested, a ring on a floor
+refused), the narrower `Meet` and `Toric` integrals, a torus cap's round
+ends and a plane within rounding of a cone's apex refused (2026-10-05, at
+`d665df29`, the public dataset, 120 seconds a case, four at once). The
+1,802 self-contained cases of the Boolean group on both backends: every
+status, reason and error is the last survey's (`12b6c176`) field for
+field, 987 evaluating, every one registered, 592 refused, 223 unsupported
+on both; none fails or times out, the sentinels, `bopfuse_simple/ZP6` and
+the `gdml_public` tori are refused as before, and the new guards refuse no
+case. The 1,814 restore cases on the Rust adapter, and the 171 the import
+reaches on native DRAW too: no status moves; 41 refusals' reasons move from
+"an imported solid other than a prism, a sphere, a cone or a torus", native
+DRAW evaluating all 41. S9e.4b.3a's 39 are refused as its trial found: 18
+(every case restoring `so1` or `so4`, whose rims OCCT split at the seam) as
+a piece other than its primitive common its planes' half-spaces and 20
+(pairs of `so2`, `so3`, `so5`, `so6` and `so7`) as faces of both inputs on
+one sphere, both S9e.4b.3c's, and `bugs/modalg_1/buc60926` as a plane
+through a cone's apex (`shading_132`'s planes through its virtual apex).
+Two CTO parts beyond the trial reach the pieces' recognition now:
+`bcut_complex/G4`, whose part is a box with a cylindrical boss (refused as
+a piece other than its primitive common its planes, S9e.4b.3c's), and
+`bcut_complex/I6`, whose tool is a block less a half cylinder tangent to
+the block's own faces `y = 0` and `y = 70`: `Degenerate("a tangency between
+the inputs (S9c)")`, raised in the piece's own first arrangement (its
+cylinder primitive against its hull), so the reason names the wrong pair
+(the tool alone against a far box is refused alike). Of the 171, 27
+evaluate on both backends, 58 are refused by S9's rules, 39 as S9e.4b.3c's,
+36 are bodies none of the kernel's constructions, 6 are S9e.4b.4's, 3 have
+spline faces (S9f) and 2 give the next Boolean several solids; native DRAW
+does not evaluate 24 of them. The same 8 time out at their first restores.
+S9e.4b.3b's split pieces move no case.
+
+The volume audit (`vprops` and `sprops` before each `checkprops`, both
+backends, the 1,014 registered Boolean cases): native DRAW's
+values are the last audit's bit for bit; the Rust adapter's statuses are
+the same and 115 cases' values moved within rounding (49 volumes, 34 areas
+and 250 centre coordinates; volumes and areas at most 6.6e-16 relative, a
+centre at most 1.6e-15 of the solid's size): 113 at the loops' certified
+integrals (`cfeab65d`) and 60 at the narrower `Meet` integrals
+(`f87d150d`: two cylinders, or a cylinder and a cone, in `bop*_simple`'s
+`ZE3` to `ZE6`, `ZI8` to `ZJ3` and `ZK5` to `ZL1`), 58 at both. None
+crosses native DRAW's printed digits: 81 agree to them as before, 34 are
+among the same 35 disagreements as before, each flagging the same fields,
+native off in each. No case newly evaluates, so none is registered (1,100
+cases) and the ledger does not change. A full contract run of the manifest
+(both backends, the dataset present, 30 seconds a case) holds for every
+case, the slowest Boolean case 6.0 seconds (`bopfuse_simple/ZK8`, on a host
+at load 5 to 10; `bopcommon_simple/ZK8` 16.9 in the last survey), the
+restore cases 0.1 to 2.6, the rollex 0.4 to 0.7.
 
 Three more `intss` cases run on the Rust adapter but are not registered,
 because the contract admits no failing status: `bug23178`, `bug28222_2` and

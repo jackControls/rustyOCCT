@@ -23,7 +23,9 @@ guarded (branch `validate-curve-at`) and the arithmetic of fields of
 degree eight (branch `given-met-speed`), both over `s9c2-kernel` at
 `abebe31c`,
 then for S9e.4b.3b (branch `s9e4b3b`, over `s9c2-kernel` at `b99799ec`),
-its pole lift combined with the meridian loop's fix (branch `fix-uv-gap`).
+its pole lift combined with the meridian loop's fix (branch `fix-uv-gap`),
+then for the DRAW survey of S9e.4b.3a, S9e.4b.3b and the fuzz fixes
+(branch `s9-draw-6`, over `s9c2-kernel` at `d665df29`).
 
 ## Where things stand
 
@@ -40,10 +42,12 @@ its pole lift combined with the meridian loop's fix (branch `fix-uv-gap`).
   arcs, and one solid of a result of several (S9e.2, `curved/matched.rs`),
   results of spheres, cones and tori, deeper chains and given results
   against spheres, cones and tori (S9e.3a, `curved/chain.rs`), each with its
-  DRAW survey (the last full survey, that of S9e.4b.2, S9f.3a and S9f.3b
-  at `12b6c176`, branch `s9-draw-5`: the Boolean group's 987 cases and 27
-  restore cases registered, none failing or timing out, the volume audit's
-  values those of `93e6fcd0`'s bit for bit) and a clean campaign (S9e.3a's and S9f.1's at `b2765f20`, 989
+  DRAW survey (the last full survey, that of S9e.4b.3a, S9e.4b.3b and the
+  fuzz fixes at `d665df29`, branch `s9-draw-6`: the Boolean group's 987
+  cases and 27 restore cases registered, none failing or timing out,
+  native DRAW's audited values those of `12b6c176`'s bit for bit, the Rust
+  adapter's in 115 cases moved within rounding, at most 6.6e-16 relative,
+  by the loops' certified integrals and the narrower `Meet` integrals) and a clean campaign (S9e.3a's and S9f.1's at `b2765f20`, 989
   runs).
 - **S9f.1 done.** Spline prisms against polyhedral prisms in any position
   (`curved/spline_walls.rs`), with its survey and campaign as above.
@@ -217,6 +221,12 @@ its pole lift combined with the meridian loop's fix (branch `fix-uv-gap`).
   trial of the survey's 39 S9e.4b.3 restore cases: none evaluates (18 a
   piece other than its primitive common its planes, 20 two pieces of one
   sphere, both S9e.4b.3c's; `buc60926` a plane through a cone's apex).
+  Its DRAW survey (that of S9e.4b.3a, S9e.4b.3b and the fuzz fixes,
+  branch `s9-draw-6`) confirms the trial, native DRAW evaluating all 39;
+  two CTO parts reach the recognition too, `bcut_complex/G4` refused as a
+  piece other than its primitive common its planes and `bcut_complex/I6`
+  as "a tangency between the inputs", raised in its notched tool's own
+  first arrangement (the reason names the wrong pair); nothing registered.
 - **S9e.4b.3b implemented** (branch `s9e4b3b`): the kernel's own split
   pieces (S8's `Clipped` and `Half`) against curved faces, on S9e.4b.3a's
   model read off the split: its primitive (the prism, the cone, the whole
@@ -242,6 +252,8 @@ its pole lift combined with the meridian loop's fix (branch `fix-uv-gap`).
   `Degenerate` before its edges enter it). At `cc7ea7ff`, with those
   fixes and `CONE_PAIRS` on, both campaigns are clean (`boolean` 996
   runs, the slowest input 13 s; `split` 1,731 runs, the slowest 19 s).
+  Its DRAW survey (with S9e.4b.3a's and the fuzz fixes', branch
+  `s9-draw-6` at `d665df29`) moves no case.
 - **CI.** Both workflows ("Rust kernel", "Rust geometry fuzzing") were green
   at `6c221525`. They had been red from S7 until 2026-09-29, unnoticed;
   check them after every push (see "Working rules").
@@ -272,18 +284,25 @@ its pole lift combined with the meridian loop's fix (branch `fix-uv-gap`).
    `cfeab65d` (803 runs, the slowest input 52 s under AddressSanitizer, an
    existing corpus input reaching neither). The DRAW survey of S9e.4b.2,
    S9f.3a and S9f.3b is done at `12b6c176` (branch `s9-draw-5`: S9e.4b.2's
-   4 restore cases registered, no case reaching the spline walls).
+   4 restore cases registered, no case reaching the spline walls), that of
+   S9e.4b.3a, S9e.4b.3b and the fuzz fixes at `d665df29` (branch
+   `s9-draw-6`: no status moving, 41 restore cases' reasons, no case
+   registered).
 3. **S9e.4b**, split in "S9e.4b refined": S9e.4b.1 (arcs rounded off
    their circles) and S9e.4b.2 (polyhedra other than prisms, on their
    stored vertices) are implemented with their DRAW surveys and
    campaigns; **S9e.4b.3**, split in "S9e.4b.3 refined": S9e.4b.3a (plane
    pieces as their primitive common their planes' half-spaces) and
    S9e.4b.3b (S9e.2's deferred `Clipped` and `Half` against curved faces
-   on that model) are implemented with clean campaigns (pending their
-   captures' Linux records and the DRAW survey); next **S9e.4b.3c**, two
-   pieces of one sphere (the survey's `so1` to `so7`, 38 cases), rims
-   split by stored vertices and pieces not convex in their planes
-   (`shading_132`); then **S9e.4b.4**, the S9e text's plan in full
+   on that model) are implemented with clean campaigns and their DRAW
+   survey (`s9-draw-6` at `d665df29`: the 39 refused as the trial found,
+   nothing registered; pending their captures' Linux records); next
+   **S9e.4b.3c**, two pieces of one sphere (the survey's `so1` to `so7`,
+   38 cases), rims split by stored vertices and pieces not convex in their
+   planes (`shading_132`; `bcut_complex/G4`'s box with a cylindrical boss
+   is refused as such a piece too, and `bcut_complex/I6`'s notched block,
+   a box less a half cylinder tangent to its own faces, is refused as a
+   tangency in its own first arrangement before any match); then **S9e.4b.4**, the S9e text's plan in full
    (joints of two circles, prisms with walls of two directions, bodies of
    several curved surfaces: 21 cases; an imported polyhedron against
    curved faces, or with a cavity). The reader's header check refuses
