@@ -26,6 +26,7 @@ use super::model::*;
 use super::num::*;
 use super::torus_segment::Span;
 use super::turned::{middle, near_node, negative_chart, roots, square_sum, Chart, Form};
+use crate::certified::{Fast, Real};
 use crate::identity::Role;
 use crate::profile::boolean::Operand;
 use crate::solid::split::{q, rational_f64, zero};
@@ -141,12 +142,46 @@ impl Ring {
     /// The side of the meridian seam (`plus`: counter-clockwise from `e`)
     /// and of the parallel seam (`upper`: from `v0` towards `v0 + pi`).
     pub(super) fn sides(&self, l: &QV) -> (Ordering, Ordering) {
+        if let Some(sides) = self.sides_enclosed(l) {
+            return sides;
+        }
         let e = [Qd::rat(self.e[0].clone()), Qd::rat(self.e[1].clone())];
         let v0 = [Qd::rat(self.v0[0].clone()), Qd::rat(self.v0[1].clone())];
         (
             cross_sign(&e, &Self::u_dir(l)),
             cross_sign(&v0, &self.v_dir(l)),
         )
+    }
+
+    /// `sides` from binary64 enclosures of the point's coordinates where
+    /// both are certain (they exclude zero): `e x (l_u, l_v)` and `v0 x
+    /// (rho - R, l_w)`, `rho = (|l|^2 + R^2 - r^2) / 2 R`, without the
+    /// exact products in the point's field (a vertex's every test against
+    /// a torus's patches).
+    fn sides_enclosed(&self, l: &QV) -> Option<(Ordering, Ordering)> {
+        let [x, y, z] = [
+            l[0].enclose_fast(SIGN_STEPS)?,
+            l[1].enclose_fast(SIGN_STEPS)?,
+            l[2].enclose_fast(SIGN_STEPS)?,
+        ];
+        let near = |r: &R| Fast::near_r(r);
+        let (e0, e1) = (near(&self.e[0])?, near(&self.e[1])?);
+        let (c0, c1) = (near(&self.v0[0])?, near(&self.v0[1])?);
+        let big = near(&self.big)?;
+        let rho = x
+            .square()
+            .add(&y.square())
+            .add(&z.square())
+            .add(&near(&self.k())?)
+            .div(&big.mul(&Fast::exact_f64(2.0)))?;
+        let certain = |v: Fast| match v.sign() {
+            Some(s @ (Ordering::Less | Ordering::Greater)) => Some(s),
+            _ => None,
+        };
+        Some((
+            certain(e0.mul(&y).sub(&e1.mul(&x)))?,
+            certain(c0.mul(&z).sub(&c1.mul(&rho.sub(&big))))?,
+        ))
     }
 
     /// Where a point on the torus lies in a patch.
