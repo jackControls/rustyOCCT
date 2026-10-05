@@ -1,0 +1,174 @@
+case hemi_cap_fuse 1e-07
+op 91
+brep imported/sphere_hemi.brep
+boolean fuse 93
+op 92
+brep imported/sphere_cap.brep
+end
+case hemi_cap_cut 1e-07
+op 91
+brep imported/sphere_hemi.brep
+boolean cut 93
+op 92
+brep imported/sphere_cap.brep
+end
+case hemi_cap_common 1e-07
+op 91
+brep imported/sphere_hemi.brep
+boolean common 93
+op 92
+brep imported/sphere_cap.brep
+end
+case cap_hemi_cut 1e-07
+op 91
+brep imported/sphere_cap.brep
+boolean cut 93
+op 92
+brep imported/sphere_hemi.brep
+end
+case cap_octant_fuse 1e-07
+op 91
+brep imported/sphere_cap.brep
+boolean fuse 93
+op 92
+brep imported/sphere_octant2.brep
+end
+case cap_octant_cut 1e-07
+op 91
+brep imported/sphere_cap.brep
+boolean cut 93
+op 92
+brep imported/sphere_octant2.brep
+end
+case cap_octant_common 1e-07
+op 91
+brep imported/sphere_cap.brep
+boolean common 93
+op 92
+brep imported/sphere_octant2.brep
+end
+case octant_cap_cut 1e-07
+op 91
+brep imported/sphere_octant2.brep
+boolean cut 93
+op 92
+brep imported/sphere_cap.brep
+end
+case ball_cap_fuse 1e-07
+op 91
+frame 5.0 5.0 4.0 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 5.0 -1.5707963267948966 1.5707963267948966
+boolean fuse 93
+op 92
+brep imported/sphere_cap.brep
+end
+case ball_cap_cut 1e-07
+op 91
+frame 5.0 5.0 4.0 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 5.0 -1.5707963267948966 1.5707963267948966
+boolean cut 93
+op 92
+brep imported/sphere_cap.brep
+end
+case ball_cap_common 1e-07
+op 91
+frame 5.0 5.0 4.0 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 5.0 -1.5707963267948966 1.5707963267948966
+boolean common 93
+op 92
+brep imported/sphere_cap.brep
+end
+case wedge_cap_fuse 1e-07
+op 91
+brep imported/sphere_wedge.brep
+boolean fuse 93
+op 92
+brep imported/sphere_cap.brep
+end
+case wedge_cap_cut 1e-07
+op 91
+brep imported/sphere_wedge.brep
+boolean cut 93
+op 92
+brep imported/sphere_cap.brep
+end
+case wedge_cap_common 1e-07
+op 91
+brep imported/sphere_wedge.brep
+boolean common 93
+op 92
+brep imported/sphere_cap.brep
+end
+case chain_cap_fuse 1e-07
+op 91
+brep imported/sphere_cap.brep
+boolean cut 93
+op 92
+brep imported/sphere_octant2.brep
+then fuse 95
+op 94
+frame 0.0 0.0 6.375 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 1.5
+boundary P 4 -4.0 -4.0 14.0 -4.0 14.0 14.0 -4.0 14.0
+end
+case chain_cap_cut 1e-07
+op 91
+brep imported/sphere_cap.brep
+boolean cut 93
+op 92
+brep imported/sphere_octant2.brep
+then cut 95
+op 94
+frame 0.0 0.0 6.375 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 1.5
+boundary P 4 -4.0 -4.0 14.0 -4.0 14.0 14.0 -4.0 14.0
+end
+case chain_cap_common 1e-07
+op 91
+brep imported/sphere_cap.brep
+boolean cut 93
+op 92
+brep imported/sphere_octant2.brep
+then common 95
+op 94
+frame 0.0 0.0 6.375 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 1.5
+boundary P 4 -4.0 -4.0 14.0 -4.0 14.0 14.0 -4.0 14.0
+end
+case ball_near_fuse 1e-07
+op 91
+frame 5.0 5.0 4.0 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 5.000000000931323 -1.5707963267948966 1.5707963267948966
+boolean fuse 93
+op 92
+brep imported/sphere_cap.brep
+end
+case ball_near_common 1e-07
+op 91
+frame 5.0 5.0 4.0 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 5.000000000931323 -1.5707963267948966 1.5707963267948966
+boolean common 93
+op 92
+brep imported/sphere_cap.brep
+end
+case hemi_octant_fuse 1e-07
+op 91
+brep imported/sphere_hemi.brep
+boolean fuse 93
+op 92
+brep imported/sphere_octant4.brep
+end
+case hemi_octant_cut 1e-07
+op 91
+brep imported/sphere_hemi.brep
+boolean cut 93
+op 92
+brep imported/sphere_octant4.brep
+end
+case hemi_octant_common 1e-07
+op 91
+brep imported/sphere_hemi.brep
+boolean common 93
+op 92
+brep imported/sphere_octant4.brep
+end

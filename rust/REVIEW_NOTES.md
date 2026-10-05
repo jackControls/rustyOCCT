@@ -7256,6 +7256,73 @@ Decisions for S9, recorded before its code (2026-09-28):
     `one-sphere`, `test_one_sphere_boolean_reference.py`); a native capture
     keyed on the refusal it removes (`compare_one_sphere_boolean.py`); then
     the kernel and its tests (`tests/one_sphere_booleans.rs`).
+  * **S9e.4b.3c.1 evidence (2026-10-05).** Five bodies OCCT wrote
+    (`boolean-one-sphere-bodies.txt`, `write` blocks of a sphere's row,
+    `boolean common` and a box's or prism's rows, written by
+    `compare_one_sphere_boolean.py --write-bodies` to
+    `rust/fixtures/imported/`), every one a piece of S9e.4b.3a's octant's
+    sphere (radius 5 about `(5, 5, 4)`): `sphere_hemi`, the ball above its
+    equator's plane on `SKEW4`, and `sphere_cap`, above the parallel's
+    plane at `3/2` on `SKEW4`, each with its rim divided as `so1`'s and
+    `so4`'s (a `write` block's new row `divide`:
+    `ShapeUpgrade_ShapeDivideClosedEdges` with one split point on the
+    written solid, the rim two arcs between the stored seam's point and the
+    opposite one); `sphere_octant2` and `sphere_octant4`, the corners of
+    `SKEW2`'s and `SKEW4`'s axes (`so2`'s wedges); `sphere_wedge`, above the
+    parallel's plane at `1` between two meridian planes of `SKEW` (`so5`'s).
+    `generate_one_sphere_boolean_fixtures.py --check`: 22 cases of 9 groups
+    (16 solid, 1 empty, 2 declared `degenerate`, 3 `unsupported`; 14 of
+    class `pieces`, 5 `sphere`, 3 `chain`): the hemisphere and the cap
+    either way (`so1` and `so4`: the cap's cut by the hemisphere empty), the
+    cap and the octant either way (`so4` and `so2`), a ball of the sphere on
+    the world's axes and the cap, the wedge and the cap, a chain (the cap
+    less the octant, then with a level slab: its cut two solids); declared
+    `degenerate` a ball of radius `5 + 2^-30` about the centre against the
+    cap (its fuse and common); declared `unsupported` (S9e.4b.3c.2) the
+    hemisphere and `sphere_octant4` on one frame (the octant's equator arc
+    on the hemisphere's rim circle). The reference is the constructions
+    OCCT was given through S9e.3a's chained reference (two pieces `(P common
+    B) op (Q common D)`, `P` and `Q` one sphere, its faces of two inputs on
+    one surface), with S9e.4b.3a's checks relative to the case's size: the
+    two families within 3.4e-36, each solid's closed form 4.1e-36, each
+    piece's closed form 1.7e-34 (`cap_closed`, the hemisphere, the
+    corners), the pair identities 5.7e-38 (the area identity left: shared
+    surfaces), Monte Carlo 2.4 standard errors (100,000 points a group),
+    quadrature estimates 9.2e-33, every meeting's sine at least 0.35 and
+    events at least 1.3e-6 of their range apart outside the declared
+    groups, each piece one solid and solid counts by rays at two
+    resolutions, here with neighbouring rays' intervals joined within two
+    grid spacings (the generator's `count_solids`: two pieces of one sphere
+    leave slivers tapering to it, whose neighbouring rays' intervals are
+    disjoint where a sliver is thinner than its slope across a spacing, and
+    the chained reference's strict overlap counted a wedge less the cap as
+    up to 20 solids). Every file read independently (`stored_records`): its
+    faces one sphere and planes, every stored vertex within 5.9e-16 of the
+    size on the construction's surfaces, a divided rim two stored vertices
+    on the rim's circle. `test_one_sphere_boolean_reference.py` checks the
+    cap's closed form against an integration of its slices, the chained
+    reference on the hemisphere and the cap of one sphere (their common the
+    cap, their fuse the hemisphere), the frames' normals off the kernel's
+    whole sphere's split planes, the case list and its protocol rows. The
+    generator's check is a CI group of its own (`one-sphere`, 14 minutes on
+    four workers locally under Python 3.12); Python 3.9 and 3.12 write the
+    same files. Corrections from the evidence, amending the refined
+    decisions' plan (7): (a) `SKEW3`'s normal `(10, 11, 2)` lies in the
+    split plane of the kernel's whole sphere's fourth rotation (rows `(1, 2,
+    2)`, `(2, 1, -2)`), so a piece on it, split there at the second
+    arrangement's seam, had its pole vertex on its own great circle within
+    rounding (`Degenerate("two meetings within rounding along an arc")`):
+    the bodies are on `SKEW4`, `SKEW2` and `SKEW`; (b) in `so4` and `so2`
+    the wedge's pole vertex is the cap's stored pole, exactly on the world's
+    axes; in turned rational frames two planes' line meets the sphere
+    within rounding of a stored pole, not on it (the reference's events
+    9.7e-19 of their range apart), so the octant's axis is another frame's
+    and the coincidence is the DRAW trial's alone; (c) the octants of two
+    frames about one centre share their corner (a vertex of both off the
+    sphere, not found as an incidence on it) and are not declared; (d) a
+    cap at `5/2` and a tilted chain slab left counts the reference's rays
+    did not resolve, so the cap is at `3/2` and the slab level; (e) the
+    ball within the resolution has no cut case (a shell `2^-30` thick).
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces

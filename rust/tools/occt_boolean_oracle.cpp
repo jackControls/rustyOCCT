@@ -60,7 +60,10 @@
 // on one side of the plane through the origin normal to the normal: the
 // solid common BRepPrimAPI_MakeHalfSpace of the plane's face on that side
 // (its reference point the origin moved one unit along the normal or against
-// it), the result's one solid (else `failure`).
+// it), the result's one solid (else `failure`). S9e.4b.3c.1: a `write`
+// block's row `divide` (after its solids' rows) divides every closed edge of
+// the written solid in two (ShapeUpgrade_ShapeDivideClosedEdges, one split
+// point: a rim ring two arcs, as the survey's so1 and so4 store theirs).
 //
 // Output: `NAME done N valid warnings` (N solids in the result, the result
 // checked by BRepCheck_Analyzer, 1 if the operation reported warnings), then
@@ -98,6 +101,7 @@
 #include <Geom_BSplineCurve.hxx>
 #include <NCollection_Array1.hxx>
 #include <NCollection_IndexedMap.hxx>
+#include <ShapeUpgrade_ShapeDivideClosedEdges.hxx>
 #include <ShapeUpgrade_UnifySameDomain.hxx>
 #include <Standard_Failure.hxx>
 #include <Standard_Version.hxx>
@@ -395,12 +399,15 @@ int main() {
       // solid.
       Prism body, other;
       std::string operation;
+      bool divide = false;
       try {
         while (std::getline(std::cin, line) && line != "end") {
           std::istringstream in(line);
           std::string kind;
           in >> kind;
-          if (kind == "boolean") {
+          if (kind == "divide") {
+            divide = true;
+          } else if (kind == "boolean") {
             if (!operation.empty() || !(in >> operation)) throw Standard_Failure("boolean row");
           } else if (operation.empty()) {
             body.row(kind, in);
@@ -426,6 +433,18 @@ int main() {
             ++solids;
           }
           if (solids != 1) throw Standard_Failure("a written result of one solid");
+        }
+        if (divide) {
+          // S9e.4b.3c.1: every closed edge in two.
+          ShapeUpgrade_ShapeDivideClosedEdges split(written);
+          split.SetNbSplitPoints(1);
+          if (!split.Perform()) throw Standard_Failure("divide");
+          int solids = 0;
+          for (TopExp_Explorer e(split.Result(), TopAbs_SOLID); e.More(); e.Next()) {
+            written = e.Current();
+            ++solids;
+          }
+          if (solids != 1) throw Standard_Failure("a divided solid");
         }
         if (path.empty() || !BRepTools::Write(written, fixture(path).c_str(), false, false,
                                               TopTools_FormatVersion_VERSION_1))

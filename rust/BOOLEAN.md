@@ -3251,6 +3251,19 @@ multiple root; and the engine's rules.
   frustum's ring), split and imported. `compare_split_pieces_boolean.py`:
   26 matches and 22 reviewed (the native measures, and entity counts: each
   splits its sections at its own points and seams).
+* **S9e.4b.3c.1 evidence (two pieces of one sphere), before its kernel
+  code.** A `write` block's row `divide` in the native oracle
+  (`ShapeUpgrade_ShapeDivideClosedEdges`: a rim two arcs, as the DRAW
+  survey's `so1` and `so4`). `generate_one_sphere_boolean_fixtures.py
+  --check` writes `boolean-one-sphere-cases.txt`, `-expected.tsv`,
+  `-frames.tsv` and `-bodies.txt`: 22 cases (9 groups; 16 solid, 1 empty,
+  2 degenerate, 3 unsupported) on five pieces of one sphere OCCT wrote (a
+  hemisphere and a cap with divided rims, two octants, a wedge above a
+  parallel's plane) against each other, a ball of their sphere and in a
+  chain, from S9e.3a's chained reference on the constructions OCCT was
+  given (two families within 3.4e-36, each piece's closed form, the pair
+  identities, Monte Carlo 2.4 standard errors, solid counts by rays joined
+  within two grid spacings).
 * **Fuzzing.** The `boolean` target (`FUZZING.md`): the split target's line
   and arc profiles, the tool offset exactly in the axis-aligned frame or
   sharing the tilted one's origin, heights equal, spanning, overlapping,
