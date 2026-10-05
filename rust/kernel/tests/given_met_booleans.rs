@@ -501,3 +501,53 @@ fn a_ball_about_a_section_on_a_wall_through_its_axis() {
     let (ball, _) = Solid::sphere_with(OperationId(7), f, 1.25, -half, half, tol).unwrap();
     identities(&given, &ball).unwrap();
 }
+
+/// The fuzz replay's chained stage with two cones (`fuzz/regressions/
+/// README.md`): a frustum fused with a cone leaning across it, whose end
+/// disc cuts the frustum's wall in a cone section, given to the turned box
+/// across that section. The section's curve is rounded on its own cone (the
+/// wall's view; the disc's view is the leaning cone's, whose frame gave a
+/// hyperbola off the section's vertices, `vertex_off_curve` before): the
+/// three operations consistent.
+#[test]
+fn a_box_across_a_cone_section_on_another_cones_disc() {
+    use rusty_occt::{Boundary, Frame3, Point2, Point3, Profile, Tolerance, Vec3};
+    let tol = Tolerance::default();
+    let (a, _) = Solid::cone_with(OperationId(1), Frame3::xy(), 1.125, 0.5625, 1.5, tol).unwrap();
+    let lean = Frame3::new(
+        Point3::new(-1.125, 0.0, 0.75),
+        Vec3::new(3.0, 0.0, 4.0),
+        Vec3::new(0.0, 1.0, 0.0),
+        tol,
+    )
+    .unwrap();
+    let base = Frame3::new(
+        lean.point(Point2::new(0.0, 0.0), 0.375),
+        lean.normal(),
+        lean.x(),
+        tol,
+    )
+    .unwrap();
+    let (b, _) = Solid::cone_with(OperationId(2), base, 2.25, 0.0, 0.75, tol).unwrap();
+    let given = boolean(&a, "fuse", 3, &b).unwrap().remove(0);
+    let f = Frame3::new(
+        Point3::new(0.5, 0.25, 0.5),
+        Vec3::new(0.0, 0.0, 1.0),
+        Vec3::new(3.0, 4.0, 0.0),
+        tol,
+    )
+    .unwrap();
+    let square = Boundary::polygon(
+        vec![
+            Point2::new(-1.0, -1.0),
+            Point2::new(1.0, -1.0),
+            Point2::new(1.0, 1.0),
+            Point2::new(-1.0, 1.0),
+        ],
+        tol,
+    )
+    .unwrap();
+    let profile = Profile::new(square, vec![], tol).unwrap();
+    let (box_, _) = Solid::extrude_with(OperationId(7), profile, f, 0.0, 1.5).unwrap();
+    identities(&given, &box_).unwrap();
+}

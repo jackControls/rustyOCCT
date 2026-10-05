@@ -1343,3 +1343,31 @@ operations evaluate as before S9e.4b.3a, their volumes the same
 `a_ball_about_a_section_on_a_wall_through_its_axis`). It replays in 3.1 s
 with debug assertions, and 540 single-byte mutations of it (every value of
 the chained byte among them) replay without a failure.
+
+## Boolean: a cone section given on the other cone's disc
+
+`boolean/replay-6fab9d419900cda3aad1257fe2ec8e8709205f20.bin` is a corpus
+input (its original name kept) that failed the debug-assertion replay with
+`CONE_PAIRS` switched on (`unexpected error invalid topology:
+vertex_off_curve`); off, it decodes a prism against the frustum. On, it
+decodes a frustum of radii `2.625` and `1.3125` over heights `0..0.75` in
+the axis-aligned frame and a frustum of radii `1.3125` and `0.65625` in the
+frame turned to the normal `(0, 3, 4)`; the chained byte gives their fuse's
+first result to the `GIVEN_BALL` sphere about the middle of its first
+meeting (`GIVEN_MET`). The fuse has an edge where one frustum's end disc
+cuts the other's wall, a cone section on the wall's cone. Given to another
+Boolean, that edge's faces are the wall and the disc, each on its own
+input's model (`view`), and both models are cones: the section's curve was
+rounded on the first model with a cone among the edge's faces' views,
+which for the disc is the other frustum, whose frame turned the section's
+plane into another one, a hyperbola off the section's vertices. 28 of the
+459 cone-pair variants of the corpus (every third input moved onto a cone
+object against the cone tool) failed alike, every one in the chained
+stage, its partner the box, the cylinder or the sphere, and one more was
+refused as a plane within the resolution of the wrong cone's apex. The
+section's curve is now rounded on the cone it lies on (its frame and radii,
+`ConeSec::lies_on`); `tests/given_met_booleans.rs`,
+`a_box_across_a_cone_section_on_another_cones_disc`, gives the fuse of a
+frustum and a leaning cone across its wall to the turned box (it failed
+`vertex_off_curve` before). The input replays in 1.6 s with debug
+assertions.
