@@ -1427,3 +1427,36 @@ partner's plane is now refused as a tangency, as it is on the plane
 (`triple::meet`; `tests/given_met_booleans.rs`,
 `a_coaxial_ring_within_rounding_of_a_floor_is_degenerate`). They replay in
 2.7 s and 0.3 s with debug assertions.
+
+## Split: a frustum's piece by a plane within rounding of its virtual apex
+
+`split/crash-baa7bc2d89a6658d6e58e7e931d5f60eb90a4265.bin` came from the
+`split` campaign at `770bcdbc`: a frustum of radii `3.5` and `0.25` over
+heights `0..1.75` on an upright frame at `(0.1875, 6, -8)`, split by a plane
+through its virtual apex's height `49/26` rounded, normal `(1, -0.75,
+-0.5)` (the revolved mode through a frustum's virtual apex). The split takes
+the plane within the resolution of the apex and cuts rulings; S9e.4b.3b's
+model of the piece below it (`PIECE_BOOLEANS`) is the frustum common the
+plane's exact half-space, which misses the apex by about `1e-16`, so its
+section is a hyperbola within rounding of the two rulings. The arrangement
+traced the cut face's loops in binary64 samples of that section, a graph
+over the cone's angle whose arms turn by less than an ulp of it: the
+samples ran off the section, both of the cut face's loops round the
+frustum's section came out clockwise, both were nested as holes in the
+face's outer piece, and the model's assembly was open
+(`InvalidTopology("an open Boolean of arcs in any position")`). The piece
+above reached `cone_curve3`, which refuses the same plane, and a whole
+frustum against a slab on that plane failed as the piece below did (at
+`770bcdbc` and `f87d150d`): S9d.3a's plane section, not S9e.4b.3b's model,
+and not the coarse polygons `Arr::group` samples again since `c82af2ec`
+(these samples are off the section, not too few). A section on a cone whose plane rounds to S8d.2's
+rulings (`cone_conic`) is now refused before any edge of it enters the
+arrangement, `Degenerate("a plane within the resolution of a cone's
+apex")`, the refusal `cone_curve3` gave (`ConeSec::rounds_as_rulings`,
+`graph.rs`; `tests/cone_booleans.rs`,
+`a_plane_within_rounding_of_a_virtual_apex_is_degenerate`, the slab moved
+`1/64` off the apex evaluating; `tests/split_piece_booleans.rs`,
+`pieces_by_a_plane_within_rounding_of_a_virtual_apex`). It replays in 0.11 s
+with debug assertions; of 645 single-byte mutations of it (every value of
+the mode byte among them), 337 failed alike before and none now, nor any of
+500 random cones, zones and caps cut by the target's planes.

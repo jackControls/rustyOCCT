@@ -612,6 +612,58 @@ fn refused_pieces() {
     }
 }
 
+/// A frustum's pieces by a plane through its virtual apex's rounded height,
+/// across its axis (the split target's replay): the split takes the plane
+/// within the resolution of the apex and cuts rulings; the model's exact
+/// plane misses the apex by less than the resolution, its section's
+/// branches within rounding of those rulings, and S9d.3a refuses it,
+/// `Degenerate`, for both pieces (the piece below it once failed its
+/// model's assembly as an open Boolean, `InvalidTopology`).
+#[test]
+fn pieces_by_a_plane_within_rounding_of_a_virtual_apex() {
+    let tol = Tolerance::default();
+    let (bottom, top, height) = (3.5, 0.25, 1.75);
+    let f = Frame3::new(
+        Point3::new(0.1875, 6.0, -8.0),
+        Vec3::new(0.0, 0.0, 1.0),
+        Vec3::new(1.0, 0.0, 0.0),
+        tol,
+    )
+    .unwrap();
+    let frustum = Solid::cone_with(OperationId(1), f, bottom, top, height, tol)
+        .unwrap()
+        .0;
+    let apex = f.point(Point2::new(0.0, 0.0), -bottom * height / (top - bottom));
+    let plane = Frame3::new(
+        apex,
+        Vec3::new(1.0, -0.75, -0.5),
+        Vec3::new(0.0, 1.0, 0.0),
+        tol,
+    )
+    .unwrap();
+    let (pieces, _) = frustum.split_by_plane(OperationId(2), plane).unwrap();
+    assert_eq!(pieces.len(), 2);
+    let all: f64 = pieces.iter().map(|(_, p)| p.mass_properties().volume).sum();
+    let whole = frustum.mass_properties().volume;
+    assert!((all - whole).abs() <= 1e-9 * whole, "{all} for {whole}");
+    let refused = |r: Outcome| match r {
+        Err(Error::Degenerate(m)) => {
+            assert_eq!(m, "a plane within the resolution of a cone's apex")
+        }
+        other => panic!("{:?}", other.map(|_| ())),
+    };
+    for (_, piece) in &pieces {
+        refused(piece.common(OperationId(4), &holder()));
+        let c = piece.mass_properties().centroid;
+        let turned =
+            Frame3::new(c, Vec3::new(1.0, 2.0, 2.0), Vec3::new(2.0, 1.0, -2.0), tol).unwrap();
+        let other = cuboid(5, turned, 3.5, 3.5, 3.5);
+        refused(piece.fuse(OperationId(6), &other));
+        refused(piece.cut(OperationId(6), &other));
+        refused(piece.common(OperationId(6), &other));
+    }
+}
+
 /// Each fixture's split piece classifies as its construction: its stored
 /// vertices on its boundary, a point far off outside; its common with a
 /// box holding it is itself.

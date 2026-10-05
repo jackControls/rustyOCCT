@@ -370,6 +370,32 @@ impl ConeSec {
         self.plane[0] == zero() && self.plane[1] == zero()
     }
 
+    /// Whether the section rounds as S8d.2's rulings (`cone_conic`: the
+    /// plane within the resolution of the apex, virtual for a frustum), on
+    /// the cone model `m` its edges round on (`assemble::cone_curve3`, which
+    /// refuses it). Its binary64 image is then no image of it: along each
+    /// branch `rho = G / (mu + k (alpha cos + beta sin))` with `G` and the
+    /// denominator both within rounding of zero, the angle turns less than
+    /// binary64 tells apart, so the arrangement refuses it before its
+    /// loops are traced in it.
+    pub(super) fn rounds_as_rulings(&self, m: &Prism) -> bool {
+        let Some(fun) = m.funnel.as_ref() else {
+            return false;
+        };
+        !self.normal_to_axis()
+            && matches!(
+                crate::solid::split::conic::cone_conic(
+                    m.frame,
+                    m.tolerance,
+                    rational_f64(&fun.b),
+                    rational_f64(&fun.t),
+                    rational_f64(&m.hi),
+                    &self.plane,
+                ),
+                Ok((crate::solid::split::conic::Section::Rulings, _))
+            )
+    }
+
     /// A section normal to the axis as the conic it is (S9e.3a: a given
     /// result's edge): `c + a cos + b sin` on the cone's frame, its angle
     /// the cone's (the same places).

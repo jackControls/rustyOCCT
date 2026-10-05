@@ -231,3 +231,78 @@ fn frustum_on_a_top(turn: impl Fn(rusty_occt::Vec3) -> rusty_occt::Vec3) {
         assert!(matches!(r, Err(Error::Degenerate(_))), "{r:?}");
     }
 }
+
+/// A frustum (radii 3.5 and 0.25 over 1.75) against a slab whose face's
+/// plane passes through its virtual apex's rounded height, leaning across
+/// its axis: the plane misses the apex by less than the resolution, so its
+/// section's branches lie within rounding of two rulings, and their
+/// binary64 image, a graph over the cone's angle turning less than an ulp,
+/// is none. `Degenerate` before the face's loops are traced in it (the
+/// split fuzz target's replay, where the open loops failed the assembly
+/// as `InvalidTopology`); the same slab moved off the apex along its
+/// normal evaluates, its pair identities holding.
+#[test]
+fn a_plane_within_rounding_of_a_virtual_apex_is_degenerate() {
+    use rusty_occt::identity::OperationId;
+    use rusty_occt::{Boundary, Error, Frame3, Point2, Point3, Profile, Solid, Tolerance, Vec3};
+    let tol = Tolerance::default();
+    let (bottom, top, height) = (3.5, 0.25, 1.75);
+    let frame = Frame3::new(
+        Point3::new(0.1875, 6.0, -8.0),
+        Vec3::new(0.0, 0.0, 1.0),
+        Vec3::new(1.0, 0.0, 0.0),
+        tol,
+    )
+    .unwrap();
+    let (frustum, _) = Solid::cone_with(OperationId(1), frame, bottom, top, height, tol).unwrap();
+    let apex = frame.point(Point2::new(0.0, 0.0), -bottom * height / (top - bottom));
+    let normal = Vec3::new(1.0, -0.75, -0.5);
+    let square = [(-10.0, -10.0), (10.0, -10.0), (10.0, 10.0), (-10.0, 10.0)]
+        .map(|(x, y)| Point2::new(x, y))
+        .to_vec();
+    let slab = |offset: f64| {
+        let face = Frame3::new(
+            apex + normal * offset,
+            normal,
+            Vec3::new(0.0, 1.0, 0.0),
+            tol,
+        )
+        .unwrap();
+        let profile =
+            Profile::new(Boundary::polygon(square.clone(), tol).unwrap(), vec![], tol).unwrap();
+        Solid::extrude_with(OperationId(2), profile, face, -20.0, 0.0)
+            .unwrap()
+            .0
+    };
+    let near = slab(0.0);
+    for r in [
+        frustum.fuse(OperationId(3), &near),
+        frustum.cut(OperationId(3), &near),
+        frustum.common(OperationId(3), &near),
+    ] {
+        match r {
+            Err(Error::Degenerate(m)) => {
+                assert_eq!(m, "a plane within the resolution of a cone's apex")
+            }
+            other => panic!("{:?}", other.map(|_| ())),
+        }
+    }
+    let off = slab(1.0 / 64.0);
+    let volume = |r: rusty_occt::Result<(Vec<Solid>, rusty_occt::history::History)>| -> f64 {
+        r.unwrap()
+            .0
+            .iter()
+            .map(|s| s.mass_properties().volume)
+            .sum()
+    };
+    let (va, vb) = (
+        frustum.mass_properties().volume,
+        off.mass_properties().volume,
+    );
+    let f = volume(frustum.fuse(OperationId(3), &off));
+    let c = volume(frustum.cut(OperationId(3), &off));
+    let m = volume(frustum.common(OperationId(3), &off));
+    assert!(m > 0.0 && c > 0.0, "{m} {c}");
+    assert!((f + m - va - vb).abs() <= 1e-9 * (va + vb), "{f} {m}");
+    assert!((c - (va - m)).abs() <= 1e-9 * (va + vb), "{c} {m}");
+}

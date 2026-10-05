@@ -1227,6 +1227,18 @@ pub(super) fn arrange_shared(models: [Prism; 2]) -> Result<Arr> {
                         _ if in_coinc[0].contains(&fa) || in_coinc[1].contains(&fb) => continue,
                         _ => return Err(seam()),
                     }
+                    // A plane within the resolution of a cone's apex: its
+                    // section's binary64 image (the loops' areas and
+                    // nesting) is none, and its edges would round to
+                    // rulings, which `cone_curve3` refuses.
+                    if let Crv::Cone(c) = crv {
+                        let face = if c.carrier == 0 { fa } else { fb };
+                        if c.rounds_as_rulings(models[c.carrier].view(face).0) {
+                            return Err(Error::Degenerate(
+                                "a plane within the resolution of a cone's apex",
+                            ));
+                        }
+                    }
                     let gid = edges.len();
                     edges.push(GEdge {
                         curve: CurveRef::Section(si, bi),

@@ -7576,6 +7576,52 @@ Decisions for S9, recorded before its code (2026-09-28):
     `compare_split.py` 72/56, `compare_split_pieces_boolean.py` 26/22 and
     the torus comparisons (11/24, 15/14, 15/29, 16/37) unchanged with 0
     failures.
+  * **A plane within rounding of a cone's apex refused before its loops
+    (2026-10-04).** The `split` campaign at `770bcdbc` found a frustum
+    (radii 3.5 and 0.25 over 1.75, upright) split through its virtual
+    apex's height `49/26` rounded by an oblique plane, whose piece below
+    failed every Boolean of S9e.4b.3b's stage, the holding box's common
+    too, as `InvalidTopology("an open Boolean of arcs in any position")`.
+    The split takes the plane within the resolution of the apex and cuts
+    rulings (S8d.2); the piece's model is the frustum common the plane's
+    exact half-space, which misses the apex by about `1e-16`, so the
+    section is a hyperbola within rounding of the rulings. Its edges'
+    binary64 samples, a graph over the cone's angle (`rho = G / (mu + k
+    (alpha cos + beta sin))`, both terms within rounding of zero) whose
+    arms turn by less than an ulp, ran off the section: both of the cut
+    face's loops round the frustum's section came out clockwise, both were
+    nested as holes in the face's outer piece, and the assembly was open.
+    The piece above reached `cone_curve3`, which refuses a plane whose
+    section rounds to S8d.2's rulings (`Degenerate("a plane within the
+    resolution of a cone's apex")`, the near-parallel audit's refusal), and
+    a whole frustum against a slab with a face on that plane fails as the
+    piece below did, at `770bcdbc` and at `f87d150d`: S9d.3a's plane
+    section, reached through S9e.4b.3b, and not the coarse polygons
+    `c82af2ec` samples again (these samples are off the section, not too
+    few). The arrangement now refuses such a section before any edge of it
+    enters (`ConeSec::rounds_as_rulings`, `cone_conic`'s own test on the
+    cone model its edges round on, in `graph.rs` where a section's edges
+    are made), with the refusal `cone_curve3` gave; a section whose edges
+    lie outside both faces still meets nothing. Not the validator's change:
+    every result that reached `cone_curve3` was refused there already.
+    `tests/cone_booleans.rs`
+    (`a_plane_within_rounding_of_a_virtual_apex_is_degenerate`: the
+    frustum against the slab refused in all three operations, the slab
+    moved `1/64` along its normal evaluating with the pair identities) and
+    `tests/split_piece_booleans.rs`
+    (`pieces_by_a_plane_within_rounding_of_a_virtual_apex`: both pieces
+    refused against the holding box and the turned box), and the input kept
+    (`fuzz/regressions/split/crash-baa7bc2d89a6658d6e58e7e931d5f60eb90a4265.bin`).
+    Checks: fmt, clippy, the 1.85 check, the release suite (593 tests);
+    replays with debug assertions of the split corpus and its regressions
+    (3,568 inputs), the boolean corpus and its regressions (1,463 inputs),
+    645 single-byte mutations of the input (every value of the mode byte
+    among them; 337 failed alike before) and 500 random cones, zones and
+    caps cut by the target's planes, none failing; the 31 boolean
+    comparisons of `HANDOFF.md`'s table unchanged with 0 failures
+    (`compare_imported_pieces_boolean.py` 32/13,
+    `compare_split_pieces_boolean.py` 26/22, `compare_cone_boolean.py`
+    25/5 and the rest), and `compare_split.py` 72/56.
   * **S9f.3 refined, before its code (2026-10-03).** Why it is refused
     today: `curved::spline_pairs` refuses a spline prism against a sphere
     or a cone ("a spline prism against a sphere or a cone (S9f.3)");
