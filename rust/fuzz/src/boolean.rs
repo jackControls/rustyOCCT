@@ -15,7 +15,7 @@
 //! torus, S9d.4b.1 a torus v-segment or wedge, S9d.4b.2a makes the object a
 //! sphere or a cone against a whole torus, S9d.4b.2b a whole torus, S9d.3c
 //! a sphere against a cone or sphere tool and a cone against a sphere, cap
-//! or zone tool (against a cone tool off, `CONE_PAIRS`), S9d.4c a sphere,
+//! or zone tool or a cone tool (`CONE_PAIRS`), S9d.4c a sphere,
 //! cap, zone or cone against a torus v-segment or wedge tool and a cap or
 //! zone against a whole torus; a
 //! result thinner than the resolution or touching itself; an undecided
@@ -79,35 +79,44 @@ use rusty_occt::{
     Vec3,
 };
 
-/// Whether two whole tori are decoded (S9d.4b.2b). Off: since the certified
-/// integrals along their meetings were sped up (REVIEW_NOTES.md's track of
-/// that name) intersecting variants take about 3 s under the sanitizer at
-/// the median, 22 s at the ninth decile and 51 s at the slowest of 44 on
-/// the Mac (46, 111 and several minutes before), too close to the target's
-/// 60 seconds at the Linux runners' 2.6 times; the kernel's tests and the
-/// replayed variants cover them until the degree-eight arrangement's
-/// arithmetic is faster too.
+/// Whether two whole tori are decoded (S9d.4b.2b). Off: since the off
+/// switches' track (REVIEW_NOTES.md, "The boolean target's off switches")
+/// none of 1,203 replayed variants (every corpus input moved onto two tori,
+/// debug assertions) fails, 3.8 G instructions at the median, 25 G at the
+/// ninth decile and 82 G at the slowest, but under the sanitizer the
+/// slowest two take 40 s and 36 s a run on the Mac (two tori of equal radii
+/// on parallel axes a short way apart, cut: their meetings' certified
+/// integrals, a quarter of it the moved result's second validation, and
+/// the arrangement of their degree-eight meetings), above the 35 s the
+/// switches on keep to here (the target allows 60); the next 29 s and below.
 const TORUS_PAIRS: bool = false;
 
-/// Whether a cone object against a cone tool is decoded (S9d.3c). Off
-/// until two cones' certified integrals are fast enough for the target's 60
-/// seconds under the sanitizer (up to 80 s with debug assertions alone, 14
-/// of 711 variants above 20 s, the time in the result's mass and
-/// validation): the kernel's tests and the replays of 711 cone-pair
-/// variants cover them meanwhile. A sphere object against a cone tool and a
-/// cone object against a sphere, cap or zone tool stay on (26 s at most).
-const CONE_PAIRS: bool = false;
+/// Whether a cone object against a cone tool is decoded (S9d.3c). On since
+/// the off switches' track (REVIEW_NOTES.md, "The boolean target's off
+/// switches"): two coaxial cones' ring took thousands of pieces a turn in
+/// its certified integrals (159 G instructions at the slowest of the
+/// variants with debug assertions), and a cone section of a given result
+/// was rounded on the other cone's frame (`vertex_off_curve`, 29 inputs);
+/// of 1,203 replayed variants (every corpus input moved onto a cone object
+/// against the cone tool, debug assertions) none fails, 3.3 G at the
+/// median, 12.5 G at the ninth decile and 48 G at the slowest, and under the
+/// sanitizer the slowest 28 s a run on the Mac, the next 21 to 23 s, where
+/// the corpus's slowest input takes 19 s.
+const CONE_PAIRS: bool = true;
 
 /// Whether a torus v-segment or wedge tool meets a sphere or cone object,
 /// and a cap or zone object a torus or a part, in the tilted or a turned
 /// frame too (S9d.4c). Off: their rims' and circles' crossings lie in
-/// fields over the rounded frames' inverses, and of 3,000 replayed variants
-/// (debug assertions, no sanitizer) the 1,201 caps and 592 parts in turned
-/// frames took 2.1 s and 0.6 s at the median, 7.5 s and 4.6 s at the ninth
-/// decile and 26 s and 50 s at the slowest (about twelve times that under
-/// the sanitizer), against 2.3 s at the slowest of 457 in the axis-aligned
-/// frames, which stay on; parts against prisms with arcs are on in every
-/// frame (4.5 s at the slowest of 750).
+/// fields over the rounded frames' inverses; since the off switches' track
+/// (REVIEW_NOTES.md, "The boolean target's off switches") none of 752
+/// replayed variants (every corpus input moved onto a part or a cap against
+/// a torus in those frames, debug assertions) fails, 16 G instructions at
+/// the median, 36 G at the ninth decile and 80 G at the slowest (329 G
+/// before), but under the sanitizer the slowest four take 38 to 43 s a run
+/// on the Mac (a cap's circles' crossings with the torus, the fields'
+/// products and inverses), above the 35 s the switches on keep to here.
+/// Those in the axis-aligned frames stay on, and parts against prisms with
+/// arcs are on in every frame (4.5 s at the slowest of 750).
 const TURNED_PARTS: bool = false;
 
 /// Whether an operation's first result with curved faces is given to the
