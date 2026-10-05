@@ -9397,6 +9397,10 @@ Decisions for S9, recorded before its code (2026-09-28):
     check, the release suite (623 tests); every comparison of
     `HANDOFF.md`'s table with its matches and reviews unchanged, none
     failing, and `compare_split.py` 72/56.
+    Campaigns at `f614b6ce` (600 s each, sampled replays, every switch on):
+    `boolean` clean, 841 runs, the slowest input 18 s under
+    AddressSanitizer; `split` clean, 1,474 runs, the slowest 18 s, at load
+    about 10.
   * **Where S9 stands (2026-09-30, paused).** Done and pushed: S9a to S9d
     (every sub-step with its DRAW survey and a clean campaign), S9e.1
     (campaign clean at `51c08edf`) and S9e.2 (`8e060c67`), S9f's decisions
