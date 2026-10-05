@@ -7323,6 +7323,25 @@ Decisions for S9, recorded before its code (2026-09-28):
     cap at `5/2` and a tilted chain slab left counts the reference's rays
     did not resolve, so the cap is at `3/2` and the slab level; (e) the
     ball within the resolution has no cut case (a shell `2^-30` thick).
+    The capture `occt-boolean-one-sphere-preimplementation`
+    (`compare_one_sphere_boolean.py`, keyed on the refusal the step removes,
+    `pieces.rs`'s `OutOfDomain("faces of both inputs on one sphere
+    (S9e.4b.3c)")`; the kernel's probe `unsupported` on all 22, the divided
+    rims refused on import): 8 matching, 14 reviewed. OCCT's General Fuse
+    on faces of both inputs on one sphere leaves 10 results invalid under
+    BRepCheck_Analyzer (the hemisphere and the cap's fuse, the cap and the
+    octant's fuse and cut, the ball and the cap's fuse and common, the wedge
+    and the cap's fuse, the near ball's two, the declared `hemi_octant`'s
+    cut and common), their solid counts the reference's and their measures
+    within 1.1e-5 relative (BRepGProp's default integration; within 7.1e-12
+    measured adaptively at 1e-10 and 1e-12 by a diagnostic build, the near
+    ball's common 5.2e-10); the cap and the octant's common is valid, its
+    volume 2.4e-5 relative off by the default integration (1.1e-11
+    adaptively); and the chain is wrong: its first result (the cap less the
+    octant, invalid) given to the slab, OCCT's fuse is 3.2e-2 short, its cut
+    one solid of the reference's two and its common empty, consistent with
+    that result missing its part above the slab's bottom plane.
+    S9e.4b.3c.1's kernel next.
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces
