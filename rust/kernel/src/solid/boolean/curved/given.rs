@@ -33,7 +33,7 @@
 //! model.
 use super::assemble::{assemble_made, Made};
 use super::graph::{classify, holds, Arr, CurveRef};
-use super::matched::{matched, Match};
+use super::matched::Match;
 use super::meet::Pos;
 use super::model::*;
 use super::num::*;
@@ -240,9 +240,12 @@ pub(super) fn built(
     } else {
         // S9e.2: another assembly's slots, matched geometrically; the one
         // re-run solid that matches.
+        // S9e.4b.3c.3: an imported piece's stored poles off its loops may
+        // stay unmatched (OCCT's vertex loops).
+        let poles = super::pieces::is_piece(s);
         let mut found = None;
         for (c, (component, _)) in out.iter().enumerate() {
-            if let Some(m) = matched(&component.parts, t, tol) {
+            if let Some(m) = super::matched::matched_poles(&component.parts, t, tol, poles) {
                 if found.is_some() {
                     return Err(differ());
                 }
@@ -498,7 +501,14 @@ pub(super) fn built(
         info.insert(eid, (op, role));
     }
     let boxes = leaf.iter().map(|&(o, f)| leaves[o].boxes[f]).collect();
-    let f = leaves[0].f.clone();
+    // The first input's frame, or the primitive's where a piece's hull is
+    // first (S9e.4b.3c.3: the hull less the primitive).
+    let f = leaves
+        .iter()
+        .find(|m| m.hull.is_none())
+        .unwrap_or(&leaves[0])
+        .f
+        .clone();
     Ok(Prism {
         frame: s.frame,
         tolerance: s.resolution(),

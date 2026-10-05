@@ -70,10 +70,12 @@ turned octant and the zone's wedge, both imported (two spheres);
 Declared `degenerate`: `tilt_flush`, a box in the turned octant's frame on
 its base plane (one plane in the construction, within the resolution of it
 in the file); `half_touch`, a box whose face touches the half ball's
-sphere at a point inside its face. Declared `unsupported` (S9e.4b.3c):
-`bitten_box`, the bitten ball and a box. `one_sphere`, the octant and
+sphere at a point inside its face. `one_sphere`, the octant and
 `octant_low` (faces of both on one sphere), declared `unsupported` until
-S9e.4b.3c.1's kernel decided them, is solid.
+S9e.4b.3c.1's kernel decided them, is solid; so is `bitten_box`, the bitten
+ball and a box, declared `unsupported` until S9e.4b.3c.3a's kernel decided
+the bitten ball as a bite (its ball less the hull of its planes turned
+over).
 
 The reference is the construction OCCT was given, through S9e.3a's chained
 reference (`chained_curved_boolean_reference.py`): each imported piece its
@@ -332,7 +334,6 @@ def group(name, klass, items, outcomes, first=None, reason=None, kind=None):
 TOUCH = 'a box\'s face touching the imported half ball\'s sphere at a point inside its face'
 FLUSH = ('a box in the turned octant\'s frame on the plane of its base (one plane in the construction, within '
          'the resolution of it in the file)')
-BITTEN = 'S9e.4b.3c: an imported plane piece not convex in its planes'
 ROD = prism([disc(5.5, 7.375, 0.75)], at('XY', (0, 0, -2)), 0.0, 14.0)
 SLAB = prism([square(-4.0, -15.0, 14.0, 15.0)], at('TILT', (0, 0, 8.125)), 0.0, 1.5)
 # The half ball's touching box: on the plane normal to `SKEW2`'s `x` through
@@ -370,7 +371,7 @@ def cases():
     out += group('one_sphere', 'both', [imported('octant'), imported('octant_low')], three)
     out += group('bitten_box', 'sphere', [imported('bitten'), prism([square(6.0, 5.5, 9.5, 8.5)],
                                                                     at('XY', (0, 0, 3.5)), 0.0, 3.0)],
-                 three, kind='unsupported', reason=BITTEN)
+                 three)
     return out
 
 
@@ -490,12 +491,22 @@ def evaluate(job):
     return name, rows, res, checks, margins, stats, degenerate
 
 
+# Groups whose margins (the meetings' sines, the events' spacing) are not
+# checked though solid: `bitten_box`, declared `unsupported` until
+# S9e.4b.3c.3a, its box's edge from the ball's centre along the frame's
+# normal through the sphere's stored pole within rounding (the reference's
+# events there 6.2e-18 of their range apart; the kernel takes the pole as a
+# vertex of the edge).
+MARGINS_UNCHECKED = {'bitten_box'}
+
+
 def jobs(mc_n):
     """One job per group."""
     groups = {}
     for c in all_cases():
         e = groups.setdefault(c.group, [c.items, c.op1 if c.stages else None, bool(c.stages and c.stages[0][1]),
-                                        bool(c.stages), {}, c.kind in ('degenerate', 'unsupported')])
+                                        bool(c.stages), {},
+                                        c.kind in ('degenerate', 'unsupported') or c.group in MARGINS_UNCHECKED])
         e[4][c.last] = c.solids
     return [(name, items, op1, swapped, chained, ops, degenerate, mc_n)
             for name, (items, op1, swapped, chained, ops, degenerate) in groups.items()]

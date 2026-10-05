@@ -25,7 +25,9 @@
 //! of one sphere, cylinder or cone face and plane faces is a plane piece,
 //! its primitive common its planes' half-spaces (`boolean::curved::pieces`),
 //! its model built and matched to its stored topology on import, its
-//! entities its stored ones. Every other body is S9e.4b's.
+//! entities its stored ones; S9e.4b.3c.3: or another Boolean of the two (the
+//! hull less the primitive, the primitive less the hull, their fuse), each
+//! form tried in turn, the match the arbiter. Every other body is S9e.4b's.
 use super::{replayable, Construction, Context, Solid};
 use crate::history::{History, Relation};
 use crate::identity::{
@@ -77,6 +79,36 @@ pub(crate) enum Recognized {
 pub(crate) struct Piece {
     pub(crate) primitive: Box<Solid>,
     pub(crate) planes: Vec<(Frame3, bool)>,
+    /// S9e.4b.3c.3: the Boolean of the primitive and the hull of the planes
+    /// the body is.
+    pub(crate) form: Form,
+}
+
+/// S9e.4b.3c.3: which Boolean of its primitive and the convex hull of its
+/// planes a plane piece is (REVIEW_NOTES.md, "S9e.4b.3c.3 refined").
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum Form {
+    /// The primitive common the hull (S9e.4b.3a): a convex piece.
+    Common,
+    /// The hull less the primitive: a hole, groove, notch or dimple, the
+    /// curved face's material outside its quadric.
+    Groove,
+    /// The primitive less the hull of its planes turned over: a bite.
+    Bite,
+    /// The hull fused with the primitive: a boss.
+    Boss,
+}
+
+impl Form {
+    /// The forms a body whose curved face's material lies outside its
+    /// quadric (`outside`) or inside it may be, in the order tried.
+    fn candidates(outside: bool) -> &'static [Form] {
+        if outside {
+            &[Form::Groove]
+        } else {
+            &[Form::Common, Form::Bite, Form::Boss]
+        }
+    }
 }
 
 impl Imported {
@@ -104,25 +136,38 @@ impl Imported {
 
 impl Piece {
     /// A point's location: its primitive's and its planes' sides (within
-    /// the resolution).
+    /// the resolution), combined by its form.
     fn classify(&self, point: Point3, tolerance: Tolerance) -> Result<crate::Location> {
         use crate::Location;
-        let mut at = self.primitive.classify(point)?;
-        if at == Location::Outside {
-            return Ok(at);
-        }
         let tol = tolerance.linear();
+        let mut hull = Location::Inside;
         for (frame, into) in &self.planes {
             let d = frame.coordinates(point)[2];
             let d = if *into { -d } else { d };
             if d > tol {
-                return Ok(Location::Outside);
+                hull = Location::Outside;
+                break;
             }
             if d >= -tol {
-                at = Location::Boundary;
+                hull = Location::Boundary;
             }
         }
-        Ok(at)
+        let primitive = self.primitive.classify(point)?;
+        // Inside 2, on the boundary 1, outside 0: a common the least, a
+        // fuse the most, a complement the reverse.
+        let rank = |l: Location| match l {
+            Location::Inside => 2,
+            Location::Boundary => 1,
+            Location::Outside => 0,
+        };
+        let (p, h) = (rank(primitive), rank(hull));
+        let r = match self.form {
+            Form::Common => p.min(h),
+            Form::Groove => h.min(2 - p),
+            Form::Bite => p.min(2 - h),
+            Form::Boss => p.max(h),
+        };
+        Ok([Location::Outside, Location::Boundary, Location::Inside][r])
     }
 }
 
@@ -192,13 +237,67 @@ impl Solid {
             }
             // S9e.4b.3a: a plane piece of a sphere, a cylinder or a cone, its
             // primitive common its planes' half-spaces (checked below).
+            // S9e.4b.3c.3: or another Boolean of the two, each form tried in
+            // turn (its model's match to the stored topology the arbiter).
             Err(e) if piece_shape(&topology) => {
-                let p = piece(&topology, resolution, construction_operation(operation))
-                    .map_err(|x| if x == not_its_primitive() { x } else { e })?;
-                (Recognized::Piece(Box::new(p)), BTreeMap::new())
+                return Self::imported_piece(context, topology, resolution, e);
             }
             Err(e) => return Err(e),
         };
+        Self::imported_as(context, topology, resolution, recognized, names)
+    }
+
+    /// S9e.4b.3a: an imported plane piece, its forms tried in turn
+    /// (S9e.4b.3c.3): the first whose model matches the stored topology,
+    /// else the first refusal other than a mismatch (a primitive the stored
+    /// data cannot build S9e.4a's refusal `e`).
+    fn imported_piece(
+        context: &Context,
+        topology: Topology,
+        resolution: Tolerance,
+        e: Error,
+    ) -> Result<(Self, History)> {
+        let op = construction_operation(context.operation);
+        let k = curved_face(&topology).ok_or_else(general)?;
+        let mut refusal = None;
+        for &form in Form::candidates(material_outside(&topology, k)) {
+            let built = piece(&topology, resolution, op, form).map_err(|x| {
+                if x == not_its_primitive() {
+                    x
+                } else {
+                    e.clone()
+                }
+            });
+            let attempt = built.and_then(|p| {
+                Self::imported_as(
+                    context,
+                    topology.clone(),
+                    resolution,
+                    Recognized::Piece(Box::new(p)),
+                    BTreeMap::new(),
+                )
+            });
+            match attempt {
+                Ok(done) => return Ok(done),
+                Err(e) if e == not_its_primitive() => {}
+                Err(e) => {
+                    refusal.get_or_insert(e);
+                }
+            }
+        }
+        Err(refusal.unwrap_or_else(not_its_primitive))
+    }
+
+    /// The imported solid of what its stored topology was recognized as
+    /// (S9e.4a), checked.
+    fn imported_as(
+        context: &Context,
+        topology: Topology,
+        resolution: Tolerance,
+        recognized: Recognized,
+        names: BTreeMap<EntityId, EntityId>,
+    ) -> Result<(Self, History)> {
+        let (level, operation) = (context.level, context.operation);
         let mass = topology
             .mass_enclosure()
             .ok_or(Error::Unrepresentable(
@@ -282,9 +381,12 @@ impl Imported {
             }
             Recognized::Polyhedron => Recognized::Polyhedron,
             // S9e.4b.3a: read off the moved stored topology again.
-            Recognized::Piece(p) => {
-                Recognized::Piece(Box::new(piece(&moved, tolerance, p.primitive.operation)?))
-            }
+            Recognized::Piece(p) => Recognized::Piece(Box::new(piece(
+                &moved,
+                tolerance,
+                p.primitive.operation,
+                p.form,
+            )?)),
         };
         let (frame, start, end, bounds) = placed(&recognized, &moved);
         Ok(Solid {
@@ -830,64 +932,152 @@ fn axial_range(t: &Topology, frame: &Frame3) -> (f64, f64) {
     range
 }
 
-/// A body of one curved face and planes other than its primitive common its
-/// planes' half-spaces (S9e.4b.3c).
+/// A body of one curved face and planes that is no Boolean of its
+/// primitive and its planes' hull (S9e.4b.3c.3b).
 fn not_its_primitive() -> Error {
     Error::OutOfDomain(
-        "an imported plane piece other than its primitive common its planes' half-spaces (S9e.4b.3c)",
+        "an imported plane piece other than one Boolean of its primitive and its planes' hull \
+         (S9e.4b.3c.3b)",
     )
 }
 
-/// A plane piece: its primitive on the curved face's stored frame and its
-/// plane faces' stored frames (S9e.4b.3a).
-fn piece(t: &Topology, tolerance: Tolerance, op: OperationId) -> Result<Piece> {
-    let k = t
-        .faces()
+/// The curved face of a plane piece's shape.
+fn curved_face(t: &Topology) -> Option<usize> {
+    t.faces()
         .iter()
         .position(|f| !matches!(f.surface, Surface::Plane(_)))
-        .ok_or_else(general)?;
-    // The curved face's material inside its quadric (its outward normal
-    // the surface's own, away from the axis or centre): a body whose
-    // material lies outside it (a block less a cylinder, a notch) is not
-    // its primitive common its planes, and its model would meet the planes
-    // its wall is tangent to, refused before it is built (S9e.4b.3c).
+}
+
+/// Whether the curved face's material lies outside its quadric (its outward
+/// normal toward the axis or centre: a hole, groove or notch).
+fn material_outside(t: &Topology, k: usize) -> bool {
     let curved = &t.faces()[k];
     let front = &t.regions()[t.shells()[curved.front.index()].region.index()];
-    let outside = if front.kind == RegionKind::Solid {
-        1.0
-    } else {
-        -1.0
-    };
-    if curved.sense.sign() * outside < 0.0 {
+    let solid = front.kind == RegionKind::Solid;
+    (curved.sense.sign() < 0.0) == solid
+}
+
+/// The axial range of a face's edges about a frame: their ends' and points'
+/// heights (16 a curve).
+fn face_range(t: &Topology, k: usize, frame: &Frame3) -> (f64, f64) {
+    let mut range = (f64::INFINITY, f64::NEG_INFINITY);
+    for l in &t.faces()[k].loops {
+        let fins = match &t.loops()[l.index()] {
+            Loop::Edges { fins, .. } => fins,
+            Loop::Vertex(v) => {
+                let w = frame.coordinates(t.vertices()[v.index()].position)[2];
+                range = (range.0.min(w), range.1.max(w));
+                continue;
+            }
+        };
+        for f in fins {
+            let edge = &t.edges()[t.fins()[f.index()].edge.index()];
+            for s in 0..=16 {
+                let w = frame.coordinates(edge.curve.point(f64::from(s) / 16.0))[2];
+                range = (range.0.min(w), range.1.max(w));
+            }
+        }
+    }
+    range
+}
+
+/// S9e.4b.3c.3: a cylinder's or a cone's caps: the plane faces normal to its
+/// axis at an end of its curved face's axial range `(w0, w1)`, their outward
+/// normal away from the range (the primitive's own end, the material inside
+/// it) or, for a groove, into it (the primitive's end seen from outside: a
+/// blind hole's floor), each its exact height along the axis rounded once.
+fn caps(
+    t: &Topology,
+    k: usize,
+    frame: &Frame3,
+    (w0, w1): (f64, f64),
+    form: Form,
+    tolerance: Tolerance,
+) -> Result<Vec<(usize, f64)>> {
+    let local = Local::new(frame)?;
+    let tol = tolerance.linear();
+    let mut out = Vec::new();
+    for (i, f) in t.faces().iter().enumerate() {
+        let Surface::Plane(plane) = &f.surface else {
+            continue;
+        };
+        if i == k || !parallel(plane.normal(), frame.normal()) {
+            continue;
+        }
+        let h = rational_f64(&local.of(plane.origin())[2]);
+        let up = outward(t, i).ok_or_else(general)?.dot(frame.normal()) > 0.0;
+        let away = if (h - w0).abs() <= tol {
+            !up
+        } else if (h - w1).abs() <= tol {
+            up
+        } else {
+            continue;
+        };
+        if away != (form == Form::Groove) {
+            out.push((i, h));
+        }
+    }
+    Ok(out)
+}
+
+/// A plane piece of a form (S9e.4b.3a; S9e.4b.3c.3): its primitive on the
+/// curved face's stored frame and its plane faces' stored frames. A common
+/// takes the primitive past the body's ends and every plane; the other forms
+/// the primitive past its curved face's ends but at its caps (a cylinder's
+/// or a cone's), and the planes but the caps', turned over for a bite.
+fn piece(t: &Topology, tolerance: Tolerance, op: OperationId, form: Form) -> Result<Piece> {
+    let k = curved_face(t).ok_or_else(general)?;
+    // The curved face's material inside its quadric (its outward normal the
+    // surface's own, away from the axis or centre) but for a groove.
+    if material_outside(t, k) != (form == Form::Groove) {
         return Err(not_its_primitive());
     }
     let half = std::f64::consts::FRAC_PI_2;
-    let primitive = match &t.faces()[k].surface {
-        Surface::Sphere { frame, radius } => {
-            Solid::build_sphere(op, *frame, *radius, -half, half, tolerance)?
+    // The axial range: the body's (a common's) or the curved face's, past
+    // either end by a quarter of it (at least of the radius) but at a cap.
+    let range = |frame: &Frame3, radius: f64| -> Result<((f64, f64), Vec<usize>)> {
+        let (w0, w1) = if form == Form::Common {
+            axial_range(t, frame)
+        } else {
+            face_range(t, k, frame)
+        };
+        let margin = 0.25 * (w1 - w0).max(radius);
+        let (mut lo, mut hi) = (w0 - margin, w1 + margin);
+        let mut capped = Vec::new();
+        if form != Form::Common {
+            for (i, h) in caps(t, k, frame, (w0, w1), form, tolerance)? {
+                if (h - w0).abs() <= (h - w1).abs() {
+                    lo = h;
+                } else {
+                    hi = h;
+                }
+                capped.push(i);
+            }
         }
+        Ok(((lo, hi), capped))
+    };
+    let (primitive, capped) = match &t.faces()[k].surface {
+        Surface::Sphere { frame, radius } => (
+            Solid::build_sphere(op, *frame, *radius, -half, half, tolerance)?,
+            Vec::new(),
+        ),
         Surface::Cylinder { frame, radius } => {
-            // Past the body's ends along the axis by a quarter of its span.
-            let (w0, w1) = axial_range(t, frame);
-            let margin = 0.25 * (w1 - w0).max(*radius);
+            let ((lo, hi), capped) = range(frame, *radius)?;
             let profile = Profile::new(
                 Boundary::circle(Point2::new(0.0, 0.0), *radius, tolerance)?,
                 Vec::new(),
                 tolerance,
             )?;
-            Solid::build(op, profile, *frame, w0 - margin, w1 + margin)?
+            (Solid::build(op, profile, *frame, lo, hi)?, capped)
         }
         Surface::Cone {
             frame,
             radius,
             half_angle,
         } => {
-            // The radius `radius + w tan a`, past the body's ends but not
-            // past the apex.
+            // The radius `radius + w tan a`, not past the apex.
             let slope = half_angle.tan();
-            let (w0, w1) = axial_range(t, frame);
-            let margin = 0.25 * (w1 - w0).max(radius.abs());
-            let (mut lo, mut hi) = (w0 - margin, w1 + margin);
+            let ((mut lo, mut hi), capped) = range(frame, radius.abs())?;
             let apex = -radius / slope;
             let (mut r_lo, mut r_hi) = (radius + lo * slope, radius + hi * slope);
             if slope > 0.0 && lo <= apex {
@@ -902,24 +1092,29 @@ fn piece(t: &Topology, tolerance: Tolerance, op: OperationId) -> Result<Piece> {
                 return Err(general());
             }
             let base = frame.at(frame.point(Point2::new(0.0, 0.0), lo));
-            Solid::build_cone(op, base, r_lo, r_hi, hi - lo, tolerance)?
+            (
+                Solid::build_cone(op, base, r_lo, r_hi, hi - lo, tolerance)?,
+                capped,
+            )
         }
         _ => return Err(general()),
     };
     let mut planes = Vec::new();
     for (i, f) in t.faces().iter().enumerate() {
-        if i == k {
+        if i == k || capped.contains(&i) {
             continue;
         }
         let Surface::Plane(frame) = &f.surface else {
             return Err(general());
         };
         let out = outward(t, i).ok_or_else(general)?;
-        planes.push((*frame, frame.normal().dot(out) < 0.0));
+        let into = frame.normal().dot(out) < 0.0;
+        planes.push((*frame, into != (form == Form::Bite)));
     }
     Ok(Piece {
         primitive: Box::new(primitive),
         planes,
+        form,
     })
 }
 

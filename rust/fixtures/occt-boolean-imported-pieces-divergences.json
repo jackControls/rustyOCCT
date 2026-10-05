@@ -163,6 +163,30 @@
       "reason": "A declared degenerate case (the box whose face touches the imported half ball's sphere at a point inside its face): the inputs touch at a point, and OCCT's fuse keeps them as 2 solids sharing that point where the reference's rays join them into 1 (the regularized union is one closed set; counting its solids across a contact of measure zero is a convention). Volume and area agree exactly as printed, the centre within 6.6e-17 of the size. The decisions refuse the case (Degenerate: a tangency between the inputs, the decisions' rule).",
       "independent_evidence": "chained_curved_boolean_reference.py's rows on the constructions OCCT was given (generate_imported_pieces_boolean_fixtures.py --check, identical under Python 3.9 and 3.12) agree two ways (each face swept by two independent families of curves) within 7.5e-37, every solid's measures from its faces within 2.0e-40 of its closed form, each piece's within 1.3e-41 of its own (Van Oosterom and Strackee's solid angle, the lune's dihedral angle, the half), the pair identities within 4.4e-38, the area identity within 9.9e-41, and Monte Carlo within 3.5 standard errors; its solid counts are the declared ones by rays at two resolutions; every stored vertex of the imported files lies on its construction's surfaces within 7.6e-16 of the size.",
       "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "bitten_box_fuse",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "161c1404ec34fd9722e318367ada9bd83f572622afadb2077ebdabd14d5a1b6d",
+      "differences": [
+        "rust_entity_counts"
+      ],
+      "reason": "BRepAlgoAPI's result is valid with the reference's solid count and measures. With the kernel, entity counts: OCCT's unified result splits the bitten ball's sphere's faces and sections at its seams and keeps its pole edges (faces, edges and vertices (10, 27, 17)) where the kernel's faces close over their periods ((10, 25, 16)); the kernel's enclosures are within the reference.",
+      "independent_evidence": "chained_curved_boolean_reference.py's rows on the constructions OCCT was given (generate_imported_pieces_boolean_fixtures.py --check, identical under Python 3.9 and 3.12) agree two ways (each face swept by two independent families of curves) within 7.5e-37, every solid's measures from its faces within 2.0e-40 of its closed form, each piece's within 1.3e-41 of its own (Van Oosterom and Strackee's solid angle, the lune's dihedral angle, the half), the pair identities within 4.4e-38, the area identity within 9.9e-41, and Monte Carlo within 3.5 standard errors; its solid counts are the declared ones by rays at two resolutions; every stored vertex of the imported files lies on its construction's surfaces within 7.6e-16 of the size.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "bitten_box_cut",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "5018ada9f2e578cc7cdb7bc926d0390570a864e4503ec120f337fd5551f82a51",
+      "differences": [
+        "rust_entity_counts"
+      ],
+      "reason": "BRepAlgoAPI's result is valid with the reference's solid count and measures. With the kernel, entity counts: OCCT's unified result splits the bitten ball's sphere's faces and sections at its seams and keeps its pole edges (faces, edges and vertices (9, 24, 15)) where the kernel's faces close over their periods ((9, 22, 14)); the kernel's enclosures are within the reference.",
+      "independent_evidence": "chained_curved_boolean_reference.py's rows on the constructions OCCT was given (generate_imported_pieces_boolean_fixtures.py --check, identical under Python 3.9 and 3.12) agree two ways (each face swept by two independent families of curves) within 7.5e-37, every solid's measures from its faces within 2.0e-40 of its closed form, each piece's within 1.3e-41 of its own (Van Oosterom and Strackee's solid angle, the lune's dihedral angle, the half), the pair identities within 4.4e-38, the area identity within 9.9e-41, and Monte Carlo within 3.5 standard errors; its solid counts are the declared ones by rays at two resolutions; every stored vertex of the imported files lies on its construction's surfaces within 7.6e-16 of the size.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
     }
   ]
 }
