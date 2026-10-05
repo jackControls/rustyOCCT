@@ -212,6 +212,45 @@ fn resultant(e: &Bv, r: &[Poly; 2]) -> Poly {
     ))
 }
 
+/// Resultants kept before the memo starts again.
+const KEPT_RESULTANTS: usize = 256;
+
+/// The kept reduced quartics and resultants, by the circle's and the
+/// torus's numbers, the rotation and the offset's side.
+type Resultants = std::collections::HashMap<(String, usize, i8), ([Poly; 2], Poly)>;
+
+thread_local! {
+    /// A circle's reduced quartics and resultants with a torus (`circ_torus`)
+    /// by the circle's and the torus's numbers, the rotation and the
+    /// offset's side (`0` none): a cap's circle meets each face on a torus
+    /// part's surface, for each seam tried and each operation, on the same
+    /// numbers. A hit is the value the products give.
+    static RESULTANTS: std::cell::RefCell<Resultants> = std::cell::RefCell::new(Resultants::new());
+}
+
+/// `make`'s reduced quartic and resultant, kept by `key`, the rotation `i`
+/// and the offset's side.
+fn kept_resultant(
+    key: &str,
+    i: usize,
+    side: i8,
+    make: impl FnOnce() -> ([Poly; 2], Poly),
+) -> ([Poly; 2], Poly) {
+    let k = (key.to_string(), i, side);
+    if let Some(hit) = RESULTANTS.with(|m| m.borrow().get(&k).cloned()) {
+        return hit;
+    }
+    let out = make();
+    RESULTANTS.with(|m| {
+        let mut m = m.borrow_mut();
+        if m.len() >= KEPT_RESULTANTS {
+            m.clear();
+        }
+        m.insert(k, out.clone());
+    });
+    out
+}
+
 /// Where a sphere's circle of a surd radius, or on a basis of unequal
 /// lengths, meets a torus (model `t`): each crossing's `(dx, dy)` place and
 /// point in `Q(alpha)`; a tangency, or a crossing within the resolution
@@ -225,11 +264,18 @@ pub(super) fn circ_torus(circ: &Circ, t: &Prism, res: f64) -> Result<EdgeMeet> {
     // <= R + r`: the band of its function a displacement of `res` spans.
     let res_q = q(res);
     let delta = int(8) * big * small * (big + small + &res_q) * &res_q;
+    let key = format!("{circ:?}|{l:?}|{big}|{small}|{res_q}");
     let mut tangent = false;
-    for [cr, sr] in rotations() {
-        let e = circle_in_st(circ, &cr, &sr);
-        let r = reduce(&torus_in_st(&l, big, small, &cr, &sr, &zero()), &e);
-        let res0 = resultant(&e, &r);
+    for (i, [cr, sr]) in rotations().into_iter().enumerate() {
+        // The torus's quartic offset by `k`, reduced modulo the circle in
+        // the rotation's coordinates, and their resultant.
+        let rotated = |k: &R| {
+            let e = circle_in_st(circ, &cr, &sr);
+            let r = reduce(&torus_in_st(&l, big, small, &cr, &sr, k), &e);
+            let res = resultant(&e, &r);
+            (r, res)
+        };
+        let (r, res0) = kept_resultant(&key, i, 0, || rotated(&zero()));
         if res0.is_empty() {
             // The circle on the torus.
             return Ok(EdgeMeet::Along);
@@ -244,8 +290,8 @@ pub(super) fn circ_torus(circ: &Circ, t: &Prism, res: f64) -> Result<EdgeMeet> {
             Err(e) => return Err(e),
         };
         let n = found.len();
-        for k in [delta.clone(), -delta.clone()] {
-            let rk = resultant(&e, &reduce(&torus_in_st(&l, big, small, &cr, &sr, &k), &e));
+        for (side, k) in [(1, delta.clone()), (-1, -delta.clone())] {
+            let (_, rk) = kept_resultant(&key, i, side, || rotated(&k));
             if count(&rk)? != Some(n) {
                 return Err(Error::Degenerate(
                     "a sphere's circle within the resolution of tangency to a torus (S9d.4c)",
