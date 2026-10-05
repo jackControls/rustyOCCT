@@ -386,8 +386,8 @@ then for S9e.4b.3c.3a (branch `s9e4b3c3`, over `s9c2-kernel` at `8a55a3e6`).
    **S9e.4b.3c.3a** (a body of one curved face and planes as one Boolean of
    its primitive and the hull of its other planes: grooves, bites, bosses,
    two faces on one plane; `bcut_complex/G4` evaluating in its trial) is
-   implemented (pending its capture's Linux record, the DRAW survey and the
-   campaigns); next **S9e.4b.3c.3b**, bodies of one curved face needing
+   implemented (campaigns clean at `e8940c22`; pending its capture's Linux
+   record and the DRAW survey); next **S9e.4b.3c.3b**, bodies of one curved face needing
    more than one hull (a groove in a body not convex in its planes, a
    primitive bitten twice, a sphere's ends with another form: the fuzz
    target's 4 remaining refusals); then

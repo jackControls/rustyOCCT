@@ -8134,8 +8134,11 @@ Decisions for S9, recorded before its code (2026-09-28):
     plane piece whose curved face is tangent to its plane faces")` (its part
     is tangent to the tool too); `bugs/modalg_1/buc60926` stays `Degenerate("a
     plane through a cone's apex")`; the 38 `so` cases as before (27
-    evaluating, 11 `Degenerate`). Pending: the capture's Linux record, the
-    DRAW survey and the campaigns.
+    evaluating, 11 `Degenerate`). Pending: the capture's Linux record and
+    the DRAW survey. Campaigns at `e8940c22` (600 s each, sampled replays,
+    every switch on): `boolean` clean, 940 runs, the slowest input 17 s
+    under AddressSanitizer at load 11 to 15; `split` clean, 1,635 runs, none
+    slow.
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces
