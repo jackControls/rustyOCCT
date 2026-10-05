@@ -324,7 +324,8 @@ pub(super) fn assemble_made(arr: &Arr, op: Op2) -> Result<Vec<(Component, Made)>
     let faces_of = |g: usize| -> BTreeSet<usize> { uses[&g].iter().map(|u| u.0).collect() };
     let removable = |v: usize| -> bool {
         // A pole stays: its sections' pcurves turn there.
-        if matches!(arr.vx[v].key, VKey::Pole(..)) {
+        // So does a stored vertex splitting a circle (S9e.4b.3c.1).
+        if matches!(arr.vx[v].key, VKey::Pole(..) | VKey::Stored(..)) {
             return false;
         }
         let gs: Vec<usize> = incident[&v].iter().copied().collect();
@@ -1032,7 +1033,20 @@ fn build_component(
                 t.push(names.by_vertex(0, *fa, v));
                 t.push(names.by_vertex(1, *fb, v));
             }
-            VKey::Ring(si, _) | VKey::Pole(si, _) => {
+            // Circles of both inputs on one sphere crossing (S9e.4b.3c.1):
+            // each edge, or its faces' where it has no id.
+            VKey::Circles(ea, eb, _) => {
+                for (o, ei) in [(0, *ea), (1, *eb)] {
+                    let e = &arr.models[o].edges[ei];
+                    match e.id {
+                        Some(id) => t.push(id),
+                        None => t.extend(e.faces.iter().map(|&f| names.by_vertex(o, f, v))),
+                    }
+                }
+            }
+            // A stored vertex splitting a section: as a ring's vertex on it
+            // (S9e.4b.3c.1).
+            VKey::Ring(si, _) | VKey::Pole(si, _) | VKey::Stored(si, _) => {
                 let s = &arr.secs[*si];
                 t.push(names.by_vertex(0, s.fa, v));
                 t.push(names.by_vertex(1, s.fb, v));

@@ -541,6 +541,10 @@ pub(super) fn section(
                 _ => Ok(Section::Curves(Vec::new())),
             }
         }
+        // One sphere (S9e.4b.3c.1): faces on one surface.
+        (Surf::Sphere { c: c1, r: r1 }, Surf::Sphere { c: c2, r: r2 }) if c1 == c2 && r1 == r2 => {
+            Ok(Section::Same)
+        }
         (Surf::Sphere { c: c1, r: r1 }, Surf::Sphere { c: c2, r: r2 }) => Ok(Section::Curves(
             super::spheres::sphere_sphere(c1, r1, c2, r2, px.tolerance.linear())?
                 .map(|circ| Crv::Circle(Box::new(circ)))

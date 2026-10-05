@@ -1,15 +1,11 @@
-//! S9e.4b.3a: imported plane pieces of a sphere (bodies OCCT wrote to
-//! `.brep` files: a ball's wedges, lunes and halves between planes through
-//! its axis and normal to it), given to Booleans, against the independent
-//! reference (`fixtures/boolean-imported-pieces-*` from
-//! `tools/generate_imported_pieces_boolean_fixtures.py`, the bodies under
-//! `fixtures/imported/`): each case's Boolean (or chain) with its imported
-//! inputs made by `Solid::imported_with`, decided as the given model of the
-//! piece's primitive common the half-spaces of its planes. Cylinders' and
-//! cones' pieces, which no `.brep` file the reader takes can hold (OCCT's
-//! ellipse records), are the kernel's own split pieces' topologies imported.
-//! Each case runs once (on a few threads) for the checks that read its
-//! result.
+//! S9e.4b.3c.1: two pieces of one sphere given to a Boolean (faces of both
+//! inputs on one sphere, in general position: S9c.1's faces on one surface,
+//! the circles of both crossing on it), and an imported sphere piece whose
+//! rim OCCT divided into two arcs (the DRAW survey's `so1` and `so4`),
+//! against the independent reference (`fixtures/boolean-one-sphere-*` from
+//! `tools/generate_one_sphere_boolean_fixtures.py`, the bodies under
+//! `fixtures/imported/`). Each case runs once (on a few threads) for the
+//! checks that read its result.
 #[path = "support/boolean_protocol.rs"]
 #[allow(dead_code)]
 mod protocol;
@@ -23,9 +19,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::OnceLock;
 
 fn cases() -> Vec<protocol::Case> {
-    protocol::cases(include_str!(
-        "../../fixtures/boolean-imported-pieces-cases.txt"
-    ))
+    protocol::cases(include_str!("../../fixtures/boolean-one-sphere-cases.txt"))
 }
 
 /// `f` over the cases on at most six threads, in the cases' order.
@@ -69,7 +63,7 @@ type Expected = std::collections::BTreeMap<String, (String, Option<(usize, [f64;
 
 fn expected() -> Expected {
     let mut expect = std::collections::BTreeMap::new();
-    for line in include_str!("../../fixtures/boolean-imported-pieces-expected.tsv")
+    for line in include_str!("../../fixtures/boolean-one-sphere-expected.tsv")
         .lines()
         .filter(|l| !l.starts_with('#'))
     {
@@ -171,9 +165,9 @@ fn every_case_matches_the_reference() {
     );
 }
 
-/// The declared refusals name their reasons: a piece not convex in its
-/// planes as S9e.4b.3c's, the flush box and the touching box as S9's (two
-/// pieces of one sphere, S9e.4b.3c.1's, evaluate).
+/// The declared refusals name their reasons: a ball within the resolution
+/// of the cap's sphere as S9's, the hemisphere and the octant on one frame
+/// as S9e.4b.3c.2's.
 #[test]
 fn refusals_name_their_reasons() {
     for (name, run) in runs() {
@@ -181,20 +175,17 @@ fn refusals_name_their_reasons() {
             Err(Error::Degenerate(m) | Error::OutOfDomain(m)) => *m,
             _ => "",
         };
-        if name.starts_with("bitten_box") {
-            assert!(
-                matches!(run, Err(Error::OutOfDomain(_))) && reason.contains("S9e.4b.3c"),
-                "{name}: {reason}"
-            );
-        }
-        if name.starts_with("tilt_flush") {
+        if name.starts_with("ball_near") {
             assert_eq!(
-                reason, "two faces within the resolution of one plane",
+                reason, "two spheres within the resolution of one sphere",
                 "{name}"
             );
         }
-        if name.starts_with("half_touch") {
-            assert!(reason.contains("tangency"), "{name}: {reason}");
+        if name.starts_with("hemi_octant") {
+            assert_eq!(
+                reason, "a vertex or a circle of both inputs on one sphere (S9e.4b.3c.2)",
+                "{name}"
+            );
         }
     }
 }
@@ -293,7 +284,7 @@ fn results_are_deterministic_and_move_rigidly() {
 }
 
 /// Both inputs moved rigidly keep the reference's volumes, translated and
-/// turned: the piece read again off its moved stored topology.
+/// turned: each piece read again off its moved stored topology.
 #[test]
 fn moved_inputs_keep_their_volumes() {
     let shift = RigidTransform::translation(Vec3::new(0.5, -0.25, 1.0)).unwrap();
@@ -302,13 +293,11 @@ fn moved_inputs_keep_their_volumes() {
     let expect = expected();
     let all = cases();
     for name in [
-        "octant_box_cut",
-        "box_octant_common",
-        "tilt_rod_fuse",
-        "lune_ball_cut",
-        "half_rod_cut",
-        "zone_box_common",
-        "pieces_fuse",
+        "hemi_cap_cut",
+        "cap_octant_common",
+        "octant_cap_cut",
+        "ball_cap_cut",
+        "wedge_cap_fuse",
     ] {
         let case = all.iter().find(|c| c.name == name).unwrap();
         for (k, motion) in [shift, turn].into_iter().enumerate() {
@@ -336,280 +325,140 @@ fn body(name: &str, op: u64) -> Result<Solid, Error> {
     Solid::imported_with(OperationId(op), topology, resolution).map(|(s, _)| s)
 }
 
-/// Every piece imports (its model matched on import), its stored mass its
-/// closed form where it has one, its stored vertices on its boundary and
-/// points in and off it classified; the ball below one plane is S9e.4a's
-/// cap and the ball less a box's corner S9e.4b.3c's.
+/// The divided rims: the hemisphere and the cap import as pieces whose rim
+/// is the stored two arcs (two stored vertices on the rim, a third at the
+/// stored pole), their volumes their closed forms, every stored vertex on
+/// the boundary.
 #[test]
-fn imported_bodies_are_pieces() {
+fn divided_rims_import_as_pieces() {
     use std::f64::consts::PI;
-    // Each with a point inside (along its corner's or wedge's middle) and
-    // that point's mirror in its centre outside.
-    let bodies = [
-        (
-            "octant",
-            Some(PI * 125.0 / 6.0),
-            [5.0, 5.0, 4.0],
-            [5.48, 7.41, 3.52],
-        ),
-        (
-            "octant_tilt",
-            Some(PI * 125.0 / 6.0),
-            [5.25, 8.5, 1.75],
-            [5.41, 6.74, 3.51],
-        ),
-        ("upper", None, [3.0, 4.0, 1.0], [5.7, 3.84, 3.22]),
-        (
-            "lune",
-            Some(PI * 64.0 / 3.0),
-            [5.0, 5.0, 5.0],
-            [4.21, 6.73, 4.37],
-        ),
-        (
-            "half",
-            Some(PI * 128.0 / 3.0),
-            [5.0, 5.0, 5.0],
-            [5.22, 3.22, 5.89],
-        ),
-        ("zone_wedge", None, [5.0, 5.0, 4.0], [3.23, 6.41, 5.06]),
-    ];
-    for (name, volume, centre, inside) in bodies {
+    for (name, volume) in [
+        ("sphere_hemi", 2.0 * PI * 125.0 / 3.0),
+        ("sphere_cap", PI * 3.5 * 3.5 * (15.0 - 3.5) / 3.0),
+    ] {
         let s = body(name, 91).unwrap_or_else(|e| panic!("{name}: {e}"));
-        let m = s.mass_properties();
-        if let Some(volume) = volume {
-            assert!(
-                (m.volume - volume).abs() <= 1e-9 * volume,
-                "{name}: {} for {volume}",
-                m.volume
-            );
-        }
-        let [x, y, z] = inside;
+        let t = s.topology();
         assert_eq!(
-            s.classify(Point3::new(x, y, z)).unwrap(),
-            Location::Inside,
+            (t.faces().len(), t.edges().len(), t.vertices().len()),
+            (2, 2, 3),
             "{name}"
         );
-        let mirror = [0, 1, 2].map(|i| 2.0 * centre[i] - inside[i]);
-        for out in [[x + 50.0, y, z], mirror] {
-            assert_eq!(
-                s.classify(Point3::new(out[0], out[1], out[2])).unwrap(),
-                Location::Outside,
-                "{name} {out:?}"
-            );
-        }
-        for v in s.topology().vertices() {
+        let m = s.mass_properties();
+        assert!(
+            (m.volume - volume).abs() <= 1e-9 * volume,
+            "{name}: {} for {volume}",
+            m.volume
+        );
+        for v in t.vertices() {
             assert_eq!(
                 s.classify(v.position).unwrap(),
                 Location::Boundary,
                 "{name}"
             );
         }
-        // Two imports keep their stored ids apart.
-        let t = body(name, 92).unwrap();
-        let a: std::collections::BTreeSet<_> = s.topology().ids().map(|(i, _)| i).collect();
-        assert!(t.topology().ids().all(|(i, _)| !a.contains(&i)), "{name}");
-    }
-    body("octant_low", 91).expect("S9e.4a's cap");
-    match body("bitten", 91) {
-        Err(Error::OutOfDomain(m)) => assert!(m.contains("S9e.4b.3c"), "{m}"),
-        other => panic!("bitten: {:?}", other.map(|_| ())),
+        assert_eq!(
+            s.classify(Point3::new(5.0, 5.0, 4.0) + Vec3::new(4.0, 1.0, 8.0) * (4.0 / 9.0))
+                .unwrap(),
+            Location::Inside,
+            "{name}"
+        );
     }
 }
 
-fn tolerance() -> Tolerance {
-    Tolerance::new(1e-7, 1e-12).unwrap()
-}
-
-fn frame(o: [f64; 3], n: [f64; 3], x: [f64; 3]) -> Frame3 {
-    let v = |a: [f64; 3]| Vec3::new(a[0], a[1], a[2]);
-    Frame3::new(Point3::new(o[0], o[1], o[2]), v(n), v(x), tolerance()).unwrap()
-}
-
-/// A box `[0, w] x [0, d]` on a frame over `[0, h]`.
-fn cuboid(f: Frame3, w: f64, d: f64, h: f64) -> Solid {
-    let pts = [(0.0, 0.0), (w, 0.0), (w, d), (0.0, d)].map(|(x, y)| Point2::new(x, y));
-    let profile = Profile::new(
-        Boundary::polygon(pts.to_vec(), tolerance()).unwrap(),
-        vec![],
-        tolerance(),
-    )
-    .unwrap();
-    Solid::extrude_with(OperationId(40), profile, f, 0.0, h)
-        .unwrap()
-        .0
-}
-
-/// A cylinder's and a frustum's pieces of an oblique plane (S8a.2, S8d.2)
-/// and a zone's halves (S8c.2), the kernel's own split pieces, their
-/// topologies imported: each a plane piece (its model matched on import),
-/// its Booleans with a box and a ball obeying the pair identities
-/// `V(A u B) + V(A n B) = V(A) + V(B)` and `V(A - B) = V(A) - V(A n B)`,
-/// its common with a box holding it its own volume.
+/// A block less a leaning rod across its back face (a groove: its one
+/// curved face's material outside the cylinder) is no piece of its
+/// primitive common its planes,
+/// refused on import as S9e.4b.3c's before its model is built (the DRAW
+/// survey's `bcut_complex/I6` tool, whose wall is tangent to two of the
+/// block's faces, reached the model's own tangency before).
 #[test]
-fn kernel_split_pieces_imported() {
-    let up = [0.0, 0.0, 1.0];
-    let ex = [1.0, 0.0, 0.0];
-    let tol = tolerance();
-    let cylinder = Solid::cylinder_with(
+fn a_notch_is_not_its_primitive_common_its_planes() {
+    let tol = Tolerance::default();
+    let frame = Frame3::xy();
+    let (block, _) = Solid::extrude_with(
         OperationId(1),
-        frame([5.0, 5.0, -1.0], up, ex),
-        3.0,
-        0.0,
-        8.0,
-        tol,
-    )
-    .unwrap()
-    .0;
-    let frustum = Solid::cone_with(
-        OperationId(3),
-        frame([5.0, 5.0, 0.0], up, ex),
-        3.0,
-        1.0,
-        5.0,
-        tol,
-    )
-    .unwrap()
-    .0;
-    let zone = Solid::sphere_with(
-        OperationId(5),
-        frame([5.0, 5.0, 3.0], up, ex),
-        4.0,
-        -0.5,
-        0.75,
-        tol,
-    )
-    .unwrap()
-    .0;
-    let splits = [
-        (
-            &cylinder,
-            frame([5.0, 5.0, 3.0], [0.6, 0.0, 0.8], [0.0, 1.0, 0.0]),
-        ),
-        (&frustum, frame([5.0, 5.0, 2.5], [0.0, 0.6, 0.8], ex)),
-        (&zone, frame([5.0, 5.0, 3.0], ex, [0.0, 1.0, 0.0])),
-    ];
-    let partners = [
-        cuboid(frame([3.0, 3.0, 1.0], up, ex), 4.0, 3.0, 2.5),
-        Solid::sphere_with(
-            OperationId(41),
-            frame([6.0, 6.5, 1.75], up, ex),
-            1.5,
-            -std::f64::consts::FRAC_PI_2,
-            std::f64::consts::FRAC_PI_2,
+        Profile::new(
+            Boundary::polygon(
+                vec![
+                    Point2::new(0.0, 0.0),
+                    Point2::new(10.0, 0.0),
+                    Point2::new(10.0, 7.0),
+                    Point2::new(0.0, 7.0),
+                ],
+                tol,
+            )
+            .unwrap(),
+            Vec::new(),
             tol,
         )
-        .unwrap()
-        .0,
-    ];
-    let holder = cuboid(frame([-5.0, -5.0, -5.0], up, ex), 20.0, 20.0, 20.0);
-    let volume = |r: rusty_occt::Result<(Vec<Solid>, history::History)>| -> f64 {
-        r.unwrap()
-            .0
-            .iter()
-            .map(|s| s.mass_properties().volume)
-            .sum()
-    };
-    for (k, (solid, plane)) in splits.into_iter().enumerate() {
-        let (pieces, _) = solid.split_by_plane(OperationId(2), plane).unwrap();
-        assert_eq!(pieces.len(), 2, "split {k}");
-        for (j, (_, piece)) in pieces.iter().enumerate() {
-            let (s, _) = Solid::imported_with(
-                OperationId(31),
-                piece.topology().clone(),
-                piece.resolution(),
-            )
-            .unwrap_or_else(|e| panic!("split {k} piece {j}: {e}"));
-            let va = s.mass_properties().volume;
-            let all = volume(s.common(OperationId(50), &holder));
-            assert!(
-                (all - va).abs() <= 1e-9 * va,
-                "split {k} piece {j}: {all} for {va}"
-            );
-            for (i, b) in partners.iter().enumerate() {
-                let vb = b.mass_properties().volume;
-                let f = volume(s.fuse(OperationId(50), b));
-                let c = volume(s.cut(OperationId(50), b));
-                let m = volume(s.common(OperationId(50), b));
-                let size = va + vb;
-                assert!(
-                    (f + m - va - vb).abs() <= 1e-9 * size,
-                    "split {k} piece {j} partner {i}"
-                );
-                assert!(
-                    (c - (va - m)).abs() <= 1e-9 * size,
-                    "split {k} piece {j} partner {i}"
-                );
-                assert!(
-                    m > 0.0 && m < va.min(vb),
-                    "split {k} piece {j} partner {i}: {m}"
-                );
-            }
-        }
+        .unwrap(),
+        frame,
+        0.0,
+        5.0,
+    )
+    .unwrap();
+    // A rod leaning across the block's back face: the groove's wall is no
+    // prism wall of the block's direction (not S9e.4a's prism).
+    let lean = Frame3::new(
+        Point3::new(5.0, 6.5, 2.5),
+        Vec3::new(1.0, 0.0, 1.0),
+        Vec3::new(0.0, 1.0, 0.0),
+        tol,
+    )
+    .unwrap();
+    let (rod, _) = Solid::extrude_with(
+        OperationId(2),
+        Profile::new(
+            Boundary::circle(Point2::new(0.0, 0.0), 1.0, tol).unwrap(),
+            Vec::new(),
+            tol,
+        )
+        .unwrap(),
+        lean,
+        -6.0,
+        6.0,
+    )
+    .unwrap();
+    let (out, _) = block.cut(OperationId(3), &rod).unwrap();
+    let [notch] = <[Solid; 1]>::try_from(out).unwrap();
+    match Solid::imported_with(OperationId(4), notch.topology().clone(), notch.resolution()) {
+        Err(Error::OutOfDomain(m)) => assert_eq!(
+            m,
+            "an imported plane piece other than its primitive common its planes' half-spaces \
+             (S9e.4b.3c)"
+        ),
+        other => panic!("{:?}", other.map(|_| ())),
     }
 }
 
-/// The octant against a whole torus across its sphere face (S9d.4b.2's
-/// meeting on the piece's sphere): the pair identities, and the common
-/// within both.
+/// Two whole balls of one sphere on different frames (their splits' great
+/// circles only on the sphere): their fuse and common the ball, their cut
+/// empty; a ball and an imported cap of its sphere, the cap's ids kept.
 #[test]
-fn a_piece_against_a_torus() {
-    let s = body("octant", 91).unwrap();
-    let tau = std::f64::consts::TAU;
-    let torus = Solid::torus_with(
-        OperationId(92),
-        frame([6.0, 7.25, 3.5], [0.0, 0.0, 1.0], [1.0, 0.0, 0.0]),
-        2.0,
-        0.75,
-        0.0,
-        tau,
-        tau,
-        tolerance(),
-    )
-    .unwrap()
-    .0;
-    let volume = |r: rusty_occt::Result<(Vec<Solid>, history::History)>| -> f64 {
-        let out = r.unwrap().0;
-        assert_eq!(out.len(), 1);
-        out.iter().map(|s| s.mass_properties().volume).sum()
-    };
-    let (va, vb) = (s.mass_properties().volume, torus.mass_properties().volume);
-    let f = volume(s.fuse(OperationId(93), &torus));
-    let c = volume(s.cut(OperationId(93), &torus));
-    let m = volume(s.common(OperationId(93), &torus));
-    assert!(
-        (f + m - va - vb).abs() <= 1e-9 * (va + vb),
-        "{f} {m} {va} {vb}"
-    );
-    assert!((c - (va - m)).abs() <= 1e-9 * va, "{c} {m} {va}");
-    assert!(m > 0.0 && m < vb, "{m}");
-}
-
-/// The kernel stores the frames the reference swept, bit for bit (the
-/// solids built from rows; the imported ones' are the converter's).
-#[test]
-fn stored_frames_are_the_reference_inputs() {
-    let hex = |x: f64| format!("{:016x}", x.to_bits());
-    let cases = cases();
-    for row in include_str!("../../fixtures/boolean-imported-pieces-frames.tsv")
-        .lines()
-        .filter(|l| !l.starts_with('#'))
-    {
-        let w: Vec<&str> = row.split('\t').collect();
-        let case = cases.iter().find(|c| c.name == w[0]).unwrap();
-        let (which, axis) = w[1].split_once(' ').unwrap();
-        let k: usize = which.trim_start_matches("solid").parse().unwrap();
-        let spec = match k {
-            0 => &case.object,
-            1 => &case.tool,
-            _ => &case.then.as_ref().unwrap().third,
-        };
-        let frame = protocol::build(spec).frame();
-        let v = match axis {
-            "n" => frame.normal(),
-            "x" => frame.x(),
-            _ => frame.y(),
-        };
-        let got = [v.x, v.y, v.z].map(hex).join(" ");
-        assert_eq!(got, w[2], "{} {}", w[0], w[1]);
+fn two_balls_of_one_sphere() {
+    let tol = Tolerance::default();
+    let half = std::f64::consts::FRAC_PI_2;
+    let c = Point3::new(5.0, 5.0, 4.0);
+    let upright = Frame3::new(c, Vec3::new(0.0, 0.0, 1.0), Vec3::new(1.0, 0.0, 0.0), tol).unwrap();
+    let (a, _) = Solid::sphere_with(OperationId(1), upright, 5.0, -half, half, tol).unwrap();
+    let turned = Frame3::new(c, Vec3::new(4.0, 1.0, 8.0), Vec3::new(-7.0, -4.0, 4.0), tol).unwrap();
+    let (b, _) = Solid::sphere_with(OperationId(2), turned, 5.0, -half, half, tol).unwrap();
+    let ball = 4.0 * std::f64::consts::PI * 125.0 / 3.0;
+    for (op, want) in [("fuse", Some(ball)), ("common", Some(ball)), ("cut", None)] {
+        let out = match op {
+            "fuse" => a.fuse(OperationId(5), &b),
+            "cut" => a.cut(OperationId(5), &b),
+            _ => a.common(OperationId(5), &b),
+        }
+        .unwrap_or_else(|e| panic!("{op}: {e}"))
+        .0;
+        match want {
+            None => assert!(out.is_empty(), "{op}"),
+            Some(v) => {
+                assert_eq!(out.len(), 1, "{op}");
+                let got = out[0].mass_properties().volume;
+                assert!((got - v).abs() <= 1e-9 * v, "{op}: {got}");
+            }
+        }
     }
 }

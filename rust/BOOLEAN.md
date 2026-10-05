@@ -39,7 +39,9 @@ polyhedra on their stored vertices (`polyhedra/imported.rs`), S9e.4b.3a's
 imported plane pieces of a sphere, cylinder or cone as their primitive
 common their planes' half-spaces (`curved/pieces.rs`), and S9e.4b.3b's
 split pieces (S8's `Clipped` and `Half`) against curved faces on the same
-model (`curved/splits.rs`).
+model (`curved/splits.rs`), and S9e.4b.3c.1's two inputs on one sphere
+in general position and sphere pieces with their rims split by stored
+vertices (`curved/graph.rs`, `curved/pieces.rs`).
 
 ## Contract
 
@@ -1129,16 +1131,40 @@ circle matched as a ring runs the result's way (turned over where it runs
 the other); a cone's section stored as a ring likewise about the cone's
 axis.
 
+Two inputs whose spheres are one (equal centres and radii as rationals: a
+sphere, cap or zone, an imported piece's primitive, a split zone) are
+S9e.4b.3c.1's: their sphere faces are faces on one surface, as equal
+cylinders' and coplanar planes' are (each holds the other's edges inside
+it, its pieces classified by the other's membership pushed off the sphere
+both ways, the kept pieces of both facing one way joined); where a circle
+of each input on the sphere crosses one of the other's, the first's point
+in the second's plane is a vertex of both (`VKey::Circles`, a whole
+sphere's split great circle among them, which bounds no plane face), and a
+piece's sphere is split at the second arrangement's seam so the two
+pieces' great circles differ and move with the seams tried. An imported
+sphere piece whose rim OCCT stored as two arcs (the survey's `so1` and
+`so4`) has its own arrangement's ring split at the circle's point in the
+direction of each stored vertex there (`VKey::Stored`, a vertex the
+assembly keeps), so S9e.2's match takes the stored arcs. Spheres within the
+resolution of one and not one, and circles of the inputs tangent on the
+sphere, are `Degenerate`; an exact incidence on one sphere (a circle of
+both, a vertex of one at an end of the other's circle) is S9e.4b.3c.2's
+(`OutOfDomain`); concentric spheres of different radii stay `Degenerate`.
+A body of one curved face and planes whose material lies outside its
+quadric (a groove or notch) is refused on import as S9e.4b.3c's before its
+model is built.
+
 Refused: a joint of two arcs of different circles off either
 (`OutOfDomain`, S9e.4b.4: their common point is a quadratic surd); an
 imported polyhedron against a solid with curved faces or edges, or a result
 of one given to a Boolean of curved faces (`OutOfDomain`, S9e.4b.4: the
 curved engine decides on constructions); a polyhedron with a cavity or
 several shells (S9e.4b.4); a plane piece other than its primitive common
-its planes' half-spaces (not convex in its planes, a ring split by stored
-vertices, two plane faces on one plane) and faces of both inputs on one
-sphere where either is a piece (`OutOfDomain`, S9e.4b.3c: the DRAW
-survey's `so1` to `so7`); a piece whose planes pass through its cone's
+its planes' half-spaces (not convex in its planes, its curved face's
+material outside its quadric, two plane faces on one plane: `OutOfDomain`,
+S9e.4b.3c.3) and an exact incidence of two inputs on one sphere
+(`OutOfDomain`, S9e.4b.3c.2: the DRAW survey's `so1` and `so2`, `so2` and
+`so3`, `so5` and `so2`); a piece whose planes pass through its cone's
 apex (`Degenerate`, S9's rule: `shading_132`); a torus's v-segment or wedge
 and every other body of curved faces (`OutOfDomain`, S9e.4b: a general
 body on its stored surfaces); spline faces or edges (S9f); S9's
@@ -3251,6 +3277,40 @@ multiple root; and the engine's rules.
   frustum's ring), split and imported. `compare_split_pieces_boolean.py`:
   26 matches and 22 reviewed (the native measures, and entity counts: each
   splits its sections at its own points and seams).
+* **S9e.4b.3c.1 evidence (two pieces of one sphere), before its kernel
+  code.** A `write` block's row `divide` in the native oracle
+  (`ShapeUpgrade_ShapeDivideClosedEdges`: a rim two arcs, as the DRAW
+  survey's `so1` and `so4`). `generate_one_sphere_boolean_fixtures.py
+  --check` writes `boolean-one-sphere-cases.txt`, `-expected.tsv`,
+  `-frames.tsv` and `-bodies.txt`: 22 cases (9 groups; 16 solid, 1 empty,
+  2 degenerate, 3 unsupported) on five pieces of one sphere OCCT wrote (a
+  hemisphere and a cap with divided rims, two octants, a wedge above a
+  parallel's plane) against each other, a ball of their sphere and in a
+  chain, from S9e.3a's chained reference on the constructions OCCT was
+  given (two families within 3.4e-36, each piece's closed form, the pair
+  identities, Monte Carlo 2.4 standard errors, solid counts by rays joined
+  within two grid spacings).
+  `compare_one_sphere_boolean.py` reproduces
+  `occt-boolean-one-sphere-preimplementation` (keyed on the refusal of two
+  inputs on one sphere in `curved/pieces.rs`, the probe `unsupported` on all
+  22 before it): 8 match, 14 reviewed (10 results OCCT leaves invalid on
+  same-domain spherical faces, their measures adaptively within 7.1e-12; a
+  common by BRepGProp's default integration; the chain OCCT gets wrong).
+* **Kernel (S9e.4b.3c.1).** `tests/one_sphere_booleans.rs`: all 22
+  fixtures as the reference (17 within the kernel's enclosures, each at
+  most `1e-9` wide; the ball within the resolution of the cap's sphere
+  refused as `Degenerate`, the hemisphere and the octant on one frame
+  `OutOfDomain` as S9e.4b.3c.2's), every history complete over the imported
+  bodies' stored ids, results deterministic and moved rigidly, moved
+  inputs keeping the reference's volumes, the divided rims' pieces of two
+  arcs, two whole balls of one sphere, and a groove refused on import as
+  S9e.4b.3c's. S9e.4b.3a's and S9e.4b.3b's one-sphere cases are solid
+  within the reference. `compare_one_sphere_boolean.py`: 8 matches and 14
+  reviewed (the native measures and validity, OCCT's wrong chain, and
+  entity counts: the kernel joins the pieces of both inputs on the sphere
+  facing one way). A trial of the DRAW survey's 38 restore cases of `so1` to
+  `so7`: 14 evaluate on both backends, 13 S9e.4b.3c.2's, 11 `Degenerate`
+  (the turned copies' corners within rounding of the partner's).
 * **Fuzzing.** The `boolean` target (`FUZZING.md`): the split target's line
   and arc profiles, the tool offset exactly in the axis-aligned frame or
   sharing the tilted one's origin, heights equal, spanning, overlapping,

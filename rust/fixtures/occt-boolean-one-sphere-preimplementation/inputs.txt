@@ -1,0 +1,122 @@
+case hemi_cap_fuse
+brep imported/sphere_hemi.brep
+boolean fuse
+brep imported/sphere_cap.brep
+end
+case hemi_cap_cut
+brep imported/sphere_hemi.brep
+boolean cut
+brep imported/sphere_cap.brep
+end
+case hemi_cap_common
+brep imported/sphere_hemi.brep
+boolean common
+brep imported/sphere_cap.brep
+end
+case cap_hemi_cut
+brep imported/sphere_cap.brep
+boolean cut
+brep imported/sphere_hemi.brep
+end
+case cap_octant_fuse
+brep imported/sphere_cap.brep
+boolean fuse
+brep imported/sphere_octant2.brep
+end
+case cap_octant_cut
+brep imported/sphere_cap.brep
+boolean cut
+brep imported/sphere_octant2.brep
+end
+case cap_octant_common
+brep imported/sphere_cap.brep
+boolean common
+brep imported/sphere_octant2.brep
+end
+case octant_cap_cut
+brep imported/sphere_octant2.brep
+boolean cut
+brep imported/sphere_cap.brep
+end
+case ball_cap_fuse
+sphere 5.0 5.0 4.0 0.0 0.0 1.0 1.0 0.0 0.0 5.0 -1.5707963267948966 1.5707963267948966
+boolean fuse
+brep imported/sphere_cap.brep
+end
+case ball_cap_cut
+sphere 5.0 5.0 4.0 0.0 0.0 1.0 1.0 0.0 0.0 5.0 -1.5707963267948966 1.5707963267948966
+boolean cut
+brep imported/sphere_cap.brep
+end
+case ball_cap_common
+sphere 5.0 5.0 4.0 0.0 0.0 1.0 1.0 0.0 0.0 5.0 -1.5707963267948966 1.5707963267948966
+boolean common
+brep imported/sphere_cap.brep
+end
+case wedge_cap_fuse
+brep imported/sphere_wedge.brep
+boolean fuse
+brep imported/sphere_cap.brep
+end
+case wedge_cap_cut
+brep imported/sphere_wedge.brep
+boolean cut
+brep imported/sphere_cap.brep
+end
+case wedge_cap_common
+brep imported/sphere_wedge.brep
+boolean common
+brep imported/sphere_cap.brep
+end
+case chain_cap_fuse
+brep imported/sphere_cap.brep
+boolean cut
+brep imported/sphere_octant2.brep
+then fuse
+plane 0.0 0.0 6.375 0.0 0.0 1.0 1.0 0.0 0.0
+wire P 4 -4.0 -4.0 6.375 14.0 -4.0 6.375 14.0 14.0 6.375 -4.0 14.0 6.375
+prism 0.0 0.0 1.5
+end
+case chain_cap_cut
+brep imported/sphere_cap.brep
+boolean cut
+brep imported/sphere_octant2.brep
+then cut
+plane 0.0 0.0 6.375 0.0 0.0 1.0 1.0 0.0 0.0
+wire P 4 -4.0 -4.0 6.375 14.0 -4.0 6.375 14.0 14.0 6.375 -4.0 14.0 6.375
+prism 0.0 0.0 1.5
+end
+case chain_cap_common
+brep imported/sphere_cap.brep
+boolean cut
+brep imported/sphere_octant2.brep
+then common
+plane 0.0 0.0 6.375 0.0 0.0 1.0 1.0 0.0 0.0
+wire P 4 -4.0 -4.0 6.375 14.0 -4.0 6.375 14.0 14.0 6.375 -4.0 14.0 6.375
+prism 0.0 0.0 1.5
+end
+case ball_near_fuse
+sphere 5.0 5.0 4.0 0.0 0.0 1.0 1.0 0.0 0.0 5.000000000931323 -1.5707963267948966 1.5707963267948966
+boolean fuse
+brep imported/sphere_cap.brep
+end
+case ball_near_common
+sphere 5.0 5.0 4.0 0.0 0.0 1.0 1.0 0.0 0.0 5.000000000931323 -1.5707963267948966 1.5707963267948966
+boolean common
+brep imported/sphere_cap.brep
+end
+case hemi_octant_fuse
+brep imported/sphere_hemi.brep
+boolean fuse
+brep imported/sphere_octant4.brep
+end
+case hemi_octant_cut
+brep imported/sphere_hemi.brep
+boolean cut
+brep imported/sphere_octant4.brep
+end
+case hemi_octant_common
+brep imported/sphere_hemi.brep
+boolean common
+brep imported/sphere_octant4.brep
+end

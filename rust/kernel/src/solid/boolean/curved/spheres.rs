@@ -703,6 +703,10 @@ fn pscale(a: &[R], k: &R) -> Vec<R> {
 /// sphere: on the two spheres' radical plane.
 pub(super) fn circ_sphere(circ: &Circ, c1: &V, r1: &R, c2: &V, r2: &R) -> Result<EdgeMeet> {
     if is_zero(&sub(c2, c1)) {
+        // One sphere (S9e.4b.3c.1): the circle lies on it.
+        if r1 == r2 {
+            return Ok(EdgeMeet::Along);
+        }
         return Err(Error::Degenerate("two spheres about one centre"));
     }
     let (p0, m) = radical(c1, r1, c2, r2);

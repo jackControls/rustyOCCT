@@ -12,8 +12,13 @@
 //! stored frame's `o + u x + v y` (the stored axes as rationals, its normal
 //! `x * y`), the side of the material by the face's region; the hull's
 //! vertices are three planes' common points (rationals), its edges lines.
-//! A body the model does not match (not convex in its planes, a stored
-//! vertex splitting a ring) and two inputs on one sphere are S9e.4b.3c's.
+//! A body the model does not match (not convex in its planes) is
+//! S9e.4b.3c's. S9e.4b.3c.1: a stored vertex within the resolution of the
+//! model's ring (a rim OCCT split at its sphere's seam) splits it in the
+//! first arrangement (`Arr::split_at`), so the match takes the stored arcs;
+//! under a partner on its sphere a piece's sphere is split at the second
+//! arrangement's seam (`common`'s `first`), its faces then on one surface
+//! with the partner's (`graph.rs`).
 use super::assemble::{assemble_made, Made};
 use super::graph::{arrange_shared, Arr};
 use super::model::*;
@@ -378,7 +383,12 @@ pub(super) fn hull_operation(primitive: &Solid) -> OperationId {
 
 /// The primitive common the hull, arranged and assembled, a full circle's
 /// seam (and a whole sphere's split) tried at several rational points.
-fn arranged(piece: &Piece, tolerance: crate::Tolerance) -> Result<(Arr, Vec<(Component, Made)>)> {
+fn arranged(
+    piece: &Piece,
+    tolerance: crate::Tolerance,
+    first: Option<&R>,
+    stored: &[[f64; 3]],
+) -> Result<(Arr, Vec<(Component, Made)>)> {
     let p = &piece.primitive;
     let (centre, half) = cube(p);
     let hull = hull_model(
@@ -389,7 +399,7 @@ fn arranged(piece: &Piece, tolerance: crate::Tolerance) -> Result<(Arr, Vec<(Com
         hull_operation(p),
         tolerance,
     )?;
-    common(p, &hull)
+    common(p, &hull, first, stored)
 }
 
 /// The cube about a primitive the hull is bounded by: its centre and half
@@ -403,19 +413,38 @@ pub(super) fn cube(p: &Solid) -> ([f64; 3], f64) {
 }
 
 /// A primitive common a hull, arranged and assembled, a full circle's seam
-/// (and a whole sphere's split) tried at several rational points.
-pub(super) fn common(p: &Solid, hull: &Prism) -> Result<(Arr, Vec<(Component, Made)>)> {
-    let seams = super::SEAMS;
+/// (and a whole sphere's split) tried at several rational points, from
+/// `first` where given (S9e.4b.3c.1: the second arrangement's seam, so two
+/// pieces of one sphere split it apart and move their splits with its
+/// seams).
+pub(super) fn common(
+    p: &Solid,
+    hull: &Prism,
+    first: Option<&R>,
+    stored: &[[f64; 3]],
+) -> Result<(Arr, Vec<(Component, Made)>)> {
     let r = |(n, d): (i64, i64)| R::new(n.into(), d.into());
-    for &seam in &seams[..seams.len() - 1] {
+    let seams = super::SEAMS;
+    let tried: Vec<R> = first
+        .cloned()
+        .into_iter()
+        .chain(seams[..seams.len() - 1].iter().map(|&s| r(s)))
+        .collect();
+    for (k, seam) in tried.iter().enumerate() {
         let attempt = || -> Result<(Arr, Vec<(Component, Made)>)> {
-            let a = super::model_of(p, Operand::A, &r(seam))?;
+            let a = super::model_of(p, Operand::A, seam, false)?;
             let mut arr = arrange_shared([a, hull.clone()])?;
+            arr.split_at(stored, p.resolution().linear())?;
             arr.for_op(Op2::Common);
             let out = assemble_made(&arr, Op2::Common)?;
             Ok((arr, out))
         };
         match attempt() {
+            // At the second arrangement's seam (S9e.4b.3c.1), a split that
+            // fails there is tried at the others in turn: a piece degenerate
+            // at every split keeps its own refusal, and a split alike the
+            // partner's is that arrangement's seam conflict.
+            Err(Error::Degenerate(_)) if first.is_some() && k == 0 => continue,
             Err(Error::ComputationLimit(m)) if m == super::graph::SEAM => continue,
             r => return r,
         }
@@ -432,14 +461,14 @@ thread_local! {
 
 /// An imported plane piece's model (S9e.4b.3a): the given model of its
 /// primitive common its hull, matched to its stored topology.
-pub(super) fn model(s: &Solid, op: Operand) -> Result<Prism> {
+pub(super) fn model(s: &Solid, op: Operand, first: Option<&R>) -> Result<Prism> {
     let Construction::Imported(i) = &s.construction else {
         unreachable!("an imported piece")
     };
     let crate::solid::imported::Recognized::Piece(piece) = &i.recognized else {
         unreachable!("an imported piece")
     };
-    let key = format!("{piece:?}\n{:?}\n{op:?}", s.topology);
+    let key = format!("{piece:?}\n{:?}\n{op:?}\n{first:?}", s.topology);
     if let Some(hit) = ARRANGED.with(|k| {
         k.borrow()
             .iter()
@@ -449,7 +478,13 @@ pub(super) fn model(s: &Solid, op: Operand) -> Result<Prism> {
         return hit;
     }
     let built = (|| {
-        let (arr, out) = arranged(piece, s.resolution())?;
+        let stored: Vec<[f64; 3]> = s
+            .topology
+            .vertices()
+            .iter()
+            .map(|v| v.position.to_array())
+            .collect();
+        let (arr, out) = arranged(piece, s.resolution(), first, &stored)?;
         super::given::built(s, op, arr, out, Op2::Common, None).map_err(|e| match e {
             Error::ComputationLimit(m) if m.contains("rebuilt differently") => Error::OutOfDomain(
                 "an imported plane piece other than its primitive common its planes' half-spaces \
@@ -487,20 +522,12 @@ fn ball_of(s: &Solid) -> Option<(Point3, f64)> {
     }
 }
 
-/// Faces of both inputs on one sphere where either is an imported piece
-/// (S9e.4b.3b: or a split zone): S9e.4b.3c's (two pieces of one sphere, the
-/// DRAW survey's `so1` to `so7`).
-pub(super) fn one_sphere(a: &Solid, b: &Solid) -> Result<()> {
-    let split = |s: &Solid| super::splits::ball_of(s).is_some();
-    if !(is_piece(a) || is_piece(b) || split(a) || split(b)) {
-        return Ok(());
-    }
-    match (ball_of(a), ball_of(b)) {
-        (Some(x), Some(y)) if x == y => Err(Error::OutOfDomain(
-            "faces of both inputs on one sphere (S9e.4b.3c)",
-        )),
-        _ => Ok(()),
-    }
+/// Whether two inputs' spheres are one (S9e.4b.3c.1): a sphere's, cap's or
+/// zone's, an imported piece's primitive or a split zone's, equal centres
+/// and radii (their exact models' alike); the arrangement then takes their
+/// faces as faces on one surface, each piece's sphere split at its seam.
+pub(super) fn on_one_sphere(a: &Solid, b: &Solid) -> bool {
+    matches!((ball_of(a), ball_of(b)), (Some(x), Some(y)) if x == y)
 }
 
 /// Whether a solid is an imported plane piece (S9e.4b.3a).
@@ -511,5 +538,5 @@ pub(crate) fn is_piece(s: &Solid) -> bool {
 /// An imported piece's model builds and matches its stored topology:
 /// checked once on import.
 pub(crate) fn check(s: &Solid) -> Result<()> {
-    model(s, Operand::A).map(|_| ())
+    model(s, Operand::A, None).map(|_| ())
 }

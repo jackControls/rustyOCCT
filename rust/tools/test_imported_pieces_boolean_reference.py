@@ -84,7 +84,7 @@ class ImportedPiecesReferenceTests(unittest.TestCase):
         fixtures.validate(listed)
         self.assertEqual(len(listed), 45)
         kinds = {k: sum(1 for c in listed if c.kind == k) for k in ('solid', 'empty', 'degenerate', 'unsupported')}
-        self.assertEqual(kinds, {'solid': 33, 'empty': 0, 'degenerate': 6, 'unsupported': 6})
+        self.assertEqual(kinds, {'solid': 36, 'empty': 0, 'degenerate': 6, 'unsupported': 3})
         for klass in fixtures.CLASSES:
             self.assertTrue(any(c.klass == klass for c in listed), klass)
         for name in ('octant_box_fuse', 'box_octant_cut', 'pieces_common', 'half_box_fuse', 'chain_octant_cut'):

@@ -26,6 +26,15 @@ fn seam() -> Error {
     Error::ComputationLimit(SEAM)
 }
 
+/// Inputs on one sphere meeting at a vertex of either or along one circle
+/// (S9e.4b.3c.2's exact incidences).
+pub(super) const ONE_SPHERE_INCIDENCE: &str =
+    "a vertex or a circle of both inputs on one sphere (S9e.4b.3c.2)";
+
+fn one_sphere_incidence() -> Error {
+    Error::OutOfDomain(ONE_SPHERE_INCIDENCE)
+}
+
 /// What a vertex is.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub(super) enum VKey {
@@ -40,6 +49,13 @@ pub(super) enum VKey {
     /// A stored sphere's pole on a section: section and pole (S9d.1's
     /// follow-up: a section's pcurves turn half a turn there).
     Pole(usize, usize),
+    /// Where circles of both inputs on one sphere cross: A's edge, B's
+    /// edge, root (S9e.4b.3c.1).
+    Circles(usize, usize, usize),
+    /// A stored vertex splitting a section circle of an imported piece's
+    /// own arrangement: the section and the stored vertex (S9e.4b.3c.1, a
+    /// rim OCCT split at its sphere's seam).
+    Stored(usize, usize),
 }
 
 #[derive(Debug, Clone)]
@@ -348,6 +364,35 @@ pub(super) fn arrange_shared(models: [Prism; 2]) -> Result<Arr> {
             pairs.insert((fa, fb), pair);
         }
     }
+    // Faces of both inputs on one sphere (S9e.4b.3c.1): equal centres and
+    // radii, faces on one surface as equal cylinders' are; spheres within
+    // the resolution of one and not one are `Degenerate`.
+    let res = models[0].tolerance.linear();
+    for fa in 0..models[0].faces.len() {
+        let (va, ia) = models[0].view(fa);
+        let Surf::Sphere { c: ca, r: ra } = &va.faces[ia].surf else {
+            continue;
+        };
+        for fb in 0..models[1].faces.len() {
+            let (vb, ib) = models[1].view(fb);
+            let Surf::Sphere { c: cb, r: rb } = &vb.faces[ib].surf else {
+                continue;
+            };
+            if ca == cb && ra == rb {
+                if boxes_meet(&models[0].boxes[fa], &models[1].boxes[fb]) {
+                    coinc.insert((fa, fb));
+                }
+                continue;
+            }
+            let d = sub(cb, ca);
+            let dr = ra - rb;
+            if rational_f64(&dot(&d, &d)).sqrt() + rational_f64(&dr).abs() <= res {
+                return Err(Error::Degenerate(
+                    "two spheres within the resolution of one sphere",
+                ));
+            }
+        }
+    }
     // A spline wall and a cylinder on crossing axes (S9f.2b), a sphere
     // (S9f.3a) or a cone (S9f.3b): the meeting's graphs over the run and
     // over the height and their switches (S9f.2b.2).
@@ -410,7 +455,6 @@ pub(super) fn arrange_shared(models: [Prism; 2]) -> Result<Arr> {
     }
     // A cylinder and a sphere (S9d.2): rings over the cylinder's angle, or
     // apart.
-    let res = models[0].tolerance.linear();
     for fa in 0..models[0].faces.len() {
         let (va, ia) = models[0].view(fa);
         for fb in 0..models[1].faces.len() {
@@ -642,6 +686,106 @@ pub(super) fn arrange_shared(models: [Prism; 2]) -> Result<Arr> {
                 .or_default()
                 .extend([(s, ps), (t, pt)]);
         }
+    }
+    // Circles of both inputs on one sphere (S9e.4b.3c.1): where an edge of
+    // each on faces on the sphere crosses the other, a vertex of both (the
+    // circles' planes' line meets the sphere there). A plane face's pierce
+    // finds those of a rim; a split's great circle bounds none.
+    // A seam's conflict (a split's great circle) is retried only where no
+    // incidence of the inputs' own circles and vertices is found.
+    let mut crossed: BTreeSet<(usize, usize)> = BTreeSet::new();
+    let mut seamy = false;
+    for &(fa, fb) in &coinc {
+        if !matches!(models[0].faces[fa].surf, Surf::Sphere { .. }) {
+            continue;
+        }
+        for (ea, a) in models[0].edges.iter().enumerate() {
+            let Crv::Circle(ca) = &a.curve else { continue };
+            if !a.faces.contains(&fa) {
+                continue;
+            }
+            for (eb, b) in models[1].edges.iter().enumerate() {
+                let Crv::Circle(cb) = &b.curve else { continue };
+                if !b.faces.contains(&fb) || !crossed.insert((ea, eb)) {
+                    continue;
+                }
+                let virtual_edge = a.id.is_none() || b.id.is_none();
+                let places = match ca.meet_plane(&cb.c, &cb.normal()) {
+                    Ok(Some(places)) => places,
+                    Ok(None) | Err(_) if virtual_edge => {
+                        seamy = true;
+                        continue;
+                    }
+                    Ok(None) => return Err(one_sphere_incidence()),
+                    Err(e) => return Err(e),
+                };
+                for (k, e) in places.into_iter().enumerate() {
+                    let x = qadd(
+                        &qv(&ca.c),
+                        &qadd(&qscale(&ca.x, &e[0]), &qscale(&ca.y, &e[1])),
+                    );
+                    let (pa, pb) = (place(&a.curve, &x), place(&b.curve, &x));
+                    let (sa, ta, wa) = edge_places(&models[0], ea);
+                    let (sb, tb, wb) = edge_places(&models[1], eb);
+                    match (
+                        strictly_within(&pa, &sa, &ta, wa),
+                        strictly_within(&pb, &sb, &tb, wb),
+                    ) {
+                        (Some(false), _) | (_, Some(false)) => continue,
+                        (Some(true), Some(true)) => {}
+                        (ia, ib) => {
+                            // At an end of either: a vertex of one on the
+                            // other's edge or vertex, an incidence of the
+                            // inputs where both are their own (a vertex or
+                            // an edge with an id), else a split's seam.
+                            let own =
+                                |m: &Prism, e: &MEdge, inside: Option<bool>, p: &Pos, s: &Pos| {
+                                    if inside == Some(true) {
+                                        e.id.is_some()
+                                    } else {
+                                        let v = if same_end(p, s) { e.start } else { e.end };
+                                        m.verts[v].id.is_some()
+                                    }
+                                };
+                            if own(&models[0], a, ia, &pa, &sa) && own(&models[1], b, ib, &pb, &sb)
+                            {
+                                return Err(one_sphere_incidence());
+                            }
+                            seamy = true;
+                            continue;
+                        }
+                    }
+                    let id = match vx.iter().position(|v| qv_eq(&v.p, &x)) {
+                        Some(id) => id,
+                        None => {
+                            vx.push(Vx {
+                                p: x.clone(),
+                                key: VKey::Circles(ea, eb, k),
+                                faces: BTreeSet::new(),
+                                view: Default::default(),
+                            });
+                            vx.len() - 1
+                        }
+                    };
+                    for &f in &a.faces {
+                        vx[id].faces.insert((0, f));
+                    }
+                    for &f in &b.faces {
+                        vx[id].faces.insert((1, f));
+                    }
+                    let (pa, pb) = (place(&a.curve, &vx[id].p), place(&b.curve, &vx[id].p));
+                    for (key, pos) in [((0, ea), pa), ((1, eb), pb)] {
+                        let list = on_edge.entry(key).or_default();
+                        if !list.iter().any(|(v, _)| *v == id) {
+                            list.push((id, pos));
+                        }
+                    }
+                }
+            }
+        }
+    }
+    if seamy {
+        return Err(seam());
     }
     // Pierces: every edge against every face of the other.
     for o in 0..2 {
@@ -1287,6 +1431,99 @@ pub(super) fn arrange_shared(models: [Prism; 2]) -> Result<Arr> {
         }
     }
     Ok(arr)
+}
+
+impl Arr {
+    /// S9e.4b.3c.1: each stored vertex `points[k]` within the resolution of
+    /// a section circle's edge strictly inside it, and of no vertex,
+    /// splits that edge at the circle's point in the direction of its
+    /// rounded place (scaled onto the circle: a point of one quadratic
+    /// field, within the resolution of the stored one), a vertex the
+    /// assembly keeps (`VKey::Stored`): a rim OCCT split at its sphere's
+    /// seam is two arcs, as its construction's ring is one.
+    pub(super) fn split_at(&mut self, points: &[[f64; 3]], tol: f64) -> Result<()> {
+        for (k, x) in points.iter().enumerate() {
+            let near =
+                |p: [f64; 3]| (0..3).map(|i| (p[i] - x[i]).powi(2)).sum::<f64>() <= tol * tol;
+            if self.vx.iter().any(|v| near(v.view())) {
+                continue;
+            }
+            let xq: QV = x.map(|c| Qd::rat(q(c)));
+            let mut found = None;
+            for (g, e) in self.edges.iter().enumerate() {
+                let (Crv::Circle(c), CurveRef::Section(si, _)) = (&e.crv, e.curve) else {
+                    continue;
+                };
+                let pl = c.place(&xq);
+                let y = c.at(&[q(pl[0].to_f64()), q(pl[1].to_f64())]);
+                if !near(qv_f64(&y)) {
+                    continue;
+                }
+                let pos = place(&e.crv, &y);
+                if strictly_within(&pos, &e.pos[0], &e.pos[1], e.with) != Some(true) {
+                    continue;
+                }
+                if found.is_some() {
+                    return Err(Error::Degenerate(
+                        "a stored vertex within the resolution of two edges",
+                    ));
+                }
+                found = Some((g, si, y, pos));
+            }
+            let Some((g, si, y, pos)) = found else {
+                continue;
+            };
+            let faces: BTreeSet<(usize, usize)> = {
+                let [a, b] = self.edges[g].ends;
+                self.vx[a]
+                    .faces
+                    .intersection(&self.vx[b].faces)
+                    .copied()
+                    .collect()
+            };
+            let v = self.vx.len();
+            self.vx.push(Vx {
+                p: y,
+                key: VKey::Stored(si, k),
+                faces,
+                view: Default::default(),
+            });
+            let e = self.edges[g].clone();
+            let (m0, p0) = midpoint(&e.crv, &e.pos[0], &pos, e.with)?;
+            let (m1, p1) = midpoint(&e.crv, &pos, &e.pos[1], e.with)?;
+            let h = self.edges.len();
+            self.edges.push(GEdge {
+                curve: e.curve,
+                crv: e.crv.clone(),
+                ends: [v, e.ends[1]],
+                pos: [pos.clone(), e.pos[1].clone()],
+                with: e.with,
+                mid: m1,
+                mid_pos: p1,
+                samples: Default::default(),
+            });
+            let first = &mut self.edges[g];
+            first.ends[1] = v;
+            first.pos[1] = pos;
+            first.mid = m0;
+            first.mid_pos = p0;
+            first.samples = Default::default();
+            for piece in &mut self.pieces {
+                for lp in &mut piece.loops {
+                    let mut out = Vec::with_capacity(lp.len() + 1);
+                    for &(x, d) in lp.iter() {
+                        match (x == g, d) {
+                            (true, true) => out.extend([(g, true), (h, true)]),
+                            (true, false) => out.extend([(h, false), (g, false)]),
+                            _ => out.push((x, d)),
+                        }
+                    }
+                    *lp = out;
+                }
+            }
+        }
+        Ok(())
+    }
 }
 
 /// Spline joints' edges on planes of the other input, and those touching.

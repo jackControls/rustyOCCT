@@ -38,8 +38,9 @@ normal to its axis (S8d.1's band). Declared `degenerate`: `cone_axis`, a
 frustum's half by a plane through its axis (through its virtual apex, S9d.3a's
 rule) against a box; `cyl_flush`, a box on the cylinder piece's cut plane
 (one plane in the construction, within the resolution of it in the kernel's
-two models). Declared `unsupported` (S9e.4b.3c): `one_sphere`, the zone's
-half against the whole ball of its sphere.
+two models). `one_sphere`, the zone's half against the whole ball of its
+sphere, declared `unsupported` until S9e.4b.3c.1's kernel decided it, is
+solid (its cut empty).
 
 Cases (each the three operations): `cyl_box`, `box_cyl`, the cylinder's
 piece and a box across its wall and cut face, either way; `cyl_ball` and
@@ -323,7 +324,6 @@ def group(name, klass, items, outcomes, first=None, reason=None, kind=None):
 APEX = 'a frustum\'s half by a plane through its axis (through its virtual apex, S9d.3a\'s rule)'
 FLUSH = ('a box on the cylinder piece\'s cut plane (one plane in the construction, within the resolution of it in '
          'the kernel\'s models)')
-ONE_SPHERE = 'S9e.4b.3c: faces of both inputs on one sphere'
 # A rod along the world's `y` (its frame's normal `y`, `x` the world's `x`:
 # a profile point `(u, v)` lies at `x = u`, `z = -v`).
 ALONG_Y = (0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 1.0, 0.0, 0.0)
@@ -366,8 +366,7 @@ def cases():
                                                                  0.0, 2.0)],
                  {'fuse': 1, 'cut': 1, 'common': 0}, reason=FLUSH)
     out += group('one_sphere', 'revolved', [split('zone_half'), sphere(4.0, at('SKEW2', (5, 5, 5)))],
-                 {'fuse': 1, 'cut': 0, 'common': 1},
-                 kind='unsupported', reason=ONE_SPHERE)
+                 {'fuse': 1, 'cut': 0, 'common': 1})
     return out
 
 

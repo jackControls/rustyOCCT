@@ -194,7 +194,7 @@ impl Solid {
             // primitive common its planes' half-spaces (checked below).
             Err(e) if piece_shape(&topology) => {
                 let p = piece(&topology, resolution, construction_operation(operation))
-                    .map_err(|_| e)?;
+                    .map_err(|x| if x == not_its_primitive() { x } else { e })?;
                 (Recognized::Piece(Box::new(p)), BTreeMap::new())
             }
             Err(e) => return Err(e),
@@ -830,6 +830,14 @@ fn axial_range(t: &Topology, frame: &Frame3) -> (f64, f64) {
     range
 }
 
+/// A body of one curved face and planes other than its primitive common its
+/// planes' half-spaces (S9e.4b.3c).
+fn not_its_primitive() -> Error {
+    Error::OutOfDomain(
+        "an imported plane piece other than its primitive common its planes' half-spaces (S9e.4b.3c)",
+    )
+}
+
 /// A plane piece: its primitive on the curved face's stored frame and its
 /// plane faces' stored frames (S9e.4b.3a).
 fn piece(t: &Topology, tolerance: Tolerance, op: OperationId) -> Result<Piece> {
@@ -838,6 +846,21 @@ fn piece(t: &Topology, tolerance: Tolerance, op: OperationId) -> Result<Piece> {
         .iter()
         .position(|f| !matches!(f.surface, Surface::Plane(_)))
         .ok_or_else(general)?;
+    // The curved face's material inside its quadric (its outward normal
+    // the surface's own, away from the axis or centre): a body whose
+    // material lies outside it (a block less a cylinder, a notch) is not
+    // its primitive common its planes, and its model would meet the planes
+    // its wall is tangent to, refused before it is built (S9e.4b.3c).
+    let curved = &t.faces()[k];
+    let front = &t.regions()[t.shells()[curved.front.index()].region.index()];
+    let outside = if front.kind == RegionKind::Solid {
+        1.0
+    } else {
+        -1.0
+    };
+    if curved.sense.sign() * outside < 0.0 {
+        return Err(not_its_primitive());
+    }
     let half = std::f64::consts::FRAC_PI_2;
     let primitive = match &t.faces()[k].surface {
         Surface::Sphere { frame, radius } => {

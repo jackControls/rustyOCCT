@@ -113,7 +113,7 @@ jobs:
       matrix:
         group: [algebra, brep, booleans, cones, cones-loops, tori, torus-parts, chained, spline-any, given,
                 given-curved, given-met, spline-parallel, spline-crossing, imported, imported-arcs, spline-sphere,
-                imported-polyhedra, spline-cone, imported-pieces, split-pieces]
+                imported-polyhedra, spline-cone, imported-pieces, split-pieces, one-sphere]
     steps:
       - uses: actions/checkout@v4.2.2
       - run: rustup toolchain install stable --profile minimal
@@ -234,6 +234,9 @@ jobs:
       - name: Verify the split plane pieces' Boolean independent reference (S9e.4b.3b)
         if: matrix.group == 'split-pieces'
         run: target/math-oracle-venv/bin/python rust/tools/generate_split_pieces_boolean_fixtures.py --check --workers 4
+      - name: Verify two pieces of one sphere's Boolean independent reference (S9e.4b.3c.1)
+        if: matrix.group == 'one-sphere'
+        run: target/math-oracle-venv/bin/python rust/tools/generate_one_sphere_boolean_fixtures.py --check --workers 4
 
   pinned-degree-oracle:
     name: Degree elevation / source-pinned OCCT

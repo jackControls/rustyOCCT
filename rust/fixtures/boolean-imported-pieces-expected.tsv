@@ -83,14 +83,11 @@ half_touch_cut	result 1 134.0412865531645136511758 150.796447372310080406731 5.1
 half_touch_common	expect degenerate S9e.4b.3a sphere
 half_touch_common	reason a box's face touching the imported half ball's sphere at a point inside its face
 half_touch_common	empty
-one_sphere_fuse	expect unsupported S9e.4b.3a both
-one_sphere_fuse	reason S9e.4b.3c: faces of both inputs on one sphere
+one_sphere_fuse	expect solid S9e.4b.3a both
 one_sphere_fuse	result 1 438.7757739513744509750913 312.7703505755217548257514 4.415645211220641415716798 4.864697480421987393893644 3.887736932699663468720007
-one_sphere_cut	expect unsupported S9e.4b.3a both
-one_sphere_cut	reason S9e.4b.3c: faces of both inputs on one sphere
+one_sphere_cut	expect solid S9e.4b.3a both
 one_sphere_cut	result 1 28.27433388230814180716308 59.87214196154340206359032 6.820568277831435352931777 8.344749788770841858848235 3.618954622265148653450488
-one_sphere_common	expect unsupported S9e.4b.3a both
-one_sphere_common	reason S9e.4b.3c: faces of both inputs on one sphere
+one_sphere_common	expect solid S9e.4b.3a both
 one_sphere_common	result 1 37.17551306747921784146746 71.28935132583046694617862 4.715694549254964310172496 7.957866357836261214499305 3.189457047854676056551039
 bitten_box_fuse	expect unsupported S9e.4b.3a sphere
 bitten_box_fuse	reason S9e.4b.3c: an imported plane piece not convex in its planes

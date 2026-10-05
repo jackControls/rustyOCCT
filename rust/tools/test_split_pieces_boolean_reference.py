@@ -97,7 +97,7 @@ class SplitPiecesReferenceTests(unittest.TestCase):
         fixtures.validate(listed)
         self.assertEqual(len(listed), 48)
         kinds = {k: sum(1 for c in listed if c.kind == k) for k in ('solid', 'empty', 'degenerate', 'unsupported')}
-        self.assertEqual(kinds, {'solid': 39, 'empty': 0, 'degenerate': 6, 'unsupported': 3})
+        self.assertEqual(kinds, {'solid': 41, 'empty': 1, 'degenerate': 6, 'unsupported': 0})
         for klass in fixtures.CLASSES:
             self.assertTrue(any(c.klass == klass for c in listed), klass)
         for name in ('cyl_box_fuse', 'box_cyl_cut', 'pair_common', 'band_ball_fuse', 'chain_cyl_cut'):
