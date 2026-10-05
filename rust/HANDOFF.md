@@ -23,7 +23,8 @@ guarded (branch `validate-curve-at`) and the arithmetic of fields of
 degree eight (branch `given-met-speed`), both over `s9c2-kernel` at
 `abebe31c`,
 then for S9e.4b.3b (branch `s9e4b3b`, over `s9c2-kernel` at `b99799ec`),
-its pole lift combined with the meridian loop's fix (branch `fix-uv-gap`).
+its pole lift combined with the meridian loop's fix (branch `fix-uv-gap`),
+then for S9e.4b.3c.1 (branch `s9e4b3c`, over `s9c2-kernel` at `d665df29`).
 
 ## Where things stand
 
@@ -242,6 +243,26 @@ its pole lift combined with the meridian loop's fix (branch `fix-uv-gap`).
   `Degenerate` before its edges enter it). At `cc7ea7ff`, with those
   fixes and `CONE_PAIRS` on, both campaigns are clean (`boolean` 996
   runs, the slowest input 13 s; `split` 1,731 runs, the slowest 19 s).
+- **S9e.4b.3c.1 implemented** (branch `s9e4b3c`): two inputs on one sphere
+  in general position and sphere pieces whose rims OCCT divided (the
+  survey's `so1` and `so4`): faces on one sphere as S9c.1's faces on one
+  surface, the circles of both crossing there met exactly (a whole
+  sphere's split great circle too), a piece's sphere split at the second
+  arrangement's seam, a stored vertex on a piece's ring splitting it in its
+  own arrangement (`curved/graph.rs`, `curved/pieces.rs`); a body whose one
+  curved face's material lies outside its quadric (a groove) refused on
+  import before its model. Decisions ("S9e.4b.3c refined", with the split
+  S9e.4b.3c.1 to S9e.4b.3c.3), 22 cases on 5 pieces OCCT wrote
+  (`generate_one_sphere_boolean_fixtures.py`, a `write` block's `divide`
+  row) captured before the kernel (8 matching, 14 reviewed), the kernel
+  within the reference on all 17 solid and empty cases, the 2 degenerate
+  refused, the 3 exact incidences S9e.4b.3c.2's; S9e.4b.3a's and S9e.4b.3b's
+  one-sphere cases solid. `PIECE_BOOLEANS` gives a zone's or cap's piece to
+  a ball of its sphere too. A trial of the survey's 38 `so` cases: 14
+  evaluate on both backends (`so1` and `so4`, `so4` and `so2`, `so2` and
+  `so6`'s common), 13 S9e.4b.3c.2's, 11 `Degenerate` (`so6` and `so7`'s
+  corners within rounding of the partner's); `bcut_complex/I6` and `G4`
+  S9e.4b.3c's.
 - **CI.** Both workflows ("Rust kernel", "Rust geometry fuzzing") were green
   at `6c221525`. They had been red from S7 until 2026-09-29, unnoticed;
   check them after every push (see "Working rules").
@@ -264,7 +285,7 @@ its pole lift combined with the meridian loop's fix (branch `fix-uv-gap`).
 2. **The Linux records and reviews** of the recaptured
    `occt-boolean-spline-crossing-preimplementation` and of the
    spline-sphere, spline-cone, imported-polyhedra, imported-arcs,
-   imported-pieces and split-pieces
+   imported-pieces, split-pieces and one-sphere
    captures from CI's run, as every capture's. `SPLINE_SPHERE` and
    `SPLINE_CONE` are on since the loops' certified integrals were sped up
    (branch `loop-integrals`; REVIEW_NOTES.md's "Certified integrals beside
@@ -280,10 +301,16 @@ its pole lift combined with the meridian loop's fix (branch `fix-uv-gap`).
    pieces as their primitive common their planes' half-spaces) and
    S9e.4b.3b (S9e.2's deferred `Clipped` and `Half` against curved faces
    on that model) are implemented with clean campaigns (pending their
-   captures' Linux records and the DRAW survey); next **S9e.4b.3c**, two
-   pieces of one sphere (the survey's `so1` to `so7`, 38 cases), rims
-   split by stored vertices and pieces not convex in their planes
-   (`shading_132`); then **S9e.4b.4**, the S9e text's plan in full
+   captures' Linux records and the DRAW survey); **S9e.4b.3c**, split in
+   "S9e.4b.3c refined": S9e.4b.3c.1 (two inputs on one sphere in general
+   position, rims split by stored vertices: 14 of the survey's 38 `so`
+   cases evaluate) is implemented (pending its capture's Linux record, the
+   DRAW survey and a campaign); next **S9e.4b.3c.2**, exact incidences on
+   one sphere (a vertex of both, a circle of both, a line of both, plane
+   faces on one plane with overlapping edges: `so1` and `so2`, `so2` and
+   `so3`, `so5` and `so2`, 13 cases), then **S9e.4b.3c.3**, pieces not
+   convex in their planes (`shading_132`, grooves such as `bcut_complex/I6`'s
+   tool) and two plane faces on one plane; then **S9e.4b.4**, the S9e text's plan in full
    (joints of two circles, prisms with walls of two directions, bodies of
    several curved surfaces: 21 cases; an imported polyhedron against
    curved faces, or with a cavity). The reader's header check refuses
@@ -400,8 +427,9 @@ Each comparison takes `--occt-root target/spline-linear-preflight/pinned-sdk/ins
 | `compare_spline_sphere_boolean.py` | 4 / 29 (the kernel within the reference on all 27 results, the 6 degenerate refused, none `unsupported`) |
 | `compare_imported_polyhedra_boolean.py` | 47 / 1 (the kernel within the reference on all 44 solid and empty cases, the flush fuse refused, the cavity `unsupported`, S9e.4b.4's) |
 | `compare_spline_cone_boolean.py` | 4 / 23 (the kernel within the reference on all 21 results, the 6 degenerate refused, none `unsupported`) |
-| `compare_imported_pieces_boolean.py` | 32 / 13 (the kernel within the reference on all 33 solid cases, the 6 degenerate refused, the 6 one-sphere and bitten cases `unsupported`, S9e.4b.3c's) |
-| `compare_split_pieces_boolean.py` | 26 / 22 (the kernel within the reference on all 39 solid cases, the 6 degenerate refused, the 3 one-sphere cases `unsupported`, S9e.4b.3c's) |
+| `compare_imported_pieces_boolean.py` | 32 / 13 (the kernel within the reference on all 36 solid cases, the 6 degenerate refused, the 3 bitten cases `unsupported`, S9e.4b.3c's; the one-sphere cases solid since S9e.4b.3c.1) |
+| `compare_split_pieces_boolean.py` | 26 / 22 (the kernel within the reference on all 42 solid and empty cases, the 6 degenerate refused; the one-sphere cases solid since S9e.4b.3c.1) |
+| `compare_one_sphere_boolean.py` | 8 / 14 (the kernel within the reference on all 17 solid and empty cases, the 2 degenerate refused, the 3 exact incidences `unsupported`, S9e.4b.3c.2's) |
 
 Every one must report 0 failures; since S9f.1 also `compare_split.py`
 (72 / 56) and `compare_brep.py --family spline` (10 / 3), which share its

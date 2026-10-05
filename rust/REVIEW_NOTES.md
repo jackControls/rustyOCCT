@@ -7342,6 +7342,87 @@ Decisions for S9, recorded before its code (2026-09-28):
     one solid of the reference's two and its common empty, consistent with
     that result missing its part above the slab's bottom plane.
     S9e.4b.3c.1's kernel next.
+  * **S9e.4b.3c.1 implemented** (`curved/graph.rs`: faces on one sphere,
+    the circles' crossings and `Arr::split_at`; `curved/pieces.rs` and
+    `splits.rs`: a piece's sphere split at the second arrangement's seam;
+    `meet.rs`, `spheres.rs`: one sphere a surface of both; `assemble.rs`:
+    the new vertices' names, a stored vertex kept), as the refined
+    decisions describe: two inputs' spheres one when their exact models'
+    centres and radii are equal (`pieces::on_one_sphere`), their sphere
+    faces then faces on one surface (`Arr::coinc`), every circle of one
+    input on such a face met with every circle of the other there (a
+    vertex of both, `VKey::Circles`, strictly inside both edges), a piece's
+    or split zone's sphere split at the second arrangement's seam first
+    (`model_of`'s `one_sphere`), and an imported sphere piece's section
+    circle split at each stored vertex within the resolution of it and of
+    no vertex (`VKey::Stored`, kept by the assembly), so the divided rims
+    match. All 22 fixtures as declared (17 within the kernel's enclosures,
+    each at most `1e-9` wide; `ball_near` refused as `Degenerate("two
+    spheres within the resolution of one sphere")`, `hemi_octant` as
+    `OutOfDomain("a vertex or a circle of both inputs on one sphere
+    (S9e.4b.3c.2)")`), every history complete over the imported bodies'
+    stored ids, results deterministic and moved rigidly, both inputs
+    translated and turned keeping the reference's volumes, the divided
+    rims' bodies pieces of two faces, two edges and three vertices (their
+    volumes the closed forms), two whole balls of one sphere in two frames
+    (their fuse and common the ball, their cut empty)
+    (`tests/one_sphere_booleans.rs`, 11 s at `opt-level` 2 with debug
+    assertions on a host at load 15, 11 s in release with debug assertions
+    under the emulated correctly rounded `hypot`, the pieces' two earlier
+    test files too). S9e.4b.3a's `one_sphere`
+    (the octant and `octant_low`) and S9e.4b.3b's (the zone's half and its
+    own ball), declared `unsupported` until now, are solid within the
+    reference (their sets' generators and unit tests declare them so;
+    `compare_imported_pieces_boolean.py` 32/13 and
+    `compare_split_pieces_boolean.py` 26/22 unchanged).
+    `compare_one_sphere_boolean.py` 8 matches and 14 reviewed (the 14
+    captured; with the kernel, entity counts in 7: OCCT's unified results
+    split their sphere faces and sections at its own points and seams where
+    the kernel joins the pieces of both inputs facing one way, and the
+    chain's are OCCT's wrong results'), every enclosure within the
+    reference; every other comparison of `HANDOFF.md`'s table unchanged with
+    0 failures; the release suite (601 tests) and the tools' unit tests
+    (327) passing, the ledger unchanged. Amendments, from the
+    implementation: (a) a piece's model split at the second arrangement's
+    seam and degenerate there (`SKEW3`'s pieces, evidence correction (a)) is
+    split at the other seams in turn, as on import (`common`'s `first`): a
+    piece degenerate at every split keeps its own refusal, and a split
+    alike the partner's is the second arrangement's seam conflict (two
+    split great circles on one circle), retried at its next;
+    (b) the circles' crossings are found before the pierces, an incidence
+    of the inputs' own circles and vertices (`OutOfDomain`, S9e.4b.3c.2)
+    taking precedence over a split great circle's seam conflict, which
+    otherwise hid it at every seam (the survey's `so1` and `so2`); (c) a body
+    of one sphere, cylinder or cone face and planes whose curved face's
+    material lies outside its quadric (a groove or notch, the face's
+    outward normal toward the axis or centre) is refused on import as
+    S9e.4b.3c's before its model is built (`imported::piece`; the survey's
+    `bcut_complex/I6` tool, a block less a half cylinder whose wall is
+    tangent to two of its faces, was refused as `Degenerate("a tangency
+    between the inputs (S9c)")` from its own model's arrangement; the DRAW
+    survey of branch `s9-draw-6` found it). The `split` fuzz target's
+    `PIECE_BOOLEANS` gives a zone's or cap's first piece also to a whole
+    ball of its sphere in a turned frame (their common the piece, their fuse
+    the ball, within `1e-9` of the ball's volume): of the split corpus and
+    its regressions 265 inputs reach it, the common and the fuse of 260
+    evaluate, 5 refused by S9's rules (a piece or result thinner than the
+    resolution, a meeting at every seam tried). Replays with debug
+    assertions, one process an input: the split corpus and its regressions
+    (3,569 inputs) and the boolean corpus and its regressions (1,466), no
+    failure, the slowest 2.4 s and 6.6 s. A trial of the DRAW survey's 38 restore cases of `so1` to `so7`
+    on the Rust adapter (not the survey: nothing registered): 14 evaluate on
+    both backends with every check (`bcommon_complex/B2`, `B5`, `B9`,
+    `bcut_complex/C5`, `C6`, `D2`, `D3`, `bfuse_complex/B5`, `B8`,
+    `bugs/modalg_2/bug413_1`, `_2`, `bugs/moddata_1/bug183_2`, `_3`, `_5`:
+    `so1` and `so4`, `so4` and `so2`, and `so2` and `so6`'s common, whose
+    corners within rounding at the centre leave its common clear of them);
+    13 are S9e.4b.3c.2's (`OutOfDomain`: `so1` and `so2`, `so2` and `so3`,
+    `so5` and `so2`); the other 11 with `so6` or `so7` `Degenerate` by S9's
+    rules (two faces within the resolution of one plane, a piece or result
+    thinner than the resolution); `bcut_complex/I6` and `G4` refused as
+    S9e.4b.3c's (a groove; a box with a cylindrical boss), I6 before its
+    model's tangency. Pending: the capture's Linux record, the DRAW survey
+    and a campaign.
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces
