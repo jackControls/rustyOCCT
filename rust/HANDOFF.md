@@ -358,8 +358,8 @@ then for S9e.4b.3c.2 (branch `s9e4b3c2`, over `s9c2-kernel` at `f4b584f7`).
    vertex of both, a circle of both, a line of both, plane faces on one
    plane with overlapping edges: `so1` and `so2`, `so2` and `so3`, `so5`
    and `so2`, 13 cases, all evaluating in its trial) is implemented
-   (pending its capture's Linux record, the DRAW survey and the
-   campaigns); next **S9e.4b.3c.3**, pieces not convex in their planes
+   (campaigns clean at `8a55a3e6`; pending its capture's Linux record and
+   the DRAW survey); next **S9e.4b.3c.3**, pieces not convex in their planes
    (`shading_132`, grooves) and two plane faces on one plane; then
    **S9e.4b.4**, the S9e text's plan in full
    (joints of two circles, prisms with walls of two directions, bodies of

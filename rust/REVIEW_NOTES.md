@@ -7820,7 +7820,10 @@ Decisions for S9, recorded before its code (2026-09-28):
     of the 38 `so` cases 27 evaluate (S9e.4b.3c.1's 14 and these 13), the
     11 with `so6` or `so7` `Degenerate` by S9's rules as before;
     `bcut_complex/I6` and `G4` refused as S9e.4b.3c's as before. Pending:
-    the capture's Linux record, the DRAW survey and the campaigns.
+    the capture's Linux record and the DRAW survey. Campaigns at `8a55a3e6`
+    (600 s each, sampled replays, every switch on): `boolean` clean, 969
+    runs, the slowest input 19 s under AddressSanitizer at load about 8;
+    `split` clean, 896 runs, the slowest 10 s.
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces
