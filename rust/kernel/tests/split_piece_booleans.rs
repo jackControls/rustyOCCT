@@ -169,8 +169,8 @@ fn every_case_matches_the_reference() {
 }
 
 /// The declared refusals name their reasons: the frustum's half through its
-/// axis its apex, the box on the cut plane one plane, the zone's half and
-/// its own ball S9e.4b.3c's.
+/// axis its apex, the box on the cut plane one plane (the zone's half and
+/// its own ball, S9e.4b.3c.1's, evaluate).
 #[test]
 fn refusals_name_their_reasons() {
     for (name, run) in runs() {
@@ -184,16 +184,6 @@ fn refusals_name_their_reasons() {
         if name.starts_with("cyl_flush") {
             assert_eq!(
                 reason, "two faces within the resolution of one plane",
-                "{name}"
-            );
-        }
-        if name.starts_with("one_sphere") {
-            assert!(
-                matches!(run, Err(Error::OutOfDomain(_))),
-                "{name}: {reason}"
-            );
-            assert_eq!(
-                reason, "faces of both inputs on one sphere (S9e.4b.3c)",
                 "{name}"
             );
         }

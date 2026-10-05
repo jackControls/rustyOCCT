@@ -167,7 +167,7 @@ fn face_frame(s: &Solid, point: &V, normal: &V) -> Result<Frame3> {
 
 /// The split piece's primitive common its planes' half-spaces, arranged
 /// and assembled.
-fn arranged(s: &Solid) -> Result<(Arr, Vec<(Component, Made)>)> {
+fn arranged(s: &Solid, first: Option<&R>) -> Result<(Arr, Vec<(Component, Made)>)> {
     let (p, planes) = primitive(s)?;
     let mut exact = Vec::new();
     for (plane, sign) in &planes {
@@ -184,7 +184,7 @@ fn arranged(s: &Solid) -> Result<(Arr, Vec<(Component, Made)>)> {
         hull_operation(&p),
         s.resolution(),
     )?;
-    common(&p, &hull)
+    common(&p, &hull, first, &[])
 }
 
 thread_local! {
@@ -196,9 +196,9 @@ thread_local! {
 
 /// A split piece's model (S9e.4b.3b): the given model of its primitive
 /// common its planes' half-spaces, matched to its stored topology.
-pub(super) fn model(s: &Solid, op: Operand) -> Result<Prism> {
+pub(super) fn model(s: &Solid, op: Operand, first: Option<&R>) -> Result<Prism> {
     let key = format!(
-        "{:?}\n{:?}\n{:?} {:?}\n{:?}\n{op:?}",
+        "{:?}\n{:?}\n{:?} {:?}\n{:?}\n{op:?}\n{first:?}",
         s.construction, s.frame, s.start, s.end, s.topology
     );
     if let Some(hit) = ARRANGED.with(|k| {
@@ -210,7 +210,7 @@ pub(super) fn model(s: &Solid, op: Operand) -> Result<Prism> {
         return hit;
     }
     let built = (|| {
-        let (arr, out) = arranged(s)?;
+        let (arr, out) = arranged(s, first)?;
         super::given::built(s, op, arr, out, Op2::Common, None)
     })();
     ARRANGED.with(|k| {

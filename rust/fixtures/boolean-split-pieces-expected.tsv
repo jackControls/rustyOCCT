@@ -95,12 +95,9 @@ cyl_flush_cut	result 1 113.0973355292325565846552 139.0154749213483472705051 4.5
 cyl_flush_common	expect degenerate S9e.4b.3b prism
 cyl_flush_common	reason a box on the cylinder piece's cut plane (one plane in the construction, within the resolution of it in the kernel's models)
 cyl_flush_common	empty
-one_sphere_fuse	expect unsupported S9e.4b.3b revolved
-one_sphere_fuse	reason S9e.4b.3c: faces of both inputs on one sphere
+one_sphere_fuse	expect solid S9e.4b.3b revolved
 one_sphere_fuse	result 1 268.0825731063290230154789 201.0619298297467672616092 5.0 5.0 5.0
-one_sphere_cut	expect unsupported S9e.4b.3b revolved
-one_sphere_cut	reason S9e.4b.3c: faces of both inputs on one sphere
+one_sphere_cut	expect empty S9e.4b.3b revolved
 one_sphere_cut	empty
-one_sphere_common	expect unsupported S9e.4b.3b revolved
-one_sphere_common	reason S9e.4b.3c: faces of both inputs on one sphere
+one_sphere_common	expect solid S9e.4b.3b revolved
 one_sphere_common	result 1 102.4171509318108716765708 125.8844750463433773809675 5.311711104817455369135283 3.7097843480167299841311 5.945976122630728201950778

@@ -24,7 +24,9 @@
 //! common with a box holding it is itself, and the first piece's fuse, cut
 //! and common with a box turned about its centroid obey the pair identities
 //! when all three evaluate; a refusal names a later step's or S9's rule,
-//! never S9e.4's.
+//! never S9e.4's. S9e.4b.3c.1: a zone's or cap's first piece also meets a
+//! whole ball of its sphere in a turned frame: their common is the piece,
+//! their fuse the ball.
 use crate::analytic_intersections::Bytes;
 use rusty_occt::identity::OperationId;
 use rusty_occt::topology::SplineSpan;
@@ -85,6 +87,38 @@ fn piece_booleans(piece: &Solid, turned: bool) {
     }
     if !turned {
         return;
+    }
+    // S9e.4b.3c.1: a zone's or cap's piece and a whole ball of its sphere in
+    // a turned frame (faces of both inputs on one sphere): their common is
+    // the piece, their fuse the ball.
+    let sphere = piece
+        .topology()
+        .faces()
+        .iter()
+        .find_map(|f| match f.surface {
+            rusty_occt::topology::Surface::Sphere { frame, radius } => {
+                Some((frame.origin(), radius))
+            }
+            _ => None,
+        });
+    if let Some((centre, radius)) = sphere {
+        let half = std::f64::consts::FRAC_PI_2;
+        if let Ok((ball, _)) = Frame3::new(
+            centre,
+            Vec3::new(4.0, 1.0, 8.0),
+            Vec3::new(-7.0, -4.0, 4.0),
+            tolerance,
+        )
+        .and_then(|f| Solid::sphere_with(OperationId(7), f, radius, -half, half, tolerance))
+        {
+            let whole = ball.mass_properties().volume;
+            if let Some(v) = volume(piece.common(OperationId(8), &ball)) {
+                assert!((v - own).abs() <= 1e-9 * whole, "{v} for {own}");
+            }
+            if let Some(v) = volume(piece.fuse(OperationId(8), &ball)) {
+                assert!((v - whole).abs() <= 1e-9 * whole, "{v} for {whole}");
+            }
+        }
     }
     let c = piece.mass_properties().centroid;
     let Ok(turned) = Frame3::new(

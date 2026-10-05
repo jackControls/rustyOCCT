@@ -228,8 +228,11 @@ pub(super) fn applies(poly: &Polyhedron) -> bool {
 }
 
 /// An input's exact model: a prism's, a sphere's (S9d.1) or a cone's
-/// (S9d.3a).
-fn model_of(s: &crate::Solid, op: Operand, seam: &R) -> Result<model::Prism> {
+/// (S9d.3a). Where the partner's sphere is this input's (`one_sphere`,
+/// S9e.4b.3c.1), a piece's model splits its sphere at this arrangement's
+/// seam, so two pieces' splits differ and move with the seams tried.
+fn model_of(s: &crate::Solid, op: Operand, seam: &R, one_sphere: bool) -> Result<model::Prism> {
+    let first = one_sphere.then_some(seam);
     match &s.construction {
         // S9e.1: a Boolean's result, on its construction's exact model
         // (S9e.2: a stack too).
@@ -239,10 +242,10 @@ fn model_of(s: &crate::Solid, op: Operand, seam: &R) -> Result<model::Prism> {
         Construction::Torus { .. } => torus::model(s, op, seam),
         // S9e.4b.3a: an imported plane piece, its primitive common its
         // planes' half-spaces.
-        Construction::Imported(_) if pieces::is_piece(s) => pieces::model(s, op),
+        Construction::Imported(_) if pieces::is_piece(s) => pieces::model(s, op, first),
         // S9e.4b.3b: a split piece, its primitive common its plane's
         // half-space.
-        Construction::Clipped(_) | Construction::Half(_) => splits::model(s, op),
+        Construction::Clipped(_) | Construction::Half(_) => splits::model(s, op, first),
         _ => model::Prism::new(s, op, seam),
     }
 }
@@ -256,9 +259,6 @@ const SEAMS: [(i64, i64); 5] = [(2, 7), (3, 11), (5, 13), (7, 19), (11, 23)];
 pub(super) fn build(poly: &Polyhedron) -> Result<Vec<Component>> {
     // S9f.1: a spline prism against a prism of lines only.
     spline_pairs(poly)?;
-    // S9e.4b.3a: an imported piece and another input on one sphere are
-    // S9e.4b.3c's.
-    pieces::one_sphere(&poly.a, &poly.b)?;
     let seams = SEAMS;
     for k in 0..seams.len() - 1 {
         let r = |(n, d): (i64, i64)| R::new(BigInt::from(n), BigInt::from(d));
@@ -305,8 +305,9 @@ fn shared(poly: &Polyhedron, seam_a: &R, seam_b: &R) -> Result<graph::Arr> {
         return hit;
     }
     let arr = (|| {
-        let a = model_of(&poly.a, Operand::A, seam_a)?;
-        let b = model_of(&poly.b, Operand::B, seam_b)?;
+        let one = pieces::on_one_sphere(&poly.a, &poly.b);
+        let a = model_of(&poly.a, Operand::A, seam_a, one)?;
+        let b = model_of(&poly.b, Operand::B, seam_b, one)?;
         let mut arr = graph::arrange_shared([a, b])?;
         // S9e.2: a given solid of several kept alone.
         matched::keep_solid(&mut arr)?;

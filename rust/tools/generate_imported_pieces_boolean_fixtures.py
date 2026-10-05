@@ -71,8 +71,9 @@ Declared `degenerate`: `tilt_flush`, a box in the turned octant's frame on
 its base plane (one plane in the construction, within the resolution of it
 in the file); `half_touch`, a box whose face touches the half ball's
 sphere at a point inside its face. Declared `unsupported` (S9e.4b.3c):
-`one_sphere`, the octant and `octant_low` (faces of both on one sphere);
-`bitten_box`, the bitten ball and a box.
+`bitten_box`, the bitten ball and a box. `one_sphere`, the octant and
+`octant_low` (faces of both on one sphere), declared `unsupported` until
+S9e.4b.3c.1's kernel decided them, is solid.
 
 The reference is the construction OCCT was given, through S9e.3a's chained
 reference (`chained_curved_boolean_reference.py`): each imported piece its
@@ -331,7 +332,6 @@ def group(name, klass, items, outcomes, first=None, reason=None, kind=None):
 TOUCH = 'a box\'s face touching the imported half ball\'s sphere at a point inside its face'
 FLUSH = ('a box in the turned octant\'s frame on the plane of its base (one plane in the construction, within '
          'the resolution of it in the file)')
-ONE_SPHERE = 'S9e.4b.3c: faces of both inputs on one sphere'
 BITTEN = 'S9e.4b.3c: an imported plane piece not convex in its planes'
 ROD = prism([disc(5.5, 7.375, 0.75)], at('XY', (0, 0, -2)), 0.0, 14.0)
 SLAB = prism([square(-4.0, -15.0, 14.0, 15.0)], at('TILT', (0, 0, 8.125)), 0.0, 1.5)
@@ -367,8 +367,7 @@ def cases():
     out += group('half_touch', 'sphere', [imported('half'), prism([square(-2.0, -2.0, 2.0, 2.0)], TOUCH_FRAME,
                                                                   0.0, 2.0)],
                  {'fuse': 1, 'cut': 1, 'common': 0}, reason=TOUCH)
-    out += group('one_sphere', 'both', [imported('octant'), imported('octant_low')], three, kind='unsupported',
-                 reason=ONE_SPHERE)
+    out += group('one_sphere', 'both', [imported('octant'), imported('octant_low')], three)
     out += group('bitten_box', 'sphere', [imported('bitten'), prism([square(6.0, 5.5, 9.5, 8.5)],
                                                                     at('XY', (0, 0, 3.5)), 0.0, 3.0)],
                  three, kind='unsupported', reason=BITTEN)
