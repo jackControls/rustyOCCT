@@ -7486,13 +7486,79 @@ Decisions for S9, recorded before its code (2026-09-28):
     rules (two faces within the resolution of one plane, a piece or result
     thinner than the resolution); `bcut_complex/I6` and `G4` refused as
     S9e.4b.3c's (a groove; a box with a cylindrical boss), I6 before its
-    model's tangency. Pending: the capture's Linux record, the DRAW survey.
+    model's tangency. Pending: the capture's Linux record. DRAW survey:
+    that of S9e.4b.3c.1 and the switches' speed-up, below (the trial's 14
+    registered, every other `so` case refused as it found).
     Campaigns at `59d0c57b`, with every switch of the boolean target on
     (`TORUS_PAIRS`, `CONE_PAIRS`, `TURNED_PARTS`, `GIVEN_MET`,
     `SPLINE_SPHERE`, `SPLINE_CONE`) and the caps' frames kept bit for bit
     (600 s each, sampled replays): `boolean` clean, 1,080 runs, the slowest
     input 13 s under AddressSanitizer at load about 6; `split` clean, 1,818
     runs, none slow.
+  * **DRAW survey of S9e.4b.3c.1 and the switches' speed-up (2026-10-05,
+    `UPSTREAM_TESTS.md`).** At `f4b584f7` (`s9c2-kernel` with S9e.4b.3c.1,
+    the speed-up of `TORUS_PAIRS` and `TURNED_PARTS` (memos of a circle's
+    resultants with a torus and of isolated roots, the shifted root
+    refinement, the fields' signs, a torus meeting's jets shared by its two
+    pcurves, a containment ray undecided at once beside an undecidable
+    fin) and a prism's caps on its frame bit for bit (`59d0c57b`); the
+    public dataset, 120 seconds a case, four at once). The 1,802
+    self-contained cases of the Boolean group on both backends: every
+    status, every refusal's reason and every error the last survey's
+    (`d665df29`) field for field, 987 evaluating and registered, 592
+    refused, 223 unsupported on both, none failing or timing out. The 1,814
+    cases restoring a shape for a Boolean on the Rust adapter, and the 171
+    the import reaches on native DRAW too: native DRAW's every status and
+    reason the last survey's; on the Rust adapter only S9e.4b.3c.1's 38
+    `so` cases and `bcut_complex/I6` move, each as its trial found, besides
+    two restores that no longer time out (below). 14
+    evaluate on both backends with every check (`so1` and `so4`, the
+    hemisphere and the cap above `z = 5` with their rims divided:
+    `bcommon_complex/B2`, `bcut_complex/C5`, `C6`, `bfuse_complex/B5`,
+    `bugs/modalg_2/bug413_1`, `_2`, `bugs/moddata_1/bug183_2`, `_3`; `so4`
+    and `so2`, the cap and a wedge: `bcommon_complex/B5`, `bcut_complex/D2`,
+    `D3`, `bfuse_complex/B8`, `bug183_5`; `so2` and `so6`'s common,
+    `bcommon_complex/B9`), 13 of them from "a piece other than its
+    primitive common its planes" and `B9` from "faces of both inputs on
+    one sphere". 13 are S9e.4b.3c.2's (`OutOfDomain("a vertex or a circle
+    of both inputs on one sphere (S9e.4b.3c.2)")`: `so1` and `so2`, `so2`
+    and `so3`, `so5` and `so2`; 5 from the former reason, 8 from the
+    latter) and 11 with `so6` or `so7` are `Degenerate` by S9's rules (4
+    two faces within the resolution of one plane, 4 a piece and 3 a result
+    thinner than the resolution). `bcut_complex/I6`'s notched tool is now
+    refused on import as a groove (S9e.4b.3c's reason for a plane piece
+    other than its primitive common its planes, where the last survey found
+    its own arrangement's tangency), `G4` as before. Of the 171: 41
+    evaluate on both backends, 68 are refused by S9's rules, 15 are
+    S9e.4b.3c's (13 S9e.4b.3c.2's, `G4` and `I6`), 36 are bodies none of
+    the kernel's constructions, 6 S9e.4b.4's, 3 spline bodies (S9f) and 2
+    arguments of several solids; 24 are unsupported natively too. Of the 8
+    that timed out at their first restores, 6 still do; `bugs/modalg_1/
+    buc60532_2` (a `SurfaceOfLinearExtrusion` the reader does not represent)
+    and `bugs/modalg_6/bug23585` (`tolerance p`) ended within the 120 s, in
+    113 and 102 s, as unsupported: load, not the kernel (alone, the worker
+    of `d665df29` took 77 to 119 s on them and this one 78 to 116 s,
+    interleaved at load 5 to 13). The volume audit (`vprops` and `sprops`
+    before each `checkprops`, both backends, the 1,014 registered and the 14
+    new cases): native DRAW's values the last audit's bit for bit on all
+    1,014; the Rust adapter's statuses the same and 2 cases' values moved,
+    `bfuse_complex/F5` and `Q2` (one pair of CTO prisms, `CTO900_pro10658a`
+    and `pro10658b`, fused): 4 centre coordinates, at most 4.7e-16 relative
+    (4.6e-16 of the solid's size), no volume or area. They move at
+    `59d0c57b`, the caps' frames (a Rust audit with the worker of its
+    parent `ff8c914f` gives the last audit's bits); S9e.4b.3c.1 and the
+    speed-up move no audited value. Both still agree with native DRAW's
+    printed digits; the same 35 disagreements as before. The 14 new cases'
+    volume, area and centre agree with native DRAW's printed digits
+    (`C6`'s cut empty on both). They are registered (`data`,
+    `viewer_skipped` on both; 1,114 cases), and the ledger does not change
+    (`--ledger` holds). A full contract run of the manifest holds on both
+    backends with the dataset (30 seconds a case), the 14 in 0.6 to 3.3 s
+    on the Rust adapter (`B9` the slowest), the slowest Boolean case 5.3 s
+    (`boptuc_simple/ZK8`, on a host at load 7 to 9; `bopfuse_simple/ZK8`
+    6.0 in the last survey), the restore cases 0.2 to 4.1 s
+    (`bfuse_complex/N9`), the rollex 0.6 to 0.7. No case fails, crashes or
+    panics; no kernel change.
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces
@@ -8633,7 +8699,11 @@ Decisions for S9, recorded before its code (2026-09-28):
     failing, and `compare_split.py` 72/56, `compare_brep.py --family spline`
     10/3, `compare_brep_io.py` 6,835/7 and `compare_step.py` 23/6; the
     native replays with debug assertions of both corpora and their
-    regressions, none failing.
+    regressions, none failing. In the DRAW survey of S9e.4b.3c.1 and the
+    switches' speed-up the fix moves 4 centre coordinates of two
+    registered restore cases (`bfuse_complex/F5`, `Q2`) within rounding,
+    at most 4.6e-16 of the solid's size, still native DRAW's to its
+    printed digits; no status.
   * **Where S9 stands (2026-09-30, paused).** Done and pushed: S9a to S9d
     (every sub-step with its DRAW survey and a clean campaign), S9e.1
     (campaign clean at `51c08edf`) and S9e.2 (`8e060c67`), S9f's decisions
@@ -9283,7 +9353,9 @@ Decisions for S9, recorded before its code (2026-09-28):
   `SPLINE_SPHERE`, `SPLINE_CONE`) and the caps' frames kept bit for bit (600
   s each, sampled replays): `boolean` clean, 1,080 runs, the slowest input
   13 s under AddressSanitizer at load about 6; `split` clean, 1,818 runs,
-  none slow.
+  none slow. DRAW survey: that of S9e.4b.3c.1 and the switches' speed-up
+  (S9e.4b.3c's section), at `f4b584f7`: the speed-up moves no status,
+  reason or audited value.
 * **The DRAW adapter's curved primitives (S9d.4b.2b), done in S9d.4b's
   survey.** It built every `ptorus`, `psphere` and `pcone` with the same
   ids, so two tori (and two spheres or cones) were refused as solids
