@@ -3311,6 +3311,22 @@ multiple root; and the engine's rules.
   facing one way). A trial of the DRAW survey's 38 restore cases of `so1` to
   `so7`: 14 evaluate on both backends, 13 S9e.4b.3c.2's, 11 `Degenerate`
   (the turned copies' corners within rounding of the partner's).
+* **S9e.4b.3c.2 evidence (exact incidences on one sphere), before its
+  kernel code.** `generate_one_sphere_incidence_boolean_fixtures.py
+  --check` writes `boolean-one-sphere-incidence-cases.txt`,
+  `-expected.tsv`, `-frames.tsv` and `-bodies.txt`: 45 cases (19 groups;
+  29 solid, 4 empty, 12 degenerate) on eleven pieces of one ball OCCT wrote
+  on the world's axes (`MakeBox` on frames whose normal is the axis and
+  whose origin lies on it: the hemisphere with its rim divided, wedges as
+  the DRAW survey's `so2`, `so3` and `so5`, a half, two octants, wedges
+  about another axis, two near copies) against each other, caps of the
+  ball on one frame and in a chain, from an exact reference of its own
+  (the ball cut into cells by every input's heights along the axis and
+  half-planes about it, closed forms per cell; the volume again by the
+  divergence theorem within 4.7e-41, the pair identities, every
+  Monte-Carlo point's membership that of its cell, Monte Carlo 2.5 standard
+  errors), every stored plane read back holding the axis, normal to it or
+  apart from the ball exactly.
 * **Fuzzing.** The `boolean` target (`FUZZING.md`): the split target's line
   and arc profiles, the tool offset exactly in the axis-aligned frame or
   sharing the tilted one's origin, heights equal, spanning, overlapping,

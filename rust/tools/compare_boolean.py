@@ -99,6 +99,12 @@ class Set:
         later sub-step's case once its code exists, S9f.2b.2)."""
         return False
 
+    def refused_before_code(self, case, rows):
+        """Whether the kernel's rows for `case` before its code are the
+        refusal the capture came before (`unsupported`; S9e.4b.3c.2 also
+        takes an S9 refusal of a declared degenerate case raised first)."""
+        return rows == [['unsupported']]
+
 
 def make_set(splines):
     return Set(splines)
@@ -352,7 +358,7 @@ def main():
         report['cases'] += 1
         native = observed[name]
         found = differences(case, native, expected[name])
-        if pre_splines and rust is not None and (rust[name] != [['unsupported']]
+        if pre_splines and rust is not None and (not SET.refused_before_code(case, rust[name])
                                                  or name in report['rust_probe_failed']):
             reason = SET.exists_key[:-len('_exists')]+'_before_its_code'
             report['failures'].append({'case': name, 'reason': reason, 'rust': rust[name]})

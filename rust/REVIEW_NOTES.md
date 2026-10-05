@@ -7593,6 +7593,76 @@ Decisions for S9, recorded before its code (2026-09-28):
     tests (`tests/one_sphere_incidence_booleans.rs`). S9e.4b.3c.1's
     `hemi_octant` (the hemisphere and the octant on one turned frame)
     becomes a solid case of its set.
+  * **S9e.4b.3c.2 evidence (2026-10-05).** Eleven bodies OCCT wrote
+    (`boolean-one-sphere-incidence-bodies.txt`, `write` blocks of a
+    sphere's row, `boolean common` and a `box` row, `BRepPrimAPI_MakeBox`
+    on a frame whose normal is the axis and whose origin lies on it, written
+    by `compare_one_sphere_incidence_boolean.py --write-bodies` to
+    `rust/fixtures/imported/`), every one a piece of the ball of radius 5
+    about `(5, 5, 4)` on the world's axes: about `z`, `incidence_hemi`, above
+    the centre's parallel, its rim divided as `so1`'s; `incidence_wedge45`,
+    between the half-planes at 45 and 135 degrees (`so2`'s);
+    `incidence_wedge23`, from `atan2(5, 12)` a quarter turn on (`so3`'s);
+    `incidence_high23`, the same above the parallel at `5/2` (`so5`'s);
+    `incidence_half`, on one side of the meridian plane along `x`;
+    `incidence_octant` and `incidence_back`, the quarters at 0 and 180
+    degrees; the near ones `incidence_turned45` (the wedge's frame's `x`
+    turned by about `2^-36`) and `incidence_lifted45` (its box `2^-40`
+    above the centre); about `x`, `incidence_x45` and `incidence_x23`.
+    `generate_one_sphere_incidence_boolean_fixtures.py --check`: 45 cases
+    of 19 groups (29 solid, 4 empty, 12 declared `degenerate`; 34 of class
+    `pieces`, 8 `sphere`, 3 `chain`): `hemi_wedge`, `wedge_hemi` (`so1` and
+    `so2`), `wedge_wedge`, `wedge_back` (`so2` and `so3`), `high_wedge`,
+    `wedge_high` (`so5` and `so2`), `half_octant`, `octant_half` (a vertex
+    of both on the rim, the octant's corner inside the half's diameter, its
+    pole inside the half's semicircle), `x_wedges`, `same_wedge` (the wedge
+    and itself), `cap_cap`, `cap_back` (two of S9d.1's caps on one frame:
+    the stored pole of both), `cap_wedge`, `wedge_cap`, `chain_zone` (the
+    wedges' fuse, then with a zone of the sphere: its cut two solids);
+    declared `degenerate`: `quadrants` (two octants about one axis touching
+    along it only), `half_wedge` (the wedge's axis edge inside the half's
+    meridian face, off its edges), `near_turned` and `near_lifted` (two
+    faces within the resolution of one plane). The reference is exact and
+    of its own: each input read off its rows as the ball cut to heights
+    along the common axis and to the half-turns of its half-planes through
+    the axis (each box face asserted, in the rows' rationals, to hold the
+    axis, to be normal to it or to miss the ball), the ball cut into cells
+    by every input's heights and half-planes, each cell kept by the set
+    function at its middle, its volume, moments and sphere area in closed
+    form and the faces between kept and dropped cells added (parallels'
+    sectors, half-planes' pieces); checks relative to the size: the volume
+    again by the divergence theorem over those faces within 4.7e-41, the
+    pair identities 4.7e-41, every Monte-Carlo point's membership by the
+    rows' own inequalities that of its cell (100,000 points a group, none
+    differing), Monte Carlo 2.5 standard errors, the solid counts by the
+    kept cells' adjacency (kept cells about the axis apart: a result
+    touching itself, declared `degenerate`); each file read independently:
+    its faces one sphere and planes, every stored vertex within 3.5e-17 of
+    the size on the construction's surfaces, every stored plane (its normal
+    the cross product of its stored axes, in rationals) holding the axis,
+    normal to it or apart from the ball exactly, the divided rim two arcs.
+    `test_one_sphere_incidence_boolean_reference.py` checks the cells'
+    closed forms against quadrature, a wedge's measures against their
+    textbook values, the hemisphere and the wedge's common and fuse, the
+    octants' touching, the bodies read as axial pieces, the case list and
+    its protocol rows. The generator's check is a CI group of its own
+    (`one-sphere-incidence`, under a minute on four workers locally);
+    Python 3.9 and 3.12 write the same files. Corrections from the evidence,
+    amending the refined decisions: (a) bodies in turned rational frames
+    hold an exact incidence along a line only between planes stored bit for
+    bit alike, so the bodies are on the world's axes, as the survey's files
+    are, and the chained reference (whose sphere families are the world's
+    meridians and parallels, along these faces) gives way to the cells; (b)
+    importing `incidence_hemi` panicked: S9e.4b.3c.1's `Arr::split_at`
+    scaled a stored vertex's place onto a section circle without testing
+    it, and the stored pole above the hemisphere's rim, exactly on the
+    rim's axis on the world's axes, has none (in turned frames it rounds
+    off the axis); fixed before the capture, its own commit; (c) two
+    octants about one axis are `Degenerate` all three ways by S9's
+    near-plane guard (their faces meet only along the axis, their boxes'
+    overlap thinner than the resolution); (d) caps of one frame on one
+    sphere (their stored pole of both, `cap_cap`) are refused today as this
+    step's incidence, as the refined decisions' S9e.4b.3c parent said.
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces

@@ -1,0 +1,103 @@
+# case	row (S9e.4b.3c.2; generate_one_sphere_incidence_boolean_fixtures.py: expect KIND S9e.4b.3c.2 CLASS, reason TEXT for a degenerate case, then result N volume area cx cy cz or empty)
+hemi_wedge_fuse	expect solid S9e.4b.3c.2 pieces
+hemi_wedge_fuse	result 1 261.7993877991494365385536 235.6194490192344928846983 5.0 5.0 5.875
+hemi_wedge_cut	expect solid S9e.4b.3c.2 pieces
+hemi_wedge_cut	result 1 196.3495408493620774039152 215.9844949342982851443067 5.0 4.116116523516815594498945 5.875
+hemi_wedge_common	expect solid S9e.4b.3c.2 pieces
+hemi_wedge_common	result 1 65.4498469497873591346384 98.17477042468103870195761 5.0 7.651650429449553216503166 5.875
+wedge_hemi_cut	expect empty S9e.4b.3c.2 pieces
+wedge_hemi_cut	empty
+wedge_wedge_fuse	expect solid S9e.4b.3c.2 pieces
+wedge_wedge_fuse	result 1 81.72514043719097550445346 112.8225345633442934347912 5.484253050116216347204072 7.447883693744180592666815 5.875
+wedge_wedge_cut	expect solid S9e.4b.3c.2 pieces
+wedge_wedge_cut	result 1 16.27529348740361636981505 53.91767230853567021361659 3.371548636351512819968632 7.431639623489169406664467 5.875
+wedge_wedge_common	expect solid S9e.4b.3c.2 pieces
+wedge_wedge_common	result 1 49.17455346238374276482335 83.52700628601778396912406 5.53896826726887780627367 7.724467367993683689481714 5.875
+wedge_back_cut	expect solid S9e.4b.3c.2 pieces
+wedge_back_cut	result 1 16.27529348740361636981505 53.91767230853567021361659 7.431639623489169406664467 6.628451363648487180031368 5.875
+high_wedge_fuse	expect solid S9e.4b.3c.2 pieces
+high_wedge_fuse	result 1 70.53587616460098925020561 106.7192995055679372961105 5.142046392399181050936553 7.555579112114742137515865 5.983158347738071249586473
+high_wedge_cut	expect solid S9e.4b.3c.2 pieces
+high_wedge_cut	result 1 5.086029214813630115567205 23.89915031349635916346173 6.96997821300641082350362 6.319280076019203852781444 7.375
+high_wedge_common	expect solid S9e.4b.3c.2 pieces
+high_wedge_common	result 1 15.3670479569949196140073 41.17126180036092552084108 5.436641899467811749367255 7.207210848659039328422762 7.375
+wedge_high_cut	expect solid S9e.4b.3c.2 pieces
+wedge_high_cut	result 1 50.08279899279243952063111 94.48667891500225799459585 4.866023921504050556169334 7.788019092730082532611684 5.414750724818521945878721
+half_octant_fuse	expect solid S9e.4b.3c.2 pieces
+half_octant_fuse	result 1 130.8996938995747182692768 157.0796326794896619231322 5.0 6.875 5.875
+half_octant_cut	expect solid S9e.4b.3c.2 pieces
+half_octant_cut	result 1 65.4498469497873591346384 98.17477042468103870195761 3.125 6.875 5.875
+half_octant_common	expect solid S9e.4b.3c.2 pieces
+half_octant_common	result 1 65.4498469497873591346384 98.17477042468103870195761 6.875 6.875 5.875
+octant_half_cut	expect empty S9e.4b.3c.2 pieces
+octant_half_cut	empty
+x_wedges_fuse	expect solid S9e.4b.3c.2 pieces
+x_wedges_fuse	result 1 81.72514043719097550445346 112.8225345633442934347912 6.875 5.484253050116216347204072 6.447883693744180592666815
+x_wedges_cut	expect solid S9e.4b.3c.2 pieces
+x_wedges_cut	result 1 16.27529348740361636981505 53.91767230853567021361659 6.875 3.371548636351512819968632 6.431639623489169406664467
+x_wedges_common	expect solid S9e.4b.3c.2 pieces
+x_wedges_common	result 1 49.17455346238374276482335 83.52700628601778396912406 6.875 5.53896826726887780627367 6.724467367993683689481714
+same_wedge_fuse	expect solid S9e.4b.3c.2 pieces
+same_wedge_fuse	result 1 65.4498469497873591346384 98.17477042468103870195761 5.0 7.651650429449553216503166 5.875
+same_wedge_cut	expect empty S9e.4b.3c.2 pieces
+same_wedge_cut	empty
+same_wedge_common	expect solid S9e.4b.3c.2 pieces
+same_wedge_common	result 1 65.4498469497873591346384 98.17477042468103870195761 5.0 7.651650429449553216503166 5.875
+cap_cap_fuse	expect solid S9e.4b.3c.2 sphere
+cap_cap_fuse	result 1 166.6263308339546174414998 191.950004423126500874708 5.0 5.0 6.596356728320438456826501
+cap_cap_cut	expect solid S9e.4b.3c.2 sphere
+cap_cap_cut	result 1 78.67236670260301708113128 170.6658893500361171332069 5.0 5.0 5.79819191351351339153884
+cap_cap_common	expect solid S9e.4b.3c.2 sphere
+cap_cap_common	result 1 87.95396413135160036036856 142.2591752836595439453443 5.0 5.0 7.310292883669036258763726
+cap_back_cut	expect empty S9e.4b.3c.2 sphere
+cap_back_cut	empty
+cap_wedge_fuse	expect solid S9e.4b.3c.2 sphere
+cap_wedge_fuse	result 1 131.4153200483010594049148 188.6176310276519875133391 5.0 5.955709874343205898159839 6.595462226712676089773137
+cap_wedge_cut	expect solid S9e.4b.3c.2 sphere
+cap_wedge_cut	result 1 65.96547309851370027027642 122.945902322518367106635 5.0 4.273025819278817683408652 7.310292883669036258763726
+cap_wedge_common	expect solid S9e.4b.3c.2 sphere
+cap_wedge_common	result 1 21.98849103283790009009214 51.81631468068859513396285 5.0 7.180922542163546949774043 7.310292883669036258763726
+wedge_cap_cut	expect solid S9e.4b.3c.2 sphere
+wedge_cap_cut	result 1 43.46135591694945904454626 76.60222079663473361895555 5.0 7.889806734289054508250885 5.148839390506805942562039
+chain_zone_fuse	expect solid S9e.4b.3c.2 chain
+chain_zone_fuse	result 1 135.8385871539722854833137 219.436590019390219583402 5.199159266137964045271651 6.006743726074992520822271 5.844402285590667814828867
+chain_zone_cut	expect solid S9e.4b.3c.2 chain
+chain_zone_cut	result 2 57.16622045136926840218244 132.5688369140684027456519 5.473242994152764452534299 7.392228212681796596916431 5.907997172725287563858446
+chain_zone_common	expect solid S9e.4b.3c.2 chain
+chain_zone_common	result 1 24.55891998582170710227102 64.05183389399019098459606 5.509881346749454672486102 7.57743391425778835581978 5.79819191351351339153884
+quadrants_fuse	expect degenerate S9e.4b.3c.2 pieces
+quadrants_fuse	reason two octants about one axis touching along it only (their fuse a result touching itself there, their faces meeting only there within the resolution of one plane over their overlap)
+quadrants_fuse	result 2 130.8996938995747182692768 196.3495408493620774039152 5.0 5.0 5.875
+quadrants_cut	expect degenerate S9e.4b.3c.2 pieces
+quadrants_cut	reason two octants about one axis touching along it only (their fuse a result touching itself there, their faces meeting only there within the resolution of one plane over their overlap)
+quadrants_cut	result 1 65.4498469497873591346384 98.17477042468103870195761 6.875 6.875 5.875
+quadrants_common	expect degenerate S9e.4b.3c.2 pieces
+quadrants_common	reason two octants about one axis touching along it only (their fuse a result touching itself there, their faces meeting only there within the resolution of one plane over their overlap)
+quadrants_common	empty
+half_wedge_fuse	expect degenerate S9e.4b.3c.2 pieces
+half_wedge_fuse	reason an edge of one input on a face of the other (the wedge's axis edge inside the half's meridian face, off its edges)
+half_wedge_fuse	result 1 130.8996938995747182692768 157.0796326794896619231322 5.0 6.875 5.875
+half_wedge_cut	expect degenerate S9e.4b.3c.2 pieces
+half_wedge_cut	reason an edge of one input on a face of the other (the wedge's axis edge inside the half's meridian face, off its edges)
+half_wedge_cut	result 2 65.4498469497873591346384 137.4446785945534541827406 5.0 6.098349570550446783496834 5.875
+half_wedge_common	expect degenerate S9e.4b.3c.2 pieces
+half_wedge_common	reason an edge of one input on a face of the other (the wedge's axis edge inside the half's meridian face, off its edges)
+half_wedge_common	result 1 65.4498469497873591346384 98.17477042468103870195761 5.0 7.651650429449553216503166 5.875
+near_turned_fuse	expect degenerate S9e.4b.3c.2 pieces
+near_turned_fuse	reason two faces within the resolution of one plane (a half-plane turned or a base lifted by rounding)
+near_turned_fuse	result 1 65.44984695009052403522717 98.1747704249538871124875 4.999999999990353351933927 7.651650429446917370777347 5.875
+near_turned_cut	expect degenerate S9e.4b.3c.2 pieces
+near_turned_cut	reason two faces within the resolution of one plane (a half-plane turned or a base lifted by rounding)
+near_turned_cut	result 1 3.031649005887702643382156e-10 39.26990817014526389131294 7.082601377254157718614633 7.082601377269310637962719 5.875
+near_turned_common	expect degenerate S9e.4b.3c.2 pieces
+near_turned_common	reason two faces within the resolution of one plane (a half-plane turned or a base lifted by rounding)
+near_turned_common	result 1 65.44984694948419423404963 98.17477042440819029142771 4.999999999990353351933907 7.65165042945218906222894 5.875
+near_lifted_fuse	expect degenerate S9e.4b.3c.2 pieces
+near_lifted_fuse	reason two faces within the resolution of one plane (a half-plane turned or a base lifted by rounding)
+near_lifted_fuse	result 1 261.7993877991494365385536 235.6194490192344928846983 5.0 5.0 5.875
+near_lifted_cut	expect degenerate S9e.4b.3c.2 pieces
+near_lifted_cut	reason two faces within the resolution of one plane (a half-plane turned or a base lifted by rounding)
+near_lifted_cut	result 1 196.349540849379935290625 255.254403104168748832756 5.0 4.116116523517168927539317 5.874999999999829469743418
+near_lifted_common	expect degenerate S9e.4b.3c.2 pieces
+near_lifted_common	reason two faces within the resolution of one plane (a half-plane turned or a base lifted by rounding)
+near_lifted_common	result 1 65.4498469497695012479286 98.17477042466480060025595 5.0 7.651650429449457882188663 5.875000000000511590769747
