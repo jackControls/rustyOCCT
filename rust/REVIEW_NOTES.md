@@ -7821,6 +7821,144 @@ Decisions for S9, recorded before its code (2026-09-28):
     11 with `so6` or `so7` `Degenerate` by S9's rules as before;
     `bcut_complex/I6` and `G4` refused as S9e.4b.3c's as before. Pending:
     the capture's Linux record, the DRAW survey and the campaigns.
+  * **S9e.4b.3c.3 refined, before its code (2026-10-05).** Why the survey's
+    last S9e.4b.3c cases are refused today, read off the dataset's files by
+    the converter (the dataset is not committed). `bcut_complex/G4`'s part
+    (`CTO900_fra50089-part`) is a box `[-100, 100] x [-50, 50] x [-100, 100]`
+    fused with a boss, a cylinder of radius 52.93 along the world's `y` from
+    the box's face `y = -50` (which holds the boss's circle as a hole) to a
+    cap at `y = -150` (S9e.4b refined listed it among prisms with walls of two
+    directions): its primitive common its planes is the cylinder through the
+    whole box, which S9e.2's match refuses (`pieces::model`'s `OutOfDomain("an
+    imported plane piece other than its primitive common its planes'
+    half-spaces (S9e.4b.3c)")`); its tool is a cylinder of radius 37.90
+    parallel to the boss from `y = -150` to `y = -50`, its caps on the boss's
+    cap plane and on the box's face exactly, its wall crossing the boss's
+    along two lines. `bcut_complex/I6`'s tool (`CTO902_cts20455-tool`) is a
+    block `[45, 127.76] x [0, 70] x [0, 20]` less a cylinder of radius 35
+    along `z` about `(45, 35)`: its wall's material outside its quadric,
+    refused on import before its model (S9e.4b.3c.1's amendment (c)), and
+    tangent to the block's own faces `y = 0` and `y = 70` along the two edges
+    it shares with them; the case's part, an L prism, has its face `x = 80`
+    tangent to the tool's wall along the generatrix at `y = 35`. `shading_132`
+    (`bugs/modalg_1/buc60926`) is a frustum of radii 1 and 2 over height 2
+    less the quarter between two planes through its axis, refused in its own
+    first arrangement as S9d.3a's `Degenerate("a plane through a cone's
+    apex")` (the planes pass through the frustum's virtual apex); its case
+    fuses it with a unit ball through two of its rim's vertices. S9e.4b.3a's
+    `bitten` (a ball less a box's corner) is refused as G4's part is, and the
+    `boolean` fuzz target's `IMPORTED` stage refused 4 first results as
+    S9e.4b.3c's (2 not their primitive common their planes, 2 with two faces
+    on one plane: `hull_of`'s `OutOfDomain("an imported plane piece with two
+    faces on one plane (S9e.4b.3c)")`). Decisions. (1) *Sub-steps*, by what
+    unlocks the most and by the machinery each takes: **S9e.4b.3c.3a** (this
+    step): a body of one sphere, cylinder or cone face and plane faces that is
+    one Boolean of its primitive and the convex hull of its other planes:
+    S9e.4b.3a's common, or the hull less the primitive (a hole, groove, slot,
+    notch or dimple: the curved face's material outside its quadric), the
+    primitive less the hull of its planes turned over (a bite: `bitten`,
+    `shading_132`'s three-quarter frustum), the hull fused with the primitive
+    (a boss: G4's part); two plane faces on one plane facing one way (a groove
+    across a face) one plane of the hull; OCCT's vertex loops at a sphere's
+    poles inside its face matched. Of the survey's cases only G4 can evaluate
+    with it (I6 and `buc60926` stay `Degenerate`, (5)); the fuzz target's
+    grooves, bosses and bites reach it. **S9e.4b.3c.3b**: a body of one curved
+    face that needs more than one hull (a union of primitive commons and
+    hulls: a primitive bitten twice, a boss, groove or bite on or by a body
+    not convex in its planes), a primitive's end not normal to its axis or a
+    sphere's ends (S9e.4b.3a's discs) with another form. (2) *The model.* The
+    body is the given model (S9e.1, S9e.3a) of that first Boolean, as
+    S9e.4b.3a's: its inputs the primitive's model and the hull leaf model
+    (`pieces.rs`'s `Hull`), the hull the first input of the hull less the
+    primitive (the given model's frame the primitive leaf's). The primitive: a
+    whole sphere on the stored frame and radius; a cylinder or a cone on the
+    curved face's stored frame over the curved face's own axial range (its
+    edges' heights along the axis), past each end by a quarter of it (at least
+    of the radius) but at a cap, a plane face normal to the axis at an end of
+    that range whose outward normal points away from the range (the
+    primitive's own end, its material inside the primitive: a boss's cap, a
+    bitten cylinder's discs) or, for the hull less the primitive, into it (the
+    primitive's end seen from outside: a slot's or a blind hole's floor), the
+    end the cap's exact height along the axis rounded once; a cone clamped at
+    its apex; S9e.4b.3a's common keeps its primitive past the body's ends and
+    every plane. The hull: the planes of the plane faces but the caps, turned
+    over for a bite (the hull its bite), bounded by S9e.4b.3a's cube; two
+    faces on one plane facing one way are one plane of the hull, its face
+    holding both stored faces (S9e.2's match takes a model face for several
+    stored faces). Numbers: the engine's own, no new field or degree. (3)
+    *Recognition.* After S9e.4a's construction fails, a body of S9e.4b.3a's
+    shape (one solid region, one shell, one sphere, cylinder or cone face and
+    plane faces) is tried as the hull less the primitive where its curved
+    face's material lies outside its quadric, else as the common, the bite and
+    the boss in turn: the first whose model matches the stored topology is the
+    body (S9e.2's match the arbiter: every stored vertex within the resolution
+    of the model's, edges through their points, faces by their edges), none
+    matching `OutOfDomain("an imported plane piece other than one Boolean of
+    its primitive and its planes' hull (S9e.4b.3c.3b)")`, a form's other
+    refusal (S9's, raised in its own first arrangement) reported, the first in
+    that order. A stored vertex loop at a pole of its sphere face's stored
+    frame that the re-run lacks is left unmatched: OCCT writes one at every
+    pole inside a sphere face, where the kernel's assembly closes a loop
+    through one pole without a vertex at the other (S9e.4b.3a's amendment (b);
+    `bitten`'s face holds its frame's south pole); a Boolean's history deletes
+    it unless a result's vertex continues it. (4) *Its other queries.*
+    Classification: the primitive's and the hull's locations (within the
+    resolution) combined by the form (a common the lesser, a fuse the greater,
+    a complement reversed); bounds S9e.4b.3a's (the primitive's between the
+    body's axial ends widened by the stored edges': a body less its primitive
+    lies in its hull, whose extremes are on the plane faces' edges); a rigid
+    motion reads the piece off the moved stored topology again in its form; a
+    result of it given to another Boolean is S9e.3a's. (5) *Degenerate and
+    refused.* S9's rules unchanged in both arrangements. A tangency in a
+    piece's own first arrangement is its curved face's with its own plane
+    faces, `Degenerate("an imported plane piece whose curved face is tangent
+    to its plane faces")`, named for the body: I6's tool, whose wall is
+    tangent to two of its block's faces along the edges it shares with them,
+    is a body S9 cannot arrange (a tangency is no meeting it decides), its
+    reason now its own (S9e.4b.3a's survey found it as "a tangency between the
+    inputs", raised in its own arrangement; S9e.4b.3c.1 refused it before its
+    model as a groove). I6 stays refused either way, its part's face `x = 80`
+    tangent to the tool's wall (S9's tangency between the inputs).
+    `shading_132`'s three-quarter frustum is its frustum's bite by the quarter
+    between two planes through its axis, `Degenerate("a plane through a cone's
+    apex")` in its own arrangement as now (S9d.3a); `buc60926` stays refused.
+    Two faces on one plane facing apart bound nothing: `Degenerate("an
+    imported plane piece's two faces on one plane facing apart")`. Bodies no
+    single form matches are S9e.4b.3c.3b's. (6) *Fuzzing.* The `boolean`
+    target's `IMPORTED` stage already imports the chained stage's first
+    results of one curved face and planes (S9e.4b.3a's widening) and cuts them
+    by the turned box again: a box less or fused with a sphere, cylinder or
+    cone, and those less a box, now reach the forms, the volume the chained
+    cut's; the replay measures how many. (7) *Evidence first.* Bodies OCCT
+    writes (a `write` block: one solid's rows, a `boolean` row, the other's
+    rows), reproducing the survey's shapes without the dataset, every section
+    a circle or a line (the reader takes no ellipse; a sphere's section off
+    its frame's parallels and meridians has an uncertified pcurve):
+    `form_boss` (G4's part on the world's axes: a box fused with a cylinder
+    along `y` from its face to a cap), `form_scoop` (a box on `SKEW` less a
+    ball centred on its top face: the top face in two faces on one plane),
+    `form_slot` (a box less a cylinder along `x` ending inside it at its
+    floor; a groove through a box is S9e.4a's prism), `form_dimple` and
+    `form_ball_boss` (a box on a turned frame less or fused with a ball whose
+    section is its parallel), `form_sink` (a box on `SKEW4` less a frustum
+    through it: a conical hole), `form_bite` (a cylinder less a box between
+    its caps on the world's axes: in a turned frame a plane along a cylinder's
+    axis is within rounding of it, S9's refusal), declared `degenerate`
+    `form_notch` (I6's tool, a box less a cylinder tangent to two of its
+    faces) and `form_quarter` (`shading_132`'s three-quarter frustum on the
+    world's axes); cases of each against rods, slabs, balls and boxes, the
+    piece as the tool, two imported, a chain, and G4's configuration (the boss
+    less a parallel cylinder whose caps lie on the boss's cap plane and the
+    box's face); the reference S9e.3a's chained reference on the constructions
+    OCCT was given (`(X op Y) op2 C`), with S9e.4b.3a's checks and each body's
+    closed form where it has one (`generate_piece_forms_boolean_fixtures.py
+    --check`, a CI group `piece-forms`,
+    `test_piece_forms_boolean_reference.py`); a native capture keyed on the
+    refusal it removes (`compare_piece_forms_boolean.py`, `imported.rs`'s
+    refusal of a piece other than its primitive common its planes); then the
+    kernel and its tests (`tests/piece_form_booleans.rs`). S9e.4b.3a's
+    `bitten_box`, declared `unsupported` there, becomes a solid case of its
+    set.
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces
