@@ -8030,7 +8030,23 @@ Decisions for S9, recorded before its code (2026-09-28):
     rounding of each other instead); (c) OCCT splits a curved face its seam
     crosses, so the notch's cylinder and the frustum have their frames' `x`
     turned off the bodies; (d) the files `notch.brep` and `slot.brep` were
-    S9e.4b.1's: this step's are `form_*`.
+    S9e.4b.1's: this step's are `form_*`. The capture
+    `occt-boolean-piece-forms-preimplementation`
+    (`compare_piece_forms_boolean.py`, keyed on the refusal the step removes,
+    `imported.rs`'s `OutOfDomain("an imported plane piece other than its
+    primitive common its planes' half-spaces (S9e.4b.3c)")`; the kernel's
+    probe `unsupported` on the 36 solid and notch cases, the bodies refused on
+    import by that refusal, and `refused` on the three-quarter frustum's 3 by
+    S9d.3a's apex, raised in its own arrangement first, which
+    `compare_boolean`'s `Set.refused_before_code` admits for a declared
+    `degenerate` case): every result valid, 26 matching (within 2e-8 of the
+    reference), 13 reviewed: the scoop's and the slot's rods, the dimple's
+    ball, the conical hole's rod and the three-quarter frustum's ball, volumes
+    up to 1.8e-5 relative and centres up to 2.2e-6 of the case's size off by
+    BRepGProp's default integration (a sphere's or a cone's faces met by
+    planes and a cylinder), within 1.4e-9 measured adaptively at 1e-10 and
+    1e-12 by a diagnostic build. G4's configuration matches. S9e.4b.3c.3a's
+    kernel next.
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces
