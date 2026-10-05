@@ -8327,6 +8327,112 @@ Decisions for S9, recorded before its code (2026-09-28):
   runs, the slowest input 31 s under AddressSanitizer at load 5 to 9
   (`c4d14627`, a polyhedral chained cut; `e36969f1` no longer among the five
   slowest).
+* **The boolean target's off switches (S9d.3c, S9d.4b.2b, S9d.4c), done:
+  `CONE_PAIRS` on; `TORUS_PAIRS` and `TURNED_PARTS` stay off.** The three
+  switches were off for time (their notes above and S9d's): two tori's
+  integrals, two cones' integrals, and a cap's or part's crossings with a
+  torus in the tilted and turned frames. Each was measured on: the corpus
+  and its regressions replayed with debug assertions and the switch on in
+  the source, and variants that reach it, every corpus input moved onto the
+  switch's configuration (the object's bits and the tool's byte; three
+  thirds of the corpus, 1,203 distinct cone-pair, 1,203 two-tori and 752
+  turned-part variants), instructions retired as the load-free measure;
+  the slowest under AddressSanitizer with the target's options, one run
+  each (`-detect_leaks=0`). Failures, all `CONE_PAIRS`'s, each a kernel bug
+  fixed with a test and a regression input (`fuzz/regressions/README.md`):
+  (1) corpus input `6fab9d41` and 28 of the first 459 cone-pair variants
+  failed `vertex_off_curve` in the chained stage, and one more was refused
+  as a plane at the wrong cone's apex: a given edge of one cone's wall and
+  the other cone's end disc has both cones among its faces' views, and its
+  section was rounded on the first with a funnel, the disc's, whose frame
+  turned the section's plane into another (a hyperbola off the vertices);
+  it is rounded on the cone it lies on now (`ConeSec::lies_on`, `be38e1c2`).
+  (2) Two coaxial cones whose ring lies `0.004` below the frustum's top rim
+  failed their fuse (`an open Boolean of arcs in any position`): a wall's
+  pieces are nested by their loops' binary64 polygons, 24 sides a circle,
+  and the rim's and the ring's crossed; a hole's point near another loop's
+  polygon now has the loops sampled again, four times as finely, to choose
+  among the pieces that may hold it (a hole none holds is refused as
+  before: finer polygons nested one in a `TURNED_PARTS` variant and its
+  result was open; `c82af2ec`, `ffd51b85`). (3) Two coaxial cones' ring
+  within rounding of the turned box's floor, given to the box, crossed its
+  walls at the floor's edges and the floor not at all (`a cone's wall
+  winding without an apex`): a given closed meeting all round within the
+  resolution of a partner's plane is refused as a tangency now
+  (`triple::meet`). Profiles (macOS `sample` of the replay with debug
+  assertions): the slowest turned part, `893d996d` (a cap against a wedge in
+  the tilted frame, 329 G), spent 80% isolating the roots of its circles'
+  crossings with the torus (`torus_parts::circ_torus`): the Sturm chains'
+  exact Horner at every bisection's midpoint (two thirds of all in bigint
+  products) and the midpoints' rational gcds; then the fields' products and
+  inverses, one inverse per crossing of one resultant. The slowest cone
+  pair, `2f5a979d` (two coaxial cones in the tilted frame, 159 G), spent 95%
+  in the certified integrals along their ring: 3,000 pieces a turn, its
+  quadratic's coefficients' jets over a piece wide (`cos^2 + sin^2` and the
+  discriminant `b^2 - a c` as natural extensions, their terms cancelling;
+  the square root's recurrence widened the top coefficient to `1e17`); the
+  next, `27c68428` (cones crossing on their side), 2,600 pieces an integral
+  where `d`'s interval over a piece was `[6.5, 20.8]`. Two tori, `73b90a76`
+  and `86e3875f`: half in the integrals along their `Toric` meetings, whose
+  jets' widths grew twentyfold an order even at a point (`+-3.4e4` at order
+  13: each step's corrections counted its provisional terms twice), a
+  quarter of that the moved result's second validation, the rest the
+  degree-eight arrangement. Changes: (a) an integer polynomial's sign at a
+  rational by a binary64 Horner with unbounded exponents first (each
+  coefficient's top 128 bits rounded once; the value beyond `(6 d + 8) 2u`
+  times the terms' absolute sum, Higham's bound, has the exact sign; the
+  exact Horner otherwise; `IntPolynomial::sign_filter`); (b) an isolation
+  bisected over one denominator, the same midpoints reduced only where a
+  root is published; (c) `turned::roots`' gcd given to the isolation, and
+  `circ_torus`'s resultant's roots isolated once; (d) what a generator's
+  polynomial gives every root alike, `x^j mod poly` and the inverses of the
+  elements prime to it, shared by its roots' generators (`num::Shared`);
+  (e) a `Meet`'s quadratic as forms of degree two in the angle, their
+  constants combined before any jet (the narrower coefficient by coefficient
+  beside the plain products), and its discriminant's constant term also in
+  its mean-value form about the piece's middle; (f) a `Toric`'s recurrence
+  with each step's outputs linear forms in its provisional terms, each
+  taken once (`+-23` at order 13 now). Tried and dropped: a transversality
+  test at a given meeting's crossings for (3) (the coaxial ring crossed
+  the box's walls, not its floor), and the finer polygons for a hole no
+  piece holds (2). Results, instructions retired with debug assertions:
+  `893d996d` 329 G to 114 G with (a) and 72 G with (b) and (c), 56 G at the
+  end; `5467edc4` (a cap against a band) 109 G to 80 G with (d);
+  `2f5a979d` 159 G to 14 G and `27c68428` 90 G to 18 G
+  with (e); `73b90a76` 80 G to 58 G and `86e3875f` 93 G to 82 G with (d)
+  and (f); the corpus's `487e8cac` (a cone carrier's meetings, the last
+  track's open lever) 39 G to 20 G. The variants, none failing: cone pairs
+  3.3 G at the median, 12.5 G at the ninth decile and 48 G at the slowest;
+  two tori 3.8, 25 and 82 G; turned parts 16, 36 and 80 G (20, 52 and 329 G
+  before over the first 300). Under AddressSanitizer at load 9 to 14, one run
+  each: the slowest cone pairs 28 s (`99d30aca`, 48 G), then 21 to 23 s;
+  the slowest two tori 40 and 36 s (`86e3875f`, `864b098c`), then 29 and 27
+  s; the slowest turned parts 43, 43, 39 and 38 s; the corpus's slowest
+  `d7599dbe` 19 s, `85659e3a` 18 s, `e36969f1` 17.5 s (20 s in the last
+  track), `487e8cac` 9.7 s (16.5 s). `CONE_PAIRS` is on; `TORUS_PAIRS` and
+  `TURNED_PARTS` stay off, above the 35 s the switches on keep to here.
+  Exactness: (a) to (d) give every result, history and refusal of the
+  corpus, its regressions and 1,218 variants as before (each result's
+  written text, mass properties and history hashed), every isolator the
+  same, but for the fixes' own: the 29 failures, a refusal at the wrong
+  cone's apex now evaluating, and one refusal's message. (e) and (f) are
+  the same functions: of the 9,809 results 1,660 report other volumes or
+  areas, within their enclosures
+  (3.6e-10 relative at most, a volume of `7e-5`), 2,034 enclosures narrower
+  and 252 wider (5.8 times at most), every one within the integrator's
+  width. Checks: fmt, clippy (release, all targets), the 1.85 check, the
+  fuzz crate's fmt and check, the release suite (578 tests); every
+  comparison unchanged with 0 failures (the table's 30 boolean comparisons,
+  `compare_imported_pieces_boolean.py` 32/13 among them); the corpus (1,433
+  inputs) and the 30 regressions replay with debug assertions and the
+  switches as left without a failure, 6.1 T instructions in all, the slowest
+  37.8 G (`734bc584`, a regression of this track), and with all three on
+  too, as do the 3,158 variants. Open: `TORUS_PAIRS`' slowest, the moved
+  result's second validation (a quarter of it) and the toric jets' cost a
+  piece (interval Newton and the recurrence, now near their natural piece
+  count); `TURNED_PARTS`', the Sturm chains of a circle's three resultants
+  (the count's with the torus offset either way) and the fields' products
+  over the rounded frames' inverses.
 * **The DRAW adapter's curved primitives (S9d.4b.2b), done in S9d.4b's
   survey.** It built every `ptorus`, `psphere` and `pcone` with the same
   ids, so two tori (and two spheres or cones) were refused as solids
