@@ -688,3 +688,66 @@ fn a_zone_rim_split_obliquely_stays_on_its_circle() {
     let issues = history::check(&ins, &outs, &h);
     assert!(issues.is_empty(), "{issues:?}");
 }
+
+#[test]
+fn a_long_torus_cap_splits_round_its_tube() {
+    // Fuzzing (split): a plane cutting a torus in one contractible loop
+    // that reaches round the tube's inner side. One branch's round end
+    // sweeps more than half a turn in `v` between its switch point and the
+    // turning point, so lifting both ends to the turn nearest the turning
+    // point ran the end the wrong way round (off the section) and the
+    // piece's loop was open (`InvalidTopology`). The cap and the rest
+    // split; the piece below the plane against a midpoint quadrature over
+    // the tube's `(u, v)` with the radial integral exact (4000^2 cells:
+    // 14.487404882; 2000^2: 14.487404270).
+    let tolerance = Tolerance::default();
+    let frame = Frame3::new(
+        Point3::new(-6.25, -1.125, -6.875),
+        Vec3::new(0.0, 3.0, 4.0),
+        Vec3::new(1.0, 0.0, 0.0),
+        tolerance,
+    )
+    .unwrap();
+    let (torus, _) = rusty_occt::Solid::torus_with(
+        OperationId(1),
+        frame,
+        1.625,
+        0.875,
+        -std::f64::consts::PI,
+        std::f64::consts::PI,
+        std::f64::consts::TAU,
+        tolerance,
+    )
+    .unwrap();
+    let plane = Frame3::new(
+        Point3::new(-5.25, -2.046875, -5.078125),
+        Vec3::new(3.0, -3.0, -2.5),
+        Vec3::new(0.0, 1.0, 0.0),
+        tolerance,
+    )
+    .unwrap();
+    let (pieces, h) = torus.split_by_plane(OperationId(2), plane).unwrap();
+    assert_eq!(pieces.len(), 2);
+    let whole = torus.mass_properties().volume;
+    let mut total = 0.0;
+    for (side, piece) in &pieces {
+        // The wall and one disc on the plane.
+        assert_eq!(piece.topology().faces().len(), 2);
+        let v = piece.mass_properties().volume;
+        total += v;
+        if *side == Side::Below {
+            assert!((v - 14.487_404_9).abs() <= 1e-6, "{v}");
+        }
+    }
+    assert!(
+        (total - whole).abs() <= 1e-12 * whole,
+        "{total} for {whole}"
+    );
+    let ins = [torus.topology().entity_set(torus.resolution())];
+    let outs: Vec<_> = pieces
+        .iter()
+        .map(|(_, p)| p.topology().entity_set(p.resolution()))
+        .collect();
+    let issues = history::check(&ins, &outs, &h);
+    assert!(issues.is_empty(), "{issues:?}");
+}

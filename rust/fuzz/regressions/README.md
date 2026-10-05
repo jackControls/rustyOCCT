@@ -1343,3 +1343,26 @@ operations evaluate as before S9e.4b.3a, their volumes the same
 `a_ball_about_a_section_on_a_wall_through_its_axis`). It replays in 3.1 s
 with debug assertions, and 540 single-byte mutations of it (every value of
 the chained byte among them) replay without a failure.
+
+## Split: a torus cap's round end sweeping more than half a turn
+
+`split/crash-366b6402fd50dddd7b52db2fd3e3de9dc02eed13.bin` came from the
+`split` campaign at `6d26886d`: a whole torus (major 1.625, minor 0.875) in
+the tilted frame cut by an oblique plane through a dyadic point in one
+contractible loop, a cap reaching round the tube's inner side. A cap's loop
+is four edges: its two branches over `u` between their switch points (slope
+one) and two round ends over `v` through the turning points. Both ends of a
+round end were lifted to the turn nearest the turning point's `v`, which
+assumes each half of it sweeps less than half a turn in `v`; here the `+`
+branch's half sweeps 3.42 radians, so the round end ran the other way
+round, off the section, and the piece's loop was open
+(`InvalidTopology("an open loop in a torus piece")`). Latent since S8d.3
+(`d7049aac`); the input fails alike at `788f8861`, `bb930aa0`, `b99799ec`
+and `a32d256f`. Each branch's `v` is continuous over the cap's `u`, so the
+ends now keep their branches' own values, the `-` end lifted by the turn
+between the branches at the turning point (`spiric.rs`; `tests/split.rs`,
+`a_long_torus_cap_splits_round_its_tube`: the piece below the plane within
+1e-6 of a midpoint quadrature over the tube). It replays in 0.32 s with
+debug assertions, and 279 single-byte mutations of it and 400 random whole
+tori cut by the target's oblique planes (2 of them failing alike before)
+without a failure.

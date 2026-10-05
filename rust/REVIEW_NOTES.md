@@ -7541,6 +7541,41 @@ Decisions for S9, recorded before its code (2026-09-28):
     (`compare_imported_pieces_boolean.py` 32/13, `compare_sphere_boolean.py`
     30/0, `compare_spheres_boolean.py` 12/21, `compare_given_met_boolean.py`
     8/42 and the rest).
+  * **A torus cap's round ends lifted along their branches (2026-10-04).**
+    The `split` campaign at `6d26886d` found a whole torus (major 1.625,
+    minor 0.875, the tilted frame) whose oblique split failed
+    `InvalidTopology("an open loop in a torus piece")` in S8d.3's own
+    split, before any piece reached S9e.4b.3b's Booleans. The plane cuts
+    it in one contractible loop (a cap) reaching round the tube's inner
+    side. `spiric::cap_edges` lifted both ends of each round end (the
+    graphs over `v` through the turning points) to the turn nearest the
+    turning point's `v`, assuming each half of a round end sweeps less
+    than half a turn; here the `+` branch's half sweeps 3.42 radians, so
+    the end ran the other way round, off the section, both round ends'
+    sides came out reversed and the cap's loop did not close. Latent since
+    S8d.3 (`d7049aac`, where the kernel call fails alike; `spiric.rs`
+    unchanged since): the input fails alike
+    at `788f8861`, `bb930aa0` (the frames' change), `a32d256f` (the
+    arithmetic and charts) and `b99799ec`; not a regression. Each branch's
+    `v` (`atan2` of the trace, `W > 0` on the cap, plus or minus `acos`)
+    is continuous over the cap's `u`, so the ends now keep their branches'
+    own values and the `-` end is lifted by the turn between the branches
+    at the turning point (none where both are `psi`, one where they are
+    `psi +- pi`). Where each half sweeps less than half a turn this is the
+    old lift, so every fixture's pieces are unchanged. The cap and the rest
+    split, the piece below the plane within 1e-6 of a midpoint quadrature
+    over the tube with the radial integral exact (`tests/split.rs`,
+    `a_long_torus_cap_splits_round_its_tube`, its history checked; the
+    input kept,
+    `fuzz/regressions/split/crash-366b6402fd50dddd7b52db2fd3e3de9dc02eed13.bin`).
+    Checks: fmt, clippy, the 1.85 check, the release suite; replays with
+    debug assertions of the split corpus (3,548 inputs), the 18
+    regressions, 279 single-byte mutations of the input and 400 random
+    whole tori cut by the target's oblique planes (2 of them failing alike
+    at `a32d256f`), none failing;
+    `compare_split.py` 72/56, `compare_split_pieces_boolean.py` 26/22 and
+    the torus comparisons (11/24, 15/14, 15/29, 16/37) unchanged with 0
+    failures.
   * **S9f.3 refined, before its code (2026-10-03).** Why it is refused
     today: `curved::spline_pairs` refuses a spline prism against a sphere
     or a cone ("a spline prism against a sphere or a cone (S9f.3)");
