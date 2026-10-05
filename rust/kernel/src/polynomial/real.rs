@@ -775,9 +775,9 @@ impl IntPolynomial {
     /// perturbed by at most `5 d + 5` factors `1 + u` (`d` the degree) and
     /// the computed value is within `gamma_{5d+5}` of the terms' absolute
     /// sum, which the same evaluation on absolute values bounds from below
-    /// within the same factor (Higham, Horner's rule). A value beyond `(6 d
-    /// + 8) 2u` times that sum has the exact value's sign; a smaller one,
-    /// zero among them, is left undecided.
+    /// within the same factor (Higham, Horner's rule). A value beyond
+    /// `(6 d + 8) 2u` times that sum has the exact value's sign; a smaller
+    /// one, zero among them, is left undecided.
     fn sign_filter(&self, numerator: &BigInt, denominator: &BigInt) -> Option<Ordering> {
         let (xn, xd) = (Xf::of(numerator), Xf::of(denominator));
         let an = xn.abs();

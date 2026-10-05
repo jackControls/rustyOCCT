@@ -96,6 +96,9 @@ pub(super) struct Sec {
 /// A loop of half-edges `(edge, forward)`.
 pub(super) type HLoop = Vec<(usize, bool)>;
 
+/// A loop's binary64 polygon in its face's parameters and its signed area.
+type Polygon = (Vec<[f64; 2]>, f64);
+
 /// A face's piece: its loops (the outer first) of half-edges `(edge,
 /// forward)` running with the face's own normal, whether the other solid
 /// holds its front and its back (`sides`), and for the operation (`for_op`)
@@ -2216,12 +2219,12 @@ impl Arr {
         // off its curve, a few hundredths of a side: two coaxial pieces'
         // circles a few thousandths apart, their 24-sided polygons
         // crossing), each refinement four times as many points.
-        let mut finer: BTreeMap<(usize, usize), (Vec<[f64; 2]>, f64)> = BTreeMap::new();
+        let mut finer: BTreeMap<(usize, usize), Polygon> = BTreeMap::new();
         for h in holes {
             let hole_edges: BTreeSet<usize> = loops[h].iter().map(|x| x.0).collect();
             let mut mult = 1;
             let k = loop {
-                let mut poly = |i: usize| -> (Vec<[f64; 2]>, f64) {
+                let mut poly = |i: usize| -> Polygon {
                     if mult == 1 {
                         return (polys[i].clone(), areas[i]);
                     }
