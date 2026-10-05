@@ -4,10 +4,17 @@
   "sources": {
     "resources/DrawResources/CheckCommands.tcl": "ff1a6ab0a57e4746346587b3bee439128d8494bf28f14c2f2d854d10136525ff",
     "resources/DrawResources/TestCommands.tcl": "badd93f0168b28f8f150c59507cc0bf63e8f0462fcb479095af2b4c6bfb236ab",
+    "tests/boolean/bcommon_complex/B2": "24c9649bc0887aee08ff35e801bcc175e0b3d2f54b47b96c5d9725f0c0bbe658",
+    "tests/boolean/bcommon_complex/B5": "d57887c76bf829e3bf8a4cb44b8fa0db8f34502baf04b013308b6a1daa51b2df",
+    "tests/boolean/bcommon_complex/B9": "01cf7cfb4d10c2db2379bb5c5236646fb212fd5225288376efaf52535c111c92",
     "tests/boolean/bcommon_complex/C5": "70ffb4187d71aedcd90720e57fe86c92668b103f34ad2dd1d15c180b9ce6ece1",
     "tests/boolean/bcommon_simple/A1": "0bf3ab9bd586c0830ad6f4a80c9f635e9fef6827fce2491c0cca50ccf912e728",
     "tests/boolean/bcommon_simple/I5": "f8086ea8e06eb760a0c43c005db9a40d8b4f5573d5af050e7d3c06206a29f49e",
     "tests/boolean/bcommon_simple/J1": "767998e1bf6f2423a097f608b559fb452daeaef72028dbfd3102645b5c8eded7",
+    "tests/boolean/bcut_complex/C5": "ba1d679fe22bbe31572a7b8b191a8ebfb2188593dd3df9290491be172b3ec0d7",
+    "tests/boolean/bcut_complex/C6": "6a7c0105e4fff04870dabd02883a130e0d6f0cf3994e7963a610b594697db12c",
+    "tests/boolean/bcut_complex/D2": "8d85c452fb0b0027c8ec7f888f59b3b61eab4e69435822fd898740ff93616ea2",
+    "tests/boolean/bcut_complex/D3": "199f6c545f47e391aa74fd332ebfac2297dd9a9c70a32e8bb241df2ae92b9a98",
     "tests/boolean/bcut_complex/H3": "0a9a0c681f083635c74e010db5f3fccce0bb1895f41aaebc849cb6e95d96d85d",
     "tests/boolean/bcut_complex/J2": "56a2497e52398ae21ee549c7cf573c2f40d90b9244b24fd4514b90448aa40449",
     "tests/boolean/bcut_complex/J7": "c5999beb34e7e8f6d73d2156f175450cb4e290188073b8b45f096b90618d9d71",
@@ -56,6 +63,8 @@
     "tests/boolean/bcut_simple/L6": "6d985364644b3f25f78f47a47e68f7ee508a0d885fdcad2d540bfce78a790e9f",
     "tests/boolean/bcut_simple/L8": "f4eaa30c6004c82263238dabf6c6d77395449e900e5c899cdb9c37e1f14f74c3",
     "tests/boolean/begin": "d69546786e4458613f453d5083979bd5e2e67ae1f0f01b93f1bd93825e3a66bd",
+    "tests/boolean/bfuse_complex/B5": "71522418cbc02ce16a6df6c7e63e0a67649ab63a3f9192ac538efdf64075207f",
+    "tests/boolean/bfuse_complex/B8": "f03dff4e47f31e336f56c9e787d86e9ec23d2aed30ba5face870fc39640fe257",
     "tests/boolean/bfuse_complex/C9": "dfa1020cfdc3ef866914fdd7d53a4cac7e20bd6668f752211ac7a156b6dff120",
     "tests/boolean/bfuse_complex/E9": "133d658567d1b24cbce3a6a5226b6094ed3104592f4c0d052c7ede14823a4158",
     "tests/boolean/bfuse_complex/F5": "d26376bc2c83399c04080088d93909d92db53989b193c847fc98110f585ea5c7",
@@ -1064,6 +1073,9 @@
     "tests/bugs/modalg_1/buc60803": "b8383c40b500b7ed8ea5fa00fd97609314af9594037936ae72890ba8a3566c7a",
     "tests/bugs/modalg_1/bug102_1": "23ddacfbe8fa089946067b609567920cbebb0147c3423efa44acd3bf18dc2ff4",
     "tests/bugs/modalg_1/bug102_2": "dadb33d18974f48c8c8e2ec1f38dc646921e88abfa5949e54d3e29335df7cfae",
+    "tests/bugs/modalg_2/begin": "16a2a51b965d83e675a1c75b1aed0eb0de88905d9ffdc81d57466305d0cf9c8a",
+    "tests/bugs/modalg_2/bug413_1": "238bf7e859fcc27d7c132eaac4c58a6caa6b368ede2fd7cd1cd26edd2037aae5",
+    "tests/bugs/modalg_2/bug413_2": "ace36226762da66cf5bde3730d98f3456cb65ff70a2fce00cb3bda6283feaa77",
     "tests/bugs/modalg_6/begin": "16a2a51b965d83e675a1c75b1aed0eb0de88905d9ffdc81d57466305d0cf9c8a",
     "tests/bugs/modalg_6/bug21427": "36bc85505fe46de0b983ef2562494e63012fc10f17d337054e2410fef829c7c2",
     "tests/bugs/modalg_6/bug27264_1": "ecc5bff3b3d2bea7a6c12b760198e7f669a147d0b94c285d5dc0727cf85eec5d",
@@ -1091,6 +1103,9 @@
     "tests/bugs/modalg_7/bug32644": "f52fb956bb8e696620bb50ba9b01300c7a46f51fcee2ee9880589738b590cfe6",
     "tests/bugs/moddata_1/begin": "5808c58aa3201cb4a5dd9513407fcf273dbc2b2763b2b395c11932a432f2a10b",
     "tests/bugs/moddata_1/buc60769": "8ece4a587d65d59a1922f08f1898735e6cf01bf2bbc0675b3616dcd129e03400",
+    "tests/bugs/moddata_1/bug183_2": "2b59b52905e0dbf84a6ae471c2be58159dc789847cbeb5132013cbf8c12147ec",
+    "tests/bugs/moddata_1/bug183_3": "0f9d0a25c584a9b1fce094dfa1333f666bdbfbdbc021c39c08579e8f13eb899a",
+    "tests/bugs/moddata_1/bug183_5": "3c6de7d526b5547993bb2444d042f07b29398c642d27b8735b6f708619d00a51",
     "tests/bugs/moddata_3/begin": "5808c58aa3201cb4a5dd9513407fcf273dbc2b2763b2b395c11932a432f2a10b",
     "tests/bugs/moddata_3/bug31587_1": "cdeabe56e21bac974a0e5bd10d470b36902223a72cea5c28e1ab5a87d65bde7f",
     "tests/bugs/moddata_3/bug31587_2": "54338ea8ce3bd4906d727fdf9493b9d45409642eaa1aba412a273c487882e6bb",
@@ -7840,6 +7855,104 @@
       "expected_rust": "viewer_skipped",
       "expected_occt": "viewer_skipped",
       "purpose": "S9e.4b.2: restored solids of the public dataset given to a Boolean, polyhedra other than prisms decided on their stored vertices: a frustum standing on a box's top (pro9481b on pro9481a: an imported prism of lines against an imported polyhedron), bop and bopfuse; checkprops -s; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bcommon_complex/B2",
+      "data": true,
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9e.4b.3c.1: restored solids of the public dataset given to a Boolean, two pieces of one sphere in general position, a rim OCCT divided matched on its stored vertices: the hemisphere and the cap above z = 5 of one sphere (so1 and so4, both rims divided), bcommon; checkprops -s; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bcut_complex/C5",
+      "data": true,
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9e.4b.3c.1: restored solids of the public dataset given to a Boolean, two pieces of one sphere in general position, a rim OCCT divided matched on its stored vertices: the hemisphere and the cap above z = 5 of one sphere (so1 and so4, both rims divided), bcut of the hemisphere by the cap; checkprops -s; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bcut_complex/C6",
+      "data": true,
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9e.4b.3c.1: restored solids of the public dataset given to a Boolean, two pieces of one sphere in general position, a rim OCCT divided matched on its stored vertices: the hemisphere and the cap above z = 5 of one sphere (so1 and so4, both rims divided), bcut of the cap by the hemisphere; checkprops -s empty; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bfuse_complex/B5",
+      "data": true,
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9e.4b.3c.1: restored solids of the public dataset given to a Boolean, two pieces of one sphere in general position, a rim OCCT divided matched on its stored vertices: the hemisphere and the cap above z = 5 of one sphere (so1 and so4, both rims divided), bfuse; checkprops -s; its checkview is recorded."
+    },
+    {
+      "path": "tests/bugs/modalg_2/bug413_1",
+      "data": true,
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9e.4b.3c.1: restored solids of the public dataset given to a Boolean, two pieces of one sphere in general position, a rim OCCT divided matched on its stored vertices: the hemisphere and the cap above z = 5 of one sphere (so1 and so4, both rims divided), bcommon; checkshape of each input and of the result, checkprops -s; its checkview is recorded."
+    },
+    {
+      "path": "tests/bugs/modalg_2/bug413_2",
+      "data": true,
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9e.4b.3c.1: restored solids of the public dataset given to a Boolean, two pieces of one sphere in general position, a rim OCCT divided matched on its stored vertices: the hemisphere and the cap above z = 5 of one sphere (so1 and so4, both rims divided), bcut; checkshape of each input and of the result, checkprops -s; its checkview is recorded."
+    },
+    {
+      "path": "tests/bugs/moddata_1/bug183_2",
+      "data": true,
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9e.4b.3c.1: restored solids of the public dataset given to a Boolean, two pieces of one sphere in general position, a rim OCCT divided matched on its stored vertices: the hemisphere and the cap above z = 5 of one sphere (so1 and so4, both rims divided), bfuse; checkshape of each input and of the result, checkprops -s; its checkview is recorded."
+    },
+    {
+      "path": "tests/bugs/moddata_1/bug183_3",
+      "data": true,
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9e.4b.3c.1: restored solids of the public dataset given to a Boolean, two pieces of one sphere in general position, a rim OCCT divided matched on its stored vertices: the hemisphere and the cap above z = 5 of one sphere (so1 and so4, both rims divided), bcut; checkshape of each input and of the result, checkprops -s; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bcommon_complex/B5",
+      "data": true,
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9e.4b.3c.1: restored solids of the public dataset given to a Boolean, two pieces of one sphere in general position, a rim OCCT divided matched on its stored vertices: the cap above z = 5 and a wedge of one sphere (so4 and so2), bcommon; checkprops -s; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bcut_complex/D2",
+      "data": true,
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9e.4b.3c.1: restored solids of the public dataset given to a Boolean, two pieces of one sphere in general position, a rim OCCT divided matched on its stored vertices: the cap above z = 5 and a wedge of one sphere (so4 and so2), bcut of the cap by the wedge; checkprops -s; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bcut_complex/D3",
+      "data": true,
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9e.4b.3c.1: restored solids of the public dataset given to a Boolean, two pieces of one sphere in general position, a rim OCCT divided matched on its stored vertices: the cap above z = 5 and a wedge of one sphere (so4 and so2), bcut of the wedge by the cap; checkprops -s; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bfuse_complex/B8",
+      "data": true,
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9e.4b.3c.1: restored solids of the public dataset given to a Boolean, two pieces of one sphere in general position, a rim OCCT divided matched on its stored vertices: the cap above z = 5 and a wedge of one sphere (so4 and so2), bfuse; checkprops -s; its checkview is recorded."
+    },
+    {
+      "path": "tests/bugs/moddata_1/bug183_5",
+      "data": true,
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9e.4b.3c.1: restored solids of the public dataset given to a Boolean, two pieces of one sphere in general position, a rim OCCT divided matched on its stored vertices: the cap above z = 5 and a wedge of one sphere (so4 and so2), bcommon; checkshape of each input and of the result, checkprops -s; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bcommon_complex/B9",
+      "data": true,
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9e.4b.3c.1: restored solids of the public dataset given to a Boolean, two pieces of one sphere in general position, a rim OCCT divided matched on its stored vertices: a wedge of one sphere and its turned copy (so2 and so6), their corners within rounding at the centre and clear of their common, bcommon; checkprops -s; its checkview is recorded."
     }
   ],
   "derived_sources": {

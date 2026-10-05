@@ -26,7 +26,9 @@ then for S9e.4b.3b (branch `s9e4b3b`, over `s9c2-kernel` at `b99799ec`),
 its pole lift combined with the meridian loop's fix (branch `fix-uv-gap`),
 then for the DRAW survey of S9e.4b.3a, S9e.4b.3b and the fuzz fixes
 (branch `s9-draw-6`, over `s9c2-kernel` at `d665df29`),
-then for S9e.4b.3c.1 (branch `s9e4b3c`, over `s9c2-kernel` at `d665df29`).
+then for S9e.4b.3c.1 (branch `s9e4b3c`, over `s9c2-kernel` at `d665df29`),
+then for the DRAW survey of S9e.4b.3c.1 and the switches' speed-up (branch
+`s9-draw-7`, over `s9c2-kernel` at `f4b584f7`).
 
 ## Where things stand
 
@@ -43,12 +45,12 @@ then for S9e.4b.3c.1 (branch `s9e4b3c`, over `s9c2-kernel` at `d665df29`).
   arcs, and one solid of a result of several (S9e.2, `curved/matched.rs`),
   results of spheres, cones and tori, deeper chains and given results
   against spheres, cones and tori (S9e.3a, `curved/chain.rs`), each with its
-  DRAW survey (the last full survey, that of S9e.4b.3a, S9e.4b.3b and the
-  fuzz fixes at `d665df29`, branch `s9-draw-6`: the Boolean group's 987
-  cases and 27 restore cases registered, none failing or timing out,
-  native DRAW's audited values those of `12b6c176`'s bit for bit, the Rust
-  adapter's in 115 cases moved within rounding, at most 6.6e-16 relative,
-  by the loops' certified integrals and the narrower `Meet` integrals) and a clean campaign (S9e.3a's and S9f.1's at `b2765f20`, 989
+  DRAW survey (the last full survey, that of S9e.4b.3c.1 and the
+  switches' speed-up at `f4b584f7`, branch `s9-draw-7`: the Boolean
+  group's 987 cases and 41 restore cases registered, none failing or
+  timing out, native DRAW's audited values those of `d665df29`'s bit for
+  bit, the Rust adapter's too but 4 centre coordinates of two restore
+  cases moved within rounding by the prism caps' frames) and a clean campaign (S9e.3a's and S9f.1's at `b2765f20`, 989
   runs).
 - **S9f.1 done.** Spline prisms against polyhedral prisms in any position
   (`curved/spline_walls.rs`), with its survey and campaign as above.
@@ -274,7 +276,11 @@ then for S9e.4b.3c.1 (branch `s9e4b3c`, over `s9c2-kernel` at `d665df29`).
   evaluate on both backends (`so1` and `so4`, `so4` and `so2`, `so2` and
   `so6`'s common), 13 S9e.4b.3c.2's, 11 `Degenerate` (`so6` and `so7`'s
   corners within rounding of the partner's); `bcut_complex/I6` and `G4`
-  S9e.4b.3c's.
+  S9e.4b.3c's. Its DRAW survey (with the switches' speed-up, branch
+  `s9-draw-7` at `f4b584f7`) confirms the trial: the 14 evaluate with
+  native DRAW's volumes and are registered (1,114 cases), the other 24
+  and `I6` are refused as it found; no other status or reason moves but
+  two restores ending within the survey's 120 s by the host's load.
 - **CI.** Both workflows ("Rust kernel", "Rust geometry fuzzing") were green
   at `6c221525`. They had been red from S7 until 2026-09-29, unnoticed;
   check them after every push (see "Working rules").
@@ -308,7 +314,8 @@ then for S9e.4b.3c.1 (branch `s9e4b3c`, over `s9c2-kernel` at `d665df29`).
    4 restore cases registered, no case reaching the spline walls), that of
    S9e.4b.3a, S9e.4b.3b and the fuzz fixes at `d665df29` (branch
    `s9-draw-6`: no status moving, 41 restore cases' reasons, no case
-   registered).
+   registered), that of S9e.4b.3c.1 and the switches' speed-up at
+   `f4b584f7` (branch `s9-draw-7`: the 14 `so` cases registered).
 3. **S9e.4b**, split in "S9e.4b refined": S9e.4b.1 (arcs rounded off
    their circles) and S9e.4b.2 (polyhedra other than prisms, on their
    stored vertices) are implemented with their DRAW surveys and
@@ -322,8 +329,9 @@ then for S9e.4b.3c.1 (branch `s9e4b3c`, over `s9c2-kernel` at `d665df29`).
    one sphere in general position, rims split by stored vertices: 14 of the
    survey's 38 `so` cases evaluate; a groove such as `bcut_complex/I6`'s
    tool or `G4`'s boss refused on import as S9e.4b.3c's) is implemented
-   (campaign clean at `59d0c57b`; pending its capture's Linux record and
-   the DRAW survey);
+   with its DRAW survey (`s9-draw-7` at `f4b584f7`: the 14 registered,
+   1,114 cases) and a clean campaign at `59d0c57b` (pending its capture's
+   Linux record);
    next **S9e.4b.3c.2**, exact incidences on one sphere (a vertex of both,
    a circle of both, a line of both, plane faces on one plane with
    overlapping edges: `so1` and `so2`, `so2` and `so3`, `so5` and `so2`,
