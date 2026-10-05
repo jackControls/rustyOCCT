@@ -1151,6 +1151,22 @@ fn ruled(imps: &[Imp; 3], rulings: &[(usize, Ruling)]) -> Result<Found> {
 pub(super) fn meet(curve: &Crv, py: &Prism, fy: usize, clip: Option<&Clip>) -> Result<EdgeMeet> {
     let (c1, c2, carrier) = curve_surfaces(curve)?;
     let (c3, partner_ruling) = partner(py, fy)?;
+    // A closed meeting all round within the resolution of the partner's
+    // plane, and not on it (a coaxial pair's circle in a plane normal to
+    // their axis, their frames rounded apart): a sliver, as a tangency.
+    if let (Crv::Meet(m), Imp::Plane { n, d }) = (curve, &c3) {
+        let f = crate::solid::split::rational_f64;
+        let (n, d) = (n.clone().map(|x| f(&x)), f(d));
+        let size = (n[0] * n[0] + n[1] * n[1] + n[2] * n[2]).sqrt();
+        let res = py.tolerance.linear();
+        let near = |p: &[f64; 3]| (n[0] * p[0] + n[1] * p[1] + n[2] * p[2] - d).abs() <= res * size;
+        if m.range.is_none()
+            && size > 0.0
+            && m.samples(0.0, std::f64::consts::TAU, 32).iter().all(near)
+        {
+            return Err(Error::Degenerate(TANGENT));
+        }
+    }
     let imps = [c1, c2, c3];
     let planes: Vec<usize> = (0..3)
         .filter(|&i| matches!(imps[i], Imp::Plane { .. }))

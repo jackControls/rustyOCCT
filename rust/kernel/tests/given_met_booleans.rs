@@ -502,6 +502,56 @@ fn a_ball_about_a_section_on_a_wall_through_its_axis() {
     identities(&given, &ball).unwrap();
 }
 
+/// The fuzz replay's chained stage with two coaxial cones: their fuse's
+/// meeting, a circle within rounding of the plane a sixth up their axis, is
+/// given to the turned box whose floor is that plane. The circle crossed
+/// the box's walls at the floor's edges and its floor not at all (a sliver
+/// between them; `a cone's wall winding without an apex` before): a closed
+/// meeting all round within the resolution of a partner's plane is
+/// refused as a tangency, as it is on the plane.
+#[test]
+fn a_coaxial_ring_within_rounding_of_a_floor_is_degenerate() {
+    use rusty_occt::{Boundary, Frame3, Point2, Point3, Profile, Tolerance, Vec3};
+    let tol = Tolerance::default();
+    let f = Frame3::new(
+        Point3::new(1.0, -2.0, 0.5),
+        Vec3::new(0.0, 3.0, 4.0),
+        Vec3::new(1.0, 0.0, 0.0),
+        tol,
+    )
+    .unwrap();
+    let (a, _) = Solid::cone_with(OperationId(1), f, 0.75, 0.375, 0.5, tol).unwrap();
+    let base = Frame3::new(
+        f.point(Point2::new(0.0, 0.0), 0.125),
+        f.normal(),
+        f.x(),
+        tol,
+    )
+    .unwrap();
+    let (b, _) = Solid::cone_with(OperationId(2), base, 0.75, 0.0, 0.25, tol).unwrap();
+    let given = boolean(&a, "fuse", 3, &b).unwrap().remove(0);
+    let o = f.point(Point2::new(0.5, 0.25), 0.5 / 3.0);
+    let turned = Frame3::new(o, f.normal(), f.x() * 3.0 + f.y() * 4.0, tol).unwrap();
+    let square = Boundary::polygon(
+        vec![
+            Point2::new(-1.0, -1.0),
+            Point2::new(1.0, -1.0),
+            Point2::new(1.0, 1.0),
+            Point2::new(-1.0, 1.0),
+        ],
+        tol,
+    )
+    .unwrap();
+    let profile = Profile::new(square, vec![], tol).unwrap();
+    let (box_, _) = Solid::extrude_with(OperationId(7), profile, turned, 0.0, 0.5).unwrap();
+    for op in ["fuse", "cut", "common"] {
+        match boolean(&given, op, 9, &box_) {
+            Err(Error::Degenerate(m)) => assert!(m.contains("tangent"), "{op}: {m}"),
+            other => panic!("{op}: {:?}", other.map(|r| r.len())),
+        }
+    }
+}
+
 /// The fuzz replay's chained stage with two cones (`fuzz/regressions/
 /// README.md`): a frustum fused with a cone leaning across it, whose end
 /// disc cuts the frustum's wall in a cone section, given to the turned box

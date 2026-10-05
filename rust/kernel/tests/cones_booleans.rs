@@ -236,6 +236,50 @@ fn a_cone_with_its_apex_at_its_base_carries_a_ring() {
     assert!(v[2] > 0.0);
 }
 
+/// Two coaxial cones in the tilted frame meeting in a ring `0.004` below
+/// the frustum's top rim (the fuzz replay's cone pair): on the frustum's
+/// wall the two rings' 24-sided polygons cross, and the top rim was nested
+/// in the band below the ring (`an open Boolean of arcs in any position`
+/// before); the loops' polygons are sampled again, four times as finely,
+/// where a hole's point lies near another loop's. Volumes the reference's
+/// integral of the smaller radius's disc over the height, the identities
+/// held.
+#[test]
+fn coaxial_cones_meeting_near_a_rim_nest_their_rings() {
+    use rusty_occt::identity::OperationId;
+    use rusty_occt::{Frame3, Point2, Point3, Solid, Tolerance, Vec3};
+    let tol = Tolerance::default();
+    let f = Frame3::new(
+        Point3::new(1.0, -2.0, 0.5),
+        Vec3::new(0.0, 3.0, 4.0),
+        Vec3::new(1.0, 0.0, 0.0),
+        tol,
+    )
+    .unwrap();
+    let (a, _) = Solid::cone_with(OperationId(1), f, 3.5625, 1.78125, 1.75, tol).unwrap();
+    let base = Frame3::new(f.point(Point2::new(0.0, 0.0), -1.0), f.normal(), f.x(), tol).unwrap();
+    let (b, _) = Solid::cone_with(OperationId(2), base, 0.0, 2.4375, 3.75, tol).unwrap();
+    let volume = |out: &[Solid]| out.iter().map(|s| s.mass_properties().volume).sum::<f64>();
+    let v: Vec<f64> = [
+        a.fuse(OperationId(3), &b),
+        a.cut(OperationId(4), &b),
+        a.common(OperationId(5), &b),
+    ]
+    .into_iter()
+    .map(|r| volume(&r.unwrap().0))
+    .collect();
+    // The tool's radius `0.65 (z + 1)`, the frustum's `3.5625 - k z`.
+    let pi = std::f64::consts::PI;
+    let k: f64 = 1.78125 / 1.75;
+    let z = (3.5625 - 0.65) / (0.65 + k);
+    let common = pi * 0.65 * 0.65 * ((z + 1.0).powi(3) - 1.0) / 3.0
+        + pi * ((3.5625 - k * z).powi(3) - (3.5625 - 1.75 * k).powi(3)) / (3.0 * k);
+    assert!((v[2] - common).abs() <= 1e-9 * common, "{} {common}", v[2]);
+    let (va, vb) = (a.mass_properties().volume, b.mass_properties().volume);
+    assert!((v[0] - (va + vb - v[2])).abs() <= 1e-9 * v[0]);
+    assert!((v[1] - (va - v[2])).abs() <= 1e-9 * va);
+}
+
 /// A sphere off a frustum's axis crossing its wall (`ball_side` with the
 /// sphere's radius 0.875, clear of the end planes): a loop over the cone's
 /// angle and height (S9d.3b.2); volumes, areas and centres the reference's
