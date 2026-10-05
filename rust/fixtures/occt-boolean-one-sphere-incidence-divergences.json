@@ -1,0 +1,44 @@
+{
+  "note": "Reviewed BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut and BRepAlgoAPI_Common differences from the S9e.4b.3c.2 reference and the kernel.",
+  "reviews": [
+    {
+      "case": "hemi_wedge_cut",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "54ddfe31e1ade2818f3f1ba9def7b4c4ec3b54df8ec82dbb3e27a1414dbd543d",
+      "differences": [
+        "invalid_result",
+        "invalid_solid"
+      ],
+      "reason": "BRepAlgoAPI's result and its solid are invalid under BRepCheck_Analyzer (OCCT's General Fuse on faces of both inputs on one sphere and one plane, the wedge's equator arc on the hemisphere's rim and its corner inside its base: so1 and so2's bcut_complex/C7); its solid count is the reference's, its volume 3.8e-15 and area 2.0e-15 relative and its centre 4.4e-16 of the case's size from the reference with BRepGProp's default integration.",
+      "independent_evidence": "generate_one_sphere_incidence_boolean_fixtures.py's exact reference of cells (--check, identical under Python 3.9 and 3.12): each input read off its rows as the ball cut to heights along the common axis and to the half-turns of its half-planes through it (each box face asserted in the rows' rationals to hold the axis, to be normal to it or to miss the ball), each cell's volume, moments and sphere area in closed form; the volume again by the divergence theorem over the faces between kept and dropped cells within 4.7e-41 of the size, the pair identities within 4.7e-41, every Monte-Carlo point's membership by the rows' own inequalities that of its cell (100,000 points a group, none differing), Monte Carlo within 2.5 standard errors; every stored plane of the imported files holds the axis, is normal to it or misses the ball exactly, every stored vertex on its construction's surfaces within 3.5e-17 of the size.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "near_turned_cut",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "227090272221ac4d69ff22d3e7f2164388b3e846c6abc1169ff4948622e93335",
+      "differences": [
+        "solids"
+      ],
+      "reason": "A case declared degenerate (the wedge less its copy turned by about 2^-36: each half-plane within the resolution of the other's over the ball): BRepAlgoAPI's result is empty where the reference leaves the sliver between the two half-planes, of volume 3.03e-10 and area 39.27 (two quarter discs back to back, at most 3.6e-11 apart at the rim), below OCCT's tolerance of 1e-7; the kernel refuses it as two faces within the resolution of one plane.",
+      "independent_evidence": "generate_one_sphere_incidence_boolean_fixtures.py's exact reference of cells (--check, identical under Python 3.9 and 3.12): each input read off its rows as the ball cut to heights along the common axis and to the half-turns of its half-planes through it (each box face asserted in the rows' rationals to hold the axis, to be normal to it or to miss the ball), each cell's volume, moments and sphere area in closed form; the volume again by the divergence theorem over the faces between kept and dropped cells within 4.7e-41 of the size, the pair identities within 4.7e-41, every Monte-Carlo point's membership by the rows' own inequalities that of its cell (100,000 points a group, none differing), Monte Carlo within 2.5 standard errors; every stored plane of the imported files holds the axis, is normal to it or misses the ball exactly, every stored vertex on its construction's surfaces within 3.5e-17 of the size.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "near_lifted_cut",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "ec7fea297cab46bd1f04746caaa7e2a6b8085d88cec6e802c71dac11f28db6fb",
+      "differences": [
+        "invalid_result",
+        "invalid_solid",
+        "measure"
+      ],
+      "reason": "A case declared degenerate (the hemisphere less the wedge whose base is 2^-40 above the hemisphere's): BRepAlgoAPI's result and its solid are invalid under BRepCheck_Analyzer and lack the reference's sliver under the wedge, 2^-40 thick (its two quarter discs, 39.27 of the reference's area 255.254, and 1.8e-11 of its volume): its volume 1.1e-13 and area 1.5e-01 relative and its centre 3.9e-14 of the case's size from the reference, the sliver below OCCT's tolerance of 1e-7; the kernel refuses it as two faces within the resolution of one plane.",
+      "independent_evidence": "generate_one_sphere_incidence_boolean_fixtures.py's exact reference of cells (--check, identical under Python 3.9 and 3.12): each input read off its rows as the ball cut to heights along the common axis and to the half-turns of its half-planes through it (each box face asserted in the rows' rationals to hold the axis, to be normal to it or to miss the ball), each cell's volume, moments and sphere area in closed form; the volume again by the divergence theorem over the faces between kept and dropped cells within 4.7e-41 of the size, the pair identities within 4.7e-41, every Monte-Carlo point's membership by the rows' own inequalities that of its cell (100,000 points a group, none differing), Monte Carlo within 2.5 standard errors; every stored plane of the imported files holds the axis, is normal to it or misses the ball exactly, every stored vertex on its construction's surfaces within 3.5e-17 of the size.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    }
+  ]
+}

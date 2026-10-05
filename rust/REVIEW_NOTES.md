@@ -7663,6 +7663,21 @@ Decisions for S9, recorded before its code (2026-09-28):
     overlap thinner than the resolution); (d) caps of one frame on one
     sphere (their stored pole of both, `cap_cap`) are refused today as this
     step's incidence, as the refined decisions' S9e.4b.3c parent said.
+    The capture `occt-boolean-one-sphere-incidence-preimplementation`
+    (`compare_one_sphere_incidence_boolean.py`, keyed on the refusal the
+    step removes, `graph.rs`'s `OutOfDomain("a vertex or a circle of both
+    inputs on one sphere (S9e.4b.3c.2)")`; the kernel's probe `unsupported`
+    on the 36 solid, empty and `half_wedge` cases, every one by that
+    refusal, and `refused` on the 9 near and touching ones by S9's
+    near-plane guard, raised first, which `compare_boolean`'s
+    `Set.refused_before_code` admits for a declared `degenerate` case): 42
+    matching, 3 reviewed. OCCT leaves the hemisphere less the wedge (`so1`
+    and `so2`'s `bcut_complex/C7`) invalid under BRepCheck_Analyzer, its
+    measures within 3.8e-15 of the reference; of the declared near cases
+    it drops the slivers thinner than its tolerance (the wedge less its
+    turned copy empty where the reference's sliver is 3.0e-10 in volume;
+    the hemisphere less the lifted wedge without its sliver under the
+    wedge, invalid). S9e.4b.3c.2's kernel next.
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces
