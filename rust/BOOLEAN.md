@@ -39,9 +39,11 @@ polyhedra on their stored vertices (`polyhedra/imported.rs`), S9e.4b.3a's
 imported plane pieces of a sphere, cylinder or cone as their primitive
 common their planes' half-spaces (`curved/pieces.rs`), and S9e.4b.3b's
 split pieces (S8's `Clipped` and `Half`) against curved faces on the same
-model (`curved/splits.rs`), and S9e.4b.3c.1's two inputs on one sphere
+model (`curved/splits.rs`), S9e.4b.3c.1's two inputs on one sphere
 in general position and sphere pieces with their rims split by stored
-vertices (`curved/graph.rs`, `curved/pieces.rs`).
+vertices (`curved/graph.rs`, `curved/pieces.rs`), and S9e.4b.3c.2's exact
+incidences of two inputs on one sphere (a vertex, a circle or a line of
+both, plane faces on one plane with overlapping edges: `curved/graph.rs`).
 
 ## Contract
 
@@ -1147,9 +1149,26 @@ sphere piece whose rim OCCT stored as two arcs (the survey's `so1` and
 direction of each stored vertex there (`VKey::Stored`, a vertex the
 assembly keeps), so S9e.2's match takes the stored arcs. Spheres within the
 resolution of one and not one, and circles of the inputs tangent on the
-sphere, are `Degenerate`; an exact incidence on one sphere (a circle of
-both, a vertex of one at an end of the other's circle) is S9e.4b.3c.2's
-(`OutOfDomain`); concentric spheres of different radii stay `Degenerate`.
+sphere, are `Degenerate`; concentric spheres of different radii stay
+`Degenerate`. The exact incidences of two inputs on one sphere are
+S9e.4b.3c.2's, merged in the arrangement: model vertices of both at one
+exact point one vertex (`VKey::Both`, continuing both), a model vertex of
+either strictly inside a line or circle edge of the other splitting it
+(and lying on its faces), and, each input's edges split at every vertex of
+both on them, a part of B's edge with the ends, the line or circle and the
+arc of a part of A's one arrangement edge, its half-edges in B's faces too
+(`Arr::shared`, continuing both edges); a face on one surface with the
+other's has it as its boundary already, a section of two faces along it
+(two wedges' half-planes crossing along their axis) is taken by it, and an
+edge of one along the other's face on one line or circle with an edge of
+that face is an edge of both where they overlap and outside the face
+elsewhere (else `Degenerate`). The splits' own great circles take part
+alike (a split's vertex on the other's edge is no longer a seam's
+conflict). Incidences within the resolution and not exact stay S9's
+`Degenerate` (the survey's `so6` and `so7`, any exact incidence turned by
+a rotation that rounds its frames), as do a result touching itself along
+an edge of both and faces meeting only along a line (S9's near-plane
+guard: two octants about one axis).
 A body of one curved face and planes whose material lies outside its
 quadric (a groove or notch) is refused on import as S9e.4b.3c's before its
 model is built.
@@ -1162,9 +1181,7 @@ curved engine decides on constructions); a polyhedron with a cavity or
 several shells (S9e.4b.4); a plane piece other than its primitive common
 its planes' half-spaces (not convex in its planes, its curved face's
 material outside its quadric, two plane faces on one plane: `OutOfDomain`,
-S9e.4b.3c.3) and an exact incidence of two inputs on one sphere
-(`OutOfDomain`, S9e.4b.3c.2: the DRAW survey's `so1` and `so2`, `so2` and
-`so3`, `so5` and `so2`); a piece whose planes pass through its cone's
+S9e.4b.3c.3); a piece whose planes pass through its cone's
 apex (`Degenerate`, S9's rule: `shading_132`); a torus's v-segment or wedge
 and every other body of curved faces (`OutOfDomain`, S9e.4b: a general
 body on its stored surfaces); spline faces or edges (S9f); S9's
@@ -3327,6 +3344,28 @@ multiple root; and the engine's rules.
   Monte-Carlo point's membership that of its cell, Monte Carlo 2.5 standard
   errors), every stored plane read back holding the axis, normal to it or
   apart from the ball exactly.
+  `compare_one_sphere_incidence_boolean.py` reproduces
+  `occt-boolean-one-sphere-incidence-preimplementation` (keyed on the
+  refusal of exact incidences on one sphere in `curved/graph.rs`, the probe
+  `unsupported` on the 36 solid, empty and `half_wedge` cases before it,
+  the 9 near and touching ones refused by S9's near-plane guard): 42 match,
+  3 reviewed (the hemisphere less the wedge invalid with the reference's
+  measures; the near cases' slivers below OCCT's tolerance, dropped).
+* **Kernel (S9e.4b.3c.2).** `tests/one_sphere_incidence_booleans.rs`: all
+  45 fixtures as the reference (33 solid and empty within the kernel's
+  enclosures, each at most `1e-9` wide; the 12 degenerate refused with S9's
+  reasons, none as an incidence), every history complete over the imported
+  bodies' stored ids, an edge or vertex of both continuing both inputs'
+  (the wedges' axis edges, corner and pole), results deterministic and
+  moved rigidly, both inputs moved by exact motions (a dyadic translation,
+  a quarter turn) keeping the reference's volumes and turned by a rounding
+  rotation refused or within it. S9e.4b.3c.1's `hemi_octant` is solid
+  within its reference. `compare_one_sphere_incidence_boolean.py`: 42
+  matches and 3 reviewed; `compare_one_sphere_boolean.py` 8 and 14
+  unchanged. A trial of the DRAW survey's restore cases: the 13 of `so1`
+  and `so2`, `so2` and `so3`, `so5` and `so2` evaluate on both backends
+  with every check, 27 of the 38 `so` cases in all, the other 11 (`so6`
+  and `so7`) `Degenerate`.
 * **Fuzzing.** The `boolean` target (`FUZZING.md`): the split target's line
   and arc profiles, the tool offset exactly in the axis-aligned frame or
   sharing the tilted one's origin, heights equal, spanning, overlapping,

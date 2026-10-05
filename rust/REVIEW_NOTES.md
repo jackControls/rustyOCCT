@@ -7678,6 +7678,83 @@ Decisions for S9, recorded before its code (2026-09-28):
     turned copy empty where the reference's sliver is 3.0e-10 in volume;
     the hemisphere less the lifted wedge without its sliver under the
     wedge, invalid). S9e.4b.3c.2's kernel next.
+  * **S9e.4b.3c.2 implemented** (`curved/graph.rs`: an arrangement of
+    inputs with faces on one sphere merges their exact incidences;
+    `assemble.rs`: the merged entities' names; `matched.rs`,
+    `assemble.rs`: a given model's face pieces named by edges of both), as
+    the refined decisions describe: model vertices of both inputs at one
+    exact point one vertex (`VKey::Both`, on every face of both, continuing
+    both vertices), a model vertex of either strictly inside a line or circle
+    edge of the other splitting it (on that edge's faces), and, each input's
+    edges split at every vertex of both on them, a part of B's edge with the
+    ends, the line or circle and the arc of a part of A's that arrangement
+    edge (`Arr::shared`: its half-edges in B's faces with B's run,
+    continuing both edges; `Arr::model_edge` gives either input's edge of
+    it); two arcs of one circle meet only at those vertices, a crossing at
+    an end of either circle's edge is one of them, a pierce at a vertex of
+    the face already on the edge is taken, a section of two faces along an
+    edge of both is taken by it, an edge of one along the other's face on
+    one line or circle with an edge of that face is an edge of both where
+    they overlap and outside the face elsewhere (else `Degenerate("an edge
+    of one input on a face of the other")`), and a face on one surface with
+    the other's has an edge of both as its own boundary, not as the
+    other's interior edge. The splits' own great circles take part alike.
+    The refusal `OutOfDomain("a vertex or a circle of both inputs on one
+    sphere (S9e.4b.3c.2)")` is gone. All 45 fixtures as declared (33 solid
+    and empty within the kernel's enclosures, each at most `1e-9` wide; the
+    12 degenerate refused with S9's reasons: two faces within the resolution
+    of one plane for the near copies and the two octants about one axis, an
+    edge of one input on a face of the other for the half and the wedge),
+    every history complete over the imported bodies' stored ids, an edge or
+    vertex of both continuing both inputs' (the two wedges' axis edges,
+    corners and poles one result edge and two vertices; the higher wedge's
+    axis edge inside the other's), results deterministic and moved rigidly,
+    both inputs moved by exact motions (a dyadic translation, a quarter turn
+    about a world axis: the stored zeros kept) keeping the reference's
+    volumes and turned by a rotation that rounds their frames refused as
+    `Degenerate` or within the reference (`tests/one_sphere_incidence_booleans.rs`,
+    4 s in release and 6 s at `opt-level` 2 with debug assertions on a host
+    at load 18, 8 s in release with debug assertions under the emulated
+    correctly rounded `hypot`, where S9e.4b.3c.1's and the pieces' test
+    files pass too). S9e.4b.3c.1's `hemi_octant` (the hemisphere and the
+    octant on one turned frame), declared `unsupported` until now, is solid
+    within its reference, its margins those of any solid case (its
+    generator, unit test and `tests/one_sphere_booleans.rs` declare it so).
+    `compare_one_sphere_incidence_boolean.py` 42 matches and 3 reviewed,
+    every enclosure within the reference; `compare_one_sphere_boolean.py`
+    8 and 14 unchanged (now all 20 solid and empty cases within the
+    reference); every other comparison of `HANDOFF.md`'s table unchanged
+    with 0 failures; the release suite (613 tests) and the tools' unit
+    tests (333) passing, the ledger unchanged. Amendments, from the
+    implementation: (a) a split's vertex on the other's edge or vertex, a
+    seam's conflict in S9e.4b.3c.1's pass over the circles, is merged as the
+    inputs' own are (decision (7)): in `so1` and `so2` the hemisphere's
+    split great circle's end on its rim lay on the wedge's equator arc at
+    every seam tried, so a first version of this step keeping those
+    conflicts refused every case as a meeting at every seam tried;
+    (b) a given model's face pieces named by its edges (a face of several
+    stored faces, a result of several solids) take an edge of both as B's
+    too (`Arr::model_edge`); (c) the `split` target's `PIECE_BOOLEANS`
+    gives a zone's or cap's first piece also to the zone or cap it was split
+    from, built again under other ids on its frame (a Boolean's inputs
+    never share ids): their common the piece, their fuse the solid, the
+    solid less the piece the rest, within `1e-9` of the solid: of the split
+    corpus and its regressions 265 inputs reach it, all three evaluate for
+    134, 127 are refused as two faces within the resolution of one plane and
+    4 as pieces or results thinner than the resolution (S9's rules).
+    Replays with debug assertions, one process an input, natively and under
+    the emulated correctly rounded `hypot`: the split corpus and its
+    regressions (3,569 inputs) and the boolean corpus and its regressions
+    (1,466), no failure, the slowest 2.7 s and 7.3 s (2.3 s and 6.6 s
+    emulated). A trial of the DRAW survey's restore cases on the Rust
+    adapter and natively (not the survey: nothing registered): the 13
+    targeted (`bcommon_complex/B3`, `B4`, `B6`, `bcut_complex/C7`, `C8`,
+    `C9`, `D1`, `D4`, `D5`, `bfuse_complex/B6`, `B7`, `B9`,
+    `bugs/moddata_1/bug183_4`) evaluate on both backends with every check;
+    of the 38 `so` cases 27 evaluate (S9e.4b.3c.1's 14 and these 13), the
+    11 with `so6` or `so7` `Degenerate` by S9's rules as before;
+    `bcut_complex/I6` and `G4` refused as S9e.4b.3c's as before. Pending:
+    the capture's Linux record, the DRAW survey and the campaigns.
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces
