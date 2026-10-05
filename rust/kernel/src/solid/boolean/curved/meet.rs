@@ -834,8 +834,14 @@ pub(super) fn edge_surface(
                 });
             }
             if !b.is_rational() || !cc.is_rational() {
-                // A generatrix's base is irrational only for sections, not
-                // for edges.
+                // A generatrix's base is irrational only for sections and
+                // (S9e.4b.3c.3a) a given piece's edges along its cylinder's
+                // section by a plane along its axis (a slot's rims): apart
+                // from the cylinder where the quadratic has no real root.
+                let disc = b.mul(&b).add(&cc.scale(&(int(-4) * &a)));
+                if disc.sign() == Ordering::Less {
+                    return Ok(EdgeMeet::None);
+                }
                 return Err(Error::ComputationLimit(
                     "an irrational line against a cylinder",
                 ));

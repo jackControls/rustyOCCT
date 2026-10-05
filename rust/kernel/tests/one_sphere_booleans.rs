@@ -386,12 +386,11 @@ fn a_stored_pole_above_its_rim_imports() {
 
 /// A block less a leaning rod across its back face (a groove: its one
 /// curved face's material outside the cylinder) is no piece of its
-/// primitive common its planes,
-/// refused on import as S9e.4b.3c's before its model is built (the DRAW
-/// survey's `bcut_complex/I6` tool, whose wall is tangent to two of the
-/// block's faces, reached the model's own tangency before).
+/// primitive common its planes: refused on import as S9e.4b.3c's before its
+/// model was built until S9e.4b.3c.3a, its hull less its primitive since (its
+/// volume the kernel's own notch's).
 #[test]
-fn a_notch_is_not_its_primitive_common_its_planes() {
+fn a_notch_is_its_hull_less_its_primitive() {
     let tol = Tolerance::default();
     let frame = Frame3::xy();
     let (block, _) = Solid::extrude_with(
@@ -440,14 +439,13 @@ fn a_notch_is_not_its_primitive_common_its_planes() {
     .unwrap();
     let (out, _) = block.cut(OperationId(3), &rod).unwrap();
     let [notch] = <[Solid; 1]>::try_from(out).unwrap();
-    match Solid::imported_with(OperationId(4), notch.topology().clone(), notch.resolution()) {
-        Err(Error::OutOfDomain(m)) => assert_eq!(
-            m,
-            "an imported plane piece other than its primitive common its planes' half-spaces \
-             (S9e.4b.3c)"
-        ),
-        other => panic!("{:?}", other.map(|_| ())),
-    }
+    let (imported, _) =
+        Solid::imported_with(OperationId(4), notch.topology().clone(), notch.resolution()).unwrap();
+    let (v0, v1) = (
+        notch.mass_properties().volume,
+        imported.mass_properties().volume,
+    );
+    assert!((v0 - v1).abs() <= 1e-9 * v0, "{v1} for {v0}");
 }
 
 /// Two whole balls of one sphere on different frames (their splits' great

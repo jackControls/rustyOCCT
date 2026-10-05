@@ -81,7 +81,50 @@ fn bounds_of(
 /// The re-run solid `parts` matched to the stored topology `t` within the
 /// resolution `tol`, or none where they differ.
 pub(crate) fn matched(parts: &TopologyParts, t: &Topology, tol: f64) -> Option<Match> {
-    if parts.vertices.len() != t.vertices().len()
+    matched_poles(parts, t, tol, false)
+}
+
+/// S9e.4b.3c.3: the stored vertex loops at a pole of their sphere face's
+/// stored frame (OCCT's at every pole inside a sphere face).
+fn pole_loops(t: &Topology, tol: f64) -> BTreeSet<usize> {
+    let mut out = BTreeSet::new();
+    for f in t.faces() {
+        let crate::topology::Surface::Sphere { frame, radius } = &f.surface else {
+            continue;
+        };
+        for l in &f.loops {
+            if let Loop::Vertex(v) = &t.loops()[l.index()] {
+                let p = t.vertices()[v.index()].position;
+                if [*radius, -*radius]
+                    .iter()
+                    .any(|&h| near(p, frame.point(crate::Point2::default(), h), tol))
+                {
+                    out.insert(v.index());
+                }
+            }
+        }
+    }
+    out
+}
+
+/// [`matched`], a stored pole's vertex loop the re-run lacks left unmatched
+/// where `poles` (S9e.4b.3c.3: an imported piece OCCT wrote, whose sphere
+/// face has a vertex loop at each pole inside it where the kernel's assembly
+/// closes a loop through the other pole without one).
+pub(crate) fn matched_poles(
+    parts: &TopologyParts,
+    t: &Topology,
+    tol: f64,
+    poles: bool,
+) -> Option<Match> {
+    let optional = if poles {
+        pole_loops(t, tol)
+    } else {
+        BTreeSet::new()
+    };
+    let n = t.vertices().len();
+    if parts.vertices.len() > n
+        || parts.vertices.len() + optional.len() < n
         || parts.edges.len() != t.edges().len()
         || parts.faces.len() != t.faces().len()
         || parts.shells.len() != t.shells().len()
@@ -105,6 +148,11 @@ pub(crate) fn matched(parts: &TopologyParts, t: &Topology, tol: f64) -> Option<M
             return None;
         }
         vertices.push(j);
+    }
+    // Every stored vertex matched but optional poles.
+    let unmatched: BTreeSet<usize> = (0..n).filter(|j| !used.contains(j)).collect();
+    if !unmatched.is_subset(&optional) {
+        return None;
     }
     // Edges: the stored edge between the matched ends through the re-run
     // edge's points.
@@ -152,7 +200,11 @@ pub(crate) fn matched(parts: &TopologyParts, t: &Topology, tol: f64) -> Option<M
     let stored: Vec<(Vec<usize>, Vec<usize>)> = t
         .faces()
         .iter()
-        .map(|f| bounds_of(&f.loops, t.loops(), t.fins()))
+        .map(|f| {
+            let (es, mut vs) = bounds_of(&f.loops, t.loops(), t.fins());
+            vs.retain(|v| !unmatched.contains(v));
+            (es, vs)
+        })
         .collect();
     for f in &parts.faces {
         let (es, vs) = bounds_of(&f.loops, &parts.loops, &parts.fins);

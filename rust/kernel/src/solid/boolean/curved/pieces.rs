@@ -12,8 +12,13 @@
 //! stored frame's `o + u x + v y` (the stored axes as rationals, its normal
 //! `x * y`), the side of the material by the face's region; the hull's
 //! vertices are three planes' common points (rationals), its edges lines.
-//! A body the model does not match (not convex in its planes) is
-//! S9e.4b.3c's. S9e.4b.3c.1: a stored vertex within the resolution of the
+//! S9e.4b.3c.3: a body may be another Boolean of its primitive and the hull
+//! of its other planes (`imported::Form`): the hull less the primitive (a
+//! groove, slot or dimple: its curved face's material outside its quadric;
+//! the hull the first input), the primitive less the hull of its planes
+//! turned over (a bite) or their fuse (a boss), the primitive ending at its
+//! caps; two faces on one plane facing one way are one plane of the hull.
+//! A body no form matches is S9e.4b.3c.3b's. S9e.4b.3c.1: a stored vertex within the resolution of the
 //! model's ring (a rim OCCT split at its sphere's seam) splits it in the
 //! first arrangement (`Arr::split_at`), so the match takes the stored arcs;
 //! under a partner on its sphere a piece's sphere is split at the second
@@ -26,7 +31,7 @@ use super::num::*;
 use crate::identity::{Derivation, EntityId, EntityKind, OperationId, OperationKind, Role};
 use crate::profile::boolean::{Op2, Operand};
 use crate::solid::boolean::polyhedra::Component;
-use crate::solid::imported::Piece;
+use crate::solid::imported::{Form, Piece};
 use crate::solid::split::{q, rational_f64, zero};
 use crate::solid::{Construction, Solid};
 use crate::topology::Surface;
@@ -197,16 +202,25 @@ pub(super) fn hull_of(
             frames.push(frame);
         }
     }
-    // Two planes alike (one plane's two faces) are not a hull's.
-    for i in 0..all.len() {
-        for j in i + 1..all.len() {
-            if is_zero(&cross(&all[i].1, &all[j].1))
+    // Two faces on one plane facing one way (S9e.4b.3c.3: a groove across
+    // a face) are one plane of the hull; facing apart they bound nothing.
+    let mut j = 0;
+    while j < all.len() {
+        let alike = (0..j).find(|&i| {
+            is_zero(&cross(&all[i].1, &all[j].1))
                 && dot(&sub(&all[j].0, &all[i].0), &all[i].1) == zero()
-            {
-                return Err(Error::OutOfDomain(
-                    "an imported plane piece with two faces on one plane (S9e.4b.3c)",
-                ));
+        });
+        match alike {
+            Some(i) if sign(&dot(&all[i].1, &all[j].1)) == Ordering::Greater => {
+                all.remove(j);
+                frames.remove(j);
             }
+            Some(_) => {
+                return Err(Error::Degenerate(
+                    "an imported plane piece's two faces on one plane facing apart",
+                ))
+            }
+            None => j += 1,
         }
     }
     let n = all.len();
@@ -395,11 +409,26 @@ fn arranged(
         &piece.planes,
         centre,
         half,
-        Operand::B,
+        if piece.form == Form::Groove {
+            Operand::A
+        } else {
+            Operand::B
+        },
         hull_operation(p),
         tolerance,
     )?;
-    common(p, &hull, first, stored)
+    of_form(p, &hull, piece.form, first, stored)
+}
+
+/// S9e.4b.3c.3: a form's first Boolean, its operation and whether the hull
+/// is its first input (the hull less the primitive).
+fn first_boolean(form: Form) -> (Op2, bool) {
+    match form {
+        Form::Common => (Op2::Common, false),
+        Form::Groove => (Op2::Cut, true),
+        Form::Bite => (Op2::Cut, false),
+        Form::Boss => (Op2::Fuse, false),
+    }
 }
 
 /// The cube about a primitive the hull is bounded by: its centre and half
@@ -423,6 +452,19 @@ pub(super) fn common(
     first: Option<&R>,
     stored: &[[f64; 3]],
 ) -> Result<(Arr, Vec<(Component, Made)>)> {
+    of_form(p, hull, Form::Common, first, stored)
+}
+
+/// [`common`] for any form (S9e.4b.3c.3): the hull less the primitive with
+/// the hull the first input.
+fn of_form(
+    p: &Solid,
+    hull: &Prism,
+    form: Form,
+    first: Option<&R>,
+    stored: &[[f64; 3]],
+) -> Result<(Arr, Vec<(Component, Made)>)> {
+    let (op, swapped) = first_boolean(form);
     let r = |(n, d): (i64, i64)| R::new(n.into(), d.into());
     let seams = super::SEAMS;
     let tried: Vec<R> = first
@@ -432,11 +474,16 @@ pub(super) fn common(
         .collect();
     for (k, seam) in tried.iter().enumerate() {
         let attempt = || -> Result<(Arr, Vec<(Component, Made)>)> {
-            let a = super::model_of(p, Operand::A, seam, false)?;
-            let mut arr = arrange_shared([a, hull.clone()])?;
+            let mut arr = if swapped {
+                let b = super::model_of(p, Operand::B, seam, false)?;
+                arrange_shared([hull.clone(), b])?
+            } else {
+                let a = super::model_of(p, Operand::A, seam, false)?;
+                arrange_shared([a, hull.clone()])?
+            };
             arr.split_at(stored, p.resolution().linear())?;
-            arr.for_op(Op2::Common);
-            let out = assemble_made(&arr, Op2::Common)?;
+            arr.for_op(op);
+            let out = assemble_made(&arr, op)?;
             Ok((arr, out))
         };
         match attempt() {
@@ -484,11 +531,20 @@ pub(super) fn model(s: &Solid, op: Operand, first: Option<&R>) -> Result<Prism> 
             .iter()
             .map(|v| v.position.to_array())
             .collect();
-        let (arr, out) = arranged(piece, s.resolution(), first, &stored)?;
-        super::given::built(s, op, arr, out, Op2::Common, None).map_err(|e| match e {
+        // A tangency in the piece's own arrangement is its curved face's
+        // with its own planes (S9e.4b.3c.3: a notch whose wall is tangent to
+        // the faces it meets), not between a Boolean's inputs.
+        let (arr, out) = arranged(piece, s.resolution(), first, &stored).map_err(|e| match e {
+            Error::Degenerate(m) if m.contains("tangen") => Error::Degenerate(
+                "an imported plane piece whose curved face is tangent to its plane faces",
+            ),
+            e => e,
+        })?;
+        let (op2, _) = first_boolean(piece.form);
+        super::given::built(s, op, arr, out, op2, None).map_err(|e| match e {
             Error::ComputationLimit(m) if m.contains("rebuilt differently") => Error::OutOfDomain(
-                "an imported plane piece other than its primitive common its planes' half-spaces \
-                 (S9e.4b.3c)",
+                "an imported plane piece other than one Boolean of its primitive and its planes' \
+                 hull (S9e.4b.3c.3b)",
             ),
             e => e,
         })
