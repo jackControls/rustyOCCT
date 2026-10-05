@@ -7486,8 +7486,13 @@ Decisions for S9, recorded before its code (2026-09-28):
     rules (two faces within the resolution of one plane, a piece or result
     thinner than the resolution); `bcut_complex/I6` and `G4` refused as
     S9e.4b.3c's (a groove; a box with a cylindrical boss), I6 before its
-    model's tangency. Pending: the capture's Linux record, the DRAW survey
-    and a campaign.
+    model's tangency. Pending: the capture's Linux record, the DRAW survey.
+    Campaigns at `59d0c57b`, with every switch of the boolean target on
+    (`TORUS_PAIRS`, `CONE_PAIRS`, `TURNED_PARTS`, `GIVEN_MET`,
+    `SPLINE_SPHERE`, `SPLINE_CONE`) and the caps' frames kept bit for bit
+    (600 s each, sampled replays): `boolean` clean, 1,080 runs, the slowest
+    input 13 s under AddressSanitizer at load about 6; `split` clean, 1,818
+    runs, none slow.
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces
@@ -9273,6 +9278,12 @@ Decisions for S9, recorded before its code (2026-09-28):
   the sanitizer; S9e.4b.3c's files, left to that track), a torus
   meeting's pieces (`pieces_of`'s windows and exact points), and the
   moved result's validity carried over.
+  Campaigns at `59d0c57b`, with every switch of the boolean target on
+  (`TORUS_PAIRS`, `CONE_PAIRS`, `TURNED_PARTS`, `GIVEN_MET`,
+  `SPLINE_SPHERE`, `SPLINE_CONE`) and the caps' frames kept bit for bit (600
+  s each, sampled replays): `boolean` clean, 1,080 runs, the slowest input
+  13 s under AddressSanitizer at load about 6; `split` clean, 1,818 runs,
+  none slow.
 * **The DRAW adapter's curved primitives (S9d.4b.2b), done in S9d.4b's
   survey.** It built every `ptorus`, `psphere` and `pcone` with the same
   ids, so two tori (and two spheres or cones) were refused as solids

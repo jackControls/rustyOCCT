@@ -322,7 +322,8 @@ then for S9e.4b.3c.1 (branch `s9e4b3c`, over `s9c2-kernel` at `d665df29`).
    one sphere in general position, rims split by stored vertices: 14 of the
    survey's 38 `so` cases evaluate; a groove such as `bcut_complex/I6`'s
    tool or `G4`'s boss refused on import as S9e.4b.3c's) is implemented
-   (pending its capture's Linux record, the DRAW survey and a campaign);
+   (campaign clean at `59d0c57b`; pending its capture's Linux record and
+   the DRAW survey);
    next **S9e.4b.3c.2**, exact incidences on one sphere (a vertex of both,
    a circle of both, a line of both, plane faces on one plane with
    overlapping edges: `so1` and `so2`, `so2` and `so3`, `so5` and `so2`,
@@ -359,8 +360,9 @@ three kinds of failure fixed and two quadrics' meetings' integrals
 narrowed, among them a cone carrier's); the last two off switches are on
 (branch `torus-turned-speed`: `TORUS_PAIRS` and `TURNED_PARTS`, their
 slowest variants 22 s a run under the sanitizer, 30 and 37 to 53 s before
-side by side; a campaign with them on is still to run); the fuzz switches
-below.
+side by side; the campaigns with every switch on are clean at `59d0c57b`:
+`boolean` 1,080 runs, the slowest input 13 s; `split` 1,818 runs); the
+fuzz switches below.
 
 ## Open user decisions
 
