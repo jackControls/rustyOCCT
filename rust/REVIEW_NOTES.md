@@ -7138,9 +7138,15 @@ Decisions for S9, recorded before its code (2026-09-28):
     rounding, pieces or results thinner than the resolution, tangencies),
     the slowest input 3.8 s on a host at load 10 to 20; the boolean
     target's corpus and regressions (1,459 inputs) replayed with debug
-    assertions, no failure, the slowest 15.6 s. Pending: the capture's
-    Linux record, the campaigns of the `split` and `boolean` targets and
-    the DRAW survey.
+    assertions, no failure, the slowest 15.6 s. Pending: the capture's Linux
+    record and the DRAW survey. Campaigns: at `6d26886d` the `boolean`
+    target's clean (886 runs, the slowest input 28 s under AddressSanitizer
+    at load about 20), the `split` target's found a torus cap's round end
+    lifted the wrong way (S8d.3's, latent since `d7049aac`) and, after its
+    fix, a plane within rounding of a frustum's virtual apex reaching the
+    arrangement through `PIECE_BOOLEANS` (both fixed, notes below); at
+    `cc7ea7ff`, with those fixes and `CONE_PAIRS` on, both clean: `boolean`
+    996 runs, the slowest 13 s, `split` 1,731 runs, the slowest 19 s.
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces
@@ -8765,6 +8771,9 @@ Decisions for S9, recorded before its code (2026-09-28):
   count); `TURNED_PARTS`', the Sturm chains of a circle's three resultants
   (the count's with the torus offset either way) and the fields' products
   over the rounded frames' inverses.
+  Campaign: the boolean campaign at `cc7ea7ff` with `CONE_PAIRS` on (600 s,
+  a sampled replay) clean, 996 runs, the slowest input 13 s under
+  AddressSanitizer at load 8 to 10.
 * **The DRAW adapter's curved primitives (S9d.4b.2b), done in S9d.4b's
   survey.** It built every `ptorus`, `psphere` and `pcone` with the same
   ids, so two tori (and two spheres or cones) were refused as solids

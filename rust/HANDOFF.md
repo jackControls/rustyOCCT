@@ -236,7 +236,12 @@ its pole lift combined with the meridian loop's fix (branch `fix-uv-gap`).
   found three assembly rules, each an imported piece's too, now fixed: a
   loop through a stored pole lifted from the pole on (its holes with it),
   a stored circle and a cone's stored section matched as rings run the
-  result's way.
+  result's way. Its campaigns found two more, both fixed: a torus cap's
+  round end lifted the wrong way (S8d.3's, latent) and a plane within
+  rounding of a frustum's virtual apex reaching the arrangement (now
+  `Degenerate` before its edges enter it). At `cc7ea7ff`, with those
+  fixes and `CONE_PAIRS` on, both campaigns are clean (`boolean` 996
+  runs, the slowest input 13 s; `split` 1,731 runs, the slowest 19 s).
 - **CI.** Both workflows ("Rust kernel", "Rust geometry fuzzing") were green
   at `6c221525`. They had been red from S7 until 2026-09-29, unnoticed;
   check them after every push (see "Working rules").
@@ -269,25 +274,22 @@ its pole lift combined with the meridian loop's fix (branch `fix-uv-gap`).
    S9f.3a and S9f.3b is done at `12b6c176` (branch `s9-draw-5`: S9e.4b.2's
    4 restore cases registered, no case reaching the spline walls).
 3. **S9e.4b**, split in "S9e.4b refined": S9e.4b.1 (arcs rounded off
-   their circles) is implemented (above, its DRAW survey and campaign done); **S9e.4b.2**, polyhedra other than prisms, is
-   implemented on their stored vertices (above; its DRAW survey and
-   campaign done, 4 restore cases registered); **S9e.4b.3**, split in
-   "S9e.4b.3 refined": S9e.4b.3a, plane pieces as their primitive common
-   their planes' half-spaces, is implemented (above; campaign clean at
-   `dd51af05`; pending the capture's Linux record and the DRAW survey);
-   **S9e.4b.3b**, S9e.2's deferred `Clipped` and `Half` against curved
-   faces on that model, is implemented (above; pending its capture's Linux
-   record, campaigns of the `split` target with `PIECE_BOOLEANS` and of
-   the boolean target, and the DRAW survey); next **S9e.4b.3c**, two pieces of one sphere (the survey's `so1`
-   to `so7`, 38 cases), rims split by stored vertices and pieces not
-   convex in their planes (`shading_132`); then
-   **S9e.4b.4**, the S9e text's plan in full (joints of two circles, prisms
-   with walls of two directions, bodies of several curved surfaces: 21
-   cases; an imported polyhedron against curved faces, or with a cavity).
-   The reader's header check
-   refuses OCCT 8.1's version-3 `.brep` (`(c) Open Cascade`; 27 dataset
-   files, none among the surveyed restore cases): widening it needs a
-   survey of the restores it opens.
+   their circles) and S9e.4b.2 (polyhedra other than prisms, on their
+   stored vertices) are implemented with their DRAW surveys and
+   campaigns; **S9e.4b.3**, split in "S9e.4b.3 refined": S9e.4b.3a (plane
+   pieces as their primitive common their planes' half-spaces) and
+   S9e.4b.3b (S9e.2's deferred `Clipped` and `Half` against curved faces
+   on that model) are implemented with clean campaigns (pending their
+   captures' Linux records and the DRAW survey); next **S9e.4b.3c**, two
+   pieces of one sphere (the survey's `so1` to `so7`, 38 cases), rims
+   split by stored vertices and pieces not convex in their planes
+   (`shading_132`); then **S9e.4b.4**, the S9e text's plan in full
+   (joints of two circles, prisms with walls of two directions, bodies of
+   several curved surfaces: 21 cases; an imported polyhedron against
+   curved faces, or with a cavity). The reader's header check refuses
+   OCCT 8.1's version-3 `.brep` (`(c) Open Cascade`; 27 dataset files,
+   none among the surveyed restore cases): widening it needs a survey of
+   the restores it opens.
 4. **S9's acceptance** (U6): kernel and fuzz CI green at the accepted
    revision, the schedule run's full replays green (boolean and
    `degree_elevation` are sharded across four jobs plus a completeness check,
@@ -306,7 +308,8 @@ meeting (S9e.3b, by cost).
 Parallel tracks (`REVIEW_NOTES.md`, "Parallel tracks"): the degree-eight
 arrangement's arithmetic is done (`GIVEN_MET` on); its open levers (the
 leak-check rerun, the torus meetings' root sampling); the boolean target's
-off switches are measured (branch `fuzz-switches`: `CONE_PAIRS` on, its
+off switches are measured (branch `fuzz-switches`: `CONE_PAIRS` on and
+its campaign clean at `cc7ea7ff`, its
 three kinds of failure fixed and two quadrics' meetings' integrals
 narrowed, among them a cone carrier's; `TORUS_PAIRS` and `TURNED_PARTS`
 off, 40 and 43 s at their slowest under the sanitizer, their open levers in
