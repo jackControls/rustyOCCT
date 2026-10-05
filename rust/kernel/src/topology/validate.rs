@@ -3249,6 +3249,21 @@ fn clear_of_boundary<T: Real>(
     periodic: bool,
     margin2: &T,
 ) -> Option<bool> {
+    // A fin this test does not decide (below: a projection, a spline or a
+    // sinusoid, or an arc on a periodic surface) leaves the point never
+    // certainly clear, whatever the chords and the other fins give, and
+    // `face_hits` takes a point not certainly clear as undecided either
+    // way: none at once, without the chords' ends (in the exact tier a
+    // projection's ends are rational series, the containment's costliest
+    // part where its binary64 tier was undecided).
+    let undecided = |u: &&Fin| match &u.pcurve {
+        Curve2::BSpline(_) | Curve2::Sinusoid { .. } | Curve2::Projection(_) => true,
+        Curve2::CircularArc { .. } | Curve2::EllipseArc { .. } => periodic,
+        Curve2::LineSegment { .. } => false,
+    };
+    if loops.iter().any(|lp| lp.fins.iter().any(undecided)) {
+        return None;
+    }
     let scaled = |a: &V2<T>| [a[0].mul(su), a[1].clone()];
     let far = |d2: &T| d2.cmp(margin2) == Some(Ordering::Greater);
     // Squared distance from p to segment ab exceeds margin2.
