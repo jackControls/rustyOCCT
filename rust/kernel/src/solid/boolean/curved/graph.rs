@@ -96,6 +96,9 @@ pub(super) struct Sec {
 /// A loop of half-edges `(edge, forward)`.
 pub(super) type HLoop = Vec<(usize, bool)>;
 
+/// A loop's binary64 polygon in its face's parameters and its signed area.
+type Polygon = (Vec<[f64; 2]>, f64);
+
 /// A face's piece: its loops (the outer first) of half-edges `(edge,
 /// forward)` running with the face's own normal, whether the other solid
 /// holds its front and its back (`sides`), and for the operation (`for_op`)
@@ -1809,7 +1812,7 @@ impl Arr {
     pub(super) fn samples(&self, h: (usize, bool)) -> Vec<[f64; 3]> {
         let forward = self.edges[h.0]
             .samples
-            .get_or_init(|| self.samples_made((h.0, true)));
+            .get_or_init(|| self.samples_made((h.0, true), 1));
         let mut pts = forward.clone();
         if !h.1 {
             pts.reverse();
@@ -1817,8 +1820,8 @@ impl Arr {
         pts
     }
 
-    /// `samples`, made.
-    fn samples_made(&self, h: (usize, bool)) -> Vec<[f64; 3]> {
+    /// `samples`, made: `mult` times as many points on a curved edge.
+    fn samples_made(&self, h: (usize, bool), mult: usize) -> Vec<[f64; 3]> {
         let e = &self.edges[h.0];
         match &e.crv {
             Crv::Line { .. } => {
@@ -1833,7 +1836,7 @@ impl Arr {
                 let (Pos::T(t0), Pos::T(t1)) = (&e.pos[0], &e.pos[1]) else {
                     unreachable!("a spline curve's places")
                 };
-                let mut pts = c.samples(t0.to_f64(), t1.to_f64(), 32);
+                let mut pts = c.samples(t0.to_f64(), t1.to_f64(), 32 * mult);
                 if !h.1 {
                     pts.reverse();
                 }
@@ -1843,7 +1846,7 @@ impl Arr {
                 let (Pos::T(t0), Pos::T(t1)) = (&e.pos[0], &e.pos[1]) else {
                     unreachable!("a spline wall's meeting's places")
                 };
-                let mut pts = c.samples(t0.to_f64(), t1.to_f64(), 48);
+                let mut pts = c.samples(t0.to_f64(), t1.to_f64(), 48 * mult);
                 if !h.1 {
                     pts.reverse();
                 }
@@ -1853,7 +1856,7 @@ impl Arr {
                 let (Pos::T(w0), Pos::T(w1)) = (&e.pos[0], &e.pos[1]) else {
                     unreachable!("a rise's places")
                 };
-                let mut pts = c.samples(w0.to_f64(), w1.to_f64(), 48);
+                let mut pts = c.samples(w0.to_f64(), w1.to_f64(), 48 * mult);
                 if !h.1 {
                     pts.reverse();
                 }
@@ -1870,7 +1873,7 @@ impl Arr {
                     sweep = TAU;
                 }
                 let sweep = if e.with { sweep } else { -sweep };
-                let mut pts = c.samples(t0, sweep, 96);
+                let mut pts = c.samples(t0, sweep, 96 * mult);
                 if !h.1 {
                     pts.reverse();
                 }
@@ -1887,7 +1890,7 @@ impl Arr {
                     sweep = TAU;
                 }
                 let sweep = if e.with { sweep } else { -sweep };
-                let mut pts = m.samples(t0, sweep, 64);
+                let mut pts = m.samples(t0, sweep, 64 * mult);
                 if !h.1 {
                     pts.reverse();
                 }
@@ -1904,7 +1907,7 @@ impl Arr {
                     sweep = TAU;
                 }
                 let sweep = if e.with { sweep } else { -sweep };
-                let mut pts = m.samples(t0, sweep, 64);
+                let mut pts = m.samples(t0, sweep, 64 * mult);
                 if !h.1 {
                     pts.reverse();
                 }
@@ -1921,7 +1924,7 @@ impl Arr {
                     sweep = TAU;
                 }
                 let sweep = if e.with { sweep } else { -sweep };
-                let mut pts = m.samples(t0, sweep, 48);
+                let mut pts = m.samples(t0, sweep, 48 * mult);
                 if !h.1 {
                     pts.reverse();
                 }
@@ -1938,7 +1941,7 @@ impl Arr {
                     sweep = TAU;
                 }
                 let sweep = if e.with { sweep } else { -sweep };
-                let mut pts = m.samples(t0, sweep, 24);
+                let mut pts = m.samples(t0, sweep, 24 * mult);
                 if !h.1 {
                     pts.reverse();
                 }
@@ -1957,7 +1960,7 @@ impl Arr {
                 let sweep = if e.with { sweep } else { -sweep };
                 let f = |x: &V| x.clone().map(|y| crate::solid::split::rational_f64(&y));
                 let (cf, af, bf) = (f(c), f(a), f(b));
-                let n = 24;
+                let n = 24 * mult;
                 let mut pts: Vec<[f64; 3]> = (0..=n)
                     .map(|i| {
                         let t = t0 + sweep * i as f64 / n as f64;
@@ -2159,10 +2162,19 @@ impl Arr {
 
     /// A loop's binary64 polygon in the face's parameters.
     pub(super) fn polygon(&self, o: usize, f: usize, lp: &[(usize, bool)]) -> Vec<[f64; 2]> {
+        self.polygon_n(o, f, lp, 1)
+    }
+
+    /// `polygon` with `mult` times as many points on its curved edges.
+    fn polygon_n(&self, o: usize, f: usize, lp: &[(usize, bool)], mult: usize) -> Vec<[f64; 2]> {
         let par = self.params(o, f);
         let mut out = Vec::new();
         for &h in lp {
-            let s = self.samples(h);
+            let s = if mult == 1 {
+                self.samples(h)
+            } else {
+                self.samples_made(h, mult)
+            };
             for p in &s[..s.len() - 1] {
                 out.push(par(*p));
             }
@@ -2195,26 +2207,65 @@ impl Arr {
         }
         let mut pieces: Vec<Vec<Vec<(usize, bool)>>> =
             outers.iter().map(|&i| vec![loops[i].clone()]).collect();
+        // A polygon's longest side.
+        let side = |p: &[[f64; 2]]| {
+            (0..p.len()).fold(0.0f64, |m, k| {
+                let (a, b) = (p[k], p[(k + 1) % p.len()]);
+                m.max((b[0] - a[0]).hypot(b[1] - a[1]))
+            })
+        };
+        // Finer polygons where a hole's point lies near an outer loop's
+        // polygon, within a twentieth of its longest side (its chords' way
+        // off its curve, a few hundredths of a side: two coaxial pieces'
+        // circles a few thousandths apart, their 24-sided polygons
+        // crossing), each refinement four times as many points.
+        let mut finer: BTreeMap<(usize, usize), Polygon> = BTreeMap::new();
         for h in holes {
-            let probe = polys[h][0];
-            let mut best: Option<(usize, f64)> = None;
             let hole_edges: BTreeSet<usize> = loops[h].iter().map(|x| x.0).collect();
-            for (k, &i) in outers.iter().enumerate() {
-                // The piece the hole bounds from inside shares its edges.
-                if loops[i].iter().any(|x| hole_edges.contains(&x.0)) {
-                    continue;
+            let mut mult = 1;
+            let k = loop {
+                let mut poly = |i: usize| -> Polygon {
+                    if mult == 1 {
+                        return (polys[i].clone(), areas[i]);
+                    }
+                    finer
+                        .entry((i, mult))
+                        .or_insert_with(|| {
+                            let p = self.polygon_n(o, f, &loops[i], mult);
+                            let a = sign * area(&p);
+                            (p, a)
+                        })
+                        .clone()
+                };
+                let probe = poly(h).0[0];
+                let mut best: Option<(usize, f64)> = None;
+                let mut near = false;
+                for (k, &i) in outers.iter().enumerate() {
+                    // The piece the hole bounds from inside shares its edges.
+                    if loops[i].iter().any(|x| hole_edges.contains(&x.0)) {
+                        continue;
+                    }
+                    let (p, a) = poly(i);
+                    let (inside, dist) = winding(&p, probe);
+                    if dist <= 1e-9 * scale {
+                        return Err(Error::Degenerate("a hole touching a piece's boundary"));
+                    }
+                    near |= dist <= side(&p) / 20.0;
+                    if inside && best.is_none_or(|(_, b)| a < b) {
+                        best = Some((k, a));
+                    }
                 }
-                let (inside, dist) = winding(&polys[i], probe);
-                if dist <= 1e-9 * scale {
-                    return Err(Error::Degenerate("a hole touching a piece's boundary"));
+                // A hole no piece holds, at first or finer: a loop whose
+                // binary64 image turned the wrong way (a sliver within the
+                // resolution), refused as before; finer polygons only choose
+                // among the pieces that may hold it.
+                if !near || mult >= 64 || best.is_none() {
+                    break best
+                        .ok_or(Error::Degenerate("a piece thinner than the resolution"))?
+                        .0;
                 }
-                if inside && best.is_none_or(|(_, a)| areas[i] < a) {
-                    best = Some((k, areas[i]));
-                }
-            }
-            // A hole no piece holds: a loop whose binary64 image turned
-            // the wrong way (a sliver within the resolution).
-            let (k, _) = best.ok_or(Error::Degenerate("a piece thinner than the resolution"))?;
+                mult *= 4;
+            };
             pieces[k].push(loops[h].clone());
         }
         Ok(pieces)

@@ -253,8 +253,9 @@ its pole lift combined with the meridian loop's fix (branch `fix-uv-gap`).
    clean at `a32d256f` (895 runs, the slowest input 31 s under
    AddressSanitizer). Open levers: libFuzzer's leak-check rerun (an input
    whose run keeps the kernel's caches runs twice under the sanitizer),
-   the certified integrals along a cone carrier's meetings, the torus
-   meetings' root sampling.
+   the torus meetings' root sampling (the certified integrals along a cone
+   carrier's meetings are narrowed since the off switches' track:
+   `487e8cac` 39 to 20 G instructions, 16.5 to 9.7 s under the sanitizer).
 2. **The Linux records and reviews** of the recaptured
    `occt-boolean-spline-crossing-preimplementation` and of the
    spline-sphere, spline-cone, imported-polyhedra, imported-arcs,
@@ -304,8 +305,12 @@ meeting (S9e.3b, by cost).
 
 Parallel tracks (`REVIEW_NOTES.md`, "Parallel tracks"): the degree-eight
 arrangement's arithmetic is done (`GIVEN_MET` on); its open levers (the
-leak-check rerun, the integrals along a cone carrier's meetings, the torus
-meetings' root sampling); the fuzz switches below.
+leak-check rerun, the torus meetings' root sampling); the boolean target's
+off switches are measured (branch `fuzz-switches`: `CONE_PAIRS` on, its
+three kinds of failure fixed and two quadrics' meetings' integrals
+narrowed, among them a cone carrier's; `TORUS_PAIRS` and `TURNED_PARTS`
+off, 40 and 43 s at their slowest under the sanitizer, their open levers in
+that track); the fuzz switches below.
 
 ## Open user decisions
 
@@ -432,13 +437,14 @@ changes, every generator importing it runs with `--check --workers 4`. Then:
 - **Fuzz timing.** AddressSanitizer costs about twelve times the plain time
   on the exact arithmetic, and Linux runners about 2.6 times this host; the
   boolean target's limit is 60 s an input. Configurations too slow for it are
-  switched off in `rust/fuzz/src/boolean.rs` (`TORUS_PAIRS`, `CONE_PAIRS`,
-  `TURNED_PARTS`; `GIVEN_CURVED`, `GIVEN_ROUND`, `GIVEN_BALL`, `GIVEN_MET`,
-  `SPLINE_WALLS`, `SPLINE_PARALLEL`, `SPLINE_CROSSING`, `SPLINE_SPHERE`,
-  `SPLINE_CONE` and `IMPORTED` are on; the three off switches and
-  `GIVEN_MET` on at once make corpus input `6fab9d41` fail
-  `vertex_off_curve`, each alone clean, open). A heavily loaded
-  host makes campaigns time out spuriously; run them on a quiet machine.
+  switched off in `rust/fuzz/src/boolean.rs` (`TORUS_PAIRS` and
+  `TURNED_PARTS`, their slowest variants 40 and 43 s a run under the
+  sanitizer here, above the 35 s the switches on keep to: REVIEW_NOTES.md's
+  "The boolean target's off switches"; `CONE_PAIRS`, `GIVEN_CURVED`,
+  `GIVEN_ROUND`, `GIVEN_BALL`, `GIVEN_MET`, `SPLINE_WALLS`,
+  `SPLINE_PARALLEL`, `SPLINE_CROSSING`, `SPLINE_SPHERE`, `SPLINE_CONE` and
+  `IMPORTED` are on). A heavily loaded host makes campaigns time out
+  spuriously; run them on a quiet machine.
 - **Keep debug-assertion tests optimized.** CI runs them with
   `CARGO_PROFILE_DEV_OPT_LEVEL=2`; time new test files that way.
 - **Commits** are subject-only and long and descriptive, with no AI

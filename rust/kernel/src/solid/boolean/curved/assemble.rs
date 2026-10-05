@@ -1501,9 +1501,11 @@ fn curve3(arr: &Arr, e: &REdge, points: &BTreeMap<usize, Point3>) -> Result<Curv
                 sweep: w1.to_f64() - w0.to_f64(),
             })))
         }
+        // The section's own cone (a given edge of a cone's wall and another
+        // cone's end disc: the wall's view, not the disc's cone).
         Crv::Cone(c) => cone_curve3(
             arr,
-            super::chain::curve_model(arr, first.curve, c.carrier, |v| v.funnel.is_some()),
+            super::chain::curve_model(arr, first.curve, c.carrier, |v| c.lies_on(v)),
             e,
             c,
             points,

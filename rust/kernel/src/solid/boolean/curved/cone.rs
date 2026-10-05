@@ -355,6 +355,16 @@ impl ConeSec {
         }
     }
 
+    /// Whether `m` is the cone this section lies on (its frame and radii):
+    /// a given result's edge of one cone's wall and another cone's end
+    /// disc has both cones among its faces' views.
+    pub(super) fn lies_on(&self, m: &Prism) -> bool {
+        m.f == self.f
+            && m.funnel
+                .as_ref()
+                .is_some_and(|fun| fun.b == self.b && fun.k == self.k)
+    }
+
     /// Whether the plane is normal to the axis (its section a circle).
     pub(super) fn normal_to_axis(&self) -> bool {
         self.plane[0] == zero() && self.plane[1] == zero()

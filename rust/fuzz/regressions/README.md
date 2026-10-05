@@ -1366,3 +1366,64 @@ between the branches at the turning point (`spiric.rs`; `tests/split.rs`,
 debug assertions, and 279 single-byte mutations of it and 400 random whole
 tori cut by the target's oblique planes (2 of them failing alike before)
 without a failure.
+
+## Boolean: a cone section given on the other cone's disc
+
+`boolean/replay-6fab9d419900cda3aad1257fe2ec8e8709205f20.bin` is a corpus
+input (its original name kept) that failed the debug-assertion replay with
+`CONE_PAIRS` switched on (`unexpected error invalid topology:
+vertex_off_curve`); off, it decodes a prism against the frustum. On, it
+decodes a frustum of radii `2.625` and `1.3125` over heights `0..0.75` in
+the axis-aligned frame and a frustum of radii `1.3125` and `0.65625` in the
+frame turned to the normal `(0, 3, 4)`; the chained byte gives their fuse's
+first result to the `GIVEN_BALL` sphere about the middle of its first
+meeting (`GIVEN_MET`). The fuse has an edge where one frustum's end disc
+cuts the other's wall, a cone section on the wall's cone. Given to another
+Boolean, that edge's faces are the wall and the disc, each on its own
+input's model (`view`), and both models are cones: the section's curve was
+rounded on the first model with a cone among the edge's faces' views,
+which for the disc is the other frustum, whose frame turned the section's
+plane into another one, a hyperbola off the section's vertices. 28 of the
+459 cone-pair variants of the corpus (every third input moved onto a cone
+object against the cone tool) failed alike, every one in the chained
+stage, its partner the box, the cylinder or the sphere, and one more was
+refused as a plane within the resolution of the wrong cone's apex. The
+section's curve is now rounded on the cone it lies on (its frame and radii,
+`ConeSec::lies_on`); `tests/given_met_booleans.rs`,
+`a_box_across_a_cone_section_on_another_cones_disc`, gives the fuse of a
+frustum and a leaning cone across its wall to the turned box (it failed
+`vertex_off_curve` before). The input replays in 1.6 s with debug
+assertions.
+
+## Boolean: two coaxial cones' rings, nested and on a floor
+
+`boolean/crash-734bc58417463c877124313950d27f7e7a834e72.bin` and
+`boolean/crash-1e2fe03086c7a2c7ad77d46b27327315d479abd8.bin` are replayed
+cone-pair variants (`CONE_PAIRS` on; another third of the corpus moved onto
+a cone object against the cone tool) that failed alike at the parent of
+these fixes, both pairs of cones in the tilted frame and so coaxial. The
+first, a frustum of radii `3.5625` and `1.78125` over heights `0..1.75` and
+a cone from its apex at `-1` to radius `2.4375` at `2.75`, failed its fuse
+(`an open Boolean of arcs in any position`): the cones meet in a ring
+`0.004` below the frustum's top rim, and the frustum's wall is split into
+pieces by its loops' binary64 polygons in the wall's projection, 24 sides a
+circle, a few hundredths of the radius off it, so the top rim's polygon
+crossed the ring's and the rim was nested in the band below the ring. A
+hole's point near another loop's polygon (within a twentieth of its
+longest side) now has the loops sampled again, four times as finely, up to
+64 times, where some piece's polygon holds it (a hole none holds is refused
+as a sliver, as before: finer polygons nested one in a frustum's wall in a
+`TURNED_PARTS` variant, and its result was open; `tests/torus_parts_booleans.rs`,
+`a_hole_no_piece_holds_is_refused`) (`Arr::group`; `tests/cones_booleans.rs`,
+`coaxial_cones_meeting_near_a_rim_nest_their_rings`, the pair's volumes the
+integral of the smaller disc over the height). The second, a frustum of
+radii `0.75` and `0.375` over `0..0.5` and a cone from radius `0.75` at
+`0.125` to its apex at `0.375`, failed its chained cut (`a cone's wall
+winding without an apex`): their ring lies at a sixth of the height up the
+axis, the turned box's floor, within rounding; given to the box, the ring
+crossed its walls at the floor's edges and the floor not at all, a sliver
+between them. A given closed meeting all round within the resolution of a
+partner's plane is now refused as a tangency, as it is on the plane
+(`triple::meet`; `tests/given_met_booleans.rs`,
+`a_coaxial_ring_within_rounding_of_a_floor_is_degenerate`). They replay in
+2.7 s and 0.3 s with debug assertions.

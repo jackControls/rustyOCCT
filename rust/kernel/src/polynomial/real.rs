@@ -755,6 +755,9 @@ impl IntPolynomial {
         let Some(last) = self.0.last() else {
             return Ordering::Equal;
         };
+        if let Some(sign) = self.sign_filter(numerator, denominator) {
+            return sign;
+        }
         let mut value = last.clone();
         let mut den = BigInt::from(1);
         for c in self.0.iter().rev().skip(1) {
@@ -762,6 +765,41 @@ impl IntPolynomial {
             value = value * numerator + c * &den;
         }
         value.cmp(&BigInt::from(0))
+    }
+    /// The sign at `numerator / denominator` where a floating-point
+    /// evaluation certifies it, `None` otherwise (the exact Horner decides).
+    /// The homogenized Horner runs in binary64 mantissas with unbounded
+    /// exponents (`Xf`): each coefficient and both ends rounded once (with
+    /// the digits below their top 128 bits dropped, relative error below
+    /// `2u`), each product and sum once more, so every term of the value is
+    /// perturbed by at most `5 d + 5` factors `1 + u` (`d` the degree) and
+    /// the computed value is within `gamma_{5d+5}` of the terms' absolute
+    /// sum, which the same evaluation on absolute values bounds from below
+    /// within the same factor (Higham, Horner's rule). A value beyond
+    /// `(6 d + 8) 2u` times that sum has the exact value's sign; a smaller
+    /// one, zero among them, is left undecided.
+    fn sign_filter(&self, numerator: &BigInt, denominator: &BigInt) -> Option<Ordering> {
+        let (xn, xd) = (Xf::of(numerator), Xf::of(denominator));
+        let an = xn.abs();
+        let mut coefficients = self.0.iter().rev();
+        let top = Xf::of(coefficients.next()?);
+        let (mut value, mut sum, mut power) = (top, top.abs(), Xf::ONE);
+        for c in coefficients {
+            power = power.mul(xd);
+            let term = Xf::of(c).mul(power);
+            value = value.mul(xn).add(term);
+            sum = sum.mul(an).add(term.abs());
+        }
+        let k = (6 * self.0.len() + 8) as f64;
+        let bound = sum.mul(Xf::new(k * f64::EPSILON, 0));
+        if value.m == 0.0 || !value.abs().exceeds(bound) {
+            return None;
+        }
+        Some(if value.m > 0.0 {
+            Ordering::Greater
+        } else {
+            Ordering::Less
+        })
     }
     /// Signs of the exact interval-Horner bounds on [a,b]. Keep both bounds
     /// over the same positive denominator instead of reducing four rational
@@ -783,6 +821,78 @@ impl IntPolynomial {
             high = products.iter().max().unwrap() + offset;
         }
         (low.cmp(&BigInt::from(0)), high.cmp(&BigInt::from(0)))
+    }
+}
+
+/// A binary64 mantissa in `[0.5, 1)` (or zero) times `2^e`, `e` unbounded:
+/// big integers' leading bits for `IntPolynomial::sign_filter`. A product
+/// or a sum rounds once (a sum's smaller operand scaled exactly by a power
+/// of two, or dropped where it lies below `2^-899` of the larger).
+#[derive(Debug, Clone, Copy)]
+struct Xf {
+    m: f64,
+    e: i64,
+}
+
+impl Xf {
+    const ONE: Self = Self { m: 0.5, e: 1 };
+
+    fn new(m: f64, e: i64) -> Self {
+        if m == 0.0 {
+            return Self { m: 0.0, e: 0 };
+        }
+        let bits = m.to_bits();
+        let exponent = ((bits >> 52) & 0x7ff) as i64;
+        debug_assert!(exponent != 0 && exponent != 0x7ff, "a normal mantissa");
+        Self {
+            m: f64::from_bits((bits & !(0x7ff << 52)) | (1022 << 52)),
+            e: e + exponent - 1022,
+        }
+    }
+
+    /// The integer's top 128 bits rounded to nearest.
+    fn of(x: &BigInt) -> Self {
+        let mut digits = x.magnitude().iter_u64_digits();
+        let n = digits.len() as i64;
+        let Some(top) = digits.next_back() else {
+            return Self::new(0.0, 0);
+        };
+        let next = digits.next_back().unwrap_or(0);
+        let m = ((u128::from(top) << 64) | u128::from(next)) as f64;
+        let e = 64 * (n - 2);
+        Self::new(if x.sign() == Sign::Minus { -m } else { m }, e)
+    }
+
+    fn abs(self) -> Self {
+        Self {
+            m: self.m.abs(),
+            e: self.e,
+        }
+    }
+
+    fn mul(self, other: Self) -> Self {
+        Self::new(self.m * other.m, self.e + other.e)
+    }
+
+    fn add(self, other: Self) -> Self {
+        let (big, small) = if self.m == 0.0 || (other.m != 0.0 && other.e > self.e) {
+            (other, self)
+        } else {
+            (self, other)
+        };
+        if small.m == 0.0 || big.e - small.e > 900 {
+            return big;
+        }
+        let scaled = small.m * f64::powi(2.0, (small.e - big.e) as i32);
+        Self::new(big.m + scaled, big.e)
+    }
+
+    /// Whether a nonnegative value exceeds another.
+    fn exceeds(self, other: Self) -> bool {
+        if other.m == 0.0 {
+            return self.m > 0.0;
+        }
+        self.m > 0.0 && (self.e > other.e || (self.e == other.e && self.m > other.m))
     }
 }
 
@@ -832,10 +942,15 @@ fn subresultants(first: IntPolynomial, second: IntPolynomial, sturm: bool) -> Ve
     chain
 }
 fn variations(chain: &[IntPolynomial], x: &R) -> i32 {
+    variations_at(chain, x.numer(), x.denom())
+}
+/// Sign variations at `numerator / denominator`, `denominator > 0`, in any
+/// terms.
+fn variations_at(chain: &[IntPolynomial], numerator: &BigInt, denominator: &BigInt) -> i32 {
     let mut previous = Ordering::Equal;
     let mut count = 0;
     for p in chain {
-        let sign = p.sign_at(x);
+        let sign = p.sign_at_fraction(numerator, denominator);
         if sign != Ordering::Equal {
             if previous != Ordering::Equal && sign != previous {
                 count += 1;
@@ -856,7 +971,22 @@ pub(crate) fn isolate(
     if p.is_constant() {
         return Ok(vec![]);
     }
-    let mut common = p.gcd(&p.derivative());
+    isolate_with_gcd(p, p.gcd(&p.derivative()), lower, upper, budget)
+}
+
+/// `isolate` with `gcd(p, p')` (as `IntPolynomial::gcd` gives it) already
+/// computed by the caller.
+pub(crate) fn isolate_with_gcd(
+    p: &IntPolynomial,
+    mut common: IntPolynomial,
+    lower: R,
+    upper: R,
+    budget: &mut Budget,
+) -> Result<Vec<AlgebraicRoot>> {
+    debug_assert!(lower <= upper && !p.is_zero());
+    if p.is_constant() {
+        return Ok(vec![]);
+    }
     let square_free = p.quotient_exact(&common).positive();
     let defining = Arc::new(RootPolynomial {
         sturm: sequence(square_free.clone(), square_free.derivative()),
@@ -884,43 +1014,58 @@ pub(crate) fn isolate(
             roots.push(root(lower.clone(), lower.clone()));
         }
         // Iterative traversal avoids stack overflow for tightly clustered roots.
+        // An interval's ends are numerators over the ends' common
+        // denominator times `2^level`: a midpoint is their sum one level
+        // down, the same rational as `(a + b) / 2`, reduced only where a
+        // root is published (no gcd per bisection).
         enum Entry {
-            Interval(R, R, i32, i32),
-            Exact(R),
+            Interval(BigInt, BigInt, u32, i32, i32),
+            Exact(BigInt, u32),
         }
         let chain = &defining.sturm;
+        let (ld, ud) = (lower.denom(), upper.denom());
+        let base = ld / gcd_integer(ld.clone(), ud.clone()) * ud;
+        let den = |level: u32| &base << level as usize;
+        let at = |n: BigInt, level: u32| R::new(n, den(level));
         let mut stack = vec![Entry::Interval(
-            lower.clone(),
-            upper.clone(),
+            lower.numer() * (&base / ld),
+            upper.numer() * (&base / ud),
+            0,
             variations(chain, &lower),
             variations(chain, &upper),
         )];
         while let Some(entry) = stack.pop() {
-            let Entry::Interval(a, b, va, vb) = entry else {
-                if let Entry::Exact(x) = entry {
+            let (a, b, level, va, vb) = match entry {
+                Entry::Exact(x, level) => {
+                    let x = at(x, level);
                     roots.push(root(x.clone(), x));
+                    continue;
                 }
-                continue;
+                Entry::Interval(a, b, level, va, vb) => (a, b, level, va, vb),
             };
-            let b_zero = q.sign_at(&b) == Ordering::Equal;
+            let d = den(level);
+            let b_zero = q.sign_at_fraction(&b, &d) == Ordering::Equal;
             // V(a)-V(b) counts (a,b]; subtract a root at b for this open interval.
             let count = va - vb - i32::from(b_zero);
             if count == 0 {
                 continue;
             }
             debug_assert!(count > 0);
-            if count == 1 && !b_zero && q.sign_at(&a) != Ordering::Equal {
-                roots.push(root(a, b));
+            if count == 1 && !b_zero && q.sign_at_fraction(&a, &d) != Ordering::Equal {
+                roots.push(root(at(a, level), at(b, level)));
                 continue;
             }
             budget.split()?;
-            let middle = (&a + &b) / R::from_integer(BigInt::from(2));
-            let vm = variations(chain, &middle);
-            stack.push(Entry::Interval(middle.clone(), b, vm, vb));
-            if q.sign_at(&middle) == Ordering::Equal {
-                stack.push(Entry::Exact(middle.clone()));
+            let middle = &a + &b;
+            let (a, b, level) = (a << 1usize, b << 1usize, level + 1);
+            let d = den(level);
+            let vm = variations_at(chain, &middle, &d);
+            let exact = q.sign_at_fraction(&middle, &d) == Ordering::Equal;
+            stack.push(Entry::Interval(middle.clone(), b, level, vm, vb));
+            if exact {
+                stack.push(Entry::Exact(middle.clone(), level));
             }
-            stack.push(Entry::Interval(a, middle, va, vm));
+            stack.push(Entry::Interval(a, middle, level, va, vm));
         }
         if q.sign_at(&upper) == Ordering::Equal {
             roots.push(root(upper.clone(), upper));
@@ -992,6 +1137,93 @@ fn one() -> R {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// The modular shortcut answers only coprime pairs, as the subresultant
+    /// The floating-point sign filter answers only where the exact Horner
+    /// agrees: coefficients of a few to a few thousand bits, points far out,
+    /// near roots (a product of known linear factors, at their roots and an
+    /// ulp-sized step beside them) and with cancelling terms.
+    #[test]
+    fn sign_filter_agrees_with_the_exact_horner() {
+        let mut state: u64 = 0x9e37_79b9_7f4a_7c15;
+        let mut next = move || {
+            state ^= state << 13;
+            state ^= state >> 7;
+            state ^= state << 17;
+            state
+        };
+        let big = |bits: u32, next: &mut dyn FnMut() -> u64| -> BigInt {
+            let mut x = BigInt::from(0);
+            for _ in 0..bits.div_ceil(64) {
+                x = (x << 64) + BigInt::from(next());
+            }
+            x >>= (64 - bits % 64) % 64;
+            if next() % 2 == 0 {
+                -x
+            } else {
+                x
+            }
+        };
+        let (mut decided, mut total) = (0, 0);
+        for round in 0..400u32 {
+            let bits = [3, 40, 70, 200, 1500, 3000][round as usize % 6];
+            let degree = 1 + (round as usize % 9);
+            // Half the polynomials vanish at known rationals.
+            let roots: Vec<(BigInt, BigInt)> = (0..degree)
+                .map(|_| {
+                    let d = big(bits / 3 + 2, &mut next).magnitude().clone() + 1u32;
+                    (big(bits / 3 + 4, &mut next), BigInt::from(d))
+                })
+                .collect();
+            let p = if round % 2 == 0 {
+                let mut c = vec![BigInt::from(1)];
+                for (n, d) in &roots {
+                    // times (d t - n)
+                    let mut out = vec![BigInt::from(0); c.len() + 1];
+                    for (i, x) in c.iter().enumerate() {
+                        out[i + 1] += x * d;
+                        out[i] -= x * n;
+                    }
+                    c = out;
+                }
+                IntPolynomial::new(c)
+            } else {
+                IntPolynomial::new((0..=degree).map(|_| big(bits, &mut next)).collect())
+            };
+            if p.is_zero() {
+                continue;
+            }
+            let mut points: Vec<(BigInt, BigInt)> = roots.clone();
+            for (n, d) in &roots {
+                let k = BigInt::from(1) << 300;
+                points.push((n * &k + 1, d * &k));
+                points.push((n * &k - 1, d * &k));
+            }
+            for _ in 0..4 {
+                let d = big(bits.min(400), &mut next).magnitude().clone() + 1u32;
+                points.push((big(bits.min(400) + 30, &mut next), BigInt::from(d)));
+            }
+            for (n, d) in &points {
+                let exact = {
+                    let mut value = p.0.last().unwrap().clone();
+                    let mut den = BigInt::from(1);
+                    for c in p.0.iter().rev().skip(1) {
+                        den *= d;
+                        value = value * n + c * &den;
+                    }
+                    value.cmp(&BigInt::from(0))
+                };
+                total += 1;
+                if let Some(sign) = p.sign_filter(n, d) {
+                    decided += 1;
+                    assert_eq!(sign, exact, "{:?} at {n}/{d}", p.0);
+                }
+                assert_eq!(p.sign_at_fraction(n, d), exact);
+            }
+        }
+        // Most points are decided by the filter; the roots never are.
+        assert!(decided * 2 > total, "{decided} of {total}");
+    }
 
     /// The modular shortcut answers only coprime pairs, as the subresultant
     /// chain does; a common factor, or a prime dividing a leading
