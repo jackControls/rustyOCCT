@@ -88,10 +88,9 @@ pub(super) struct Gen {
     /// polynomial found zero there): a polynomial it divides is zero at
     /// the root without another Sturm-Tarski count.
     divisor: Mutex<Option<Vec<R>>>,
-    /// `x^j mod poly` for `j` from its degree `n` to `2 n - 2`, numerators
-    /// over one common denominator (S9d.4b.2b: a product reduced without a
-    /// rational operation per coefficient), computed once.
-    powers: OnceLock<(Vec<Vec<BigInt>>, BigInt)>,
+    /// What `poly` gives every root of it alike, shared by their
+    /// generators (`Shared`).
+    shared: Arc<Shared>,
     /// A dyadic point `x / 2^bits` within `2^-bits` of the root, certified
     /// by its defining polynomial's signs at `(x -+ 1) / 2^bits` inside the
     /// isolator; the finest found is kept.
@@ -102,6 +101,35 @@ pub(super) struct Gen {
     inverses: Mutex<std::collections::HashMap<Ip, Option<Ip>>>,
     /// The isolator's width's bits above one (`filter_steps`), once.
     above: OnceLock<usize>,
+}
+
+/// What a generator's polynomial gives every root of it alike, kept by the
+/// polynomial and shared by those roots' generators (S9d.4c: a circle's
+/// crossings with a torus are the roots of one resultant, each root its
+/// own generator, and each crossing's place divides by one polynomial's
+/// value there): `x^j mod poly` for `j` from its degree `n` to `2 n - 2`,
+/// numerators over one common denominator (S9d.4b.2b: a product reduced
+/// without a rational operation per coefficient), computed once; and the
+/// inverses of the elements prime to `poly` (an inverse modulo `poly`, one
+/// polynomial whatever the root).
+#[derive(Debug, Default)]
+struct Shared {
+    powers: OnceLock<(Vec<Vec<BigInt>>, BigInt)>,
+    inverses: Mutex<std::collections::HashMap<Ip, Ip>>,
+}
+
+/// `poly`'s `Shared`, kept for the last few hundred polynomials.
+fn shared(poly: &[R]) -> Arc<Shared> {
+    static KEPT: OnceLock<Mutex<std::collections::HashMap<Ip, Arc<Shared>>>> = OnceLock::new();
+    let key = Ip::from_rats(poly);
+    let mut kept = KEPT
+        .get_or_init(Default::default)
+        .lock()
+        .unwrap_or_else(|e| e.into_inner());
+    if kept.len() >= 256 && !kept.contains_key(&key) {
+        kept.clear();
+    }
+    kept.entry(key).or_default().clone()
 }
 
 /// A polynomial with rational coefficients as integer numerators over one
@@ -358,12 +386,12 @@ const SIGN_STEPS: usize = 96;
 impl Gen {
     pub(super) fn new(poly: Vec<R>, root: AlgebraicRoot) -> Self {
         Self {
+            shared: shared(&poly),
             poly,
             root,
             narrowed: Mutex::new(Vec::new()),
             exact: Mutex::new(std::collections::HashMap::new()),
             divisor: Mutex::new(None),
-            powers: OnceLock::new(),
             tight: Mutex::new(None),
             inverses: Mutex::new(std::collections::HashMap::new()),
             above: OnceLock::new(),
@@ -372,7 +400,7 @@ impl Gen {
 
     /// `x^j mod poly`, `j` in `n..=2 n - 2`, over a common denominator.
     fn powers(&self) -> &(Vec<Vec<BigInt>>, BigInt) {
-        self.powers.get_or_init(|| {
+        self.shared.powers.get_or_init(|| {
             let m = &self.poly;
             let n = m.len() - 1;
             let lead = m[n].clone();
@@ -1062,6 +1090,17 @@ impl K {
                 {
                     return known.as_ref().map(|q| K::Alg(g.clone(), q.clone()));
                 }
+                // Prime to the polynomial: another root's inverse is this
+                // root's too.
+                if let Some(q) = g
+                    .shared
+                    .inverses
+                    .lock()
+                    .unwrap_or_else(|e| e.into_inner())
+                    .get(&key)
+                {
+                    return Some(K::of_ip(g, q.clone()));
+                }
                 let inv = Self::inverse(g, p);
                 let mut kept = g.inverses.lock().unwrap_or_else(|e| e.into_inner());
                 if kept.len() >= 4096 {
@@ -1088,6 +1127,7 @@ impl K {
     /// lower degree, whatever the algorithm).
     fn inverse(g: &Arc<Gen>, p: &Ip) -> Option<Self> {
         let mut m = Ip::from_rats(&g.poly);
+        let mut whole = true;
         loop {
             // Extended Euclid: s p = gcd (mod m).
             let (mut r0, mut r1) = (m.clone(), p.divmod(&m).1);
@@ -1101,7 +1141,17 @@ impl K {
             if r0.len() == 1 {
                 // `s0 / r0`.
                 let k = R::new(r0.den().clone(), r0.num()[0].clone());
-                return Some(K::of_ip(g, s0.scale(&k).divmod(&Ip::from_rats(&g.poly)).1));
+                let q = s0.scale(&k).divmod(&Ip::from_rats(&g.poly)).1;
+                // Prime to the whole polynomial (no factor divided out):
+                // every root's.
+                if whole {
+                    let mut kept = g.shared.inverses.lock().unwrap_or_else(|e| e.into_inner());
+                    if kept.len() >= 4096 {
+                        kept.clear();
+                    }
+                    kept.insert(p.canonical(), q.clone());
+                }
+                return Some(K::of_ip(g, q));
             }
             // A common factor: zero at alpha, or alpha is a root of the
             // cofactor.
@@ -1109,6 +1159,7 @@ impl K {
                 return None;
             }
             m = m.divmod(&r0).0;
+            whole = false;
         }
     }
 
