@@ -16,7 +16,7 @@ use super::meet::{tangency, CylPair};
 use super::model::*;
 use super::num::*;
 use super::procedural::{other_of, MeetCrv, Other, Quartic, Ruled};
-use crate::polynomial::real::{isolate, AlgebraicRoot, Budget, IntPolynomial};
+use crate::polynomial::real::{isolate, isolate_with_gcd, AlgebraicRoot, Budget, IntPolynomial};
 use crate::polynomial::RootIsolationOptions;
 use crate::solid::split::{q, rational_f64, zero};
 use crate::{Error, Result};
@@ -254,8 +254,10 @@ pub(super) fn roots(p: &Poly) -> Result<Vec<AlgebraicRoot>> {
         .map(|c| abs(c) / &lead)
         .fold(zero(), |m, x| if x > m { x } else { m })
         + int(1);
-    isolate(
+    // `isolate` with the gcd above (it would compute it again).
+    isolate_with_gcd(
         &ip,
+        g,
         -bound.clone(),
         bound,
         &mut Budget::new(RootIsolationOptions::default()),

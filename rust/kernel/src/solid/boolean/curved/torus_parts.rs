@@ -234,10 +234,16 @@ pub(super) fn circ_torus(circ: &Circ, t: &Prism, res: f64) -> Result<EdgeMeet> {
             // The circle on the torus.
             return Ok(EdgeMeet::Along);
         }
-        let Some(n) = count(&res0)? else {
-            tangent = true;
-            continue;
+        // The roots once (their count, then their points).
+        let found = match roots(&res0) {
+            Ok(rs) => rs,
+            Err(Error::Degenerate(_)) => {
+                tangent = true;
+                continue;
+            }
+            Err(e) => return Err(e),
         };
+        let n = found.len();
         for k in [delta.clone(), -delta.clone()] {
             let rk = resultant(&e, &reduce(&torus_in_st(&l, big, small, &cr, &sr, &k), &e));
             if count(&rk)? != Some(n) {
@@ -251,7 +257,7 @@ pub(super) fn circ_torus(circ: &Circ, t: &Prism, res: f64) -> Result<EdgeMeet> {
         }
         let mut out = Vec::new();
         let mut ok = true;
-        for root in roots(&res0)? {
+        for root in found {
             let g = Arc::new(Gen::new(res0.clone(), root));
             let s = K::generator(&g);
             let Some(inv) = peval_k(&r[1], &s).recip() else {
