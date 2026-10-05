@@ -7959,6 +7959,78 @@ Decisions for S9, recorded before its code (2026-09-28):
     kernel and its tests (`tests/piece_form_booleans.rs`). S9e.4b.3a's
     `bitten_box`, declared `unsupported` there, becomes a solid case of its
     set.
+  * **S9e.4b.3c.3a evidence (2026-10-05).** Nine bodies OCCT wrote
+    (`boolean-piece-forms-bodies.txt`, `write` blocks of one solid's rows, a
+    `boolean` row and the other's rows, written by
+    `compare_piece_forms_boolean.py --write-bodies` to
+    `rust/fixtures/imported/form_*.brep`), every section a circle or a line:
+    `form_boss` (G4's part on the world's axes: the box `[0, 10] x [0, 8] x
+    [0, 10]` fused with a cylinder of radius 5/2 along `y` from its face `y =
+    0` to a cap at `y = -4`), `form_scoop` (a box `12 x 6 x 6` on `SKEW4` less
+    a ball of radius 9/2 centred on its top face, the ball's frame normal the
+    box's `y` and its `x` the box's normal: the top face a meridian plane in
+    two faces on one plane, the side faces parallels' planes, the seam above
+    the body), `form_slot` (a box on the world's axes less a cylinder of
+    radius 5/4 along `x`, its axis 1/2 above the top face, ending inside the
+    box at its floor), `form_dimple` and `form_ball_boss` (boxes on `SKEW` and
+    `SKEW2` less a ball of radius 5/2 3/2 above the top face's middle, fused
+    with one 1 below it), `form_sink` (a box on `SKEW4` less a frustum of
+    radii 1 and 3 along its normal through it), `form_bite` (a cylinder of
+    radius 3 on the world's axes less a box across its wall between its caps),
+    declared `degenerate` `form_notch` (I6's tool: a box less a cylinder of
+    radius 3 along `z` about the middle of one face, tangent to the two faces
+    it meets) and `form_quarter` (`shading_132`'s: the frustum of radii 2 and
+    1 over 2 on the world's axes less the quarter between two planes through
+    its axis). `generate_piece_forms_boolean_fixtures.py --check`: 39 cases of
+    13 groups (33 solid, 6 declared `degenerate`; 33 of class `pieces`, 3
+    `both`, 3 `chain`): `boss_rod` (G4's configuration: the boss and a
+    cylinder of radius 2 along `y` whose caps lie on the boss's cap plane and
+    on the box's face, crossing the boss's wall along two lines), `boss_slab`,
+    `scoop_rod`, `slab_scoop` (the scoop the tool), `slot_rod`, `dimple_ball`,
+    `ball_boss_slab`, `sink_rod`, `bite_box`, `pieces` (the boss and the slot,
+    both imported), `chain_slot` (the slot less a rod, then with a `TILT`
+    slab); declared `degenerate` `notch_box` and `quarter_ball` (the
+    three-quarter frustum and a ball, as `buc60926`). The reference is the
+    constructions OCCT was given through S9e.3a's chained reference (`(X op Y)
+    op2 C`, swapped, two bodies, chained), with S9e.4b.3a's checks relative to
+    the case's size: the two families within 3.4e-36, each solid's closed form
+    1.4e-40, each body's closed form 3.7e-38 (G4's part, the slot's segment,
+    the dimple's and the ball boss's caps on the boxes' stored axes, their
+    determinant a unit within rounding), the pair identities 1.4e-41 and the
+    area identity 7.0e-41 (where no two inputs share a surface), Monte Carlo
+    2.6 standard errors (100,000 points a group), quadrature estimates
+    9.8e-33, every meeting's sine at least 0.11 and events at least 1.7e-6 of
+    their range apart outside the declared groups, solid counts by rays at two
+    resolutions with S9e.4b.3c.1's join within two grid spacings (the scoop's
+    side faces on `SKEW4` lie nearly along the rays, whose grazing intervals
+    the strict overlap counted as further solids); the declared groups'
+    checks, whose reference meets the notch's tangency and the frustum's
+    planes through its apex, kept apart within 1.3e-21. Every file read
+    independently (`stored_records`): its faces one sphere, cylinder or cone
+    and planes, every stored vertex within 4.6e-16 of the size on the
+    construction's surfaces, every body a Boolean other than a primitive
+    common a box. `test_piece_forms_boolean_reference.py` checks the segments'
+    and caps' closed forms against quadrature, G4's part's measures, the
+    chained reference on the slot against its closed form, the frames keeping
+    every section a circle or a line (the scoop's ball's axes in the rows'
+    integers, the seams off the bodies), the bodies being this step's, the
+    case list and its protocol rows and the files apart from every earlier
+    set's. The generator's check is a CI group of its own (`piece-forms`, 8
+    minutes on four workers locally); Python 3.9 and 3.12 write the same
+    files. Corrections from the evidence, amending the refined decisions' plan
+    (7): (a) a box less a cylinder through it along one of its axes is
+    S9e.4a's prism (a profile of lines and an arc), so the groove across a
+    face is the scoop's ball (the top face in two faces) and the cylinder's
+    groove the slot, ending inside the box at its floor (a cap of the hull
+    less the primitive); (b) a plane along a cylinder's axis in a turned frame
+    is within rounding of it (S9's `Degenerate("a plane within rounding of a
+    cylinder's direction")`), so the bitten cylinder is on the world's axes,
+    as is the three-quarter frustum, whose planes then pass through its apex
+    exactly (`shading_132`'s refusal; on `SKEW` they met the cone within
+    rounding of each other instead); (c) OCCT splits a curved face its seam
+    crosses, so the notch's cylinder and the frustum have their frames' `x`
+    turned off the bodies; (d) the files `notch.brep` and `slot.brep` were
+    S9e.4b.1's: this step's are `form_*`.
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces
