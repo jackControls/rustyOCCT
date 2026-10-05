@@ -7820,7 +7820,9 @@ Decisions for S9, recorded before its code (2026-09-28):
     of the 38 `so` cases 27 evaluate (S9e.4b.3c.1's 14 and these 13), the
     11 with `so6` or `so7` `Degenerate` by S9's rules as before;
     `bcut_complex/I6` and `G4` refused as S9e.4b.3c's as before. Pending:
-    the capture's Linux record and the DRAW survey. Campaigns at `8a55a3e6`
+    the capture's Linux record. DRAW survey: that of S9e.4b.3c.2 and
+    S9e.4b.3c.3a, after S9e.4b.3c.3a's implemented bullet (the 13
+    registered). Campaigns at `8a55a3e6`
     (600 s each, sampled replays, every switch on): `boolean` clean, 969
     runs, the slowest input 19 s under AddressSanitizer at load about 8;
     `split` clean, 896 runs, the slowest 10 s.
@@ -8134,11 +8136,61 @@ Decisions for S9, recorded before its code (2026-09-28):
     plane piece whose curved face is tangent to its plane faces")` (its part
     is tangent to the tool too); `bugs/modalg_1/buc60926` stays `Degenerate("a
     plane through a cone's apex")`; the 38 `so` cases as before (27
-    evaluating, 11 `Degenerate`). Pending: the capture's Linux record and
-    the DRAW survey. Campaigns at `e8940c22` (600 s each, sampled replays,
+    evaluating, 11 `Degenerate`). Pending: the capture's Linux record. DRAW
+    survey: that of S9e.4b.3c.2 and S9e.4b.3c.3a, below (`G4` registered,
+    `I6` and `buc60926` refused as the trial found). Campaigns at
+    `e8940c22` (600 s each, sampled replays,
     every switch on): `boolean` clean, 940 runs, the slowest input 17 s
     under AddressSanitizer at load 11 to 15; `split` clean, 1,635 runs, none
     slow.
+  * **DRAW survey of S9e.4b.3c.2 and S9e.4b.3c.3a (2026-10-05,
+    `UPSTREAM_TESTS.md`).** At `b9c7ae1b` (`s9c2-kernel` with S9e.4b.3c.2,
+    its `Arr::split_at` fix and S9e.4b.3c.3a; the public dataset, 120
+    seconds a case, four at once). The 1,802 self-contained cases of the
+    Boolean group on both backends: every status, every refusal's reason
+    and every error the last survey's (`f4b584f7`) field for field, 987
+    evaluating and registered, 592 refused, 223 unsupported on both, none
+    failing or timing out. The 1,814 cases restoring a shape for a Boolean
+    on the Rust adapter, and the 171 the import reaches on native DRAW too:
+    native DRAW's every status and reason the last survey's; on the Rust
+    adapter only 15 cases move, each as the two steps' trials found. 13
+    evaluate on both backends with every check, S9e.4b.3c.2's (`so1` and
+    `so2`: `bcommon_complex/B3`, `bcut_complex/C7`, `C8`,
+    `bfuse_complex/B6`, `bugs/moddata_1/bug183_4`; `so2` and `so3`:
+    `bcommon_complex/B4`, `bcut_complex/C9`, `D1`, `bfuse_complex/B7`;
+    `so5` and `so2`: `bcommon_complex/B6`, `bcut_complex/D4`, `D5`,
+    `bfuse_complex/B9`), each from `OutOfDomain("a vertex or a circle of
+    both inputs on one sphere (S9e.4b.3c.2)")`; `bcut_complex/G4`
+    evaluates on both backends with every check (S9e.4b.3c.3a's boss, from
+    `OutOfDomain("an imported plane piece other than its primitive common
+    its planes' half-spaces (S9e.4b.3c)")`); `bcut_complex/I6` moves from
+    that reason to `Degenerate("an imported plane piece whose curved face
+    is tangent to its plane faces")`, its tool's own tangency.
+    `bugs/modalg_1/buc60926` stays `Degenerate("a plane through a cone's
+    apex")` and the 11 `so` cases with `so6` or `so7` `Degenerate` by S9's
+    rules. Of the 171: 55 evaluate on both backends, 69 are refused by S9's
+    rules, 36 are bodies none of the kernel's constructions, 6 S9e.4b.4's,
+    3 spline bodies (S9f) and 2 arguments of several solids; none is
+    S9e.4b.3c's any more; 24 are unsupported natively too. The same 6
+    cases time out at their first restores, and `bugs/modalg_1/
+    buc60532_2` and `bugs/modalg_6/bug23585` end within the 120 s again
+    (104 and 100 s), unsupported as before. The volume audit (`vprops` and
+    `sprops` before each `checkprops`, both backends, the 1,028 audited
+    before and the 14 new cases): both backends' values the last audit's
+    bit for bit on all 1,028 (no moved value: S9e.4b.3c.2 and
+    S9e.4b.3c.3a move no audited value), the statuses the same, the same 35
+    disagreements. The 14 new cases' volume, area and centre agree with
+    native DRAW's printed digits (`C8`'s cut empty on both; `G4`'s volume
+    4,812,276.20 and area 193,592.99 against native's printed 4.81228e6 and
+    193593). They are registered (`data`, `viewer_skipped` on both; 1,128
+    cases), and the ledger does not change (`--ledger` holds). A full
+    contract run of the manifest holds on both backends with the dataset
+    (30 seconds a case), the 14 in 0.6 to 1.2 s on the Rust adapter
+    (`bfuse_complex/B9` the slowest), the slowest Boolean case 4.4 s
+    (`bopfuse_simple/ZK8`, on a host at load 5 to 8; `boptuc_simple/ZK8`
+    5.3 in the last survey), the restore cases 0.1 to 3.6 s
+    (`bcommon_complex/B9`), the rollex 0.5. No case fails, crashes or
+    panics; no kernel change.
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces
