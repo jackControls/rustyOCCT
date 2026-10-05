@@ -30,7 +30,9 @@ then for S9e.4b.3c.1 (branch `s9e4b3c`, over `s9c2-kernel` at `d665df29`),
 then for the DRAW survey of S9e.4b.3c.1 and the switches' speed-up (branch
 `s9-draw-7`, over `s9c2-kernel` at `f4b584f7`),
 then for S9e.4b.3c.2 (branch `s9e4b3c2`, over `s9c2-kernel` at `f4b584f7`),
-then for S9e.4b.3c.3a (branch `s9e4b3c3`, over `s9c2-kernel` at `8a55a3e6`).
+then for S9e.4b.3c.3a (branch `s9e4b3c3`, over `s9c2-kernel` at `8a55a3e6`),
+then for the DRAW survey of S9e.4b.3c.2 and S9e.4b.3c.3a (branch
+`s9-draw-8`, over `s9c2-kernel` at `b9c7ae1b`).
 
 ## Where things stand
 
@@ -47,12 +49,10 @@ then for S9e.4b.3c.3a (branch `s9e4b3c3`, over `s9c2-kernel` at `8a55a3e6`).
   arcs, and one solid of a result of several (S9e.2, `curved/matched.rs`),
   results of spheres, cones and tori, deeper chains and given results
   against spheres, cones and tori (S9e.3a, `curved/chain.rs`), each with its
-  DRAW survey (the last full survey, that of S9e.4b.3c.1 and the
-  switches' speed-up at `f4b584f7`, branch `s9-draw-7`: the Boolean
-  group's 987 cases and 41 restore cases registered, none failing or
-  timing out, native DRAW's audited values those of `d665df29`'s bit for
-  bit, the Rust adapter's too but 4 centre coordinates of two restore
-  cases moved within rounding by the prism caps' frames) and a clean campaign (S9e.3a's and S9f.1's at `b2765f20`, 989
+  DRAW survey (the last full survey, that of S9e.4b.3c.2 and
+  S9e.4b.3c.3a at `b9c7ae1b`, branch `s9-draw-8`: the Boolean group's 987
+  cases and 55 restore cases registered, none failing or timing out, both
+  backends' audited values those of `f4b584f7`'s bit for bit) and a clean campaign (S9e.3a's and S9f.1's at `b2765f20`, 989
   runs).
 - **S9f.1 done.** Spline prisms against polyhedral prisms in any position
   (`curved/spline_walls.rs`), with its survey and campaign as above.
@@ -304,7 +304,9 @@ then for S9e.4b.3c.3a (branch `s9e4b3c3`, over `s9c2-kernel` at `8a55a3e6`).
   zone's or cap's piece to the solid it was split from too. A trial of the
   survey's restore cases: the 13 evaluate on both backends with every
   check (27 of the 38 `so` cases in all; `so6` and `so7`'s 11 `Degenerate`
-  as before).
+  as before). Its DRAW survey (with S9e.4b.3c.3a's, branch `s9-draw-8` at
+  `b9c7ae1b`) confirms the trial: the 13 evaluate with native DRAW's
+  volumes and are registered.
 - **S9e.4b.3c.3a implemented** (branch `s9e4b3c3`): an imported body of one
   sphere, cylinder or cone face and plane faces that is another Boolean of
   its primitive and the convex hull of its other planes than a common
@@ -326,7 +328,11 @@ then for S9e.4b.3c.3a (branch `s9e4b3c3`, over `s9c2-kernel` at `8a55a3e6`).
   of the survey's restore cases: `G4` evaluates on both backends with every
   check, `I6` refused for its tool's own tangency (its part tangent to the
   tool besides), `buc60926` at its frustum's apex as before, the 38 `so`
-  cases as before.
+  cases as before. Its DRAW survey (with S9e.4b.3c.2's, branch `s9-draw-8`
+  at `b9c7ae1b`) confirms the trial: `G4` evaluates with native DRAW's
+  volume and is registered (1,128 cases with S9e.4b.3c.2's 13), `I6` and
+  `buc60926` are refused as it found; no other status, reason or audited
+  value moves.
 - **CI.** Both workflows ("Rust kernel", "Rust geometry fuzzing") were green
   at `6c221525`. They had been red from S7 until 2026-09-29, unnoticed;
   check them after every push (see "Working rules").
@@ -361,7 +367,9 @@ then for S9e.4b.3c.3a (branch `s9e4b3c3`, over `s9c2-kernel` at `8a55a3e6`).
    S9e.4b.3a, S9e.4b.3b and the fuzz fixes at `d665df29` (branch
    `s9-draw-6`: no status moving, 41 restore cases' reasons, no case
    registered), that of S9e.4b.3c.1 and the switches' speed-up at
-   `f4b584f7` (branch `s9-draw-7`: the 14 `so` cases registered).
+   `f4b584f7` (branch `s9-draw-7`: the 14 `so` cases registered), that of
+   S9e.4b.3c.2 and S9e.4b.3c.3a at `b9c7ae1b` (branch `s9-draw-8`: 13 `so`
+   cases and `bcut_complex/G4` registered).
 3. **S9e.4b**, split in "S9e.4b refined": S9e.4b.1 (arcs rounded off
    their circles) and S9e.4b.2 (polyhedra other than prisms, on their
    stored vertices) are implemented with their DRAW surveys and
@@ -381,13 +389,15 @@ then for S9e.4b.3c.3a (branch `s9e4b3c3`, over `s9c2-kernel` at `8a55a3e6`).
    vertex of both, a circle of both, a line of both, plane faces on one
    plane with overlapping edges: `so1` and `so2`, `so2` and `so3`, `so5`
    and `so2`, 13 cases, all evaluating in its trial) is implemented
-   (campaigns clean at `8a55a3e6`; pending its capture's Linux record and
-   the DRAW survey); **S9e.4b.3c.3**, split in "S9e.4b.3c.3 refined":
+   with its DRAW survey (`s9-draw-8` at `b9c7ae1b`: the 13 registered)
+   and clean campaigns at `8a55a3e6` (pending its capture's Linux
+   record); **S9e.4b.3c.3**, split in "S9e.4b.3c.3 refined":
    **S9e.4b.3c.3a** (a body of one curved face and planes as one Boolean of
    its primitive and the hull of its other planes: grooves, bites, bosses,
    two faces on one plane; `bcut_complex/G4` evaluating in its trial) is
-   implemented (campaigns clean at `e8940c22`; pending its capture's Linux
-   record and the DRAW survey); next **S9e.4b.3c.3b**, bodies of one curved face needing
+   implemented with its DRAW survey (`s9-draw-8` at `b9c7ae1b`: `G4`
+   registered, 1,128 cases) and clean campaigns at `e8940c22` (pending its
+   capture's Linux record); next **S9e.4b.3c.3b**, bodies of one curved face needing
    more than one hull (a groove in a body not convex in its planes, a
    primitive bitten twice, a sphere's ends with another form: the fuzz
    target's 4 remaining refusals); then
