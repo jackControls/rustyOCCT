@@ -330,9 +330,11 @@ leak-check rerun, the torus meetings' root sampling); the boolean target's
 off switches are measured (branch `fuzz-switches`: `CONE_PAIRS` on and
 its campaign clean at `cc7ea7ff`, its
 three kinds of failure fixed and two quadrics' meetings' integrals
-narrowed, among them a cone carrier's; `TORUS_PAIRS` and `TURNED_PARTS`
-off, 40 and 43 s at their slowest under the sanitizer, their open levers in
-that track); the fuzz switches below.
+narrowed, among them a cone carrier's); the last two off switches are on
+(branch `torus-turned-speed`: `TORUS_PAIRS` and `TURNED_PARTS`, their
+slowest variants 22 s a run under the sanitizer, 30 and 37 to 53 s before
+side by side; a campaign with them on is still to run); the fuzz switches
+below.
 
 ## Open user decisions
 
@@ -435,8 +437,9 @@ changes, every generator importing it runs with `--check --workers 4`. Then:
 - a replay with debug assertions of every boolean corpus input and every
   `rust/fuzz/regressions/boolean*` file, one process per file: build with
   `CARGO_INCREMENTAL=0 RUSTFLAGS="-C debug-assertions" cargo +nightly-2026-09-22 build --release --example replay_boolean` in `rust/fuzz`;
-  for a switch that is off (`TORUS_PAIRS`, `CONE_PAIRS`, ...), replay once
-  more with it switched on in the source, which reaches the paths it gates;
+  for a switch that is off (none is now; `TORUS_PAIRS`, `CONE_PAIRS`,
+  ... when one is), replay once more with it switched on in the source,
+  which reaches the paths it gates;
 - `target/math-oracle-venv/bin/python -m unittest discover -s rust/tools -p 'test_*.py'` (the system Python lacks mpmath);
 - `python3 rust/tools/run_upstream_tests.py --ledger`;
 - a campaign: `python3 rust/tools/run_fuzz.py --target boolean --seconds 600 --toolchain nightly --replay sample` (the full local corpus exceeds the startup hour under AddressSanitizer; the sampled replay plus the debug-assertion replay above stand in for it, and CI's schedule runs the full replay in shards).
@@ -459,13 +462,13 @@ changes, every generator importing it runs with `--check --workers 4`. Then:
 - **Fuzz timing.** AddressSanitizer costs about twelve times the plain time
   on the exact arithmetic, and Linux runners about 2.6 times this host; the
   boolean target's limit is 60 s an input. Configurations too slow for it are
-  switched off in `rust/fuzz/src/boolean.rs` (`TORUS_PAIRS` and
-  `TURNED_PARTS`, their slowest variants 40 and 43 s a run under the
-  sanitizer here, above the 35 s the switches on keep to: REVIEW_NOTES.md's
-  "The boolean target's off switches"; `CONE_PAIRS`, `GIVEN_CURVED`,
+  switched off in `rust/fuzz/src/boolean.rs`, below the 35 s a run under the
+  sanitizer here the switches on keep to; none is off now (`TORUS_PAIRS` and
+  `TURNED_PARTS` on since REVIEW_NOTES.md's "The boolean target's last two
+  off switches", their slowest variants 22 s; `CONE_PAIRS`, `GIVEN_CURVED`,
   `GIVEN_ROUND`, `GIVEN_BALL`, `GIVEN_MET`, `SPLINE_WALLS`,
   `SPLINE_PARALLEL`, `SPLINE_CROSSING`, `SPLINE_SPHERE`, `SPLINE_CONE` and
-  `IMPORTED` are on). A heavily loaded host makes campaigns time out
+  `IMPORTED` too). A heavily loaded host makes campaigns time out
   spuriously; run them on a quiet machine.
 - **Keep debug-assertion tests optimized.** CI runs them with
   `CARGO_PROFILE_DEV_OPT_LEVEL=2`; time new test files that way.

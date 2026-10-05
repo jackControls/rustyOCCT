@@ -8839,6 +8839,118 @@ Decisions for S9, recorded before its code (2026-09-28):
   Campaign: the boolean campaign at `cc7ea7ff` with `CONE_PAIRS` on (600 s,
   a sampled replay) clean, 996 runs, the slowest input 13 s under
   AddressSanitizer at load 8 to 10.
+* **The boolean target's last two off switches (S9d.4b.2b, S9d.4c), done:
+  `TORUS_PAIRS` and `TURNED_PARTS` on.** The off switches' track left
+  them off, their slowest variants 40 and 43 s a run under
+  AddressSanitizer. Measured as there: the 1,203 two-tori and 752
+  turned-part variants (every corpus input moved onto the switch's
+  configuration), instructions retired with debug assertions as the
+  load-free measure, and the slowest one run each under AddressSanitizer
+  with the target's options (`-detect_leaks=0`), the original target and
+  the changed one side by side; every result's written text, mass
+  properties and history hashed over the corpus, its 30 regressions and the
+  variants with both switches on (3,421 inputs), identical before and
+  after each change. Profiles (macOS `sample` of the replay with debug
+  assertions and of the sanitizer's target): the slowest turned part,
+  `5467edc4` (a cap against a part in a turned frame, 80 G; 595 G under the
+  sanitizer), spent a third in its cap circles' crossings with the torus
+  (`circ_torus`): each circle met each face on the part's torus, for each
+  seam tried, each operation and the imported input again, so eight times
+  the same resultants and their Sturm chains (32 calls, 4 different);
+  `64c75743` 18% in a cavity's containment rays, whose exact tier
+  evaluated a torus section's ends in rational series for a loop with a
+  projection's fin, which the boundary test never decides; then the
+  fields' signs: a torus's seam sides at every vertex by exact products in
+  `Q(alpha)` (`Ring::sides`), two fields' dot products by rational
+  interval enclosures asked again and again, and on `b48d4be3` (the
+  slowest after the first changes) 244 Sturm-Tarski queries of elements
+  with coefficients of 300 to 25,000 bits, every one nonzero: `tight`'s
+  Newton iteration never certified a dyadic point from its starts (complex
+  roots beside the real one put them outside its convergence), so the
+  dyadic filter had none, and it was tried again at every query (4,000
+  times). The slowest two tori, `86e3875f` (82 G; 519 G), spent a third in
+  the integrals along their `Toric` meetings, each edge's jets computed for
+  both its faces' pcurves (they run opposite ways), and a quarter in the
+  moved result's second validation; under the sanitizer two thirds in
+  their meeting's arrangement, up to half of that (`864b098c`) the root
+  sampling's bisections (`refine_for_signs`, 72 a root: past the binary64 filter's
+  46 bits every midpoint's sign by the exact Horner on growing numbers,
+  and the rational root test and the ends' reductions every 16 steps).
+  Changes, every sign, isolator and decision the one before: (a) a
+  polynomial's isolated roots kept by its integers (`turned::roots`), and
+  a circle's reduced quartics and resultants with a torus by its and the
+  torus's numbers, the rotation and the offset (`circ_torus`; the fields'
+  generators made afresh, so no two crossings share one that did not);
+  (b) a constant gcd's quotient the primitive part, without the rational
+  division (`isolate_with_gcd`); (c) a containment ray's hit undecided at
+  once where a loop holds a fin the boundary test does not decide (a
+  projection, a spline, a sinusoid, an arc on a periodic surface): it was
+  never clear, and `face_hits` took either answer alike; (d) a torus
+  meeting's jets kept in the binary64 tier by its numbers and the
+  variable's base (`toric_jet`), a reversed use's `B - s` given the jets in
+  `B + s` with the odd coefficients negated (binary64 intervals round both
+  ways alike, so the recurrences give the same bits with every odd term
+  negated, zeros' signs aside, which no bound takes: checked on every
+  two-tori variant and in a test); (e) an isolator bisected, once the
+  binary64 filter leaves a midpoint undecided, by the polynomial taken onto
+  the isolator then (`Shifted`: `D^d p((a + y w) / D)`, the same signs, by
+  the filter again), and where a small prime shows the defining polynomial
+  free of rational roots no rational root test and the ends reduced at the
+  end alone (`RootPolynomial::rational_free`; tests against the plain
+  bisection); (f) a torus's seam sides from binary64 enclosures of the
+  point's local coordinates before the exact products (`Ring::sides`); (g)
+  two fields' dot products' enclosure signs kept by their numbers, the
+  generators kept alive with their keys (`approx_dot_sign`); (h) `tight`'s
+  failed precisions kept, and where it has no point one for signs alone
+  from isolators narrowed 192 to 1,536 bisections more (`sign_point`),
+  `tight` asked only what it was before, so its points, and the binary64
+  views from them, are the ones they were (a first version asked it at
+  the sign filter's precisions, found points it had not and moved two
+  variants' views: caught by the hashes, kept apart; test). Tried and
+  dropped: the projections' memo enlarged (1 to 2%). Not done: the moved
+  result's validity carried over. Its geometry is the motion's rounded
+  image, not the exact one, so the original's certificates hold of it only
+  with each certified integral's margin against the rounding's effect on
+  it, which nothing bounds yet; the second validation is cheaper through
+  (d) instead (the moved jets' two pcurves share them too). Results,
+  instructions retired with debug assertions, before and after: turned
+  parts `5467edc4` 80.2 to 43.7 G, `93091c44` 80.1 to 31.7, `64c75743` 71.8
+  to 39.6, `fabb98f8` 70.9 to 32.8, `b48d4be3` 66.7 to 34.0, `d32da787` 62.6
+  to 43.8 (now the slowest); two tori `86e3875f` 81.8 to 54.6, `f799cd7f`
+  64.8 to 45.8, `864b098c` 62.9 to 37.9, `9b1c1192` 59.2 to 41.5. By step on
+  the slowest: (a) and (b) the turned parts 80 to 66, 80 to 56 and 71 to 56
+  G (the resultants a further 10 to 18%), (c) `64c75743` 66 to 54, (d)
+  `86e3875f` 79 to 68 and `f799cd7f` 63 to 52, (e) `864b098c` 58 to 43 and
+  `86e3875f` 68 to 60, (f) 60 to 55, (g) `5467edc4` 56 to 49, (h)
+  `b48d4be3` 53 to 34. The variants: two tori 3.6 G at the median, 18.9 G
+  at the ninth decile and 54.6 G at the slowest (3.8, 25 and 82 G before),
+  8.4 T in all (11.0 T); turned parts 10.3, 23.3 and 43.8 G (16, 36 and 80
+  G), 9.2 T (14.0 T). Under AddressSanitizer, one run each side by side
+  at load 6 to 16: `86e3875f` 30.1 to 19.8 s (519 to 343 G), `864b098c`
+  27.0 to 16.1 s, `9b1c1192` 23.8 to 16.1 s, `5467edc4` 53.1 to 33.4 s wall
+  at load 14 to 16 (42.6 to 24.4 s of CPU), `93091c44` 37.0 to 12.0 s,
+  `d32da787` 26.1 to 18.1 s, `a4843568` 29.6 to 16.6 s; the 40 heaviest
+  variants of each kind 8 to 22 s (two tori) and 13 to 22 s (turned
+  parts) of CPU at load 7 to 35, where the corpus's slowest inputs took 15
+  s (`d7599dbe`, `85659e3a`) and 11 s (`e36969f1`). Both switches are on.
+  Checks: fmt, clippy (release, all targets), the 1.85 check, the fuzz
+  crate's fmt and check, the release suite (597 tests); every
+  comparison unchanged with 0 failures (the table's 31 boolean comparisons,
+  `compare_imported_pieces_boolean.py` 32/13 and
+  `compare_split_pieces_boolean.py` 26/22 among them, `compare_split.py`
+  72/56); the boolean corpus (1,436 inputs) and its 30 regressions replay
+  with debug assertions and the switches on without a failure, 6.04 T
+  instructions in all (6.33 T before with both on), the slowest 35.1 G
+  (`85659e3a`, `d7599dbe`; 46.9 G before, `ac19cff5`, a turned part), and
+  the split corpus (3,550) and its 19 regressions too; the torus test
+  files (31 tests) and the library's unit tests pass under Linux's
+  correctly rounded `hypot` emulated. Open: a campaign with both switches
+  on; the arrangement's direction tests at a vertex (`graph::next_on_kept`
+  and `model::angle_cmp`: the exact coordinates `qqdot` and `qcross`
+  build before any enclosure, a tenth to a sixth of these inputs under
+  the sanitizer; S9e.4b.3c's files, left to that track), a torus
+  meeting's pieces (`pieces_of`'s windows and exact points), and the
+  moved result's validity carried over.
 * **The DRAW adapter's curved primitives (S9d.4b.2b), done in S9d.4b's
   survey.** It built every `ptorus`, `psphere` and `pcone` with the same
   ids, so two tori (and two spheres or cones) were refused as solids
