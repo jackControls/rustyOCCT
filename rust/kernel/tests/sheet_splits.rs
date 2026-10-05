@@ -192,3 +192,82 @@ fn a_spline_sheet_splits_through_its_spline() {
     assert_eq!(pieces.len(), 2);
     check(&wire, &pieces, &h);
 }
+
+/// The split target's `crash-93175910`: a square wire `17.5` across in the
+/// tilted frame split by a plane in its plane, its normal the frame's
+/// normalized again (glibc's `hypot` turns it an ulp): the trace `a u + b v
+/// + d = 0` of an ulp's tilt crossed the square, and each piece lay within
+/// 1e-15 of the plane, its centre on its side only exactly, not by the
+/// target's binary64 test. A plane within the resolution of the body's
+/// plane over the whole body that would split it is now `Degenerate`, a
+/// sheet's and a wire's alike, on every normal an ulp or two off the
+/// frame's (a plane exactly parallel, or missing the body, returns it); a
+/// plane tilted `1e-6` across the body still splits it.
+#[test]
+fn a_plane_within_the_resolution_of_the_bodys_plane_is_degenerate() {
+    let s = 8.75;
+    let square = || {
+        Boundary::polygon(
+            [(-s, -s), (s, -s), (s, s), (-s, s)]
+                .map(|(x, y)| Point2::new(x, y))
+                .to_vec(),
+            tol(),
+        )
+        .unwrap()
+    };
+    let frame = Frame3::new(
+        Point3::new(7.9375, 7.9375, 7.9375),
+        Vec3::new(0.0, 3.0, 4.0),
+        Vec3::new(1.0, 0.0, 0.0),
+        tol(),
+    )
+    .unwrap();
+    let (wire, _) = Body::wire_from_boundary_with(OperationId(1), square(), frame, tol()).unwrap();
+    let profile = Profile::new(square(), vec![], tol()).unwrap();
+    let (sheet, _) = Body::face_from_profile_with(OperationId(1), profile, frame).unwrap();
+    let n = frame.normal();
+    let mut refused = 0;
+    for body in [&wire, &sheet] {
+        for k in -2i64..=2 {
+            for (i, x) in [n.y, n.z].into_iter().enumerate() {
+                let x = f64::from_bits((x.to_bits() as i64 + k) as u64);
+                let m = if i == 0 {
+                    Vec3::new(n.x, x, n.z)
+                } else {
+                    Vec3::new(n.x, n.y, x)
+                };
+                // Through the body's centre: a trace of any tilt crosses it.
+                let at = Frame3::new(frame.origin(), m, frame.x(), tol()).unwrap();
+                match body.split_by_plane(OperationId(2), at) {
+                    Err(rusty_occt::Error::Degenerate(m)) => {
+                        assert!(m.contains("body's plane"), "{m}");
+                        refused += 1;
+                    }
+                    Ok((pieces, h)) => {
+                        assert_eq!(pieces.len(), 1, "{k} {i}");
+                        assert_eq!(pieces[0].1.topology().body_id(), body.topology().body_id());
+                        check(body, &pieces, &h);
+                    }
+                    Err(e) => panic!("{e}"),
+                }
+                // 1e-3 above the body's plane (beyond the resolution): the
+                // body below it, whole.
+                let off = Frame3::new(frame.origin() + n * 1e-3, m, frame.x(), tol()).unwrap();
+                let (pieces, _) = body.split_by_plane(OperationId(2), off).unwrap();
+                assert_eq!(pieces.len(), 1);
+                assert_eq!(pieces[0].0, Side::Below);
+            }
+        }
+        // Tilted 1e-6 about the frame's y through its centre: the trace is
+        // the y axis, the halves 8.75e-6 off the plane at the square's sides.
+        let m = n + frame.x() * 1e-6;
+        let at = Frame3::new(frame.origin(), m, frame.y(), tol()).unwrap();
+        let (pieces, h) = body.split_by_plane(OperationId(2), at).unwrap();
+        assert_eq!(pieces.len(), 2);
+        assert_eq!(pieces[0].0, Side::Below);
+        check(body, &pieces, &h);
+        let total: f64 = pieces.iter().map(|(_, p)| measure(p)).sum();
+        assert!((total - measure(body)).abs() <= 1e-9 * measure(body));
+    }
+    assert!(refused > 0);
+}

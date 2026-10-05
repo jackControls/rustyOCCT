@@ -1488,3 +1488,57 @@ axes bit for bit too (`Topology`'s prism; `imported::tests`,
 with the same ids, as did 6 more of the corpus's distinct inputs and 3,103
 of its 4,080 single-byte mutations; none now. It replays in 0.5 s with
 debug assertions.
+
+## Boolean: a chained ball's section through its pole within rounding
+
+`boolean/crash-43d937188bc1497ecaf79ef04b3c95e3dd198701.bin` was found by
+CI's scheduled full replay at `59d0c57b`, mutated from a corpus input
+(`unexpected error coordinates cannot resolve the requested linear
+tolerance`, `PrecisionLoss`); it fails alike natively on macOS and under
+emulated glibc rounding at `973b0bb4`. It decodes a square `2.5` by `2.5`
+with a round hole of radius `0.9375` over heights `0..2.25` and the
+sphere tool's lower cap (radius `2.8125` about `(-1.625, 2, 1.125)`, the
+frame turned about `z`); the three operations evaluate, and the chained
+byte gives the cut's first result to the `GIVEN_BALL` sphere of radius
+`1.25` about the middle of its first meeting of two curved faces
+(`GIVEN_MET`), the hole's wall with the cap's sphere. That point lies on
+the hole's cylinder within rounding and the ball's axis is parallel to the
+hole's, so the ball meets the wall in a loop through its north pole within
+about `1e-16`, inside the wall: its projection on the ball turns half a
+turn there, which 256 anchors cannot pin, and the chained cut and common
+returned `PrecisionLoss`. Such an unpinned projection (a section within
+about `1e-4` of a pole of a ball of radius `1.25`, or through it within
+rounding) is now `ComputationLimit` (`assemble::loop_fins`); exactly
+through the pole it stays S9d.1's `OutOfDomain`
+(`tests/spheres_booleans.rs`,
+`a_section_within_rounding_of_a_spheres_pole_is_a_computation_limit`: the
+holed prism and a ball on its hole's cylinder exactly, within rounding
+and `0.0125` off). It replays in 0.3 s with debug assertions; of its
+4,335 single-byte mutations 3,108 failed alike under the emulated
+rounding before and none now, natively or emulated.
+
+## Split: a wire split by a plane within rounding of its own
+
+`split/crash-931759f8d1f9a72e1e5ff3ca63525b69335db8a9.bin` was found by
+CI's scheduled full replay at `59d0c57b`, mutated from a corpus input
+(`4.4e-16: a piece below its plane`). It passes natively on macOS and fails
+under emulated glibc rounding (`Vec3::length` correctly rounded in a local
+patch) at `973b0bb4`. It decodes S8e's closed wire of the lens profile's
+outer square, `17.5` across, in the tilted frame about `(7.9375, 7.9375,
+7.9375)`, split in the oblique mode with both tilts zero: a plane through
+a point of the body's plane along three times the frame's normal, which
+`Frame3::new` normalizes again. On macOS the trace `a u + b v + d = 0` of
+that ulp's tilt misses the square and the wire is returned; glibc's
+rounding moves it across, so the wire was cut into two open wires each
+within about `1e-15` of the plane, the below one's centre `4.4e-16` above
+it by the target's binary64 test (on its side only exactly). A plane
+within the resolution of the body's plane over the whole body (`|d| +
+|(a, b)| R`, `R` the profile's reach from the frame's origin) that would
+split it is now `Degenerate`, for sheets and wires (`body/split.rs`;
+`tests/sheet_splits.rs`,
+`a_plane_within_the_resolution_of_the_bodys_plane_is_degenerate`: normals
+an ulp or two off the frame's through the body's centre, `1e-3` off the
+plane, and a `1e-6` tilt still splitting). It replays in under 0.01 s
+with debug assertions; of its 8,670 single-byte mutations 7,086 failed
+alike under the emulated rounding before and none now, natively or
+emulated.

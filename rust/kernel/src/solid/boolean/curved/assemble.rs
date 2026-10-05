@@ -2062,14 +2062,25 @@ fn loop_fins(
                 {
                     Some(pc) => pc,
                     // More anchors where 16 do not pin the lift (a curve
-                    // passing near a sphere's pole, S9d.4b.2).
+                    // passing near a sphere's pole, S9d.4b.2). A curve
+                    // passing nearer than 256 pin (its `u` turning by more
+                    // than a quarter turn within a sample's step: a section
+                    // within about 1e-4 of a pole of a sphere of radius
+                    // 1.25, or through it within rounding) exhausts them: a
+                    // computation limit, not the coordinates' (a ball
+                    // centred within rounding on a parallel cylinder, its
+                    // section through the north pole:
+                    // fuzz/regressions/boolean/crash-43d93718).
                     None => Curve2::Projection(Box::new(
                         [16, 64, 256]
                             .into_iter()
                             .find_map(|n| {
                                 Projection::new(curve.clone(), surface.clone(), reversed, uv, n)
                             })
-                            .ok_or(Error::PrecisionLoss)?,
+                            .ok_or(Error::ComputationLimit(
+                                "a section's pcurve whose lift its anchors leave unpinned \
+                                 (near a sphere's pole or a cone's apex)",
+                            ))?,
                     )),
                 };
                 lift = Some(pc.point(1.0));

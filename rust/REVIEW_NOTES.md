@@ -9336,6 +9336,67 @@ Decisions for S9, recorded before its code (2026-09-28):
     registered restore cases (`bfuse_complex/F5`, `Q2`) within rounding,
     at most 4.6e-16 of the solid's size, still native DRAW's to its
     printed digits; no status.
+  * **CI's scheduled full replay at `59d0c57b` (2026-10-05).** The
+    scheduled "Rust geometry fuzzing" run replayed the full corpora under
+    AddressSanitizer on Linux and found two crashes while mutating. (1)
+    `boolean/crash-43d93718…`: `unexpected error coordinates cannot
+    resolve the requested linear tolerance`, `Error::PrecisionLoss`, which
+    a Boolean does not document. It fails natively at `973b0bb4`. The
+    cut of a holed prism by the sphere tool's cap is given to the
+    `GIVEN_BALL` sphere about the middle of its first meeting of two
+    curved faces (`GIVEN_MET`), the hole's wall with the cap's sphere; that
+    point lies on the hole's cylinder within rounding and the ball's axis
+    is parallel to the hole's, so the ball meets the wall in a loop through
+    its north pole within about `1e-16`, inside the wall. Exactly through
+    the pole the graph's pole pass refuses it (S9d.1's `OutOfDomain`, a
+    section through a pole off its meridians); within rounding the pass
+    (exact for curves other than circles) misses it, and the loop's
+    projection pcurve on the ball turns half a turn at the pole, which
+    `loop_fins`' 16, 64 and 256 anchors cannot pin (S9d.4b.2's addition):
+    `PrecisionLoss`. A ball centred `1e-4` off the cylinder fails alike,
+    `1e-3` off evaluates: the anchors are a computation budget, not the
+    coordinates' resolution. Fix: a projection whose lift 256 anchors
+    leave unpinned is `ComputationLimit` (`assemble::loop_fins`), the
+    exact case unchanged. Regression: `tests/spheres_booleans.rs`,
+    `a_section_within_rounding_of_a_spheres_pole_is_a_computation_limit`
+    (the holed prism's direct form: a ball on the hole's cylinder exactly,
+    `OutOfDomain`; an ulp off and the fuzz input's centre,
+    `ComputationLimit` for fuse, cut and common; `0.0125` off, all three
+    evaluating with the pair identities). (2) `split/crash-93175910…`:
+    `4.4e-16: a piece below its plane`, the target's check of a body
+    piece's centre. It passes natively and fails under the emulated
+    glibc rounding at `973b0bb4`. An S8e closed wire (a square `17.5`
+    across in the tilted frame) is split by a plane through a point of its
+    plane along three times its frame's normal, which `Frame3::new`
+    normalizes again: an ulp's tilt, whose trace `a u + b v + d = 0` misses
+    the square on macOS and crosses it under glibc's `hypot`, cutting the
+    wire into two open wires each within about `1e-15` of the plane, on
+    its side only exactly (the target's binary64 centre test cannot tell).
+    The kernel was the one to fix, not the assertion: the pieces' sides
+    were decided below the resolution, as a prism's cap within it is
+    refused (`a vertex within the resolution of the plane`, `a split
+    within binary64 of a cap`), and flipped with an ulp of the input. Fix:
+    `Body::split_by_plane` refuses a plane within the resolution of the
+    body's plane over the whole body (`|d| + |(a, b)| R` within it, `R`
+    the profile's reach from the frame's origin over its points, arcs'
+    and circles' extents and splines' poles) that would split it,
+    `Degenerate`, sheets and wires alike; an exactly parallel plane and a
+    body on one side are returned as before. Regression:
+    `tests/sheet_splits.rs`,
+    `a_plane_within_the_resolution_of_the_bodys_plane_is_degenerate` (the
+    input's square as a wire and a sheet, normals an ulp or two off the
+    frame's through its centre refused or returning the body, never
+    split; `1e-3` off the plane the body whole below; a `1e-6` tilt still
+    splitting it in two with its length or area kept). Both inputs are in
+    `fuzz/regressions/` with README entries. Sweeps with debug assertions,
+    one process per input: of the inputs' single-byte mutations under the
+    emulated rounding 3,108 of 4,335 (boolean) and 7,086 of 8,670 (split)
+    failed alike before the fix, none after, natively or emulated; the
+    corpora and regressions (1,467 boolean and 3,570 split inputs) replay
+    without a failure natively and emulated. Checks: fmt, clippy, the 1.85
+    check, the release suite (623 tests); every comparison of
+    `HANDOFF.md`'s table with its matches and reviews unchanged, none
+    failing, and `compare_split.py` 72/56.
   * **Where S9 stands (2026-09-30, paused).** Done and pushed: S9a to S9d
     (every sub-step with its DRAW survey and a clean campaign), S9e.1
     (campaign clean at `51c08edf`) and S9e.2 (`8e060c67`), S9f's decisions

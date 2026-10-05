@@ -13,7 +13,9 @@ use crate::identity::{
     Derivation, EntityId, EntityKind, OperationId, OperationKind, Parent, ProfileElement, Role,
 };
 use crate::profile::Segment;
-use crate::solid::split::{piece_ordinal, q, zero, Kind, PointId, Section, SegOrigin};
+use crate::solid::split::{
+    piece_ordinal, q, rational_f64, zero, Kind, PointId, Section, SegOrigin,
+};
 use crate::solid::{replayable, Context};
 use crate::topology::{Slot, Topology};
 use crate::{Boundary, Error, Frame3, Point2, Profile, Result, Side, Tolerance};
@@ -165,6 +167,36 @@ fn segment_of(kind: &Kind) -> Segment {
     }
 }
 
+/// The largest distance from the frame's origin of the boundaries' points,
+/// arcs' and circles' centres plus their radii and splines' poles: the body
+/// lies within it (a spline in its poles' hull).
+fn reach(boundaries: &[&Boundary]) -> f64 {
+    use crate::profile::BoundaryKind;
+    let mut out = 0.0f64;
+    let mut at = |p: Point2, r: f64| out = out.max(p.x.hypot(p.y) + r);
+    for boundary in boundaries {
+        match &boundary.kind {
+            BoundaryKind::Polygon(points) => points.iter().for_each(|p| at(*p, 0.0)),
+            BoundaryKind::Circle { center, radius } => at(*center, *radius),
+            BoundaryKind::Path { points, segments } => {
+                points.iter().for_each(|p| at(*p, 0.0));
+                for segment in segments {
+                    match segment {
+                        Segment::Line => {}
+                        Segment::Arc { center, radius, .. } => at(*center, *radius),
+                        Segment::Spline(span) => {
+                            for p in span.curve().as_curve3().poles() {
+                                at(Point2::new(p.x, p.y), 0.0);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    out
+}
+
 fn side_of(sign: i8) -> Side {
     if sign < 0 {
         Side::Below
@@ -181,9 +213,11 @@ impl Body {
     /// it, returns the body itself (on the side it lies on; `Below` in the
     /// plane), every entity `Unchanged`. Errors as `Solid::split_by_plane`:
     /// `Degenerate` for a split leaving an edge or a piece thinner than the
-    /// resolution or pinching a sheet, `ComputationLimit` for an undecided
-    /// comparison; an open wire (a split's piece) split again is
-    /// `OutOfDomain`.
+    /// resolution or pinching a sheet, or for a plane within the resolution
+    /// of the body's plane over the whole body crossing it (its pieces
+    /// thinner than the resolution along the plane's normal),
+    /// `ComputationLimit` for an undecided comparison; an open wire (a
+    /// split's piece) split again is `OutOfDomain`.
     pub fn split_by_plane(
         &self,
         operation: OperationId,
@@ -210,12 +244,29 @@ impl Body {
             let side = if d > zero() { Side::Above } else { Side::Below };
             return Ok(self.unchanged(context, side));
         }
+        // The plane within the resolution of the body's plane over the whole
+        // body (a tilted frame's normal normalized again, an ulp off the
+        // body's): which side a part lies on is below the resolution, the
+        // pieces thinner than it along the plane's normal, as a prism's cap
+        // vertex within the resolution of the plane (`Degenerate` where it
+        // would split the body; a body on one side is returned as before).
+        let (tilt, offset) = (
+            rational_f64(&a).hypot(rational_f64(&b)),
+            rational_f64(&d).abs(),
+        );
+        let flat = |boundaries: Vec<&Boundary>, tolerance: Tolerance| {
+            offset + tilt * reach(&boundaries) <= tolerance.linear() * plane.normal().length()
+        };
+        let thin = Error::Degenerate("a plane within the resolution of the body's plane");
         match &self.construction {
             Construction::Face(profile) => {
                 let section = Section::new(profile, [a, b, d])?;
                 let first = section.pieces[0].side;
                 if section.pieces.iter().all(|p| p.side == first) {
                     return Ok(self.unchanged(context, first));
+                }
+                if flat(profile.boundaries().collect(), profile.tolerance()) {
+                    return Err(thin);
                 }
                 self.split_sheet(context, profile, &section)
             }
@@ -225,7 +276,8 @@ impl Body {
             } => {
                 let profile = Profile::new(boundary.clone(), Vec::new(), *tolerance)?;
                 let section = Section::arrangement(&profile, [a, b, d])?;
-                self.split_wire(context, boundary, *tolerance, &section)
+                let thin = flat(vec![boundary], *tolerance).then_some(thin);
+                self.split_wire(context, boundary, *tolerance, &section, thin)
             }
             Construction::Path { .. } => Err(Error::OutOfDomain(
                 "split_by_plane: an open wire (a split's piece) split again",
@@ -368,6 +420,7 @@ impl Body {
         boundary: &Boundary,
         tolerance: Tolerance,
         section: &Section,
+        thin: Option<Error>,
     ) -> Result<(Vec<(Side, Body)>, History)> {
         let operation = context.operation;
         let input = &self.topology;
@@ -388,6 +441,9 @@ impl Body {
         }
         if sides.iter().all(|s| *s == sides[0]) {
             return Ok(self.unchanged(context, side_of(sides[0])));
+        }
+        if let Some(e) = thin {
+            return Err(e);
         }
         // Maximal runs, from a change of side round the boundary.
         let start = (0..n)

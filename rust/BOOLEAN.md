@@ -429,7 +429,11 @@ face whose loops wind once in all holds its pole as a vertex loop (S3's
 caps). A section through the stored sphere's pole, or within the
 resolution of it, has a vertex there, kept in the result, its meridian
 arcs' pcurves lines on either side; a section through a pole off the
-axis's planes is `OutOfDomain`. The validator decides a ray against a whole sphere (a cavity in a
+axis's planes is `OutOfDomain`, and one other than a circle passing within
+rounding of it, or so near it (within about `1e-4` of a ball of radius
+`1.25`) that 256 anchors leave its projection's lift unpinned, is
+`ComputationLimit` (a ball centred within rounding on a parallel
+cylinder). The validator decides a ray against a whole sphere (a cavity in a
 sphere); a result's bounds hold its spheres' boxes. A sphere against a
 cylinder or another sphere is S9d.2's.
 

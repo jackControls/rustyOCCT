@@ -206,3 +206,83 @@ fn a_sphere_tangent_to_a_cylinder_all_round_is_degenerate() {
         assert!(matches!(r, Err(Error::Degenerate(_))), "{r:?}");
     }
 }
+
+/// The boolean target's `crash-43d93718` (the chained stage's sphere about
+/// the middle of a holed prism's meeting with a sphere, `GIVEN_MET`), its
+/// direct form: a ball whose axis is parallel to a round hole's and whose
+/// centre lies on the hole's cylinder meets it in a loop through the
+/// ball's north pole, inside the wall. Exactly on it, a section through a
+/// sphere's pole off its meridians is refused (S9d.1); a centre within
+/// rounding of it (the fuzz input's, an ulp off an exact one) passes too
+/// near the pole for the pcurve's 256 anchors to pin its lift on the
+/// sphere, `ComputationLimit` (it was `PrecisionLoss`, which a Boolean
+/// does not document); a centre `0.0125` off evaluates.
+#[test]
+fn a_section_within_rounding_of_a_spheres_pole_is_a_computation_limit() {
+    use rusty_occt::identity::OperationId;
+    use rusty_occt::{Boundary, Error, Frame3, Point2, Point3, Profile, Solid, Tolerance, Vec3};
+    let tol = Tolerance::default();
+    let s = 1.25;
+    let outer = Boundary::polygon(
+        [(-s, -s), (s, -s), (s, s), (-s, s)]
+            .map(|(x, y)| Point2::new(x, y))
+            .to_vec(),
+        tol,
+    )
+    .unwrap();
+    let hole = Boundary::circle(Point2::new(0.0, 0.0), 0.9375, tol).unwrap();
+    let profile = Profile::new(outer, vec![hole], tol).unwrap();
+    let (a, _) = Solid::extrude_with(OperationId(1), profile, Frame3::xy(), 0.0, 2.25).unwrap();
+    let half = std::f64::consts::FRAC_PI_2;
+    let ball = |x: f64, y: f64| {
+        let f = Frame3::new(
+            Point3::new(x, y, 0.5625),
+            Vec3::new(0.0, 0.0, 1.0),
+            Vec3::new(3.0, 4.0, 0.0),
+            tol,
+        )
+        .unwrap();
+        Solid::sphere_with(OperationId(2), f, 1.25, -half, half, tol)
+            .unwrap()
+            .0
+    };
+    let all = |b: &Solid| {
+        [
+            a.fuse(OperationId(3), b),
+            a.cut(OperationId(4), b),
+            a.common(OperationId(5), b),
+        ]
+    };
+    // On the hole's cylinder exactly: 0.5625^2 + 0.75^2 = 0.9375^2.
+    for r in all(&ball(0.5625, 0.75)) {
+        assert!(
+            matches!(&r, Err(Error::OutOfDomain(m)) if m.contains("pole")),
+            "{:?}",
+            r.map(|_| ())
+        );
+    }
+    // Within rounding of it: an ulp off that point, and the fuzz input's
+    // centre (the middle of a rounded meeting on the hole's wall).
+    let ulp = f64::from_bits(0.75f64.to_bits() + 1);
+    for (x, y) in [(0.5625, ulp), (-0.7184401491032446, -0.6022873086463865)] {
+        for r in all(&ball(x, y)) {
+            assert!(
+                matches!(&r, Err(Error::ComputationLimit(m)) if m.contains("unpinned")),
+                "{:?}",
+                r.map(|_| ())
+            );
+        }
+    }
+    // 0.0125 off the cylinder (radius 0.95): fuse, cut and common evaluate.
+    let b = ball(0.57, 0.76);
+    let [f, c, m] = all(&b).map(|r| {
+        r.unwrap()
+            .0
+            .iter()
+            .map(|s| s.mass_properties().volume)
+            .sum::<f64>()
+    });
+    let (va, vb) = (a.mass_properties().volume, b.mass_properties().volume);
+    assert!((f + m - va - vb).abs() <= 1e-9 * (va + vb), "{f} {m}");
+    assert!((c + m - va).abs() <= 1e-9 * va, "{c} {m}");
+}

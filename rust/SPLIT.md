@@ -154,7 +154,11 @@ bodies, planar sheets and closed wires, by the plane's trace
 frame and plane).
 
 * **Parallel.** A plane parallel to the body (`a = b = 0`) returns it, on
-  the side it lies on, `Below` in the plane.
+  the side it lies on, `Below` in the plane. A plane within the resolution
+  of the body's plane over the whole body (`|d| + |(a, b)| R` within it,
+  `R` the profile's reach from the frame's origin: a tilted frame's normal
+  normalized again) that would split it is `Degenerate`, its pieces
+  thinner than the resolution along the plane's normal.
 * **Sheets.** The profile's section by the trace (the prisms' exact
   `Section`, lines, arcs, circles, holes and splines) gives the pieces;
   each is a planar sheet of its profile on the body's frame. Whole edges
