@@ -26,7 +26,9 @@
 //! when all three evaluate; a refusal names a later step's or S9's rule,
 //! never S9e.4's. S9e.4b.3c.1: a zone's or cap's first piece also meets a
 //! whole ball of its sphere in a turned frame: their common is the piece,
-//! their fuse the ball.
+//! their fuse the ball. S9e.4b.3c.2: and the zone or cap it was split from
+//! (exact incidences on one sphere): their common is the piece, their fuse
+//! the solid, the solid less the piece the rest.
 use crate::analytic_intersections::Bytes;
 use rusty_occt::identity::OperationId;
 use rusty_occt::topology::SplineSpan;
@@ -48,8 +50,11 @@ const PIECE_BOOLEANS: bool = true;
 /// (`turned`: the first piece only, for time), the pair identities where
 /// fuse, cut and common evaluate. A refusal is
 /// documented (`Degenerate`, `ComputationLimit`, or `OutOfDomain` of a later
-/// step), never S9e.4's refusal of a plane's piece.
-fn piece_booleans(piece: &Solid, turned: bool) {
+/// step), never S9e.4's refusal of a plane's piece. S9e.4b.3c.2: a zone's or
+/// cap's first piece and the solid it was split from (`whole`), on one frame
+/// (the arcs of their rims, the pole and the disc of both): their common is
+/// the piece, their fuse the solid, the solid less the piece the rest.
+fn piece_booleans(piece: &Solid, turned: bool, whole: Option<&Solid>) {
     use rusty_occt::history::History;
     let curved = piece
         .topology()
@@ -117,6 +122,18 @@ fn piece_booleans(piece: &Solid, turned: bool) {
             }
             if let Some(v) = volume(piece.fuse(OperationId(8), &ball)) {
                 assert!((v - whole).abs() <= 1e-9 * whole, "{v} for {whole}");
+            }
+        }
+        if let Some(solid) = whole {
+            let w = solid.mass_properties().volume;
+            if let Some(v) = volume(piece.common(OperationId(9), solid)) {
+                assert!((v - own).abs() <= 1e-9 * w, "{v} for {own}");
+            }
+            if let Some(v) = volume(piece.fuse(OperationId(9), solid)) {
+                assert!((v - w).abs() <= 1e-9 * w, "{v} for {w}");
+            }
+            if let Some(v) = volume(solid.cut(OperationId(9), piece)) {
+                assert!((v - (w - own)).abs() <= 1e-9 * w, "{v} for {w} - {own}");
             }
         }
     }
@@ -651,7 +668,7 @@ fn check_prism(data: &[u8], splined: bool) {
         assert!((v0 - v1).abs() <= 1e-9 * v0.max(1.0), "{v0} moved to {v1}");
         // S8a.2's oblique pieces (the other modes' pieces are prisms).
         if mode >= 6 {
-            piece_booleans(piece, std::ptr::eq(piece, &pieces[0].1));
+            piece_booleans(piece, std::ptr::eq(piece, &pieces[0].1), None);
         }
     }
 }
@@ -684,6 +701,7 @@ fn check_revolved(data: &[u8]) {
         return;
     };
     // A cone (t may be zero: an apex), a whole sphere, a zone or a cap.
+    let mut latitudes = None;
     let (made, low_w, high_w) = match kind {
         0 => (
             Solid::cone_with(OperationId(1), frame, s, t, h, tolerance),
@@ -700,17 +718,21 @@ fn check_revolved(data: &[u8]) {
                 -0.5 - f64::from(b.next() % 8) / 8.0,
                 0.25 + f64::from(b.next() % 8) / 8.0,
             );
+            latitudes = Some((lo, hi));
             (
                 Solid::sphere_with(OperationId(1), frame, s, lo, hi, tolerance),
                 s * lo.sin(),
                 s * hi.sin(),
             )
         }
-        3 => (
-            Solid::sphere_with(OperationId(1), frame, s, 0.25, FRAC_PI_2, tolerance),
-            s * 0.25f64.sin(),
-            s,
-        ),
+        3 => {
+            latitudes = Some((0.25, FRAC_PI_2));
+            (
+                Solid::sphere_with(OperationId(1), frame, s, 0.25, FRAC_PI_2, tolerance),
+                s * 0.25f64.sin(),
+                s,
+            )
+        }
         // S8d.1: a whole torus (its tube's radius from t, the gap to the
         // axis from s).
         _ => {
@@ -732,6 +754,13 @@ fn check_revolved(data: &[u8]) {
         }
     };
     let Ok((solid, _)) = made else { return };
+    // S9e.4b.3c.2: the zone or cap again under other ids (a Boolean's
+    // inputs never share theirs), for its pieces against it.
+    let twin = latitudes.and_then(|(lo, hi)| {
+        Solid::sphere_with(OperationId(10), frame, s, lo, hi, tolerance)
+            .ok()
+            .map(|(x, _)| x)
+    });
     let at = |w: f64| frame.point(rusty_occt::Point2::new(0.0, 0.0), w);
     // Every plane splits since S8d.3 (a torus's two caps aside).
     let spiric = false;
@@ -846,7 +875,7 @@ fn check_revolved(data: &[u8]) {
         // sphere's pieces and those normal to the axis are caps, zones and
         // frusta; a torus's are slow).
         if matches!(kind, 0 | 2 | 3) && mode >= 2 {
-            piece_booleans(piece, std::ptr::eq(piece, &pieces[0].1));
+            piece_booleans(piece, std::ptr::eq(piece, &pieces[0].1), twin.as_ref());
         }
     }
 }

@@ -50,10 +50,12 @@ less the octant, then with a level slab across it (its cut two solids).
 Declared `degenerate`: `ball_near`, a ball about the sphere's centre whose
 radius is `5 + 2^-30`, within the resolution of the cap's sphere and not it
 (its fuse and common; its cut a shell thinner than the reference's rays
-resolve). Declared `unsupported` (S9e.4b.3c.2):
-`hemi_octant`, the hemisphere and `octant4` on one frame (the octant's
-equator arc on the hemisphere's rim circle, both bases on one plane, as
-`so1` and `so2`). S9e.4b.3a's `one_sphere` (its octant and `octant_low`) and
+resolve). `hemi_octant`, the hemisphere and `octant4` on one frame (the
+octant's equator arc on the hemisphere's rim circle, both bases on one
+plane, as `so1` and `so2`), declared `unsupported` until S9e.4b.3c.2's
+kernel decided its exact incidences, is solid (its margins those of any
+solid case: the least sine 1.0, the events' spacing 4.9e-3).
+S9e.4b.3a's `one_sphere` (its octant and `octant_low`) and
 S9e.4b.3b's (a zone's half and its own ball) are this step's too, kept in
 their sets.
 
@@ -230,7 +232,6 @@ def group(name, klass, items, outcomes, first=None, reason=None, kind=None):
 
 NEAR = ('a ball about the sphere\'s centre whose radius is 5 + 2^-30: within the resolution of the cap\'s sphere and '
         'not it')
-INCIDENCE = 'S9e.4b.3c.2: a vertex or a circle of both inputs on one sphere'
 SLAB = prism([square(-4.0, -4.0, 14.0, 14.0)], at('XY', (0, 0, 6.375)), 0.0, 1.5)
 BALL = sphere(RADIUS, at('XY', CENTRE))
 NEAR_BALL = sphere(RADIUS+2.0**-30, at('XY', CENTRE))
@@ -248,8 +249,7 @@ def cases():
     out += group('chain_cap', 'chain', [imported('sphere_cap'), imported('sphere_octant2'), SLAB],
                  {'fuse': 1, 'cut': 2, 'common': 1}, first='cut')
     out += group('ball_near', 'sphere', [NEAR_BALL, imported('sphere_cap')], {'fuse': 1, 'common': 1}, reason=NEAR)
-    out += group('hemi_octant', 'pieces', [imported('sphere_hemi'), imported('sphere_octant4')], three,
-                 kind='unsupported', reason=INCIDENCE)
+    out += group('hemi_octant', 'pieces', [imported('sphere_hemi'), imported('sphere_octant4')], three)
     return out
 
 

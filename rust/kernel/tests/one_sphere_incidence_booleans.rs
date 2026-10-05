@@ -1,25 +1,26 @@
-//! S9e.4b.3c.1: two pieces of one sphere given to a Boolean (faces of both
-//! inputs on one sphere, in general position: S9c.1's faces on one surface,
-//! the circles of both crossing on it), and an imported sphere piece whose
-//! rim OCCT divided into two arcs (the DRAW survey's `so1` and `so4`),
-//! against the independent reference (`fixtures/boolean-one-sphere-*` from
-//! `tools/generate_one_sphere_boolean_fixtures.py`, the bodies under
-//! `fixtures/imported/`). Each case runs once (on a few threads) for the
-//! checks that read its result.
+//! S9e.4b.3c.2: exact incidences of two pieces of one sphere given to a
+//! Boolean (a vertex, a circle or a line of both inputs, plane faces on one
+//! plane with overlapping edges: the DRAW survey's `so1` and `so2`, `so2`
+//! and `so3`, `so5` and `so2`), against the independent reference
+//! (`fixtures/boolean-one-sphere-incidence-*` from
+//! `tools/generate_one_sphere_incidence_boolean_fixtures.py`, the bodies
+//! under `fixtures/imported/`). Each case runs once (on a few threads) for
+//! the checks that read its result.
 #[path = "support/boolean_protocol.rs"]
 #[allow(dead_code)]
 mod protocol;
-use rusty_occt::history::{self, Resolution};
-use rusty_occt::identity::OperationId;
-use rusty_occt::{
-    Boundary, Error, Frame3, Location, Point2, Point3, Profile, RigidTransform, Solid, Tolerance,
-    Vec3,
-};
+use rusty_occt::history::{self, History, Resolution};
+use rusty_occt::identity::{EntityId, OperationId};
+use rusty_occt::topology::Slot;
+use rusty_occt::{Error, Location, Point3, RigidTransform, Solid, Vec3};
+use std::collections::BTreeMap;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::OnceLock;
 
 fn cases() -> Vec<protocol::Case> {
-    protocol::cases(include_str!("../../fixtures/boolean-one-sphere-cases.txt"))
+    protocol::cases(include_str!(
+        "../../fixtures/boolean-one-sphere-incidence-cases.txt"
+    ))
 }
 
 /// `f` over the cases on at most six threads, in the cases' order.
@@ -59,11 +60,11 @@ fn runs() -> &'static [(String, Result<protocol::Run, Error>)] {
 }
 
 /// The reference's kind and `(solids, [volume, area])` per case.
-type Expected = std::collections::BTreeMap<String, (String, Option<(usize, [f64; 2])>)>;
+type Expected = BTreeMap<String, (String, Option<(usize, [f64; 2])>)>;
 
 fn expected() -> Expected {
-    let mut expect = std::collections::BTreeMap::new();
-    for line in include_str!("../../fixtures/boolean-one-sphere-expected.tsv")
+    let mut expect = BTreeMap::new();
+    for line in include_str!("../../fixtures/boolean-one-sphere-incidence-expected.tsv")
         .lines()
         .filter(|l| !l.starts_with('#'))
     {
@@ -130,10 +131,9 @@ fn every_case_matches_the_reference() {
         let (kind, want) = &expect[name];
         match (kind.as_str(), run) {
             ("degenerate", Err(Error::Degenerate(_))) => continue,
-            ("unsupported", Err(Error::OutOfDomain(_))) => continue,
-            ("degenerate" | "unsupported", other) => {
+            ("degenerate", other) => {
                 failures.push(format!(
-                    "{name}: {:?} not refused as {kind}",
+                    "{name}: {:?} not refused as degenerate",
                     other.as_ref().map(|_| ())
                 ));
                 continue;
@@ -165,9 +165,10 @@ fn every_case_matches_the_reference() {
     );
 }
 
-/// The declared refusals name their reasons: a ball within the resolution
-/// of the cap's sphere as S9's. The hemisphere and the octant on one frame,
-/// S9e.4b.3c.2's exact incidences, evaluate since its kernel.
+/// The declared refusals name S9's reasons: the near copies and the two
+/// octants touching along their axis two faces within the resolution of one
+/// plane, the wedge's axis edge inside the half's face an edge of one input
+/// on a face of the other; none refuses as an incidence of S9e.4b.3c.2.
 #[test]
 fn refusals_name_their_reasons() {
     for (name, run) in runs() {
@@ -175,21 +176,25 @@ fn refusals_name_their_reasons() {
             Err(Error::Degenerate(m) | Error::OutOfDomain(m)) => *m,
             _ => "",
         };
-        if name.starts_with("ball_near") {
+        if name.starts_with("near_") || name.starts_with("quadrants") {
             assert_eq!(
-                reason, "two spheres within the resolution of one sphere",
+                reason, "two faces within the resolution of one plane",
                 "{name}"
             );
         }
-        if name.starts_with("hemi_octant") {
-            assert!(run.is_ok(), "{name}: {reason}");
+        if name.starts_with("half_wedge") {
+            assert_eq!(
+                reason, "an edge of one input on a face of the other",
+                "{name}"
+            );
         }
+        assert!(!reason.contains("S9e.4b.3c.2"), "{name}: {reason}");
     }
 }
 
 /// Each Boolean's history is complete over its inputs, the imported ones'
 /// stored ids among them: every entity of every input resolved, and no
-/// relation from an id outside the inputs (a primitive's or a hull's).
+/// relation from an id outside the inputs.
 #[test]
 fn histories_are_complete_over_the_imported_ids() {
     let failures: Vec<String> = runs()
@@ -233,14 +238,85 @@ fn histories_are_complete_over_the_imported_ids() {
     assert!(failures.is_empty(), "{failures:#?}");
 }
 
+/// What an input entity became in the result.
+fn targets(h: &History, id: EntityId) -> Vec<EntityId> {
+    match h.resolve(id) {
+        Resolution::Same(x) => vec![x],
+        Resolution::Split(v) => v,
+        Resolution::Merged { into, .. } => vec![into],
+        Resolution::Deleted | Resolution::Unknown => Vec::new(),
+    }
+}
+
+/// The ids of a solid's edges with both ends on the vertical line through
+/// `(5, 5)` (a wedge's axis edge), and of its vertices at a point.
+fn axis_edges(s: &Solid) -> Vec<EntityId> {
+    let t = s.topology();
+    let on_axis = |p: Point3| (p.x - 5.0).abs() < 1e-9 && (p.y - 5.0).abs() < 1e-9;
+    t.edges()
+        .iter()
+        .enumerate()
+        .filter(|(_, e)| {
+            [e.start, e.end]
+                .iter()
+                .all(|v| v.is_some_and(|v| on_axis(t.vertices()[v.index()].position)))
+        })
+        .filter_map(|(k, _)| t.id_of(Slot::Edge(rusty_occt::topology::EdgeId::new(k))))
+        .collect()
+}
+
+fn vertex_at(s: &Solid, at: Point3) -> Option<EntityId> {
+    let t = s.topology();
+    let k = t
+        .vertices()
+        .iter()
+        .position(|v| (v.position - at).length() < 1e-9)?;
+    t.id_of(Slot::Vertex(rusty_occt::topology::VertexId::new(k)))
+}
+
+/// An edge or a vertex of both inputs continues both: the two wedges'
+/// common (`so2` and `so3`) has one axis edge, which both axis edges
+/// become, and one corner and one pole, which both inputs' become; the
+/// higher wedge's (`so5`'s) axis edge inside the other's becomes the
+/// common's.
+#[test]
+fn entities_of_both_continue_both() {
+    let all: BTreeMap<&str, _> = runs().iter().map(|(n, r)| (n.as_str(), r)).collect();
+    let Ok((a, b, out, h)) = all["wedge_wedge_common"] else {
+        panic!("the wedges' common")
+    };
+    let [result] = &out[..] else {
+        panic!("one solid")
+    };
+    let axis = axis_edges(result);
+    assert_eq!(axis.len(), 1);
+    for s in [a, b] {
+        let mine = axis_edges(s);
+        assert_eq!(mine.len(), 1);
+        assert_eq!(targets(h, mine[0]), axis);
+        for at in [Point3::new(5.0, 5.0, 4.0), Point3::new(5.0, 5.0, 9.0)] {
+            let v = vertex_at(s, at).expect("a corner and a pole");
+            assert_eq!(targets(h, v), vec![vertex_at(result, at).unwrap()]);
+        }
+    }
+    let Ok((a, _, out, h)) = all["high_wedge_common"] else {
+        panic!("the higher wedge's common")
+    };
+    let [result] = &out[..] else {
+        panic!("one solid")
+    };
+    let mine = axis_edges(a);
+    assert_eq!(mine.len(), 1);
+    assert_eq!(targets(h, mine[0]), axis_edges(result));
+}
+
 #[test]
 fn results_are_deterministic_and_move_rigidly() {
     let motion =
         RigidTransform::rotation(Point3::new(1.0, 0.0, 0.0), Vec3::new(1.0, 2.0, 2.0), 0.5)
             .unwrap();
     let ids = |s: &Solid| s.topology().ids().map(|(id, _)| id).collect::<Vec<_>>();
-    let first: std::collections::BTreeMap<&str, _> =
-        runs().iter().map(|(n, r)| (n.as_str(), r)).collect();
+    let first: BTreeMap<&str, _> = runs().iter().map(|(n, r)| (n.as_str(), r)).collect();
     let failures: Vec<String> = each(|case| {
         let Ok((_, _, out, h)) = first[case.name.as_str()] else {
             return Vec::new();
@@ -280,203 +356,46 @@ fn results_are_deterministic_and_move_rigidly() {
     assert!(failures.is_empty(), "{failures:#?}");
 }
 
-/// Both inputs moved rigidly keep the reference's volumes, translated and
-/// turned: each piece read again off its moved stored topology.
+/// Both inputs moved by exact motions (a dyadic translation, a quarter turn
+/// about a world axis: the stored zeros kept) keep the reference's volumes;
+/// turned by a rotation that rounds their frames, the incidences are within
+/// the resolution and no longer exact: refused as `Degenerate`, or within
+/// the reference.
 #[test]
 fn moved_inputs_keep_their_volumes() {
     let shift = RigidTransform::translation(Vec3::new(0.5, -0.25, 1.0)).unwrap();
+    let quarter = RigidTransform::quarter_turn(Point3::new(1.0, 0.0, 0.0), 0, 1).unwrap();
     let turn = RigidTransform::rotation(Point3::new(1.0, 0.0, 0.0), Vec3::new(1.0, 2.0, 2.0), 0.5)
         .unwrap();
     let expect = expected();
     let all = cases();
     for name in [
-        "hemi_cap_cut",
-        "cap_octant_common",
-        "octant_cap_cut",
-        "ball_cap_cut",
-        "wedge_cap_fuse",
+        "hemi_wedge_cut",
+        "wedge_wedge_fuse",
+        "high_wedge_cut",
+        "half_octant_common",
+        "x_wedges_cut",
+        "cap_wedge_fuse",
     ] {
         let case = all.iter().find(|c| c.name == name).unwrap();
-        for (k, motion) in [shift, turn].into_iter().enumerate() {
+        for (k, motion) in [shift, quarter, turn].into_iter().enumerate() {
             let (a, b, _, _) = protocol::run_first(case).unwrap();
             let a = a.transform_with(OperationId(801), motion).unwrap().0;
             let b = b.transform_with(OperationId(802), motion).unwrap().0;
-            let out = match case.op.as_str() {
+            let run = match case.op.as_str() {
                 "fuse" => a.fuse(case.operation, &b),
                 "cut" => a.cut(case.operation, &b),
                 _ => a.common(case.operation, &b),
-            }
-            .unwrap_or_else(|e| panic!("{name} {k}: {e}"))
-            .0;
+            };
             let (count, [v, _]) = expect[name].1.unwrap();
-            let got: f64 = out.iter().map(|s| s.mass_properties().volume).sum();
-            assert_eq!(out.len(), count, "{name} {k}");
-            assert!((got - v).abs() <= 1e-9 * v, "{name} {k}: {got} for {v}");
-        }
-    }
-}
-
-/// A body file's imported solid under an operation.
-fn body(name: &str, op: u64) -> Result<Solid, Error> {
-    let (topology, resolution) = protocol::imported_topology(&format!("imported/{name}.brep"));
-    Solid::imported_with(OperationId(op), topology, resolution).map(|(s, _)| s)
-}
-
-/// The divided rims: the hemisphere and the cap import as pieces whose rim
-/// is the stored two arcs (two stored vertices on the rim, a third at the
-/// stored pole), their volumes their closed forms, every stored vertex on
-/// the boundary.
-#[test]
-fn divided_rims_import_as_pieces() {
-    use std::f64::consts::PI;
-    for (name, volume) in [
-        ("sphere_hemi", 2.0 * PI * 125.0 / 3.0),
-        ("sphere_cap", PI * 3.5 * 3.5 * (15.0 - 3.5) / 3.0),
-    ] {
-        let s = body(name, 91).unwrap_or_else(|e| panic!("{name}: {e}"));
-        let t = s.topology();
-        assert_eq!(
-            (t.faces().len(), t.edges().len(), t.vertices().len()),
-            (2, 2, 3),
-            "{name}"
-        );
-        let m = s.mass_properties();
-        assert!(
-            (m.volume - volume).abs() <= 1e-9 * volume,
-            "{name}: {} for {volume}",
-            m.volume
-        );
-        for v in t.vertices() {
-            assert_eq!(
-                s.classify(v.position).unwrap(),
-                Location::Boundary,
-                "{name}"
-            );
-        }
-        assert_eq!(
-            s.classify(Point3::new(5.0, 5.0, 4.0) + Vec3::new(4.0, 1.0, 8.0) * (4.0 / 9.0))
-                .unwrap(),
-            Location::Inside,
-            "{name}"
-        );
-    }
-}
-
-/// A stored vertex on a section circle's axis (the stored pole above a
-/// hemisphere's rim on the world's axes, exactly) has no place on the
-/// circle: the divided rim's split passes it by (it divided by zero, a
-/// panic on import, before S9e.4b.3c.2's evidence found it).
-#[test]
-fn a_stored_pole_above_its_rim_imports() {
-    use std::f64::consts::PI;
-    let s = body("incidence_hemi", 91).unwrap();
-    let t = s.topology();
-    assert_eq!(
-        (t.faces().len(), t.edges().len(), t.vertices().len()),
-        (2, 2, 3)
-    );
-    let volume = 2.0 * PI * 125.0 / 3.0;
-    let m = s.mass_properties();
-    assert!((m.volume - volume).abs() <= 1e-9 * volume, "{}", m.volume);
-    assert_eq!(
-        s.classify(Point3::new(5.0, 5.0, 9.0)).unwrap(),
-        Location::Boundary
-    );
-}
-
-/// A block less a leaning rod across its back face (a groove: its one
-/// curved face's material outside the cylinder) is no piece of its
-/// primitive common its planes,
-/// refused on import as S9e.4b.3c's before its model is built (the DRAW
-/// survey's `bcut_complex/I6` tool, whose wall is tangent to two of the
-/// block's faces, reached the model's own tangency before).
-#[test]
-fn a_notch_is_not_its_primitive_common_its_planes() {
-    let tol = Tolerance::default();
-    let frame = Frame3::xy();
-    let (block, _) = Solid::extrude_with(
-        OperationId(1),
-        Profile::new(
-            Boundary::polygon(
-                vec![
-                    Point2::new(0.0, 0.0),
-                    Point2::new(10.0, 0.0),
-                    Point2::new(10.0, 7.0),
-                    Point2::new(0.0, 7.0),
-                ],
-                tol,
-            )
-            .unwrap(),
-            Vec::new(),
-            tol,
-        )
-        .unwrap(),
-        frame,
-        0.0,
-        5.0,
-    )
-    .unwrap();
-    // A rod leaning across the block's back face: the groove's wall is no
-    // prism wall of the block's direction (not S9e.4a's prism).
-    let lean = Frame3::new(
-        Point3::new(5.0, 6.5, 2.5),
-        Vec3::new(1.0, 0.0, 1.0),
-        Vec3::new(0.0, 1.0, 0.0),
-        tol,
-    )
-    .unwrap();
-    let (rod, _) = Solid::extrude_with(
-        OperationId(2),
-        Profile::new(
-            Boundary::circle(Point2::new(0.0, 0.0), 1.0, tol).unwrap(),
-            Vec::new(),
-            tol,
-        )
-        .unwrap(),
-        lean,
-        -6.0,
-        6.0,
-    )
-    .unwrap();
-    let (out, _) = block.cut(OperationId(3), &rod).unwrap();
-    let [notch] = <[Solid; 1]>::try_from(out).unwrap();
-    match Solid::imported_with(OperationId(4), notch.topology().clone(), notch.resolution()) {
-        Err(Error::OutOfDomain(m)) => assert_eq!(
-            m,
-            "an imported plane piece other than its primitive common its planes' half-spaces \
-             (S9e.4b.3c)"
-        ),
-        other => panic!("{:?}", other.map(|_| ())),
-    }
-}
-
-/// Two whole balls of one sphere on different frames (their splits' great
-/// circles only on the sphere): their fuse and common the ball, their cut
-/// empty; a ball and an imported cap of its sphere, the cap's ids kept.
-#[test]
-fn two_balls_of_one_sphere() {
-    let tol = Tolerance::default();
-    let half = std::f64::consts::FRAC_PI_2;
-    let c = Point3::new(5.0, 5.0, 4.0);
-    let upright = Frame3::new(c, Vec3::new(0.0, 0.0, 1.0), Vec3::new(1.0, 0.0, 0.0), tol).unwrap();
-    let (a, _) = Solid::sphere_with(OperationId(1), upright, 5.0, -half, half, tol).unwrap();
-    let turned = Frame3::new(c, Vec3::new(4.0, 1.0, 8.0), Vec3::new(-7.0, -4.0, 4.0), tol).unwrap();
-    let (b, _) = Solid::sphere_with(OperationId(2), turned, 5.0, -half, half, tol).unwrap();
-    let ball = 4.0 * std::f64::consts::PI * 125.0 / 3.0;
-    for (op, want) in [("fuse", Some(ball)), ("common", Some(ball)), ("cut", None)] {
-        let out = match op {
-            "fuse" => a.fuse(OperationId(5), &b),
-            "cut" => a.cut(OperationId(5), &b),
-            _ => a.common(OperationId(5), &b),
-        }
-        .unwrap_or_else(|e| panic!("{op}: {e}"))
-        .0;
-        match want {
-            None => assert!(out.is_empty(), "{op}"),
-            Some(v) => {
-                assert_eq!(out.len(), 1, "{op}");
-                let got = out[0].mass_properties().volume;
-                assert!((got - v).abs() <= 1e-9 * v, "{op}: {got}");
+            match run {
+                Err(Error::Degenerate(_)) if k == 2 => continue,
+                Err(e) => panic!("{name} {k}: {e}"),
+                Ok((out, _)) => {
+                    let got: f64 = out.iter().map(|s| s.mass_properties().volume).sum();
+                    assert_eq!(out.len(), count, "{name} {k}");
+                    assert!((got - v).abs() <= 1e-9 * v, "{name} {k}: {got} for {v}");
+                }
             }
         }
     }

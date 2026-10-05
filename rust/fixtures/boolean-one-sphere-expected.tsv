@@ -39,12 +39,9 @@ ball_near_fuse	result 1 523.5987758908824889850371 314.1592654760127701985367 5.
 ball_near_common	expect degenerate S9e.4b.3c.1 sphere
 ball_near_common	reason a ball about the sphere's centre whose radius is 5 + 2^-30: within the resolution of the cap's sphere and not it
 ball_near_common	result 1 147.5239550248207134406506 181.4269757448105629218894 6.224637681159420186146713 5.306159420289855059283125 6.449275362318840576236569
-hemi_octant_fuse	expect unsupported S9e.4b.3c.1 pieces
-hemi_octant_fuse	reason S9e.4b.3c.2: a vertex or a circle of both inputs on one sphere
+hemi_octant_fuse	expect solid S9e.4b.3c.1 pieces
 hemi_octant_fuse	result 1 261.7993877991494365385536 235.6194490192344928846983 5.833333333333333278079178 5.208333333333333328193412 5.666666666666666694936234
-hemi_octant_cut	expect unsupported S9e.4b.3c.1 pieces
-hemi_octant_cut	reason S9e.4b.3c.2: a vertex or a circle of both inputs on one sphere
+hemi_octant_cut	expect solid S9e.4b.3c.1 pieces
 hemi_octant_cut	result 1 196.3495408493620756049427 215.9844949342982839878244 6.041666666666666624027037 6.041666666666666683845589 5.458333333333333360788478
-hemi_octant_common	expect unsupported S9e.4b.3c.1 pieces
-hemi_octant_common	reason S9e.4b.3c.2: a vertex or a circle of both inputs on one sphere
+hemi_octant_common	expect solid S9e.4b.3c.1 pieces
 hemi_octant_common	result 1 65.4498469497873609336109 98.17477042468104032103285 5.208333333333333263140832 2.708333333333333352857799 6.291666666666666674474276
