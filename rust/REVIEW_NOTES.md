@@ -9812,6 +9812,86 @@ Decisions for S9, recorded before its code (2026-09-28):
     tolerance 1e-7); and the touching ball's fuse, which OCCT keeps as two
     solids touching at a point where the reference's rays count one, their
     totals the reference's within 4.8e-15. S9e.4b.4b.2b.1's kernel next.
+  * **S9e.4b.4b.2b.1 implemented** (`solid/imported.rs`'s `chain_piece`
+    given the body's leaves, `bosses`, `plane_along`, `prism_on`'s prism of
+    one cap; `curved/pieces.rs` unchanged: the flats' and pockets' hulls are
+    S9e.4b.3c.3b's `Tree::Hull` leaves), as the refined decisions describe:
+    after S9e.4b.4b.2a's chains (the primitives alone, then each leaf), each
+    chain again with the other plane faces, the leaves' first and the
+    primitives' alone last (`primitives_choices`, `Piece`'s choice read off
+    the moved stored topology again by a rigid motion): prisms of one cap
+    fused after the leaf, flats making their part common their hull, pockets
+    less their teeth cut from the chain, the first whose model matches the
+    stored topology the body. All 24 fixtures as declared (21 within the
+    kernel's enclosures, each at most `1e-9` wide; the ball resting on the
+    frustum refused as `Degenerate("a plane crossing a sphere within the
+    resolution of tangency (S9d.1)")`), every history complete over the
+    imported bodies' stored ids, results deterministic and moved rigidly,
+    both inputs translated and turned keeping the reference's volumes, every
+    body its chain (its closed-form volume, points in and off it classified,
+    its stored vertices on its boundary), S9e.4b.4b.2a's notch refused as
+    `OutOfDomain("an imported body of several primitives with plane faces
+    other than their ends, a prism's, a flat or a pocket (S9e.4b.4b.2b.2)")`,
+    and the kernel's own cake and stack and the `boolean` fuzz target's three
+    bodies (a ball's half fused with a frustum on its disc, a pentagon under a
+    stadium, a plate with a hole less its moved copy's band) built by the
+    kernel, written by its writer, read back and imported, their volumes, and
+    their Booleans with a turned box the kernel's own results' but the
+    stack's (`tests/plane_part_booleans.rs`, 13.1 s in release on a host at
+    load 10 to 12, 18.3 s at `opt-level` 2 with debug assertions, 14.5 to
+    18.4 s in release with debug assertions and overflow checks under the
+    emulated correctly rounded `hypot`, where the prism leaves', primitive
+    chains', piece trees' and piece forms' test files pass too).
+    `compare_plane_parts_boolean.py` 15 matches and 9 reviewed (the 5
+    captured and, with the kernel, entity counts: the faces agree, OCCT's
+    unified results keeping seam edges of their closed surfaces or dividing
+    a meeting into edges otherwise, the kernel's meetings of the ball with
+    the boss's arc walls split at their turning points), every enclosure
+    within the reference; every other comparison of `HANDOFF.md`'s table
+    unchanged with 0 failures (and `compare_split.py` 72/56, `compare_brep.py
+    --family spline` 10/3, `compare_brep_io.py` 6,835/7, `compare_step.py`
+    23/6 on STEP-b's SDK); the release suite (661 tests) and the tools' unit
+    tests (366) passing, the ledger unchanged. Amendments, from the
+    implementation: (a) the cake, which S9e.4b.4b.2a refused as the body's
+    own tangency (its boss's arcs read as primitives tangent to its line
+    walls), now evaluates: a joint of one prism of one cap is the
+    construction's own; (b) a hull plane's axis may be a sphere's frame's
+    normal too (each primitive's frame is among the chain's axes, as
+    S9e.4b.4b.1's coaxial test takes them); (c) the kernel's own stack (a
+    hexagon prism fused with a stadium prism on one frame) given to a Boolean
+    is refused as `Degenerate("an edge of one input on a face of the other")`
+    with boxes, rods and balls alike, flush or with the hexagon reaching into
+    the stadium, where its import evaluates them: the kernel's tests take its
+    import alone, and the given model of such a fuse is left open; (d) OCCT's
+    cake with a ball wholly inside it (a cavity) is `ComputationLimit("a
+    cavity's containment the validator's rays leave undecided")` where the
+    kernel's own cake evaluates, given to no case. The `boolean` fuzz
+    target's `IMPORTED` stage (unchanged): replayed with debug assertions, the
+    same 80 first results of several curved faces of the corpus's 1,470
+    inputs and regressions reach it, 29 imported and cut within the chained
+    cut's volume (the 3 refused as S9e.4b.4b.2b's among them), 51 not written
+    by the kernel's writer, none refused; under the emulated `hypot` 89 (35
+    imported, 54 not written). Replays with debug assertions, one process an
+    input, natively and under the emulated correctly rounded `hypot`: the
+    boolean corpus and its regressions (1,470 inputs) and the split corpus
+    and its regressions (3,571), no failure, the slowest 5.8 s and 1.7 s (5.3
+    s and 1.2 s emulated) on a host at load 6 to 12. A trial of the
+    survey's 171 restore cases the import reaches, on the Rust adapter and
+    natively (not the survey: nothing registered): no case moves with this
+    step, 59 evaluating on both backends as before, `bfuse_complex/K1`
+    refused as a tangency between the inputs as S9e.4b.4b.2a's trial found,
+    `bugs/modalg_6/bug28773` as two cylinders' axes within rounding of
+    parallel, none refused as S9e.4b.4b.2b's; native DRAW's statuses as
+    before (147 evaluating, 24 unsupported). The trial found a draft's
+    mistake, fixed before the commit: counting a primitive's caps among its
+    faces for its bends with the earlier parts (S9e.4b.4b.1 counts its curved
+    faces alone) changed `bug28773`'s comb's chain, which then did not match
+    (`OutOfDomain(... other than a Boolean chain of them (S9e.4b.4c))`); a
+    primitive's faces there are its curved faces and its flats. Open:
+    S9e.4b.4b.2b.2 (hulls across several parts, polyhedral bosses, the
+    notch's prism cut at both caps' rims, mixed pockets and components, two
+    leaves of two caps each); the kernel's own stack given to a Boolean (c).
+    Pending: its DRAW survey, its capture's Linux record and its campaigns.
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces
