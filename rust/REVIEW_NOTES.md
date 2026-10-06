@@ -8880,6 +8880,154 @@ Decisions for S9, recorded before its code (2026-09-28):
     to 45; `bopfuse_simple/ZK8` 4.4 in the last survey), the restore
     cases 0.2 to 5.1 s (`bcommon_complex/B9`), the rollex 0.6 to 0.7. No
     case fails, crashes or panics; no kernel change.
+  * **S9e.4b.4b refined, before its code (2026-10-05).** Why S9e.4b.4's
+    bodies of several curved faces are refused today, read off the survey's
+    files by the converter (the dataset is not committed): the import takes
+    S9e.4a's constructions and, for one sphere, cylinder or cone face among
+    planes, S9e.4b.3's pieces; a body whose curved faces lie on two
+    surfaces or more is neither, `OutOfDomain("an imported solid other than
+    a prism, a sphere, a cone or a torus (S9e.4b)")` (`imported.rs`'s
+    `general`). `bfuse_complex/E5`'s part (`CTO900_pro9476-part`) is a
+    stepped shaft along the world's `x`: a cylinder of radius 419.41 from
+    its disc `x = 0` to a disc `x = 138.37` holding a ring, and a coaxial
+    one of radius 118.38 from that ring to a disc `x = 595.65` (rings, no
+    vertex), fused with a box (`-tool`, S9e.4a's prism) whose face lies on
+    the step's plane. `bugs/modalg_6/bug28773`'s `_2` is six coaxial
+    cylinders along `x` and seven discs: a cylinder of radius 1 over `[1,
+    2]`, and over `[0, 1]` a tube of radii 0.025 and 0.03, a tube of radii
+    0.01 and 0.02 and a rod of radius 0.006 joined to it (three of its
+    cylinders holes, its discs at `x = 1` stored on frames OCCT rounds
+    1e-17 apart); its `_1`, cut from it, is a tube of radii 0.006 and 0.01
+    over `[-0.01, 1]` lying in `_2`'s gap, on its cylinders (S9e.4a's prism
+    on its bottom disc's stored frame, whose normal leans 2.2e-33 off the
+    walls' `x`). `bfuse_complex/K1`'s part (`CTO904_cts20370-part`) is the
+    box `[0, 200]^3` with its four edges along `z` rounded by cylinders of
+    radius 50 tangent to its faces, less a cylinder of radius 40 along `y`
+    through it (its tool a rod of radius 40 along `x`, its cap on the box's
+    face `x = 200`). `bcut_complex/G9` and `bugs/modalg_2/bug417`
+    (`cts21128c` and `d`): a frustum of half-angle 0.145 rad narrowing up
+    from its disc `z = 0` of radius 14.8 common a ball of radius 58.9 about
+    `(0, 0, -45.7)` on its axis (a dome, its pole a vertex loop), less a
+    rod of radius 2.95 from the plane `z = 0` common the same ball (a pin,
+    its disc inside the dome's, its rim on the dome's sphere split at its
+    cylinder's and its sphere's seams by two stored vertices). Decisions.
+    (1) *Sub-steps*, by what each unlocks and the machinery each takes:
+    **S9e.4b.4b.1** (this step): a body of several sphere, cylinder and
+    cone faces every plane face of which is an end of their primitives
+    (S9e.4b.3c.3a's caps), a Boolean chain of its primitives (2, 3): E5's
+    shaft, `bug28773`'s comb and G9's dome and pin; **S9e.4b.4b.2**: such a
+    body with other plane faces (a primitive's flat, a box with a hole and
+    fillets) and a prism among its leaves (walls along one axis between
+    two caps, S9e.4a's construction of those faces, its arcs tangent to its
+    lines inside it): K1's part. (2) *Primitives.* The curved faces on one
+    stored surface (equal stored data) are one primitive's. A sphere's is
+    the whole ball on its stored frame; a cylinder's or a cone's spans its
+    faces' axial range on its frame, past each end by a quarter of it (at
+    least of its radius) but at a cap (a plane face normal to its axis at
+    that end whose outward normal points away from the range where its
+    material lies inside its quadric, into it where outside: a blind
+    hole's floor), its height there rounded once, a cone clamped at its
+    apex (S9e.4b.3c.3a's). Coaxial primitives share one axis: a cylinder or
+    a cone whose stored axis lies on an earlier one's in the chain's order
+    within the resolution (parallel within `1e-9`, its stored origin within
+    the resolution of that axis; a sphere's axis its stored frame's normal
+    through its centre) is built on that primitive's frame (`Frame3::at`
+    where it moves along it), its heights read in it, so `bug28773`'s discs
+    at `x = 1` are its caps at one height and G9's pin's rod lies on its
+    ball's axis exactly (its stored origin 8.9e-16 off it, where the rod's
+    meeting with the ball would be no circle). Every plane face must be a
+    cap of some primitive (else S9e.4b.4b.2's). (3) *The chain.* The
+    primitives in the order of their reach from their axes or centres (a
+    sphere's radius, a cylinder's, a cone's widest end over its faces'
+    range), widest first, ties in face order; the first's material inside
+    its quadric; each next one cut where its material lies outside its
+    quadric, else in common where its faces meet the earlier ones' curved
+    faces along convex edges only (S9e.4b.3c.3b's bends: the dome's cone and
+    sphere, the pin's rod and sphere), fused where along concave edges only
+    or none (joined through the caps: E5's thin cylinder through the wide
+    one's ring). E5 is one fuse, G9's dome and pin one common each,
+    `bug28773`'s comb five Booleans (the radius-1 cylinder fused with the
+    0.03 tube's, less the 0.025 bore, fused with the 0.02, less the 0.01,
+    fused with the rod). Each Boolean is S9e.4b.3c.3b's tree's (an inner
+    one's assembly its given model, the stored vertices splitting rims in
+    every one), the last one's given model matched to the stored topology
+    by S9e.2's match, its ids the stored ones. Numbers: the engine's own,
+    no new field or degree. A draft of the step's code (not committed)
+    imports all five bodies but K1's and needs three changes of the
+    arrangement, each the existing rule carried to a meeting of two curved
+    faces: (a) a stored vertex within the resolution of a cylinder's or a
+    cone's meeting with a sphere splits it (S9e.4b.3c.1's `split_at`, until
+    now a sphere's circles only), at the carrier's rational unit direction
+    nearest the vertex's (its half-angle tangent rounded once), a point of
+    one quadratic field: the pin's rim, which OCCT splits at its seams'
+    vertices; (b) such a meeting matched to a stored circle (OCCT's
+    coaxial rim) whose frame turns against the carrier's angle is flipped,
+    as conics and a sphere's circles are (S9e.2's `flip`); (c) an edge of a
+    given meeting of two curved faces against a face of the partner on one
+    surface with one of the edge's faces lies on that face's surface and
+    is taken with the faces on one surface (as `Along`), not met again by
+    S9e.3b's three surfaces, whose fibres there are not separated (the
+    pin's rim on the dome's sphere: `ComputationLimit("a given meeting's
+    points not separated by a projection (S9e.3b)")` without it). (4) *Its
+    other queries.* Classification by the chain's set functions over each
+    primitive's location within the resolution (a common the lesser, a
+    fuse the greater, a cut reversed); bounds every primitive's between the
+    body's axial ends widened by the stored edges'; mass by the stored
+    topology; a rigid motion reads the chain off the moved stored topology
+    again; a result given to another Boolean is S9e.3a's. (5) *Degenerate
+    and refused.* S9's rules unchanged in every Boolean of the chain. A
+    body's own faces tangent along an edge (a bend within `1e-6` of flat:
+    a hemisphere's end on a rod of its radius, a fillet on its faces) are
+    `Degenerate("an imported body of several primitives whose faces are
+    tangent along an edge")`, named for the body (the S9e text holds stored
+    faces tangent along an edge degenerate), after the plane faces' check,
+    so K1's part is S9e.4b.4b.2's. Refused: plane faces other than ends,
+    `OutOfDomain("an imported body of several primitives with plane faces
+    other than their ends (S9e.4b.4b.2)")`; faces of one surface whose
+    material lies on different sides, a widest primitive whose material
+    lies outside it, a primitive meeting the earlier ones along edges of
+    both kinds and a chain whose model does not match the stored topology,
+    `OutOfDomain("an imported body of several primitives other than a
+    Boolean chain of them (S9e.4b.4c)")`; a torus among the faces stays
+    S9e.4b's. The general refusal becomes `OutOfDomain("an imported solid
+    other than a prism, a sphere, a cone, a torus or a Boolean of its
+    primitives (S9e.4b)")`. Expected in the DRAW trial: E5, G9 and `bug417`
+    evaluating (the draft's: G9's area 2,814.0138, DRAW's printed
+    2814.01); `bug28773` refused by S9's rules as `Degenerate("two
+    cylinders' axes within rounding of parallel")` (`_1`'s prism on its
+    leaning disc frame against `_2`'s primitives on its walls' axis); K1
+    as S9e.4b.4b.2's. (6) *Fuzzing.* The `boolean` target's `IMPORTED`
+    stage imports the chained stage's first results of no or one curved
+    face; it takes those of several sphere, cylinder and cone faces too
+    (the kernel's writer writes circles alone, so coaxial meetings and plane
+    sections), cut by the turned box again, the volume the chained cut's;
+    the replay measures how many. (7) *Evidence first.* Bodies OCCT writes
+    in one Boolean of two primitives (a `write` block), every section a
+    circle or a line (coaxial meetings, planes normal to the axes): `shaft`
+    (E5's: a cylinder fused with a coaxial narrower one from inside it to a
+    cap, on a turned frame), `cup` (a cylinder less a coaxial bore ending
+    inside it, its floor a cap), `dome` (G9's `c`: a frustum common a ball
+    on its axis, meeting it at a rational circle), `pin` (G9's `d`: a rod
+    from the dome's base plane common that ball), `bead` (a ball less a
+    coaxial rod through it: no plane face), `knob` (a ball fused with a
+    coaxial rod from inside it to a cap); declared `degenerate` `capsule`
+    (a rod fused with a ball of its radius about its end's centre: tangent
+    along the rim) and declared `unsupported` `rounded` (K1's part, a prism
+    of a rounded square less a cylinder across it: S9e.4b.4b.2's); cases of
+    each against boxes, slabs, balls and rods, the body the tool, the dome
+    and the pin both imported (G9's configuration: one sphere, the pin's
+    disc on the dome's base plane) and a chain; the reference S9e.3a's
+    chained reference on the constructions OCCT was given with S9e.4b.3c.3a's
+    checks and each body's closed form
+    (`generate_primitive_chains_boolean_fixtures.py --check`, a CI group
+    `primitive-chains`, `test_primitive_chains_boolean_reference.py`); a
+    native capture keyed on the refusal the step removes
+    (`compare_primitive_chains_boolean.py`, `imported.rs`'s general
+    refusal's present text); then the kernel and its tests
+    (`tests/primitive_chain_booleans.rs`: every fixture within `1e-9`
+    enclosures, the degenerate refused, histories over the stored ids,
+    deterministic, moved rigidly; the kernel's own stepped shaft and bead
+    written, read back and imported) and the DRAW trial of the five.
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces
