@@ -24,7 +24,8 @@
 //! own assembly its slots: `Tree::node`), the root's matched to the stored
 //! topology. S9e.4b.4b.1: a body of several sphere, cylinder and cone faces
 //! is such a tree of its primitives alone (`Tree::Primitive(i)`, a chain of
-//! them), each primitive's model at a seam of its own. S9e.4b.3c.1: a stored
+//! them), each primitive's model at a seam of its own; S9e.4b.4b.2a: its first
+//! leaf a prism (S9e.4a's, read off a cap of the body). S9e.4b.3c.1: a stored
 //! vertex within the resolution of the model's ring (a rim OCCT split at its
 //! sphere's seam; S9e.4b.4b.1: a cylinder's or a cone's meeting with a
 //! sphere too) splits it in the first arrangement (`Arr::split_at`), so the

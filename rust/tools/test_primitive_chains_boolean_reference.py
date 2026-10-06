@@ -120,16 +120,15 @@ class PrimitiveChainsReferenceTests(unittest.TestCase):
             self.assertTrue(ccw)
             for p in (square.points[k], square.points[(k+1) % len(square.points)]):
                 self.assertEqual((F(p[0])-F(cx))**2+(F(p[1])-F(cy))**2, F(r)**2)
-        self.assertEqual({b.name for b in fixtures.BODIES.values() if b.kind}, {'capsule', 'rounded'})
+        self.assertEqual({b.name for b in fixtures.BODIES.values() if b.kind}, {'capsule'})
         self.assertEqual(fixtures.BODIES['capsule'].kind, 'degenerate')
-        self.assertEqual(fixtures.BODIES['rounded'].kind, 'unsupported')
 
     def test_cases(self):
         listed = fixtures.all_cases()
         fixtures.validate(listed)
         self.assertEqual(len(listed), 24)
         kinds = {k: sum(1 for c in listed if c.kind == k) for k in ('solid', 'empty', 'degenerate', 'unsupported')}
-        self.assertEqual(kinds, {'solid': 21, 'empty': 0, 'degenerate': 0, 'unsupported': 3})
+        self.assertEqual(kinds, {'solid': 24, 'empty': 0, 'degenerate': 0, 'unsupported': 0})
         for klass in fixtures.CLASSES:
             self.assertTrue(any(c.klass == klass for c in listed), klass)
         for name in ('shaft_box_fuse', 'knob_box_cut', 'dome_pin_common', 'chain_dome_cut'):

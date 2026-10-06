@@ -56,7 +56,9 @@ circles meet at a joint, each such arc taken through its two ends
 sphere, cylinder and cone faces whose plane faces are their primitives'
 ends, a Boolean chain of those primitives (a stepped shaft, a cup, a dome
 and a pin on one ball: `solid/imported.rs`'s `primitives_piece`,
-`curved/pieces.rs`).
+`curved/pieces.rs`), and S9e.4b.4b.2a's such bodies led by a prism leaf
+(`bfuse_complex/K1`'s rounded box less a bore, a plate with a boss, a dimple,
+a dome or a conical pocket: `solid/imported.rs`'s `leaves`).
 
 ## Contract
 
@@ -1274,12 +1276,27 @@ circles (`Arr::split_at`, at the carrier's rational unit direction nearest
 the vertex's), turns it with OCCT's stored circle the way its carrier's
 angle does (`flip`, a ring by `ring_about`), and takes a given meeting of
 two curved faces against a face of the partner on one surface with one of
-its faces as lying on it (no three surfaces' points there). A body's own
-faces tangent along an edge are `Degenerate("an imported body of several
+its faces as lying on it (no three surfaces' points there). S9e.4b.4b.2a:
+where some plane faces are no primitive's ends, or its faces are tangent
+along an edge, the chain is led by a *prism leaf*: two plane
+faces facing apart, the bottom's loops each of whose edges' other faces is a
+wall along its normal (a plane parallel to it, a cylinder along it) sharing
+an edge with the top cap, its outer loop among them; S9e.4a's prism read off
+those loops on the bottom's stored frame (its arcs onto their circles, its
+walls' tangent joints the construction's own), its faces the caps, the walls
+and every face on their surfaces (`imported.rs`'s `leaves`, each tried in
+turn, the match the arbiter); the other surfaces' primitives follow as
+above, one along the leaf's axis on its axes bit for bit at its own stored
+origin (`bfuse_complex/K1`'s rounded box less its bore, a stadium plate with
+a boss, a dimple, a dome, a conical pocket). A body's own faces tangent
+along an edge other than a prism's walls' joints (two walls along one axis
+tangent along a line along it) are `Degenerate("an imported body of several
 primitives whose faces are tangent along an edge")`; plane faces other than
-the primitives' ends `OutOfDomain(... (S9e.4b.4b.2))` (`bfuse_complex/K1`'s
-rounded box), checked first; faces of one surface on different sides, a
-widest primitive whose material lies outside it, a primitive meeting the
+the primitives' ends and a leaf's `OutOfDomain("an imported body of several
+primitives with plane faces other than their ends or a prism's
+(S9e.4b.4b.2b)")` (two prisms, a prism on a primitive or cut at both caps'
+rims, a hull of planes among several primitives); faces of one surface on
+different sides, a widest primitive whose material lies outside it, a primitive meeting the
 earlier ones along both kinds of edge and a chain the match rejects
 `OutOfDomain("an imported body of several primitives other than a Boolean
 chain of them (S9e.4b.4c)")`.
@@ -1294,7 +1311,9 @@ and its planes' hulls matches (a pocket within a pocket: `OutOfDomain`,
 S9e.4b.4); a piece whose planes pass through its cone's
 apex (`Degenerate`, S9's rule: `shading_132`); a body of several
 primitives with plane faces other than their ends (`OutOfDomain`,
-S9e.4b.4b.2) or no Boolean chain of them (`OutOfDomain`, S9e.4b.4c); a
+S9e.4b.4b.2b: two prisms, a prism on a primitive or cut at both caps'
+rims, a hull of planes among several primitives) or no Boolean chain of
+them (`OutOfDomain`, S9e.4b.4c); a
 torus's v-segment or wedge and every other body of curved faces, a torus
 among several among them (`OutOfDomain`, S9e.4b: a general body on its
 stored surfaces); spline faces or edges (S9f); S9's
@@ -3632,6 +3651,46 @@ multiple root; and the engine's rules.
   with every check; `bugs/modalg_6/bug28773` is refused as two cylinders'
   axes within rounding of parallel (its tube's disc frame leaning 2.2e-33
   off its walls), `bfuse_complex/K1` as S9e.4b.4b.2's.
+* **S9e.4b.4b.2a evidence (imported bodies led by a prism leaf), before its
+  kernel code.** 7 bodies written by OCCT, each one Boolean of a prism of
+  lines and arcs (a square its corners rounded, or a stadium) and a
+  primitive, every section a circle or a line (K1's rounded box less a bore
+  on the world's axes, a stadium plate with a boss, a rounded plate with a
+  dimple, a stadium plate with a conical pocket, a rounded plate with a
+  dome; declared `degenerate` a post on a fillet's circle and declared
+  `unsupported` a notch through both caps at the rim, both given to no case)
+  under `rust/fixtures/imported/`. `generate_prism_leaves_boolean_fixtures.py
+  --check` writes `boolean-prism-leaves-cases.txt`, `-expected.tsv`,
+  `-frames.tsv` and `-bodies.txt`: 24 cases (8 groups; 21 solid, 3
+  degenerate: a rod tangent to the bore) against `TILT` rods and boxes, a
+  ball, as object and tool, the boss and the pocket both imported and the
+  dimple's chain, from S9e.3a's chained reference on the constructions OCCT
+  was given (two families 3.8e-36, each body's closed form 4.0e-42, Monte
+  Carlo 2.5 standard errors), every stored vertex within 6.7e-16 of the size
+  on its construction. `compare_prism_leaves_boolean.py` reproduces
+  `occt-boolean-prism-leaves-preimplementation` (keyed on S9e.4b.4b.1's
+  refusal of plane faces other than the primitives' ends, the probe
+  `unsupported` on all 24 before the step): every result valid, 19 match, 5
+  reviewed (BRepGProp's default integration).
+* **Kernel (S9e.4b.4b.2a).** `tests/prism_leaf_booleans.rs`: all 24
+  fixtures as the reference (21 within the kernel's enclosures, each at most
+  `1e-9` wide; the tangent rod `Degenerate`), every history complete over
+  the imported bodies' stored ids, results deterministic and moved rigidly,
+  moved inputs keeping the reference's volumes, every body its chain led by
+  its prism, the post refused for its own tangency and the notch as
+  S9e.4b.4b.2b's, and the kernel's own boss, dimple and dome plates written,
+  read back and imported giving its own Booleans' volumes (K1's shape the
+  writer refuses: its bore's rims stored as ellipses of equal axes).
+  `compare_prism_leaves_boolean.py`: 15 matches and 9 reviewed (the native
+  measures and, with the kernel, entity counts: its meetings of two
+  cylinders split at their turning points, OCCT's seams and its closed
+  edges' vertices); S9e.4b.4b.1's rounded box solid, its
+  `compare_primitive_chains_boolean.py` 14 and 10 with the kernel within
+  the reference on all 24. A trial of the targeted DRAW restore cases:
+  `bfuse_complex/K1`'s part imports as its chain and the fuse is refused as
+  a tangency between the inputs (its tool a rod of the bore's radius whose
+  axis crosses it); `bugs/modalg_6/bug28773` stays two cylinders' axes
+  within rounding of parallel; `E5`, `G9` and `bug417` evaluate as before.
 * **Fuzzing.** The `boolean` target (`FUZZING.md`): the split target's line
   and arc profiles, the tool offset exactly in the axis-aligned frame or
   sharing the tilted one's origin, heights equal, spanning, overlapping,
@@ -3649,7 +3708,8 @@ multiple root; and the engine's rules.
   turned box again, its volume the chained cut's; since S9e.4b.3a a first
   result of one sphere, cylinder or cone face and plane faces too, a plane
   piece; since S9e.4b.4b.1 one of several such faces too, a Boolean chain
-  of their primitives); S9e.4b.4a: a lens in the object's frame given the chosen
+  of their primitives, since S9e.4b.4b.2a one led by a prism leaf too);
+  S9e.4b.4a: a lens in the object's frame given the chosen
   operation, then written, read back, imported and given it again, both
   volumes equal (`JOINTS`, by the chained byte's next bit; in the tilted
   frame its joints round off both circles once read back).

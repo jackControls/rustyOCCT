@@ -1,70 +1,78 @@
 #!/usr/bin/env python3
-"""Fixtures for S9e.4b.4b.1 of REVIEW_NOTES.md: imported bodies of several
-sphere, cylinder and cone faces whose plane faces are all ends of their
-primitives, a Boolean chain of those primitives (bodies OCCT wrote to
-`.brep` files), given to Booleans.
+"""Fixtures for S9e.4b.4b.2a of REVIEW_NOTES.md: imported bodies of several
+sphere, cylinder and cone faces led by a prism leaf (a prism of lines and
+arcs with both its caps, its walls' joints tangent where its corners are
+rounded), the chain of the leaf and the other primitives (bodies OCCT wrote
+to `.brep` files), given to Booleans.
 
-The bodies are OCCT's own output, as S9e.4b.3c.3b's
-(`generate_piece_trees_boolean_fixtures.py`): `boolean-primitive-chains-
-bodies.txt` holds one `write NAME imported/chain_NAME.brep` block per body
-for `occt_boolean_oracle.cpp` (one solid's rows, a `boolean` row and
-another solid's rows: the Boolean's one solid written), which
-`compare_primitive_chains_boolean.py --write-bodies` runs to write
-`rust/fixtures/imported/chain_NAME.brep` (format version 1, no
+The bodies are OCCT's own output, as S9e.4b.4b.1's
+(`generate_primitive_chains_boolean_fixtures.py`): `boolean-prism-leaves-
+bodies.txt` holds one `write NAME imported/leaf_NAME.brep` block per body
+for `occt_boolean_oracle.cpp` (the prism's rows, a `boolean` row and the
+primitive's rows: the Boolean's one solid written), which
+`compare_prism_leaves_boolean.py --write-bodies` runs to write
+`rust/fixtures/imported/leaf_NAME.brep` (format version 1, no
 triangulations). Nothing here reads the kernel; the files are read only to
 check that each is the body it claims to be (below).
 
-`boolean-primitive-chains-cases.txt` lists each case in the Boolean
-protocol, an imported input as its one `brep imported/chain_NAME.brep` row,
-a chain's further `then` rows as S9e.1's; `boolean-primitive-chains-
-expected.tsv` gives per case `expect KIND S9e.4b.4b.1 CLASS` (`solid`,
-`empty`, `degenerate`: a `Degenerate` of S9's rules or the body's own;
-`unsupported`: `OutOfDomain`, a later step's; the class `pieces`: an
-imported body and a construction, `both`: two imported inputs, `chain`: an
-imported input's result given to another Boolean), a degenerate or
-unsupported case's `reason TEXT`, then `result N volume area cx cy cz`
-(totals over the N solids, world coordinates) or `empty`;
-`boolean-primitive-chains-frames.tsv` the stored axes of every solid the
-kernel builds from its rows.
+`boolean-prism-leaves-cases.txt` lists each case in the Boolean protocol, an
+imported input as its one `brep imported/leaf_NAME.brep` row, a chain's
+further `then` rows as S9e.1's; `boolean-prism-leaves-expected.tsv` gives
+per case `expect KIND S9e.4b.4b.2a CLASS` (`solid`, `empty`, `degenerate`: a
+`Degenerate` of S9's rules or the body's own; `unsupported`: `OutOfDomain`,
+a later step's; the class `pieces`: an imported body and a construction,
+`both`: two imported inputs, `chain`: an imported input's result given to
+another Boolean), a degenerate or unsupported case's `reason TEXT`, then
+`result N volume area cx cy cz` (totals over the N solids, world
+coordinates) or `empty`; `boolean-prism-leaves-frames.tsv` the stored axes of
+every solid the kernel builds from its rows.
 
-Each body is one Boolean OCCT was given of two primitives (a cylinder, the
-prism of a disc; a cone; a ball), coaxial, so every section is a circle (a
-coaxial meeting, or a plane normal to the axis: the `.brep` reader takes no
-ellipse, and a sphere's section off its stored frame's parallels has a
-pcurve the converter does not certify, S9e.4b.3a's evidence): `shaft`
-(`bfuse_complex/E5`'s part), a cylinder of radius 3 over `[0, 4]` on
-`SKEW` fused with a coaxial one of radius 3/2 over `[2, 9]` (from inside it
-to a cap: its step a ring); `cup`, a cylinder of radius 3 over `[0, 5]` on
-`SKEW2` less a coaxial bore of radius 2 over `[1, 7]` (a blind hole, its
-floor a cap of the bore); `dome` (`bcut_complex/G9`'s `cts21128c`), a
-frustum of radii 7/2 and 5/2 over 4 on the world's axes common a ball of
-radius 5 about `(0, 0, -2)` (meeting at radius 3, height 2; its pole a
-vertex loop); `pin` (G9's `cts21128d`), a rod of radius 7/5 over `[0, 6]`
-common that ball (its rim about 14/5 high, its disc on the dome's base
-plane); `bead`, a ball of radius 5 on `SKEW4` less a coaxial rod of radius 3
-through it (its rims at heights `+-4`, no plane face); `knob`, a ball of
-radius 2 on the world's axes about `(1, 1, 1)` fused with a coaxial rod of
-radius 6/5 over `[0, 5]` (from its centre to a cap, its rim at height
-8/5); declared `degenerate`: `capsule`, a rod of radius 2 over `[0, 4]`
-fused with a ball of its radius about its top's centre (tangent along the
-rim: `Degenerate("an imported body of several primitives whose faces are
-tangent along an edge")`); `rounded` (`bfuse_complex/K1`'s part), a prism
-of a square of side 8 its corners rounded by arcs of radius 2, less a
-cylinder of radius 3/2 along the world's `y` through it (plane faces other
-than its primitives' ends: declared `unsupported` until S9e.4b.4b.2a's prism
-leaf, solid since).
+Each body is one Boolean OCCT was given of a prism of lines and arcs (a
+square of side 9 its corners rounded by arcs of radius 2, as
+`bfuse_complex/K1`'s part; or a stadium, two half discs of radius 5/2 about
+`(0, 0)` and `(6, 0)` joined by lines) and a primitive, every section a
+circle or a line (the `.brep` reader takes no ellipse, and a sphere's
+section off its stored frame's parallels has a pcurve the converter does not
+certify, S9e.4b.3a's evidence): `bore` (K1's part), the rounded square over
+`[0, 6]` on the world's axes about `(1, 2, 1/2)` less a cylinder of radius
+3/2 along `y` about `(9/2, *, 3)` through both its walls `y = 0` and `y = 9`
+(on a turned frame its axis would lie within rounding of the walls `x = 0`
+and `x = 9`, which S9's rules refuse); `boss`, the stadium over `[0, 2]` on
+`SKEW2` fused with a cylinder of radius 5/4 along its axis about `(3, 0)`
+over `[1, 5]` (from inside the plate to a cap above it); `dimple`, the
+rounded square over `[0, 3]` on the world's axes less a ball of radius 5/2
+about `(9/2, 9/2, 9/2)` (meeting the top cap at radius 2); `pocket`, the
+stadium over `[0, 3]` on `SKEW` (across the boss's plate) less a frustum
+along its axis about `(3, 0)` from radius 1/2 at height 1 to radius 2 at
+height 4 (a conical pocket with a flat floor); `dome`, the rounded square over `[0, 3]`
+on `SKEW2` fused with a ball of radius 2 about `(9/2, 9/2, 5/2)` (meeting
+the top cap alone); declared `degenerate`: `post`, the rounded square over
+`[0, 3]` on the world's axes fused with a cylinder of radius 2 about the
+corner `(2, 2)` over `[1, 5]` (a post on the fillet's circle: the fillet's
+face and the post's above it on one surface along their arc,
+`Degenerate("an imported body of several primitives whose faces are
+tangent along an edge")`, given to no case); declared `unsupported`:
+`notch`, the rounded square over `[0, 2]` on the world's axes less a rod of
+radius 3/2 along `y` about `(9/2, *, 1)` from `y = -1` to `y = 4` (a blind
+notch through both caps at the rim: no cap's loop the prism's,
+S9e.4b.4b.2b's).
 
-Cases (each the three operations): `shaft_box`, the shaft and a `TILT` box
-across its step; `cup_ball`, the cup and a ball across its rim between its
-wall and its bore; `dome_pin`, the dome and the pin, both imported (G9's
-configuration: one sphere, the pin's disc inside the dome's on one plane);
-`dome_slab`, the dome and a `TILT` slab; `bead_slab`, the bead and a `TILT`
-slab; `knob_box`, a `TILT` box less the knob (the body the tool);
-`chain_dome`, the dome less a `TILT` box biting its side, then with a
-`TILT` slab; `rounded_rod`, the rounded box and a rod through its corner
-along its walls (solid since S9e.4b.4b.2a). The capsule is given to no
-case: its own tangency along its rim keeps the reference's sweeps over twenty
-minutes a group, so the kernel's tests refuse it on import alone.
+Cases (each the three operations): `bore_rod`, the bore and a `TILT` rod
+across it; `boss_box`, the boss and a `TILT` box across the boss and the
+plate's rim; `dimple_ball`, the dimple and a ball across its rim;
+`pocket_rod`, the pocket and a `TILT` rod through its floor; `dome_box`, a
+`TILT` box less the dome (the body the tool); `boss_pocket`, the boss and
+the pocket both imported (their plates crossing); `chain_dimple`, the dimple
+less a `TILT` rod through its rounded corner, then with a `TILT` slab.
+Declared `degenerate`: `bore_touch`, the bore and a rod of radius 1 along `x`
+about `(*, 9/2, 11/2)`, tangent to the bore from above at `(9/2, 9/2, 9/2)`
+(`Degenerate("a tangency between the inputs (S9c)")`; K1's own
+configuration, a rod of the bore's radius whose axis crosses it, the kernel
+does not refuse alike in every Boolean, so it is left to the DRAW trial). The post and the
+notch are given to no case (the reference's cost grows with a case's faces:
+a first set with the bore and the boss both imported, the bore's chain with a
+box and a slab and the notch against a box ran over twenty minutes a group),
+so the kernel's tests refuse them on import alone.
 
 The reference is the construction OCCT was given, through S9e.3a's chained
 reference (`chained_curved_boolean_reference.py`): each imported body its
@@ -73,13 +81,12 @@ op2 (Z op W)`, a chain `((X op Y) op2 C) op3 D`, with S9e.4b.3c.3a's checks
 (the two families, each solid's closed form, the pair identities on the
 last Boolean's arguments, Monte Carlo, solid counts by rays at two
 resolutions, each body one solid, the meetings' sines and the events'
-spacing outside the declared groups) and each body's closed form where it
-has one (`closed`: the shaft and the cup, prisms on one frame, their
-volumes in their chart times the stored axes' determinant; the dome, the
-pin and the knob on the world's axes). With `--check`, where the bodies'
+spacing outside the declared groups) and each body's closed form (its
+prism's section in its chart, less or plus the primitive's part in it,
+times the stored axes' determinant). With `--check`, where the bodies'
 files exist, each is read (`stored_records`): its curved faces' kinds its
-primitives', every stored vertex within 1e-12 of the size on the
-construction's surfaces.
+prism's arcs' and its primitive's, every stored vertex within 1e-12 of the
+size on the construction's surfaces.
 """
 import argparse
 from fractions import Fraction as F
@@ -93,133 +100,171 @@ from identity_reference import Boundary, Case, native_case
 from curve_surface_reference import stored_axes
 import generate_imported_pieces_boolean_fixtures as pieces
 import generate_piece_forms_boolean_fixtures as forms
+import generate_primitive_chains_boolean_fixtures as chains
 
 base = pieces.base
 ROOT = base.ROOT
 OPS = base.OPS
 OPERATIONS, BOOLEANS = base.OPERATIONS, base.BOOLEANS
 CLASSES = ('pieces', 'both', 'chain')
-PREFIX = 'boolean-primitive-chains'
+PREFIX = 'boolean-prism-leaves'
 BODIES_FILE = f'{PREFIX}-bodies.txt'
-STEP = 'S9e.4b.4b.1'
+STEP = 'S9e.4b.4b.2a'
 FRAMES = forms.FRAMES
 HP = base.HP
 prism, sphere, cone, construction = base.prism, base.sphere, base.cone, base.construction
 ref = base.ref
-at, q, point, moved = forms.at, forms.q, forms.point, forms.moved
+q, point, moved = forms.q, forms.point, forms.moved
 cylinder, block, cap_volume = forms.cylinder, forms.block, forms.cap_volume
+det, rounded_square = chains.det, chains.rounded_square
+
+
+def at(name, origin):
+    return tuple(float(c) for c in origin)+FRAMES[name]
 
 
 # ------------------------------------------------------------------ bodies
 
-class Body:
-    """An imported body `first op second` of two primitives, OCCT's rows for
-    it, its closed form `(volume, area)` where it has one (the area `None`
-    where not checked), and its declared refusal (`kind` `degenerate` or
-    `unsupported`, its reason `reason`)."""
+class Body(chains.Body):
+    """An imported body `prism op primitive`, OCCT's rows for it, its closed
+    form `(volume, area)` (the area `None` where not checked), and its
+    declared refusal (`kind` `degenerate` or `unsupported`, its reason
+    `reason`)."""
 
     def __init__(self, name, first, op, second, closed=None, kind=None, reason=None):
-        self.name, self.first, self.op, self.second = name, first, op, second
-        self.closed, self.kind, self.reason = closed, kind, reason
-        self.path = f'imported/chain_{name}.brep'
-        self.ref_specs, self.ref_expr = [first, second], (op, 0, 1)
-
-    def specs(self):
-        return [self.first, self.second]
-
-    def native_rows(self):
-        rows = lambda spec: native_case(construction(spec, 0)).split('\n')[1:-1]
-        return rows(self.first)+[f'boolean {self.op}']+rows(self.second)
-
-    def curved_kinds(self):
-        """The kinds of its primitives' curved faces' surfaces, sorted (a
-        prism's the cylinders of its arcs and circles)."""
-        out = []
-        for s in self.specs():
-            if s[0] == 'prism':
-                for b in s[1]:
-                    if b.circle is not None:
-                        out.append('cylinder')
-                    else:
-                        out += ['cylinder' for seg in (b.segments or []) if seg is not None]
-            else:
-                out.append(s[0])
-        return sorted(out)
+        super().__init__(name, first, op, second, closed, kind, reason)
+        self.path = f'imported/leaf_{name}.brep'
 
 
-def det(frame):
-    """The frame's stored axes' determinant (a unit within rounding)."""
-    _, x, y, n = (tuple(F(c) for c in a) for a in stored_axes(frame))
-    return q(x[0]*(y[1]*n[2]-y[2]*n[1])-x[1]*(y[0]*n[2]-y[2]*n[0])+x[2]*(y[0]*n[1]-y[1]*n[0]))
+def stadium(length, r):
+    """Two half discs of radius `r` about `(0, 0)` and `(length, 0)` joined
+    by lines, counter-clockwise."""
+    points = [(0.0, -r), (length, -r), (length, r), (0.0, r)]
+    segments = [None, (float(length), 0.0, float(r), True), None, (0.0, 0.0, float(r), True)]
+    return Boundary(points=[(float(x), float(y)) for x, y in points], segments=segments)
 
 
-def rounded_square(side, r):
-    """A square `[0, side]^2` its corners rounded by arcs of radius `r`,
-    counter-clockwise."""
-    s = side
-    points = [(r, 0), (s-r, 0), (s, r), (s, s-r), (s-r, s), (r, s), (0, s-r), (0, r)]
-    arcs = [None, (s-r, r, r, True), None, (s-r, s-r, r, True), None, (r, s-r, r, True), None, (r, r, r, True)]
-    return Boundary(points=[(float(x), float(y)) for x, y in points],
-                    segments=[None if a is None else tuple(float(c) for c in a[:3])+(a[3],) for a in arcs])
+def rounded_area(side, r):
+    """The rounded square's area: the square less its corners' `(4 - pi)
+    r^2`."""
+    return q(side)**2-(4-mp.pi)*q(r)**2
 
 
-def rod_in_ball(r, R, above):
-    """A rod of radius `r` from a plane `above` over a ball's centre (of
-    radius `R`) common the ball: the rod up to its rim, at `d = sqrt(R^2 -
-    r^2)` above the centre, and the ball's cap beyond it."""
-    d = mp.sqrt(R**2-r**2)
-    return (mp.pi*r**2*(d-above)+cap_volume(R, d), None)
+def stadium_area(length, r):
+    return q(length)*2*q(r)+mp.pi*q(r)**2
 
 
-def knob_volume(r, R, top):
-    """A ball of radius `R` fused with a rod of radius `r` from its centre
-    to a cap `top` above it: the ball, and the rod above its rim at `d =
-    sqrt(R^2 - r^2)` less the ball's cap beyond it."""
-    d = mp.sqrt(R**2-r**2)
-    return (mp.pi*mp.mpf(4)/3*R**3+mp.pi*r**2*(top-d)-cap_volume(R, d), None)
+def frustum_volume(r0, r1, h):
+    return mp.pi*q(h)/3*(q(r0)**2+q(r0)*q(r1)+q(r1)**2)
+
+
+def height(frame, p):
+    """A point's height `w` in a frame's chart on its stored axes, exactly
+    (`p = o + u x + v y + w n`, Cramer's rule): a primitive's rounded origin
+    placed in its plate's chart."""
+    o, x, y, n = (tuple(F(c) for c in a) for a in stored_axes(frame))
+    d = tuple(F(p[i])-o[i] for i in range(3))
+
+    def det3(a, b, c):
+        return a[0]*(b[1]*c[2]-b[2]*c[1])-a[1]*(b[0]*c[2]-b[2]*c[0])+a[2]*(b[0]*c[1]-b[1]*c[0])
+    return det3(x, y, d)/det3(x, y, n)
+
+
+def axes(frame):
+    """A frame's stored origin and axes as exact rationals."""
+    return [tuple(F(c) for c in a) for a in stored_axes(frame)]
+
+
+def bore_volume():
+    """The bore's part between the plate's walls `v = 0` and `v = 9`: its
+    frame's chart map `o' + u x' + v y' + w n'` (stored axes, exact) carries
+    the disc of radius 3/2 about `(3, 9/2)` along `n'`; the walls bound `w`
+    where the plate's chart's `v` (a linear function of the bore's chart) is
+    0 and 9, a range of `w` alike over the disc (the walls parallel), so the
+    part is the disc's area times that range times the bore's axes'
+    determinant."""
+    o, x, y, n = axes(BORE_FRAME)
+    o2, x2, y2, n2 = axes(BORE_HOLE)
+
+    def det3(a, b, c):
+        return a[0]*(b[1]*c[2]-b[2]*c[1])-a[1]*(b[0]*c[2]-b[2]*c[0])+a[2]*(b[0]*c[1]-b[1]*c[0])
+    # The plate's `v` of a world vector `d`: Cramer's rule on its axes.
+    dv = det3(x, n2, n)/det3(x, y, n)
+    return mp.pi*q(F(9, 4))*q(9/abs(dv))*q(det3(x2, y2, n2))
+
+
+def pocket_depth():
+    """The pocket's frustum base's height in its plate's chart (1 within
+    rounding)."""
+    return height(POCKET_FRAME, POCKET_CONE[4][:3])
+
+
+def dome_centre():
+    """The dome's ball centre's height in its plate's chart (5/2 within
+    rounding)."""
+    return height(DOME_FRAME, DOME_BALL[2][:3])
+
+
+def dome_gap():
+    """The world distance from the dome's ball centre to the plate's top
+    cap, the plane `w = 3` of its chart: `(3 - c) det / |x * y|` on the
+    stored axes (the chart's `w` a unit along the normal within
+    rounding)."""
+    _, x, y, n = axes(DOME_FRAME)
+    xy = (x[1]*y[2]-x[2]*y[1], x[2]*y[0]-x[0]*y[2], x[0]*y[1]-x[1]*y[0])
+    d = xy[0]*n[0]+xy[1]*n[1]+xy[2]*n[2]
+    return q((3-dome_centre())*d)/mp.sqrt(q(sum(c*c for c in xy)))
 
 
 # The bodies' frames and places.
-SHAFT_FRAME = at('SKEW', (1, 2, 0.5))
-CUP_FRAME = at('SKEW2', (0.5, 1, 1.5))
-DOME_FRAME = at('XY', (0, 0, 0))
-DOME_BALL = at('XY', (0, 0, -2))
-BEAD_FRAME = at('SKEW4', (2, 1, 0.5))
-KNOB_FRAME = at('XY', (1, 1, 1))
-CAPSULE_FRAME = at('XY', (0, 0, 0))
-ROUNDED_FRAME = at('XY', (0, 0, 0))
-ROUNDED_HOLE = at('ALONGY', (0, 0, 0))
+BORE_FRAME = at('XY', (1, 2, 0.5))
+BORE_HOLE = moved(at('ALONGY', (0, 0, 0)), BORE_FRAME[:3])
+BOSS_FRAME = at('SKEW2', (3, 4.5, 5))
+DIMPLE_FRAME = at('XY', (0, 0, 0))
+POCKET_FRAME = at('SKEW', point(BOSS_FRAME, 1.5, -0.5, -1.25))
+DOME_FRAME = at('SKEW2', (1, -1, 0.5))
+POCKET_CONE = cone(0.5, 2.0, 3.0, at('SKEW', point(POCKET_FRAME, 3.0, 0.0, 1.0)))
+DOME_BALL = sphere(2.0, at('SKEW2', point(DOME_FRAME, 4.5, 4.5, 2.5)))
+POST_FRAME = at('XY', (0, 0, 0))
+NOTCH_ROD = at('ALONGY', (0, 0, 0))
 
 
 def make_bodies():
     pi = mp.pi
     out = [
-        Body('shaft', cylinder(SHAFT_FRAME, 0.0, 0.0, 3.0, 0.0, 4.0), 'fuse',
-             cylinder(SHAFT_FRAME, 0.0, 0.0, 1.5, 2.0, 9.0),
-             closed=lambda: (q(36+F(9, 4)*5)*pi*det(SHAFT_FRAME), None)),
-        Body('cup', cylinder(CUP_FRAME, 0.0, 0.0, 3.0, 0.0, 5.0), 'cut',
-             cylinder(CUP_FRAME, 0.0, 0.0, 2.0, 1.0, 7.0),
-             closed=lambda: ((45-16)*pi*det(CUP_FRAME), None)),
-        # The frustum over `[0, 2]` and the ball's cap above height 2 (its
-        # centre's 4).
-        Body('dome', cone(3.5, 2.5, 4.0, DOME_FRAME), 'common', sphere(5.0, DOME_BALL),
-             closed=lambda: (pi*q(F(2, 3)*(F(49, 4)+F(21, 2)+9))+cap_volume(5, 4), None)),
-        # The rod up to its rim, `d - 2` above its base (`d` the rim's
-        # height over the ball's centre, about 24/5 for the binary64 radius
-        # 1.4), and the ball's cap above it.
-        Body('pin', cylinder(DOME_FRAME, 0.0, 0.0, 1.4, 0.0, 6.0), 'common', sphere(5.0, DOME_BALL),
-             closed=lambda: rod_in_ball(q(1.4), 5, 2)),
-        Body('bead', sphere(5.0, BEAD_FRAME), 'cut', cylinder(BEAD_FRAME, 0.0, 0.0, 3.0, -6.0, 6.0)),
-        # The ball, and the rod above its rim (about 8/5 above the centre for
-        # the binary64 radius 1.2) less the ball's cap above it.
-        Body('knob', sphere(2.0, KNOB_FRAME), 'fuse', cylinder(KNOB_FRAME, 0.0, 0.0, 1.2, 0.0, 5.0),
-             closed=lambda: knob_volume(q(1.2), 2, 5)),
-        Body('capsule', cylinder(CAPSULE_FRAME, 0.0, 0.0, 2.0, 0.0, 4.0), 'fuse', sphere(2.0, at('XY', (0, 0, 4))),
+        # The rounded square over 6 less the bore across its 9.
+        Body('bore', prism([rounded_square(9, 2)], BORE_FRAME, 0.0, 6.0), 'cut',
+             cylinder(BORE_HOLE, 3.0, 4.5, 1.5, -1.0, 10.0),
+             closed=lambda: (6*rounded_area(9, 2)*det(BORE_FRAME)-bore_volume(), None)),
+        # The stadium over 2 and the boss above it, `[2, 5]`.
+        Body('boss', prism([stadium(6, 2.5)], BOSS_FRAME, 0.0, 2.0), 'fuse',
+             cylinder(BOSS_FRAME, 3.0, 0.0, 1.25, 1.0, 5.0),
+             closed=lambda: ((2*stadium_area(6, 2.5)+3*pi*q(F(25, 16)))*det(BOSS_FRAME), None)),
+        # The rounded square over 3 less the ball's cap below it, 3/2 from
+        # its centre.
+        Body('dimple', prism([rounded_square(9, 2)], DIMPLE_FRAME, 0.0, 3.0), 'cut',
+             sphere(2.5, at('XY', (4.5, 4.5, 4.5))),
+             closed=lambda: (3*rounded_area(9, 2)-cap_volume(q(F(5, 2)), q(F(3, 2))), None)),
+        # The stadium over 3 less the frustum's part below its top, from
+        # radius 1/2 at its base's height (1 within rounding) up to 3, its
+        # slope 1/2.
+        Body('pocket', prism([stadium(6, 2.5)], POCKET_FRAME, 0.0, 3.0), 'cut', POCKET_CONE,
+             closed=lambda: ((3*stadium_area(6, 2.5)-frustum_volume(F(1, 2), F(1, 2)+(3-pocket_depth())/2,
+                                                                     3-pocket_depth()))*det(POCKET_FRAME), None)),
+        # The rounded square over 3 and the ball's cap above it, its centre
+        # (5/2 high within rounding) below the cap.
+        Body('dome', prism([rounded_square(9, 2)], DOME_FRAME, 0.0, 3.0), 'fuse', DOME_BALL,
+             closed=lambda: (3*rounded_area(9, 2)*det(DOME_FRAME)+cap_volume(2, dome_gap()), None)),
+        # A post on a rounded corner, on its fillet's circle: the fillet's
+        # face and the post's above it on one surface along their arc.
+        Body('post', prism([rounded_square(9, 2)], POST_FRAME, 0.0, 3.0), 'fuse',
+             cylinder(POST_FRAME, 2.0, 2.0, 2.0, 1.0, 5.0),
              kind='degenerate', reason='an imported body of several primitives whose faces are tangent along an edge'),
-        # Declared `unsupported` until S9e.4b.4b.2a (plane faces other than
-        # its primitives' ends): a chain led by its prism leaf since.
-        Body('rounded', prism([rounded_square(8, 2)], ROUNDED_FRAME, 0.0, 8.0), 'cut',
-             cylinder(ROUNDED_HOLE, 4.0, 4.0, 1.5, -1.0, 9.0)),
+        Body('notch', prism([rounded_square(9, 2)], POST_FRAME, 0.0, 2.0), 'cut',
+             cylinder(NOTCH_ROD, 1.0, 4.5, 1.5, -1.0, 4.0),
+             kind='unsupported',
+             reason='an imported body of several primitives with plane faces other than their ends or a prism\'s '
+                    '(S9e.4b.4b.2b)'),
     ]
     return {b.name: b for b in out}
 
@@ -231,13 +276,6 @@ def imported(name):
     return ('imported', name)
 
 
-def shifted(expr, k):
-    """An expression over a body's own solids, its leaves moved by `k`."""
-    if isinstance(expr, int):
-        return expr+k
-    return (expr[0], shifted(expr[1], k), shifted(expr[2], k))
-
-
 def flatten(items):
     """The reference's solids of a case's inputs (an imported body its two
     solids) and each input's expression over them."""
@@ -247,7 +285,7 @@ def flatten(items):
             b = BODIES[it[1]]
             k = len(specs)
             specs += b.ref_specs
-            exprs.append(shifted(b.ref_expr, k))
+            exprs.append(chains.shifted(b.ref_expr, k))
         else:
             exprs.append(len(specs))
             specs.append(it)
@@ -281,29 +319,32 @@ class Imported(pieces.Imported):
         return (op2, e[2], first) if sw2 else (op2, first, e[2])
 
 
-def group(name, klass, items, outcomes, first=None):
+def group(name, klass, items, outcomes, first=None, kind=None, reason=None):
     """Cases of one group: the last operation varied over `outcomes` (`{op:
-    solids}`, 0 for empty); a declared body's refusal declares its cases."""
+    solids}`, 0 for empty); a declared body's refusal, or the group's own
+    (`kind`, `reason`), declares its cases."""
     out = []
     declared = [BODIES[s[1]] for s in items if s[0] == 'imported' and BODIES[s[1]].kind]
     for op, n in outcomes.items():
         if declared:
-            kind, reason = declared[0].kind, declared[0].reason
+            k, why = declared[0].kind, declared[0].reason
+        elif kind:
+            k, why = kind, reason
         else:
-            kind, reason = ('solid' if n else 'empty'), None
+            k, why = ('solid' if n else 'empty'), None
         stages = [(op, False)] if first else []
-        out.append(Imported(f'{name}_{op}', klass, items, first or op, stages, kind, n, reason))
+        out.append(Imported(f'{name}_{op}', klass, items, first or op, stages, k, n, why))
     return out
 
 
-SHAFT_BOX = block(at('TILT', point(SHAFT_FRAME, 1.0, 0.5, 4.25)), -2.5, -2.0, 2.0, 2.5, -1.25, 1.75)
-CUP_BALL = sphere(1.75, at('XY', point(CUP_FRAME, 2.5, 0.25, 5.0)))
-DOME_SLAB = block(at('TILT', (0.5, 0.25, 1.5)), -7.0, -7.0, 7.0, 7.0, -0.75, 0.625)
-BEAD_SLAB = block(at('TILT', point(BEAD_FRAME, 0.5, 1.0, 1.0)), -7.0, -7.0, 7.0, 7.0, -1.0, 1.5)
-KNOB_BOX = block(at('TILT', point(KNOB_FRAME, 0.5, -0.25, 1.5)), -3.0, -3.0, 3.0, 3.0, -0.5, 1.25)
-CHAIN_BOX = block(at('TILT', (2.5, 0.5, 0.75)), -1.5, -1.5, 1.5, 1.5, -1.0, 1.0)
-CHAIN_SLAB = block(at('TILT', (0.25, -0.5, 2.25)), -6.0, -6.0, 6.0, 6.0, -0.5, 0.625)
-ROUNDED_ROD = cylinder(ROUNDED_FRAME, 6.5, 6.5, 0.75, -1.0, 9.0)
+BORE_ROD = cylinder(at('TILT', point(BORE_FRAME, 6.25, 3.5, 3.25)), 0.0, 0.0, 1.0, -6.0, 6.0)
+BORE_TOUCH = cylinder(moved(at('SIDE', (0, 0, 0)), BORE_FRAME[:3]), 4.5, 5.5, 1.0, -1.0, 10.0)
+BOSS_BOX = block(at('TILT', point(BOSS_FRAME, 4.25, 1.5, 2.25)), -2.0, -1.75, 2.0, 2.0, -1.5, 1.5)
+DIMPLE_BALL = sphere(1.75, at('XY', (6.0, 4.75, 3.25)))
+POCKET_ROD = cylinder(at('TILT', point(POCKET_FRAME, 3.25, 0.5, 1.0)), 0.0, 0.0, 0.75, -3.0, 3.0)
+DOME_BOX = block(at('TILT', point(DOME_FRAME, 5.5, 4.0, 3.0)), -3.0, -3.0, 3.0, 3.0, -1.25, 1.0)
+CHAIN_ROD = cylinder(at('TILT', (7.25, 7.5, 1.5)), 0.0, 0.0, 1.0, -4.0, 4.0)
+CHAIN_SLAB = block(at('TILT', (4.25, 4.75, 2.125)), -8.0, -8.0, 8.0, 8.0, -0.75, 0.5)
 
 
 def cases():
@@ -311,15 +352,16 @@ def cases():
     take them in this order)."""
     out = []
     three = {'fuse': 1, 'cut': 1, 'common': 1}
-    out += group('cup_ball', 'pieces', [imported('cup'), CUP_BALL], three)
-    out += group('shaft_box', 'pieces', [imported('shaft'), SHAFT_BOX], three)
-    out += group('dome_pin', 'both', [imported('dome'), imported('pin')], three)
-    out += group('chain_dome', 'chain', [imported('dome'), CHAIN_BOX, CHAIN_SLAB], {'fuse': 1, 'cut': 2, 'common': 1},
-                 first='cut')
-    out += group('dome_slab', 'pieces', [imported('dome'), DOME_SLAB], {'fuse': 1, 'cut': 2, 'common': 1})
-    out += group('bead_slab', 'pieces', [imported('bead'), BEAD_SLAB], {'fuse': 1, 'cut': 2, 'common': 1})
-    out += group('knob_box', 'pieces', [KNOB_BOX, imported('knob')], three)
-    out += group('rounded_rod', 'pieces', [imported('rounded'), ROUNDED_ROD], three)
+    out += group('boss_pocket', 'both', [imported('boss'), imported('pocket')], three)
+    out += group('chain_dimple', 'chain', [imported('dimple'), CHAIN_ROD, CHAIN_SLAB],
+                 {'fuse': 1, 'cut': 2, 'common': 1}, first='cut')
+    out += group('bore_rod', 'pieces', [imported('bore'), BORE_ROD], three)
+    out += group('boss_box', 'pieces', [imported('boss'), BOSS_BOX], three)
+    out += group('dimple_ball', 'pieces', [imported('dimple'), DIMPLE_BALL], three)
+    out += group('pocket_rod', 'pieces', [imported('pocket'), POCKET_ROD], three)
+    out += group('dome_box', 'pieces', [DOME_BOX, imported('dome')], three)
+    out += group('bore_touch', 'pieces', [imported('bore'), BORE_TOUCH], three, kind='degenerate',
+                 reason='a tangency between the inputs (S9c)')
     return out
 
 
@@ -350,7 +392,7 @@ def validate(listed):
 
 def evaluate(job):
     """One group on the chained reference: rows, results and checks
-    (S9e.4b.3c.3a's, each body's closed form where it has one)."""
+    (S9e.4b.3c.3a's, each body's closed form)."""
     name, items, op1, swapped, chained, ops, declared, mc_n = job
     specs, sub = flatten(items)
     chain = ref.Chain([construction(s, 0) for s in specs])
@@ -379,7 +421,7 @@ def evaluate(job):
         v, m, a = chain.measures(k)
         cdev = max(cdev, abs(v-V)/size**3, abs(a-A)/size**2, max(abs(m[i]-mom[i]) for i in range(3))/size**4)
     checks['solid_closed_forms'] = cdev
-    # Each imported body one solid, its closed form where it has one.
+    # Each imported body one solid, its closed form.
     for it, e in zip(items, sub):
         if it[0] != 'imported':
             continue
@@ -416,10 +458,10 @@ def evaluate(job):
         shared = any(owner[i] != owner[sw.others.surfs[k][0]] for i, _, sw in chain.sweeps(0) for k in sw.skip)
         if not shared:
             checks['area_identity'] = abs(af+an-ax-ac)/size**2
-    for op, (expr, solids) in exprs.items():
+    for op, (expr, _) in exprs.items():
         for n in (48, 71):
             got = forms.count_solids(chain, expr, n)
-            assert got == solids, f'{name} {op}: {got} solids by rays ({n}), {solids} declared'
+            assert got == ops[op], f'{name} {op}: {got} solids by rays ({n}), {ops[op]} declared'
     mc = ref.monte_carlo(chain, [e for e, _ in exprs.values()], mc_n, zlib.crc32(name.encode()))
     z = 0.0
     for op, (expr, _) in exprs.items():
@@ -449,7 +491,7 @@ def jobs(mc_n):
 
 def cached(job):
     """`evaluate`, its result kept in `--cache` (a development aid)."""
-    cache = os.environ.get('PRIMITIVE_CHAINS_CACHE')
+    cache = os.environ.get('PRISM_LEAVES_CACHE')
     if not cache:
         return evaluate(job)
     import hashlib
@@ -471,10 +513,10 @@ def cached(job):
 
 LIMITS = forms.LIMITS
 # Groups whose events' spacing is not checked (their sines and gaps are):
-# the bead's bore, a cylinder on `SKEW4`'s stored axes (an affine model, its
-# axes orthonormal within rounding), meets its ball in its rims, where the
-# reference finds each rim as both surfaces' event, a rounding apart.
-SPACING_UNCHECKED = {'bead_slab'}
+# the chain's slab crosses the dimple's rim circle, where its top cap and
+# its ball meet the slab's face at one point, found as several events of the
+# slab's chords within 1e-21 of each other.
+SPACING_UNCHECKED = {'chain_dimple'}
 
 
 def reference_checks(results):
@@ -485,8 +527,8 @@ def reference_checks(results):
         covered[key] = covered.get(key, 0)+1
 
     for name, rows, _, checks, margins, stats, declared in results:
-        # A declared group's reference meets its body's own tangency or the
-        # later step's planes: its checks kept apart, looser.
+        # A declared group's reference meets a tangency or the later step's
+        # planes: its checks kept apart, looser.
         for key, value in checks.items():
             note(('degenerate_'+key) if declared and key != 'monte_carlo_sigma' else key, value)
         note('quadrature_estimate', stats['quadrature'])
@@ -540,7 +582,7 @@ def generate(results):
 
 
 def native_input():
-    """Every case's native rows (`compare_primitive_chains_boolean.py`)."""
+    """Every case's native rows (`compare_prism_leaves_boolean.py`)."""
     return '\n'.join(c.native() for c in all_cases())+'\n'
 
 
@@ -554,11 +596,10 @@ def case_size(case):
 # ------------------------------------------------------------------ the files' check
 
 def check_bodies():
-    """Each existing body file: its curved faces' kinds its primitives'
-    (each primitive's one face but a sphere's or a cylinder's that OCCT
-    keeps whole: compared as sets), each stored vertex on the construction's
-    surfaces within 1e-12 of the body's size. Returns the largest deviation
-    and the files read."""
+    """Each existing body file: its curved faces' kinds its prism's arcs'
+    and its primitive's (compared as sets), each stored vertex on the
+    construction's surfaces within 1e-12 of the body's size. Returns the
+    largest deviation and the files read."""
     worst, read = mp.mpf(0), 0
     for b in BODIES.values():
         path = ROOT/'fixtures'/b.path
@@ -590,7 +631,7 @@ def main():
     parser.add_argument('--cache', help='a directory keeping each group\'s result (development)')
     args = parser.parse_args()
     if args.cache:
-        os.environ['PRIMITIVE_CHAINS_CACHE'] = args.cache
+        os.environ['PRISM_LEAVES_CACHE'] = args.cache
     listed = all_cases()
     validate(listed)
     todo = jobs(args.samples)

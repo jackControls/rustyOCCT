@@ -41,12 +41,9 @@ knob_box_cut	expect solid S9e.4b.4b.1 pieces
 knob_box_cut	result 1 48.15271749980627868744407 119.4851765643495896305933 1.654168687366953396084223 0.8588744932008824042633669 2.932902057735148703991262
 knob_box_common	expect solid S9e.4b.4b.1 pieces
 knob_box_common	result 1 14.84728250019371991367492 40.06841667406140300201926 1.0 1.35161832886568864413069 2.368971948827668656759835
-rounded_rod_fuse	expect unsupported S9e.4b.4b.1 pieces
-rounded_rod_fuse	reason an imported body of several primitives with plane faces other than their ends (S9e.4b.4b.2)
+rounded_rod_fuse	expect solid S9e.4b.4b.1 pieces
 rounded_rod_fuse	result 1 431.5165888855456227317475 420.3495408493620774039152 4.020475989952184341543598 4.020475989952184341543598 4.0
-rounded_rod_cut	expect unsupported S9e.4b.4b.1 pieces
-rounded_rod_cut	reason an imported body of several primitives with plane faces other than their ends (S9e.4b.4b.2)
+rounded_rod_cut	expect solid S9e.4b.4b.1 pieces
 rounded_rod_cut	result 1 413.8451302091030357653951 445.0895829963816991568085 3.914598687351890548525639 3.914598687351890548525639 4.0
-rounded_rod_common	expect unsupported S9e.4b.4b.1 pieces
-rounded_rod_common	reason an imported body of several primitives with plane faces other than their ends (S9e.4b.4b.2)
+rounded_rod_common	expect solid S9e.4b.4b.1 pieces
 rounded_rod_common	result 1 14.1371669411540695730819 41.23340357836603625482219 6.5 6.5 4.0
