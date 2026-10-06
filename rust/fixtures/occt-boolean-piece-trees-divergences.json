@@ -1,0 +1,42 @@
+{
+  "note": "Reviewed differences of the S9e.4b.3c.3b capture (occt-boolean-piece-trees-preimplementation): each fingerprinted by its native row; the measures BRepGProp's default integration leaves off the reference, within 4.8e-9 adaptively.",
+  "reviews": [
+    {
+      "case": "u_scoop_rod_common",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "17df5d790ba6d3d5e5b953bae4eed7f7549bd464e812afe8ab44ec3db66deb6d",
+      "differences": [
+        "centre",
+        "measure"
+      ],
+      "reason": "BRepAlgoAPI's result is valid with the reference's solid count; the U's groove (a U prism less a ball on one arm's top face) and an upright rod through it: its volume 4.0e-07 and area 6.3e-08 relative and its centre 5.8e-08 of the case's size from the reference with BRepGProp's default integration (a sphere's or a cylinder's faces met by planes and other quadrics), 4.8e-09, 7.4e-10 and 1.2e-09 with an adaptive accuracy of 1e-10 and of 1e-12 alike (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe).",
+      "independent_evidence": "chained_curved_boolean_reference.py's rows on the constructions OCCT was given (generate_piece_trees_boolean_fixtures.py --check, identical under Python 3.9 and 3.12; a U prism as the box of its outer planes less its slot's box, a hemisphere as its ball common a cylinder above its equator, the same sets) agree two ways (each face swept by two independent families of curves) within 1.6e-35, every solid's measures from its faces within 9.7e-41 of its closed form, each body's within 4.5e-37 of its own where it has one, the pair identities within 1.4e-41, and Monte Carlo within 2.5 standard errors; its solid counts are the declared ones by rays at two resolutions; every stored vertex of the imported files lies on its construction's surfaces within 4.5e-16 of the size.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "chain_dee_common",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "e60ec5466cfc0009e20d8612609679ad03ee6cc8ad8a622dff587ffb8f0996b2",
+      "differences": [
+        "measure"
+      ],
+      "reason": "BRepAlgoAPI's result is valid with the reference's solid count; the flattened boss less a rod, then in common with a TILT slab (two solids): its volume 1.8e-08 and area 5.9e-08 relative and its centre 4.2e-09 of the case's size from the reference with BRepGProp's default integration (a sphere's or a cylinder's faces met by planes and other quadrics), 6.8e-11, 5.2e-11 and 3.3e-12 with an adaptive accuracy of 1e-10 and of 1e-12 alike (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe).",
+      "independent_evidence": "chained_curved_boolean_reference.py's rows on the constructions OCCT was given (generate_piece_trees_boolean_fixtures.py --check, identical under Python 3.9 and 3.12; a U prism as the box of its outer planes less its slot's box, a hemisphere as its ball common a cylinder above its equator, the same sets) agree two ways (each face swept by two independent families of curves) within 1.6e-35, every solid's measures from its faces within 9.7e-41 of its closed form, each body's within 4.5e-37 of its own where it has one, the pair identities within 1.4e-41, and Monte Carlo within 2.5 standard errors; its solid counts are the declared ones by rays at two resolutions; every stored vertex of the imported files lies on its construction's surfaces within 4.5e-16 of the size.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "dee_boss_ball_common",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "f679386ab8985e15673640d5483025a8a14d9a2561df7b82bec70371d6a038f4",
+      "differences": [
+        "measure"
+      ],
+      "reason": "BRepAlgoAPI's result is valid with the reference's solid count; the flattened boss (a box fused with a cylinder flattened along its axis) and a ball across its flat: its volume 9.7e-08 and area 6.9e-08 relative and its centre 6.4e-09 of the case's size from the reference with BRepGProp's default integration (a sphere's or a cylinder's faces met by planes and other quadrics), 2.4e-10, 8.4e-11 and 2.9e-11 with an adaptive accuracy of 1e-10 and of 1e-12 alike (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe).",
+      "independent_evidence": "chained_curved_boolean_reference.py's rows on the constructions OCCT was given (generate_piece_trees_boolean_fixtures.py --check, identical under Python 3.9 and 3.12; a U prism as the box of its outer planes less its slot's box, a hemisphere as its ball common a cylinder above its equator, the same sets) agree two ways (each face swept by two independent families of curves) within 1.6e-35, every solid's measures from its faces within 9.7e-41 of its closed form, each body's within 4.5e-37 of its own where it has one, the pair identities within 1.4e-41, and Monte Carlo within 2.5 standard errors; its solid counts are the declared ones by rays at two resolutions; every stored vertex of the imported files lies on its construction's surfaces within 4.5e-16 of the size.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    }
+  ]
+}

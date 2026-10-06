@@ -8368,7 +8368,18 @@ Decisions for S9, recorded before its code (2026-09-28):
     thicker and the chain's slab higher (solids within two grid spacings at
     the coarse resolution), the bitten cylinder's box and the flattened boss
     off round coordinates (events of different features a rounding apart).
-    The capture next, keyed on the refusal the step removes.
+    The capture `occt-boolean-piece-trees-preimplementation`
+    (`compare_piece_trees_boolean.py`, keyed on the refusal the step removes,
+    `imported.rs`'s `OutOfDomain("an imported plane piece other than one
+    Boolean of its primitive and its planes' hull (S9e.4b.3c.3b)")`; the
+    kernel's probe `unsupported` on all 30, every body refused on import by
+    that refusal): every result valid, 27 matching (within 2e-8 of the
+    reference), 3 reviewed: the U's groove's, the flattened boss's ball's
+    and the chain's commons, volumes up to 4.0e-7 relative and centres up to
+    5.8e-8 of the case's size off by BRepGProp's default integration (a
+    sphere's or a cylinder's faces met by planes and other quadrics), within
+    4.8e-9 measured adaptively at 1e-10 and 1e-12 by a diagnostic build.
+    S9e.4b.3c.3b's kernel next.
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces
