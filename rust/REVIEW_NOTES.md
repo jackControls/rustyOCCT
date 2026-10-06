@@ -9205,6 +9205,137 @@ Decisions for S9, recorded before its code (2026-09-28):
     AddressSanitizer (its startup replay 1,601 s; at `64673ebd` it overran
     the hour's budget at load 13 to 16, no input failing); `split` clean,
     1,972 runs, none slow.
+  * **S9e.4b.4b.2 refined, before its code (2026-10-06).** Why it is
+    refused today: S9e.4b.4b.1's chain takes the curved faces on each stored
+    surface as one primitive and refuses a body whose plane faces are not
+    all ends of those primitives, before its own tangency check
+    (`OutOfDomain("an imported body of several primitives with plane faces
+    other than their ends (S9e.4b.4b.2)")`, `imported.rs`'s
+    `primitives_piece`). `bfuse_complex/K1`'s part (`CTO904_cts20370-part`,
+    read off its file by the converter; the dataset is not committed) has 11
+    faces on 11 stored surfaces: the box `[0, 200]^3`'s six planes, its four
+    edges along `z` rounded by quarter cylinders of radius 50 (each its own
+    surface, about `(50, 50)`, `(50, 150)`, `(150, 50)` and `(150, 150)`,
+    their 8 edges with the side faces stored `G1`, tangent), the faces `z =
+    0` and `z = 200` each one loop of four lines and four arcs, less a
+    cylinder of radius 40 along `-y` about `(100, *, 100)` through the faces
+    `y = 0` and `y = 200` (a hole in each). As a chain its fillets are four
+    primitives whose side faces are no primitive's ends and whose tangent
+    edges are the body's own tangency; it is S9e.4a's prism of a rounded
+    square (its fillets the profile's arcs, tangent to its lines inside it:
+    S9e.4b.1's joints) less the bore. Its tool (`cts20370-tool`) is a rod of
+    radius 40 along `x` about `(*, 100, 100)` from `x = -10` to its cap on
+    the face `x = 200`: two cylinders of equal radii whose axes cross, tangent
+    at `(100, 100, 60)` and `(100, 100, 140)`, so the case stays refused by
+    S9's rules (a draft of this step's code imports the part, its volume
+    6,565,486.678 its closed form, and refuses the fuse as `Degenerate("a
+    tangency between the inputs (S9c)")`). S9e.4b.4b.1's trial and the
+    surveys list no other restore case refused so; the `boolean` fuzz
+    target's `IMPORTED` stage refuses 3 first results so (S9e.4b.4b.1's
+    replay). Decisions. (1) *Sub-steps*, by what each unlocks:
+    **S9e.4b.4b.2a** (this step): a body of several sphere, cylinder and
+    cone faces one group of whose faces is a *prism leaf* with both its caps
+    (2), the chain led by it (3): K1's part, a rounded or stadium plate with a
+    bore across it, a boss, a dimple, a dome or a conical pocket;
+    **S9e.4b.4b.2b**: other plane faces (a primitive's flat or a hull of
+    planes among several primitives, S9e.4b.3c.3b's groups with several
+    primitives), a prism with one cap (a prism boss on a primitive) or with
+    both caps cut at their rims by another primitive (its profile read off
+    its walls), and two prism leaves. (2) *The prism leaf*, read off the
+    stored topology: two plane faces facing apart (their outward normals
+    parallel within `1e-9`; the pairs in face order, each face as the bottom
+    in turn), the bottom's loops each of whose edges' other faces is a *wall*
+    along the bottom's inward normal `n` (a plane whose outward normal is
+    perpendicular to `n` within `1e-9`, or a cylinder whose stored axis is
+    parallel to it) sharing an edge with the top cap's faces, its outer loop
+    among them (else no leaf: a prism on another primitive, or cut at its
+    rim, is S9e.4b.4b.2b's); its faces the caps, those walls and every face on
+    one of their surfaces (equal stored surfaces, or planes within the
+    resolution of one plane facing one way: a wall or cap another primitive
+    splits, its stored frames rounded apart). Its solid is S9e.4a's prism on
+    those loops of the bottom alone (the bottom's stored frame, turned over to
+    `n` exactly by `Frame3::flipped`; its profile their stored vertices and
+    arcs rounded once into it, the arcs taken onto their circles by S9e.4b.1
+    and S9e.4b.4a; its height the top cap's), the bottom's other loops (a
+    primitive's crossing of the cap) not its. Its walls' edges with each
+    other may be tangent (S9e.4b.1's joints of a line and an arc, as the
+    construction's own). (3) *The chain.* The leaf first (its material
+    inside), then the other surfaces' primitives as S9e.4b.4b.1's: widest
+    first, each cut where its material lies outside its quadric, in common
+    where its faces meet the earlier ones (the leaf's among them) along convex
+    edges only, fused otherwise; a cylinder or a cone whose stored axis is
+    parallel to the leaf's within `1e-9` is built on the leaf's frame's axes
+    bit for bit at its own stored origin (`Frame3::at`: a boss or a pocket
+    along the plate's axis, no axes within rounding of parallel between the
+    chain's own Booleans), coaxial primitives on one frame as S9e.4b.4b.1's;
+    the cut and common primitives reach past the leaf's bounds as past the
+    other primitives'. Every plane face must be the leaf's or a primitive's
+    end. Each Boolean is S9e.4b.3c.3b's tree's (an inner one's assembly its
+    given model, the stored vertices splitting rims in every one), the last
+    one's given model matched to the stored topology by S9e.2's match, its
+    ids the stored ones. A leaf is tried only where S9e.4b.4b.1's chain of
+    the primitives alone refuses for plane faces or for the body's own
+    tangency (every body it imports keeps its chain), each leaf in turn, the
+    first whose model matches the stored topology the body (`Piece`'s
+    choice, the leaf read off the moved stored topology again by a rigid
+    motion). Numbers: the engine's own and S9e.4a's prism's, no new field or
+    degree. (4) *Its other queries* are S9e.4b.4b.1's: classification by the
+    chain's set functions over each leaf's location (the prism's within the
+    resolution), bounds every leaf's widened by the stored edges', mass by
+    the stored topology, a result given to another Boolean S9e.3a's. (5)
+    *Degenerate and refused.* S9's rules unchanged in every Boolean of the
+    chain. A body's own faces tangent along an edge other than between two of
+    the leaf's faces (a fillet on a primitive's faces, a primitive tangent to
+    a cap) are `Degenerate("an imported body of several primitives whose
+    faces are tangent along an edge")`, named for the body as S9e.4b.4b.1's
+    (also where no leaf takes a body's tangent faces). Refused: plane faces
+    other than the leaf's and the primitives' ends, `OutOfDomain("an
+    imported body of several primitives with plane faces other than their
+    ends or a prism's (S9e.4b.4b.2b)")`, replacing S9e.4b.4b.1's text; a leaf
+    whose chain's model does not match the stored topology as S9e.4b.4b.1's
+    (`OutOfDomain(... other than a Boolean chain of them (S9e.4b.4c))`). Of
+    the leaves tried the first refusal their Booleans give is reported, else
+    the body's own tangency, else S9e.4b.4b.2b's. (6) *`bug28773` and the
+    walls' axis.* S9e.4a's prisms stay on their bottom cap's stored frame.
+    A draft building them on their first wall cylinder's stored axes where
+    those are not the cap frame's normal bit for bit (`_1`'s tube, its disc
+    frame leaning 2.2e-33 off its walls' `x`; `_2`'s primitives on that axis
+    since S9e.4b.4b.1) takes the case past its axes within rounding of
+    parallel to `Degenerate("two faces within the resolution of one plane")`:
+    `_1`'s top cap at `x = 1` and `_2`'s discs there lie 1e-17 apart, each
+    height rounded once in its own frame, a flush contact S9's rules refuse.
+    The change would unlock nothing and stays undone. (7) *Fuzzing.* The
+    `IMPORTED` stage unchanged: its replay measures how many of its 3
+    refusals import now. (8) *Evidence first.* Bodies OCCT writes in one
+    Boolean of a prism of lines and arcs and a primitive (a `write` block),
+    every section a circle or a line: `bore` (K1's part, a square its
+    corners rounded on a turned frame less a cylinder across it through two
+    walls), `boss` (a stadium plate fused with a cylinder along its axis from
+    inside it to a cap), `dimple` (a rounded plate less a ball centred above
+    its top cap), `pocket` (a stadium plate less a frustum along its axis
+    narrowing to a floor inside it: a conical pocket), `dome` (a rounded
+    plate fused with a ball about a point inside it, meeting its top cap
+    only); declared `degenerate` `groove` (a rounded plate less a rod across
+    it tangent to its bottom cap from inside: the body's own tangency, given
+    to no case) and declared `unsupported` `notch` (a rounded plate less a
+    blind rod across its rim through both caps: S9e.4b.4b.2b's); cases of
+    each against boxes, slabs, balls and rods, the body the tool, two
+    imported and a chain, and declared `degenerate` K1's configuration (the
+    bore and a rod of its radius whose axis crosses its axis: two cylinders
+    tangent at two points); S9e.4b.4b.1's `rounded` (K1's on the world's
+    axes) and its `rounded_rod` cases declared solid with the kernel; the
+    reference S9e.3a's chained reference on the constructions OCCT was given
+    with S9e.4b.3c.3a's checks and each body's closed form
+    (`generate_prism_leaves_boolean_fixtures.py --check`, a CI group
+    `prism-leaves`, `test_prism_leaves_boolean_reference.py`); a native
+    capture keyed on the refusal the step removes
+    (`compare_prism_leaves_boolean.py`, `imported.rs`'s present text "with
+    plane faces other than their ends (S9e.4b.4b.2)"); then the kernel and
+    its tests (`tests/prism_leaf_booleans.rs`: every fixture within `1e-9`
+    enclosures, the degenerate refused, histories over the stored ids,
+    deterministic, moved rigidly; the kernel's own rounded plate with a bore
+    and with a boss written, read back and imported) and the DRAW trial of
+    K1 (expected refused as above).
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces
