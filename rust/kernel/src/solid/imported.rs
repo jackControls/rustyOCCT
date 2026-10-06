@@ -38,8 +38,13 @@
 //! plane faces are no primitive's ends, or its faces are tangent along an
 //! edge, such a chain led by a prism leaf (`leaves`: S9e.4a's prism read off
 //! a cap's loops whose edges' other faces are walls along its normal, its
-//! walls' tangent joints its own), each leaf tried in turn. Every other body
-//! is S9e.4b's.
+//! walls' tangent joints its own), each leaf tried in turn. S9e.4b.4b.2b.1:
+//! then each such chain with the other plane faces (`chain_piece`'s
+//! `extra`): prisms of one cap (`bosses`: a boss read off its one cap, its
+//! other end hidden in the part it stands on), flats (a part common the hull
+//! of planes it meets along convex edges) and pockets (the hull of planes
+//! joined along concave edges turned over, less the primitives standing in
+//! it, cut from the chain). Every other body is S9e.4b's.
 use super::{replayable, Construction, Context, Solid};
 use crate::history::{History, Relation};
 use crate::identity::{
@@ -343,9 +348,11 @@ impl Solid {
     /// S9e.4b.4b.1: an imported body of several primitives as a Boolean
     /// chain of them; S9e.4b.4b.2a: where some plane faces are no
     /// primitive's ends or its faces are tangent along an edge, each chain
-    /// led by a prism leaf in turn, the first whose model matches the stored
-    /// topology, else the first refusal a leaf's Booleans give, else the
-    /// body's own tangency, else S9e.4b.4b.2b's.
+    /// led by a prism leaf in turn; S9e.4b.4b.2b.1: then each such chain
+    /// with the other plane faces (prisms of one cap, flats, pockets); the
+    /// first whose model matches the stored topology, else the first refusal
+    /// a chain's Booleans give, else the body's own tangency, else
+    /// S9e.4b.4b.2b.2's.
     fn imported_primitives(
         context: &Context,
         topology: Topology,
@@ -368,9 +375,14 @@ impl Solid {
             r => return r,
         };
         let (mut refusal, mut tangent) = (None, alone == tangent_body());
-        for choice in 1..primitives_choices(&topology, resolution) {
+        let (choices, plain) = primitives_choices(&topology, resolution);
+        for choice in choices.into_iter().skip(1) {
             match attempt(choice) {
                 Ok(done) => return Ok(done),
+                // S9e.4b.4b.2b.1: a decomposition with the other plane faces
+                // whose prisms part a joint tangent along its walls is one the
+                // body is not.
+                Err(e) if e == tangent_body() && choice >= plain => {}
                 Err(e) if e == tangent_body() => tangent = true,
                 Err(e) if e == not_their_faces() || e == general() => {}
                 Err(e) => {
@@ -859,17 +871,19 @@ fn prism(t: &Topology, tolerance: Tolerance, op: OperationId) -> Result<Solid> {
     }
     let (bottom, top, up) = caps.ok_or_else(general)?;
     let loops: Vec<usize> = (0..faces[bottom].loops.len()).collect();
-    prism_on(t, (bottom, top, up), &loops, tolerance, op)
+    prism_on(t, (bottom, top, up), &loops, (None, None), tolerance, op)
 }
 
 /// S9e.4a's prism between a bottom and a top cap (`up` the bottom's inward
 /// normal): on the bottom's stored frame (turned over to `up`), its profile
 /// the bottom's `loops` (indices in its loops, the outer first) rounded once
-/// into it, its height the top's.
+/// into it, its height the top's; S9e.4b.4b.2b: a prism of one cap (`open`
+/// its walls) past its walls' far end by a quarter of their range.
 fn prism_on(
     t: &Topology,
     (bottom, top, up): (usize, usize, Vec3),
     loops: &[usize],
+    (open, along): (Option<&[usize]>, Option<&Frame3>),
     tolerance: Tolerance,
     op: OperationId,
 ) -> Result<Solid> {
@@ -877,10 +891,25 @@ fn prism_on(
     let Surface::Plane(stored) = &faces[bottom].surface else {
         return Err(general());
     };
-    let frame = if stored.normal().dot(up) > 0.0 {
-        *stored
-    } else {
-        stored.flipped()
+    // S9e.4b.4b.2b.1: a prism of one cap on the side its walls' stored axes
+    // point to (its cylinders' frames and the model's one way), and a boss
+    // parallel to the leaf on its axes, bit for bit.
+    let against = open.is_some_and(|walls| {
+        walls.iter().any(|&k| {
+            matches!(&faces[k].surface, Surface::Cylinder { frame, .. } if frame.normal().dot(up) < 0.0)
+        })
+    });
+    let dir = if against { -up } else { up };
+    let turned = |f: &Frame3| {
+        if f.normal().dot(dir) > 0.0 {
+            *f
+        } else {
+            f.flipped()
+        }
+    };
+    let frame = match along {
+        Some(a) if parallel(a.normal(), up) => turned(a).at(stored.origin()),
+        _ => turned(stored),
     };
     let local = Local::new(&frame)?;
     let mut boundaries = Vec::new();
@@ -921,7 +950,7 @@ fn prism_on(
                     ..
                 } => {
                     let turns = (*sweep_angle > 0.0) == forward;
-                    let about = c.normal().dot(up) > 0.0;
+                    let about = c.normal().dot(dir) > 0.0;
                     Segment::Arc {
                         center: point2(&local.of(c.origin())),
                         radius: *radius,
@@ -947,14 +976,29 @@ fn prism_on(
     // S9e.4b.1: its arcs' ends are roundings, taken onto their circles by
     // the exact model.
     let profile = Profile::new(boundaries.remove(0), holes, tolerance)?.with_rounded_arcs();
-    let Surface::Plane(top_frame) = &faces[top].surface else {
-        return Err(general());
+    let (start, end) = match open {
+        Some(walls) => {
+            let (lo, hi) = walls.iter().fold((0.0f64, 0.0f64), |(lo, hi), &k| {
+                let (a, b) = face_range(t, k, &frame);
+                (lo.min(a), hi.max(b))
+            });
+            if against {
+                (1.25 * lo, 0.0)
+            } else {
+                (0.0, 1.25 * hi)
+            }
+        }
+        None => {
+            let Surface::Plane(top_frame) = &faces[top].surface else {
+                return Err(general());
+            };
+            (0.0, rational_f64(&local.of(top_frame.origin())[2]))
+        }
     };
-    let height = rational_f64(&local.of(top_frame.origin())[2]);
-    if height <= 0.0 {
+    if end - start <= 0.0 {
         return Err(general());
     }
-    Solid::build(op, profile, frame, 0.0, height)
+    Solid::build(op, profile, frame, start, end)
 }
 
 /// An end of a sphere or cone: its local height, its radius (zero at a
@@ -1993,11 +2037,12 @@ fn primitive_over(
 }
 
 /// S9e.4b.4b.2a: a body of several primitives whose plane faces are not all
-/// their ends or a prism leaf's faces (S9e.4b.4b.2b).
+/// their ends or a prism leaf's faces; S9e.4b.4b.2b.1: nor a prism's of one
+/// cap, a flat's or a pocket's (S9e.4b.4b.2b.2).
 fn not_their_faces() -> Error {
     Error::OutOfDomain(
-        "an imported body of several primitives with plane faces other than their ends or a \
-         prism's (S9e.4b.4b.2b)",
+        "an imported body of several primitives with plane faces other than their ends, a \
+         prism's, a flat or a pocket (S9e.4b.4b.2b.2)",
     )
 }
 
@@ -2018,6 +2063,9 @@ struct Leaf {
     caps: (usize, usize, Vec3),
     loops: Vec<usize>,
     faces: Vec<bool>,
+    /// S9e.4b.4b.2b.1: a prism of one cap, its walls (its height a quarter
+    /// past their far end).
+    open: Option<Vec<usize>>,
 }
 
 /// Whether a face is a wall along `up`: a plane whose outward normal is
@@ -2144,6 +2192,7 @@ fn leaves(t: &Topology, tolerance: Tolerance) -> Vec<Leaf> {
                     caps: (bottom, top, up),
                     loops,
                     faces,
+                    open: None,
                 });
             }
         }
@@ -2160,61 +2209,164 @@ fn leaves(t: &Topology, tolerance: Tolerance) -> Vec<Leaf> {
 /// the earlier ones' curved faces along convex edges, fused where along
 /// concave edges or none. S9e.4b.4b.2a: or such a chain led by a prism leaf
 /// (`leaves`): `choice` 0 the primitives alone, `k` the `k`-th leaf.
+/// S9e.4b.4b.2b.1: from `L + 1` on (`L` the leaves) the same chains with
+/// the other plane faces (`chain_piece`'s `extra`): `L + 1` the primitives'
+/// alone, `L + 1 + k` the `k`-th leaf's.
 fn primitives_piece(
     t: &Topology,
     tolerance: Tolerance,
     op: OperationId,
     choice: u32,
 ) -> Result<Piece> {
-    let leaf = match choice {
+    let all = leaves(t, tolerance);
+    let count = all.len() + 1;
+    let (k, extra) = (choice as usize % count, choice as usize >= count);
+    let leaf = match k {
         0 => None,
-        k => Some(
-            leaves(t, tolerance)
-                .into_iter()
-                .nth(k as usize - 1)
-                .ok_or_else(not_their_chain)?,
-        ),
+        k => Some(all.get(k - 1).cloned().ok_or_else(not_their_chain)?),
     };
-    let mut piece = chain_piece(t, tolerance, op, leaf.as_ref())?;
+    let mut piece = chain_piece(t, tolerance, op, leaf.as_ref(), extra.then_some(&all[..]))?;
     piece.choice = choice;
     Ok(piece)
 }
 
-/// S9e.4b.4b.2a: how many chains a body of several primitives is tried as:
-/// its primitives alone, then each prism leaf.
-fn primitives_choices(t: &Topology, tolerance: Tolerance) -> u32 {
-    1 + u32::try_from(leaves(t, tolerance).len()).unwrap_or(u32::MAX - 1)
+/// S9e.4b.4b.2a: the chains a body of several primitives is tried as, in
+/// order: its primitives alone, then each prism leaf; S9e.4b.4b.2b.1: then
+/// each leaf's with the other plane faces, then the primitives' alone with
+/// them.
+fn primitives_choices(t: &Topology, tolerance: Tolerance) -> (Vec<u32>, u32) {
+    let count = u32::try_from(leaves(t, tolerance).len() + 1).unwrap_or(u32::MAX / 2);
+    let order = (0..count)
+        .chain((count + 1..2 * count).chain([count]))
+        .collect();
+    (order, count)
+}
+
+/// S9e.4b.4b.2b.1: the prisms of one cap a body holds besides its leaf
+/// `lead`, in face order: a plane face no leaf's cap (of `all`) and no face
+/// of `lead`'s or of an earlier such prism's, whose outer loop's every edge's
+/// other face is a wall along its inward normal (a prism boss: its walls
+/// reaching another part's faces, its other cap hidden), its faces it, those
+/// walls and every face on their surfaces.
+fn bosses(t: &Topology, tolerance: Tolerance, lead: Option<&Leaf>, all: &[Leaf]) -> Vec<Leaf> {
+    let tol = tolerance.linear();
+    let n = t.faces().len();
+    let fins = fin_faces(t);
+    let mut taken = lead.map_or_else(|| vec![false; n], |l| l.faces.clone());
+    let caps: Vec<usize> = all.iter().flat_map(|l| [l.caps.0, l.caps.1]).collect();
+    let mut out = Vec::new();
+    for b in 0..n {
+        if taken[b] || caps.contains(&b) || !matches!(t.faces()[b].surface, Surface::Plane(_)) {
+            continue;
+        }
+        let Some(m) = outward(t, b) else { continue };
+        let up = -m;
+        let Some(l) = t.faces()[b].loops.first() else {
+            continue;
+        };
+        let Loop::Edges { fins: lf, .. } = &t.loops()[l.index()] else {
+            continue;
+        };
+        let across: Vec<usize> = lf
+            .iter()
+            .filter_map(|f| {
+                let e = &t.edges()[t.fins()[f.index()].edge.index()];
+                e.fins.iter().find(|x| *x != f).map(|x| fins[x.index()])
+            })
+            .collect();
+        let walls = across.len() == lf.len()
+            && across
+                .iter()
+                .all(|&k| k < n && k != b && !taken[k] && wall(t, k, up));
+        if !walls {
+            continue;
+        }
+        let mut faces = vec![false; n];
+        faces[b] = true;
+        for &k in &across {
+            faces[k] = true;
+        }
+        let members: Vec<usize> = (0..n).filter(|&k| faces[k]).collect();
+        for k in 0..n {
+            if !faces[k] && !taken[k] && members.iter().any(|&m| one_surface(t, m, k, tol)) {
+                faces[k] = true;
+            }
+        }
+        for k in 0..n {
+            taken[k] |= faces[k];
+        }
+        let mut walls = across;
+        walls.sort_unstable();
+        walls.dedup();
+        out.push(Leaf {
+            caps: (b, b, up),
+            loops: vec![0],
+            faces,
+            open: Some(walls),
+        });
+    }
+    out
+}
+
+/// S9e.4b.4b.2b.1: a plane face's stored frame, taken onto an axis of the
+/// chain's (`axes`: a prism's or a cylinder's or a cone's frame) whose
+/// direction its normal is parallel to within `ALIGN` (that axis's axes bit
+/// for bit at its stored origin), and whether its normal `x * y` points into
+/// the material (turned over where `over`).
+fn plane_along(t: &Topology, i: usize, over: bool, axes: &[Frame3]) -> Result<(Frame3, bool)> {
+    let Surface::Plane(stored) = &t.faces()[i].surface else {
+        return Err(general());
+    };
+    let frame = axes
+        .iter()
+        .find(|a| parallel(a.normal(), stored.normal()))
+        .map_or(*stored, |a| a.at(stored.origin()));
+    let out = outward(t, i).ok_or_else(general)?;
+    let into = frame.normal().dot(out) < 0.0;
+    Ok((frame, into != over))
 }
 
 /// [`primitives_piece`] of a chain of primitives, led by a prism leaf where
-/// given.
+/// given; S9e.4b.4b.2b.1: with the other plane faces where `extra` (the
+/// body's leaves): prisms of one cap (`bosses`), each fused after the leaf;
+/// each component of the other plane faces (through their edges with each
+/// other) convex within itself a flat of the one part it meets along convex
+/// edges (that part common the hull of its planes), or concave within itself
+/// a pocket (the hull of its planes turned over, less the primitives it
+/// meets along concave edges: its teeth) cut from the chain.
 #[allow(clippy::too_many_lines)]
 fn chain_piece(
     t: &Topology,
     tolerance: Tolerance,
     op: OperationId,
     leaf: Option<&Leaf>,
+    extra: Option<&[Leaf]>,
 ) -> Result<Piece> {
     let tol = tolerance.linear();
     let n = t.faces().len();
-    let prism_face = |k: usize| leaf.is_some_and(|l| l.faces[k]);
+    let bossed = extra.map_or_else(Vec::new, |all| bosses(t, tolerance, leaf, all));
+    let prisms: Vec<&Leaf> = leaf.into_iter().chain(&bossed).collect();
+    let prism_of = |k: usize| prisms.iter().position(|l| l.faces[k]);
     let groups: Vec<Vec<usize>> = surfaces(t)
         .into_iter()
-        .filter(|g| !g.iter().any(|&k| prism_face(k)))
+        .filter(|g| !g.iter().any(|&k| prism_of(k).is_some()))
         .collect();
-    if groups.is_empty() || (leaf.is_none() && groups.len() < 2) {
+    if (groups.is_empty() && bossed.is_empty()) || (prisms.is_empty() && groups.len() < 2) {
         return Err(general());
     }
+    // Each face's part: a prism's (in order), else a primitive's (its faces
+    // and its caps).
+    let p = prisms.len();
+    let mut part: Vec<Option<usize>> = (0..n).map(prism_of).collect();
     let mut order = Vec::new();
-    let mut ends = vec![false; n];
     for (g, faces) in groups.iter().enumerate() {
         let outside = material_outside(t, faces[0]);
         if faces.iter().any(|&k| material_outside(t, k) != outside) {
             return Err(not_their_chain());
         }
         let (_, capped, reach) = primitive_over(t, tolerance, op, faces, outside, None, &[])?;
-        for c in capped {
-            ends[c] = true;
+        for &k in faces.iter().chain(&capped) {
+            part[k] = Some(p + g);
         }
         order.push((g, outside, reach));
     }
@@ -2222,70 +2374,158 @@ fn chain_piece(
     // faces, a primitive on another's surface) but a prism's walls' joints
     // (S9e.4b.4b.2a: two walls along one axis tangent along a line along it,
     // a leaf's both); then plane faces other than the primitives' ends and a
-    // leaf's are S9e.4b.4b.2b's.
+    // leaf's are S9e.4b.4b.2b.2's but the flats and pockets taken (below).
     let bends = bends(t)?;
     for (i, &(a, b, bend)) in bends.iter().enumerate() {
-        let joint = joint(t, i, a, b) && (leaf.is_none() || (prism_face(a) && prism_face(b)));
-        if bend == Bend::Flat && !joint {
+        let one = prisms.is_empty() || (prism_of(a).is_some() && prism_of(a) == prism_of(b));
+        // S9e.4b.4b.2b.1: two faces of one surface (a face OCCT split at its
+        // surface's seam) are none.
+        let split = t.faces()[a].surface == t.faces()[b].surface;
+        if bend == Bend::Flat && !split && !(joint(t, i, a, b) && one) {
             return Err(tangent_body());
         }
     }
-    for (i, f) in t.faces().iter().enumerate() {
-        if matches!(f.surface, Surface::Plane(_)) && !ends[i] && !prism_face(i) {
+    let others: Vec<usize> = (0..n)
+        .filter(|&i| matches!(t.faces()[i].surface, Surface::Plane(_)) && part[i].is_none())
+        .collect();
+    if !others.is_empty() && extra.is_none() {
+        return Err(not_their_faces());
+    }
+    // S9e.4b.4b.2b.1: with nothing more than the chain alone, its own.
+    if extra.is_some() && others.is_empty() && bossed.is_empty() {
+        return Err(general());
+    }
+    // The other plane faces' components, each a flat or a pocket.
+    let mut root: Vec<usize> = (0..n).collect();
+    for &(a, b, _) in &bends {
+        if others.contains(&a) && others.contains(&b) {
+            let (x, y) = (find(&mut root, a), find(&mut root, b));
+            root[x.max(y)] = x.min(y);
+        }
+    }
+    let mut flats: Vec<Vec<usize>> = vec![Vec::new(); p + groups.len()];
+    let mut pockets: Vec<(Vec<usize>, Vec<usize>)> = Vec::new();
+    let mut teeth = vec![false; groups.len()];
+    let mut seen = Vec::new();
+    for &i in &others {
+        let r = find(&mut root, i);
+        if seen.contains(&r) {
+            continue;
+        }
+        seen.push(r);
+        let members: Vec<usize> = others
+            .iter()
+            .copied()
+            .filter(|&k| find(&mut root, k) == r)
+            .collect();
+        let (mut convex, mut concave) = (false, false);
+        let mut met: BTreeMap<usize, (bool, bool)> = BTreeMap::new();
+        for &(a, b, bend) in &bends {
+            let (x, y) = (members.contains(&a), members.contains(&b));
+            if x && y {
+                convex |= bend == Bend::Convex;
+                concave |= bend == Bend::Concave;
+            } else if x || y {
+                let other = if x { b } else { a };
+                let Some(q) = part[other] else {
+                    return Err(not_their_faces());
+                };
+                let e = met.entry(q).or_default();
+                e.0 |= bend == Bend::Convex;
+                e.1 |= bend == Bend::Concave;
+            }
+        }
+        if !concave {
+            // A flat: the one part it meets along convex edges (the others
+            // fused to it along concave ones).
+            let trimmed: Vec<usize> = met.iter().filter(|(_, m)| m.0).map(|(q, _)| *q).collect();
+            let [x] = trimmed.as_slice() else {
+                return Err(not_their_faces());
+            };
+            flats[*x].extend(members);
+        } else if !convex {
+            // A pocket: its teeth the primitives it meets along concave
+            // edges alone.
+            let mut mine = Vec::new();
+            for (&q, &(cx, cc)) in &met {
+                match (cx, cc) {
+                    (false, true) if q >= p => {
+                        teeth[q - p] = true;
+                        mine.push(q - p);
+                    }
+                    (true, false) => {}
+                    _ => return Err(not_their_faces()),
+                }
+            }
+            pockets.push((members, mine));
+        } else {
             return Err(not_their_faces());
         }
     }
-    // Widest first (a stable order: ties in face order).
+    if teeth
+        .iter()
+        .zip(&flats[p..])
+        .any(|(t, f)| *t && !f.is_empty())
+    {
+        return Err(not_their_faces());
+    }
+    // Widest first (a stable order: ties in face order), the teeth apart.
     order.sort_by(|a, b| b.2.total_cmp(&a.2));
-    if leaf.is_none() && order[0].1 {
+    let (tooth, order): (Vec<_>, Vec<_>) = order.into_iter().partition(|o| teeth[o.0]);
+    if prisms.is_empty() && order.first().is_none_or(|o| o.1) {
         return Err(not_their_chain());
     }
-    // The prism leaf first, on its bottom cap's frame.
-    let prism = leaf
-        .map(|l| prism_on(t, l.caps, &l.loops, tolerance, op))
-        .transpose()
-        .map_err(|e| match e {
-            Error::OutOfDomain(_) => e,
-            _ => not_their_chain(),
-        })?;
-    let lead = usize::from(prism.is_some());
+    // The prisms first, on their bottom caps' frames (a boss parallel to the
+    // leaf on its axes, bit for bit).
+    let mut built: Vec<Solid> = Vec::new();
+    for (i, l) in prisms.iter().enumerate() {
+        let along = built.first().map(|s| s.frame);
+        let open = (l.open.as_deref(), along.as_ref());
+        built.push(
+            prism_on(t, l.caps, &l.loops, open, tolerance, mine(op, i)).map_err(|e| match e {
+                Error::OutOfDomain(_) => e,
+                _ => not_their_chain(),
+            })?,
+        );
+    }
+    let lead = built.len();
+    let lead_frame = built.first().map(|s| s.frame);
+    // Each part's faces: a prism's, or a primitive's curved faces (not its
+    // caps, as S9e.4b.4b.1's chain), with its flats.
+    let faces_of = |q: usize| -> Vec<usize> {
+        let own = |k: usize| {
+            if q < p {
+                part[k] == Some(q)
+            } else {
+                groups[q - p].contains(&k)
+            }
+        };
+        (0..n)
+            .filter(|&k| own(k) || flats[q].contains(&k))
+            .collect()
+    };
     // Each one's Boolean with the earlier ones and its frame.
     let mut ops: Vec<Op2> = Vec::new();
-    let mut axes: Vec<Frame3> = Vec::new();
+    let mut axes: Vec<Frame3> = built.iter().map(|s| s.frame).collect();
     let mut frames: Vec<Option<Frame3>> = Vec::new();
-    let mut earlier: Vec<usize> = (0..n).filter(|&k| prism_face(k)).collect();
-    for (i, &(g, outside, _)) in order.iter().enumerate() {
-        let faces = &groups[g];
-        let own = axis_of(t, faces[0]).ok_or_else(general)?;
-        // A cylinder or a cone on an earlier primitive's axis takes its
-        // frame; S9e.4b.4b.2a: one along the prism's axis its axes, bit for
-        // bit, at its stored origin.
-        let sphere = matches!(t.faces()[faces[0]].surface, Surface::Sphere { .. });
-        let along = prism
-            .as_ref()
-            .filter(|p| parallel(p.frame.normal(), own.normal()))
-            .map(|p| p.frame.at(own.origin()));
-        let reference = (!sphere)
-            .then(|| {
-                axes.iter()
-                    .find(|a| coaxial(a, &own, tol))
-                    .copied()
-                    .or(along)
-            })
-            .flatten();
+    let mut earlier: Vec<usize> = Vec::new();
+    let meets = |mine: &[usize], earlier: &[usize]| {
         let (mut convex, mut concave) = (false, false);
         for &(a, b, bend) in &bends {
-            let pair = (faces.contains(&a) && earlier.contains(&b))
-                || (faces.contains(&b) && earlier.contains(&a));
-            if pair {
+            if (mine.contains(&a) && earlier.contains(&b))
+                || (mine.contains(&b) && earlier.contains(&a))
+            {
                 convex |= bend == Bend::Convex;
                 concave |= bend == Bend::Concave;
             }
         }
-        ops.push(if i + lead == 0 {
+        (convex, concave)
+    };
+    for q in 0..lead {
+        let mine = faces_of(q);
+        let (convex, concave) = meets(&mine, &earlier);
+        ops.push(if q == 0 {
             Op2::Common
-        } else if outside {
-            Op2::Cut
         } else if convex && concave {
             return Err(not_their_chain());
         } else if convex {
@@ -2293,21 +2533,58 @@ fn chain_piece(
         } else {
             Op2::Fuse
         });
+        earlier.extend(mine);
+    }
+    let chained: Vec<(usize, bool, f64)> = order.iter().chain(&tooth).copied().collect();
+    for (i, &(g, outside, _)) in chained.iter().enumerate() {
+        let faces = &groups[g];
+        let own = axis_of(t, faces[0]).ok_or_else(general)?;
+        // A cylinder or a cone on an earlier primitive's axis takes its
+        // frame; S9e.4b.4b.2a: one along the leaf's axis its axes, bit for
+        // bit, at its stored origin.
+        let sphere = matches!(t.faces()[faces[0]].surface, Surface::Sphere { .. });
+        let along = lead_frame
+            .filter(|f| parallel(f.normal(), own.normal()))
+            .map(|f| f.at(own.origin()));
+        let reference = (!sphere)
+            .then(|| {
+                axes[lead..]
+                    .iter()
+                    .find(|a| coaxial(a, &own, tol))
+                    .copied()
+                    .or(along)
+            })
+            .flatten();
+        if i < order.len() {
+            let mine = faces_of(p + g);
+            let (convex, concave) = meets(&mine, &earlier);
+            ops.push(if i + lead == 0 {
+                Op2::Common
+            } else if outside {
+                Op2::Cut
+            } else if convex && concave {
+                return Err(not_their_chain());
+            } else if convex {
+                Op2::Common
+            } else {
+                Op2::Fuse
+            });
+            earlier.extend(mine);
+        }
         axes.push(reference.unwrap_or(own));
         frames.push(reference);
-        earlier.extend(faces.iter().copied());
     }
     // Each primitive's entities under an operation of its own (the first
     // the body's construction's), past each open end by a quarter of its
     // faces' range; the first, a common's and a cut's past the others' too
-    // (what bounds the body there, or what the cut leaves).
-    let mine = |i: usize| OperationId(op.0 ^ ((i as u64) << 24));
+    // (what bounds the body there, or what the cut leaves). A tooth as a
+    // fused one.
     let mut solids = Vec::new();
-    for (i, &(g, outside, _)) in order.iter().enumerate() {
+    for (i, &(g, outside, _)) in chained.iter().enumerate() {
         let (solid, _, _) = primitive_over(
             t,
             tolerance,
-            mine(i + lead),
+            mine(op, i + lead),
             &groups[g],
             outside,
             frames[i].as_ref(),
@@ -2316,9 +2593,9 @@ fn chain_piece(
         solids.push(solid);
     }
     let mut bounds: Vec<crate::Bounds3> = solids.iter().map(|s| s.bounds).collect();
-    bounds.extend(prism.iter().map(|p| p.bounds));
-    for (i, &(g, outside, _)) in order.iter().enumerate() {
-        if ops[i] == Op2::Fuse {
+    bounds.extend(built.iter().map(|s| s.bounds));
+    for (i, &(g, outside, _)) in chained.iter().enumerate() {
+        if i >= order.len() || ops[i + lead] == Op2::Fuse {
             continue;
         }
         let others: Vec<crate::Bounds3> = (0..bounds.len())
@@ -2328,7 +2605,7 @@ fn chain_piece(
         solids[i] = primitive_over(
             t,
             tolerance,
-            mine(i + lead),
+            mine(op, i + lead),
             &groups[g],
             outside,
             frames[i].as_ref(),
@@ -2336,11 +2613,48 @@ fn chain_piece(
         )?
         .0;
     }
-    let mut tree = Tree::Primitive(0);
-    for (i, &op2) in ops.iter().enumerate().skip(1 - lead) {
-        tree = Tree::Op(op2, Box::new(tree), Box::new(Tree::Primitive(i + lead)));
+    // The tree: each part (common its flats' hull), the chain of them, each
+    // pocket (less its teeth) cut from it.
+    let hull_axes = axes.clone();
+    let hull = |members: &[usize], over: bool| -> Result<Vec<(Frame3, bool)>> {
+        let planes = members
+            .iter()
+            .map(|&k| plane_along(t, k, over, &hull_axes))
+            .collect::<Result<Vec<_>>>()?;
+        Ok(one_plane(planes, tol))
+    };
+    let index_of = |q: usize| -> usize {
+        if q < lead {
+            q
+        } else {
+            lead + chained.iter().position(|o| o.0 == q - p).expect("a part")
+        }
+    };
+    let leaf_of = |q: usize| -> Result<Tree> {
+        let x = Tree::Primitive(index_of(q));
+        Ok(if flats[q].is_empty() {
+            x
+        } else {
+            Tree::Op(
+                Op2::Common,
+                Box::new(x),
+                Box::new(Tree::Hull(hull(&flats[q], false)?)),
+            )
+        })
+    };
+    let parts: Vec<usize> = (0..lead).chain(order.iter().map(|o| p + o.0)).collect();
+    let mut tree = leaf_of(parts[0])?;
+    for (k, &q) in parts.iter().enumerate().skip(1) {
+        tree = Tree::Op(ops[k], Box::new(tree), Box::new(leaf_of(q)?));
     }
-    let mut solids = prism.into_iter().chain(solids);
+    for (members, mine) in &pockets {
+        let mut pocket = Tree::Hull(hull(members, true)?);
+        for &g in mine {
+            pocket = Tree::Op(Op2::Cut, Box::new(pocket), Box::new(leaf_of(p + g)?));
+        }
+        tree = Tree::Op(Op2::Cut, Box::new(tree), Box::new(pocket));
+    }
+    let mut solids = built.into_iter().chain(solids);
     let primitive = solids.next().expect("two primitives");
     Ok(Piece {
         primitive: Box::new(primitive),
@@ -2350,6 +2664,12 @@ fn chain_piece(
         tree: Some(tree),
         choice: 0,
     })
+}
+
+/// A chain's `i`-th part's operation: the body's construction's for the
+/// first.
+fn mine(op: OperationId, i: usize) -> OperationId {
+    OperationId(op.0 ^ ((i as u64) << 24))
 }
 
 /// A plane piece's bounds: its primitive's between the body's axial ends

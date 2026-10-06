@@ -55,7 +55,7 @@ tangent along an edge")`, given to no case); declared `unsupported`:
 `notch`, the rounded square over `[0, 2]` on the world's axes less a rod of
 radius 3/2 along `y` about `(9/2, *, 1)` from `y = -1` to `y = 4` (a blind
 notch through both caps at the rim: no cap's loop the prism's,
-S9e.4b.4b.2b's).
+S9e.4b.4b.2b.2's).
 
 Cases (each the three operations): `bore_rod`, the bore and a `TILT` rod
 across it; `boss_box`, the boss and a `TILT` box across the boss and the
@@ -263,8 +263,8 @@ def make_bodies():
         Body('notch', prism([rounded_square(9, 2)], POST_FRAME, 0.0, 2.0), 'cut',
              cylinder(NOTCH_ROD, 1.0, 4.5, 1.5, -1.0, 4.0),
              kind='unsupported',
-             reason='an imported body of several primitives with plane faces other than their ends or a prism\'s '
-                    '(S9e.4b.4b.2b)'),
+             reason='an imported body of several primitives with plane faces other than their ends, a prism\'s, a '
+                    'flat or a pocket (S9e.4b.4b.2b.2)'),
     ]
     return {b.name: b for b in out}
 
