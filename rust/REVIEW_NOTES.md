@@ -9427,7 +9427,19 @@ Decisions for S9, recorded before its code (2026-09-28):
     where its top cap and its ball meet the slab's face at one point, which
     the reference finds as several events of the slab's chords within 1e-21
     of each other, so that group's spacing is not checked (its sines and gaps
-    are).
+    are). The capture `occt-boolean-prism-leaves-preimplementation`
+    (`compare_prism_leaves_boolean.py`, keyed on the refusal the step
+    removes: `imported.rs`'s `OutOfDomain("an imported body of several
+    primitives with plane faces other than their ends (S9e.4b.4b.2)")`, whose
+    text the step changes; the kernel's probe `unsupported` on all 24, every
+    body refused on import by it): every result valid with the reference's
+    solid counts, 19 matching (within 2e-8 of the reference), 5 reviewed, in
+    `occt-boolean-prism-leaves-divergences.json`: the bore's three with a
+    `TILT` rod (its cylinder met off its axis in a quartic; volumes up to
+    1.7e-5 relative by BRepGProp's default integration), the boss and the
+    pocket's common and the dimple's chain's cut (2.8e-8 and 3.3e-8), each
+    within 2.4e-9 measured adaptively at 1e-10 and 1e-12 by a diagnostic
+    build (its edges' tolerance at most 1.5e-7). S9e.4b.4b.2a's kernel next.
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces
