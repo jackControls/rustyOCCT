@@ -8729,7 +8729,20 @@ Decisions for S9, recorded before its code (2026-09-28):
     resolution of one; the step's kernel takes that rule for parallel circular
     cylinders (refined decisions (3)), which refuses `quad_seat` and, in the
     same draft, DRAW's `D5` (otherwise left to the validator's undecided loop
-    winding, a `ComputationLimit`).
+    winding, a `ComputationLimit`). The capture
+    `occt-boolean-imported-joints-preimplementation`
+    (`compare_imported_joints_boolean.py`, keyed on the refusal the step
+    removes, `snapped.rs`'s `OutOfDomain("an imported prism's arcs of two
+    circles meeting at a joint (S9e.4b.4)")`; the kernel's probe `unsupported`
+    on all 39, every body refused by it in the Boolean's exact model): every
+    result valid, 36 matching (volumes within 2.3e-10, areas 8.8e-11, centres
+    3.2e-11 of the size: OCCT joins the declared `quad_seat`'s rod and arc
+    walls, its fuse one solid with the reference's measures), 3 reviewed: the
+    quad's ball cases, BRepGProp's default integration on a sphere's faces met
+    by cylinders (up to 7.0e-7 relative; within 2.3e-9 measured adaptively at
+    1e-10 and 1e-12 by a diagnostic build), in
+    `occt-boolean-imported-joints-divergences.json`; 5 results' counts change
+    when unified. S9e.4b.4a's kernel next.
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces
