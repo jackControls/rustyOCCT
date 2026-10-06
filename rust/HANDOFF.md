@@ -463,9 +463,17 @@ then for S9e.4b.4b.2b.1 (branch `s9e4b4b2b`, over `s9c2-kernel` at `298fcf3a`).
    spline-sphere, spline-cone, imported-polyhedra, imported-arcs,
    imported-pieces, split-pieces, one-sphere, one-sphere-incidence,
    piece-forms, piece-trees, primitive-chains, prism-leaves and plane-parts
-   captures from
-   CI's run, as
-   every capture's.
+   captures (with imported-joints'), and in fact of every Boolean capture
+   but S9a.1's two prisms (`occt-boolean-preimplementation`): CI runs
+   only `compare_boolean.py`'s default set, so its
+   `source-pinned-brep-results` artifact holds no other set's
+   `native-observed.txt` (checked at `d1869f2f`, runs 37438561216 and
+   37454728856, and at `64673ebd`, run 37415799498), and none of the
+   other 38 captures has ever had a `platform-linux/` record. They stay
+   pending until the B-rep job also runs those comparisons (each set's
+   compare script on the job's pinned SDK, its output directory added to
+   the artifact) and a green run uploads their observations; see
+   REVIEW_NOTES.md's "The Boolean captures' Linux records".
    `SPLINE_SPHERE` and `SPLINE_CONE` are on since the loops' certified integrals were sped up
    (branch `loop-integrals`; REVIEW_NOTES.md's "Certified integrals beside
    spline walls' loops"), and the campaign with both on is clean at

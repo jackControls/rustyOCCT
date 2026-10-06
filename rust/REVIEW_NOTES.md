@@ -11901,6 +11901,25 @@ Decisions for S9, recorded before its code (2026-09-28):
   evaluate, the other 41 are the kernel's `Degenerate`, and the bridge
   tests two spheres and a torus with its moved copy.
 
+* **The Boolean captures' Linux records, open: CI has no observations to
+  take them from.** S9e.4b and S9f.3's notes leave each capture's Linux
+  record pending until CI's run, but the B-rep job runs only
+  `compare_boolean.py`'s default set (S9a.1's two prisms): the
+  `source-pinned-brep-results` artifacts of the green runs at `d1869f2f`
+  (37438561216, push; 37454728856, schedule) and `64673ebd`
+  (37415799498) hold `boolean-oracle/native-observed.txt` alone, its 45
+  rows equal to that capture's `platform-linux/native.txt`. No other
+  Boolean comparison has ever run in CI, and none of the other 38
+  `occt-boolean-*-preimplementation` captures (S9a.2's splines, S9c to
+  S9f, plane-parts not yet pushed) has a `platform-linux/` record; their
+  comparisons are run on macOS only, where `platform_record` reads the
+  capture itself. No record was added. Taking them needs the B-rep job to
+  run each set's compare script on its pinned SDK and upload each set's
+  output directory (the kernel probe's time counted against the job's
+  limit), then one green run's
+  observations reviewed against the macOS captures as the other
+  `platform-linux/` records were.
+
 * **CI budget (U6).** Per-push fuzz runs replay a bounded sample plus every
   regression and new seed; the daily schedule replays everything; the heavy
   exact targets run on schedule only; Windows runs a smoke subset per push
