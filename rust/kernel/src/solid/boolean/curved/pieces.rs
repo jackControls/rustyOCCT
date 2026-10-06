@@ -18,7 +18,11 @@
 //! the hull the first input), the primitive less the hull of its planes
 //! turned over (a bite) or their fuse (a boss), the primitive ending at its
 //! caps; two faces on one plane facing one way are one plane of the hull.
-//! A body no form matches is S9e.4b.3c.3b's. S9e.4b.3c.1: a stored vertex within the resolution of the
+//! S9e.4b.3c.3b: a body no form matches is a Boolean tree of its primitive
+//! and several hulls (`imported::Tree`), each inner Boolean arranged and
+//! assembled in turn and given to the next as its given model (S9e.1's, its
+//! own assembly its slots: `Tree::node`), the root's matched to the stored
+//! topology. S9e.4b.3c.1: a stored vertex within the resolution of the
 //! model's ring (a rim OCCT split at its sphere's seam) splits it in the
 //! first arrangement (`Arr::split_at`), so the match takes the stored arcs;
 //! under a partner on its sphere a piece's sphere is split at the second
@@ -31,7 +35,7 @@ use super::num::*;
 use crate::identity::{Derivation, EntityId, EntityKind, OperationId, OperationKind, Role};
 use crate::profile::boolean::{Op2, Operand};
 use crate::solid::boolean::polyhedra::Component;
-use crate::solid::imported::{Form, Piece};
+use crate::solid::imported::{Form, Piece, Tree as PieceTree};
 use crate::solid::split::{q, rational_f64, zero};
 use crate::solid::{Construction, Solid};
 use crate::topology::Surface;
@@ -404,6 +408,9 @@ fn arranged(
     stored: &[[f64; 3]],
 ) -> Result<(Arr, Vec<(Component, Made)>)> {
     let p = &piece.primitive;
+    if let Some(tree) = &piece.tree {
+        return of_tree(p, tree, tolerance, first, stored);
+    }
     let (centre, half) = cube(p);
     let hull = hull_model(
         &piece.planes,
@@ -420,14 +427,15 @@ fn arranged(
     of_form(p, &hull, piece.form, first, stored)
 }
 
-/// S9e.4b.3c.3: a form's first Boolean, its operation and whether the hull
-/// is its first input (the hull less the primitive).
-fn first_boolean(form: Form) -> (Op2, bool) {
-    match form {
-        Form::Common => (Op2::Common, false),
-        Form::Groove => (Op2::Cut, true),
-        Form::Bite => (Op2::Cut, false),
-        Form::Boss => (Op2::Fuse, false),
+/// S9e.4b.3c.3: a form's first Boolean's operation; S9e.4b.3c.3b: a tree's
+/// root Boolean's.
+fn first_boolean(piece: &Piece) -> Op2 {
+    match (piece.form, &piece.tree) {
+        (Form::Common, _) => Op2::Common,
+        (Form::Groove | Form::Bite, _) => Op2::Cut,
+        (Form::Boss, _) => Op2::Fuse,
+        (Form::Tree, Some(PieceTree::Op(op, _, _))) => *op,
+        (Form::Tree, _) => unreachable!("a tree of one Boolean or more"),
     }
 }
 
@@ -464,7 +472,13 @@ fn of_form(
     first: Option<&R>,
     stored: &[[f64; 3]],
 ) -> Result<(Arr, Vec<(Component, Made)>)> {
-    let (op, swapped) = first_boolean(form);
+    let (op, swapped) = match form {
+        Form::Common => (Op2::Common, false),
+        Form::Groove => (Op2::Cut, true),
+        Form::Bite => (Op2::Cut, false),
+        Form::Boss => (Op2::Fuse, false),
+        Form::Tree => unreachable!("a tree's piece is arranged by `of_tree`"),
+    };
     let r = |(n, d): (i64, i64)| R::new(n.into(), d.into());
     let seams = super::SEAMS;
     let tried: Vec<R> = first
@@ -491,6 +505,145 @@ fn of_form(
             // fails there is tried at the others in turn: a piece degenerate
             // at every split keeps its own refusal, and a split alike the
             // partner's is that arrangement's seam conflict.
+            Err(Error::Degenerate(_)) if first.is_some() && k == 0 => continue,
+            Err(Error::ComputationLimit(m)) if m == super::graph::SEAM => continue,
+            r => return r,
+        }
+    }
+    Err(Error::Degenerate("a meeting at every seam tried"))
+}
+
+/// S9e.4b.3c.3b: what a piece's tree is evaluated with: its primitive, the
+/// seam tried, the hulls' cube and the stored vertices that split rims.
+struct Tree<'a> {
+    p: &'a Solid,
+    seam: &'a R,
+    cube: ([f64; 3], f64),
+    stored: &'a [[f64; 3]],
+    tolerance: crate::Tolerance,
+}
+
+impl Tree<'_> {
+    /// A tree's model as an input `operand`: the primitive's model, a hull
+    /// leaf model (its entities under an operation of its own, `count` the
+    /// hulls and Booleans so far), or an inner Boolean's given model.
+    fn node(&self, tree: &PieceTree, operand: Operand, count: &mut u64) -> Result<Prism> {
+        *count += 1;
+        let own = OperationId(hull_operation(self.p).0 ^ (*count << 40));
+        match tree {
+            PieceTree::Primitive => super::model_of(self.p, operand, self.seam, false),
+            PieceTree::Hull(planes) => {
+                let (centre, half) = self.cube;
+                hull_model(planes, centre, half, operand, own, self.tolerance)
+            }
+            PieceTree::Op(op, a, b) => {
+                let (arr, out) = self.boolean(*op, a, b, count)?;
+                // One solid, its own assembly naming its given model (under
+                // ids of its own operation).
+                if out.len() != 1 {
+                    return Err(crate::solid::imported::not_its_primitive());
+                }
+                let parts = out[0].0.parts.clone();
+                let topology = inner_topology(parts, own)?;
+                let stored = super::given::Stored {
+                    topology: &topology,
+                    resolution: self.tolerance,
+                    frame: self.p.frame,
+                    poles: false,
+                };
+                super::given::built_on(&stored, operand, arr, out, *op, Some(0))
+            }
+        }
+    }
+
+    /// A Boolean of two trees, arranged (the stored vertices splitting its
+    /// rims) and assembled.
+    fn boolean(
+        &self,
+        op: Op2,
+        a: &PieceTree,
+        b: &PieceTree,
+        count: &mut u64,
+    ) -> Result<(Arr, Vec<(Component, Made)>)> {
+        let ma = self.node(a, Operand::A, count)?;
+        let mb = self.node(b, Operand::B, count)?;
+        let mut arr = arrange_shared([ma, mb])?;
+        arr.split_at(self.stored, self.p.resolution().linear())?;
+        arr.for_op(op);
+        let out = assemble_made(&arr, op)?;
+        Ok((arr, out))
+    }
+}
+
+/// An inner Boolean's assembly as a topology under ids of its own operation
+/// (unchecked: it only names that Boolean's given model).
+fn inner_topology(
+    parts: crate::topology::TopologyParts,
+    operation: OperationId,
+) -> Result<crate::topology::Topology> {
+    use crate::topology::{EdgeId, FaceId, RegionId, Slot, VertexId};
+    let topology = crate::topology::Topology::from_parts_unchecked(parts);
+    let d = |entity, ordinal: usize| Derivation {
+        operation,
+        kind: OperationKind::External,
+        entity,
+        role: Role::External,
+        ordinal: ordinal as u32,
+        parents: Vec::new(),
+    };
+    let slots = (0..topology.vertices().len())
+        .map(|i| (Slot::Vertex(VertexId(i)), d(EntityKind::Vertex, i)))
+        .chain((0..topology.edges().len()).map(|i| (Slot::Edge(EdgeId(i)), d(EntityKind::Edge, i))))
+        .chain((0..topology.faces().len()).map(|i| (Slot::Face(FaceId(i)), d(EntityKind::Face, i))))
+        .chain(
+            (1..topology.regions().len())
+                .map(|i| (Slot::Region(RegionId(i)), d(EntityKind::Region, i))),
+        )
+        .collect();
+    topology.renamed(d(EntityKind::Body, 0), slots)
+}
+
+/// S9e.4b.3c.3b: the cube a tree's hulls are bounded by: about its
+/// primitive, its half side past the stored vertices too.
+fn tree_cube(p: &Solid, stored: &[[f64; 3]]) -> ([f64; 3], f64) {
+    let (centre, half) = cube(p);
+    let reach = stored
+        .iter()
+        .flat_map(|v| (0..3).map(move |i| (v[i] - centre[i]).abs()))
+        .fold(half, f64::max);
+    (centre, 2.0 * reach + 0.375)
+}
+
+/// S9e.4b.3c.3b: a piece's tree's root Boolean arranged and assembled, its
+/// inner Booleans' results their given models, a full circle's seam (and a
+/// whole sphere's split) tried at several rational points.
+fn of_tree(
+    p: &Solid,
+    tree: &PieceTree,
+    tolerance: crate::Tolerance,
+    first: Option<&R>,
+    stored: &[[f64; 3]],
+) -> Result<(Arr, Vec<(Component, Made)>)> {
+    let PieceTree::Op(op, a, b) = tree else {
+        return Err(crate::solid::imported::not_its_primitive());
+    };
+    let r = |(n, d): (i64, i64)| R::new(n.into(), d.into());
+    let seams = super::SEAMS;
+    let tried: Vec<R> = first
+        .cloned()
+        .into_iter()
+        .chain(seams[..seams.len() - 1].iter().map(|&s| r(s)))
+        .collect();
+    let cube = tree_cube(p, stored);
+    for (k, seam) in tried.iter().enumerate() {
+        let ctx = Tree {
+            p,
+            seam,
+            cube,
+            stored,
+            tolerance,
+        };
+        match ctx.boolean(*op, a, b, &mut 0) {
             Err(Error::Degenerate(_)) if first.is_some() && k == 0 => continue,
             Err(Error::ComputationLimit(m)) if m == super::graph::SEAM => continue,
             r => return r,
@@ -540,12 +693,11 @@ pub(super) fn model(s: &Solid, op: Operand, first: Option<&R>) -> Result<Prism> 
             ),
             e => e,
         })?;
-        let (op2, _) = first_boolean(piece.form);
+        let op2 = first_boolean(piece);
         super::given::built(s, op, arr, out, op2, None).map_err(|e| match e {
-            Error::ComputationLimit(m) if m.contains("rebuilt differently") => Error::OutOfDomain(
-                "an imported plane piece other than one Boolean of its primitive and its planes' \
-                 hull (S9e.4b.3c.3b)",
-            ),
+            Error::ComputationLimit(m) if m.contains("rebuilt differently") => {
+                crate::solid::imported::not_its_primitive()
+            }
             e => e,
         })
     })();

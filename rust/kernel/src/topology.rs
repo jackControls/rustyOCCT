@@ -2012,6 +2012,30 @@ impl Topology {
             attributes: AttributeMap::new(),
         })
     }
+    /// Parts taken as they are, unchecked, under external ids
+    /// (S9e.4b.3c.3b: an inner Boolean's assembly in an imported piece's
+    /// tree, which only names that Boolean's given model).
+    pub(crate) fn from_parts_unchecked(parts: TopologyParts) -> Self {
+        let identity = Identity::external(
+            parts.vertices.len(),
+            parts.edges.len(),
+            parts.faces.len(),
+            parts.regions.len(),
+        )
+        .expect("distinct external ordinals give distinct ids");
+        Self {
+            vertices: parts.vertices,
+            edges: parts.edges,
+            fins: parts.fins,
+            loops: parts.loops,
+            faces: parts.faces,
+            shells: parts.shells,
+            regions: parts.regions,
+            identity,
+            layout: Vec::new(),
+            attributes: AttributeMap::new(),
+        }
+    }
     /// Validated parts under the given derivations (an operation's own
     /// body, S8a.2): every vertex, fin and face measured, then the whole
     /// contract checked; the issues otherwise.

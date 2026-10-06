@@ -27,13 +27,17 @@
 //! its model built and matched to its stored topology on import, its
 //! entities its stored ones; S9e.4b.3c.3: or another Boolean of the two (the
 //! hull less the primitive, the primitive less the hull, their fuse), each
-//! form tried in turn, the match the arbiter. Every other body is S9e.4b's.
+//! form tried in turn, the match the arbiter; S9e.4b.3c.3b: else a Boolean
+//! tree of its primitive and several convex hulls of its planes (`Tree`), its
+//! faces grouped by how its edges bend, each grouping tried in turn. Every
+//! other body is S9e.4b's.
 use super::{replayable, Construction, Context, Solid};
 use crate::history::{History, Relation};
 use crate::identity::{
     AlgorithmLevel, Derivation, EntityId, EntityKind, InputLabel, OperationId, OperationKind,
     Parent, Role,
 };
+use crate::profile::boolean::Op2;
 use crate::solid::split::{q, rational_f64, zero};
 use crate::topology::{
     Curve3, EdgeId, FaceId, Loop, Orientation, RegionId, RegionKind, Slot, Surface, Topology,
@@ -82,6 +86,70 @@ pub(crate) struct Piece {
     /// S9e.4b.3c.3: the Boolean of the primitive and the hull of the planes
     /// the body is.
     pub(crate) form: Form,
+    /// S9e.4b.3c.3b: the Boolean tree of the primitive and its planes'
+    /// hulls the body is (`Form::Tree`; `planes` then empty), and the
+    /// choice of its faces' groups it was decomposed by.
+    pub(crate) tree: Option<Tree>,
+    pub(crate) choice: u32,
+}
+
+/// S9e.4b.3c.3b: a Boolean tree of a plane piece's primitive and convex
+/// hulls of its planes (REVIEW_NOTES.md, "S9e.4b.3c.3b refined").
+#[derive(Debug, Clone, PartialEq)]
+pub(crate) enum Tree {
+    /// The primitive.
+    Primitive,
+    /// The convex hull of planes: each plane face's stored frame and whether
+    /// its normal `x * y` points into the hull.
+    Hull(Vec<(Frame3, bool)>),
+    /// A Boolean of two trees.
+    Op(Op2, Box<Tree>, Box<Tree>),
+}
+
+impl Tree {
+    /// Its Booleans.
+    pub(crate) fn booleans(&self) -> usize {
+        match self {
+            Tree::Op(_, a, b) => 1 + a.booleans() + b.booleans(),
+            _ => 0,
+        }
+    }
+
+    /// A point's location by rank (inside 2, on the boundary 1, outside 0):
+    /// the primitive's `primitive`, a hull's sides within `tol`, a common
+    /// the lesser, a fuse the greater, a cut the first's common the second's
+    /// reversed.
+    fn rank(&self, primitive: u8, point: Point3, tol: f64) -> u8 {
+        match self {
+            Tree::Primitive => primitive,
+            Tree::Hull(planes) => hull_rank(planes, point, tol),
+            Tree::Op(op, a, b) => {
+                let (x, y) = (a.rank(primitive, point, tol), b.rank(primitive, point, tol));
+                match op {
+                    Op2::Common => x.min(y),
+                    Op2::Fuse => x.max(y),
+                    Op2::Cut => x.min(2 - y),
+                }
+            }
+        }
+    }
+}
+
+/// A point's rank in the hull of planes (each frame's plane, `into` its
+/// normal pointing into the hull), within `tol`.
+fn hull_rank(planes: &[(Frame3, bool)], point: Point3, tol: f64) -> u8 {
+    let mut rank = 2;
+    for (frame, into) in planes {
+        let d = frame.coordinates(point)[2];
+        let d = if *into { -d } else { d };
+        if d > tol {
+            return 0;
+        }
+        if d >= -tol {
+            rank = 1;
+        }
+    }
+    rank
 }
 
 /// S9e.4b.3c.3: which Boolean of its primitive and the convex hull of its
@@ -97,6 +165,8 @@ pub(crate) enum Form {
     Bite,
     /// The hull fused with the primitive: a boss.
     Boss,
+    /// S9e.4b.3c.3b: a Boolean tree of the primitive and its planes' hulls.
+    Tree,
 }
 
 impl Form {
@@ -140,34 +210,24 @@ impl Piece {
     fn classify(&self, point: Point3, tolerance: Tolerance) -> Result<crate::Location> {
         use crate::Location;
         let tol = tolerance.linear();
-        let mut hull = Location::Inside;
-        for (frame, into) in &self.planes {
-            let d = frame.coordinates(point)[2];
-            let d = if *into { -d } else { d };
-            if d > tol {
-                hull = Location::Outside;
-                break;
-            }
-            if d >= -tol {
-                hull = Location::Boundary;
-            }
-        }
+        let h = hull_rank(&self.planes, point, tol);
         let primitive = self.primitive.classify(point)?;
         // Inside 2, on the boundary 1, outside 0: a common the least, a
         // fuse the most, a complement the reverse.
-        let rank = |l: Location| match l {
+        let p = match primitive {
             Location::Inside => 2,
             Location::Boundary => 1,
             Location::Outside => 0,
         };
-        let (p, h) = (rank(primitive), rank(hull));
-        let r = match self.form {
-            Form::Common => p.min(h),
-            Form::Groove => h.min(2 - p),
-            Form::Bite => p.min(2 - h),
-            Form::Boss => p.max(h),
+        let r = match (self.form, &self.tree) {
+            (Form::Common, _) => p.min(h),
+            (Form::Groove, _) => h.min(2 - p),
+            (Form::Bite, _) => p.min(2 - h),
+            (Form::Boss, _) => p.max(h),
+            (Form::Tree, Some(tree)) => tree.rank(p, point, tol),
+            (Form::Tree, None) => unreachable!("a tree's piece"),
         };
-        Ok([Location::Outside, Location::Boundary, Location::Inside][r])
+        Ok([Location::Outside, Location::Boundary, Location::Inside][usize::from(r)])
     }
 }
 
@@ -260,9 +320,18 @@ impl Solid {
         let op = construction_operation(context.operation);
         let k = curved_face(&topology).ok_or_else(general)?;
         let mut refusal = None;
-        for &form in Form::candidates(material_outside(&topology, k)) {
-            let built = piece(&topology, resolution, op, form).map_err(|x| {
-                if x == not_its_primitive() {
+        // S9e.4b.3c.3b: then the Boolean trees its faces decompose into,
+        // each choice of its groups in turn.
+        let forms = Form::candidates(material_outside(&topology, k));
+        let choices = tree_choices(&topology, resolution, op, k).unwrap_or(1);
+        let tried = forms
+            .iter()
+            .map(|&f| (f, 0))
+            .chain((0..choices).map(|c| (Form::Tree, c)));
+        for (form, choice) in tried {
+            let built = piece(&topology, resolution, op, form, choice).map_err(|x| {
+                let tree = form == Form::Tree && matches!(x, Error::Degenerate(_));
+                if x == not_its_primitive() || tree {
                     x
                 } else {
                     e.clone()
@@ -280,6 +349,9 @@ impl Solid {
             match attempt {
                 Ok(done) => return Ok(done),
                 Err(e) if e == not_its_primitive() => {}
+                // A later choice's refusal is a tree the body is not (its
+                // first choice's is the decomposition's own).
+                Err(_) if form == Form::Tree && choice > 0 => {}
                 Err(e) => {
                     refusal.get_or_insert(e);
                 }
@@ -386,6 +458,7 @@ impl Imported {
                 tolerance,
                 p.primitive.operation,
                 p.form,
+                p.choice,
             )?)),
         };
         let (frame, start, end, bounds) = placed(&recognized, &moved);
@@ -932,12 +1005,13 @@ fn axial_range(t: &Topology, frame: &Frame3) -> (f64, f64) {
     range
 }
 
-/// A body of one curved face and planes that is no Boolean of its
-/// primitive and its planes' hull (S9e.4b.3c.3b).
-fn not_its_primitive() -> Error {
+/// A body of one curved face and planes that is no Boolean tree of its
+/// primitive and its planes' hulls (S9e.4b.3c.3b: one of a pocket within a
+/// pocket, S9e.4b.4's).
+pub(crate) fn not_its_primitive() -> Error {
     Error::OutOfDomain(
-        "an imported plane piece other than one Boolean of its primitive and its planes' hull \
-         (S9e.4b.3c.3b)",
+        "an imported plane piece other than a Boolean tree of its primitive and its planes' hulls \
+         (S9e.4b.4)",
     )
 }
 
@@ -1025,13 +1099,54 @@ fn caps(
 /// takes the primitive past the body's ends and every plane; the other forms
 /// the primitive past its curved face's ends but at its caps (a cylinder's
 /// or a cone's), and the planes but the caps', turned over for a bite.
-fn piece(t: &Topology, tolerance: Tolerance, op: OperationId, form: Form) -> Result<Piece> {
+fn piece(
+    t: &Topology,
+    tolerance: Tolerance,
+    op: OperationId,
+    form: Form,
+    choice: u32,
+) -> Result<Piece> {
     let k = curved_face(t).ok_or_else(general)?;
+    if form == Form::Tree {
+        return Ok(tree_piece(t, tolerance, op, k, choice)?.0);
+    }
     // The curved face's material inside its quadric (its outward normal the
     // surface's own, away from the axis or centre) but for a groove.
     if material_outside(t, k) != (form == Form::Groove) {
         return Err(not_its_primitive());
     }
+    let (primitive, capped) = primitive_of(t, tolerance, op, k, form)?;
+    let mut planes = Vec::new();
+    for (i, f) in t.faces().iter().enumerate() {
+        if i == k || capped.contains(&i) {
+            continue;
+        }
+        let Surface::Plane(frame) = &f.surface else {
+            return Err(general());
+        };
+        let out = outward(t, i).ok_or_else(general)?;
+        let into = frame.normal().dot(out) < 0.0;
+        planes.push((*frame, into != (form == Form::Bite)));
+    }
+    Ok(Piece {
+        primitive: Box::new(primitive),
+        planes,
+        form,
+        tree: None,
+        choice: 0,
+    })
+}
+
+/// A plane piece's primitive (S9e.4b.3a; S9e.4b.3c.3) for a form other than
+/// a tree (a tree's: a boss's, or a groove's outside the quadric), and its
+/// caps' faces.
+fn primitive_of(
+    t: &Topology,
+    tolerance: Tolerance,
+    op: OperationId,
+    k: usize,
+    form: Form,
+) -> Result<(Solid, Vec<usize>)> {
     let half = std::f64::consts::FRAC_PI_2;
     // The axial range: the body's (a common's) or the curved face's, past
     // either end by a quarter of it (at least of the radius) but at a cap.
@@ -1099,23 +1214,476 @@ fn piece(t: &Topology, tolerance: Tolerance, op: OperationId, form: Form) -> Res
         }
         _ => return Err(general()),
     };
-    let mut planes = Vec::new();
-    for (i, f) in t.faces().iter().enumerate() {
-        if i == k || capped.contains(&i) {
+    Ok((primitive, capped))
+}
+
+// ------------------------------------------------------------------ Boolean trees
+
+/// How an edge bends between its two faces (S9e.4b.3c.3b): convex where
+/// the second face leans away from the first's material, concave where
+/// toward it, flat within `1e-6` of neither (the faces tangent along it).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Bend {
+    Convex,
+    Concave,
+    Flat,
+}
+
+impl Bend {
+    fn reversed(self) -> Self {
+        match self {
+            Bend::Convex => Bend::Concave,
+            Bend::Concave => Bend::Convex,
+            Bend::Flat => Bend::Flat,
+        }
+    }
+}
+
+/// A face's oriented normal at a point of its surface (a plane's, a
+/// sphere's, a cylinder's or a cone's), against the surface where the face
+/// is reversed.
+fn oriented_normal(t: &Topology, fi: usize, p: Point3) -> Option<Vec3> {
+    let f = &t.faces()[fi];
+    let n = match &f.surface {
+        Surface::Plane(frame) => frame.normal(),
+        s @ (Surface::Sphere { frame, .. }
+        | Surface::Cylinder { frame, .. }
+        | Surface::Cone { frame, .. }) => {
+            let c = frame.coordinates(p);
+            let u = c[1].atan2(c[0]);
+            let v = c[2].atan2(c[0].hypot(c[1]));
+            s.normal(Point2::new(u, v))
+        }
+        _ => return None,
+    };
+    Some(n * f.sense.sign())
+}
+
+/// A face's outward normal at a point (away from its solid region).
+fn outward_at(t: &Topology, fi: usize, p: Point3) -> Option<Vec3> {
+    let f = &t.faces()[fi];
+    let n = oriented_normal(t, fi, p)?;
+    let front = &t.regions()[t.shells()[f.front.index()].region.index()];
+    Some(if front.kind == RegionKind::Solid {
+        n
+    } else {
+        -n
+    })
+}
+
+/// Each fin's face.
+fn fin_faces(t: &Topology) -> Vec<usize> {
+    let mut out = vec![usize::MAX; t.fins().len()];
+    for (fi, f) in t.faces().iter().enumerate() {
+        for l in &f.loops {
+            if let Loop::Edges { fins, .. } = &t.loops()[l.index()] {
+                for x in fins {
+                    out[x.index()] = fi;
+                }
+            }
+        }
+    }
+    out
+}
+
+/// Each edge of two faces with how it bends from the first to the second:
+/// at its curve's middle point, the first face's outward normal against the
+/// direction into the second face from the edge (the second's oriented
+/// normal across its loop's tangent there, its loops counter-clockwise
+/// about it), both ways alike.
+fn bends(t: &Topology) -> Result<Vec<(usize, usize, Bend)>> {
+    let faces = fin_faces(t);
+    let mut out = Vec::new();
+    for e in t.edges() {
+        let [fa, fb] = e.fins.as_slice() else {
+            return Err(not_its_primitive());
+        };
+        let (a, b) = (faces[fa.index()], faces[fb.index()]);
+        if a == usize::MAX || b == usize::MAX || a == b {
+            return Err(not_its_primitive());
+        }
+        let m = e.curve.point(0.5);
+        let h = 1e-4;
+        let along = e.curve.point(0.5 + h) - e.curve.point(0.5 - h);
+        if along.length() == 0.0 {
+            return Err(not_its_primitive());
+        }
+        let tangent = along * (1.0 / along.length());
+        let side = |x: usize, y: usize, fin: crate::topology::FinId| -> Option<f64> {
+            let n = oriented_normal(t, y, m)?;
+            let d = n.cross(tangent * t.fins()[fin.index()].sense.sign());
+            Some(outward_at(t, x, m)?.dot(d) / d.length().max(f64::MIN_POSITIVE))
+        };
+        let (Some(ab), Some(ba)) = (side(a, b, *fb), side(b, a, *fa)) else {
+            return Err(not_its_primitive());
+        };
+        let bend = |v: f64| {
+            if v.abs() <= 1e-6 {
+                Bend::Flat
+            } else if v < 0.0 {
+                Bend::Convex
+            } else {
+                Bend::Concave
+            }
+        };
+        if bend(ab) != bend(ba) {
+            return Err(not_its_primitive());
+        }
+        out.push((a, b, bend(ab)));
+    }
+    Ok(out)
+}
+
+/// A plane face's stored frame and whether its normal `x * y` points into
+/// the material (turned over where `over`).
+fn plane_of(t: &Topology, i: usize, over: bool) -> Result<(Frame3, bool)> {
+    let Surface::Plane(frame) = &t.faces()[i].surface else {
+        return Err(general());
+    };
+    let out = outward(t, i).ok_or_else(general)?;
+    let into = frame.normal().dot(out) < 0.0;
+    Ok((*frame, into != over))
+}
+
+/// The root of a union-find set.
+fn find(root: &mut [usize], x: usize) -> usize {
+    let mut x = x;
+    while root[x] != x {
+        root[x] = root[root[x]];
+        x = root[x];
+    }
+    x
+}
+
+/// A group's region: its hull's planes and its pockets' (faces joined by
+/// edges concave in the region's material, components of two faces or
+/// more in the order of their first faces, turned over); `turned` for the
+/// primitive's group outside the quadric (its faces turned over, its edges'
+/// bends reversed).
+type Region = (Vec<(Frame3, bool)>, Vec<Vec<(Frame3, bool)>>);
+
+fn group_region(
+    t: &Topology,
+    bends: &[(usize, usize, Bend)],
+    members: &[usize],
+    turned: bool,
+    tolerance: Tolerance,
+) -> Result<Region> {
+    let n = t.faces().len();
+    let mut root: Vec<usize> = (0..n).collect();
+    let mut pocketed = vec![false; n];
+    for &(a, b, bend) in bends {
+        if !members.contains(&a) || !members.contains(&b) {
             continue;
         }
-        let Surface::Plane(frame) = &f.surface else {
-            return Err(general());
-        };
-        let out = outward(t, i).ok_or_else(general)?;
-        let into = frame.normal().dot(out) < 0.0;
-        planes.push((*frame, into != (form == Form::Bite)));
+        let bend = if turned { bend.reversed() } else { bend };
+        if bend == Bend::Flat {
+            return Err(not_its_primitive());
+        }
+        if bend == Bend::Concave {
+            let (x, y) = (find(&mut root, a), find(&mut root, b));
+            root[x.max(y)] = x.min(y);
+            pocketed[a] = true;
+            pocketed[b] = true;
+        }
     }
-    Ok(Piece {
+    let mut hull = Vec::new();
+    let mut pockets: BTreeMap<usize, Vec<(Frame3, bool)>> = BTreeMap::new();
+    for &i in members {
+        if pocketed[i] {
+            let r = find(&mut root, i);
+            pockets.entry(r).or_default().push(plane_of(t, i, !turned)?);
+        } else {
+            hull.push(plane_of(t, i, turned)?);
+        }
+    }
+    let tol = tolerance.linear();
+    Ok((
+        one_plane(hull, tol),
+        pockets.into_values().map(|k| one_plane(k, tol)).collect(),
+    ))
+}
+
+/// Planes of faces within the resolution of one plane (two walls of a U
+/// prism on one plane, their stored frames rounded apart) on the first's
+/// frame, so the hull takes them as one plane.
+fn one_plane(planes: Vec<(Frame3, bool)>, tol: f64) -> Vec<(Frame3, bool)> {
+    let mut out: Vec<(Frame3, bool)> = Vec::new();
+    for (frame, into) in planes {
+        let alike = out.iter().find(|(f, _)| {
+            parallel(f.normal(), frame.normal()) && f.coordinates(frame.origin())[2].abs() <= tol
+        });
+        out.push(match alike {
+            Some((f, _)) => (*f, into != (f.normal().dot(frame.normal()) < 0.0)),
+            None => (frame, into),
+        });
+    }
+    out
+}
+
+/// Each plane face's group (S9e.4b.3c.3b): the primitive's (0: sharing an
+/// edge with the curved face convex inside the quadric, concave outside; the
+/// caps) or the other (1). An edge of the kind no seam between the groups
+/// takes (convex inside the quadric, concave outside: within a hull, or
+/// between a hull and its pocket) keeps its faces in one group, every other
+/// face joining through such edges; a face reached only across the other
+/// kind (a pocket's own edges, or the seam where the groups are fused or
+/// cut) lies with the faces it reaches through the first kind, those
+/// components each in the other group than the faces they meet (bit clear in
+/// `choice`) or the same (bit set), in the order of their first faces.
+/// Returns the groups and the number of choices.
+fn groups(
+    t: &Topology,
+    bends: &[(usize, usize, Bend)],
+    k: usize,
+    capped: &[usize],
+    outside: bool,
+    choice: u32,
+) -> Result<(Vec<Option<usize>>, u32)> {
+    let n = t.faces().len();
+    let mut group: Vec<Option<usize>> = vec![None; n];
+    for &c in capped {
+        group[c] = Some(0);
+    }
+    let mut seeds: Vec<Option<usize>> = vec![None; n];
+    for &(a, b, bend) in bends {
+        let plane = match (a == k, b == k) {
+            (true, false) => b,
+            (false, true) => a,
+            _ => continue,
+        };
+        if capped.contains(&plane) {
+            continue;
+        }
+        let g = match bend {
+            Bend::Flat => {
+                return Err(Error::Degenerate(
+                    "an imported plane piece whose curved face is tangent to its plane faces",
+                ))
+            }
+            Bend::Convex => usize::from(outside),
+            Bend::Concave => usize::from(!outside),
+        };
+        match seeds[plane] {
+            Some(h) if h != g => return Err(not_its_primitive()),
+            _ => seeds[plane] = Some(g),
+        }
+    }
+    for (i, s) in seeds.iter().enumerate() {
+        if s.is_some() {
+            group[i] = *s;
+        }
+    }
+    // The kind of edge that keeps a face of a group in it: within a hull,
+    // or between a hull and its pocket (convex, but concave for the
+    // primitive's group outside the quadric, its faces turned over).
+    let keeping = |g: usize| {
+        if g == 0 && outside {
+            Bend::Concave
+        } else {
+            Bend::Convex
+        }
+    };
+    let plane_edges = || {
+        bends
+            .iter()
+            .filter(move |(a, b, _)| *a != k && *b != k)
+            .copied()
+    };
+    // Through keeping edges, in rounds; both groups at once refused.
+    let spread = |group: &mut Vec<Option<usize>>| -> Result<()> {
+        loop {
+            let before = group.clone();
+            let mut changed = false;
+            for (i, slot) in group.iter_mut().enumerate() {
+                if i == k || slot.is_some() {
+                    continue;
+                }
+                let mut reached = [false; 2];
+                for (a, b, bend) in plane_edges() {
+                    let other = if a == i {
+                        b
+                    } else if b == i {
+                        a
+                    } else {
+                        continue;
+                    };
+                    if let Some(g) = before[other] {
+                        if bend == keeping(g) {
+                            reached[g] = true;
+                        }
+                    }
+                }
+                match reached {
+                    [true, true] => return Err(not_its_primitive()),
+                    [false, false] => {}
+                    _ => {
+                        *slot = Some(usize::from(reached[1]));
+                        changed = true;
+                    }
+                }
+            }
+            if !changed {
+                return Ok(());
+            }
+        }
+    };
+    spread(&mut group)?;
+    // The faces left: components through convex edges, each meeting
+    // assigned faces across the other kind.
+    let mut root: Vec<usize> = (0..n).collect();
+    for (a, b, bend) in plane_edges() {
+        if bend == Bend::Convex && group[a].is_none() && group[b].is_none() {
+            let (x, y) = (find(&mut root, a), find(&mut root, b));
+            root[x.max(y)] = x.min(y);
+        }
+    }
+    let mut components: Vec<usize> = Vec::new();
+    for (i, g) in group.iter().enumerate() {
+        if i != k && g.is_none() {
+            let r = find(&mut root, i);
+            if !components.contains(&r) {
+                components.push(r);
+            }
+        }
+    }
+    if components.len() > 3 {
+        return Err(not_its_primitive());
+    }
+    for (bit, &c) in components.iter().enumerate() {
+        let members: Vec<usize> = (0..n)
+            .filter(|&i| i != k && group[i].is_none() && find(&mut root, i) == c)
+            .collect();
+        // The first assigned face it meets, and its group.
+        let met = plane_edges().find_map(|(a, b, _)| {
+            match (members.contains(&a), members.contains(&b)) {
+                (true, false) => group[b].map(|g| (b, g)),
+                (false, true) => group[a].map(|g| (a, g)),
+                _ => None,
+            }
+        });
+        let Some((m, g)) = met else {
+            return Err(not_its_primitive());
+        };
+        // Met from the other group or from a face of a pocket (one meeting a
+        // face of its own group across a pocket's edge), the pocket first;
+        // else the seam first.
+        let pocket = if g == 0 && outside {
+            Bend::Convex
+        } else {
+            Bend::Concave
+        };
+        let in_pocket = plane_edges().any(|(a, b, bend)| {
+            bend == pocket && ((a == m && group[b] == Some(g)) || (b == m && group[a] == Some(g)))
+        });
+        let same = (g == 1 || in_pocket) != (choice >> bit & 1 == 1);
+        for i in members {
+            group[i] = Some(if same { g } else { 1 - g });
+        }
+    }
+    Ok((group, 1 << components.len()))
+}
+
+/// S9e.4b.3c.3b: how many trees a body's faces decompose into (its
+/// groupings, inside the quadric each two ways).
+fn tree_choices(t: &Topology, tolerance: Tolerance, op: OperationId, k: usize) -> Result<u32> {
+    let outside = material_outside(t, k);
+    let form = if outside { Form::Groove } else { Form::Boss };
+    let (_, capped) = primitive_of(t, tolerance, op, k, form)?;
+    let (_, grouped) = groups(t, &bends(t)?, k, &capped, outside, 0)?;
+    Ok(grouped * if outside { 1 } else { 2 })
+}
+
+/// S9e.4b.3c.3b: an imported plane piece as a Boolean tree of its primitive
+/// and its planes' convex hulls (REVIEW_NOTES.md, "S9e.4b.3c.3b refined"):
+/// its plane faces in the primitive's group (trimming it) and the other
+/// (joined to it, or cutting it outside the quadric), each group's region
+/// its hull less its pockets; the primitive common its group's region fused
+/// with the other's, or the other's less it.
+fn tree_piece(
+    t: &Topology,
+    tolerance: Tolerance,
+    op: OperationId,
+    k: usize,
+    choice: u32,
+) -> Result<(Piece, u32)> {
+    let outside = material_outside(t, k);
+    let form = if outside { Form::Groove } else { Form::Boss };
+    let (primitive, capped) = primitive_of(t, tolerance, op, k, form)?;
+    let n = t.faces().len();
+    let bends = bends(t)?;
+    let (group, grouped) = groups(t, &bends, k, &capped, outside, choice)?;
+    // Inside the quadric, the union two ways (the second choice of each
+    // grouping): the primitive common its group's region fused with the
+    // other's, or the primitive common both regions' union (the other's
+    // hidden faces within the first, none of them meeting the curved face:
+    // a box within a ball's half fused with it), the latter first where no
+    // face of the other group meets the curved face.
+    let variants = if outside { 1 } else { 2 };
+    let touches = bends
+        .iter()
+        .any(|&(a, b, _)| (a == k && group[b] == Some(1)) || (b == k && group[a] == Some(1)));
+    let within = (choice / grouped == 0) != touches;
+    let members = |g: usize| -> Vec<usize> {
+        (0..n)
+            .filter(|&i| i != k && group[i] == Some(g) && !capped.contains(&i))
+            .collect()
+    };
+    let (p_hull, p_pockets) = group_region(t, &bends, &members(0), outside, tolerance)?;
+    let (o_hull, o_pockets) = group_region(t, &bends, &members(1), false, tolerance)?;
+    let cut = |x: Tree, pockets: Vec<Vec<(Frame3, bool)>>| {
+        pockets.into_iter().fold(x, |x, k| {
+            Tree::Op(Op2::Cut, Box::new(x), Box::new(Tree::Hull(k)))
+        })
+    };
+    let others = !o_hull.is_empty() || !o_pockets.is_empty();
+    // A group of pockets alone outside the primitive bounds nothing.
+    if others && o_hull.is_empty() {
+        return Err(not_its_primitive());
+    }
+    let tree = if !outside && others && within {
+        if p_hull.is_empty() {
+            return Err(not_its_primitive());
+        }
+        let x = cut(Tree::Hull(p_hull), p_pockets);
+        let y = cut(Tree::Hull(o_hull), o_pockets);
+        let union = Tree::Op(Op2::Fuse, Box::new(x), Box::new(y));
+        Tree::Op(Op2::Common, Box::new(Tree::Primitive), Box::new(union))
+    } else {
+        // The primitive common its group's hull, less its pockets.
+        let mut x = Tree::Primitive;
+        if !p_hull.is_empty() {
+            x = Tree::Op(Op2::Common, Box::new(x), Box::new(Tree::Hull(p_hull)));
+        }
+        let x = cut(x, p_pockets);
+        if !others {
+            // Outside the quadric the primitive's alone bounds nothing;
+            // inside, the union's second way is its first.
+            if outside || choice / grouped == 1 {
+                return Err(not_its_primitive());
+            }
+            x
+        } else {
+            let y = cut(Tree::Hull(o_hull), o_pockets);
+            if outside {
+                Tree::Op(Op2::Cut, Box::new(y), Box::new(x))
+            } else {
+                Tree::Op(Op2::Fuse, Box::new(x), Box::new(y))
+            }
+        }
+    };
+    let choices = grouped * variants;
+    if !(1..=4).contains(&tree.booleans()) {
+        return Err(not_its_primitive());
+    }
+    let piece = Piece {
         primitive: Box::new(primitive),
-        planes,
-        form,
-    })
+        planes: Vec::new(),
+        form: Form::Tree,
+        tree: Some(tree),
+        choice,
+    };
+    Ok((piece, choices))
 }
 
 /// A plane piece's bounds: its primitive's between the body's axial ends
