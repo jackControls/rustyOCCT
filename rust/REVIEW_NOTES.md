@@ -9440,6 +9440,93 @@ Decisions for S9, recorded before its code (2026-09-28):
     pocket's common and the dimple's chain's cut (2.8e-8 and 3.3e-8), each
     within 2.4e-9 measured adaptively at 1e-10 and 1e-12 by a diagnostic
     build (its edges' tolerance at most 1.5e-7). S9e.4b.4b.2a's kernel next.
+  * **S9e.4b.4b.2a implemented** (`solid/imported.rs`'s `leaves`,
+    `chain_piece` and `joint`, `prism_on` read off chosen loops of a cap,
+    `Piece`'s choice the leaf's; `curved/pieces.rs` unchanged but for its
+    text: the leaf is `Tree::Primitive(0)`, S9e.4a's prism's model), as the
+    refined decisions describe with the evidence's amendments: a body of
+    several sphere, cylinder and cone faces whose plane faces are not all
+    its primitives' ends, or whose faces are tangent along an edge, is
+    S9e.4b.4b.1's chain led by a prism leaf, each leaf tried in turn and the
+    first whose model matches the stored topology the body. All 24 fixtures
+    as declared (21 within the kernel's enclosures, each at most `1e-9`
+    wide; the rod tangent to the bore refused as `Degenerate("a tangency
+    between the inputs (S9c)")`), every history complete over the imported
+    bodies' stored ids, results deterministic and moved rigidly, both inputs
+    translated and turned keeping the reference's volumes, every body its
+    chain (its closed-form volume, points in and off it classified, its
+    stored vertices on its boundary), the post refused on import as
+    `Degenerate("an imported body of several primitives whose faces are
+    tangent along an edge")` and the notch as `OutOfDomain("an imported body
+    of several primitives with plane faces other than their ends or a
+    prism's (S9e.4b.4b.2b)")`, and the kernel's own boss, dimple and dome
+    plates (a rounded square of side 9 with a rod along its axis, less and
+    fused with a ball) written by its writer, read back and imported, each
+    Boolean with a turned rod its own result's volume
+    (`tests/prism_leaf_booleans.rs`, 12.8 s in release on a host at load 10
+    to 13, 18.0 s at `opt-level` 2 with debug assertions, 13.0 s in release
+    with debug assertions under the emulated correctly rounded `hypot`, where
+    the primitive chains', piece trees' and piece forms' test files pass
+    too). S9e.4b.4b.1's `rounded` (K1's on the world's axes), declared
+    `unsupported` until now, is solid within its reference
+    (`generate_primitive_chains_boolean_fixtures.py` declares it so, its
+    margins checked: sines at least 0.29, events 1.0e-4 apart; its unit test
+    and `tests/primitive_chain_booleans.rs` too, the body its closed form).
+    `compare_prism_leaves_boolean.py` 15 matches and 9 reviewed (the 5
+    captured and, with the kernel, entity counts: the kernel's meeting of the
+    bore with the crossing rod split at its turning points into S9d.2's
+    graphs where OCCT's is an approximated edge, OCCT's unified results
+    keeping the boss's, the rod's and the frustum's seams and a vertex on a
+    closed edge), every enclosure within the reference;
+    `compare_primitive_chains_boolean.py` 14 and 10, the kernel within the
+    reference on all 24; every other comparison of `HANDOFF.md`'s table
+    unchanged with 0 failures; the release suite (652 tests) and the tools'
+    unit tests (361) passing, the ledger unchanged. Amendments, from
+    the implementation: (a) a prism's walls' joints are exempt from the
+    body's own tangency only as such (two walls along one axis tangent along
+    a line along it, `joint`), checked before the plane faces in the chain of
+    the primitives alone too, so a primitive on a fillet's surface (the post)
+    is the body's own tangency and a body with a prism no leaf takes (the
+    notch) S9e.4b.4b.2b's; (b) a leaf's walls must reach its top cap, so a
+    prism on another primitive (a rounded boss on a disc, whose disc's bottom
+    would be taken for the boss's top) is S9e.4b.4b.2b's rather than a chain
+    the match rejects; (c) S9e.4b.4b.1's refusal of plane faces other than
+    the primitives' ends is gone, the chain of the primitives alone refusing
+    with S9e.4b.4b.2b's text before the leaves are tried. The `boolean` fuzz
+    target's `IMPORTED` stage takes such first results already (S9e.4b.4b.1's
+    stage takes every first result of sphere, cylinder and cone faces and
+    planes): replayed with debug assertions, the same 80 first results of
+    several curved faces of the corpus's 1,468 inputs and regressions reach
+    it, 26 imported and cut within the chained cut's volume, 51 not written by
+    the kernel's writer, the 3 refused as S9e.4b.4b.2's refused as
+    S9e.4b.4b.2b's (two of prisms of lines and arcs fused at two heights,
+    their caps on two levels: two leaves; one of a cone and a ball with a
+    plane face no primitive's end: a hull among several primitives); under
+    the emulated
+    `hypot` 89 reach it (32 imported, 54 not written, the same 3 refused).
+    Replays with debug assertions, one process an input, natively and under
+    the emulated correctly rounded `hypot`: the boolean corpus and its
+    regressions (1,468 inputs) and the split corpus and its regressions
+    (3,571), no failure, the slowest 6.0 s and 1.2 s (5.5 s and 1.2 s
+    emulated) on a host at load 6 to 12. A trial of the targeted DRAW restore
+    cases on the Rust adapter and natively (not the survey: nothing
+    registered): `bfuse_complex/K1`'s part (`CTO904_cts20370-part`) imports
+    as its chain led by its rounded box, and the fuse is
+    `Degenerate("a tangency between the inputs (S9c)")` (its tool a rod of
+    the bore's radius whose axis crosses it, tangent at two points; native
+    DRAW evaluates it); `bugs/modalg_6/bug28773` stays `Degenerate("two
+    cylinders' axes within rounding of parallel")` (refined decision (6));
+    `bfuse_complex/E5`, `bcut_complex/G9` and `bugs/modalg_2/bug417`
+    evaluate on both backends with every check as before. Open:
+    S9e.4b.4b.2b (other plane faces: a primitive's flat, a hull of planes
+    among several primitives, a prism on a primitive or cut at both caps'
+    rims, two leaves: the fuzz target's 3); the kernel's handling of two
+    cylinders of equal radii whose axes cross at right angles (K1's own
+    configuration, tangent at two points: on kernel-built prisms the fuse
+    `InvalidTopology("non_manifold_vertex")`, the cut evaluating, the common
+    `Degenerate("solids touching at a vertex")`, the imported K1 refused as
+    a tangency), a task of its own. Pending: its DRAW survey, its campaigns
+    and its capture's Linux record.
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces

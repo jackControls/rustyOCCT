@@ -37,7 +37,8 @@ then for S9e.4b.3c.3b (branch `s9e4b3c3b`, over `s9c2-kernel` at `e8940c22`),
 then for S9e.4b.4a (branch `s9e4b4`, over `s9c2-kernel` at `699b9b85`),
 then for the DRAW survey of S9e.4b.3c.3b, S9e.4b.4a and the scheduled
 replay's fixes (branch `s9-draw-9`, over `s9c2-kernel` at `16121052`),
-then for S9e.4b.4b.1 (branch `s9e4b4b`, over `s9c2-kernel` at `64673ebd`).
+then for S9e.4b.4b.1 (branch `s9e4b4b`, over `s9c2-kernel` at `64673ebd`),
+then for S9e.4b.4b.2a (branch `s9e4b4b2`, over `s9c2-kernel` at `c62470a3`).
 
 ## Where things stand
 
@@ -395,6 +396,28 @@ then for S9e.4b.4b.1 (branch `s9e4b4b`, over `s9c2-kernel` at `64673ebd`).
   and `E1` (with the rule disabled in a scratch build `E8` evaluates with
   native DRAW's volume and area, `D5` and `E1` are refused for other
   reasons: the rule costs `E8` a result until the open item lands).
+- **S9e.4b.4b.2a implemented** (branch `s9e4b4b2`): an imported body of
+  several sphere, cylinder and cone faces whose plane faces are not all its
+  primitives' ends, or whose faces are tangent along an edge, as
+  S9e.4b.4b.1's chain led by a prism leaf (`solid/imported.rs`'s `leaves`
+  and `chain_piece`): two plane faces facing apart, the bottom's loops whose
+  edges' other faces are walls along its normal reaching the top cap,
+  S9e.4a's prism read off those loops (its fillets' tangent joints its
+  own), each leaf tried in turn with S9e.2's match the arbiter; a
+  primitive along the leaf's axis on its axes bit for bit; the body's own
+  tangency outside a prism's walls' joints `Degenerate`, other plane faces
+  S9e.4b.4b.2b's. Decisions ("S9e.4b.4b.2 refined": S9e.4a's prisms kept on
+  their caps' frames, `bug28773` moving only to another `Degenerate` on
+  their walls' axis), 24 cases on 7 bodies OCCT wrote
+  (`generate_prism_leaves_boolean_fixtures.py`, the chained reference with
+  each body's closed form) captured before the kernel (19 matching, 5
+  reviewed), the kernel within the reference on all 21 solid cases, the
+  tangent rod refused; S9e.4b.4b.1's rounded box solid. The fuzz target's 3
+  first results refused as S9e.4b.4b.2's stay refused as S9e.4b.4b.2b's
+  (stacked prisms, a cone with a ball). A trial of the targeted DRAW
+  restore cases, on both backends: `bfuse_complex/K1`'s part imports, the
+  fuse refused as a tangency between the inputs; `bug28773` as before; `E5`,
+  `G9` and `bug417` evaluate.
 - **CI.** Both workflows ("Rust kernel", "Rust geometry fuzzing") were green
   at `6c221525`. They had been red from S7 until 2026-09-29, unnoticed;
   check them after every push (see "Working rules").
@@ -418,7 +441,8 @@ then for S9e.4b.4b.1 (branch `s9e4b4b`, over `s9c2-kernel` at `64673ebd`).
    `occt-boolean-spline-crossing-preimplementation` and of the
    spline-sphere, spline-cone, imported-polyhedra, imported-arcs,
    imported-pieces, split-pieces, one-sphere, one-sphere-incidence,
-   piece-forms, piece-trees and primitive-chains captures from CI's run, as
+   piece-forms, piece-trees, primitive-chains and prism-leaves captures from
+   CI's run, as
    every capture's.
    `SPLINE_SPHERE` and `SPLINE_CONE` are on since the loops' certified integrals were sped up
    (branch `loop-integrals`; REVIEW_NOTES.md's "Certified integrals beside
@@ -485,9 +509,15 @@ then for S9e.4b.4b.1 (branch `s9e4b4b`, over `s9c2-kernel` at `64673ebd`).
    `bug28773` refused by S9's rule, its tube's disc frame leaning 2.2e-33
    off its walls) is implemented (campaigns clean at `d1869f2f`: `boolean`
    1,025 runs, `split` 1,972; pending its DRAW survey and its capture's
-   Linux record); next **S9e.4b.4b.2** (such bodies with
-   other plane faces, and prisms among the leaves: `K1`'s rounded box less
-   a cylinder), then
+   Linux record); **S9e.4b.4b.2**, split in "S9e.4b.4b.2 refined":
+   **S9e.4b.4b.2a** (such bodies led by a prism leaf with both its caps,
+   its walls' tangent joints its own: `K1`'s part imports as its rounded
+   box less its bore, the case refused by S9's tangency, its tool a rod of
+   the bore's radius whose axis crosses it) is implemented (pending its DRAW
+   survey, its campaigns and its capture's Linux record); next
+   **S9e.4b.4b.2b** (other plane faces: a primitive's flat, a hull of planes
+   among several primitives, a prism on a primitive or cut at both caps'
+   rims, two prism leaves: the fuzz target's 3 such first results), then
    **S9e.4b.4c** (deeper trees, a pocket within a pocket; an imported
    polyhedron against curved faces or with a cavity) and **S9e.4b.4d**
    (turned bodies of smooth joins and nearly degenerate surfaces,
@@ -616,7 +646,8 @@ Each comparison takes `--occt-root target/spline-linear-preflight/pinned-sdk/ins
 | `compare_piece_forms_boolean.py` | 20 / 19 (the kernel within the reference on all 33 solid cases, the 6 degenerate refused) |
 | `compare_piece_trees_boolean.py` | 22 / 8 (the kernel within the reference on all 24 solid cases, the 3 degenerate refused, the tooth's 3 `unsupported`, S9e.4b.4's) |
 | `compare_imported_joints_boolean.py` | 36 / 3 (the kernel within the reference on all 33 solid cases, the 3 degenerate refused, the split lens's 3 `unsupported`, S9e.4b.4's) |
-| `compare_primitive_chains_boolean.py` | 14 / 10 (the kernel within the reference on all 21 solid cases, the rounded box's 3 `unsupported`, S9e.4b.4b.2's) |
+| `compare_primitive_chains_boolean.py` | 14 / 10 (the kernel within the reference on all 24 solid cases; the rounded box's 3 solid since S9e.4b.4b.2a) |
+| `compare_prism_leaves_boolean.py` | 15 / 9 (the kernel within the reference on all 21 solid cases, the 3 degenerate refused) |
 
 Every one must report 0 failures; since S9f.1 also `compare_split.py`
 (72 / 56) and `compare_brep.py --family spline` (10 / 3), which share its
