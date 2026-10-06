@@ -337,7 +337,9 @@ cylinders with meeting axes, they meet in a quartic (`curved/procedural.rs`).
 Across the common perpendicular `e = nA x nB` each cylinder reaches
 `[e_k - r_k, e_k + r_k]`; exactly: apart, touching (outside, or inside
 with a node) `Degenerate`, one extent strictly inside the other's (two
-rings about the inner cylinder), or overlapping in part (one loop). Each
+rings about the inner cylinder), or overlapping in part (one loop); ends
+of the extents near each other are a near node, `Degenerate` by S9c.2b.1's
+margins (below). Each
 piece is a graph over one cylinder's angle, the ruling at `(cos, sin)`
 meeting the other where `A w^2 + 2 B w + C = 0` and the branch the sign of
 `A w + B`: a ring over its cylinder's whole turn, a loop in four graphs,
@@ -386,7 +388,16 @@ of the chart's antipode). A repeated root, or a critical point of the
 chart's quartic where `|D| < (A res / 2)^2` (two branches within the
 resolution: equal cylinders with meeting axes in stored turned frames
 among them, whose extents across the common perpendicular are equal
-exactly), is `Degenerate`.
+exactly), is `Degenerate`. So is an extremum of either cylinder's `D`
+nearer zero than the meeting's stored binary64 image holds, in exact
+frames too: a stored meeting is the root `(-B + s sqrt(D)) / A` with its
+coefficients rounded from the stored frames, `D` within about `eps A L^2`
+(`L^2 = 2 rho^2 + r^2`, `rho` the reach from the carrier's stored origin
+to the other's axis plus its radius, `r` the other's radius), so its
+height near the extremum, and a vertex or a ring's closing point there,
+is uncertain by about `eps L^2 / sqrt(D)`; `|D| < (8 eps L^2 / res)^2` is
+refused (`turned::conditioned_node`, each chart at an axis point read
+over the quarter turns either side of it).
 
 ### Algebraic vertices (S9c.2b.2)
 

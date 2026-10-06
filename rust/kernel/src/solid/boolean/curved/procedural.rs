@@ -450,8 +450,10 @@ type Cyl<'a> = (&'a Affine, &'a P2, &'a R);
 
 /// The meeting of two circular cylinders with perpendicular axes (`x` of
 /// operand 0, `y` of operand 1), classified exactly by their extents
-/// across the common perpendicular.
-pub(super) fn perpendicular(x: Cyl, y: Cyl) -> Result<CylPair> {
+/// across the common perpendicular; a section within the resolution of a
+/// node, or nearer one than its stored image holds, refused as in turned
+/// frames (`turned::conditioned_node`, `reach2` each one's `L^2`).
+pub(super) fn perpendicular(x: Cyl, y: Cyl, res: f64, reach2: [f64; 2]) -> Result<CylPair> {
     let cyl = [x, y];
     let e = cross(&x.0.n, &y.0.n);
     let axis = |z: Cyl| z.0.point(&z.1[0], &z.1[1], &zero());
@@ -471,6 +473,11 @@ pub(super) fn perpendicular(x: Cyl, y: Cyl) -> Result<CylPair> {
         return Err(tangency());
     }
     let others = [other_of(y.0, y.1, y.2), other_of(x.0, x.1, x.2)];
+    // Ends of the extents near each other: a near node.
+    for k in 0..2 {
+        let (a, d) = super::turned::discriminant(cyl[k], &others[k]);
+        super::turned::conditioned_node(&a, &d, res, reach2[k])?;
+    }
     let piece = |k: usize, plus: bool, range: Option<[[Qd; 2]; 2]>| {
         MeetCrv::new(k, cyl[k], &others[k], plus, range)
     };
