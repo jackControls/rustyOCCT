@@ -19,8 +19,8 @@ the import refused such a body with its general refusal (`imported.rs`'s
 torus (S9e.4b)")`, whose text the step changes): the capture's
 `rust_primitive_chains_boolean_exists` is false, and the comparison requires
 every case `unsupported` until that refusal is gone; then none of the
-solid, empty or degenerate cases may stay `unsupported` (the declared
-`unsupported` cases, S9e.4b.4b.2's, stay so).
+solid, empty or degenerate cases may stay `unsupported` (the rounded box's,
+declared `unsupported` until S9e.4b.4b.2a's prism leaf, solid since).
 
 `--write-bodies` writes the bodies themselves first: the oracle's `write`
 blocks of `boolean-primitive-chains-bodies.txt` into `rust/fixtures/imported/`.

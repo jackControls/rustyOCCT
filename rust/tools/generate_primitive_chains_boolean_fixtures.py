@@ -48,10 +48,11 @@ radius 6/5 over `[0, 5]` (from its centre to a cap, its rim at height
 8/5); declared `degenerate`: `capsule`, a rod of radius 2 over `[0, 4]`
 fused with a ball of its radius about its top's centre (tangent along the
 rim: `Degenerate("an imported body of several primitives whose faces are
-tangent along an edge")`); declared `unsupported`: `rounded`
-(`bfuse_complex/K1`'s part), a prism of a square of side 8 its corners
-rounded by arcs of radius 2, less a cylinder of radius 3/2 along the world's
-`y` through it (plane faces other than its primitives' ends, S9e.4b.4b.2's).
+tangent along an edge")`); `rounded` (`bfuse_complex/K1`'s part), a prism
+of a square of side 8 its corners rounded by arcs of radius 2, less a
+cylinder of radius 3/2 along the world's `y` through it (plane faces other
+than its primitives' ends: declared `unsupported` until S9e.4b.4b.2a's prism
+leaf, solid since).
 
 Cases (each the three operations): `shaft_box`, the shaft and a `TILT` box
 across its step; `cup_ball`, the cup and a ball across its rim between its
@@ -60,7 +61,8 @@ configuration: one sphere, the pin's disc inside the dome's on one plane);
 `dome_slab`, the dome and a `TILT` slab; `bead_slab`, the bead and a `TILT`
 slab; `knob_box`, a `TILT` box less the knob (the body the tool);
 `chain_dome`, the dome less a `TILT` box biting its side, then with a
-`TILT` slab. Declared `unsupported`: `rounded_rod`. The capsule is given to no
+`TILT` slab; `rounded_rod`, the rounded box and a rod through its corner
+along its walls (solid since S9e.4b.4b.2a). The capsule is given to no
 case: its own tangency along its rim keeps the reference's sweeps over twenty
 minutes a group, so the kernel's tests refuse it on import alone.
 
@@ -214,10 +216,10 @@ def make_bodies():
              closed=lambda: knob_volume(q(1.2), 2, 5)),
         Body('capsule', cylinder(CAPSULE_FRAME, 0.0, 0.0, 2.0, 0.0, 4.0), 'fuse', sphere(2.0, at('XY', (0, 0, 4))),
              kind='degenerate', reason='an imported body of several primitives whose faces are tangent along an edge'),
+        # Declared `unsupported` until S9e.4b.4b.2a (plane faces other than
+        # its primitives' ends): a chain led by its prism leaf since.
         Body('rounded', prism([rounded_square(8, 2)], ROUNDED_FRAME, 0.0, 8.0), 'cut',
-             cylinder(ROUNDED_HOLE, 4.0, 4.0, 1.5, -1.0, 9.0),
-             kind='unsupported',
-             reason='an imported body of several primitives with plane faces other than their ends (S9e.4b.4b.2)'),
+             cylinder(ROUNDED_HOLE, 4.0, 4.0, 1.5, -1.0, 9.0)),
     ]
     return {b.name: b for b in out}
 

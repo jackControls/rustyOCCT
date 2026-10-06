@@ -1,20 +1,21 @@
-//! S9e.4b.4b.1: imported bodies of several sphere, cylinder and cone faces
-//! whose plane faces are all ends of their primitives, a Boolean chain of
-//! those primitives (a stepped shaft, a cup, a dome and a pin on one ball, a
-//! bead, a knob) given to Booleans, against the independent reference
-//! (`fixtures/boolean-primitive-chains-*` from
-//! `tools/generate_primitive_chains_boolean_fixtures.py`, the bodies under
-//! `fixtures/imported/`); the kernel's own stepped shaft, cup and comb built,
-//! written by its writer, read back and imported. Each case runs once (on a
-//! few threads) for the checks that read its result.
+//! S9e.4b.4b.2a: imported bodies of several sphere, cylinder and cone faces
+//! led by a prism leaf (a prism of lines and arcs with both its caps, its
+//! walls' joints tangent where its corners are rounded: `bfuse_complex/K1`'s
+//! rounded box less a bore, a stadium plate with a boss, a dimple, a conical
+//! pocket, a dome) given to Booleans, against the independent reference
+//! (`fixtures/boolean-prism-leaves-*` from
+//! `tools/generate_prism_leaves_boolean_fixtures.py`, the bodies under
+//! `fixtures/imported/`); the kernel's own rounded plates with a bore and a
+//! boss built, written by its writer, read back and imported. Each case runs
+//! once (on a few threads) for the checks that read its result.
 #[path = "support/boolean_protocol.rs"]
 #[allow(dead_code)]
 mod protocol;
 use rusty_occt::history::{self, History, Resolution};
 use rusty_occt::identity::OperationId;
 use rusty_occt::{
-    Boundary, Error, Frame3, Location, Point2, Point3, Profile, RigidTransform, Solid, Tolerance,
-    Vec3,
+    Boundary, Error, Frame3, Location, Point2, Point3, Profile, RigidTransform, Segment, Solid,
+    Tolerance, Vec3,
 };
 use std::collections::BTreeMap;
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -22,7 +23,7 @@ use std::sync::OnceLock;
 
 fn cases() -> Vec<protocol::Case> {
     protocol::cases(include_str!(
-        "../../fixtures/boolean-primitive-chains-cases.txt"
+        "../../fixtures/boolean-prism-leaves-cases.txt"
     ))
 }
 
@@ -67,7 +68,7 @@ type Expected = BTreeMap<String, (String, String, Option<(usize, [f64; 2])>)>;
 
 fn expected() -> Expected {
     let mut expect = BTreeMap::new();
-    for line in include_str!("../../fixtures/boolean-primitive-chains-expected.tsv")
+    for line in include_str!("../../fixtures/boolean-prism-leaves-expected.tsv")
         .lines()
         .filter(|l| !l.starts_with('#'))
     {
@@ -280,12 +281,12 @@ fn moved_inputs_keep_their_volumes() {
     let expect = expected();
     let all = cases();
     for name in [
-        "shaft_box_cut",
-        "cup_ball_common",
-        "dome_pin_cut",
-        "bead_slab_fuse",
-        "knob_box_cut",
-        "dome_slab_common",
+        "bore_rod_cut",
+        "boss_box_common",
+        "dimple_ball_fuse",
+        "pocket_rod_cut",
+        "dome_box_cut",
+        "boss_pocket_common",
     ] {
         let case = all.iter().find(|c| c.name == name).unwrap();
         for (k, motion) in [shift, turn].into_iter().enumerate() {
@@ -331,59 +332,57 @@ fn cap(r: f64, d: f64) -> f64 {
     std::f64::consts::PI * t * t * (3.0 * r - t) / 3.0
 }
 
-/// Every body imports as its chain (its model matched on import), its
-/// volume its closed form, its stored vertices on its boundary, points in
-/// its material inside and points its chain removes outside; the capsule is
-/// refused for its own tangency, and the rounded box (plane faces other than
-/// its primitives' ends) is a chain led by its prism leaf since S9e.4b.4b.2a.
+/// Every body imports as its chain led by its prism (its model matched on
+/// import), its volume its closed form, its stored vertices on its boundary,
+/// points in its material inside and points its chain removes outside; the
+/// post (on a fillet's circle) is refused for its own tangency and the notch
+/// (both caps cut at its rim: no prism leaf) as S9e.4b.4b.2b's.
 #[test]
 fn imported_bodies_are_their_chains() {
     use std::f64::consts::PI;
-    let skew = frame([1.0, 2.0, 0.5], [8.0, 4.0, 1.0], [-1.0, 4.0, -8.0]);
-    let skew2 = frame([0.5, 1.0, 1.5], [4.0, 4.0, 7.0], [1.0, -8.0, 4.0]);
-    let skew4 = frame([2.0, 1.0, 0.5], [4.0, 1.0, 8.0], [-7.0, -4.0, 4.0]);
+    let skew = |o: [f64; 3]| frame(o, [8.0, 4.0, 1.0], [-1.0, 4.0, -8.0]);
+    let skew2 = |o: [f64; 3]| frame(o, [4.0, 4.0, 7.0], [1.0, -8.0, 4.0]);
+    let bore = frame([1.0, 2.0, 0.5], [0.0, 0.0, 1.0], [1.0, 0.0, 0.0]);
+    let boss = skew2([3.0, 4.5, 5.0]);
+    let pocket = skew(boss.point(Point2::new(1.5, -0.5), -1.25).to_array());
+    let dome = skew2([1.0, -1.0, 0.5]);
     let at = |f: Frame3, u: f64, v: f64, w: f64| f.point(Point2::new(u, v), w).to_array();
-    let (r14, r12) = (1.4f64, 1.2f64);
-    let d14 = (25.0 - r14 * r14).sqrt();
-    let d12 = (4.0 - r12 * r12).sqrt();
+    // The rounded square of side 9 (its corners' arcs of radius 2) and the
+    // stadium's areas.
+    let square = 65.0 + 4.0 * PI;
+    let stadium = 30.0 + 6.25 * PI;
     // Each body's name, closed-form volume, and points inside and outside.
     type Points = Vec<[f64; 3]>;
-    let bodies: [(&str, f64, Points, Points); 6] = [
+    let bodies: [(&str, f64, Points, Points); 5] = [
         (
-            "chain_shaft",
-            47.25 * PI,
-            vec![at(skew, 2.0, 0.0, 1.0), at(skew, 0.0, 1.0, 6.0)],
-            vec![at(skew, 2.5, 0.0, 6.0), at(skew, 0.0, 0.0, 9.5)],
+            "leaf_bore",
+            6.0 * square - 20.25 * PI,
+            vec![at(bore, 1.0, 4.5, 3.0), at(bore, 4.5, 4.5, 0.5)],
+            vec![at(bore, 4.5, 4.5, 3.0), at(bore, 0.25, 0.25, 3.0)],
         ),
         (
-            "chain_cup",
-            29.0 * PI,
-            vec![at(skew2, 2.5, 0.0, 3.0), at(skew2, 0.0, 0.0, 0.5)],
-            vec![at(skew2, 0.0, 0.0, 3.0), at(skew2, 0.0, 1.5, 4.5)],
+            "leaf_boss",
+            2.0 * stadium + 3.0 * PI * 1.5625,
+            vec![at(boss, 3.0, 0.0, 4.5), at(boss, -2.0, 0.0, 1.0)],
+            vec![at(boss, 5.0, 0.0, 3.0), at(boss, 3.0, 0.0, 5.5)],
         ),
         (
-            "chain_dome",
-            PI * 2.0 / 3.0 * 31.75 + cap(5.0, 4.0),
-            vec![[0.0, 0.0, 2.5], [3.2, 0.0, 1.0]],
-            vec![[3.3, 0.0, 1.0], [0.0, 0.0, 3.1]],
+            "leaf_dimple",
+            3.0 * square - cap(2.5, 1.5),
+            vec![[4.5, 4.5, 1.5], [1.0, 4.5, 2.5]],
+            vec![[4.5, 4.5, 2.5], [0.25, 0.25, 1.0]],
         ),
         (
-            "chain_pin",
-            PI * r14 * r14 * (d14 - 2.0) + cap(5.0, d14),
-            vec![[0.0, 0.0, 2.9], [1.3, 0.0, 1.0]],
-            vec![[1.3, 0.0, 2.9], [0.0, 0.0, -0.5]],
+            "leaf_pocket",
+            3.0 * stadium - PI * 2.0 / 3.0 * 3.25,
+            vec![at(pocket, 3.0, 0.0, 0.5), at(pocket, 3.0, 1.75, 2.5)],
+            vec![at(pocket, 3.0, 0.0, 2.0), at(pocket, 3.0, 2.75, 1.5)],
         ),
         (
-            "chain_bead",
-            256.0 * PI / 3.0,
-            vec![at(skew4, 4.0, 0.0, 0.0), at(skew4, 0.0, 3.5, 2.0)],
-            vec![at(skew4, 0.0, 0.0, 0.0), at(skew4, 0.0, 0.0, 4.5)],
-        ),
-        (
-            "chain_knob",
-            32.0 * PI / 3.0 + PI * r12 * r12 * (5.0 - d12) - cap(2.0, d12),
-            vec![[1.0, 1.0, 5.0], [2.5, 1.0, 1.0]],
-            vec![[2.5, 1.0, 4.0], [1.0, 1.0, 6.5]],
+            "leaf_dome",
+            3.0 * square + cap(2.0, 0.5),
+            vec![at(dome, 4.5, 4.5, 4.0), at(dome, 1.0, 4.5, 1.5)],
+            vec![at(dome, 4.5, 4.5, 4.75), at(dome, 6.5, 4.5, 3.5)],
         ),
     ];
     for (name, volume, inside, outside) in bodies {
@@ -411,36 +410,61 @@ fn imported_bodies_are_their_chains() {
             );
         }
     }
-    match body("chain_capsule", 91) {
+    match body("leaf_post", 91) {
         Err(Error::Degenerate(m)) => assert_eq!(
             m,
             "an imported body of several primitives whose faces are tangent along an edge"
         ),
-        other => panic!("chain_capsule: {:?}", other.map(|_| ())),
+        other => panic!("leaf_post: {:?}", other.map(|_| ())),
     }
-    // S9e.4b.4b.2a: the rounded box (K1's part), declared S9e.4b.4b.2's
-    // until then, a chain led by its prism leaf: the rounded square of side
-    // 8 over 8 less the bore of radius 3/2 across it.
-    let s = body("chain_rounded", 91).unwrap_or_else(|e| panic!("chain_rounded: {e}"));
-    let volume = 8.0 * (48.0 + 4.0 * PI) - 18.0 * PI;
-    let got = s.mass_properties().volume;
-    assert!(
-        (got - volume).abs() <= 1e-9 * volume,
-        "chain_rounded: {got}"
-    );
-    for (p, want) in [
-        ([1.0, 4.0, 4.0], Location::Inside),
-        ([4.0, 4.0, 4.0], Location::Outside),
-        ([0.25, 0.25, 4.0], Location::Outside),
-    ] {
-        assert_eq!(s.classify(Point3::new(p[0], p[1], p[2])).unwrap(), want);
+    match body("leaf_notch", 91) {
+        Err(Error::OutOfDomain(m)) => assert_eq!(
+            m,
+            "an imported body of several primitives with plane faces other than their ends or a \
+             prism's (S9e.4b.4b.2b)"
+        ),
+        other => panic!("leaf_notch: {:?}", other.map(|_| ())),
     }
 }
 
-/// A cylinder of radius `r` on a frame over `[h0, h1]`.
-fn rod(f: Frame3, r: f64, h0: f64, h1: f64, op: u64) -> Solid {
+/// A rounded square `[0, side]^2`, its corners rounded by arcs of radius `r`.
+fn rounded(side: f64, r: f64) -> Profile {
+    let arc = |x: f64, y: f64| Segment::Arc {
+        center: Point2::new(x, y),
+        radius: r,
+        ccw: true,
+    };
+    let s = side;
+    let points = [
+        (r, 0.0),
+        (s - r, 0.0),
+        (s, r),
+        (s, s - r),
+        (s - r, s),
+        (r, s),
+        (0.0, s - r),
+        (0.0, r),
+    ]
+    .map(|(x, y)| Point2::new(x, y))
+    .to_vec();
+    let segments = vec![
+        Segment::Line,
+        arc(s - r, r),
+        Segment::Line,
+        arc(s - r, s - r),
+        Segment::Line,
+        arc(r, s - r),
+        Segment::Line,
+        arc(r, r),
+    ];
+    let outer = Boundary::path(points, segments, tolerance()).unwrap();
+    Profile::new(outer, Vec::new(), tolerance()).unwrap()
+}
+
+/// A cylinder of radius `r` about `(cx, cy)` on a frame over `[h0, h1]`.
+fn rod(f: Frame3, cx: f64, cy: f64, r: f64, h0: f64, h1: f64, op: u64) -> Solid {
     let profile = Profile::new(
-        Boundary::circle(Point2::new(0.0, 0.0), r, tolerance()).unwrap(),
+        Boundary::circle(Point2::new(cx, cy), r, tolerance()).unwrap(),
         vec![],
         tolerance(),
     )
@@ -461,13 +485,14 @@ fn reimported(s: &Solid, op: u64) -> Solid {
         .0
 }
 
-/// The kernel's own bodies of coaxial cylinders, written by its writer (which
-/// writes circles alone; a Boolean on a given result of these stores its
-/// rings as ellipses of equal axes, which it refuses), read back and
-/// imported: a stepped shaft along the world's `x`, a cup on the world's axes
-/// and a comb (`bugs/modalg_6/bug28773`'s: a wide disc fused with a tube from
-/// below, the tube's bore a third primitive, two Booleans). Each its chain:
-/// its volume, and its Booleans with a turned rod the kernel's own results'.
+/// The kernel's own rounded plates on the world's axes, written, read back
+/// and imported: a boss (a rounded plate fused with a rod along its axis from
+/// inside it to a cap), a dimple and a dome (less and fused with a ball
+/// meeting its top cap). Each its chain led by its prism: its volume, and its
+/// Booleans with a turned rod the kernel's own results'. K1's shape (a rounded
+/// plate less a rod along `y` through two walls) the writer refuses: it
+/// writes circles alone, and the kernel stores the bore's rims as ellipses of
+/// equal axes (S9e.4b.4b.1's amendment (a)).
 #[test]
 fn kernel_bodies_imported_as_chains() {
     let one = |r: rusty_occt::Result<(Vec<Solid>, History)>| {
@@ -475,26 +500,31 @@ fn kernel_bodies_imported_as_chains() {
         assert_eq!(out.len(), 1);
         out.into_iter().next().unwrap()
     };
-    let g = frame([1.0, -2.0, 0.5], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0]);
     let world = frame([0.0, 0.0, 0.0], [0.0, 0.0, 1.0], [1.0, 0.0, 0.0]);
-    let shaft = one(rod(g, 2.0, 0.0, 3.0, 1).fuse(OperationId(2), &rod(g, 1.0, 1.5, 6.0, 3)));
-    let cup = one(rod(world, 3.0, 0.0, 5.0, 4).cut(OperationId(5), &rod(world, 2.0, 1.0, 7.0, 6)));
-    let disc = rod(world, 2.0, 1.0, 2.0, 7);
-    let annulus = Profile::new(
-        Boundary::circle(Point2::new(0.0, 0.0), 1.0, tolerance()).unwrap(),
-        vec![Boundary::circle(Point2::new(0.0, 0.0), 0.75, tolerance()).unwrap()],
-        tolerance(),
-    )
-    .unwrap();
-    let tube = Solid::extrude_with(OperationId(9), annulus, world, 0.0, 1.5)
-        .unwrap()
-        .0;
-    let comb = one(disc.fuse(OperationId(8), &tube));
+    let along_y = frame([0.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]);
+    let plate = |h: f64, op: u64| {
+        Solid::extrude_with(OperationId(op), rounded(9.0, 2.0), world, 0.0, h)
+            .unwrap()
+            .0
+    };
+    let bored = one(plate(6.0, 1).cut(OperationId(2), &rod(along_y, 3.0, 4.5, 1.5, -1.0, 10.0, 3)));
+    let ball = |c: [f64; 3], r: f64, op: u64| {
+        let half = std::f64::consts::FRAC_PI_2;
+        let f = frame(c, [0.0, 0.0, 1.0], [1.0, 0.0, 0.0]);
+        Solid::sphere_with(OperationId(op), f, r, -half, half, tolerance())
+            .unwrap()
+            .0
+    };
+    let dimpled = one(plate(3.0, 7).cut(OperationId(8), &ball([4.5, 4.5, 4.5], 2.5, 9)));
+    let domed = one(plate(3.0, 10).fuse(OperationId(11), &ball([4.5, 4.5, 2.5], 2.0, 12)));
+    let bossed = one(plate(2.0, 4).fuse(OperationId(5), &rod(world, 3.25, 4.5, 1.25, 1.0, 5.0, 6)));
     let probe = rod(
-        frame([0.5, -0.25, 0.75], [0.0, 3.0, 4.0], [3.0, 0.0, 4.0]),
+        frame([3.5, 2.25, 1.75], [0.0, 3.0, 4.0], [3.0, 0.0, 4.0]),
+        0.0,
+        0.0,
         1.25,
-        -3.0,
-        3.0,
+        -5.0,
+        5.0,
         14,
     );
     let volume = |r: rusty_occt::Result<(Vec<Solid>, History)>| -> f64 {
@@ -504,7 +534,10 @@ fn kernel_bodies_imported_as_chains() {
             .map(|s| s.mass_properties().volume)
             .sum()
     };
-    for (name, s) in [("shaft", shaft), ("cup", cup), ("comb", comb)] {
+    // K1's shape, its bore's rims written as circles of equal axes, is
+    // refused by the writer.
+    assert!(rusty_occt::occt_brep::write(bored.topology(), bored.resolution().linear()).is_err());
+    for (name, s) in [("bossed", bossed), ("dimpled", dimpled), ("domed", domed)] {
         let i = reimported(&s, 50);
         let (v0, v1) = (s.mass_properties().volume, i.mass_properties().volume);
         assert!((v0 - v1).abs() <= 1e-9 * v0, "{name}: {v1} for {v0}");
