@@ -475,15 +475,17 @@ then for S9e.4b.4b.1 (branch `s9e4b4b`, over `s9c2-kernel` at `64673ebd`).
    the 6 restore cases of two circles at a joint) is implemented with its
    DRAW survey (`s9-draw-9` at `16121052`: `P4` registered, 1,129 cases;
    `E8`, `D5` and `E1` refused by the parallel cylinders' rule; pending
-   its capture's Linux record and the campaigns); **S9e.4b.4b**, split in
+   its capture's Linux record; campaigns clean at `d1869f2f`);
+   **S9e.4b.4b**, split in
    "S9e.4b.4b refined": **S9e.4b.4b.1** (bodies of several sphere,
    cylinder and cone faces whose plane faces are all their primitives'
    ends, a Boolean chain of the primitives widest first, coaxial ones on
    one frame: `bfuse_complex/E5`'s stepped shaft and `bcut_complex/G9`'s
    and `bug417`'s dome and pin on one ball evaluating in its trial,
    `bug28773` refused by S9's rule, its tube's disc frame leaning 2.2e-33
-   off its walls) is implemented (pending its DRAW survey, its capture's
-   Linux record and the campaigns); next **S9e.4b.4b.2** (such bodies with
+   off its walls) is implemented (campaigns clean at `d1869f2f`: `boolean`
+   1,025 runs, `split` 1,972; pending its DRAW survey and its capture's
+   Linux record); next **S9e.4b.4b.2** (such bodies with
    other plane faces, and prisms among the leaves: `K1`'s rounded box less
    a cylinder), then
    **S9e.4b.4c** (deeper trees, a pocket within a pocket; an imported

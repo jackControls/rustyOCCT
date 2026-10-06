@@ -8823,10 +8823,15 @@ Decisions for S9, recorded before its code (2026-09-28):
     circle of the part's arcs taken through their ends; `E1`'s tangency
     besides), `bugs/modalg_2/bug4993_1` and `_2` as two faces within the
     resolution of one plane; native DRAW's statuses as before. Of the 171, 56
-    evaluate on both backends. Pending: the capture's Linux record and the
-    campaigns. DRAW survey: that of S9e.4b.3c.3b, S9e.4b.4a and the
+    evaluate on both backends. Pending: the capture's Linux record (the
+    campaigns below). DRAW survey: that of S9e.4b.3c.3b, S9e.4b.4a and the
     scheduled replay's fixes, below (`P4` registered; the parallel
     cylinders' rule moving no registered case).
+    Campaigns at `d1869f2f` (600 s each, sampled replays, every switch on):
+    `boolean` clean, 1,025 runs, the slowest input 19 s under
+    AddressSanitizer (its startup replay 1,601 s; at `64673ebd` it overran
+    the hour's budget at load 13 to 16, no input failing); `split` clean,
+    1,972 runs, none slow.
   * **DRAW survey of S9e.4b.3c.3b, S9e.4b.4a and the scheduled replay's
     fixes (2026-10-05, `UPSTREAM_TESTS.md`).** At `16121052`
     (`s9c2-kernel` with the fixes of CI's scheduled full replay,
@@ -9194,8 +9199,12 @@ Decisions for S9, recorded before its code (2026-09-28):
     tori among its faces) keep the general refusal, under its new text.
     Open: S9e.4b.4b.2 (K1's rounded box less a cylinder: hulls with several
     primitives, prism leaves); `bug28773`'s tube would need S9e.4a's prisms
-    on their walls' axes. Pending: its DRAW survey, its capture's Linux record
-    and the campaigns.
+    on their walls' axes. Pending: its DRAW survey and its capture's Linux
+    record. Campaigns at `d1869f2f` (600 s each, sampled replays, every
+    switch on): `boolean` clean, 1,025 runs, the slowest input 19 s under
+    AddressSanitizer (its startup replay 1,601 s; at `64673ebd` it overran
+    the hour's budget at load 13 to 16, no input failing); `split` clean,
+    1,972 runs, none slow.
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces
