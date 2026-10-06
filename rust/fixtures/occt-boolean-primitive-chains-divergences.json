@@ -1,0 +1,56 @@
+{
+  "note": "Reviewed differences of the S9e.4b.4b.1 capture (occt-boolean-primitive-chains-preimplementation): each fingerprinted by its native row; the measures BRepGProp's default integration leaves off the reference (within 4.0e-9 adaptively), and those the Boolean's approximated intersection curves leave off it, within their tolerance.",
+  "reviews": [
+    {
+      "case": "cup_ball_fuse",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "7274ff61de0158e4fc0ccf0c87bdabc518e40dfe888de3bf07e9510a5299c939",
+      "differences": [
+        "centre",
+        "measure"
+      ],
+      "reason": "BRepAlgoAPI's result is valid with the reference's solid count; the cup (a cylinder less a coaxial blind bore) and a ball centred on its rim between its wall and its bore, both cylinders met off their axis in quartics: its volume 4.2e-06 and area 1.0e-05 relative and its centre 8.3e-07 of the case's size from the reference with BRepGProp's default integration, 5.5e-08, 7.7e-08 and 1.4e-08 with an adaptive accuracy of 1e-10 and of 1e-12 alike (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe): its faces are bounded by the Boolean's approximated intersection curves, its edges' tolerance up to 8.0e-06 (10 of its 29 edges B-splines), so its geometry lies within that tolerance of the reference's and its measures no closer; the same native result's common is within 4.0e-09 adaptively.",
+      "independent_evidence": "chained_curved_boolean_reference.py's rows on the constructions OCCT was given (generate_primitive_chains_boolean_fixtures.py --check, identical under Python 3.9 and 3.12) agree two ways (each face swept by two independent families of curves) within 1.8e-35, every solid's measures from its faces within 3.6e-40 of its closed form, each body's within 4.3e-42 of its own where it has one (the cup's 29 pi in its chart times its stored axes' determinant), the pair identities within 1.4e-41, and Monte Carlo within 2.7 standard errors; its solid counts are the declared ones by rays at two resolutions; every stored vertex of the imported files lies on its construction's surfaces within 2.3e-14 of the size; the native cup alone (fused with a far ball) measures 29 pi to 1e-15.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "cup_ball_cut",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "67d2957c40f4cf0875c3438fdb8864c49ebe0b2331218a03301af5da22fd19df",
+      "differences": [
+        "centre",
+        "measure"
+      ],
+      "reason": "BRepAlgoAPI's result is valid with the reference's solid count; the cup less a ball centred on its rim between its wall and its bore, both cylinders met off their axis in quartics: its volume 3.7e-06 and area 4.3e-06 relative and its centre 1.0e-06 of the case's size from the reference with BRepGProp's default integration, 6.9e-08, 8.8e-08 and 2.0e-08 with an adaptive accuracy of 1e-10 and of 1e-12 alike (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe): its faces are bounded by the Boolean's approximated intersection curves, its edges' tolerance up to 8.0e-06 (10 of its 29 edges B-splines), so its geometry lies within that tolerance of the reference's and its measures no closer; the same native result's common is within 4.0e-09 adaptively.",
+      "independent_evidence": "chained_curved_boolean_reference.py's rows on the constructions OCCT was given (generate_primitive_chains_boolean_fixtures.py --check, identical under Python 3.9 and 3.12) agree two ways (each face swept by two independent families of curves) within 1.8e-35, every solid's measures from its faces within 3.6e-40 of its closed form, each body's within 4.3e-42 of its own where it has one (the cup's 29 pi in its chart times its stored axes' determinant), the pair identities within 1.4e-41, and Monte Carlo within 2.7 standard errors; its solid counts are the declared ones by rays at two resolutions; every stored vertex of the imported files lies on its construction's surfaces within 2.3e-14 of the size; the native cup alone (fused with a far ball) measures 29 pi to 1e-15.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "cup_ball_common",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "fe735939f045f84dc75d95934bb8b13ee75fe1ea9859aa7072762ff501baece0",
+      "differences": [
+        "centre",
+        "measure"
+      ],
+      "reason": "BRepAlgoAPI's result is valid with the reference's solid count; the cup in common with a ball centred on its rim between its wall and its bore: its volume 1.4e-04 and area 1.2e-04 relative and its centre 1.4e-05 of the case's size from the reference with BRepGProp's default integration (a sphere's faces met by two cylinders off their axis), 4.0e-09, 1.1e-09 and 4.3e-10 with an adaptive accuracy of 1e-10 and of 1e-12 alike (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe); its edges' tolerance up to 8.0e-06 (10 of its 29 edges B-splines).",
+      "independent_evidence": "chained_curved_boolean_reference.py's rows on the constructions OCCT was given (generate_primitive_chains_boolean_fixtures.py --check, identical under Python 3.9 and 3.12) agree two ways (each face swept by two independent families of curves) within 1.8e-35, every solid's measures from its faces within 3.6e-40 of its closed form, each body's within 4.3e-42 of its own where it has one (the cup's 29 pi in its chart times its stored axes' determinant), the pair identities within 1.4e-41, and Monte Carlo within 2.7 standard errors; its solid counts are the declared ones by rays at two resolutions; every stored vertex of the imported files lies on its construction's surfaces within 2.3e-14 of the size.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "knob_box_common",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "f956de048ad2f4fc390111a9743be9151f4b65a4835397c6babdf0088e45e263",
+      "differences": [
+        "measure"
+      ],
+      "reason": "BRepAlgoAPI's result is valid with the reference's solid count; a TILT box in common with the knob (a ball fused with a coaxial rod): its volume 2.2e-08 and area 1.7e-08 relative from the reference with BRepGProp's default integration (a sphere's and a cylinder's faces met by planes), just past the allowance of 2e-8, 2.3e-11 and 5.9e-11 with an adaptive accuracy of 1e-10 and of 1e-12 alike (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe); its edges' tolerance at most 1.3e-07 (none of its 16 edges B-splines).",
+      "independent_evidence": "chained_curved_boolean_reference.py's rows on the constructions OCCT was given (generate_primitive_chains_boolean_fixtures.py --check, identical under Python 3.9 and 3.12) agree two ways (each face swept by two independent families of curves) within 1.8e-35, every solid's measures from its faces within 3.6e-40 of its closed form, each body's within 4.3e-42 of its own where it has one (the knob's on the world's axes), the pair identities within 1.4e-41, and Monte Carlo within 2.7 standard errors; its solid counts are the declared ones by rays at two resolutions; every stored vertex of the imported files lies on its construction's surfaces within 2.3e-14 of the size.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    }
+  ]
+}

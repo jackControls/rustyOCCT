@@ -9103,7 +9103,24 @@ Decisions for S9, recorded before its code (2026-09-28):
     minutes); (e) the bead's bore, a cylinder on `SKEW4`'s stored axes,
     meets its ball in its rims, where the reference finds each rim as both
     surfaces' event a rounding apart, so its spacing is not checked (its
-    sines and gaps are).
+    sines and gaps are). The capture
+    `occt-boolean-primitive-chains-preimplementation`
+    (`compare_primitive_chains_boolean.py`, keyed on the refusal the step
+    removes: `imported.rs`'s general `OutOfDomain("an imported solid other
+    than a prism, a sphere, a cone or a torus (S9e.4b)")`, whose text the
+    step changes; the kernel's probe `unsupported` on all 24, every body
+    refused on import by it): every result valid, 20 matching (within 2e-8
+    of the reference), 4 reviewed, in
+    `occt-boolean-primitive-chains-divergences.json`: the cup's three with a
+    ball across its rim, whose faces OCCT bounds by its approximated quartics
+    (its edges' tolerance up to 8.0e-6, 10 of its 29 edges B-splines),
+    volumes up to 1.4e-4 relative by BRepGProp's default integration and,
+    measured adaptively at 1e-10 and 1e-12 by a diagnostic build, the fuse
+    and the cut within 6.9e-8 and 8.8e-8 (no closer than those curves'
+    tolerance; the native cup alone measures its 29 pi to 1e-15), the
+    common within 4.0e-9; and the knob's common with a box, its volume 2.2e-8
+    off by the default integration, 2.3e-11 adaptively. S9e.4b.4b.1's kernel
+    next.
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces
