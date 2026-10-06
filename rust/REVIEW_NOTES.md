@@ -10468,6 +10468,72 @@ Decisions for S9, recorded before its code (2026-09-28):
     `boolean` clean, 841 runs, the slowest input 18 s under
     AddressSanitizer; `split` clean, 1,474 runs, the slowest 18 s, at load
     about 10.
+  * **Equal cylinders crossing at right angles, a result touching itself
+    (2026-10-06).** S9e.4b.4b.2's evidence found K1's configuration on
+    kernel-built prisms decided three ways: a prism with a round hole and a
+    rod of the hole's radius whose axis crosses the hole's at right angles
+    (exact frames) fused as `InvalidTopology("non_manifold_vertex")`, cut
+    evaluating, common `Degenerate("solids touching at a vertex")`. The
+    pair is S9c.1's, decided exactly: equal circular cylinders with
+    crossing axes meet in two ellipses, which cross at the two points where
+    the walls are tangent (`meet.rs`'s `cyl_pair`, `CylPair::Crossing`;
+    S9c's refusal of tangencies between the inputs covers tangencies that
+    leave no such curves, not these), and whether a result keeps both sides
+    of a wall there is its own: as declared for the Steinmetz fixtures
+    (fuse and common evaluating, the cut two pieces touching at those
+    points, `degenerate`). With a hole the sides swap: the cut keeps the
+    rod's wall's outside and is a manifold solid, the common is the rod's
+    two halves either side of the hole touching there (two shells meeting
+    at a vertex, refused as before), and the fuse is one solid whose void
+    is the hole's two halves either side of the rod, touching at those
+    points: one shell meeting itself at a vertex. `assemble.rs` refused
+    shells meeting each other at a vertex, not a shell meeting itself, so
+    the fuse was built and the validator found the pinch. Root cause and
+    fix: the assembly now checks every shell before building it, linking
+    the arrangement's edges at each vertex where a face's loop runs from
+    one to the next (the validator's link test, on the exact arrangement)
+    and refusing a vertex whose edges fall into more than one fan as
+    `Degenerate("a result touching itself at a vertex")`, S9a's rule and
+    reason; the validator is unchanged. The three operations are now each
+    decided exactly as before, the fuse refused for its own result. Other
+    crossings of equal radii were consistent already: in turned frames
+    (the tilted frame's rod across its hole) S9c.2b.1's near node
+    (`two cylinders' section within the resolution of a node`), at an
+    oblique angle (axes `z` and `(0, 3, 4)`) a tangency (`a tangency
+    between the inputs (S9c)`), all three operations alike, holes or rods.
+    Radii `1` and `1 + 2^-k` evaluate in all three frames for `k` = 10, 30
+    and 40 with the pair identities (rods and holes); nearer, outside this
+    fix: in exact frames S9c.2a has no near-node rule, and at `k` = 50 and
+    52 the validator leaves a loop's winding undecided
+    (`ComputationLimit`, rods and at 52 holes too); in turned frames `k` =
+    50 and 52 are near nodes, and at `k` = 46 (the two rings a few
+    resolutions apart where the walls nearly touch) the holes evaluate,
+    the tilted rods are `ComputationLimit` but the oblique rods fail
+    validation (`InvalidTopology("enclosure_exceeds_resolution")`), the
+    near-node margin's own question, left open (the fuzz target's radii,
+    eighths, cannot reach it). The boolean fuzz target reaches the fixed
+    case: a square with a round hole and the stadium tool of its radius
+    stood on its side through it (`pick` 128, `dx = dy = 0`), its first
+    arc's axis crossing the hole's, crashed with `unexpected error invalid
+    topology: non_manifold_vertex` before the fix; that hand-written input
+    is kept (`fuzz/regressions/boolean/replay-47992d6f….bin`). Regressions:
+    `tests/curved_booleans.rs`,
+    `a_hole_and_a_rod_of_its_radius_crossing_it_touch_at_two_points` (the
+    fuse touching itself, the common two solids touching, the cut its
+    closed form `144 - 10 pi + 16 / 3`, either way round: the rod less the
+    slab three solids, `2 pi + 16 / 3`; the tilted frame's near node and the
+    oblique tangency in every operation; radius `1 + 2^-10` evaluating in
+    all three frames with the pair identities) and
+    `a_stadium_on_its_side_through_an_equal_hole` (the fuzz input's
+    geometry: fuse and common each one solid touching itself, the cut its
+    closed form). Checks: fmt, clippy, the 1.85 check, the release suite
+    (648 tests); every comparison of `HANDOFF.md`'s table with its matches
+    and reviews unchanged, none failing; replays with debug assertions of
+    the boolean corpus and its regressions (1,469 inputs) and the split
+    corpus and its regressions (3,571), none failing; of the input's 3,570
+    single-byte mutations 1,527 failed alike before (every one
+    `non_manifold_vertex`) and none after; the new tests under the emulated
+    glibc `hypot` with debug assertions and overflow checks (8.6 s).
   * **Where S9 stands (2026-09-30, paused).** Done and pushed: S9a to S9d
     (every sub-step with its DRAW survey and a clean campaign), S9e.1
     (campaign clean at `51c08edf`) and S9e.2 (`8e060c67`), S9f's decisions

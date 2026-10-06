@@ -1542,3 +1542,29 @@ plane, and a `1e-6` tilt still splitting). It replays in under 0.01 s
 with debug assertions; of its 8,670 single-byte mutations 7,086 failed
 alike under the emulated rounding before and none now, natively or
 emulated.
+
+## Boolean: a hole and a stadium of its radius crossing it at right angles
+
+`boolean/replay-47992d6f86cc40623519ea7e6f61d97df022032a.bin` was written by
+hand (14 bytes) after S9e.4b.4b.2's evidence found the configuration on
+kernel-built prisms: a square `5` across with a round hole of radius `1`
+over heights `0..2.25`, and the stadium tool (`s = 1.25`, radius `1`)
+stood on its side through it, its first arc's axis crossing the hole's at
+right angles at half the height. Two equal circular cylinders whose axes
+cross meet in S9c.1's two ellipses, which cross where the walls are
+tangent; one such point lies on the arc's face. The fuse keeps both sides
+of the hole's wall there (its void is the hole's two halves either side
+of the stadium, touching at that point), and the common is the stadium
+less the hole, its halves either side joined by its flat end: each one
+solid whose boundary touches itself at a vertex. The assembly checked
+shells meeting each other at a vertex, not a shell meeting itself, so the
+fuse reached the validator and failed (`unexpected error invalid
+topology: non_manifold_vertex`) at `d38d3bb6`. A shell whose edges at a
+vertex fall into more than one fan (linked where a loop runs from one to
+the next) is now `Degenerate("a result touching itself at a vertex")`
+(`curved/assemble.rs`); the cut, a manifold solid, evaluates
+(`tests/curved_booleans.rs`, `a_stadium_on_its_side_through_an_equal_hole`
+with the cut's closed form, and
+`a_hole_and_a_rod_of_its_radius_crossing_it_touch_at_two_points`). It
+replays in 0.1 s with debug assertions; of its 3,570 single-byte mutations
+1,527 failed alike before (every one `non_manifold_vertex`) and none now.

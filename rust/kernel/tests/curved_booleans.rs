@@ -300,3 +300,179 @@ fn two_arcs_of_one_circle_are_its_circle() {
         );
     }
 }
+
+/// A slab's round hole and a rod of its radius whose axis crosses the
+/// hole's at right angles (exact frames, S9c.1's two ellipses): the walls
+/// are tangent where the ellipses cross. The cut keeps the rod's wall's
+/// outside there and evaluates (the slab less the hole, less the rod over
+/// the slab's width, plus the Steinmetz common of the hole and the rod,
+/// `16 r^3 / 3`); the fuse's void is the hole's two halves either side of
+/// the rod, touching at those points, and the common the rod's two halves
+/// either side of the hole: `Degenerate`, as a Steinmetz cut is. The fuse
+/// failed validation instead (`InvalidTopology("non_manifold_vertex")`,
+/// the boolean fuzz target's crash) until the assembly checked each shell
+/// for touching itself at a vertex. Crossing at another angle (turned
+/// frames) the pair is a tangency, in the tilted frame a near node, all
+/// three operations refused; radii apart by more than the resolution
+/// evaluate with the pair identities.
+#[test]
+fn a_hole_and_a_rod_of_its_radius_crossing_it_touch_at_two_points() {
+    use rusty_occt::identity::OperationId;
+    use rusty_occt::{Boundary, Error, Frame3, Point2, Point3, Profile, Solid, Tolerance, Vec3};
+    let t = Tolerance::default();
+    let fr = |o: [f64; 3], n: [f64; 3], x: [f64; 3]| {
+        Frame3::new(
+            Point3::new(o[0], o[1], o[2]),
+            Vec3::new(n[0], n[1], n[2]),
+            Vec3::new(x[0], x[1], x[2]),
+            t,
+        )
+        .unwrap()
+    };
+    let holed = |f: Frame3, r: f64| {
+        let square = Boundary::polygon(
+            [(-3.0, -3.0), (3.0, -3.0), (3.0, 3.0), (-3.0, 3.0)]
+                .map(|(x, y)| Point2::new(x, y))
+                .to_vec(),
+            t,
+        )
+        .unwrap();
+        let hole = Boundary::circle(Point2::new(0.0, 0.0), r, t).unwrap();
+        let profile = Profile::new(square, vec![hole], t).unwrap();
+        Solid::extrude_with(OperationId(1), profile, f, -2.0, 2.0)
+            .unwrap()
+            .0
+    };
+    let rod = |f: Frame3, r: f64| {
+        let disc = Boundary::circle(Point2::new(0.0, 0.0), r, t).unwrap();
+        let profile = Profile::new(disc, vec![], t).unwrap();
+        Solid::extrude_with(OperationId(2), profile, f, -4.0, 4.0)
+            .unwrap()
+            .0
+    };
+    let volume = |out: &[Solid]| out.iter().map(|s| s.mass_properties().volume).sum::<f64>();
+    let refused = |r: Result<(Vec<Solid>, history::History), Error>, why: &str| match r {
+        Err(Error::Degenerate(m)) => assert_eq!(m, why),
+        Err(e) => panic!("{e:?}, not {why}"),
+        Ok(_) => panic!("evaluated, not {why}"),
+    };
+    let xy = Frame3::xy();
+    let side = fr([0.0; 3], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0]);
+    let (a, b) = (holed(xy, 1.0), rod(side, 1.0));
+    let itself = "a result touching itself at a vertex";
+    let two = "solids touching at a vertex";
+    refused(a.fuse(OperationId(3), &b), itself);
+    refused(a.common(OperationId(5), &b), two);
+    let (cut, _) = a.cut(OperationId(4), &b).unwrap();
+    let want = 144.0 - 10.0 * std::f64::consts::PI + 16.0 / 3.0;
+    assert_eq!(cut.len(), 1);
+    assert!(
+        (volume(&cut) - want).abs() <= 1e-9 * want,
+        "{}",
+        volume(&cut)
+    );
+    // The other way round: the same fuse and common; the rod less the slab
+    // is its two ends past the slab and the Steinmetz solid in the hole.
+    refused(b.fuse(OperationId(3), &a), itself);
+    refused(b.common(OperationId(5), &a), two);
+    let (rest, _) = b.cut(OperationId(4), &a).unwrap();
+    let want = 2.0 * std::f64::consts::PI + 16.0 / 3.0;
+    assert_eq!(rest.len(), 3);
+    assert!(
+        (volume(&rest) - want).abs() <= 1e-9 * want,
+        "{}",
+        volume(&rest)
+    );
+    // Turned frames: the tilted frame's near node, an oblique crossing's
+    // tangency, in every operation.
+    let tilted = (
+        fr([1.0, -2.0, 0.5], [0.0, 3.0, 4.0], [1.0, 0.0, 0.0]),
+        fr([1.0, -2.0, 0.5], [1.0, 0.0, 0.0], [0.0, 3.0, 4.0]),
+    );
+    let oblique = (xy, fr([0.0; 3], [0.0, 3.0, 4.0], [1.0, 0.0, 0.0]));
+    for ((fa, fb), why) in [
+        (
+            tilted,
+            "two cylinders' section within the resolution of a node",
+        ),
+        (oblique, "a tangency between the inputs (S9c)"),
+    ] {
+        let (a, b) = (holed(fa, 1.0), rod(fb, 1.0));
+        refused(a.fuse(OperationId(3), &b), why);
+        refused(a.cut(OperationId(4), &b), why);
+        refused(a.common(OperationId(5), &b), why);
+    }
+    // A rod of radius `1 + 2^-10` (two rings about the hole, about `0.09`
+    // apart where the walls nearly touch): every operation evaluates.
+    for (fa, fb) in [(xy, side), tilted, oblique] {
+        let (a, b) = (holed(fa, 1.0), rod(fb, 1.0 + 1.0 / 1024.0));
+        let f = volume(&a.fuse(OperationId(3), &b).unwrap().0);
+        let c = volume(&a.cut(OperationId(4), &b).unwrap().0);
+        let m = volume(&a.common(OperationId(5), &b).unwrap().0);
+        let (va, vb) = (a.mass_properties().volume, b.mass_properties().volume);
+        assert!((f - (va + vb - m)).abs() <= 1e-9 * f, "fuse {f}");
+        assert!((c - (va - m)).abs() <= 1e-9 * va, "cut {c}");
+    }
+}
+
+/// The boolean fuzz target's input
+/// (`fuzz/regressions/boolean/replay-47992d6f….bin`): a square with a round
+/// hole of radius 1 and a stadium of that radius on its side, its first
+/// arc's axis crossing the hole's at its height's middle, so the walls are
+/// tangent at the arc's middle. The fuse and the common (each one solid,
+/// the stadium's flat end joining the common's two halves) touch
+/// themselves there; the cut evaluates.
+#[test]
+fn a_stadium_on_its_side_through_an_equal_hole() {
+    use rusty_occt::identity::OperationId;
+    use rusty_occt::{
+        Boundary, Error, Frame3, Point2, Point3, Profile, Segment, Solid, Tolerance, Vec3,
+    };
+    let t = Tolerance::default();
+    let p = |x: f64, y: f64| Point2::new(x, y);
+    let square = Boundary::polygon(
+        vec![p(-2.5, -2.5), p(2.5, -2.5), p(2.5, 2.5), p(-2.5, 2.5)],
+        t,
+    )
+    .unwrap();
+    let hole = Boundary::circle(p(0.0, 0.0), 1.0, t).unwrap();
+    let arc = |x: f64| Segment::Arc {
+        center: p(x, 0.0),
+        radius: 1.0,
+        ccw: true,
+    };
+    let stadium = Boundary::path(
+        vec![p(0.0, -1.0), p(1.25, -1.0), p(1.25, 1.0), p(0.0, 1.0)],
+        vec![Segment::Line, arc(1.25), Segment::Line, arc(0.0)],
+        t,
+    )
+    .unwrap();
+    let h = 2.25;
+    let side = Frame3::new(
+        Point3::new(-h / 2.0, 0.0, h / 2.0),
+        Vec3::new(1.0, 0.0, 0.0),
+        Vec3::new(0.0, 1.0, 0.0),
+        t,
+    )
+    .unwrap();
+    let a = Profile::new(square, vec![hole], t).unwrap();
+    let (a, _) = Solid::extrude_with(OperationId(1), a, Frame3::xy(), 0.0, h).unwrap();
+    let b = Profile::new(stadium, vec![], t).unwrap();
+    let (b, _) = Solid::extrude_with(OperationId(2), b, side, -1.0, h + 1.0).unwrap();
+    for r in [a.fuse(OperationId(3), &b), a.common(OperationId(5), &b)] {
+        match r {
+            Err(Error::Degenerate(m)) => assert_eq!(m, "a result touching itself at a vertex"),
+            other => panic!("{:?}", other.map(|(o, _)| o.len())),
+        }
+    }
+    // The stadium lies within the square's slab; within the hole it holds
+    // the hole's half towards its flat side over its height 2 and half the
+    // Steinmetz solid of the hole and its arc, `8 / 3`.
+    let pi = std::f64::consts::PI;
+    let common = (2.5 + pi) * 4.25 - (pi + 8.0 / 3.0);
+    let want = (25.0 - pi) * h - common;
+    let (cut, _) = a.cut(OperationId(4), &b).unwrap();
+    assert_eq!(cut.len(), 1);
+    let v = cut[0].mass_properties().volume;
+    assert!((v - want).abs() <= 1e-9 * want, "{v} for {want}");
+}
