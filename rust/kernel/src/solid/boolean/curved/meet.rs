@@ -8,6 +8,7 @@
 use super::model::{Affine, Crv, Prism, Surf, P2};
 use super::num::*;
 use crate::solid::split::zero;
+use crate::topology::Surface;
 use crate::{Error, Result};
 use num_rational::BigRational as R;
 use std::cmp::Ordering;
@@ -159,7 +160,10 @@ pub(super) enum CylPair {
     Same,
 }
 
-/// Two cylinders' relation: `x` a cylinder of `px`, `y` one of `py`.
+/// Two cylinders' relation: `x` a cylinder of `px`, `y` one of `py`;
+/// `stored` their faces' stored surfaces (a meeting's binary64 image is on
+/// them).
+#[allow(clippy::too_many_arguments)]
 pub(super) fn cyl_pair(
     px: &Prism,
     cx: &P2,
@@ -168,6 +172,7 @@ pub(super) fn cyl_pair(
     py: &Prism,
     cy: &P2,
     ry: &R,
+    stored: [&Surface; 2],
 ) -> Result<CylPair> {
     let (fx, fy) = (&px.f, &py.f);
     let apart_boxes =
@@ -237,9 +242,11 @@ pub(super) fn cyl_pair(
             "two cylinders' axes within rounding of parallel",
         ));
     }
+    let res = px.tolerance.linear();
+    let reach2 = reaches(stored, [(fx, cx, rx), (fy, cy, ry)]);
     if !circular {
         // Turned frames, crossing axes (S9c.2b.1).
-        return super::turned::crossing((fx, cx, rx), (fy, cy, ry), px.tolerance.linear());
+        return super::turned::crossing((fx, cx, rx), (fy, cy, ry), res, reach2);
     }
     // Circular, equal radii: the axes must meet (coplanar) for two conics;
     // others perpendicular (in exact frames) meet in quartics (S9c.2a).
@@ -250,7 +257,7 @@ pub(super) fn cyl_pair(
         if dot(&fx.n, &fy.n) != zero() {
             return Err(quartic());
         }
-        return super::procedural::perpendicular((fx, cx, rx), (fy, cy, ry));
+        return super::procedural::perpendicular((fx, cx, rx), (fy, cy, ry), res, reach2);
     }
     // The axes' meeting point: ox + s nx = oy + t ny.
     let d = sub(&oy, &ox);
@@ -269,6 +276,46 @@ pub(super) fn cyl_pair(
         .map(|k| qadd(&qv(&p), &qscale(&w, k)))
         .collect();
     Ok(CylPair::Crossing(Box::new(Crossing { planes, points })))
+}
+
+/// Each of two crossing cylinders' `L^2` as the carrier of a stored
+/// meeting (`turned::conditioned_node`): `2 rho^2 + r^2`, `rho` the
+/// distance from its stored frame's origin to the other's stored axis plus
+/// its radius, `r` the other's radius (binary64; a model's frame where a
+/// face's stored surface is not a cylinder).
+fn reaches(stored: [&Surface; 2], models: [(&Affine, &P2, &R); 2]) -> [f64; 2] {
+    use crate::solid::split::rational_f64;
+    let axis = |k: usize| -> ([f64; 3], [f64; 3], f64) {
+        match stored[k] {
+            Surface::Cylinder { frame, radius } => (
+                frame.origin().to_array(),
+                frame.normal().to_array(),
+                *radius,
+            ),
+            _ => {
+                let (f, c, r) = models[k];
+                let o = f.point(&c[0], &c[1], &zero());
+                (
+                    o.each_ref().map(rational_f64),
+                    f.n.each_ref().map(rational_f64),
+                    rational_f64(r),
+                )
+            }
+        }
+    };
+    let (a, b) = (axis(0), axis(1));
+    let reach = |(o, _, r): ([f64; 3], [f64; 3], f64), (p, n, s): ([f64; 3], [f64; 3], f64)| {
+        let d = [o[0] - p[0], o[1] - p[1], o[2] - p[2]];
+        let w = [
+            d[1] * n[2] - d[2] * n[1],
+            d[2] * n[0] - d[0] * n[2],
+            d[0] * n[1] - d[1] * n[0],
+        ];
+        let norm = |v: [f64; 3]| (v[0] * v[0] + v[1] * v[1] + v[2] * v[2]).sqrt();
+        let rho = norm(w) / norm(n) + r.abs();
+        2.0 * rho * rho + s * s
+    };
+    [reach(a, b), reach(b, a)]
 }
 
 /// Whether two axes lie within rounding of parallel: the sine of their

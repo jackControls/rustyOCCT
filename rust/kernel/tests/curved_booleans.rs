@@ -476,3 +476,115 @@ fn a_stadium_on_its_side_through_an_equal_hole() {
     let v = cut[0].mass_properties().volume;
     assert!((v - want).abs() <= 1e-9 * want, "{v} for {want}");
 }
+
+/// Radii `1` and `1 + 2^-k` crossing (a rod and a rod, a slab's hole and a
+/// rod, either radius the larger; the slab also standing on the plane
+/// through the near nodes, its vertices there) in the exact, tilted and
+/// oblique frames: the two branches of the walls' meeting about
+/// `2 sqrt(2^(1 - k)) / A` apart where they nearly touch. A stored
+/// meeting's height there is uncertain by about `eps L^2 / sqrt(D)`
+/// (`turned::conditioned_node`); from `k` = 43 the validator's enclosures
+/// of a ring's closing point or of a vertex there exceeded the resolution,
+/// and results failed validation (`InvalidTopology`,
+/// `enclosure_exceeds_resolution`, nearer with `uncertified_loop_winding`)
+/// in each frame, up to `k` = 52. The band is a near node now in every
+/// operation, and `k` = 40 evaluates with the pair identities where it
+/// failed.
+#[test]
+fn crossing_cylinders_near_a_node_are_refused_or_valid() {
+    use rusty_occt::identity::OperationId;
+    use rusty_occt::{Boundary, Error, Frame3, Point2, Point3, Profile, Solid, Tolerance, Vec3};
+    let t = Tolerance::default();
+    let fr = |o: [f64; 3], n: [f64; 3], x: [f64; 3]| {
+        Frame3::new(
+            Point3::new(o[0], o[1], o[2]),
+            Vec3::new(n[0], n[1], n[2]),
+            Vec3::new(x[0], x[1], x[2]),
+            t,
+        )
+        .unwrap()
+    };
+    let holed = |f: Frame3, r: f64, z0: f64| {
+        let square = Boundary::polygon(
+            [(-3.0, -3.0), (3.0, -3.0), (3.0, 3.0), (-3.0, 3.0)]
+                .map(|(x, y)| Point2::new(x, y))
+                .to_vec(),
+            t,
+        )
+        .unwrap();
+        let hole = Boundary::circle(Point2::new(0.0, 0.0), r, t).unwrap();
+        let profile = Profile::new(square, vec![hole], t).unwrap();
+        Solid::extrude_with(OperationId(1), profile, f, z0, 2.0)
+            .unwrap()
+            .0
+    };
+    let rod = |f: Frame3, r: f64, id: u64| {
+        let disc = Boundary::circle(Point2::new(0.0, 0.0), r, t).unwrap();
+        let profile = Profile::new(disc, vec![], t).unwrap();
+        Solid::extrude_with(OperationId(id), profile, f, -4.0, 4.0)
+            .unwrap()
+            .0
+    };
+    let xy = Frame3::xy();
+    let exact = (xy, fr([0.0; 3], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0]));
+    let tilted = (
+        fr([1.0, -2.0, 0.5], [0.0, 3.0, 4.0], [1.0, 0.0, 0.0]),
+        fr([1.0, -2.0, 0.5], [1.0, 0.0, 0.0], [0.0, 3.0, 4.0]),
+    );
+    let oblique = (xy, fr([0.0; 3], [0.0, 3.0, 4.0], [1.0, 0.0, 0.0]));
+    // The first operand (a rod, a slab from -2, or one from the nodes'
+    // plane) and the rod: radii 1 and 1 + 2^-k, or swapped.
+    #[derive(Clone, Copy)]
+    enum First {
+        Rod,
+        Slab,
+        Standing,
+    }
+    let pair = |(fa, fb): (Frame3, Frame3), first: First, swapped: bool, k: i32| {
+        let e = 1.0 + 2f64.powi(-k);
+        let (ra, rb) = if swapped { (e, 1.0) } else { (1.0, e) };
+        let a = match first {
+            First::Rod => rod(fa, ra, 1),
+            First::Slab => holed(fa, ra, -2.0),
+            First::Standing => holed(fa, ra, 0.0),
+        };
+        (a, rod(fb, rb, 2))
+    };
+    let node = "two cylinders' section within the resolution of a node";
+    for k in 42..=52 {
+        for frames in [exact, tilted, oblique] {
+            for first in [First::Rod, First::Slab, First::Standing] {
+                for swapped in [false, true] {
+                    let (a, b) = pair(frames, first, swapped, k);
+                    for r in [
+                        a.fuse(OperationId(3), &b),
+                        a.cut(OperationId(4), &b),
+                        a.common(OperationId(5), &b),
+                    ] {
+                        match r {
+                            Err(Error::Degenerate(m)) => assert_eq!(m, node, "k = {k}"),
+                            other => panic!("k = {k}: {:?}", other.map(|(o, _)| o.len())),
+                        }
+                    }
+                }
+            }
+        }
+    }
+    // Where results failed validation nearer: the swapped rods in exact
+    // frames (rings over the thinner rod closing at its near node), the
+    // oblique rods, and the standing slab's vertices at the near nodes.
+    let volume = |out: &[Solid]| out.iter().map(|s| s.mass_properties().volume).sum::<f64>();
+    for (frames, first, swapped) in [
+        (exact, First::Rod, true),
+        (oblique, First::Rod, false),
+        (exact, First::Standing, true),
+    ] {
+        let (a, b) = pair(frames, first, swapped, 40);
+        let f = volume(&a.fuse(OperationId(3), &b).unwrap().0);
+        let c = volume(&a.cut(OperationId(4), &b).unwrap().0);
+        let m = volume(&a.common(OperationId(5), &b).unwrap().0);
+        let (va, vb) = (a.mass_properties().volume, b.mass_properties().volume);
+        assert!((f - (va + vb - m)).abs() <= 1e-9 * f, "fuse {f}");
+        assert!((c - (va - m)).abs() <= 1e-9 * va, "cut {c}");
+    }
+}

@@ -792,26 +792,78 @@ pub(super) fn near_node(a: &R, d: &Form, chart: &Chart, res: f64) -> Result<()> 
         let h = a * q(res) / int(2);
         &h * &h
     };
+    if extremum_within(d, chart, &delta, false)? {
+        return Err(node());
+    }
+    Ok(())
+}
+
+fn node() -> Error {
+    Error::Degenerate("two cylinders' section within the resolution of a node")
+}
+
+/// Whether a critical point of `D`'s polynomial in a chart, within `|t| <=
+/// 1` when `half` (the quarter turns either side of its base), has `|D| <
+/// delta`.
+fn extremum_within(d: &Form, chart: &Chart, delta: &R, half: bool) -> Result<bool> {
+    let p = d.poly(chart);
     let w2 = (0..d.degree()).fold(vec![int(1)], |acc, _| {
         pmul(&acc, &vec![int(1), zero(), int(1)])
     });
-    let lo = int_poly(&padd(&p, &pscale(&w2, &delta)));
+    let lo = int_poly(&padd(&p, &pscale(&w2, delta)));
     let hi = int_poly(&padd(&p, &pscale(&w2, &-delta.clone())));
     let dp = pderiv(&p);
     if dp.is_empty() {
-        return Ok(());
+        return Ok(false);
     }
     let crit = match roots(&dp) {
         Ok(r) => r,
         // A repeated critical point is an inflection, not a node.
-        Err(Error::Degenerate(_)) => return Ok(()),
+        Err(Error::Degenerate(_)) => return Ok(false),
         Err(e) => return Err(e),
     };
-    for r in crit {
-        if r.sign_polynomial(&lo) == Ordering::Greater && r.sign_polynomial(&hi) == Ordering::Less {
-            return Err(Error::Degenerate(
-                "two cylinders' section within the resolution of a node",
-            ));
+    Ok(crit.into_iter().any(|r| {
+        (!half
+            || (r.compare_rational(&int(-1)) != Ordering::Less
+                && r.compare_rational(&int(1)) != Ordering::Greater))
+            && r.sign_polynomial(&lo) == Ordering::Greater
+            && r.sign_polynomial(&hi) == Ordering::Less
+    }))
+}
+
+/// Two cylinders' near-node margin as their meeting's stored binary64
+/// image needs it (beside `near_node`'s, which it includes). A meeting is
+/// stored over its carrier's angle as the root `w = (-B + s sqrt(D)) / A`
+/// of a ruling's quadratic, its coefficients rounded from the stored
+/// frames: `D` within about `eps A L^2` (`L^2 = 2 rho^2 + r^2`, `rho` the
+/// reach from the carrier's stored origin to the other's axis plus the
+/// carrier's radius, `r` the other's radius; `reach2`), so near an extremum
+/// of `D` its height, and every point enclosed there (a vertex, a ring's
+/// closing point), is uncertain by about `eps L^2 / sqrt(D)`, which the
+/// validator's enclosures measure a few times over. An extremum where that
+/// reaches the resolution with eight times the margin, `|D| < (8 eps L^2 /
+/// res)^2`, or where the branches close within the resolution (`(A res /
+/// 2)^2`), is a near node. Each chart at an axis point is read over the
+/// quarter turns either side of it (a chart's extremum at its antipode
+/// shows as critical points of its polynomial far out, where `D` is not
+/// extreme), so every angle is read where its chart is faithful.
+pub(super) fn conditioned_node(a: &R, d: &Form, res: f64, reach2: f64) -> Result<()> {
+    let own = {
+        let h = a * q(res) / int(2);
+        &h * &h
+    };
+    let image = {
+        let h = q(8.0 * f64::EPSILON * reach2 / res);
+        &h * &h
+    };
+    let delta = own.max(image);
+    for (c0, s0) in [(1, 0), (0, 1), (-1, 0), (0, -1)] {
+        let chart = Chart {
+            c0: int(c0),
+            s0: int(s0),
+        };
+        if extremum_within(d, &chart, &delta, true)? {
+            return Err(node());
         }
     }
     Ok(())
@@ -850,8 +902,9 @@ pub(super) fn near_node_within(a: &R, d: &Form, chart: &Chart, res: f64, t0: &R,
 // ------------------------------------------------------------ the pair
 
 /// The meeting of two cylinders in turned frames whose axes cross (`x` of
-/// operand 0, `y` of operand 1).
-pub(super) fn crossing(x: Cyl, y: Cyl, res: f64) -> Result<CylPair> {
+/// operand 0, `y` of operand 1; `reach2` each one's `L^2` as the carrier of
+/// a stored meeting, `conditioned_node`).
+pub(super) fn crossing(x: Cyl, y: Cyl, res: f64, reach2: [f64; 2]) -> Result<CylPair> {
     let cyl = [x, y];
     let others = [other_of(y.0, y.1, y.2), other_of(x.0, x.1, x.2)];
     let disc = [
@@ -872,6 +925,9 @@ pub(super) fn crossing(x: Cyl, y: Cyl, res: f64) -> Result<CylPair> {
         });
         near_node(a, d, &test, res)?;
         charts.push(chart);
+    }
+    for ((a, d), reach2) in disc.iter().zip(reach2) {
+        conditioned_node(a, d, res, reach2)?;
     }
     // D_K >= 0 all round (no negative point): rings over K.
     for (k, chart) in charts.iter().enumerate() {

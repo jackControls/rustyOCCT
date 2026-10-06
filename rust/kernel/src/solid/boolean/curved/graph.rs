@@ -360,7 +360,8 @@ pub(super) fn arrange_shared(models: [Prism; 2]) -> Result<Arr> {
                 continue;
             };
             let bx = [&models[0].boxes[fa], &models[1].boxes[fb]];
-            let pair = cyl_pair(va, ca, ra, bx, vb, cb, rb)?;
+            let stored = [&models[0].faces[fa].stored, &models[1].faces[fb].stored];
+            let pair = cyl_pair(va, ca, ra, bx, vb, cb, rb, stored)?;
             if matches!(pair, CylPair::Same) && boxes_meet(bx[0], bx[1]) {
                 coinc.insert((fa, fb));
             }
@@ -917,7 +918,8 @@ pub(super) fn arrange_shared(models: [Prism; 2]) -> Result<Arr> {
                     ) if o == 1 => {
                         let wall = wall.expect("an arc's own cylinder");
                         let bx = [&me.boxes[wall], &other.boxes[g]];
-                        reversed = cyl_pair(vm, cx, rx, bx, vo, c, r)?;
+                        let stored = [&me.faces[wall].stored, &other.faces[g].stored];
+                        reversed = cyl_pair(vm, cx, rx, bx, vo, c, r, stored)?;
                         Some(&reversed)
                     }
                     (p, ..) => p,

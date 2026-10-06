@@ -10856,6 +10856,75 @@ Decisions for S9, recorded before its code (2026-09-28):
     single-byte mutations 1,527 failed alike before (every one
     `non_manifold_vertex`) and none after; the new tests under the emulated
     glibc `hypot` with debug assertions and overflow checks (8.6 s).
+  * **Crossing cylinders near a node, enclosures past the resolution
+    (2026-10-06).** The open item the previous note left: radii `1` and `1 +
+    2^-k` crossing, between the near-node rule's margin and exact
+    evaluation. Mapped directly over `k` = 36 to 56, the exact, tilted and
+    oblique frames, rods and the slab's hole, either radius the larger, and
+    the slab also standing on the plane through the near nodes (its bottom
+    face's vertices there), fuse, cut and common alike in every row:
+    `InvalidTopology` in the exact frames with the radii swapped (the `1 +
+    2^-k` cylinder on `z`; rods and holes) for `k` = 43 to 52
+    (`enclosure_exceeds_resolution` to 45, with it
+    `uncertified_loop_winding` from 46), the oblique rods (either order) for
+    44 to 49, and the standing slab with the larger hole for 45 to 49
+    (exact), 45 to 47 (tilted) and 47 to 49 (oblique); elsewhere in the band
+    results evaluated, the tilted rods were `ComputationLimit` at 46 and 47,
+    S9c.2b.1's near node began at 48 (tilted) or 50 (oblique), and the exact
+    frames had no near-node rule (S9c.2a), unswapped rods there
+    `ComputationLimit` from 50. From 53 the radii are equal in binary64, the
+    previous note's cases. Root cause: a stored meeting (`Curve3::Meet`) is
+    the root `w = (-B + s sqrt(D)) / A` of a ruling's quadratic, its
+    coefficients rounded from the stored frames, so `D` is uncertain by
+    about `eps A L^2` (`L^2 = 2 rho^2 + r^2`, `rho` the reach from the
+    carrier's stored origin to the other's axis plus its radius, `r` the
+    other's radius: `51` for the exact frames' rods from `-4`), and near an
+    extremum of `D` the height is uncertain by about `eps L^2 / sqrt(D)`.
+    The validator encloses what lies there: a ring edge's closing point (the
+    carrier's angle `0`, which in these frames is a near node: the face's
+    loop gap) or a vertex on a plane through the node. Measured, those
+    enclosures are `kappa eps L^2 / sqrt(D)` with `kappa` 1.3 to 5.0 over
+    the failing rows (doubling every two `k`: the exact frames' swapped
+    rods' ring `3.6e-8` at `k` = 40, `1.03e-7` at 43). The near-node margin,
+    `|D| < (A res / 2)^2` (the branches within the resolution), takes no
+    account of the image's rounding: at `k` = 46 the branches are a few
+    resolutions apart while the image's enclosures are three times the
+    resolution; rings closing elsewhere (the exact frames' unswapped rods,
+    closing a quarter turn from the node) passed. Fix:
+    `turned::conditioned_node` refuses an extremum of either cylinder's `D`
+    with `|D| < max((A res / 2)^2, (8 eps L^2 / res)^2)` as the same near
+    node (`two cylinders' section within the resolution of a node`), in
+    turned frames after `near_node` and now in exact frames too
+    (`procedural::perpendicular`, after its exact tangencies), `L^2` from
+    the faces' stored surfaces (`meet::reaches`, given to `cyl_pair`). Each
+    chart at an axis point is read over the quarter turns either side of it:
+    an extremum at a chart's antipode shows as critical points of its
+    polynomial far out (`|t|` about `10^6` here) where `|D|` is a fraction
+    of its extremum's, which refused `k` = 40 on a first try. Eight times
+    the margin keeps the largest measured `kappa` 1.6 times inside it and
+    `k` = 40 1.5 times outside it (exact frames; 1.9 oblique). The validator
+    is unchanged. After the fix the same map has no `InvalidTopology`: every
+    row evaluates through `k` = 41 as before (the pre-existing refusals of
+    the standing rod with the larger radius, `Unrepresentable` and
+    `ComputationLimit`, unchanged) and is the near node from 42 to 52 in
+    every frame; two rods standing on the nodes' plane (stored origins
+    there, `L^2 = 3`) still evaluate validly to 47. The boolean fuzz
+    target's radii (eighths) still cannot reach the band. Regression:
+    `tests/curved_booleans.rs`,
+    `crossing_cylinders_near_a_node_are_refused_or_valid` (`k` = 42 to 52,
+    the three frames, rods, the slab and the standing slab, either radius
+    the larger, every operation the near node; at `k` = 40 the exact frames'
+    swapped rods, the oblique rods and the exact standing slab evaluating
+    with the pair identities); before the fix it fails at `k` = 42. Other
+    quadric pairs' near nodes (`spheres.rs`, `cones*.rs`, `torus*.rs`) keep
+    `near_node`'s margin alone, unexamined here. Checks: fmt, clippy, the
+    1.85 check, the release suite (655 tests); every comparison of
+    `HANDOFF.md`'s table with its matches and reviews unchanged, none
+    failing, and `compare_split.py` 72/56; replays with debug assertions of
+    the boolean corpus and its regressions (1,470 inputs) and the split
+    corpus and its regressions (3,571), none failing;
+    `tests/curved_booleans.rs` under the emulated glibc `hypot` with debug
+    assertions and overflow checks, the new test 6.6 s.
   * **Where S9 stands (2026-09-30, paused).** Done and pushed: S9a to S9d
     (every sub-step with its DRAW survey and a clean campaign), S9e.1
     (campaign clean at `51c08edf`) and S9e.2 (`8e060c67`), S9f's decisions
