@@ -518,8 +518,9 @@ then for S9e.4b.4b.2a (branch `s9e4b4b2`, over `s9c2-kernel` at `c62470a3`).
    **S9e.4b.4b.2a** (such bodies led by a prism leaf with both its caps,
    its walls' tangent joints its own: `K1`'s part imports as its rounded
    box less its bore, the case refused by S9's tangency, its tool a rod of
-   the bore's radius whose axis crosses it) is implemented (pending its DRAW
-   survey, its campaigns and its capture's Linux record); next
+   the bore's radius whose axis crosses it) is implemented (campaigns clean
+   at `3aba844c`; pending its DRAW survey and its capture's Linux record);
+   next
    **S9e.4b.4b.2b** (other plane faces: a primitive's flat, a hull of planes
    among several primitives, a prism on a primitive or cut at both caps'
    rims, two prism leaves: the fuzz target's 3 such first results), then

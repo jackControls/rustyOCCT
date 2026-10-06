@@ -9578,8 +9578,13 @@ Decisions for S9, recorded before its code (2026-09-28):
     configuration, tangent at two points: on kernel-built prisms the fuse
     `InvalidTopology("non_manifold_vertex")`, the cut evaluating, the common
     `Degenerate("solids touching at a vertex")`, the imported K1 refused as
-    a tangency), a task of its own. Pending: its DRAW survey, its campaigns
-    and its capture's Linux record.
+    a tangency), a task of its own (fixed since: a result touching itself at
+    a vertex, `9c06cdf3`). Pending: its DRAW survey and its capture's Linux
+    record. Campaigns at `3aba844c`, with the fix of a hole and a rod of its
+    radius crossing it (600 s each, sampled replays, every switch on):
+    `boolean` clean, 892 runs, the slowest input 31 s under
+    AddressSanitizer, its startup replay 2,200 s; `split` clean, 1,571 runs,
+    none slow.
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces
