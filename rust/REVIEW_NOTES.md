@@ -9336,6 +9336,98 @@ Decisions for S9, recorded before its code (2026-09-28):
     deterministic, moved rigidly; the kernel's own rounded plate with a bore
     and with a boss written, read back and imported) and the DRAW trial of
     K1 (expected refused as above).
+  * **S9e.4b.4b.2a evidence (2026-10-06).** Seven bodies OCCT wrote
+    (`boolean-prism-leaves-bodies.txt`, `write` blocks of a prism's rows, a
+    `boolean` row and a primitive's, written by
+    `compare_prism_leaves_boolean.py --write-bodies` to
+    `rust/fixtures/imported/leaf_*.brep`), each one Boolean of a prism of
+    lines and arcs (a square of side 9 its corners rounded by arcs of radius
+    2, tangent to its lines; or a stadium of half discs of radius 5/2 about
+    `(0, 0)` and `(6, 0)`) and a primitive, every section a circle or a line
+    (lines and circles alone in every file): `bore` (K1's part: the rounded
+    square over `[0, 6]` on the world's axes less a cylinder of radius 3/2
+    along `y` about `(9/2, *, 3)` through its walls `y = 0` and `y = 9`),
+    `boss` (the stadium over `[0, 2]` on `SKEW2` fused with a cylinder of
+    radius 5/4 along its axis from inside it to a cap 3 above it), `dimple`
+    (the rounded square over `[0, 3]` on the world's axes less a ball of
+    radius 5/2 meeting its top cap at radius 2), `pocket` (the stadium over
+    `[0, 3]` on `SKEW` across the boss's plate, less a frustum along its axis
+    from radius 1/2 at height 1: a conical pocket with a flat floor), `dome`
+    (the rounded square over `[0, 3]` on `SKEW2` fused with a ball of radius
+    2 about a point 1/2 below its top cap, meeting it alone), declared
+    `degenerate` `post` (the rounded square fused with a cylinder of radius 2
+    about its corner's arc's centre from inside it to above it: the fillet's
+    face and the post's on one surface along their arc) and declared
+    `unsupported` `notch` (the rounded square over `[0, 2]` less a blind rod
+    across its rim through both caps: no cap's loop the prism's, S9e.4b.4b.2b's).
+    `generate_prism_leaves_boolean_fixtures.py --check`: 24 cases of 8 groups
+    (21 solid, 3 declared `degenerate`; 18 of class `pieces`, 3 `both`, 3
+    `chain`): `bore_rod` (a `TILT` rod across the bore's plate), `boss_box`
+    (a `TILT` box across the boss and the plate's rim), `dimple_ball` (a ball
+    across the dimple's rim), `pocket_rod` (a `TILT` rod through the pocket's
+    floor), `dome_box` (a `TILT` box less the dome: the body the tool),
+    `boss_pocket` (both imported, their plates crossing), `chain_dimple` (the
+    dimple less a `TILT` rod through its rounded corner, then with a `TILT`
+    slab: its cut two solids) and declared `degenerate` `bore_touch` (a rod
+    of radius 1 along `x` tangent to the bore from above at one point:
+    `Degenerate("a tangency between the inputs (S9c)")`). The reference is
+    the constructions OCCT was given through S9e.3a's chained reference with
+    S9e.4b.3c.3a's checks, relative to the case's size: the two families
+    within 3.8e-36, each solid's closed form 1.5e-36, each body's closed
+    form 4.0e-42 (its prism's section in its chart times the stored axes'
+    determinant, less or plus its primitive's part: the bore's part between
+    the walls by its own chart, the dome's ball beyond the cap at its world
+    distance from the centre, the pocket's frustum from its base's height in
+    the plate's chart), the pair identities 6.8e-42 and the area identity
+    1.0e-40, Monte Carlo 2.5 standard errors (100,000 points a group),
+    quadrature estimates 1.1e-32, every meeting's sine at least 0.11 and
+    events at least 4.5e-5 of their range apart outside the declared group
+    (the chain's spacing below), solid counts by rays at two resolutions;
+    the declared group's checks kept apart within 6.4e-36. Every file read
+    independently (`stored_records`): its curved faces' kinds its prism's
+    arcs' and its primitive's, every stored vertex within 6.7e-16 of the size
+    on the construction's surfaces. `test_prism_leaves_boolean_reference.py`
+    checks every body's closed form against quadratures of its sections, the
+    chained reference on the dimple and the pocket against theirs, every
+    profile's arcs tangent to the lines they join exactly, every primitive's
+    place (the bore within the flats of the walls it crosses and clear of the
+    caps, the boss and the pocket on their plates' axes, the balls meeting the
+    top caps alone within the flats), the post on its fillet's circle, the
+    notch through both caps, the touching rod's axis the radii's sum above
+    the bore's, the case list and its protocol rows and the files apart from
+    every earlier set's. The generator's check is a CI group of its own
+    (`prism-leaves`, 12 minutes on four workers locally under Python 3.9,
+    8.3 under 3.12); Python 3.9 and 3.12 write the same files. Corrections
+    from the evidence, amending the refined decisions' plan (8): (a) K1's
+    part on a turned frame is degenerate by S9's rules: the bore's axis lies
+    within rounding of the walls `x = 0` and `x = 9` it runs along
+    (`Degenerate("a plane within rounding of a cylinder's direction")` on
+    the kernel's own plates on turned frames), so the bore is on the world's
+    axes, as K1's; (b) a rounded square whose side is four
+    times its arcs' radius (K1's own proportions, S9e.4b.4b.1's `rounded`) on
+    a turned frame made its Booleans with a cross rod and with a ball
+    `Degenerate("two cylinders' section within the resolution of a node")`
+    (the kernel's own plates too: S9's rule on the arcs' whole cylinders), so
+    the set's squares are of side 9; (c) the first degenerate body, a groove
+    tangent to the bottom cap from inside, OCCT wrote with a non-manifold
+    edge the converter rejects: the post replaces it; (d) K1's own
+    configuration (a rod of the bore's radius whose axis crosses it, tangent
+    at two points) the kernel does not refuse alike in every Boolean (a
+    kernel prism with a round hole against that rod: the fuse
+    `InvalidTopology("non_manifold_vertex")`, the cut evaluating, the common
+    `Degenerate("solids touching at a vertex")`, before this step's code),
+    so the declared case is a rod tangent at one point, K1's own left to the
+    DRAW trial and the engine's behaviour to a task of its own; (e) the
+    reference's cost grows with a case's faces: a first set with the bore and
+    the boss both imported, the bore's chain with a box and a slab and the
+    notch against a box ran over twenty minutes of one worker a group, so
+    the pair is the boss and the pocket, the chain the dimple's with a rod and
+    the notch and the post are given to no case (the kernel's tests refuse
+    them on import); (f) the chain's slab crosses the dimple's rim circle,
+    where its top cap and its ball meet the slab's face at one point, which
+    the reference finds as several events of the slab's chords within 1e-21
+    of each other, so that group's spacing is not checked (its sines and gaps
+    are).
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces

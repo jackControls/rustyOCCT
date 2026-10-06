@@ -1,0 +1,222 @@
+case boss_pocket_fuse 1e-07
+op 91
+brep imported/leaf_boss.brep
+boolean fuse 93
+op 92
+brep imported/leaf_pocket.brep
+end
+case boss_pocket_cut 1e-07
+op 91
+brep imported/leaf_boss.brep
+boolean cut 93
+op 92
+brep imported/leaf_pocket.brep
+end
+case boss_pocket_common 1e-07
+op 91
+brep imported/leaf_boss.brep
+boolean common 93
+op 92
+brep imported/leaf_pocket.brep
+end
+case chain_dimple_fuse 1e-07
+op 91
+brep imported/leaf_dimple.brep
+boolean cut 93
+op 92
+frame 7.25 7.5 1.5 0.0 3.0 4.0 1.0 0.0 0.0
+offsets -4.0 4.0
+boundary C 0.0 0.0 1.0
+then fuse 95
+op 94
+frame 4.25 4.75 2.125 0.0 3.0 4.0 1.0 0.0 0.0
+offsets -0.75 0.5
+boundary P 4 -8.0 -8.0 8.0 -8.0 8.0 8.0 -8.0 8.0
+end
+case chain_dimple_cut 1e-07
+op 91
+brep imported/leaf_dimple.brep
+boolean cut 93
+op 92
+frame 7.25 7.5 1.5 0.0 3.0 4.0 1.0 0.0 0.0
+offsets -4.0 4.0
+boundary C 0.0 0.0 1.0
+then cut 95
+op 94
+frame 4.25 4.75 2.125 0.0 3.0 4.0 1.0 0.0 0.0
+offsets -0.75 0.5
+boundary P 4 -8.0 -8.0 8.0 -8.0 8.0 8.0 -8.0 8.0
+end
+case chain_dimple_common 1e-07
+op 91
+brep imported/leaf_dimple.brep
+boolean cut 93
+op 92
+frame 7.25 7.5 1.5 0.0 3.0 4.0 1.0 0.0 0.0
+offsets -4.0 4.0
+boundary C 0.0 0.0 1.0
+then common 95
+op 94
+frame 4.25 4.75 2.125 0.0 3.0 4.0 1.0 0.0 0.0
+offsets -0.75 0.5
+boundary P 4 -8.0 -8.0 8.0 -8.0 8.0 8.0 -8.0 8.0
+end
+case bore_rod_fuse 1e-07
+op 91
+brep imported/leaf_bore.brep
+boolean fuse 93
+op 92
+frame 7.25 5.5 3.75 0.0 3.0 4.0 1.0 0.0 0.0
+offsets -6.0 6.0
+boundary C 0.0 0.0 1.0
+end
+case bore_rod_cut 1e-07
+op 91
+brep imported/leaf_bore.brep
+boolean cut 93
+op 92
+frame 7.25 5.5 3.75 0.0 3.0 4.0 1.0 0.0 0.0
+offsets -6.0 6.0
+boundary C 0.0 0.0 1.0
+end
+case bore_rod_common 1e-07
+op 91
+brep imported/leaf_bore.brep
+boolean common 93
+op 92
+frame 7.25 5.5 3.75 0.0 3.0 4.0 1.0 0.0 0.0
+offsets -6.0 6.0
+boundary C 0.0 0.0 1.0
+end
+case boss_box_fuse 1e-07
+op 91
+brep imported/leaf_boss.brep
+boolean fuse 93
+op 92
+frame 5.805555555555555 1.5555555555555558 7.972222222222222 0.0 3.0 4.0 1.0 0.0 0.0
+offsets -1.5 1.5
+boundary P 4 -2.0 -1.75 2.0 -1.75 2.0 2.0 -2.0 2.0
+end
+case boss_box_cut 1e-07
+op 91
+brep imported/leaf_boss.brep
+boolean cut 93
+op 92
+frame 5.805555555555555 1.5555555555555558 7.972222222222222 0.0 3.0 4.0 1.0 0.0 0.0
+offsets -1.5 1.5
+boundary P 4 -2.0 -1.75 2.0 -1.75 2.0 2.0 -2.0 2.0
+end
+case boss_box_common 1e-07
+op 91
+brep imported/leaf_boss.brep
+boolean common 93
+op 92
+frame 5.805555555555555 1.5555555555555558 7.972222222222222 0.0 3.0 4.0 1.0 0.0 0.0
+offsets -1.5 1.5
+boundary P 4 -2.0 -1.75 2.0 -1.75 2.0 2.0 -2.0 2.0
+end
+case dimple_ball_fuse 1e-07
+op 91
+brep imported/leaf_dimple.brep
+boolean fuse 93
+op 92
+frame 6.0 4.75 3.25 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 1.75 -1.5707963267948966 1.5707963267948966
+end
+case dimple_ball_cut 1e-07
+op 91
+brep imported/leaf_dimple.brep
+boolean cut 93
+op 92
+frame 6.0 4.75 3.25 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 1.75 -1.5707963267948966 1.5707963267948966
+end
+case dimple_ball_common 1e-07
+op 91
+brep imported/leaf_dimple.brep
+boolean common 93
+op 92
+frame 6.0 4.75 3.25 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 1.75 -1.5707963267948966 1.5707963267948966
+end
+case pocket_rod_fuse 1e-07
+op 91
+brep imported/leaf_pocket.brep
+boolean fuse 93
+op 92
+frame 2.472222222222222 4.944444444444445 2.3611111111111107 0.0 3.0 4.0 1.0 0.0 0.0
+offsets -3.0 3.0
+boundary C 0.0 0.0 0.75
+end
+case pocket_rod_cut 1e-07
+op 91
+brep imported/leaf_pocket.brep
+boolean cut 93
+op 92
+frame 2.472222222222222 4.944444444444445 2.3611111111111107 0.0 3.0 4.0 1.0 0.0 0.0
+offsets -3.0 3.0
+boundary C 0.0 0.0 0.75
+end
+case pocket_rod_common 1e-07
+op 91
+brep imported/leaf_pocket.brep
+boolean common 93
+op 92
+frame 2.472222222222222 4.944444444444445 2.3611111111111107 0.0 3.0 4.0 1.0 0.0 0.0
+offsets -3.0 3.0
+boundary C 0.0 0.0 0.75
+end
+case dome_box_fuse 1e-07
+op 91
+frame 6.5 -5.0 3.5000000000000004 0.0 3.0 4.0 1.0 0.0 0.0
+offsets -1.25 1.0
+boundary P 4 -3.0 -3.0 3.0 -3.0 3.0 3.0 -3.0 3.0
+boolean fuse 93
+op 92
+brep imported/leaf_dome.brep
+end
+case dome_box_cut 1e-07
+op 91
+frame 6.5 -5.0 3.5000000000000004 0.0 3.0 4.0 1.0 0.0 0.0
+offsets -1.25 1.0
+boundary P 4 -3.0 -3.0 3.0 -3.0 3.0 3.0 -3.0 3.0
+boolean cut 93
+op 92
+brep imported/leaf_dome.brep
+end
+case dome_box_common 1e-07
+op 91
+frame 6.5 -5.0 3.5000000000000004 0.0 3.0 4.0 1.0 0.0 0.0
+offsets -1.25 1.0
+boundary P 4 -3.0 -3.0 3.0 -3.0 3.0 3.0 -3.0 3.0
+boolean common 93
+op 92
+brep imported/leaf_dome.brep
+end
+case bore_touch_fuse 1e-07
+op 91
+brep imported/leaf_bore.brep
+boolean fuse 93
+op 92
+frame 1.0 2.0 0.5 1.0 0.0 0.0 0.0 1.0 0.0
+offsets -1.0 10.0
+boundary C 4.5 5.5 1.0
+end
+case bore_touch_cut 1e-07
+op 91
+brep imported/leaf_bore.brep
+boolean cut 93
+op 92
+frame 1.0 2.0 0.5 1.0 0.0 0.0 0.0 1.0 0.0
+offsets -1.0 10.0
+boundary C 4.5 5.5 1.0
+end
+case bore_touch_common 1e-07
+op 91
+brep imported/leaf_bore.brep
+boolean common 93
+op 92
+frame 1.0 2.0 0.5 1.0 0.0 0.0 0.0 1.0 0.0
+offsets -1.0 10.0
+boundary C 4.5 5.5 1.0
+end
