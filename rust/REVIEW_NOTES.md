@@ -9028,6 +9028,82 @@ Decisions for S9, recorded before its code (2026-09-28):
     enclosures, the degenerate refused, histories over the stored ids,
     deterministic, moved rigidly; the kernel's own stepped shaft and bead
     written, read back and imported) and the DRAW trial of the five.
+  * **S9e.4b.4b.1 evidence (2026-10-06).** Eight bodies OCCT wrote
+    (`boolean-primitive-chains-bodies.txt`, `write` blocks of one
+    primitive's rows, a `boolean` row and another's, written by
+    `compare_primitive_chains_boolean.py --write-bodies` to
+    `rust/fixtures/imported/chain_*.brep`), each one Boolean of two coaxial
+    primitives, every section a circle: `shaft` (E5's: a cylinder of radius
+    3 over `[0, 4]` on `SKEW` fused with a coaxial one of radius 3/2 over
+    `[2, 9]`), `cup` (a cylinder of radius 3 over `[0, 5]` on `SKEW2` less a
+    coaxial bore of radius 2 over `[1, 7]`), `dome` (G9's `c`: a frustum of
+    radii 7/2 and 5/2 over 4 on the world's axes common a ball of radius 5
+    about `(0, 0, -2)`, meeting at radius 3, 2 above the base), `pin` (G9's
+    `d`: a rod of radius 1.4 over `[0, 6]` common that ball, its disc on the
+    dome's base plane), `bead` (a ball of radius 5 on `SKEW4` less a coaxial
+    rod of radius 3 through it: no plane face), `knob` (a ball of radius 2
+    about `(1, 1, 1)` fused with a coaxial rod of radius 1.2 from its centre
+    to a cap 5 above it), declared `degenerate` `capsule` (a rod of radius 2
+    fused with a ball of its radius about its top's centre: tangent along
+    the rim) and declared `unsupported` `rounded` (K1's part: a prism of a
+    square of side 8 its corners rounded by arcs of radius 2, less a
+    cylinder of radius 3/2 along `y` through it).
+    `generate_primitive_chains_boolean_fixtures.py --check`: 24 cases of 8
+    groups (21 solid, 3 `unsupported`; 18 of class `pieces`, 3 `both`, 3
+    `chain`): `cup_ball` (a ball centred on the cup's rim between its wall
+    and its bore), `shaft_box` (a `TILT` box across the step), `dome_pin`
+    (G9's configuration, both imported: one sphere, the pin's disc inside the
+    dome's on one plane), `chain_dome` (the dome less a `TILT` box biting its
+    side, then with a `TILT` slab), `dome_slab`, `bead_slab` (`TILT` slabs
+    through them, their cuts two solids), `knob_box` (a `TILT` box less the
+    knob: the body the tool); declared `unsupported` `rounded_rod`. The
+    reference is the constructions OCCT was given through S9e.3a's chained
+    reference with S9e.4b.3c.3a's checks, relative to the case's size: the
+    two families within 1.8e-35, each solid's closed form 3.6e-40, each
+    body's closed form 4.3e-42 (the shaft's and the cup's sections in their
+    chart times the stored axes' determinant; the dome, the pin and the knob
+    on the world's axes), the pair identities 1.4e-41 and the area identity
+    2.6e-40, Monte Carlo 2.7 standard errors (100,000 points a group),
+    quadrature estimates 1.3e-32, every meeting's sine at least 0.29 and
+    events at least 1.0e-4 of their range apart outside the declared group
+    (the bead's events but its spacing, below), solid counts by rays at two
+    resolutions with S9e.4b.3c.1's join; the declared group's checks kept
+    apart within 1.1e-35. Every file read independently (`stored_records`):
+    its curved faces' kinds its primitives', every stored vertex within
+    2.3e-14 of the size on the construction's surfaces.
+    `test_primitive_chains_boolean_reference.py` checks the dome's, the
+    pin's, the knob's, the shaft's and the cup's closed forms against
+    quadratures of their sections, the chained reference on the cup and the
+    dome against theirs, every body's two primitives on one axis exactly in
+    the rows (every meeting a circle: the dome's at radius 3, the bead's at
+    `+-4`), the pin's disc on the dome's base plane, the capsule's tangency
+    and the rounded square's arcs tangent to its lines, the case list and
+    its protocol rows and the files apart from every earlier set's. The
+    generator's check is a CI group of its own (`primitive-chains`, 10.9
+    minutes on four workers locally under Python 3.9, 7.2 under 3.12);
+    Python 3.9 and 3.12 write the same files. Corrections from the evidence,
+    amending the refined decisions' plan (7): (a) the capsule is given to
+    no case: its own tangency along its rim kept the reference's sweeps over
+    twenty minutes of one worker for one group, which CI's job cannot
+    afford; the kernel's tests refuse it on import (its file is checked
+    with the others); (b) the dome's frustum first chosen, of radii 4 and 2,
+    put the open end of its primitive in a draft of the step's code (a
+    quarter of its face's range past it) on the plane tangent to the ball at
+    its pole, `Degenerate` in the dome's own common; and a primitive in
+    common or cut needs to reach past the other primitives anyway (the
+    dome's cone past the ball's top, a bore past the ball it goes through):
+    the first primitive and those in common or cut reach past the other
+    primitives' bounds along their axes as well (amending (2)), and the
+    set's frustum is of radii 7/2 and 5/2; (c) a stored circle of a
+    coaxial meeting is also a ring (the dome's rim): such a ring turns with
+    the meeting's carrier (`ring_about`, as a cone's section), amending
+    (3)'s (b); (d) the `TILT` slabs through the dome and the bead cut each
+    in two, their cuts two solids; the chain is the dome's (a shaft less a
+    rod parallel to its axis, then with a slab, kept one worker over thirty
+    minutes); (e) the bead's bore, a cylinder on `SKEW4`'s stored axes,
+    meets its ball in its rims, where the reference finds each rim as both
+    surfaces' event a rounding apart, so its spacing is not checked (its
+    sines and gaps are).
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces
