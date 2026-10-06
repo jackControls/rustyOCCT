@@ -228,6 +228,11 @@ impl MeetCrv {
         }
     }
 
+    /// S9e.4b.4b.1: the normal its carrier's angle turns about (`x * y`).
+    pub(super) fn turn(&self) -> V {
+        cross(&self.x, &self.y)
+    }
+
     /// The ruling's direction at a `(cos, sin)`.
     fn dir(&self, cs: &[Qd; 2]) -> QV {
         let radial = qadd(&qscale(&self.x, &cs[0]), &qscale(&self.y, &cs[1]));

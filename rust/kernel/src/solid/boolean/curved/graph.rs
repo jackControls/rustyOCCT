@@ -878,6 +878,13 @@ pub(super) fn arrange_shared(models: [Prism; 2]) -> Result<Arr> {
                 if !boxes_meet(&ebox, &other.boxes[g]) {
                     continue;
                 }
+                // S9e.4b.4b.1: an edge of a face on the face's surface lies on
+                // it (taken with the faces on one surface, as `Along`
+                // below): a given meeting on one sphere (a pin's rim on a
+                // dome's sphere) is not met again on that surface.
+                if unmet && e.faces.iter().any(|&f| coincident_with(o, f, g)) {
+                    continue;
+                }
                 if unmet
                     && !(matches!(e.curve, Crv::Cone(_) | Crv::Torus(_))
                         && matches!(
@@ -1567,6 +1574,18 @@ pub(super) fn arrange_shared(models: [Prism; 2]) -> Result<Arr> {
     Ok(arr)
 }
 
+/// S9e.4b.4b.1: the rational unit vector nearest a direction `d` of length
+/// about one: `(+-(1 - s^2), 2 s) / (1 + s^2)`, its `x` of `d`'s sign, `s`
+/// the binary64 rounding of `d_y / (1 + |d_x|)` (the half-angle tangent from
+/// the nearer end of the `x` diameter).
+fn unit_near(d: [f64; 2]) -> [R; 2] {
+    let s = q(d[1] / (1.0 + d[0].abs()));
+    let one = int(1);
+    let w = &one + &s * &s;
+    let a = (&one - &s * &s) / &w;
+    [if d[0] >= 0.0 { a } else { -a }, int(2) * &s / &w]
+}
+
 impl Arr {
     /// The model edge of operand `o` an arrangement edge lies on: its own
     /// curve's, or B's of an edge of both (S9e.4b.3c.2).
@@ -1584,7 +1603,10 @@ impl Arr {
     /// rounded place (scaled onto the circle: a point of one quadratic
     /// field, within the resolution of the stored one), a vertex the
     /// assembly keeps (`VKey::Stored`): a rim OCCT split at its sphere's
-    /// seam is two arcs, as its construction's ring is one.
+    /// seam is two arcs, as its construction's ring is one. S9e.4b.4b.1: a
+    /// cylinder's or a cone's meeting with a sphere likewise, at its
+    /// carrier's rational unit direction nearest the stored vertex's
+    /// (`unit_near`), a point of one quadratic field.
     pub(super) fn split_at(&mut self, points: &[[f64; 3]], tol: f64) -> Result<()> {
         for (k, x) in points.iter().enumerate() {
             let near =
@@ -1595,17 +1617,37 @@ impl Arr {
             let xq: QV = x.map(|c| Qd::rat(q(c)));
             let mut found = None;
             for (g, e) in self.edges.iter().enumerate() {
-                let (Crv::Circle(c), CurveRef::Section(si, _)) = (&e.crv, e.curve) else {
+                let CurveRef::Section(si, _) = e.curve else {
                     continue;
                 };
-                let pl = c.place(&xq);
-                let d = [q(pl[0].to_f64()), q(pl[1].to_f64())];
-                // A point on the circle's axis (a pole above a rim's
-                // centre) has no direction on it, nor lies near it.
-                if d.iter().all(|t| *t == zero()) {
-                    continue;
-                }
-                let y = c.at(&d);
+                let y = match &e.crv {
+                    Crv::Circle(c) => {
+                        let pl = c.place(&xq);
+                        let d = [q(pl[0].to_f64()), q(pl[1].to_f64())];
+                        // A point on the circle's axis (a pole above a
+                        // rim's centre) has no direction on it, nor lies
+                        // near it.
+                        if d.iter().all(|t| *t == zero()) {
+                            continue;
+                        }
+                        c.at(&d)
+                    }
+                    // S9e.4b.4b.1: a cylinder's or a cone's meeting with a
+                    // sphere (a pin's or a dome's rim), at the carrier's
+                    // rational unit direction nearest the point's.
+                    Crv::Meet(m) => {
+                        let pl = m.place(&xq);
+                        let d = [pl[0].to_f64(), pl[1].to_f64()];
+                        if d == [0.0, 0.0] {
+                            continue;
+                        }
+                        let Some(y) = m.at(&unit_near(d)) else {
+                            continue;
+                        };
+                        y
+                    }
+                    _ => continue,
+                };
                 if !near(qv_f64(&y)) {
                     continue;
                 }

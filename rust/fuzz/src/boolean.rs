@@ -70,6 +70,8 @@
 //! cut by the turned box again, its volume the chained cut's. S9e.4b.3a:
 //! a first result of one sphere, cylinder or cone face and plane faces too
 //! (a plane piece, its primitive common its planes' half-spaces).
+//! S9e.4b.4b.1: one of several sphere, cylinder and cone faces too (a
+//! Boolean chain of their primitives).
 //! S9e.4b.4a: a lens prism in the object's frame given the chosen operation
 //! with the tool, and again once written, read back and imported, its arcs
 //! of two circles taken through their ends where their joints round off
@@ -767,11 +769,12 @@ pub fn check_boolean(data: &[u8]) {
                 .map(|f| &f.surface)
                 .filter(|s| !matches!(s, S::Plane(_)))
                 .collect();
-            let planar = match curved.as_slice() {
-                [] => true,
-                [s] => matches!(s, S::Sphere { .. } | S::Cylinder { .. } | S::Cone { .. }),
-                _ => false,
-            };
+            // S9e.4b.4b.1: or of several such faces (a Boolean chain of
+            // their primitives; the writer writes circles alone, so their
+            // coaxial meetings and plane sections).
+            let planar = curved
+                .iter()
+                .all(|s| matches!(s, S::Sphere { .. } | S::Cylinder { .. } | S::Cone { .. }));
             if let (true, true, Some(c)) = (IMPORTED, planar, &c) {
                 if let Some(again) = reimported(first) {
                     if let Some(out) = run(again.cut(OperationId(12), &box_)) {

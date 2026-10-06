@@ -22,9 +22,13 @@
 //! and several hulls (`imported::Tree`), each inner Boolean arranged and
 //! assembled in turn and given to the next as its given model (S9e.1's, its
 //! own assembly its slots: `Tree::node`), the root's matched to the stored
-//! topology. S9e.4b.3c.1: a stored vertex within the resolution of the
-//! model's ring (a rim OCCT split at its sphere's seam) splits it in the
-//! first arrangement (`Arr::split_at`), so the match takes the stored arcs;
+//! topology. S9e.4b.4b.1: a body of several sphere, cylinder and cone faces
+//! is such a tree of its primitives alone (`Tree::Primitive(i)`, a chain of
+//! them), each primitive's model at a seam of its own. S9e.4b.3c.1: a stored
+//! vertex within the resolution of the model's ring (a rim OCCT split at its
+//! sphere's seam; S9e.4b.4b.1: a cylinder's or a cone's meeting with a
+//! sphere too) splits it in the first arrangement (`Arr::split_at`), so the
+//! match takes the stored arcs;
 //! under a partner on its sphere a piece's sphere is split at the second
 //! arrangement's seam (`common`'s `first`), its faces then on one surface
 //! with the partner's (`graph.rs`).
@@ -409,7 +413,9 @@ fn arranged(
 ) -> Result<(Arr, Vec<(Component, Made)>)> {
     let p = &piece.primitive;
     if let Some(tree) = &piece.tree {
-        return of_tree(p, tree, tolerance, first, stored);
+        // S9e.4b.4b.1: every primitive of a body of several.
+        let prims: Vec<&Solid> = std::iter::once(&**p).chain(&piece.others).collect();
+        return of_tree(&prims, tree, tolerance, first, stored);
     }
     let (centre, half) = cube(p);
     let hull = hull_model(
@@ -517,7 +523,9 @@ fn of_form(
 /// seam tried, the hulls' cube and the stored vertices that split rims.
 struct Tree<'a> {
     p: &'a Solid,
-    seam: &'a R,
+    /// S9e.4b.4b.1: every primitive (the piece's first) and its seam.
+    prims: &'a [&'a Solid],
+    seams: Vec<&'a R>,
     cube: ([f64; 3], f64),
     stored: &'a [[f64; 3]],
     tolerance: crate::Tolerance,
@@ -531,7 +539,9 @@ impl Tree<'_> {
         *count += 1;
         let own = OperationId(hull_operation(self.p).0 ^ (*count << 40));
         match tree {
-            PieceTree::Primitive => super::model_of(self.p, operand, self.seam, false),
+            PieceTree::Primitive(i) => {
+                super::model_of(self.prims[*i], operand, self.seams[*i], false)
+            }
             PieceTree::Hull(planes) => {
                 let (centre, half) = self.cube;
                 hull_model(planes, centre, half, operand, own, self.tolerance)
@@ -618,7 +628,7 @@ fn tree_cube(p: &Solid, stored: &[[f64; 3]]) -> ([f64; 3], f64) {
 /// inner Booleans' results their given models, a full circle's seam (and a
 /// whole sphere's split) tried at several rational points.
 fn of_tree(
-    p: &Solid,
+    prims: &[&Solid],
     tree: &PieceTree,
     tolerance: crate::Tolerance,
     first: Option<&R>,
@@ -634,11 +644,18 @@ fn of_tree(
         .into_iter()
         .chain(seams[..seams.len() - 1].iter().map(|&s| r(s)))
         .collect();
+    let p = prims[0];
     let cube = tree_cube(p, stored);
-    for (k, seam) in tried.iter().enumerate() {
+    for k in 0..tried.len() {
+        // Each primitive's seam apart from the others' (one surface's seams
+        // on one line otherwise; S9e.4b.4b.1).
+        let seams = (0..prims.len())
+            .map(|i| &tried[(k + i) % tried.len()])
+            .collect();
         let ctx = Tree {
             p,
-            seam,
+            prims,
+            seams,
             cube,
             stored,
             tolerance,
@@ -687,14 +704,28 @@ pub(super) fn model(s: &Solid, op: Operand, first: Option<&R>) -> Result<Prism> 
         // A tangency in the piece's own arrangement is its curved face's
         // with its own planes (S9e.4b.3c.3: a notch whose wall is tangent to
         // the faces it meets), not between a Boolean's inputs.
+        // S9e.4b.4b.1: a body of several primitives' own tangency and
+        // mismatch are named for it.
+        let several = !piece.others.is_empty();
         let (arr, out) = arranged(piece, s.resolution(), first, &stored).map_err(|e| match e {
+            Error::Degenerate(m) if m.contains("tangen") && several => Error::Degenerate(
+                "an imported body of several primitives whose faces are tangent along an edge",
+            ),
             Error::Degenerate(m) if m.contains("tangen") => Error::Degenerate(
                 "an imported plane piece whose curved face is tangent to its plane faces",
             ),
+            Error::OutOfDomain(_)
+                if several && e == crate::solid::imported::not_its_primitive() =>
+            {
+                crate::solid::imported::not_their_chain()
+            }
             e => e,
         })?;
         let op2 = first_boolean(piece);
         super::given::built(s, op, arr, out, op2, None).map_err(|e| match e {
+            Error::ComputationLimit(m) if m.contains("rebuilt differently") && several => {
+                crate::solid::imported::not_their_chain()
+            }
             Error::ComputationLimit(m) if m.contains("rebuilt differently") => {
                 crate::solid::imported::not_its_primitive()
             }
@@ -719,7 +750,11 @@ fn ball_of(s: &Solid) -> Option<(Point3, f64)> {
     }
     let s = match &s.construction {
         Construction::Imported(i) => match &i.recognized {
-            crate::solid::imported::Recognized::Piece(p) => &p.primitive,
+            // S9e.4b.4b.1: a body of several primitives' sphere.
+            crate::solid::imported::Recognized::Piece(p) => std::iter::once(&*p.primitive)
+                .chain(&p.others)
+                .find(|x| matches!(x.construction, Construction::Sphere { .. }))
+                .unwrap_or(&p.primitive),
             _ => return None,
         },
         _ => s,

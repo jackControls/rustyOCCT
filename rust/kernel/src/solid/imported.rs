@@ -29,8 +29,13 @@
 //! hull less the primitive, the primitive less the hull, their fuse), each
 //! form tried in turn, the match the arbiter; S9e.4b.3c.3b: else a Boolean
 //! tree of its primitive and several convex hulls of its planes (`Tree`), its
-//! faces grouped by how its edges bend, each grouping tried in turn. Every
-//! other body is S9e.4b's.
+//! faces grouped by how its edges bend, each grouping tried in turn.
+//! S9e.4b.4b.1: a body of several sphere, cylinder and cone faces whose plane
+//! faces are all ends of their primitives is a Boolean chain of those
+//! primitives (`primitives_piece`: widest first, each next one cut, in
+//! common or fused by its material's side and how its edges with the
+//! earlier ones bend; coaxial ones on one frame). Every other body is
+//! S9e.4b's.
 use super::{replayable, Construction, Context, Solid};
 use crate::history::{History, Relation};
 use crate::identity::{
@@ -82,6 +87,9 @@ pub(crate) enum Recognized {
 #[derive(Debug, Clone, PartialEq)]
 pub(crate) struct Piece {
     pub(crate) primitive: Box<Solid>,
+    /// S9e.4b.4b.1: a body of several primitives' curved faces, its other
+    /// primitives (the tree's leaves `Primitive(1)` on, in its order).
+    pub(crate) others: Vec<Solid>,
     pub(crate) planes: Vec<(Frame3, bool)>,
     /// S9e.4b.3c.3: the Boolean of the primitive and the hull of the planes
     /// the body is.
@@ -97,8 +105,9 @@ pub(crate) struct Piece {
 /// hulls of its planes (REVIEW_NOTES.md, "S9e.4b.3c.3b refined").
 #[derive(Debug, Clone, PartialEq)]
 pub(crate) enum Tree {
-    /// The primitive.
-    Primitive,
+    /// A primitive: the piece's (0), or (S9e.4b.4b.1) another of a body of
+    /// several primitives.
+    Primitive(usize),
     /// The convex hull of planes: each plane face's stored frame and whether
     /// its normal `x * y` points into the hull.
     Hull(Vec<(Frame3, bool)>),
@@ -116,15 +125,18 @@ impl Tree {
     }
 
     /// A point's location by rank (inside 2, on the boundary 1, outside 0):
-    /// the primitive's `primitive`, a hull's sides within `tol`, a common
+    /// each primitive's `primitives`, a hull's sides within `tol`, a common
     /// the lesser, a fuse the greater, a cut the first's common the second's
     /// reversed.
-    fn rank(&self, primitive: u8, point: Point3, tol: f64) -> u8 {
+    fn rank(&self, primitives: &[u8], point: Point3, tol: f64) -> u8 {
         match self {
-            Tree::Primitive => primitive,
+            Tree::Primitive(i) => primitives[*i],
             Tree::Hull(planes) => hull_rank(planes, point, tol),
             Tree::Op(op, a, b) => {
-                let (x, y) = (a.rank(primitive, point, tol), b.rank(primitive, point, tol));
+                let (x, y) = (
+                    a.rank(primitives, point, tol),
+                    b.rank(primitives, point, tol),
+                );
                 match op {
                     Op2::Common => x.min(y),
                     Op2::Fuse => x.max(y),
@@ -211,20 +223,28 @@ impl Piece {
         use crate::Location;
         let tol = tolerance.linear();
         let h = hull_rank(&self.planes, point, tol);
-        let primitive = self.primitive.classify(point)?;
         // Inside 2, on the boundary 1, outside 0: a common the least, a
         // fuse the most, a complement the reverse.
-        let p = match primitive {
-            Location::Inside => 2,
-            Location::Boundary => 1,
-            Location::Outside => 0,
+        let rank = |s: &Solid| -> Result<u8> {
+            Ok(match s.classify(point)? {
+                Location::Inside => 2,
+                Location::Boundary => 1,
+                Location::Outside => 0,
+            })
         };
+        let p = rank(&self.primitive)?;
         let r = match (self.form, &self.tree) {
             (Form::Common, _) => p.min(h),
             (Form::Groove, _) => h.min(2 - p),
             (Form::Bite, _) => p.min(2 - h),
             (Form::Boss, _) => p.max(h),
-            (Form::Tree, Some(tree)) => tree.rank(p, point, tol),
+            (Form::Tree, Some(tree)) => {
+                let mut ranks = vec![p];
+                for s in &self.others {
+                    ranks.push(rank(s)?);
+                }
+                tree.rank(&ranks, point, tol)
+            }
             (Form::Tree, None) => unreachable!("a tree's piece"),
         };
         Ok([Location::Outside, Location::Boundary, Location::Inside][usize::from(r)])
@@ -232,7 +252,10 @@ impl Piece {
 }
 
 fn general() -> Error {
-    Error::OutOfDomain("an imported solid other than a prism, a sphere, a cone or a torus (S9e.4b)")
+    Error::OutOfDomain(
+        "an imported solid other than a prism, a sphere, a cone, a torus or a Boolean of its \
+         primitives (S9e.4b)",
+    )
 }
 
 /// Candidates' parallel and perpendicular tests (the match decides).
@@ -301,6 +324,19 @@ impl Solid {
             // turn (its model's match to the stored topology the arbiter).
             Err(e) if piece_shape(&topology) => {
                 return Self::imported_piece(context, topology, resolution, e);
+            }
+            // S9e.4b.4b.1: a body of several primitives' curved faces, a
+            // Boolean chain of its primitives.
+            Err(_) if primitives_shape(&topology) => {
+                let op = construction_operation(context.operation);
+                let p = primitives_piece(&topology, resolution, op)?;
+                return Self::imported_as(
+                    context,
+                    topology,
+                    resolution,
+                    Recognized::Piece(Box::new(p)),
+                    BTreeMap::new(),
+                );
             }
             Err(e) => return Err(e),
         };
@@ -453,6 +489,9 @@ impl Imported {
             }
             Recognized::Polyhedron => Recognized::Polyhedron,
             // S9e.4b.3a: read off the moved stored topology again.
+            Recognized::Piece(p) if !p.others.is_empty() => Recognized::Piece(Box::new(
+                primitives_piece(&moved, tolerance, p.primitive.operation)?,
+            )),
             Recognized::Piece(p) => Recognized::Piece(Box::new(piece(
                 &moved,
                 tolerance,
@@ -533,7 +572,24 @@ fn placed(recognized: &Recognized, t: &Topology) -> (Frame3, f64, f64, crate::Bo
         // its primitive's between the body's axial ends.
         Recognized::Piece(p) => {
             let r = &p.primitive;
-            (r.frame, r.start, r.end, widened(piece_bounds(p, t), t))
+            let mut bounds = piece_bounds(r, t);
+            // S9e.4b.4b.1: every primitive's.
+            for o in &p.others {
+                let b = piece_bounds(o, t);
+                bounds = crate::Bounds3 {
+                    min: Point3::new(
+                        bounds.min.x.min(b.min.x),
+                        bounds.min.y.min(b.min.y),
+                        bounds.min.z.min(b.min.z),
+                    ),
+                    max: Point3::new(
+                        bounds.max.x.max(b.max.x),
+                        bounds.max.y.max(b.max.y),
+                        bounds.max.z.max(b.max.z),
+                    ),
+                };
+            }
+            (r.frame, r.start, r.end, widened(bounds, t))
         }
     }
 }
@@ -1130,6 +1186,7 @@ fn piece(
     }
     Ok(Piece {
         primitive: Box::new(primitive),
+        others: Vec::new(),
         planes,
         form,
         tree: None,
@@ -1648,10 +1705,10 @@ fn tree_piece(
         let x = cut(Tree::Hull(p_hull), p_pockets);
         let y = cut(Tree::Hull(o_hull), o_pockets);
         let union = Tree::Op(Op2::Fuse, Box::new(x), Box::new(y));
-        Tree::Op(Op2::Common, Box::new(Tree::Primitive), Box::new(union))
+        Tree::Op(Op2::Common, Box::new(Tree::Primitive(0)), Box::new(union))
     } else {
         // The primitive common its group's hull, less its pockets.
-        let mut x = Tree::Primitive;
+        let mut x = Tree::Primitive(0);
         if !p_hull.is_empty() {
             x = Tree::Op(Op2::Common, Box::new(x), Box::new(Tree::Hull(p_hull)));
         }
@@ -1678,6 +1735,7 @@ fn tree_piece(
     }
     let piece = Piece {
         primitive: Box::new(primitive),
+        others: Vec::new(),
         planes: Vec::new(),
         form: Form::Tree,
         tree: Some(tree),
@@ -1686,10 +1744,339 @@ fn tree_piece(
     Ok((piece, choices))
 }
 
+// ------------------------------------------------------------------ several primitives
+
+/// S9e.4b.4b.1: the curved faces grouped by their stored surfaces (faces on
+/// one surface one primitive), in face order.
+fn surfaces(t: &Topology) -> Vec<Vec<usize>> {
+    let mut out: Vec<Vec<usize>> = Vec::new();
+    for (i, f) in t.faces().iter().enumerate() {
+        if matches!(f.surface, Surface::Plane(_)) {
+            continue;
+        }
+        match out
+            .iter_mut()
+            .find(|g| t.faces()[g[0]].surface == f.surface)
+        {
+            Some(g) => g.push(i),
+            None => out.push(vec![i]),
+        }
+    }
+    out
+}
+
+/// Whether a stored topology is a body of several primitives' shape
+/// (S9e.4b.4b.1): one solid region of one shell, sphere, cylinder, cone and
+/// plane faces, the curved ones on two surfaces or more, no spline edge.
+fn primitives_shape(t: &Topology) -> bool {
+    one_shell(t)
+        && t.faces().iter().all(|f| {
+            matches!(
+                f.surface,
+                Surface::Plane(_)
+                    | Surface::Sphere { .. }
+                    | Surface::Cylinder { .. }
+                    | Surface::Cone { .. }
+            )
+        })
+        && surfaces(t).len() >= 2
+        && !t
+            .edges()
+            .iter()
+            .any(|e| matches!(e.curve, Curve3::BSpline(_)))
+}
+
+/// A body of several primitives whose plane faces are not all their ends
+/// (S9e.4b.4b.2).
+fn not_their_ends() -> Error {
+    Error::OutOfDomain(
+        "an imported body of several primitives with plane faces other than their ends (S9e.4b.4b.2)",
+    )
+}
+
+/// A body of several primitives no chain of them matches.
+pub(crate) fn not_their_chain() -> Error {
+    Error::OutOfDomain(
+        "an imported body of several primitives other than a Boolean chain of them (S9e.4b.4c)",
+    )
+}
+
+/// S9e.4b.4b.1: a primitive's stored axis (a cylinder's or a cone's, a
+/// sphere's frame's normal through its centre).
+fn axis_of(t: &Topology, k: usize) -> Option<Frame3> {
+    match &t.faces()[k].surface {
+        Surface::Sphere { frame, .. }
+        | Surface::Cylinder { frame, .. }
+        | Surface::Cone { frame, .. } => Some(*frame),
+        _ => None,
+    }
+}
+
+/// Whether an axis lies on a frame's within the resolution: parallel
+/// within `ALIGN`, its origin within `tol` of the frame's axis line.
+fn coaxial(reference: &Frame3, axis: &Frame3, tol: f64) -> bool {
+    let c = reference.coordinates(axis.origin());
+    parallel(reference.normal(), axis.normal()) && c[0].hypot(c[1]) <= tol
+}
+
+/// A primitive's heights `(lo, hi)`, its faces' axial range and its caps'
+/// faces.
+type Span = ((f64, f64), (f64, f64), Vec<usize>);
+
+/// S9e.4b.4b.1: a primitive of a body of several (its faces on one surface):
+/// a whole sphere, or a cylinder or a cone over its faces' axial range,
+/// past each end by a quarter of it (at least of the radius) but at a cap
+/// (`caps`: a plane face normal to its axis at that end facing away from
+/// the range, or into it where its material lies outside its quadric),
+/// clamped at a cone's apex; on its stored frame, or on `reference` (an
+/// earlier primitive's frame whose axis its own lies on within the
+/// resolution: coaxial primitives on one axis, their caps' heights rounded
+/// alike); its caps' faces and its reach from its axis (a sphere's radius,
+/// a cylinder's, a cone's widest end's over its faces' range).
+fn primitive_over(
+    t: &Topology,
+    tolerance: Tolerance,
+    op: OperationId,
+    faces: &[usize],
+    outside: bool,
+    reference: Option<&Frame3>,
+    past: &[crate::Bounds3],
+) -> Result<(Solid, Vec<usize>, f64)> {
+    let half = std::f64::consts::FRAC_PI_2;
+    let k = faces[0];
+    let form = if outside { Form::Groove } else { Form::Boss };
+    let range = |frame: &Frame3, radius: f64| -> Result<Span> {
+        let (w0, w1) = faces
+            .iter()
+            .fold((f64::INFINITY, f64::NEG_INFINITY), |r, &f| {
+                let (a, b) = face_range(t, f, frame);
+                (r.0.min(a), r.1.max(b))
+            });
+        let margin = 0.25 * (w1 - w0).max(radius);
+        // Past the other primitives' bounds along the axis, where given.
+        let (p0, p1) = past.iter().fold((w0, w1), |r, b| {
+            let (a, c) = (b.min.to_array(), b.max.to_array());
+            (0..8).fold(r, |r, k| {
+                let corner = Point3::new(
+                    if k & 1 == 0 { a[0] } else { c[0] },
+                    if k & 2 == 0 { a[1] } else { c[1] },
+                    if k & 4 == 0 { a[2] } else { c[2] },
+                );
+                let w = frame.coordinates(corner)[2];
+                (r.0.min(w), r.1.max(w))
+            })
+        });
+        let (mut lo, mut hi) = (p0 - margin, p1 + margin);
+        let mut capped = Vec::new();
+        for (i, h) in caps(t, k, frame, (w0, w1), form, tolerance)? {
+            if (h - w0).abs() <= (h - w1).abs() {
+                lo = h;
+            } else {
+                hi = h;
+            }
+            capped.push(i);
+        }
+        Ok(((lo, hi), (w0, w1), capped))
+    };
+    match &t.faces()[k].surface {
+        Surface::Sphere { frame, radius } => Ok((
+            Solid::build_sphere(op, *frame, *radius, -half, half, tolerance)?,
+            Vec::new(),
+            *radius,
+        )),
+        Surface::Cylinder { frame, radius } => {
+            let frame = reference.unwrap_or(frame);
+            let ((lo, hi), _, capped) = range(frame, *radius)?;
+            let profile = Profile::new(
+                Boundary::circle(Point2::new(0.0, 0.0), *radius, tolerance)?,
+                Vec::new(),
+                tolerance,
+            )?;
+            Ok((Solid::build(op, profile, *frame, lo, hi)?, capped, *radius))
+        }
+        Surface::Cone {
+            frame: stored,
+            radius,
+            half_angle,
+        } => {
+            // The radius `radius + (w - c) slope` at height `w` on the
+            // frame, `c` the stored origin's height (zero on its own).
+            let frame = reference.unwrap_or(stored);
+            let along = if frame.normal().dot(stored.normal()) < 0.0 {
+                -1.0
+            } else {
+                1.0
+            };
+            let c = match reference {
+                Some(r) => rational_f64(&Local::new(r)?.of(stored.origin())[2]),
+                None => 0.0,
+            };
+            let slope = along * half_angle.tan();
+            let at = |w: f64| radius + (w - c) * slope;
+            let ((mut lo, mut hi), (w0, w1), capped) = range(frame, radius.abs())?;
+            let reach = at(w0).abs().max(at(w1).abs());
+            let apex = c - radius / slope;
+            let (mut r_lo, mut r_hi) = (at(lo), at(hi));
+            if slope > 0.0 && lo <= apex {
+                lo = apex;
+                r_lo = 0.0;
+            }
+            if slope < 0.0 && hi >= apex {
+                hi = apex;
+                r_hi = 0.0;
+            }
+            if r_lo < 0.0 || r_hi < 0.0 {
+                return Err(general());
+            }
+            let base = frame.at(frame.point(Point2::new(0.0, 0.0), lo));
+            Ok((
+                Solid::build_cone(op, base, r_lo, r_hi, hi - lo, tolerance)?,
+                capped,
+                reach,
+            ))
+        }
+        _ => Err(general()),
+    }
+}
+
+/// S9e.4b.4b.1: a body of several primitives' curved faces as a Boolean
+/// chain of its primitives (REVIEW_NOTES.md, "S9e.4b.4b refined"): each
+/// surface's primitive (`primitive_over`), every plane face an end of one;
+/// in the order of their reach from their axes or centres, widest first, the
+/// first's material inside its quadric; each next one cut where its
+/// material lies outside its quadric, else in common where its faces meet
+/// the earlier ones' curved faces along convex edges, fused where along
+/// concave edges or none.
+fn primitives_piece(t: &Topology, tolerance: Tolerance, op: OperationId) -> Result<Piece> {
+    let tol = tolerance.linear();
+    let groups = surfaces(t);
+    let mut order = Vec::new();
+    let mut ends = vec![false; t.faces().len()];
+    for (g, faces) in groups.iter().enumerate() {
+        let outside = material_outside(t, faces[0]);
+        if faces.iter().any(|&k| material_outside(t, k) != outside) {
+            return Err(not_their_chain());
+        }
+        let (_, capped, reach) = primitive_over(t, tolerance, op, faces, outside, None, &[])?;
+        for c in capped {
+            ends[c] = true;
+        }
+        order.push((g, outside, reach));
+    }
+    // Plane faces other than the primitives' ends are S9e.4b.4b.2's, the
+    // body's own tangency (a fillet's on its faces) then.
+    for (i, f) in t.faces().iter().enumerate() {
+        if matches!(f.surface, Surface::Plane(_)) && !ends[i] {
+            return Err(not_their_ends());
+        }
+    }
+    let bends = bends(t)?;
+    if bends.iter().any(|&(_, _, b)| b == Bend::Flat) {
+        return Err(Error::Degenerate(
+            "an imported body of several primitives whose faces are tangent along an edge",
+        ));
+    }
+    // Widest first (a stable order: ties in face order).
+    order.sort_by(|a, b| b.2.total_cmp(&a.2));
+    if order[0].1 {
+        return Err(not_their_chain());
+    }
+    // Each one's Boolean with the earlier ones and its frame.
+    let mut ops: Vec<Op2> = Vec::new();
+    let mut axes: Vec<Frame3> = Vec::new();
+    let mut frames: Vec<Option<Frame3>> = Vec::new();
+    let mut earlier: Vec<usize> = Vec::new();
+    for (i, &(g, outside, _)) in order.iter().enumerate() {
+        let faces = &groups[g];
+        let own = axis_of(t, faces[0]).ok_or_else(general)?;
+        // A cylinder or a cone on an earlier primitive's axis takes its
+        // frame.
+        let sphere = matches!(t.faces()[faces[0]].surface, Surface::Sphere { .. });
+        let reference = (!sphere)
+            .then(|| axes.iter().find(|a| coaxial(a, &own, tol)))
+            .flatten()
+            .copied();
+        let (mut convex, mut concave) = (false, false);
+        for &(a, b, bend) in &bends {
+            let pair = (faces.contains(&a) && earlier.contains(&b))
+                || (faces.contains(&b) && earlier.contains(&a));
+            if pair {
+                convex |= bend == Bend::Convex;
+                concave |= bend == Bend::Concave;
+            }
+        }
+        ops.push(if i == 0 {
+            Op2::Common
+        } else if outside {
+            Op2::Cut
+        } else if convex && concave {
+            return Err(not_their_chain());
+        } else if convex {
+            Op2::Common
+        } else {
+            Op2::Fuse
+        });
+        axes.push(reference.unwrap_or(own));
+        frames.push(reference);
+        earlier.extend(faces.iter().copied());
+    }
+    // Each primitive's entities under an operation of its own (the first
+    // the body's construction's), past each open end by a quarter of its
+    // faces' range; the first, a common's and a cut's past the others' too
+    // (what bounds the body there, or what the cut leaves).
+    let mine = |i: usize| OperationId(op.0 ^ ((i as u64) << 24));
+    let mut solids = Vec::new();
+    for (i, &(g, outside, _)) in order.iter().enumerate() {
+        let (solid, _, _) = primitive_over(
+            t,
+            tolerance,
+            mine(i),
+            &groups[g],
+            outside,
+            frames[i].as_ref(),
+            &[],
+        )?;
+        solids.push(solid);
+    }
+    let bounds: Vec<crate::Bounds3> = solids.iter().map(|s| s.bounds).collect();
+    for (i, &(g, outside, _)) in order.iter().enumerate() {
+        if ops[i] == Op2::Fuse {
+            continue;
+        }
+        let others: Vec<crate::Bounds3> = (0..bounds.len())
+            .filter(|&j| j != i)
+            .map(|j| bounds[j])
+            .collect();
+        solids[i] = primitive_over(
+            t,
+            tolerance,
+            mine(i),
+            &groups[g],
+            outside,
+            frames[i].as_ref(),
+            &others,
+        )?
+        .0;
+    }
+    let mut tree = Tree::Primitive(0);
+    for (i, &op2) in ops.iter().enumerate().skip(1) {
+        tree = Tree::Op(op2, Box::new(tree), Box::new(Tree::Primitive(i)));
+    }
+    let mut solids = solids.into_iter();
+    let primitive = solids.next().expect("two primitives");
+    Ok(Piece {
+        primitive: Box::new(primitive),
+        others: solids.collect(),
+        planes: Vec::new(),
+        form: Form::Tree,
+        tree: Some(tree),
+        choice: 0,
+    })
+}
+
 /// A plane piece's bounds: its primitive's between the body's axial ends
 /// (a cylinder's or a cone's), else its primitive's.
-fn piece_bounds(p: &Piece, t: &Topology) -> crate::Bounds3 {
-    let r = &p.primitive;
+fn piece_bounds(r: &Solid, t: &Topology) -> crate::Bounds3 {
     let (frame, n) = (r.frame, r.frame.normal());
     let reach = |w: f64, radius: f64| {
         let c = frame.point(Point2::new(0.0, 0.0), w);

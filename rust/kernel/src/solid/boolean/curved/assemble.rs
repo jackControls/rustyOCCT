@@ -1363,6 +1363,12 @@ fn curve3(arr: &Arr, e: &REdge, points: &BTreeMap<usize, Point3>) -> Result<Curv
                         // S9e.4b.3b: a cone's section stored as a ring runs the
                         // result's way about the cone's axis.
                         (None, Crv::Cone(sec)) => ring_about(c, sec.axis(), first.with == d0),
+                        // S9e.4b.4b.1: a cylinder's or a cone's meeting with
+                        // a coaxial sphere stored as a ring (OCCT's rim of a
+                        // dome) likewise about its carrier's axis.
+                        (None, Crv::Meet(m)) => {
+                            ring_about(c, m.turn().map(|x| rational_f64(&x)), first.with == d0)
+                        }
                         _ => super::chain::stored(c, ends),
                     })
             {

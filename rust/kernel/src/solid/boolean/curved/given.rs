@@ -504,6 +504,17 @@ pub(super) fn built_on(
                 let m = frame.normal();
                 n[0] * m.x + n[1] * m.y + n[2] * m.z < 0.0
             }
+            // S9e.4b.4b.1: a cylinder's or a cone's meeting with a coaxial
+            // sphere matched to a stored circle (OCCT's rim of a pin or a
+            // dome), its carrier's turn against the stored frame's normal.
+            (
+                Crv::Meet(c),
+                Some(Curve3::Circle { frame, .. } | Curve3::CircularArc { frame, .. }),
+            ) => {
+                let n = c.turn().map(|x| crate::solid::split::rational_f64(&x));
+                let m = frame.normal();
+                n[0] * m.x + n[1] * m.y + n[2] * m.z < 0.0
+            }
             _ => false,
         });
         curves.push(stored);
