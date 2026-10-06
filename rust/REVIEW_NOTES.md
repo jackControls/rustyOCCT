@@ -8380,6 +8380,93 @@ Decisions for S9, recorded before its code (2026-09-28):
     sphere's or a cylinder's faces met by planes and other quadrics), within
     4.8e-9 measured adaptively at 1e-10 and 1e-12 by a diagnostic build.
     S9e.4b.3c.3b's kernel next.
+  * **S9e.4b.3c.3b implemented** (`solid/imported.rs`'s `Tree`: the bends of
+    the stored edges, the faces' groups, each group's hull and pockets, the
+    tree, its classification; `curved/pieces.rs`: the tree's Booleans in turn,
+    an inner one's assembly named under an operation of its own and given to
+    the next as its given model; `curved/given.rs`: `built_on`, a given model
+    on a stored topology or an inner assembly, its frame its first leaf's
+    holding the primitive; `topology.rs`: an inner assembly's unchecked
+    topology), as the refined decisions describe: a body of one sphere,
+    cylinder or cone face and plane faces that no form of S9e.4b.3c.3a's
+    matches is decomposed into a Boolean tree of its primitive and the convex
+    hulls of its planes, the first tree whose given model matches its stored
+    topology the body, none matching `OutOfDomain("an imported plane piece
+    other than a Boolean tree of its primitive and its planes' hulls
+    (S9e.4b.4)")` (the forms' mismatch too). All 30 fixtures as declared (24
+    within the kernel's enclosures, each at most `1e-9` wide; the U's notch's
+    3 refused as `Degenerate("an imported plane piece whose curved face is
+    tangent to its plane faces")`, read off its edges' bends before any tree;
+    the tooth's 3 as S9e.4b.4's), every history complete over the imported
+    bodies' stored ids, the U's two arm ends on one plane each continuing
+    apart, results deterministic and moved rigidly, both inputs translated and
+    turned keeping the reference's volumes, every body its tree (its volume
+    its closed form, points in and off it classified, its stored vertices on
+    its boundary), and the kernel's own bodies of trees imported, their
+    Booleans with a turned box the kernel's own results': the `boolean` fuzz
+    target's two (a box fused with a ball's half whose disc plane cuts it, a U
+    prism less a ball about its end's corner) and a rod bitten twice by a U,
+    written by its writer and read back, and a cylinder's piece of an oblique
+    plane fused with a box (its end an ellipse, which the reader does not
+    take), its topology imported directly (`tests/piece_tree_booleans.rs`,
+    8.1 s in release, 9.0 s at `opt-level` 2 with debug assertions, 8.7 s in
+    release with debug assertions under the emulated correctly rounded
+    `hypot`, where the pieces' earlier test files pass too). Amendments, from
+    the implementation: (a) the groups: an edge of the kind no seam between
+    the groups takes (convex, but concave for the primitive's group outside
+    the quadric: within a hull, or between a hull and its pocket) keeps its
+    faces in one group, every other face joining through such edges; a
+    component of faces met only across the other kind (a pocket's own edges,
+    or the seam where the groups are fused or cut) is tried in the other group
+    than the faces it meets and in the same, in turn (the same first where it
+    meets the other group or a face of a pocket; at most three such
+    components), the match the arbiter. The refined decisions' rounds through
+    convex then concave edges put the fuzz target's box, whose faces meet only
+    the ball's half's disc, with the disc; (b) inside the quadric the union is
+    tried two ways, the primitive common its group's region fused with the
+    other's, and the primitive common both regions' union, the latter first
+    where no face of the other group meets the curved face: the fuzz target's
+    box lies within the ball, its bottom face hidden, so its hull is open
+    below and only the primitive bounds it; (c) planes of faces within the
+    resolution of one plane facing one way (a U prism's two arm ends, whose
+    stored frames OCCT rounds apart) take the first's frame, so the hull takes
+    them as one plane (S9e.4b.3c.3a's exact test of one plane missed them, and
+    the U's groove was a face too many); (d) only the first tree's refusal
+    other than a mismatch is reported, a later choice's being a tree the body
+    is not (a later tree of the tooth's met S9's `Degenerate("a vertex of one
+    input on the other's face")`); (e) the tree's hulls are bounded by a cube about the
+    primitive whose half side reaches past every stored vertex, twice and
+    `3/8` more (S9e.4b.3c.3a's cube about the primitive alone met the U boss's
+    arms' end plane), each hull's and inner Boolean's entities under an
+    operation of their own. `compare_piece_trees_boolean.py` 22 matches and 8
+    reviewed (the 3 captured and, with the kernel, entity counts: the kernel's
+    meetings of a cylinder with a ball split at their turning points into
+    S9d.2's graphs where OCCT's are one approximated edge, OCCT's unified
+    result keeping a boss's cylinder's seam edge), every enclosure within the
+    reference; every other comparison of `HANDOFF.md`'s table unchanged with 0
+    failures (and `compare_split.py` 72/56, `compare_brep.py --family spline`
+    10/3); the release suite (628 tests) and the tools' unit tests (344)
+    passing, the ledger unchanged. The `boolean` fuzz target's `IMPORTED`
+    stage: replayed with debug assertions, 92 first results of the corpus's
+    1,467 inputs and regressions reach it, 23 imported and cut within the
+    chained cut's volume (the 4 refused as this step's among them: the box
+    with a ball's half and the U's groove, twice each), 63 not written by the
+    kernel's writer, 6 read back with pcurves off their edges, none refused.
+    Replays with debug assertions, one process an input, natively and under
+    the emulated correctly rounded `hypot`: the boolean corpus and its
+    regressions (1,467 inputs) and the split corpus and its regressions
+    (3,570), the slowest 6.6 s and 3.2 s (6.3 s and 2.7 s emulated), no
+    failure but two inputs another campaign added to the local corpus after
+    this branch's base, which fail on that base alike (a boolean input's
+    `coordinates cannot resolve the requested linear tolerance`, natively and
+    emulated; a split input's `a piece below its plane`, emulated only). A
+    trial of the DRAW survey's 171 restore cases the import reaches, on the
+    Rust adapter and natively (not the survey: nothing registered): no case
+    moves with this step, every status and reason S9e.4b.3c.3a's trial found
+    (55 evaluating on both backends, S9e.4b.3c.2's 13 and `G4` among them;
+    `I6` refused for its tool's own tangency, `buc60926` at its frustum's
+    apex), none refused as S9e.4b.3c's; native DRAW's statuses as before.
+    Pending: the capture's Linux record, the DRAW survey and the campaigns.
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces

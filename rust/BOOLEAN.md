@@ -46,7 +46,11 @@ incidences of two inputs on one sphere (a vertex, a circle or a line of
 both, plane faces on one plane with overlapping edges: `curved/graph.rs`),
 and S9e.4b.3c.3a's imported bodies of one curved face and planes that are
 another Boolean of their primitive and the hull of their other planes (a
-groove, a bite, a boss: `solid/imported.rs`'s `Form`, `curved/pieces.rs`).
+groove, a bite, a boss: `solid/imported.rs`'s `Form`, `curved/pieces.rs`),
+and S9e.4b.3c.3b's that are a Boolean tree of their primitive and several
+hulls (a groove or boss on a U, a primitive bitten twice, a sphere's disc
+or a cylinder's flat with a box: `solid/imported.rs`'s `Tree`,
+`curved/pieces.rs`).
 
 ## Contract
 
@@ -1190,9 +1194,27 @@ lacks stays unmatched, deleted in a Boolean's history. A tangency in the
 piece's own arrangement is its curved face's with its own planes:
 `Degenerate("an imported plane piece whose curved face is tangent to its
 plane faces")` (the DRAW survey's `bcut_complex/I6` tool). A body no form
-matches is S9e.4b.3c.3b's (`OutOfDomain`). A given piece's edge along its
-cylinder's section by a plane along its axis (a slot's rim, its base a
-quadratic surd) meets another cylinder only where it is apart from it (no
+matches is S9e.4b.3c.3b's: a Boolean tree of its primitive and the convex
+hulls of its planes (`imported::Tree`), read off how its edges bend (convex
+or concave at their middle points). Its plane faces fall in two groups: the
+primitive's (sharing an edge with the curved face convex inside the
+quadric, concave outside) and the other's, every other face joining
+through edges that keep a group (convex, but concave for the primitive's
+group outside the quadric), a component met only across the other kind
+tried in the other group and in the same, in turn. A group's region is the
+hull of its faces' planes less its pockets (faces joined by concave edges
+within it, their planes turned over); the body the primitive common its
+group's region fused with the other's (or, where no face of the other
+meets the curved face, the primitive common both regions' union), or
+outside the quadric the other's less that; inner Booleans' results their
+given models, the root's matched to the stored topology. Planes of faces
+within the resolution of one plane facing one way are one plane; an edge of
+the curved face along which a plane face is tangent to it is the body's own
+`Degenerate`. Bodies no tree of at most four Booleans matches (a pocket
+within a pocket) are `OutOfDomain("an imported plane piece other than a
+Boolean tree of its primitive and its planes' hulls (S9e.4b.4)")`. A given
+piece's edge along its cylinder's section by a plane along its axis (a
+slot's rim, its base a quadratic surd) meets another cylinder only where it is apart from it (no
 real root); elsewhere it stays `ComputationLimit`.
 
 Refused: a joint of two arcs of different circles off either
@@ -1200,10 +1222,9 @@ Refused: a joint of two arcs of different circles off either
 imported polyhedron against a solid with curved faces or edges, or a result
 of one given to a Boolean of curved faces (`OutOfDomain`, S9e.4b.4: the
 curved engine decides on constructions); a polyhedron with a cavity or
-several shells (S9e.4b.4); a plane piece other than its primitive common
-its planes' half-spaces (not convex in its planes, its curved face's
-material outside its quadric, two plane faces on one plane: `OutOfDomain`,
-S9e.4b.3c.3); a piece whose planes pass through its cone's
+several shells (S9e.4b.4); a plane piece no Boolean tree of its primitive
+and its planes' hulls matches (a pocket within a pocket: `OutOfDomain`,
+S9e.4b.4); a piece whose planes pass through its cone's
 apex (`Degenerate`, S9's rule: `shading_132`); a torus's v-segment or wedge
 and every other body of curved faces (`OutOfDomain`, S9e.4b: a general
 body on its stored surfaces); spline faces or edges (S9f); S9's
@@ -3425,6 +3446,41 @@ multiple root; and the engine's rules.
   evaluates on both backends with every check, `I6` is refused for its
   tool's own tangency (its part tangent to the tool besides),
   `buc60926` at its frustum's apex as before.
+* **S9e.4b.3c.3b evidence (plane pieces of Boolean trees), before its
+  kernel code.** `generate_piece_trees_boolean_fixtures.py --check` writes
+  `boolean-piece-trees-cases.txt`, `-expected.tsv`, `-frames.tsv` and
+  `-bodies.txt`: 30 cases (10 groups; 24 solid, 3 degenerate, 3
+  unsupported) on eight bodies OCCT wrote, every section a circle or a line
+  (a U prism's groove by a ball, the fuzz target's; a U's cylindrical boss;
+  a cylinder bitten twice by a U; a box fused with or less an upper
+  hemisphere whose disc lies below or inside it, the fuzz target's ball's
+  half; a box with a cylinder flattened along its axis; declared
+  `degenerate` `I6`'s notch on a U and `unsupported` a tooth left in a
+  cylinder's U-shaped bite) against rods, slabs, a ball and a box, as the
+  tool, two imported and in a chain, from S9e.3a's chained reference on the
+  constructions OCCT was given (a U as a box less its slot's box, a
+  hemisphere as its ball common a cylinder above its equator; two families
+  within 1.6e-35, each body's closed form 4.5e-37, the pair identities,
+  Monte Carlo 2.5 standard errors, solid counts by rays joined within two
+  grid spacings). `compare_piece_trees_boolean.py` reproduces
+  `occt-boolean-piece-trees-preimplementation` (keyed on `imported.rs`'s
+  refusal of a piece other than one Boolean of its primitive and its
+  planes' hull, the probe `unsupported` on all 30 before it): 27 match, 3
+  reviewed (BRepGProp's default integration, within 4.8e-9 adaptively).
+* **Kernel (S9e.4b.3c.3b).** `tests/piece_tree_booleans.rs`: all 30 fixtures
+  as the reference (24 within the kernel's enclosures, each at most `1e-9`
+  wide; the U's notch refused for its wall tangent to its own faces, the tooth
+  as S9e.4b.4's), every history complete over the imported bodies' stored ids,
+  the U's arm ends on one plane keeping their ids, results deterministic and
+  moved rigidly, moved inputs keeping the reference's volumes, every body its
+  tree, and the kernel's own bodies of trees imported (the fuzz target's two,
+  a rod bitten twice, a cylinder's oblique end fused with a box).
+  `compare_piece_trees_boolean.py`: 22 matches and 8 reviewed (the native
+  measures and, with the kernel, entity counts: its meetings of a cylinder
+  with a ball split at their turning points, OCCT's unified result keeping a
+  boss's seam edge). A trial of the DRAW survey's 171 restore cases the import
+  reaches: no case moves (55 evaluate on both backends), none refused as
+  S9e.4b.3c's.
 * **Fuzzing.** The `boolean` target (`FUZZING.md`): the split target's line
   and arc profiles, the tool offset exactly in the axis-aligned frame or
   sharing the tilted one's origin, heights equal, spanning, overlapping,
