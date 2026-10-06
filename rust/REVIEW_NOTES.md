@@ -8660,6 +8660,76 @@ Decisions for S9, recorded before its code (2026-09-28):
     enclosures, the degenerate refused, histories over the stored ids,
     deterministic, moved rigidly), S9e.4b.1's `lens` cases solid with it, and
     the DRAW trial of the 6.
+  * **S9e.4b.4a evidence (2026-10-05).** Five bodies OCCT wrote
+    (`boolean-imported-joints-bodies.txt`, `MakePrism` of profiles whose world
+    coordinates are their turned frames' roundings, written by
+    `compare_imported_joints_boolean.py --write-bodies` to
+    `rust/fixtures/imported/`), every joint of two circles a rational common
+    point of both in the profile's frame: `quad`, the common of four discs of
+    radius 5 about `(+-1, 0)` and `(0, +-1)`, its corners `(+-3, +-3)` (`E8`'s
+    and `D5`'s part), in the `R125` frame; `arch`, a base from `(-2, 0)` to
+    `(2, 0)` under two arcs of radius 5 about `(-+3, 0)` meeting at `(0, 4)`
+    (a crossing joint whose arcs end at a line too), in the `TURN30` frame;
+    `cam`, an arc of radius 3 tangent inside one of radius 5 at `(5, 0)`
+    (`E1`'s), in the `R125` frame; `blade`, arcs of radii 25/2 and 13/2
+    crossing at 0.11 rad at `(12, 7/2)` (`bug4993`'s), in the `TURN30` frame;
+    and `split_lens`, S9e.4b.1's lens with each arc split in two, in the
+    `TURN30` frame. `generate_imported_joints_boolean_fixtures.py --check`: 39
+    cases of 13 groups (33 solid, 3 declared `degenerate`, 3 `unsupported`; 33
+    of class `prism`, 3 `both`, 3 `chain`): the quad against a box across its
+    corner, as object and as tool, a rod through its arc wall and a ball about
+    its corner's vertical edge; the arch against a box across its apex and a
+    `TILT` slab (two solids cut); the cam against a box across its tangent
+    joint and a rod through its small arc's wall; the blade against a box
+    across its crossing; the quad and the arch both imported; the quad less
+    the rod, then with the box; declared `degenerate` `quad_seat`, a rod in
+    the quad's frame on the circle of its arc about `(-1, 0)` below its bottom
+    face (`D5`'s configuration); declared `unsupported` the split lens against
+    a box (a joint of two circles each holding several arcs, S9e.4b.4's). The
+    reference is the constructions OCCT was given through S9e.3a's chained
+    reference with S9e.4a's checks (`generate_imported_boolean_fixtures.
+    evaluate_chain`), relative to the case's size: the two families within
+    2.1e-36, each solid's closed form 5.7e-41, the pair identities 3.4e-42 and
+    the area identity 2.6e-41, Monte Carlo 3.3 standard errors, quadrature
+    estimates 8.5e-33, solid counts by rays at two resolutions, every
+    meeting's sine at least 0.47 and events at least 1.6e-3 of their range
+    apart outside the declared groups. Every file read independently
+    (`stored_records`): its faces' kinds the construction's, every stored
+    vertex within 1.9e-15 of the size on one of the construction's walls and
+    one of its caps (OCCT's 15 digits; a vertex on a cap's plane exactly no
+    longer hides its wall's distance in one minimum), and every joint of two
+    circles, its stored vertices' local coordinates in the construction's
+    frame rounded once, off one of its circles at least: all 18 (the quad's 8,
+    the arch's, the cam's and the blade's 2, the split lens's 4).
+    `test_imported_joints_boolean_reference.py` checks every construction's
+    arcs ending on their circles and its joints on both exactly, the joints'
+    kinds (the cam's circles touching inside, the arch's, the blade's and the
+    quad's crossing at `asin(24/25)`, `asin(36/325)` and `asin(7/25)`), the
+    chained reference on each body alone against its profile's closed form (a
+    polygon and its arcs' segments, times the stored axes' determinant), the
+    quad in common with the box against a direct quadrature of its sections
+    within 1e-12, the off-joint test, and the case list and its protocol rows.
+    The generator's check is a CI group of its own (`imported-joints`, 4.8
+    minutes on four workers locally under Python 3.9, 3.2 under 3.12); Python
+    3.9 and 3.12 write the same files. Corrections from the evidence, amending
+    the refined decisions' plan (6): (a) the chained reference takes convex
+    profiles only (counter-clockwise arcs), so the S curve of two arcs
+    touching from either side (`P4`'s fillets, `ogee`) is no body of this set:
+    the kernel's tests write such a body of its own and read it back, and the
+    DRAW trial reads `P4`'s; the `arch` takes its place; (b) the arch's slab
+    moved off its base corner (a slab plane through a stored vertex: events
+    3.7e-17 of their range apart); (c) a trial of the cases on a draft of the
+    step's code (not committed) put every solid case within the reference but
+    evaluated the declared `quad_seat`: the rod's circle and the quad's arc's
+    circle taken through its ends lie a rounding apart, and the walls leave a
+    sliver between them at the shared cap plane that none of the curved
+    engine's rules finds (no two vertices within the resolution), where S9a's
+    one frame refuses such a pair as "a boundary within the resolution of the
+    other profile's" and S9e.4b.3c.1's spheres as two spheres within the
+    resolution of one; the step's kernel takes that rule for parallel circular
+    cylinders (refined decisions (3)), which refuses `quad_seat` and, in the
+    same draft, DRAW's `D5` (otherwise left to the validator's undecided loop
+    winding, a `ComputationLimit`).
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces
