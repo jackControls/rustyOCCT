@@ -19,8 +19,11 @@ the import refused such a body as S9e.4b.4b.2a did (`imported.rs`'s
 `OutOfDomain("an imported body of several primitives with plane faces other
 than their ends or a prism's (S9e.4b.4b.2b)")`, whose text the step
 changes): the capture's `rust_plane_parts_boolean_exists` is false, and the
-comparison requires every case `unsupported` until that refusal is gone;
-then none of the solid, empty or degenerate cases may stay `unsupported`.
+comparison requires every case `unsupported` until that refusal is gone (the
+cake's `refused`: S9e.4b.4b.2a took its boss's arcs for primitives tangent to
+its line walls, `Degenerate("an imported body of several primitives whose
+faces are tangent along an edge")`); then none of the solid, empty or
+degenerate cases may stay `unsupported`.
 
 `--write-bodies` writes the bodies themselves first: the oracle's `write`
 blocks of `boolean-plane-parts-bodies.txt` into `rust/fixtures/imported/`.
@@ -65,7 +68,8 @@ class PlanePartsSet(base.Set):
 
     def refused_before_code(self, case, rows):
         """Before the code, every case `unsupported` (every body refused on
-        import as S9e.4b.4b.2a refused it)."""
+        import as S9e.4b.4b.2a refused it; the cake's refusal counted so by
+        `rust_rows`)."""
         return rows == [['unsupported']]
 
     def must_support(self, case):
@@ -78,6 +82,23 @@ def native_input():
 
 
 base.make_set = PlanePartsSet
+_rust_rows = base.rust_rows
+
+
+def rust_rows():
+    """The kernel's probe's rows; before the code, a case of the cake
+    `refused` (S9e.4b.4b.2a's reading of its boss's arcs as primitives tangent
+    to its walls, the body's own tangency) counted `unsupported`."""
+    rows, failed = _rust_rows()
+    if not rust_plane_parts_boolean_exists():
+        for case in fixtures.all_cases():
+            cake = any(s == ('imported', 'cake') for s in case.items)
+            if cake and rows.get(case.name) == [['refused']]:
+                rows[case.name] = [['unsupported']]
+    return rows, failed
+
+
+base.rust_rows = rust_rows
 base.native_input = native_input
 base.case_scale = fixtures.case_size
 

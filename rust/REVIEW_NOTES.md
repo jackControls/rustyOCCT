@@ -9792,7 +9792,26 @@ Decisions for S9, recorded before its code (2026-09-28):
     within 6e-18 of each other wherever it was placed, so the body is the
     tool of a rod; (d) the declared ball resting on the frustum's top is S9's
     plane tangent to a sphere, `Degenerate("a plane crossing a sphere within
-    the resolution of tangency (S9d.1)")`.
+    the resolution of tangency (S9d.1)")`. The capture
+    `occt-boolean-plane-parts-preimplementation`
+    (`compare_plane_parts_boolean.py`, keyed on the refusal the step removes:
+    `imported.rs`'s `OutOfDomain("an imported body of several primitives with
+    plane faces other than their ends or a prism's (S9e.4b.4b.2b)")`, whose
+    text the step changes; the kernel's probe `unsupported` on all 24 before
+    the code, every body refused on import by it but the cake, which
+    S9e.4b.4b.2a refuses as `Degenerate("an imported body of several
+    primitives whose faces are tangent along an edge")`, its boss's arcs read
+    as primitives tangent to its line walls, so the comparison counts the
+    cake's refusal `unsupported` before the code): every result valid, 19
+    matching (within 2e-8 of the reference), 5 reviewed, in
+    `occt-boolean-plane-parts-divergences.json`: the cake's common with the
+    ball and the rod's three with the flat, volumes up to 2.8e-7 relative by
+    BRepGProp's default integration, within 9.7e-9 measured adaptively at
+    1e-10 and 1e-12 by a diagnostic build but the rod's common, 3.3e-8 (no
+    closer than its approximated meetings: 10 of its 24 edges B-splines, their
+    tolerance 1e-7); and the touching ball's fuse, which OCCT keeps as two
+    solids touching at a point where the reference's rays count one, their
+    totals the reference's within 4.8e-15. S9e.4b.4b.2b.1's kernel next.
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces
