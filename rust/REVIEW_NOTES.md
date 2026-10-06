@@ -8275,6 +8275,100 @@ Decisions for S9, recorded before its code (2026-09-28):
     target's two bodies, a cylinder with an oblique end fused with a box and
     a ball's half with a box built by the kernel and imported, their
     Booleans the kernel's own results').
+  * **S9e.4b.3c.3b evidence (2026-10-05).** Eight bodies OCCT wrote
+    (`boolean-piece-trees-bodies.txt`, `write` blocks of one solid's rows, a
+    `boolean` row and the other's rows, written by
+    `compare_piece_trees_boolean.py --write-bodies` to
+    `rust/fixtures/imported/form_*.brep`), each one Boolean of a primitive
+    and a prism of lines (a box, or a U: a body not convex in its planes),
+    every section a circle or a line: `form_u_scoop` (a U prism `12 x 8 x 6`
+    on `SKEW4`, its slot `[4, 12] x [3, 5]`, less a ball of radius 5/2
+    centred on the top face of one arm, the ball's frame as S9e.4b.3c.3a's
+    scoop's: the top face a meridian plane, the arm's walls parallels'
+    planes, the groove crossing the arm into the slot, the top face in two
+    faces on one plane and the arms' ends two faces on one plane whose
+    stored frames OCCT rounds apart; the fuzz target's ball's groove in a U),
+    `form_u_boss` (a U prism on the world's axes fused with a cylindrical
+    boss of radius 3/2 from its base's top face to a cap), `form_bites` (a
+    cylinder of radius 3 on the world's axes less a U prism along its axis
+    between its caps, its two arms biting the wall from outside, the seam
+    between them: a primitive bitten twice, by a body not convex),
+    `form_cap_boss` (a box on `SKEW` fused with an upper hemisphere of radius
+    3 on its frame whose disc lies 1 below the box, the ball meeting the
+    box's bottom alone, a parallel's plane; the fuzz target's ball's half
+    with a box), `form_cap_pocket` (a box on `SKEW2` less such a hemisphere
+    whose disc lies 2 inside it: a dish with a flat floor), `form_dee_boss` (a
+    box on the world's axes fused with a prism along `x` of a disc of radius
+    5/2 less a segment, its flat a plane along the axis with its ends
+    rational, the box's top face through the axis, the arc's seam beyond the
+    flat: a cylinder's end not normal to its axis), declared `degenerate`
+    `form_u_notch` (a U prism less a cylinder of radius 3 along `z` about the
+    middle of its base's end face, tangent to the two faces it meets) and
+    declared `unsupported` `form_tooth` (a cylinder less a U prism whose base
+    and slot lie inside it, a tooth left between the arms).
+    `generate_piece_trees_boolean_fixtures.py --check`: 30 cases of 10
+    groups (24 solid, 3 declared `degenerate`, 3 `unsupported`; 24 of class
+    `pieces`, 3 `both`, 3 `chain`): `u_scoop_rod` (an upright rod through the
+    groove), `pieces` (the hemisphere's boss and the flattened boss, both
+    imported), `bites_box` (a `TILT` box across one bite), `rod_cap_pocket`
+    (a `TILT` rod less the dish, the body the tool), `u_boss_slab` (a `TILT`
+    slab across the boss and the slot), `cap_boss_rod` (a rod along `x`
+    through the disc), `chain_dee` (the flattened boss less a rod, then with
+    a `TILT` slab), `dee_boss_ball` (a ball across the flat); declared
+    `unsupported` `tooth_rod` (a pocket within a pocket, S9e.4b.4's) and
+    `degenerate` `u_notch_rod` (the notch, its wall tangent to its own
+    faces). The reference is the constructions OCCT was given through
+    S9e.3a's chained reference, with S9e.4b.3c.3a's checks relative to the
+    case's size: the two families within 1.6e-35, each solid's closed form
+    9.7e-41, each body's closed form 4.5e-37 (the U boss, the hemisphere's
+    boss and dish on their boxes' stored axes, the flattened boss), the pair
+    identities 1.4e-41 and the area identity 4.8e-41 (where no two inputs
+    share a surface), Monte Carlo 2.5 standard errors (100,000 points a
+    group), quadrature estimates 1.2e-32, every meeting's sine at least 0.11
+    and events at least 1.9e-6 of their range apart outside the declared
+    groups (and `rod_cap_pocket`'s events, below), solid counts by rays at
+    two resolutions with S9e.4b.3c.1's join; the declared groups' checks
+    kept apart within 1.1e-21. Every file read independently
+    (`stored_records`): its faces one sphere or cylinder and planes, every
+    stored vertex within 4.5e-16 of the size on the construction's surfaces.
+    `test_piece_trees_boolean_reference.py` checks the hemispheres' and the
+    flattened boss's closed forms against quadrature, the U boss's against
+    its area, the chained reference on the flattened boss against its
+    closed form, the reference's U prisms against OCCT's profiles (one area,
+    the slot's box past the open end and both caps, a reflex corner), the
+    reference's hemispheres, the frames keeping every section a circle or a
+    line and every seam off its body, the bodies' declared refusals, the
+    case list and its protocol rows and the files apart from every earlier
+    set's. The generator's check is a CI group of its own (`piece-trees`,
+    15 minutes on four workers locally, 11 under Python 3.12); Python 3.9 and 3.12 write the same
+    files. Corrections from the evidence, amending the refined decisions'
+    plan (7): (a) the reference models convex profiles and whole spheres
+    only, so it takes each U prism as the box of its outer planes less its
+    slot's box (past the open end and both caps) and each hemisphere as its
+    ball common a cylinder from its equator's plane (twice its radius wide,
+    four radii high): the same sets; the dish's cylinder's base, through the
+    ball's rounded centre, lies within rounding of a family line of the
+    dish's box's walls, so `rod_cap_pocket`'s events are found twice
+    rounding apart there and its spacing is not checked (its sines and gaps
+    are); (b) the reference's cost grows with a case's faces (the first set,
+    with boxes and slabs as partners and a box less a slot in every U, ran
+    over half an hour on four workers), so the partners are rods where they
+    can be, the chain the flattened boss's and `pieces` the hemisphere's boss
+    with the flattened boss; a rod across the bitten cylinder meets its
+    bites' lines along its axis, irrational lines
+    (`ComputationLimit("an irrational line against a cylinder")`,
+    S9e.4b.3c.3a's), so its partner stays a box; (c) the U boss is 11 long:
+    at 10 the arms' end plane was a face of S9e.4b.3c.3a's cube about its
+    bite form's primitive, facing it, so the current import refused it as
+    `Degenerate("an imported plane piece's two faces on one plane facing
+    apart")` rather than as this step's; (d) partners moved: the flattened
+    boss's ball off its box's face and its cap's plane (tangent), the
+    hemisphere's rod from the box's normal (a plane along a cylinder's axis
+    within rounding, S9's refusal) to the world's `x`, the U boss's slab
+    thicker and the chain's slab higher (solids within two grid spacings at
+    the coarse resolution), the bitten cylinder's box and the flattened boss
+    off round coordinates (events of different features a rounding apart).
+    The capture next, keyed on the refusal the step removes.
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces

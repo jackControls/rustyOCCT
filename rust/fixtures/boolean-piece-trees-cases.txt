@@ -1,0 +1,276 @@
+case u_scoop_rod_fuse 1e-07
+op 91
+brep imported/form_u_scoop.brep
+boolean fuse 93
+op 92
+frame -3.6388888888888897 -3.2222222222222223 3.4722222222222223 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -4.0 12.0
+boundary C 0.0 0.0 0.625
+end
+case u_scoop_rod_cut 1e-07
+op 91
+brep imported/form_u_scoop.brep
+boolean cut 93
+op 92
+frame -3.6388888888888897 -3.2222222222222223 3.4722222222222223 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -4.0 12.0
+boundary C 0.0 0.0 0.625
+end
+case u_scoop_rod_common 1e-07
+op 91
+brep imported/form_u_scoop.brep
+boolean common 93
+op 92
+frame -3.6388888888888897 -3.2222222222222223 3.4722222222222223 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -4.0 12.0
+boundary C 0.0 0.0 0.625
+end
+case pieces_fuse 1e-07
+op 91
+brep imported/form_cap_boss.brep
+boolean fuse 93
+op 92
+brep imported/form_dee_boss.brep
+end
+case pieces_cut 1e-07
+op 91
+brep imported/form_cap_boss.brep
+boolean cut 93
+op 92
+brep imported/form_dee_boss.brep
+end
+case pieces_common 1e-07
+op 91
+brep imported/form_cap_boss.brep
+boolean common 93
+op 92
+brep imported/form_dee_boss.brep
+end
+case bites_box_fuse 1e-07
+op 91
+brep imported/form_bites.brep
+boolean fuse 93
+op 92
+frame 0.0 0.0 0.0 0.0 3.0 4.0 1.0 0.0 0.0
+offsets 5.0625 6.9375
+boundary P 4 1.3125 1.4375 6.5625 1.4375 6.5625 4.5625 1.3125 4.5625
+end
+case bites_box_cut 1e-07
+op 91
+brep imported/form_bites.brep
+boolean cut 93
+op 92
+frame 0.0 0.0 0.0 0.0 3.0 4.0 1.0 0.0 0.0
+offsets 5.0625 6.9375
+boundary P 4 1.3125 1.4375 6.5625 1.4375 6.5625 4.5625 1.3125 4.5625
+end
+case bites_box_common 1e-07
+op 91
+brep imported/form_bites.brep
+boolean common 93
+op 92
+frame 0.0 0.0 0.0 0.0 3.0 4.0 1.0 0.0 0.0
+offsets 5.0625 6.9375
+boundary P 4 1.3125 1.4375 6.5625 1.4375 6.5625 4.5625 1.3125 4.5625
+end
+case rod_cap_pocket_fuse 1e-07
+op 91
+frame 5.444444444444445 -2.3055555555555554 3.777777777777778 0.0 3.0 4.0 1.0 0.0 0.0
+offsets -6.0 6.0
+boundary C 0.0 0.0 1.0
+boolean fuse 93
+op 92
+brep imported/form_cap_pocket.brep
+end
+case rod_cap_pocket_cut 1e-07
+op 91
+frame 5.444444444444445 -2.3055555555555554 3.777777777777778 0.0 3.0 4.0 1.0 0.0 0.0
+offsets -6.0 6.0
+boundary C 0.0 0.0 1.0
+boolean cut 93
+op 92
+brep imported/form_cap_pocket.brep
+end
+case rod_cap_pocket_common 1e-07
+op 91
+frame 5.444444444444445 -2.3055555555555554 3.777777777777778 0.0 3.0 4.0 1.0 0.0 0.0
+offsets -6.0 6.0
+boundary C 0.0 0.0 1.0
+boolean common 93
+op 92
+brep imported/form_cap_pocket.brep
+end
+case u_boss_slab_fuse 1e-07
+op 91
+brep imported/form_u_boss.brep
+boolean fuse 93
+op 92
+frame 0.0 0.0 0.0 0.0 3.0 4.0 1.0 0.0 0.0
+offsets 4.0 6.0
+boundary P 4 -1.0 -4.0 12.0 -4.0 12.0 8.0 -1.0 8.0
+end
+case u_boss_slab_cut 1e-07
+op 91
+brep imported/form_u_boss.brep
+boolean cut 93
+op 92
+frame 0.0 0.0 0.0 0.0 3.0 4.0 1.0 0.0 0.0
+offsets 4.0 6.0
+boundary P 4 -1.0 -4.0 12.0 -4.0 12.0 8.0 -1.0 8.0
+end
+case u_boss_slab_common 1e-07
+op 91
+brep imported/form_u_boss.brep
+boolean common 93
+op 92
+frame 0.0 0.0 0.0 0.0 3.0 4.0 1.0 0.0 0.0
+offsets 4.0 6.0
+boundary P 4 -1.0 -4.0 12.0 -4.0 12.0 8.0 -1.0 8.0
+end
+case cap_boss_rod_fuse 1e-07
+op 91
+brep imported/form_cap_boss.brep
+boolean fuse 93
+op 92
+frame -1.5833333333333335 6.583333333333333 -1.6666666666666663 1.0 0.0 0.0 0.0 1.0 0.0
+offsets -6.0 6.0
+boundary C 0.0 0.0 0.75
+end
+case cap_boss_rod_cut 1e-07
+op 91
+brep imported/form_cap_boss.brep
+boolean cut 93
+op 92
+frame -1.5833333333333335 6.583333333333333 -1.6666666666666663 1.0 0.0 0.0 0.0 1.0 0.0
+offsets -6.0 6.0
+boundary C 0.0 0.0 0.75
+end
+case cap_boss_rod_common 1e-07
+op 91
+brep imported/form_cap_boss.brep
+boolean common 93
+op 92
+frame -1.5833333333333335 6.583333333333333 -1.6666666666666663 1.0 0.0 0.0 0.0 1.0 0.0
+offsets -6.0 6.0
+boundary C 0.0 0.0 0.75
+end
+case chain_dee_fuse 1e-07
+op 91
+brep imported/form_dee_boss.brep
+boolean cut 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -2.0 8.0
+boundary C 8.125 1.875 0.625
+then fuse 95
+op 94
+frame 0.0 0.0 0.0 0.0 3.0 4.0 1.0 0.0 0.0
+offsets 4.75 6.5
+boundary P 4 2.0 -6.0 15.0 -6.0 15.0 8.0 2.0 8.0
+end
+case chain_dee_cut 1e-07
+op 91
+brep imported/form_dee_boss.brep
+boolean cut 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -2.0 8.0
+boundary C 8.125 1.875 0.625
+then cut 95
+op 94
+frame 0.0 0.0 0.0 0.0 3.0 4.0 1.0 0.0 0.0
+offsets 4.75 6.5
+boundary P 4 2.0 -6.0 15.0 -6.0 15.0 8.0 2.0 8.0
+end
+case chain_dee_common 1e-07
+op 91
+brep imported/form_dee_boss.brep
+boolean cut 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -2.0 8.0
+boundary C 8.125 1.875 0.625
+then common 95
+op 94
+frame 0.0 0.0 0.0 0.0 3.0 4.0 1.0 0.0 0.0
+offsets 4.75 6.5
+boundary P 4 2.0 -6.0 15.0 -6.0 15.0 8.0 2.0 8.0
+end
+case dee_boss_ball_fuse 1e-07
+op 91
+brep imported/form_dee_boss.brep
+boolean fuse 93
+op 92
+frame 7.75 2.75 4.25 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 1.75 -1.5707963267948966 1.5707963267948966
+end
+case dee_boss_ball_cut 1e-07
+op 91
+brep imported/form_dee_boss.brep
+boolean cut 93
+op 92
+frame 7.75 2.75 4.25 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 1.75 -1.5707963267948966 1.5707963267948966
+end
+case dee_boss_ball_common 1e-07
+op 91
+brep imported/form_dee_boss.brep
+boolean common 93
+op 92
+frame 7.75 2.75 4.25 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 1.75 -1.5707963267948966 1.5707963267948966
+end
+case tooth_rod_fuse 1e-07
+op 91
+brep imported/form_tooth.brep
+boolean fuse 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -1.0 7.0
+boundary C 5.0 4.0 0.75
+end
+case tooth_rod_cut 1e-07
+op 91
+brep imported/form_tooth.brep
+boolean cut 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -1.0 7.0
+boundary C 5.0 4.0 0.75
+end
+case tooth_rod_common 1e-07
+op 91
+brep imported/form_tooth.brep
+boolean common 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -1.0 7.0
+boundary C 5.0 4.0 0.75
+end
+case u_notch_rod_fuse 1e-07
+op 91
+brep imported/form_u_notch.brep
+boolean fuse 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -1.0 4.0
+boundary C 3.25 1.25 0.5
+end
+case u_notch_rod_cut 1e-07
+op 91
+brep imported/form_u_notch.brep
+boolean cut 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -1.0 4.0
+boundary C 3.25 1.25 0.5
+end
+case u_notch_rod_common 1e-07
+op 91
+brep imported/form_u_notch.brep
+boolean common 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -1.0 4.0
+boundary C 3.25 1.25 0.5
+end
