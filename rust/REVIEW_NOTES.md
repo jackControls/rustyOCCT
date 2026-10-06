@@ -8521,8 +8521,10 @@ Decisions for S9, recorded before its code (2026-09-28):
     (55 evaluating on both backends, S9e.4b.3c.2's 13 and `G4` among them;
     `I6` refused for its tool's own tangency, `buc60926` at its frustum's
     apex), none refused as S9e.4b.3c's; native DRAW's statuses as before.
-    Pending: the capture's Linux record and the DRAW survey (its trial moves
-    no case). Campaigns at `699b9b85` (600 s each, sampled replays, every
+    Pending: the capture's Linux record. DRAW survey: that of S9e.4b.3c.3b,
+    S9e.4b.4a and the scheduled replay's fixes, after S9e.4b.4a's
+    implemented bullet (no case moving with this step, as its trial
+    found). Campaigns at `699b9b85` (600 s each, sampled replays, every
     switch on): `boolean` clean, 978 runs, the slowest input 22 s under
     AddressSanitizer; `split` clean, 1,241 runs, the slowest 16 s.
   * **S9e.4b.4 refined, before its code (2026-10-05).** Why each class is
@@ -8821,8 +8823,63 @@ Decisions for S9, recorded before its code (2026-09-28):
     circle of the part's arcs taken through their ends; `E1`'s tangency
     besides), `bugs/modalg_2/bug4993_1` and `_2` as two faces within the
     resolution of one plane; native DRAW's statuses as before. Of the 171, 56
-    evaluate on both backends. Pending: the capture's Linux record, the DRAW
-    survey and the campaigns.
+    evaluate on both backends. Pending: the capture's Linux record and the
+    campaigns. DRAW survey: that of S9e.4b.3c.3b, S9e.4b.4a and the
+    scheduled replay's fixes, below (`P4` registered; the parallel
+    cylinders' rule moving no registered case).
+  * **DRAW survey of S9e.4b.3c.3b, S9e.4b.4a and the scheduled replay's
+    fixes (2026-10-05, `UPSTREAM_TESTS.md`).** At `16121052`
+    (`s9c2-kernel` with the fixes of CI's scheduled full replay,
+    S9e.4b.3c.3b and S9e.4b.4a; the public dataset, 120 seconds a case,
+    four at once, on a host at load 10 to 64). The 1,802 self-contained
+    cases of the Boolean group on both backends: every status, every
+    refusal's reason and every error the last survey's (`b9c7ae1b`) field
+    for field, 987 evaluating and registered, 592 refused, 223 unsupported
+    on both, none failing or timing out. The 1,814 cases restoring a shape
+    for a Boolean on the Rust adapter, and the 171 the import reaches on
+    native DRAW too: native DRAW's every status and reason the last
+    survey's; on the Rust adapter only S9e.4b.4a's 6 cases move, each from
+    `OutOfDomain("an imported prism's arcs of two circles meeting at a
+    joint (S9e.4b.4)")` as its trial found: `bcut_complex/P4` evaluates on
+    both backends with every check; `bcut_complex/E8`, `bfuse_complex/D5`
+    and `E1` are `Degenerate("two cylinders within the resolution of one
+    cylinder")`; `bugs/modalg_2/bug4993_1` and `_2` `Degenerate("two faces
+    within the resolution of one plane")`. S9e.4b.3c.3b and the scheduled
+    replay's fixes move no case. The parallel cylinders' rule
+    (S9e.4b.4a's amendment (a), `meet.rs`'s `cyl_pair`): no registered
+    case and no self-contained case's status or reason moves with it, and
+    of all the surveyed cases it refuses only `E8`, `D5` and `E1`, none
+    registered and none evaluating before. Replayed at `16121052` with
+    the rule disabled (a scratch build, no kernel change): `E8` evaluates
+    with native DRAW's volume and area to its printed digits (4,697,379.48
+    and 173,509.85, native's 4.69738e6 and 173510; 3.9 s), so the rule
+    costs it a result, the open item's case (its tool holds a stored
+    circle of the part exactly); `D5` is `ComputationLimit("a face's loop
+    winding the validator leaves undecided")` and `E1` `Degenerate("a
+    tangency between the inputs (S9c)")`, so the rule only renames their
+    refusals; `P4` evaluates either way. Of the 171: 56 evaluate on both
+    backends, 74 are refused by S9's rules, 36 are bodies none of the
+    kernel's constructions, 3 spline bodies (S9f) and 2 arguments of
+    several solids; none is S9e.4b.4's any more; 24 are unsupported
+    natively too. Six cases time out at their first restores again, the
+    load moving two of the reader's slowest: `bugs/modalg_1/buc60532_2` and
+    `bugs/modalg_6/bug23585` time out where the last survey's ended in 104
+    and 100 s, `buc60532` and `buc60532_1` end in 114 s where they timed
+    out; alone at load 6 to 10 the four end in 88 to 117 s, unsupported as
+    before (the reader takes no `SurfaceOfLinearExtrusion`; `tolerance`).
+    The volume audit (`vprops` and `sprops` before each `checkprops`, both
+    backends, the 1,042 audited before and `P4`): both backends' values the
+    last audit's bit for bit on all 1,042 (no moved value), the statuses
+    the same, the same 35 disagreements. `P4`'s volume 88,171,481.37, area
+    1,642,145.80 and centre agree with native DRAW's printed digits
+    (8.81715e7, 1.64215e6). It is registered (`data`, `viewer_skipped` on
+    both; 1,129 cases), and the ledger does not change (`--ledger` holds).
+    A full contract run of the manifest holds on both backends with the
+    dataset (30 seconds a case), `P4` in 3.0 s on the Rust adapter, the
+    slowest Boolean case 5.8 s (`bopcut_simple/ZK8`, on a host at load 10
+    to 45; `bopfuse_simple/ZK8` 4.4 in the last survey), the restore
+    cases 0.2 to 5.1 s (`bcommon_complex/B9`), the rollex 0.6 to 0.7. No
+    case fails, crashes or panics; no kernel change.
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces

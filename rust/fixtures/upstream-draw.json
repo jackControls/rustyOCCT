@@ -30,6 +30,7 @@
     "tests/boolean/bcut_complex/J7": "c5999beb34e7e8f6d73d2156f175450cb4e290188073b8b45f096b90618d9d71",
     "tests/boolean/bcut_complex/K8": "96bd7ea3110749076ae6b4fa6b5758d92e6c12d7e293dfcd481d7c71ebc4684b",
     "tests/boolean/bcut_complex/O9": "e20dc94cc44a0c9cd8325c15f9c736bb67e3d5cd5977cb1368275f5c48164500",
+    "tests/boolean/bcut_complex/P4": "a5aee2d3a74aa18a4d8e7c309bbba4c156ccaa4d617fb987293e7d0007f97033",
     "tests/boolean/bcut_simple/G7": "32b95d55c8a08b2b39d2c64e39d1fa4502bbb3fa78c92949bd0bb27e3365b319",
     "tests/boolean/bcut_simple/G8": "7f630a0200be640a8501b44c0532bc623a761872e90fd9e863dd1dd4c865d5c8",
     "tests/boolean/bcut_simple/H4": "7b1c1af963eed279cf52dc97968534208bb05c2c26717fbe81e48c4c22ae2a21",
@@ -8065,6 +8066,13 @@
       "expected_rust": "viewer_skipped",
       "expected_occt": "viewer_skipped",
       "purpose": "S9e.4b.3c.3a: restored solids of the public dataset given to a Boolean, a body of one curved face and planes as one Boolean of its primitive and the hull of its other planes: a box fused with a cylindrical boss along y (CTO900_fra50089-part, the hull fused with the primitive) less a parallel cylinder whose caps lie on the boss's cap plane and the box's face (fra50089-tool), bcut; checkprops -s; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bcut_complex/P4",
+      "data": true,
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9e.4b.4a: restored solids of the public dataset given to a Boolean, an imported prism whose arcs of two circles meet at a joint rounded off either, each such arc taken through its two ends: a box (CTO909_part_1) less a prism inside it whose profile of lines and fillets has arcs of radii 2 and 0.47 meeting tangent from either side (CTO909_tool_2), bcut; checkprops -s; its checkview is recorded."
     }
   ],
   "derived_sources": {
