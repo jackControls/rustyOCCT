@@ -319,7 +319,11 @@ on principal axes); pcurves lie on the input faces' stored surfaces
 fractions, exact projections otherwise, lifted continuously along each
 loop and each hole lifted to its outer loop's turn); solids are the shells
 joined by edges, a cut's shell of the tool alone its cavity (one among
-several solids `OutOfDomain`), shells meeting at a vertex `Degenerate`.
+several solids `OutOfDomain`), shells meeting at a vertex `Degenerate`,
+and so is a shell touching itself at a vertex (the edges there, linked
+where a loop runs from one to the next, in more than one fan: a hole's
+wall and a rod of its radius crossing its axis fused, the void two halves
+of the hole touching where the walls are tangent).
 Names follow S9b.1's rules; a result is a `Polyhedron` (both inputs, the
 operation, its index), classified by the set function and moved by its
 stored geometry. A result with arcs given to another Boolean is decided on

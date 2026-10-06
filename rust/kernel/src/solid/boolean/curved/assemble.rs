@@ -462,6 +462,42 @@ pub(super) fn assemble_made(arr: &Arr, op: Op2) -> Result<Vec<(Component, Made)>
         shells.entry(r).or_default().push(fi);
     }
     let shells: Vec<Vec<usize>> = shells.into_values().collect();
+    // A shell touching itself at a vertex (S9a's rule, decided on the exact
+    // arrangement before the validator meets it): the edges at a vertex,
+    // linked where a loop runs from one to the next, fall apart in more
+    // than one fan. Two equal cylinders with crossing axes are tangent at
+    // the two points where their ellipses cross; a result keeping both
+    // sides of a wall there (a hole's wall and a rod through it fused, the
+    // void between them two halves of the hole) touches itself, as a
+    // Steinmetz cut's two pieces touch each other (S9c.1).
+    for sh in &shells {
+        let mut links: BTreeMap<usize, BTreeMap<usize, BTreeSet<usize>>> = BTreeMap::new();
+        for &fi in sh {
+            for lp in &faces[fi].loops {
+                for (k, &(g, d)) in lp.iter().enumerate() {
+                    let (h, _) = lp[(k + 1) % lp.len()];
+                    let v = arr.edges[g].ends[usize::from(d)];
+                    let link = links.entry(v).or_default();
+                    link.entry(g).or_default().insert(h);
+                    link.entry(h).or_default().insert(g);
+                }
+            }
+        }
+        for link in links.values() {
+            let Some(&start) = link.keys().next() else {
+                continue;
+            };
+            let (mut seen, mut stack) = (BTreeSet::new(), vec![start]);
+            while let Some(g) = stack.pop() {
+                if seen.insert(g) {
+                    stack.extend(link[&g].iter().copied());
+                }
+            }
+            if seen.len() != link.len() {
+                return Err(Error::Degenerate("a result touching itself at a vertex"));
+            }
+        }
+    }
     // Shells meeting at a vertex touch.
     let mut shell_of_vertex: BTreeMap<usize, usize> = BTreeMap::new();
     for (si, sh) in shells.iter().enumerate() {
