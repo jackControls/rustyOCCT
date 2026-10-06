@@ -25,6 +25,7 @@
     "tests/boolean/bcut_complex/D4": "320022030c48d9851d20527cb7f1629838e46b8adc29234cbd873d2e42ef2dba",
     "tests/boolean/bcut_complex/D5": "21e5337c7e273d5e4899e6462978d72c7d33c7781a4abe30a67c8627fd01f5ae",
     "tests/boolean/bcut_complex/G4": "f43d6f39eed33a0f1d0787b61c0b8bf287de0af666c869b991bdd26c3505d9a5",
+    "tests/boolean/bcut_complex/G9": "daebba3f8c87e7054e061b824f7fc71b03c9f054e3fa807846d0a1c6bd4aa671",
     "tests/boolean/bcut_complex/H3": "0a9a0c681f083635c74e010db5f3fccce0bb1895f41aaebc849cb6e95d96d85d",
     "tests/boolean/bcut_complex/J2": "56a2497e52398ae21ee549c7cf573c2f40d90b9244b24fd4514b90448aa40449",
     "tests/boolean/bcut_complex/J7": "c5999beb34e7e8f6d73d2156f175450cb4e290188073b8b45f096b90618d9d71",
@@ -80,6 +81,7 @@
     "tests/boolean/bfuse_complex/B8": "f03dff4e47f31e336f56c9e787d86e9ec23d2aed30ba5face870fc39640fe257",
     "tests/boolean/bfuse_complex/B9": "9975e1ff75f0dbf1797b7c168f17624592405091958a831f0054ad90b0975983",
     "tests/boolean/bfuse_complex/C9": "dfa1020cfdc3ef866914fdd7d53a4cac7e20bd6668f752211ac7a156b6dff120",
+    "tests/boolean/bfuse_complex/E5": "86c0ba80faa05313919c57d0e357a8916b8ee0286dcb0366d26a0bf468e3ddf5",
     "tests/boolean/bfuse_complex/E9": "133d658567d1b24cbce3a6a5226b6094ed3104592f4c0d052c7ede14823a4158",
     "tests/boolean/bfuse_complex/F5": "d26376bc2c83399c04080088d93909d92db53989b193c847fc98110f585ea5c7",
     "tests/boolean/bfuse_complex/H4": "e416b187b848482b08a6571942f6ced6dc0081a878e10d41d889b7604132b74d",
@@ -1090,6 +1092,7 @@
     "tests/bugs/modalg_2/begin": "16a2a51b965d83e675a1c75b1aed0eb0de88905d9ffdc81d57466305d0cf9c8a",
     "tests/bugs/modalg_2/bug413_1": "238bf7e859fcc27d7c132eaac4c58a6caa6b368ede2fd7cd1cd26edd2037aae5",
     "tests/bugs/modalg_2/bug413_2": "ace36226762da66cf5bde3730d98f3456cb65ff70a2fce00cb3bda6283feaa77",
+    "tests/bugs/modalg_2/bug417": "0084cc68bb06583b96a4b00f2dbb6192426c7a78a558f942663a5af6214356e9",
     "tests/bugs/modalg_6/begin": "16a2a51b965d83e675a1c75b1aed0eb0de88905d9ffdc81d57466305d0cf9c8a",
     "tests/bugs/modalg_6/bug21427": "36bc85505fe46de0b983ef2562494e63012fc10f17d337054e2410fef829c7c2",
     "tests/bugs/modalg_6/bug27264_1": "ecc5bff3b3d2bea7a6c12b760198e7f669a147d0b94c285d5dc0727cf85eec5d",
@@ -8073,6 +8076,27 @@
       "expected_rust": "viewer_skipped",
       "expected_occt": "viewer_skipped",
       "purpose": "S9e.4b.4a: restored solids of the public dataset given to a Boolean, an imported prism whose arcs of two circles meet at a joint rounded off either, each such arc taken through its two ends: a box (CTO909_part_1) less a prism inside it whose profile of lines and fillets has arcs of radii 2 and 0.47 meeting tangent from either side (CTO909_tool_2), bcut; checkprops -s; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bfuse_complex/E5",
+      "data": true,
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9e.4b.4b.1: restored solids of the public dataset given to a Boolean, an imported body of several cylinder faces whose plane faces are all their primitives' ends as a Boolean chain of those primitives: a stepped shaft of two coaxial cylinders along x, the narrower from the wider one's ring to its own disc (CTO900_pro9476-part, one fuse), fused with a box whose face lies on the step's plane (CTO900_pro9476-tool), bfuse; checkprops -s; its checkview is recorded."
+    },
+    {
+      "path": "tests/boolean/bcut_complex/G9",
+      "data": true,
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9e.4b.4b.1: restored solids of the public dataset given to a Boolean, imported bodies of several sphere, cylinder and cone faces whose plane faces are all their primitives' ends as Boolean chains of those primitives: a frustum common a ball on its axis (cts21128c, a dome) less a rod from its base plane common the same ball (cts21128d, a pin, its rim on the dome's sphere split by two stored vertices), bcut; checkprops -s; its checkview is recorded."
+    },
+    {
+      "path": "tests/bugs/modalg_2/bug417",
+      "data": true,
+      "expected_rust": "viewer_skipped",
+      "expected_occt": "viewer_skipped",
+      "purpose": "S9e.4b.4b.1: restored solids of the public dataset given to a Boolean, imported bodies of several sphere, cylinder and cone faces whose plane faces are all their primitives' ends as Boolean chains of those primitives: G9's dome less its pin (cts21128c and cts21128d), bcut; checkshape of each input and of the result, checkprops -s; its checkview is recorded."
     }
   ],
   "derived_sources": {

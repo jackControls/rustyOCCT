@@ -168,15 +168,15 @@ group, and stale success records are removed before each run.
 | `boolean/bcut_simple/G8` | Unsupported | Viewer skipped | A semi-infinite prism of an exploded face (`explode`, `SemiInf`) |
 
 There are **five original geometry tests passing on both backends** and
-1,047 more evaluated on both with their image commands recorded
+1,050 more evaluated on both with their image commands recorded
 (`buc60769`, S7's `lowalgos/intss` cases `bug23177_1`, `bug23177_2` and
 `bug24648`, 987 Boolean cases of S9a, S9a.2, S9b.1, S9b.2, S9c.1, S9c.2a,
 S9c.2b.2, S9d.1, S9d.2, S9d.3a, S9d.1's pole follow-up, S9d.3b.1,
-S9d.4b.2a and S9e.2, and 56 Booleans of restored solids, 16 of S9e.4a, 7
+S9d.4b.2a and S9e.2, and 59 Booleans of restored solids, 16 of S9e.4a, 7
 of S9e.4b.1, 4 of S9e.4b.2, 14 of S9e.4b.3c.1, 13 of S9e.4b.3c.2, 1 of
-S9e.4b.3c.3a and 1 of S9e.4b.4a; S9c.2b.1, S9e.3a, S9f.1, S9e.3b, S9f.2a,
-S9f.2b.1, S9f.2b.2, S9f.3a, S9f.3b, S9e.4b.3a, S9e.4b.3b and S9e.4b.3c.3b
-add none).
+S9e.4b.3c.3a, 1 of S9e.4b.4a and 3 of S9e.4b.4b.1; S9c.2b.1, S9e.3a,
+S9f.1, S9e.3b, S9f.2a, S9f.2b.1, S9f.2b.2, S9f.3a, S9f.3b, S9e.4b.3a,
+S9e.4b.3b and S9e.4b.3c.3b add none).
 S8e registers the upstream `bsplit` group as capability sentinels: `boolean/splitter/A5`
 and `B5` and the 22 `bugs` cases that call `bsplit` (with `bug29333_1` and
 `bug29333_2`, registered before). They need S9's general builder: tools that
@@ -1813,6 +1813,54 @@ seconds a case) holds for every case, `P4` in 3.0 seconds on the Rust
 adapter, the slowest Boolean case 5.8 seconds (`bopcut_simple/ZK8`, on a
 host at load 10 to 45; `bopfuse_simple/ZK8` 4.4 in the last survey), the
 restore cases 0.2 to 5.1 (`bcommon_complex/B9`), the rollex 0.6 to 0.7.
+
+**S9e.4b.4b.1: the Boolean group and the restore cases.** Both sets were
+run again after S9e.4b.4b.1 (an imported body of several sphere, cylinder
+and cone faces whose plane faces are all their primitives' ends, as a
+Boolean chain of those primitives) (2026-10-06, at `c62470a3`, the public
+dataset, 120 seconds a case, four at once). The 1,802 self-contained
+cases of the Boolean group on both backends: every status, reason and
+error is the last survey's (`16121052`) field for field, 987 evaluating,
+every one registered, 592 refused, 223 unsupported on both; none fails or
+times out. The 1,814 restore cases on the Rust adapter, and the 171 the
+import reaches on native DRAW too: native DRAW's statuses and reasons are
+the last survey's, and on the Rust adapter only the 36 bodies the import
+refused as none of its constructions move, as the step's trial found.
+`bfuse_complex/E5` (a stepped shaft of two coaxial cylinders fused with a
+box on its step's plane), `bcut_complex/G9` and `bugs/modalg_2/bug417` (a
+dome, a frustum common a ball, less a pin, a rod common the same ball)
+evaluate on both backends with every check; `bugs/modalg_6/bug28773` is
+refused as two cylinders' axes within rounding of parallel (its tube a
+prism on a disc frame leaning 2.2e-33 off its walls), `bfuse_complex/K1`
+as S9e.4b.4b.2's (plane faces other than its primitives' ends); the other
+31 keep the general refusal under its new text ("an imported solid other
+than a prism, a sphere, a cone, a torus or a Boolean of its primitives"):
+`bugs/modalg_2/bug476_1` to `_8` and 23 cases of the `_2d` grids, a solid
+of several curved faces (`case_8_solid_repaired`) against wires. Of the
+171, 59 evaluate on both backends, 75 are refused by S9's rules, 31 are
+bodies none of the kernel's constructions, 1 is S9e.4b.4b.2's, 3 have
+spline faces (S9f) and 2 give the next Boolean several solids; native
+DRAW does not evaluate 24 of them. Four cases time out at their first
+restores, as in the last three surveys (`bugs/modalg_1/buc60531_1`, `_2`,
+`bugs/modalg_5/bug23849_1`, `_3`); at this survey's load (3 to 15) the
+reader's other slowest end within the 120 seconds (`buc60532_2` and
+`bugs/modalg_6/bug23585` in 97 and 94, `buc60532` and `buc60532_1` in
+114), unsupported as before.
+
+The volume audit (`vprops` and `sprops` before each `checkprops`, both
+backends, the 1,043 audited before and the three): both backends' values
+are the last audit's bit for bit on all 1,043, the statuses the same, and
+the same 35 disagreements remain, native off in each. E5's volume
+97,940,759.17, area 1,831,656.94 and centre agree with native DRAW's
+printed digits (9.79408e7, 1.83166e6), G9's and `bug417`'s volume
+8,941.5371 and area 2,814.0138 with native's (8941.54, 2814.01). The
+three are registered (`data`, `viewer_skipped` on both; 1,132 cases); the
+ledger does not change. A full contract run of the manifest (both
+backends, the dataset present, 30 seconds a case) holds for every case,
+E5, G9 and `bug417` in 0.7, 1.4 and 1.3 seconds on the Rust adapter, the
+slowest Boolean case 3.9 seconds (`bopfuse_simple/ZK8`, on a host at load
+4 to 15; `bopcut_simple/ZK8` 5.8 in the last survey), the restore cases
+0.1 to 3.3 (`bcommon_complex/B9`), the rollex 0.4.
 
 Three more `intss` cases run on the Rust adapter but are not registered,
 because the contract admits no failing status: `bug23178`, `bug28222_2` and

@@ -9199,12 +9199,65 @@ Decisions for S9, recorded before its code (2026-09-28):
     tori among its faces) keep the general refusal, under its new text.
     Open: S9e.4b.4b.2 (K1's rounded box less a cylinder: hulls with several
     primitives, prism leaves); `bug28773`'s tube would need S9e.4a's prisms
-    on their walls' axes. Pending: its DRAW survey and its capture's Linux
-    record. Campaigns at `d1869f2f` (600 s each, sampled replays, every
+    on their walls' axes. Pending: its capture's Linux record. DRAW survey:
+    below (E5, G9 and `bug417` registered; nothing else moving but the
+    general refusal's text). Campaigns at `d1869f2f` (600 s each, sampled replays, every
     switch on): `boolean` clean, 1,025 runs, the slowest input 19 s under
     AddressSanitizer (its startup replay 1,601 s; at `64673ebd` it overran
     the hour's budget at load 13 to 16, no input failing); `split` clean,
     1,972 runs, none slow.
+  * **DRAW survey of S9e.4b.4b.1 (2026-10-06, `UPSTREAM_TESTS.md`).** At
+    `c62470a3` (`s9c2-kernel` with S9e.4b.4b.1 and its campaigns' record;
+    the public dataset, 120 seconds a case, four at once, on a host at load
+    3 to 15). The 1,802 self-contained cases of the Boolean group on both
+    backends: every status, every refusal's reason and every error the last
+    survey's (`16121052`) field for field, 987 evaluating and registered,
+    592 refused, 223 unsupported on both, none failing or timing out. The
+    1,814 cases restoring a shape for a Boolean on the Rust adapter, and
+    the 171 the import reaches on native DRAW too: native DRAW's every
+    status and reason the last survey's; on the Rust adapter only the 36
+    bodies refused by `imported.rs`'s general refusal move, as S9e.4b.4b.1's
+    trial found: `bfuse_complex/E5` (the stepped shaft fused with a box on
+    its step's plane), `bcut_complex/G9` and `bugs/modalg_2/bug417` (the
+    dome less the pin) evaluate on both backends with every check;
+    `bugs/modalg_6/bug28773` is `Degenerate("two cylinders' axes within
+    rounding of parallel")`, `bfuse_complex/K1` `OutOfDomain("an imported
+    body of several primitives with plane faces other than their ends
+    (S9e.4b.4b.2)")`; the other 31 keep the general refusal under its new
+    text, `OutOfDomain("an imported solid other than a prism, a sphere, a
+    cone, a torus or a Boolean of its primitives (S9e.4b)")`:
+    `bugs/modalg_2/bug476_1` to `_8` (`OCC485a`, tori among its faces) and
+    23 cases of the `_2d` grids (`bcommon_2d/M6` to `N2`, `bcut_2d/N1` to
+    `N5`, `bopcommon_2d/M6` to `N2`, `boptuc_2d/M3` to `M8`: a solid of
+    several curved faces, `case_8_solid_repaired`, against wires, which the
+    trial did not name). Of the 171: 59 evaluate on both backends, 75 are
+    refused by S9's rules, 31 are bodies none of the kernel's constructions,
+    1 is S9e.4b.4b.2's, 3 spline bodies (S9f) and 2 arguments of several
+    solids; 24 are unsupported natively too. Four cases time out at their
+    first restores, as in the last three surveys
+    (`bugs/modalg_1/buc60531_1`, `_2`, `bugs/modalg_5/bug23849_1`, `_3`);
+    the reader's slowest besides end within the 120 s at this load:
+    `buc60532_2` and `bugs/modalg_6/bug23585`, which timed out at the last
+    survey's, in 97 and 94 s, `buc60532` and `buc60532_1` in 114 s,
+    unsupported as before (the reader takes no
+    `SurfaceOfLinearExtrusion`; `tolerance`). No case fails, crashes or
+    panics on either backend (the 276 restore cases `failed` on the Rust
+    adapter are the reader's validator rejecting their files, as before).
+    The volume audit (`vprops` and `sprops` before each `checkprops`, both
+    backends, the 1,043 audited before and the three): both backends'
+    values the last audit's bit for bit on all 1,043 (no moved value, the
+    largest relative move 0), the statuses the same, the same 35
+    disagreements. E5's volume 97,940,759.17, area 1,831,656.94 and centre
+    agree with native DRAW's printed digits (9.79408e7, 1.83166e6); G9's
+    and `bug417`'s volume 8,941.5371, area 2,814.0138 and centre with
+    native's (8941.54, 2814.01). They are registered (`data`,
+    `viewer_skipped` on both; 1,132 cases), and the ledger does not change
+    (`--ledger` holds). A full contract run of the manifest holds on both
+    backends with the dataset (30 seconds a case), E5, G9 and `bug417` in
+    0.7, 1.4 and 1.3 s on the Rust adapter, the slowest Boolean case 3.9 s
+    (`bopfuse_simple/ZK8`, on a host at load 4 to 15; `bopcut_simple/ZK8`
+    5.8 in the last survey), the restore cases 0.1 to 3.3 s
+    (`bcommon_complex/B9`), the rollex 0.4. No kernel change.
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces

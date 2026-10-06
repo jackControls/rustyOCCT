@@ -37,7 +37,9 @@ then for S9e.4b.3c.3b (branch `s9e4b3c3b`, over `s9c2-kernel` at `e8940c22`),
 then for S9e.4b.4a (branch `s9e4b4`, over `s9c2-kernel` at `699b9b85`),
 then for the DRAW survey of S9e.4b.3c.3b, S9e.4b.4a and the scheduled
 replay's fixes (branch `s9-draw-9`, over `s9c2-kernel` at `16121052`),
-then for S9e.4b.4b.1 (branch `s9e4b4b`, over `s9c2-kernel` at `64673ebd`).
+then for S9e.4b.4b.1 (branch `s9e4b4b`, over `s9c2-kernel` at `64673ebd`),
+then for the DRAW survey of S9e.4b.4b.1 (branch `s9-draw-10`, over
+`s9c2-kernel` at `c62470a3`).
 
 ## Where things stand
 
@@ -54,11 +56,10 @@ then for S9e.4b.4b.1 (branch `s9e4b4b`, over `s9c2-kernel` at `64673ebd`).
   arcs, and one solid of a result of several (S9e.2, `curved/matched.rs`),
   results of spheres, cones and tori, deeper chains and given results
   against spheres, cones and tori (S9e.3a, `curved/chain.rs`), each with its
-  DRAW survey (the last full survey, that of S9e.4b.3c.3b, S9e.4b.4a and
-  the scheduled replay's fixes at `16121052`, branch `s9-draw-9`: the
-  Boolean group's 987 cases and 56 restore cases registered, none failing
-  or timing out, both backends' audited values those of `b9c7ae1b`'s bit
-  for bit) and a clean campaign (S9e.3a's and S9f.1's at `b2765f20`, 989
+  DRAW survey (the last full survey, that of S9e.4b.4b.1 at `c62470a3`,
+  branch `s9-draw-10`: the Boolean group's 987 cases and 59 restore cases
+  registered, none failing or timing out, both backends' audited values
+  those of `16121052`'s bit for bit) and a clean campaign (S9e.3a's and S9f.1's at `b2765f20`, 989
   runs).
 - **S9f.1 done.** Spline prisms against polyhedral prisms in any position
   (`curved/spline_walls.rs`), with its survey and campaign as above.
@@ -435,7 +436,9 @@ then for S9e.4b.4b.1 (branch `s9e4b4b`, over `s9c2-kernel` at `64673ebd`).
    cases and `bcut_complex/G4` registered), that of S9e.4b.3c.3b, S9e.4b.4a
    and the scheduled replay's fixes at `16121052` (branch `s9-draw-9`:
    `bcut_complex/P4` registered, the parallel cylinders' rule moving no
-   registered case).
+   registered case), that of S9e.4b.4b.1 at `c62470a3` (branch
+   `s9-draw-10`: `bfuse_complex/E5`, `bcut_complex/G9` and
+   `bugs/modalg_2/bug417` registered, 1,132 cases).
 3. **S9e.4b**, split in "S9e.4b refined": S9e.4b.1 (arcs rounded off
    their circles) and S9e.4b.2 (polyhedra other than prisms, on their
    stored vertices) are implemented with their DRAW surveys and
@@ -483,8 +486,10 @@ then for S9e.4b.4b.1 (branch `s9e4b4b`, over `s9c2-kernel` at `64673ebd`).
    one frame: `bfuse_complex/E5`'s stepped shaft and `bcut_complex/G9`'s
    and `bug417`'s dome and pin on one ball evaluating in its trial,
    `bug28773` refused by S9's rule, its tube's disc frame leaning 2.2e-33
-   off its walls) is implemented (campaigns clean at `d1869f2f`: `boolean`
-   1,025 runs, `split` 1,972; pending its DRAW survey and its capture's
+   off its walls) is implemented with its DRAW survey (`s9-draw-10` at
+   `c62470a3`: E5, G9 and `bug417` registered, 1,132 cases; nothing else
+   moving but the general refusal's text) and clean campaigns at
+   `d1869f2f` (`boolean` 1,025 runs, `split` 1,972; pending its capture's
    Linux record); next **S9e.4b.4b.2** (such bodies with
    other plane faces, and prisms among the leaves: `K1`'s rounded box less
    a cylinder), then
