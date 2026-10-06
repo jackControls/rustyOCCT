@@ -552,8 +552,9 @@ then for S9e.4b.4b.2b.1 (branch `s9e4b4b2b`, over `s9c2-kernel` at `298fcf3a`).
    **S9e.4b.4b.2b**, split in "S9e.4b.4b.2b refined": **S9e.4b.4b.2b.1**
    (other plane faces as a primitive's flat, a prism of one cap or a pocket
    with its teeth: the fuzz target's 3 such first results importing, no DRAW
-   case moving in its trial) is implemented (pending its DRAW survey, its
-   capture's Linux record and its campaigns); next **S9e.4b.4b.2b.2** (a hull
+   case moving in its trial) is implemented (campaigns clean at
+   `c3ce4d42`; pending its DRAW survey and its capture's Linux record);
+   next **S9e.4b.4b.2b.2** (a hull
    across several parts, a polyhedral boss, a prism cut at both caps' rims,
    mixed pockets and components, two leaves of two caps each; the kernel's
    own fused stack of prisms given to a Boolean, refused as an edge of one

@@ -9891,7 +9891,10 @@ Decisions for S9, recorded before its code (2026-09-28):
     S9e.4b.4b.2b.2 (hulls across several parts, polyhedral bosses, the
     notch's prism cut at both caps' rims, mixed pockets and components, two
     leaves of two caps each); the kernel's own stack given to a Boolean (c).
-    Pending: its DRAW survey, its capture's Linux record and its campaigns.
+    Pending: its DRAW survey (its trial moves no case) and its capture's
+    Linux record. Campaigns at `c3ce4d42` (600 s each, sampled replays,
+    every switch on): `boolean` clean, 930 runs, the slowest input 24 s
+    under AddressSanitizer; `split` clean, 1,519 runs, none slow.
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces
