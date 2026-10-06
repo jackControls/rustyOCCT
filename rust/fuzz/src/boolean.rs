@@ -72,7 +72,8 @@
 //! (a plane piece, its primitive common its planes' half-spaces).
 //! S9e.4b.4b.1: one of several sphere, cylinder and cone faces too (a
 //! Boolean chain of their primitives; S9e.4b.4b.2a: one led by a prism leaf,
-//! its walls' arcs tangent to its lines or not).
+//! its walls' arcs tangent to its lines or not; S9e.4b.4b.2b.1: one with
+//! other plane faces, a primitive's flat, a prism of one cap or a pocket).
 //! S9e.4b.4a: a lens prism in the object's frame given the chosen operation
 //! with the tool, and again once written, read back and imported, its arcs
 //! of two circles taken through their ends where their joints round off
