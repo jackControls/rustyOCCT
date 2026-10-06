@@ -8743,6 +8743,83 @@ Decisions for S9, recorded before its code (2026-09-28):
     1e-10 and 1e-12 by a diagnostic build), in
     `occt-boolean-imported-joints-divergences.json`; 5 results' counts change
     when unified. S9e.4b.4a's kernel next.
+  * **S9e.4b.4a implemented** (`solid/boolean/curved/snapped.rs`'s `path`,
+    `model.rs` taking each arc's circle from it, `meet.rs`'s `cyl_pair`), as
+    the refined decisions describe: an arc of an imported prism ending at a
+    joint where arcs of two circles meet off either, whose circle no other arc
+    of its path shares, is taken through its two ends in the exact model (its
+    centre `a + rho e` from its start, `e` the rational unit vector nearest
+    the stored centre's direction by its half-angle tangent rounded once, `rho
+    = |b - a|^2 / (2 (b - a) . e)` exactly), the joint its rounded point or a
+    kept circle's, the circle within the resolution of the stored one. All 39
+    fixtures as declared (33 within the kernel's enclosures, each at most
+    `1e-9` wide; `quad_seat`'s 3 refused as `Degenerate("two cylinders within
+    the resolution of one cylinder")`; the split lens's 3 `OutOfDomain` as
+    S9e.4b.4's), every history complete over the imported bodies' stored ids,
+    results deterministic and moved rigidly, both inputs translated (and
+    turned where no face of one input is exactly parallel to the other's
+    cylinder) keeping the reference's volumes, every body its construction
+    (its closed-form volume, points classified, its stored vertices on its
+    boundary), and the kernel's own prisms whose arcs of two circles meet at
+    rational points in turned frames (four discs' common, a lens in the tilted
+    frame, an S curve of two arcs touching from either side, an arc tangent
+    inside another) written by its writer, read back and imported, each
+    Boolean with a box and a rod its own result's volume
+    (`tests/imported_joint_booleans.rs`, 10.9 s at `opt-level` 2 with debug
+    assertions and 9.8 s in release on a host at load 23 to 29, 7.3 s in
+    release with debug assertions under the emulated correctly rounded
+    `hypot`, where S9e.4b.1's and S9e.4a's test files pass too). S9e.4b.1's
+    `lens` cases are solid, declared so (its generator's group, its tests).
+    `compare_imported_joints_boolean.py` 36 matches and 3 reviewed (the native
+    measures and, with the kernel, entity counts: a ball's meetings and sphere
+    face split at the kernel's own points and at OCCT's), every enclosure
+    within the reference; `compare_imported_arcs_boolean.py` 27 and 9, the
+    kernel within the reference on all 30 solid cases; every other comparison
+    of `HANDOFF.md`'s table unchanged with 0 failures (and `compare_split.py`
+    72/56, `compare_brep.py --family spline` 10/3, `compare_brep_io.py`
+    6,835/7, `compare_step.py` 23/6 on STEP-b's SDK); the release suite (640
+    tests) and the tools' unit tests (350) passing, the ledger unchanged.
+    Amendments, from the implementation: (a) the refined decisions' (3)
+    expected the arrangement to refuse a partner's cylinder on an arc's stored
+    circle, but the curved engine had no rule for it (S9a's one frame refuses
+    two boundaries within the resolution, S9e.4b.3c.1 two spheres within the
+    resolution of one): two parallel circular cylinders within the resolution
+    of one and not one, their faces' boxes meeting, are now `Degenerate("two
+    cylinders within the resolution of one cylinder")` (`cyl_pair`), refusing
+    `quad_seat` and DRAW's `D5` where a sliver between the walls or the
+    validator's undecided winding was left; no case of the comparisons, the
+    suite or the replays moves with it; (b) `onto` keeps S9e.4b.1's points bit
+    for bit, its rational unit vector now `unit`'s, shared with `through`.
+    Open: where a partner holds an arc's stored circle exactly (`E8`'s and
+    `D5`'s tools, on the world's axes), keeping that circle and taking the
+    other arc at each of its joints through its ends would decide the two
+    walls on one surface; the choice needs the partner in the prism's model,
+    left open (the trial's three such cases refused by (a)). The `boolean`
+    fuzz target's `JOINTS` stage (a lens of two arcs of circles about `(+-3k,
+    0)` of radius `5k` in the object's frame, by the chained byte's next bit,
+    given the chosen operation, then written, read back, imported and given it
+    again): replaying the corpus and the regressions with debug assertions
+    (1,468 inputs), 480 reach it, 298 evaluate both ways with equal volumes
+    (96 in the tilted frame, where the joints round off both circles once read
+    back), the others refused by S9's rules on one side or both (most of them
+    the reimported frames, normalized again, within rounding of the tool's
+    directions); no failure, the slowest input 10.9 s, and under the emulated
+    `hypot` 15.3 s on a host at load 20 to 29; the split corpus and its
+    regressions (3,571 inputs) clean natively and emulated, the slowest 3.3 s
+    and 1.6 s. A trial of the DRAW survey's 171 restore cases the import
+    reaches, on the Rust adapter and natively (not the survey: nothing
+    registered): only the 6 of two circles at a joint move, each from "an
+    imported prism's arcs of two circles meeting at a joint (S9e.4b.4)":
+    `bcut_complex/P4` (a fillet chain's tool, arcs touching from either side,
+    inside its box) evaluates on both backends with every check;
+    `bcut_complex/E8` and `bfuse_complex/D5` (the four discs' part against a
+    cylinder on one of its circles below it) and `E1` are refused as two
+    cylinders within the resolution of one cylinder (each tool on a stored
+    circle of the part's arcs taken through their ends; `E1`'s tangency
+    besides), `bugs/modalg_2/bug4993_1` and `_2` as two faces within the
+    resolution of one plane; native DRAW's statuses as before. Of the 171, 56
+    evaluate on both backends. Pending: the capture's Linux record, the DRAW
+    survey and the campaigns.
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces
