@@ -1,0 +1,273 @@
+case quad_box_fuse
+brep imported/quad.brep
+boolean fuse
+plane 0.0 0.0 1.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire P 4 6.0 6.0 1.0 12.0 6.0 1.0 12.0 12.0 1.0 6.0 12.0 1.0
+prism 0.0 0.0 1.5
+end
+case quad_box_cut
+brep imported/quad.brep
+boolean cut
+plane 0.0 0.0 1.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire P 4 6.0 6.0 1.0 12.0 6.0 1.0 12.0 12.0 1.0 6.0 12.0 1.0
+prism 0.0 0.0 1.5
+end
+case quad_box_common
+brep imported/quad.brep
+boolean common
+plane 0.0 0.0 1.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire P 4 6.0 6.0 1.0 12.0 6.0 1.0 12.0 12.0 1.0 6.0 12.0 1.0
+prism 0.0 0.0 1.5
+end
+case box_quad_fuse
+plane 0.0 0.0 1.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire P 4 6.0 6.0 1.0 12.0 6.0 1.0 12.0 12.0 1.0 6.0 12.0 1.0
+prism 0.0 0.0 1.5
+boolean fuse
+brep imported/quad.brep
+end
+case box_quad_cut
+plane 0.0 0.0 1.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire P 4 6.0 6.0 1.0 12.0 6.0 1.0 12.0 12.0 1.0 6.0 12.0 1.0
+prism 0.0 0.0 1.5
+boolean cut
+brep imported/quad.brep
+end
+case box_quad_common
+plane 0.0 0.0 1.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire P 4 6.0 6.0 1.0 12.0 6.0 1.0 12.0 12.0 1.0 6.0 12.0 1.0
+prism 0.0 0.0 1.5
+boolean common
+brep imported/quad.brep
+end
+case quad_rod_fuse
+brep imported/quad.brep
+boolean fuse
+plane 0.0 0.0 -3.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire C 8.5 4.75 -3.0 1.0
+prism 0.0 0.0 11.0
+end
+case quad_rod_cut
+brep imported/quad.brep
+boolean cut
+plane 0.0 0.0 -3.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire C 8.5 4.75 -3.0 1.0
+prism 0.0 0.0 11.0
+end
+case quad_rod_common
+brep imported/quad.brep
+boolean common
+plane 0.0 0.0 -3.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire C 8.5 4.75 -3.0 1.0
+prism 0.0 0.0 11.0
+end
+case quad_ball_fuse
+brep imported/quad.brep
+boolean fuse
+sphere 6.375 8.625 2.0 0.0 0.0 1.0 1.0 0.0 0.0 1.5 -1.5707963267948966 1.5707963267948966
+end
+case quad_ball_cut
+brep imported/quad.brep
+boolean cut
+sphere 6.375 8.625 2.0 0.0 0.0 1.0 1.0 0.0 0.0 1.5 -1.5707963267948966 1.5707963267948966
+end
+case quad_ball_common
+brep imported/quad.brep
+boolean common
+sphere 6.375 8.625 2.0 0.0 0.0 1.0 1.0 0.0 0.0 1.5 -1.5707963267948966 1.5707963267948966
+end
+case arch_box_fuse
+brep imported/arch.brep
+boolean fuse
+plane 0.0 0.0 0.5 0.0 0.0 1.0 1.0 0.0 0.0
+wire P 4 2.0 5.5 0.5 4.0 5.5 0.5 4.0 7.5 0.5 2.0 7.5 0.5
+prism 0.0 0.0 1.0
+end
+case arch_box_cut
+brep imported/arch.brep
+boolean cut
+plane 0.0 0.0 0.5 0.0 0.0 1.0 1.0 0.0 0.0
+wire P 4 2.0 5.5 0.5 4.0 5.5 0.5 4.0 7.5 0.5 2.0 7.5 0.5
+prism 0.0 0.0 1.0
+end
+case arch_box_common
+brep imported/arch.brep
+boolean common
+plane 0.0 0.0 0.5 0.0 0.0 1.0 1.0 0.0 0.0
+wire P 4 2.0 5.5 0.5 4.0 5.5 0.5 4.0 7.5 0.5 2.0 7.5 0.5
+prism 0.0 0.0 1.0
+end
+case arch_slab_fuse
+brep imported/arch.brep
+boolean fuse
+plane 0.0 0.0 2.25 0.0 0.6 0.8 1.0 -0.0 0.0
+wire P 4 -2.0 -12.0 11.25 12.0 -12.0 11.25 12.0 12.0 -6.75 -2.0 12.0 -6.75
+prism 0.0 0.6 0.8
+end
+case arch_slab_cut
+brep imported/arch.brep
+boolean cut
+plane 0.0 0.0 2.25 0.0 0.6 0.8 1.0 -0.0 0.0
+wire P 4 -2.0 -12.0 11.25 12.0 -12.0 11.25 12.0 12.0 -6.75 -2.0 12.0 -6.75
+prism 0.0 0.6 0.8
+end
+case arch_slab_common
+brep imported/arch.brep
+boolean common
+plane 0.0 0.0 2.25 0.0 0.6 0.8 1.0 -0.0 0.0
+wire P 4 -2.0 -12.0 11.25 12.0 -12.0 11.25 12.0 12.0 -6.75 -2.0 12.0 -6.75
+prism 0.0 0.6 0.8
+end
+case cam_box_fuse
+brep imported/cam.brep
+boolean fuse
+plane 0.0 0.0 1.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire P 4 8.5 5.5 1.0 12.0 5.5 1.0 12.0 9.0 1.0 8.5 9.0 1.0
+prism 0.0 0.0 1.0
+end
+case cam_box_cut
+brep imported/cam.brep
+boolean cut
+plane 0.0 0.0 1.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire P 4 8.5 5.5 1.0 12.0 5.5 1.0 12.0 9.0 1.0 8.5 9.0 1.0
+prism 0.0 0.0 1.0
+end
+case cam_box_common
+brep imported/cam.brep
+boolean common
+plane 0.0 0.0 1.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire P 4 8.5 5.5 1.0 12.0 5.5 1.0 12.0 9.0 1.0 8.5 9.0 1.0
+prism 0.0 0.0 1.0
+end
+case cam_rod_fuse
+brep imported/cam.brep
+boolean fuse
+plane 0.0 0.0 -2.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire C 7.875 8.375 -2.0 0.5
+prism 0.0 0.0 7.0
+end
+case cam_rod_cut
+brep imported/cam.brep
+boolean cut
+plane 0.0 0.0 -2.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire C 7.875 8.375 -2.0 0.5
+prism 0.0 0.0 7.0
+end
+case cam_rod_common
+brep imported/cam.brep
+boolean common
+plane 0.0 0.0 -2.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire C 7.875 8.375 -2.0 0.5
+prism 0.0 0.0 7.0
+end
+case blade_box_fuse
+brep imported/blade.brep
+boolean fuse
+plane 0.0 0.0 1.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire P 4 7.5 8.0 1.0 10.0 8.0 1.0 10.0 10.5 1.0 7.5 10.5 1.0
+prism 0.0 0.0 1.0
+end
+case blade_box_cut
+brep imported/blade.brep
+boolean cut
+plane 0.0 0.0 1.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire P 4 7.5 8.0 1.0 10.0 8.0 1.0 10.0 10.5 1.0 7.5 10.5 1.0
+prism 0.0 0.0 1.0
+end
+case blade_box_common
+brep imported/blade.brep
+boolean common
+plane 0.0 0.0 1.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire P 4 7.5 8.0 1.0 10.0 8.0 1.0 10.0 10.5 1.0 7.5 10.5 1.0
+prism 0.0 0.0 1.0
+end
+case both_fuse
+brep imported/quad.brep
+boolean fuse
+brep imported/arch.brep
+end
+case both_cut
+brep imported/quad.brep
+boolean cut
+brep imported/arch.brep
+end
+case both_common
+brep imported/quad.brep
+boolean common
+brep imported/arch.brep
+end
+case chain_quad_fuse
+brep imported/quad.brep
+boolean cut
+plane 0.0 0.0 -3.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire C 8.5 4.75 -3.0 1.0
+prism 0.0 0.0 11.0
+then fuse
+plane 0.0 0.0 1.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire P 4 6.0 6.0 1.0 12.0 6.0 1.0 12.0 12.0 1.0 6.0 12.0 1.0
+prism 0.0 0.0 1.5
+end
+case chain_quad_cut
+brep imported/quad.brep
+boolean cut
+plane 0.0 0.0 -3.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire C 8.5 4.75 -3.0 1.0
+prism 0.0 0.0 11.0
+then cut
+plane 0.0 0.0 1.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire P 4 6.0 6.0 1.0 12.0 6.0 1.0 12.0 12.0 1.0 6.0 12.0 1.0
+prism 0.0 0.0 1.5
+end
+case chain_quad_common
+brep imported/quad.brep
+boolean cut
+plane 0.0 0.0 -3.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire C 8.5 4.75 -3.0 1.0
+prism 0.0 0.0 11.0
+then common
+plane 0.0 0.0 1.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire P 4 6.0 6.0 1.0 12.0 6.0 1.0 12.0 12.0 1.0 6.0 12.0 1.0
+prism 0.0 0.0 1.5
+end
+case quad_seat_fuse
+brep imported/quad.brep
+boolean fuse
+plane 5.0 5.0 -3.0 0.0 0.0 1.0 0.9230769230769231 0.38461538461538464 -0.0
+wire C 4.076923076923077 4.615384615384615 -3.0 5.0
+prism 0.0 0.0 3.0
+end
+case quad_seat_cut
+brep imported/quad.brep
+boolean cut
+plane 5.0 5.0 -3.0 0.0 0.0 1.0 0.9230769230769231 0.38461538461538464 -0.0
+wire C 4.076923076923077 4.615384615384615 -3.0 5.0
+prism 0.0 0.0 3.0
+end
+case quad_seat_common
+brep imported/quad.brep
+boolean common
+plane 5.0 5.0 -3.0 0.0 0.0 1.0 0.9230769230769231 0.38461538461538464 -0.0
+wire C 4.076923076923077 4.615384615384615 -3.0 5.0
+prism 0.0 0.0 3.0
+end
+case split_lens_box_fuse
+brep imported/split_lens.brep
+boolean fuse
+plane 0.0 0.0 1.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire P 4 4.0 -2.0 1.0 6.0 -2.0 1.0 6.0 12.0 1.0 4.0 12.0 1.0
+prism 0.0 0.0 1.5
+end
+case split_lens_box_cut
+brep imported/split_lens.brep
+boolean cut
+plane 0.0 0.0 1.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire P 4 4.0 -2.0 1.0 6.0 -2.0 1.0 6.0 12.0 1.0 4.0 12.0 1.0
+prism 0.0 0.0 1.5
+end
+case split_lens_box_common
+brep imported/split_lens.brep
+boolean common
+plane 0.0 0.0 1.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire P 4 4.0 -2.0 1.0 6.0 -2.0 1.0 6.0 12.0 1.0 4.0 12.0 1.0
+prism 0.0 0.0 1.5
+end

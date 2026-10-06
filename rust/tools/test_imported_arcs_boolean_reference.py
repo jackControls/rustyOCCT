@@ -109,7 +109,8 @@ class ImportedArcsReferenceTests(unittest.TestCase):
         fixtures.validate(listed)
         self.assertEqual(len(listed), 36)
         kinds = {k: sum(1 for c in listed if c.kind == k) for k in ('solid', 'empty', 'degenerate', 'unsupported')}
-        self.assertEqual(kinds, {'solid': 27, 'empty': 0, 'degenerate': 6, 'unsupported': 3})
+        # The lens's 3 solid since S9e.4b.4a.
+        self.assertEqual(kinds, {'solid': 30, 'empty': 0, 'degenerate': 6, 'unsupported': 0})
         for klass in fixtures.CLASSES:
             self.assertTrue(any(c.klass == klass for c in listed), klass)
         for name in ('slot_box_fuse', 'box_slot_cut', 'both_common', 'chain_slot_cut'):

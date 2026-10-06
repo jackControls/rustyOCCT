@@ -33,7 +33,8 @@ then for S9e.4b.3c.2 (branch `s9e4b3c2`, over `s9c2-kernel` at `f4b584f7`),
 then for S9e.4b.3c.3a (branch `s9e4b3c3`, over `s9c2-kernel` at `8a55a3e6`),
 then for the DRAW survey of S9e.4b.3c.2 and S9e.4b.3c.3a (branch
 `s9-draw-8`, over `s9c2-kernel` at `b9c7ae1b`),
-then for S9e.4b.3c.3b (branch `s9e4b3c3b`, over `s9c2-kernel` at `e8940c22`).
+then for S9e.4b.3c.3b (branch `s9e4b3c3b`, over `s9c2-kernel` at `e8940c22`),
+then for S9e.4b.4a (branch `s9e4b4`, over `s9c2-kernel` at `699b9b85`).
 
 ## Where things stand
 
@@ -355,6 +356,33 @@ then for S9e.4b.3c.3b (branch `s9e4b3c3b`, over `s9c2-kernel` at `e8940c22`).
   results). A trial of the survey's 171 restore cases the import reaches,
   on both backends: no case moves (55 evaluate on both, S9e.4b.3c.2's and
   S9e.4b.3c.3a's as their trials found; none is refused as S9e.4b.3c's).
+- **S9e.4b.4a implemented** (branch `s9e4b4`): an imported prism whose arcs of
+  two circles meet at a joint rounded off either (four discs' common,
+  fillet chains, an arc tangent inside another, circles crossing at a small
+  angle), each such arc whose circle no other arc of its path shares taken
+  through its two ends in the exact model: its circle through both, of
+  centre `a + rho e` from its start (`e` the rational unit vector nearest
+  the stored centre's direction) and rational radius `rho = |b - a|^2 / (2
+  (b - a) . e)`, within the resolution of the stored circle, the joint its
+  rounded point (`curved/snapped.rs`); two parallel circular cylinders
+  within the resolution of one and not one `Degenerate`, as S9a's
+  boundaries in one frame (`curved/meet.rs`). Decisions ("S9e.4b.4
+  refined", with the split S9e.4b.4a to S9e.4b.4d), 39 cases on 5 bodies
+  OCCT wrote (`generate_imported_joints_boolean_fixtures.py`, the chained
+  reference with each body's closed form) captured before the kernel (36
+  matching, 3 reviewed), the kernel within the reference on all 33 solid
+  cases, the rod on a stored circle refused, the split lens's 3 S9e.4b.4's;
+  S9e.4b.1's lens cases solid. The fuzz target's `JOINTS` stage gives a
+  lens in the object's frame the chosen operation again once written, read
+  back and imported (298 of the 480 reaching it evaluating both ways in the
+  replay). A trial of the survey's 171 restore cases, on both backends:
+  `bcut_complex/P4` evaluates, `E8`, `D5` and `E1` are refused as two
+  cylinders within the resolution of one cylinder (each tool on a stored
+  circle of the part's arcs), `bug4993_1` and `_2` as two faces within the
+  resolution of one plane; nothing else moves (56 evaluate on both).
+  Open: keeping a circle a partner holds exactly (`E8`'s, `D5`'s tools)
+  instead of taking its arc through its ends needs the partner in the
+  prism's model.
 - **CI.** Both workflows ("Rust kernel", "Rust geometry fuzzing") were green
   at `6c221525`. They had been red from S7 until 2026-09-29, unnoticed;
   check them after every push (see "Working rules").
@@ -424,12 +452,20 @@ then for S9e.4b.3c.3b (branch `s9e4b3c3b`, over `s9c2-kernel` at `e8940c22`).
    its planes, a primitive bitten twice, a sphere's disc or a cylinder's
    flat or oblique end with another form; the fuzz target's 4 refusals
    importing) is implemented (campaigns clean at `699b9b85`; pending its
-   capture's Linux record and the DRAW survey); then
-   **S9e.4b.4**, the S9e text's plan in full
-   (joints of two circles, prisms with walls of two directions, bodies of
-   several curved surfaces: 21 cases; a body of one curved face needing a
-   deeper tree, a pocket within a pocket; an imported polyhedron against
-   curved faces, or with a cavity). The reader's header check refuses
+   capture's Linux record and the DRAW survey); then **S9e.4b.4**, the
+   S9e text's plan in full, split in "S9e.4b.4 refined": **S9e.4b.4a** (an imported prism's
+   arcs of two circles meeting at a joint, each taken through its ends:
+   the 6 restore cases of two circles at a joint) is implemented (pending
+   its capture's Linux record, the DRAW survey and the campaigns); next
+   **S9e.4b.4b** (bodies of several primitives' curved faces as trees with
+   a leaf per primitive: `bfuse_complex/E5`'s and `bug28773`'s stepped
+   shafts, `K1`'s rounded box with a boss along another axis,
+   `bcut_complex/G9`'s and `bug417`'s dome and pin on one sphere), then
+   **S9e.4b.4c** (deeper trees, a pocket within a pocket; an imported
+   polyhedron against curved faces or with a cavity) and **S9e.4b.4d**
+   (turned bodies of smooth joins and nearly degenerate surfaces,
+   `bug476_1` to `_8`'s `OCC485a`: refused until a decision of their
+   own). The reader's header check refuses
    OCCT 8.1's version-3 `.brep` (`(c) Open Cascade`; 27 dataset files,
    none among the surveyed restore cases): widening it needs a survey of
    the restores it opens.
@@ -542,7 +578,7 @@ Each comparison takes `--occt-root target/spline-linear-preflight/pinned-sdk/ins
 | `compare_spline_crossing_boolean.py` | 14 / 37 (the kernel within the reference on all 45 results, the 6 degenerate refused, none `unsupported`) |
 | `compare_given_met_boolean.py` | 8 / 42 (the kernel within the reference on all 42 solid cases, the 8 degenerate refused) |
 | `compare_imported_boolean.py` | 54 / 15 (the kernel within the reference on all 57 solid cases, the 12 degenerate refused: since S9e.4b.1 the 3 turned profiles' corner on the box's) |
-| `compare_imported_arcs_boolean.py` | 27 / 9 (the kernel within the reference on all 27 solid cases, the 6 degenerate refused, the 3 lens cases `unsupported`, S9e.4b.4's) |
+| `compare_imported_arcs_boolean.py` | 27 / 9 (the kernel within the reference on all 30 solid cases, the 6 degenerate refused; the lens's 3 solid since S9e.4b.4a) |
 | `compare_spline_sphere_boolean.py` | 4 / 29 (the kernel within the reference on all 27 results, the 6 degenerate refused, none `unsupported`) |
 | `compare_imported_polyhedra_boolean.py` | 47 / 1 (the kernel within the reference on all 44 solid and empty cases, the flush fuse refused, the cavity `unsupported`, S9e.4b.4's) |
 | `compare_spline_cone_boolean.py` | 4 / 23 (the kernel within the reference on all 21 results, the 6 degenerate refused, none `unsupported`) |
@@ -552,6 +588,7 @@ Each comparison takes `--occt-root target/spline-linear-preflight/pinned-sdk/ins
 | `compare_one_sphere_incidence_boolean.py` | 42 / 3 (the kernel within the reference on all 33 solid and empty cases, the 12 degenerate refused) |
 | `compare_piece_forms_boolean.py` | 20 / 19 (the kernel within the reference on all 33 solid cases, the 6 degenerate refused) |
 | `compare_piece_trees_boolean.py` | 22 / 8 (the kernel within the reference on all 24 solid cases, the 3 degenerate refused, the tooth's 3 `unsupported`, S9e.4b.4's) |
+| `compare_imported_joints_boolean.py` | 36 / 3 (the kernel within the reference on all 33 solid cases, the 3 degenerate refused, the split lens's 3 `unsupported`, S9e.4b.4's) |
 
 Every one must report 0 failures; since S9f.1 also `compare_split.py`
 (72 / 56) and `compare_brep.py --family spline` (10 / 3), which share its

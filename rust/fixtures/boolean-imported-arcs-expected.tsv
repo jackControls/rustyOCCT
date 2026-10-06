@@ -71,12 +71,9 @@ slot_kiss_cut	result 1 182.8318530717958607095702 195.9645943005142087614755 5.0
 slot_kiss_common	expect degenerate S9e.4b.1 prism
 slot_kiss_common	reason a box's wall touching the imported slot's arc wall along a generatrix
 slot_kiss_common	empty
-lens_box_fuse	expect unsupported S9e.4b.1 prism
-lens_box_fuse	reason S9e.4b.4: the imported prism's arcs of two circles meeting at a joint
+lens_box_fuse	expect solid S9e.4b.1 prism
 lens_box_fuse	result 1 115.1557135341447307419497 178.3776894870780421412625 5.0 3.729447088833271182513136 2.332639633250570550173949
-lens_box_cut	expect unsupported S9e.4b.1 prism
-lens_box_cut	reason S9e.4b.4: the imported prism's arcs of two circles meeting at a joint
+lens_box_cut	expect solid S9e.4b.1 prism
 lens_box_cut	result 1 73.15571353414473074194968 149.1108495364115868137097 5.0 3.0 2.667143439096199008497296
-lens_box_common	expect unsupported S9e.4b.1 prism
-lens_box_common	reason S9e.4b.4: the imported prism's arcs of two circles meeting at a joint
+lens_box_common	expect solid S9e.4b.1 prism
 lens_box_common	result 1 16.30333006617773510378057 44.53544975321217740300326 5.0 3.0 1.75

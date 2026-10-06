@@ -1,0 +1,357 @@
+case quad_box_fuse 1e-07
+op 91
+brep imported/quad.brep
+boolean fuse 93
+op 92
+frame 0.0 0.0 1.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 1.5
+boundary P 4 6.0 6.0 12.0 6.0 12.0 12.0 6.0 12.0
+end
+case quad_box_cut 1e-07
+op 91
+brep imported/quad.brep
+boolean cut 93
+op 92
+frame 0.0 0.0 1.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 1.5
+boundary P 4 6.0 6.0 12.0 6.0 12.0 12.0 6.0 12.0
+end
+case quad_box_common 1e-07
+op 91
+brep imported/quad.brep
+boolean common 93
+op 92
+frame 0.0 0.0 1.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 1.5
+boundary P 4 6.0 6.0 12.0 6.0 12.0 12.0 6.0 12.0
+end
+case box_quad_fuse 1e-07
+op 91
+frame 0.0 0.0 1.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 1.5
+boundary P 4 6.0 6.0 12.0 6.0 12.0 12.0 6.0 12.0
+boolean fuse 93
+op 92
+brep imported/quad.brep
+end
+case box_quad_cut 1e-07
+op 91
+frame 0.0 0.0 1.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 1.5
+boundary P 4 6.0 6.0 12.0 6.0 12.0 12.0 6.0 12.0
+boolean cut 93
+op 92
+brep imported/quad.brep
+end
+case box_quad_common 1e-07
+op 91
+frame 0.0 0.0 1.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 1.5
+boundary P 4 6.0 6.0 12.0 6.0 12.0 12.0 6.0 12.0
+boolean common 93
+op 92
+brep imported/quad.brep
+end
+case quad_rod_fuse 1e-07
+op 91
+brep imported/quad.brep
+boolean fuse 93
+op 92
+frame 0.0 0.0 -3.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 11.0
+boundary C 8.5 4.75 1.0
+end
+case quad_rod_cut 1e-07
+op 91
+brep imported/quad.brep
+boolean cut 93
+op 92
+frame 0.0 0.0 -3.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 11.0
+boundary C 8.5 4.75 1.0
+end
+case quad_rod_common 1e-07
+op 91
+brep imported/quad.brep
+boolean common 93
+op 92
+frame 0.0 0.0 -3.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 11.0
+boundary C 8.5 4.75 1.0
+end
+case quad_ball_fuse 1e-07
+op 91
+brep imported/quad.brep
+boolean fuse 93
+op 92
+frame 6.375 8.625 2.0 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 1.5 -1.5707963267948966 1.5707963267948966
+end
+case quad_ball_cut 1e-07
+op 91
+brep imported/quad.brep
+boolean cut 93
+op 92
+frame 6.375 8.625 2.0 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 1.5 -1.5707963267948966 1.5707963267948966
+end
+case quad_ball_common 1e-07
+op 91
+brep imported/quad.brep
+boolean common 93
+op 92
+frame 6.375 8.625 2.0 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 1.5 -1.5707963267948966 1.5707963267948966
+end
+case arch_box_fuse 1e-07
+op 91
+brep imported/arch.brep
+boolean fuse 93
+op 92
+frame 0.0 0.0 0.5 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 1.0
+boundary P 4 2.0 5.5 4.0 5.5 4.0 7.5 2.0 7.5
+end
+case arch_box_cut 1e-07
+op 91
+brep imported/arch.brep
+boolean cut 93
+op 92
+frame 0.0 0.0 0.5 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 1.0
+boundary P 4 2.0 5.5 4.0 5.5 4.0 7.5 2.0 7.5
+end
+case arch_box_common 1e-07
+op 91
+brep imported/arch.brep
+boolean common 93
+op 92
+frame 0.0 0.0 0.5 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 1.0
+boundary P 4 2.0 5.5 4.0 5.5 4.0 7.5 2.0 7.5
+end
+case arch_slab_fuse 1e-07
+op 91
+brep imported/arch.brep
+boolean fuse 93
+op 92
+frame 0.0 0.0 2.25 0.0 3.0 4.0 1.0 0.0 0.0
+offsets 0.0 1.0
+boundary P 4 -2.0 -15.0 12.0 -15.0 12.0 15.0 -2.0 15.0
+end
+case arch_slab_cut 1e-07
+op 91
+brep imported/arch.brep
+boolean cut 93
+op 92
+frame 0.0 0.0 2.25 0.0 3.0 4.0 1.0 0.0 0.0
+offsets 0.0 1.0
+boundary P 4 -2.0 -15.0 12.0 -15.0 12.0 15.0 -2.0 15.0
+end
+case arch_slab_common 1e-07
+op 91
+brep imported/arch.brep
+boolean common 93
+op 92
+frame 0.0 0.0 2.25 0.0 3.0 4.0 1.0 0.0 0.0
+offsets 0.0 1.0
+boundary P 4 -2.0 -15.0 12.0 -15.0 12.0 15.0 -2.0 15.0
+end
+case cam_box_fuse 1e-07
+op 91
+brep imported/cam.brep
+boolean fuse 93
+op 92
+frame 0.0 0.0 1.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 1.0
+boundary P 4 8.5 5.5 12.0 5.5 12.0 9.0 8.5 9.0
+end
+case cam_box_cut 1e-07
+op 91
+brep imported/cam.brep
+boolean cut 93
+op 92
+frame 0.0 0.0 1.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 1.0
+boundary P 4 8.5 5.5 12.0 5.5 12.0 9.0 8.5 9.0
+end
+case cam_box_common 1e-07
+op 91
+brep imported/cam.brep
+boolean common 93
+op 92
+frame 0.0 0.0 1.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 1.0
+boundary P 4 8.5 5.5 12.0 5.5 12.0 9.0 8.5 9.0
+end
+case cam_rod_fuse 1e-07
+op 91
+brep imported/cam.brep
+boolean fuse 93
+op 92
+frame 0.0 0.0 -2.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 7.0
+boundary C 7.875 8.375 0.5
+end
+case cam_rod_cut 1e-07
+op 91
+brep imported/cam.brep
+boolean cut 93
+op 92
+frame 0.0 0.0 -2.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 7.0
+boundary C 7.875 8.375 0.5
+end
+case cam_rod_common 1e-07
+op 91
+brep imported/cam.brep
+boolean common 93
+op 92
+frame 0.0 0.0 -2.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 7.0
+boundary C 7.875 8.375 0.5
+end
+case blade_box_fuse 1e-07
+op 91
+brep imported/blade.brep
+boolean fuse 93
+op 92
+frame 0.0 0.0 1.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 1.0
+boundary P 4 7.5 8.0 10.0 8.0 10.0 10.5 7.5 10.5
+end
+case blade_box_cut 1e-07
+op 91
+brep imported/blade.brep
+boolean cut 93
+op 92
+frame 0.0 0.0 1.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 1.0
+boundary P 4 7.5 8.0 10.0 8.0 10.0 10.5 7.5 10.5
+end
+case blade_box_common 1e-07
+op 91
+brep imported/blade.brep
+boolean common 93
+op 92
+frame 0.0 0.0 1.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 1.0
+boundary P 4 7.5 8.0 10.0 8.0 10.0 10.5 7.5 10.5
+end
+case both_fuse 1e-07
+op 91
+brep imported/quad.brep
+boolean fuse 93
+op 92
+brep imported/arch.brep
+end
+case both_cut 1e-07
+op 91
+brep imported/quad.brep
+boolean cut 93
+op 92
+brep imported/arch.brep
+end
+case both_common 1e-07
+op 91
+brep imported/quad.brep
+boolean common 93
+op 92
+brep imported/arch.brep
+end
+case chain_quad_fuse 1e-07
+op 91
+brep imported/quad.brep
+boolean cut 93
+op 92
+frame 0.0 0.0 -3.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 11.0
+boundary C 8.5 4.75 1.0
+then fuse 95
+op 94
+frame 0.0 0.0 1.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 1.5
+boundary P 4 6.0 6.0 12.0 6.0 12.0 12.0 6.0 12.0
+end
+case chain_quad_cut 1e-07
+op 91
+brep imported/quad.brep
+boolean cut 93
+op 92
+frame 0.0 0.0 -3.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 11.0
+boundary C 8.5 4.75 1.0
+then cut 95
+op 94
+frame 0.0 0.0 1.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 1.5
+boundary P 4 6.0 6.0 12.0 6.0 12.0 12.0 6.0 12.0
+end
+case chain_quad_common 1e-07
+op 91
+brep imported/quad.brep
+boolean cut 93
+op 92
+frame 0.0 0.0 -3.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 11.0
+boundary C 8.5 4.75 1.0
+then common 95
+op 94
+frame 0.0 0.0 1.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 1.5
+boundary P 4 6.0 6.0 12.0 6.0 12.0 12.0 6.0 12.0
+end
+case quad_seat_fuse 1e-07
+op 91
+brep imported/quad.brep
+boolean fuse 93
+op 92
+frame 5.0 5.0 0.0 0.0 0.0 1.0 12.0 5.0 0.0
+offsets -3.0 0.0
+boundary C -1.0 0.0 5.0
+end
+case quad_seat_cut 1e-07
+op 91
+brep imported/quad.brep
+boolean cut 93
+op 92
+frame 5.0 5.0 0.0 0.0 0.0 1.0 12.0 5.0 0.0
+offsets -3.0 0.0
+boundary C -1.0 0.0 5.0
+end
+case quad_seat_common 1e-07
+op 91
+brep imported/quad.brep
+boolean common 93
+op 92
+frame 5.0 5.0 0.0 0.0 0.0 1.0 12.0 5.0 0.0
+offsets -3.0 0.0
+boundary C -1.0 0.0 5.0
+end
+case split_lens_box_fuse 1e-07
+op 91
+brep imported/split_lens.brep
+boolean fuse 93
+op 92
+frame 0.0 0.0 1.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 1.5
+boundary P 4 4.0 -2.0 6.0 -2.0 6.0 12.0 4.0 12.0
+end
+case split_lens_box_cut 1e-07
+op 91
+brep imported/split_lens.brep
+boolean cut 93
+op 92
+frame 0.0 0.0 1.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 1.5
+boundary P 4 4.0 -2.0 6.0 -2.0 6.0 12.0 4.0 12.0
+end
+case split_lens_box_common 1e-07
+op 91
+brep imported/split_lens.brep
+boolean common 93
+op 92
+frame 0.0 0.0 1.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.0 1.5
+boundary P 4 4.0 -2.0 6.0 -2.0 6.0 12.0 4.0 12.0
+end

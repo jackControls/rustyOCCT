@@ -8525,6 +8525,304 @@ Decisions for S9, recorded before its code (2026-09-28):
     no case). Campaigns at `699b9b85` (600 s each, sampled replays, every
     switch on): `boolean` clean, 978 runs, the slowest input 22 s under
     AddressSanitizer; `split` clean, 1,241 runs, the slowest 16 s.
+  * **S9e.4b.4 refined, before its code (2026-10-05).** Why each class is
+    refused today, from S9e.4b.3c.3b's trial of the 171 restore cases the
+    import reaches and the files they restore (read by the converter; the
+    dataset is not committed). (a) *Joints of two circles* (6 cases, each
+    `OutOfDomain("an imported prism's arcs of two circles meeting at a joint
+    (S9e.4b.4)")`, S9e.4b.1's `snapped::points` in the Boolean's exact model):
+    `bcut_complex/E8` and `bfuse_complex/D5` (`CTO900_jap60038-part`,
+    `CTO900_ksi0014a`: the common of four discs of radius 80 about `(0, +-50)`
+    and `(+-50, 0)` on the world's axes, its corners the circles' irrational
+    common points; the tool a cylinder of radius 80 on one of those circles,
+    below the part's bottom face), `bcut_complex/P4` (`CTO909_tool_2`, a
+    profile of lines and fillets whose arcs of radii 2 and 0.47 meet tangent
+    from either side, inside the box `CTO909_part_1`), `bfuse_complex/E1`
+    (`CTO900_fra11018a`, an arc of radius 10 tangent inside one of radius 26.6
+    at their joint) and `bugs/modalg_2/bug4993_1`, `_2` (`OCC4993-s1` and
+    `-s2`, arcs of radii 32 and 4.5 crossing at 0.011 rad): S9e.4a's prism,
+    whose stored joint, rounded once in its cap's frame, lies off both circles
+    (by up to 9.2e-14 in these files), and whose circles' common point is a
+    quadratic surd that a profile segment's rational ends do not hold. (b)
+    *Bodies of several curved faces* (10): `bcut_complex/G9` and
+    `bugs/modalg_2/bug417` (`cts21128c`, a frustum of half-angle 0.145 rad
+    from `z = 0` common a ball of radius 58.9 about `(0, 0, -45.7)`;
+    `cts21128d`, a rod of radius 2.95 between a plane and the same sphere: a
+    pin drilled out of the dome, both inputs' faces on one sphere), and
+    `bugs/modalg_2/bug476_1` to `_8` (`OCC485a`, a turned part of two
+    cylinders, three cones and two tori, smoothly joined, whose stored axes
+    lean 1.1e-8 apart and whose origins drift up to 4.4e-7, two of its cones
+    of half-angles within 1.3e-6 of a right angle; against `OCC485b`, a
+    triangular prism). (c) *Walls of two directions* (3): `bfuse_complex/E5`
+    (`CTO900_pro9476-part`, a stepped shaft: two coaxial cylinders along `x`
+    of radii 118.4 and 419.4 between three discs), `bugs/modalg_6/bug28773`
+    (`bug28773_2`, a stepped shaft of five coaxial cylinders, against `_1`, of
+    two) and `bfuse_complex/K1` (`CTO904_cts20370-part`, a box with its four
+    vertical edges rounded and a cylindrical boss of radius 40 along `y`);
+    `bcut_complex/G4`'s part, listed among these in S9e.4b refined, is
+    S9e.4b.3c.3a's boss. (d) The other 23 bodies none of the kernel's
+    constructions are the hollow sphere's, in Booleans with wires (no solid
+    argument; unsupported natively too). (e) From the fixtures and the fuzz
+    target: an imported polyhedron against curved faces (one first result of
+    the `boolean` target's replay) or with a cavity (S9e.4b.2's `hollow`), and
+    a pocket within a pocket (S9e.4b.3c.3b's `tooth`). Decisions. (1)
+    *Sub-steps*, ordered by the cases each unlocks and the machinery each
+    takes: **S9e.4b.4a** (this step): an imported prism whose arcs of two
+    circles meet at a joint, (a), on S9e.4a's construction with each such arc
+    taken through its two ends (2): the prism model alone, no new field or
+    degree (the S9e text's plan, a joint the circles' common point in a
+    quadratic field, would carry surds through every profile test and every
+    pierce of the vertical edge there, nested under a partner cylinder's);
+    **S9e.4b.4b**: bodies of several primitives' curved faces, (c) and G9's
+    pair: S9e.4b.3c.3b's tree with a leaf per curved face's primitive (a
+    stepped shaft the fuse of coaxial prisms, a boss along another axis the
+    fuse of two prisms, the dome a frustum common a ball, the pin a rod common
+    that ball), its faces grouped by their primitives' surfaces, with
+    S9e.4b.3c.1's faces on one sphere between the inputs; **S9e.4b.4c**:
+    deeper trees (a pocket within a pocket) and an imported polyhedron against
+    curved faces or with a cavity (S9b.2's stored model of exactly planar
+    triangles as a leaf of the curved engine, membership by parity);
+    **S9e.4b.4d**: turned bodies of smooth joins and nearly degenerate
+    surfaces (`OCC485a`): the S9e text holds stored faces tangent along an
+    edge `Degenerate` until such edges keep exact data, and a cone within
+    1.3e-6 of a disc is no exact model's, so they stay refused until a
+    decision of their own. The reader's version-3 header check stays open on
+    the import track (none of the 171 restores such a file). (2) *S9e.4b.4a's
+    representation.* A *crossing joint*: arcs of two circles (centres or radii
+    different in the cap's frame) meeting at a point that, rounded once, lies
+    off either exactly. An arc ending at a crossing joint whose circle no
+    other arc of its path shares is *taken through its ends*: in the exact
+    model its circle is the one through its two model ends `a` (where it
+    starts) and `b`, of centre `a + rho e` and radius `rho`, `e` the rational
+    unit vector nearest the stored centre's direction from `a` (`(+-(1 - s^2),
+    2 s) / (1 + s^2)`, the sign the direction's `x`'s, `s` the binary64
+    rounding of `d_y / (r + |d_x|)` computed exactly: S9e.4b.1's half-angle
+    tangent) and `rho = |b - a|^2 / (2 (b - a) . e)` exactly (a chord's
+    projection on the radius at its end is half its square over the radius).
+    Every circle through two rational points with a rational centre and radius
+    has that form, and `(b - a) . e > 0` for any chord seen from its end, so
+    `rho` exists and is positive. A crossing joint of such an arc with a line
+    or with another arc taken through its ends is its rounded point (as two
+    lines' joint); with an arc kept (an arc meeting only lines, or one of
+    several arcs on one circle) that circle's point (S9e.4b.1's `onto`), the
+    same for both. Numbers: the model's centre and radius rationals of a few
+    hundred bits (`e`'s 106-bit terms, `rho` over their products), its
+    vertices binary64 or S9e.4b.1's points: no new field or degree. The circle
+    moves by at most about `(|a - p| + |b - q|) / sin(theta / 2)` plus `r
+    2^-52` for an arc of angle `theta` whose stored ends `p` and `q` lie off
+    its stored circle: checked exactly, its centre and radius within the
+    body's resolution of the stored ones, else `Degenerate("an imported
+    prism's arc too short to take through its ends")`. A joint tangent in the
+    body OCCT was given (a fillet chain, `P4`'s and `E1`'s) is tangent in no
+    rounded data: the two circles cross at the joint within rounding of
+    tangency and again within rounding of it on one circle's continuation,
+    outside that arc, and the arrangement decides the joint by its exact turn,
+    as S9e.4b.1's line tangent to its arc. The flag asking for it is
+    S9e.4b.1's (`Profile::rounded_arcs`); the code stays `snapped.rs`'s, its
+    refusal going. (3) *Degenerate and refused.* S9's rules unchanged. A
+    partner's surface on an arc's stored circle (`D5`'s tool, a cylinder on
+    the part's circle below its face) lies within rounding of the circle taken
+    through the arc's ends, not on it: two surfaces within the resolution of
+    one, which the arrangement refuses where it meets them (the declared case
+    below); `D5` is expected refused. The arc too short, as (2). Refused: a
+    crossing joint of two arcs whose circles each hold other arcs of the path
+    (a lens whose arcs OCCT split, none among the surveyed files),
+    `OutOfDomain("an imported prism's joint of two circles each holding
+    several arcs (S9e.4b.4)")`; a kernel profile's arc ending off its circle
+    stays refused by design (S9c). (4) *Its other queries* are S9e.4b.1's:
+    classification by the construction, mass by the stored topology, a rigid
+    motion rebuilding the construction whose arcs are taken through their ends
+    again in the moved frame, a result given to another Boolean re-running the
+    same model. (5) *Fuzzing.* No profile of the `boolean` target has a joint
+    of two circles (S9e.4b.1's replay met none), so the `IMPORTED` stage gains
+    a lens (two arcs of circles about `(+-3k, 0)` of radius `5k` meeting at
+    `(0, +-4k)`, `k` dyadic) in the object's frame given the chosen operation
+    with the tool, then written, read back, imported and given it again, both
+    volumes equal within `1e-9` (`JOINTS`, by the chained byte's next bit; in
+    the tilted frame the joints round off both circles once read back). (6)
+    *Evidence first.* Bodies OCCT writes (`MakePrism` of profiles in turned
+    frames, every joint of two circles a rational common point in the
+    profile's frame, so the construction is exact and the stored joints its
+    roundings): `quad` (E8's and D5's shape, four discs' common), `ogee`
+    (P4's, two arcs tangent from either side between lines), `cam` (E1's, an
+    arc tangent inside another), `blade` (bug4993's, two circles crossing at a
+    small angle) and, declared `unsupported`, `split_lens` (a lens each of
+    whose arcs is split in two); cases against boxes, a rod, a ball and a
+    `TILT` slab, as object and as tool, two imported, a chain, and declared
+    `degenerate` a rod on one of the quad's circles below its bottom face
+    (D5's configuration); the reference the constructions OCCT was given
+    through S9e.3a's chained reference with S9e.4a's checks, each file's
+    stored vertices on the construction's surfaces and its crossing joints off
+    both circles in the construction's frame once rounded
+    (`generate_imported_joints_boolean_fixtures.py --check`, a CI group
+    `imported-joints`, `test_imported_joints_boolean_reference.py`); a native
+    capture keyed on the refusal it removes
+    (`compare_imported_joints_boolean.py`, `snapped.rs`'s "an imported prism's
+    arcs of two circles meeting at a joint"); then the kernel and its tests
+    (`tests/imported_joint_booleans.rs`: every fixture within `1e-9`
+    enclosures, the degenerate refused, histories over the stored ids,
+    deterministic, moved rigidly), S9e.4b.1's `lens` cases solid with it, and
+    the DRAW trial of the 6.
+  * **S9e.4b.4a evidence (2026-10-05).** Five bodies OCCT wrote
+    (`boolean-imported-joints-bodies.txt`, `MakePrism` of profiles whose world
+    coordinates are their turned frames' roundings, written by
+    `compare_imported_joints_boolean.py --write-bodies` to
+    `rust/fixtures/imported/`), every joint of two circles a rational common
+    point of both in the profile's frame: `quad`, the common of four discs of
+    radius 5 about `(+-1, 0)` and `(0, +-1)`, its corners `(+-3, +-3)` (`E8`'s
+    and `D5`'s part), in the `R125` frame; `arch`, a base from `(-2, 0)` to
+    `(2, 0)` under two arcs of radius 5 about `(-+3, 0)` meeting at `(0, 4)`
+    (a crossing joint whose arcs end at a line too), in the `TURN30` frame;
+    `cam`, an arc of radius 3 tangent inside one of radius 5 at `(5, 0)`
+    (`E1`'s), in the `R125` frame; `blade`, arcs of radii 25/2 and 13/2
+    crossing at 0.11 rad at `(12, 7/2)` (`bug4993`'s), in the `TURN30` frame;
+    and `split_lens`, S9e.4b.1's lens with each arc split in two, in the
+    `TURN30` frame. `generate_imported_joints_boolean_fixtures.py --check`: 39
+    cases of 13 groups (33 solid, 3 declared `degenerate`, 3 `unsupported`; 33
+    of class `prism`, 3 `both`, 3 `chain`): the quad against a box across its
+    corner, as object and as tool, a rod through its arc wall and a ball about
+    its corner's vertical edge; the arch against a box across its apex and a
+    `TILT` slab (two solids cut); the cam against a box across its tangent
+    joint and a rod through its small arc's wall; the blade against a box
+    across its crossing; the quad and the arch both imported; the quad less
+    the rod, then with the box; declared `degenerate` `quad_seat`, a rod in
+    the quad's frame on the circle of its arc about `(-1, 0)` below its bottom
+    face (`D5`'s configuration); declared `unsupported` the split lens against
+    a box (a joint of two circles each holding several arcs, S9e.4b.4's). The
+    reference is the constructions OCCT was given through S9e.3a's chained
+    reference with S9e.4a's checks (`generate_imported_boolean_fixtures.
+    evaluate_chain`), relative to the case's size: the two families within
+    2.1e-36, each solid's closed form 5.7e-41, the pair identities 3.4e-42 and
+    the area identity 2.6e-41, Monte Carlo 3.3 standard errors, quadrature
+    estimates 8.5e-33, solid counts by rays at two resolutions, every
+    meeting's sine at least 0.47 and events at least 1.6e-3 of their range
+    apart outside the declared groups. Every file read independently
+    (`stored_records`): its faces' kinds the construction's, every stored
+    vertex within 1.9e-15 of the size on one of the construction's walls and
+    one of its caps (OCCT's 15 digits; a vertex on a cap's plane exactly no
+    longer hides its wall's distance in one minimum), and every joint of two
+    circles, its stored vertices' local coordinates in the construction's
+    frame rounded once, off one of its circles at least: all 18 (the quad's 8,
+    the arch's, the cam's and the blade's 2, the split lens's 4).
+    `test_imported_joints_boolean_reference.py` checks every construction's
+    arcs ending on their circles and its joints on both exactly, the joints'
+    kinds (the cam's circles touching inside, the arch's, the blade's and the
+    quad's crossing at `asin(24/25)`, `asin(36/325)` and `asin(7/25)`), the
+    chained reference on each body alone against its profile's closed form (a
+    polygon and its arcs' segments, times the stored axes' determinant), the
+    quad in common with the box against a direct quadrature of its sections
+    within 1e-12, the off-joint test, and the case list and its protocol rows.
+    The generator's check is a CI group of its own (`imported-joints`, 4.8
+    minutes on four workers locally under Python 3.9, 3.2 under 3.12); Python
+    3.9 and 3.12 write the same files. Corrections from the evidence, amending
+    the refined decisions' plan (6): (a) the chained reference takes convex
+    profiles only (counter-clockwise arcs), so the S curve of two arcs
+    touching from either side (`P4`'s fillets, `ogee`) is no body of this set:
+    the kernel's tests write such a body of its own and read it back, and the
+    DRAW trial reads `P4`'s; the `arch` takes its place; (b) the arch's slab
+    moved off its base corner (a slab plane through a stored vertex: events
+    3.7e-17 of their range apart); (c) a trial of the cases on a draft of the
+    step's code (not committed) put every solid case within the reference but
+    evaluated the declared `quad_seat`: the rod's circle and the quad's arc's
+    circle taken through its ends lie a rounding apart, and the walls leave a
+    sliver between them at the shared cap plane that none of the curved
+    engine's rules finds (no two vertices within the resolution), where S9a's
+    one frame refuses such a pair as "a boundary within the resolution of the
+    other profile's" and S9e.4b.3c.1's spheres as two spheres within the
+    resolution of one; the step's kernel takes that rule for parallel circular
+    cylinders (refined decisions (3)), which refuses `quad_seat` and, in the
+    same draft, DRAW's `D5` (otherwise left to the validator's undecided loop
+    winding, a `ComputationLimit`). The capture
+    `occt-boolean-imported-joints-preimplementation`
+    (`compare_imported_joints_boolean.py`, keyed on the refusal the step
+    removes, `snapped.rs`'s `OutOfDomain("an imported prism's arcs of two
+    circles meeting at a joint (S9e.4b.4)")`; the kernel's probe `unsupported`
+    on all 39, every body refused by it in the Boolean's exact model): every
+    result valid, 36 matching (volumes within 2.3e-10, areas 8.8e-11, centres
+    3.2e-11 of the size: OCCT joins the declared `quad_seat`'s rod and arc
+    walls, its fuse one solid with the reference's measures), 3 reviewed: the
+    quad's ball cases, BRepGProp's default integration on a sphere's faces met
+    by cylinders (up to 7.0e-7 relative; within 2.3e-9 measured adaptively at
+    1e-10 and 1e-12 by a diagnostic build), in
+    `occt-boolean-imported-joints-divergences.json`; 5 results' counts change
+    when unified. S9e.4b.4a's kernel next.
+  * **S9e.4b.4a implemented** (`solid/boolean/curved/snapped.rs`'s `path`,
+    `model.rs` taking each arc's circle from it, `meet.rs`'s `cyl_pair`), as
+    the refined decisions describe: an arc of an imported prism ending at a
+    joint where arcs of two circles meet off either, whose circle no other arc
+    of its path shares, is taken through its two ends in the exact model (its
+    centre `a + rho e` from its start, `e` the rational unit vector nearest
+    the stored centre's direction by its half-angle tangent rounded once, `rho
+    = |b - a|^2 / (2 (b - a) . e)` exactly), the joint its rounded point or a
+    kept circle's, the circle within the resolution of the stored one. All 39
+    fixtures as declared (33 within the kernel's enclosures, each at most
+    `1e-9` wide; `quad_seat`'s 3 refused as `Degenerate("two cylinders within
+    the resolution of one cylinder")`; the split lens's 3 `OutOfDomain` as
+    S9e.4b.4's), every history complete over the imported bodies' stored ids,
+    results deterministic and moved rigidly, both inputs translated (and
+    turned where no face of one input is exactly parallel to the other's
+    cylinder) keeping the reference's volumes, every body its construction
+    (its closed-form volume, points classified, its stored vertices on its
+    boundary), and the kernel's own prisms whose arcs of two circles meet at
+    rational points in turned frames (four discs' common, a lens in the tilted
+    frame, an S curve of two arcs touching from either side, an arc tangent
+    inside another) written by its writer, read back and imported, each
+    Boolean with a box and a rod its own result's volume
+    (`tests/imported_joint_booleans.rs`, 10.9 s at `opt-level` 2 with debug
+    assertions and 9.8 s in release on a host at load 23 to 29, 7.3 s in
+    release with debug assertions under the emulated correctly rounded
+    `hypot`, where S9e.4b.1's and S9e.4a's test files pass too). S9e.4b.1's
+    `lens` cases are solid, declared so (its generator's group, its tests).
+    `compare_imported_joints_boolean.py` 36 matches and 3 reviewed (the native
+    measures and, with the kernel, entity counts: a ball's meetings and sphere
+    face split at the kernel's own points and at OCCT's), every enclosure
+    within the reference; `compare_imported_arcs_boolean.py` 27 and 9, the
+    kernel within the reference on all 30 solid cases; every other comparison
+    of `HANDOFF.md`'s table unchanged with 0 failures (and `compare_split.py`
+    72/56, `compare_brep.py --family spline` 10/3, `compare_brep_io.py`
+    6,835/7, `compare_step.py` 23/6 on STEP-b's SDK); the release suite (640
+    tests) and the tools' unit tests (350) passing, the ledger unchanged.
+    Amendments, from the implementation: (a) the refined decisions' (3)
+    expected the arrangement to refuse a partner's cylinder on an arc's stored
+    circle, but the curved engine had no rule for it (S9a's one frame refuses
+    two boundaries within the resolution, S9e.4b.3c.1 two spheres within the
+    resolution of one): two parallel circular cylinders within the resolution
+    of one and not one, their faces' boxes meeting, are now `Degenerate("two
+    cylinders within the resolution of one cylinder")` (`cyl_pair`), refusing
+    `quad_seat` and DRAW's `D5` where a sliver between the walls or the
+    validator's undecided winding was left; no case of the comparisons, the
+    suite or the replays moves with it; (b) `onto` keeps S9e.4b.1's points bit
+    for bit, its rational unit vector now `unit`'s, shared with `through`.
+    Open: where a partner holds an arc's stored circle exactly (`E8`'s and
+    `D5`'s tools, on the world's axes), keeping that circle and taking the
+    other arc at each of its joints through its ends would decide the two
+    walls on one surface; the choice needs the partner in the prism's model,
+    left open (the trial's three such cases refused by (a)). The `boolean`
+    fuzz target's `JOINTS` stage (a lens of two arcs of circles about `(+-3k,
+    0)` of radius `5k` in the object's frame, by the chained byte's next bit,
+    given the chosen operation, then written, read back, imported and given it
+    again): replaying the corpus and the regressions with debug assertions
+    (1,468 inputs), 480 reach it, 298 evaluate both ways with equal volumes
+    (96 in the tilted frame, where the joints round off both circles once read
+    back), the others refused by S9's rules on one side or both (most of them
+    the reimported frames, normalized again, within rounding of the tool's
+    directions); no failure, the slowest input 10.9 s, and under the emulated
+    `hypot` 15.3 s on a host at load 20 to 29; the split corpus and its
+    regressions (3,571 inputs) clean natively and emulated, the slowest 3.3 s
+    and 1.6 s. A trial of the DRAW survey's 171 restore cases the import
+    reaches, on the Rust adapter and natively (not the survey: nothing
+    registered): only the 6 of two circles at a joint move, each from "an
+    imported prism's arcs of two circles meeting at a joint (S9e.4b.4)":
+    `bcut_complex/P4` (a fillet chain's tool, arcs touching from either side,
+    inside its box) evaluates on both backends with every check;
+    `bcut_complex/E8` and `bfuse_complex/D5` (the four discs' part against a
+    cylinder on one of its circles below it) and `E1` are refused as two
+    cylinders within the resolution of one cylinder (each tool on a stored
+    circle of the part's arcs taken through their ends; `E1`'s tangency
+    besides), `bugs/modalg_2/bug4993_1` and `_2` as two faces within the
+    resolution of one plane; native DRAW's statuses as before. Of the 171, 56
+    evaluate on both backends. Pending: the capture's Linux record, the DRAW
+    survey and the campaigns.
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces
