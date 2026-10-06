@@ -9585,6 +9585,137 @@ Decisions for S9, recorded before its code (2026-09-28):
     `boolean` clean, 892 runs, the slowest input 31 s under
     AddressSanitizer, its startup replay 2,200 s; `split` clean, 1,571 runs,
     none slow.
+  * **S9e.4b.4b.2b refined, before its code (2026-10-06).** Why it is
+    refused today: S9e.4b.4b.2a's chain, of the primitives alone or led by a
+    prism leaf, takes every plane face as a primitive's end or a leaf's face
+    and refuses any other (`OutOfDomain("an imported body of several
+    primitives with plane faces other than their ends or a prism's
+    (S9e.4b.4b.2b)")`, `imported.rs`'s `chain_piece`). The `boolean` fuzz
+    target's `IMPORTED` stage refuses 3 first results so (S9e.4b.4b.2a's
+    replay, again at `298fcf3a`: of the corpus's 1,470 inputs and
+    regressions none other), read off the kernel's writer's files: (a) a
+    ball of radius 2.8125 about `(0.375, -0.125, 1.125)` below its equator's
+    plane `z = 1.125` fused with a frustum along `z` about the origin
+    narrowing from radius 0.9375 at `z = 0` to its disc at `z = 2.25`, its
+    base hidden in the ball: the plane face an annulus between the ball's
+    rim and the frustum's circle, convex along the rim, concave along the
+    circle (a primitive's flat; four faces, no leaf); (b) a regular pentagon
+    of circumradius 1 about the origin over `[0, 1/4]` fused with a stadium
+    (half discs of radius 9/4 about `(-3/4, -5/4)` and `(1/2, -5/4)`) over
+    `[1/4, 3/4]`, flush: the stadium a leaf (its bottom's outer loop's walls
+    reaching its top), the pentagon's walls and bottom other plane faces, its
+    top hidden in the stadium (a prism of one cap); (c) the square `[-4,
+    4]^2` with a hole of radius 2 about the origin over `[0, 3/2]` less the
+    same shape moved by `(9/8, 9/8)` over `[3/8, 9/8]`: the plate a leaf
+    (with its hole), the moved copy's floor, roof and two walls other plane
+    faces joined along concave edges (a pocket), the moved hole's cylinder a
+    crescent standing in it (its faces meeting the pocket's along concave
+    edges, the plate's hole along two lines). The survey's restore cases
+    hold none (S9e.4b.4b.2a's trial: K1 imports; the rest of the 171 none of
+    these), so no DRAW case is expected to move. Decisions. (1) *Sub-steps*,
+    by what each unlocks: **S9e.4b.4b.2b.1** (this step): the three (2):
+    flats of one part, prisms of one cap, pockets with their teeth;
+    **S9e.4b.4b.2b.2**: the rest of S9e.4b.4b.2b's list: a hull of planes
+    across several parts (a plane face convex along two primitives' faces),
+    a convex group of planes meeting the parts along concave edges alone (a
+    polyhedral boss no prism of one cap takes), a prism with both caps cut at
+    their rims (S9e.4b.4b.2a's notch, its profile read off its walls), a
+    pocket meeting a part along edges of both kinds or holding a prism (a
+    square post in a slot), a group of planes of both kinds, two leaves with
+    both caps each. (2) *The parts*, read off the stored topology, tried only
+    after S9e.4b.4b.2a's chains (of the primitives alone, then each leaf)
+    refuse for other plane faces: for each of those chains in turn, the
+    leaves' first and the primitives' alone last, (a) *prisms of one cap*: in
+    face order, a plane face no cap of a leaf (S9e.4b.4b.2a's pairs) and no
+    face of the chain's leaf or an earlier such prism, whose outer loop's
+    every edge's other face is a wall along its inward normal (S9e.4b.4b.2a's
+    walls, none of the leaf's): its faces it, those walls and every face on
+    their surfaces; S9e.4a's prism on that loop alone, past its walls' far
+    end (their range along the normal) by a quarter of it (its other cap
+    hidden in the part it stands on, as a fused primitive's open end), on the
+    face's stored frame or, where the walls' stored cylinders' axes point
+    against the inward normal (a boss read off its top cap), on that frame
+    turned over and extruded back from the cap, so its walls' frames and the
+    stored ones point one way; a prism parallel to the chain's first prism
+    within `1e-9` on that prism's axes bit for bit at its own stored origin
+    (`Frame3::at`, as S9e.4b.4b.2a's primitives along the leaf); (b) the
+    primitives as S9e.4b.4b.2a's (each surface's, every one's caps its ends);
+    (c) the other plane faces (no end, no prism's), in components through
+    their edges with each other: a component whose edges among its faces are
+    all convex (or of one face) is a *flat* of the one part (a prism or a
+    primitive with its ends) it meets along convex edges, that part common
+    the convex hull of its planes (S9e.4b.3c.3b's hull leaf; the others it
+    meets along concave edges, fused to it); a component whose edges among
+    its faces are all concave is a *pocket*: the convex hull of its planes
+    turned over (S9e.4b.3c.3b's pocket), less its *teeth*, the primitives
+    it meets along concave edges alone (none of them in the chain), cut from
+    the chain; it may meet the other parts along convex edges alone (its
+    rims). A plane of a hull parallel to a prism's or a cylinder's or a
+    cone's axis of the chain within `1e-9` lies on that axis's axes bit for
+    bit at its stored origin (a pocket's floor normal to the plate's walls
+    exactly). (3) *The tree.* The prisms first (the leaf, then the prisms of
+    one cap), then the primitives but the teeth as S9e.4b.4b.2a's (widest
+    first; each next one cut where its material lies outside its quadric, in
+    common where its faces and its flats' meet the earlier parts' along
+    convex edges only, fused otherwise), each part common its flats' hull,
+    then each pocket (its hull less each tooth in turn) cut from the chain;
+    each Boolean S9e.4b.3c.3b's tree's (an inner one's assembly its given
+    model, the stored vertices splitting rims in every one), the last one's
+    given model matched to the stored topology by S9e.2's match, its ids the
+    stored ones; the first chain whose model matches the body (`Piece`'s
+    choice, read off the moved stored topology again by a rigid motion). The
+    fuzz target's three: (a) the ball common its flat's half-space, fused
+    with the frustum; (b) the stadium fused with the pentagon past its top by
+    a sixteenth; (c) the plate less the pocket less the crescent's cylinder.
+    Numbers: the engine's own and S9e.4a's prism's, no new field or degree.
+    (4) *Its other queries* are S9e.4b.4b.2a's: classification by the tree's
+    set functions (a hull's sides within the resolution), bounds every part's
+    widened by the stored edges', mass by the stored topology, a result given
+    to another Boolean S9e.3a's. (5) *Degenerate and refused.* S9's rules
+    unchanged in every Boolean of the tree. A body's own faces tangent along
+    an edge are S9e.4b.4b.2a's `Degenerate`, a prism's walls' joints exempt
+    within one prism, two faces of one stored surface (a face OCCT split at
+    its surface's seam) no tangency; a chain with the other plane faces whose
+    prisms part such a joint is one the body is not (the next is tried).
+    Refused as S9e.4b.4b.2b.2's: a component of both kinds, a flat meeting no
+    part or several along convex edges, a pocket meeting a part along both
+    kinds or meeting a prism along concave edges, a tooth with a flat,
+    `OutOfDomain("an imported body of several primitives with plane faces
+    other than their ends, a prism's, a flat or a pocket (S9e.4b.4b.2b.2)")`,
+    replacing S9e.4b.4b.2a's text (the notch now refused so); a chain whose
+    model does not match as S9e.4b.4b.1's (`OutOfDomain(... other than a
+    Boolean chain of them (S9e.4b.4c)")`); of the chains tried the first
+    refusal their Booleans give is reported, else the body's own tangency,
+    else S9e.4b.4b.2b.2's. (6) *Fuzzing.* The `IMPORTED` stage unchanged: its
+    replay measures how many of its 3 refusals import now (a draft of the
+    step's code, not committed, imports all three, each cut by the turned
+    box within the chained cut's volume, and no other import moves). (7)
+    *Evidence first.* Bodies OCCT writes in one Boolean (a `write` block),
+    every section a circle or a line: `flat` ((a): a ball's half, a sphere's
+    row from its south pole to its equator, fused with a frustum off its
+    axis on a turned frame), `stack` ((b): a hexagon of rational corners
+    under a stadium, flush, on a turned frame), `cake` (a stadium boss read
+    off its top cap, from inside a box to its cap, on a turned frame: a prism
+    of one cap with arcs), `slot` ((c): a plate with a hole less its copy's
+    band on the world's axes, the copy turned half a turn so each hole's
+    seam lies inside the other's disc and OCCT splits no face at a seam);
+    cases of each against boxes, rods and balls, the body the tool, two
+    imported and a chain, and a declared `degenerate` ball resting on the
+    flat's frustum's top; S9e.4b.4b.2a's notch refused with the new text by
+    the kernel's tests; the reference S9e.3a's chained reference on the
+    constructions OCCT was given (a ball's half its ball common a cylinder
+    below its equator, a plate with a hole its box less the hole's cylinder)
+    with S9e.4b.3c.3a's checks and each body's closed form
+    (`generate_plane_parts_boolean_fixtures.py --check`, a CI group
+    `plane-parts`, `test_plane_parts_boolean_reference.py`); a native capture
+    keyed on the refusal the step removes (`compare_plane_parts_boolean.py`,
+    `imported.rs`'s present text ending "prism's (S9e.4b.4b.2b)"); then the
+    kernel and its tests (`tests/plane_part_booleans.rs`: every fixture
+    within `1e-9` enclosures, the degenerate refused, histories over the
+    stored ids, deterministic, moved rigidly; the kernel's own cake and stack
+    written, read back and imported, their Booleans the kernel's own
+    results'; the fuzz target's three bodies rebuilt by the kernel and
+    imported) and a DRAW trial of the restore cases the import reaches.
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces
