@@ -9716,6 +9716,83 @@ Decisions for S9, recorded before its code (2026-09-28):
     written, read back and imported, their Booleans the kernel's own
     results'; the fuzz target's three bodies rebuilt by the kernel and
     imported) and a DRAW trial of the restore cases the import reaches.
+  * **S9e.4b.4b.2b.1 evidence (2026-10-06).** Four bodies OCCT wrote
+    (`boolean-plane-parts-bodies.txt`, `write` blocks of one solid's rows, a
+    `boolean` row and the other's, written by
+    `compare_plane_parts_boolean.py --write-bodies` to
+    `rust/fixtures/imported/part_*.brep`), each one Boolean, every section a
+    circle or a line (lines and circles alone in every file): `flat` (the
+    fuzz target's (a): a ball of radius 3 on `SKEW` below its equator's plane,
+    a sphere's row from its south pole to its equator, fused with a frustum
+    on its frame's axes about `(3/4, -1/2)` from radius 5/4 at height -1,
+    inside the ball, to radius 3/4 at 5/2), `stack` ((b): a hexagon of
+    rational corners over `[0, 1]` on `SKEW2` fused with a stadium of half
+    discs of radius 5/2 about `(0, 0)` and `(6, 0)` over `[1, 3]`, flush, its
+    footprint holding the hexagon's), `cake` (a box `9 x 7 x 2` on `SKEW4`
+    fused with a stadium boss of half discs of radius 3/2 about `(5/2, 7/2)`
+    and `(13/2, 7/2)` from height 3/2 inside it to its cap at 4: a prism of
+    one cap with arcs, read off its top) and `slot` ((c): the square `[0,
+    8]^2` with a hole of radius 2 about `(4, 4)` over `[0, 3]` on the world's
+    axes less the square `[3/4, 35/4] x [5/4, 37/4]` with a hole of radius
+    3/2 about `(11/2, 4)` over `[1, 2]` on those axes turned half a turn: the
+    pocket's floor, roof and two walls, and a crescent of the second hole's
+    disc standing in it, its cylinder meeting the first hole's in two lines).
+    `generate_plane_parts_boolean_fixtures.py --check`: 24 cases of 8 groups
+    (21 solid, 3 declared `degenerate`; 18 of class `pieces`, 3 `both`, 3
+    `chain`): `slot_rod` (an upright rod through the crescent and the plate's
+    hole), `chain_cake` (the cake less a `TILT` rod through the boss, then
+    with a `TILT` box), `cake_stack` (both imported, the cake's box across the
+    stadium), `flat_box` (a `TILT` box across the disc and the frustum),
+    `stack_rod` (a `TILT` rod through both levels), `cake_ball` (a ball across
+    the boss's rim), `rod_flat` (a `TILT` rod less the flat: the body the
+    tool) and declared `degenerate` `flat_touch` (a ball resting on the
+    frustum's top disc at its centre: `Degenerate("a plane crossing a sphere
+    within the resolution of tangency (S9d.1)")`). The reference is the
+    constructions OCCT was given through S9e.3a's chained reference with
+    S9e.4b.3c.3a's checks (the ball's half its ball common a cylinder below
+    its equator's plane, each plate with a hole its box less its hole's
+    cylinder: the reference models convex profiles), relative to the case's
+    size: the two families within 1.4e-31 (the cake's groups; the others'
+    within 5.1e-36), each solid's closed form 2.4e-36, each body's closed form
+    6.2e-33 (the cake's; the others' 2.0e-37: the flat's ball's half and its
+    frustum above the disc in the frustum's chart, the stack's and the
+    cake's sections times their axes' determinant, the cake's boss above the
+    box by its frame's origin's height in the box's chart, the slot's plate
+    less its band's rectangle less both discs' union), the pair identities
+    1.4e-42 and the area identity 2.0e-41, Monte Carlo 2.2 standard errors
+    (100,000 points a group), quadrature estimates 1.5e-32, every meeting's
+    sine at least 0.17 and events at least 8.0e-6 of their range apart
+    outside the declared group, solid counts by rays at two resolutions; the
+    declared group's checks kept apart within 1.3e-37. Every file read
+    independently (`stored_records`): its curved faces' kinds its
+    constructions', every stored vertex within 4.7e-16 of the size on the
+    constructions' surfaces. `test_plane_parts_boolean_reference.py` checks
+    every body's closed form against quadratures of its sections (the slot's
+    by rows, its chords parting where the circles cross), the chained
+    reference on the stack and the cake against theirs, every part's place
+    (the frustum's base inside the ball, the hexagon inside the stadium's
+    footprint, the boss inside the box's from inside it, the crescent's
+    circle crossing the plate's hole and each hole's seam inside the other's
+    disc), the declared case, the case list and its protocol rows and the
+    files apart from every earlier set's. The generator's check is a CI group
+    of its own (`plane-parts`, 18.5 minutes on four workers locally under
+    Python 3.9, 12.7 under 3.12); Python 3.9 and 3.12 write the same
+    files. Corrections from the evidence, amending the refined decisions'
+    plan (7): (a) the slot's copy is turned half a turn about `z`: with both
+    holes' seams toward `+x` OCCT split the crescent's wall at its seam into
+    two faces on one surface (a draft's import found them no tangency, then
+    its model, of one face there, did not match) or, the copy moved, wrote the
+    plate's hole's wall with a seam edge the converter rejects (`SeamEdge`),
+    so each hole's seam lies inside the other's disc; (b) the reference's cost
+    grows with a case's faces: a first set with the flat and the stack both
+    imported, the stack's chain with a slab and the slot with a `TILT` box ran
+    18 to 26 minutes of one worker a group, so the pair is the cake and the
+    stack, the chain the cake's with a box and the slot's partner an upright
+    rod; (c) a `TILT` box less the flat put two of the reference's events
+    within 6e-18 of each other wherever it was placed, so the body is the
+    tool of a rod; (d) the declared ball resting on the frustum's top is S9's
+    plane tangent to a sphere, `Degenerate("a plane crossing a sphere within
+    the resolution of tangency (S9d.1)")`.
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces

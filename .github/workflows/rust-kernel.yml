@@ -114,7 +114,7 @@ jobs:
         group: [algebra, brep, booleans, cones, cones-loops, tori, torus-parts, chained, spline-any, given,
                 given-curved, given-met, spline-parallel, spline-crossing, imported, imported-arcs, spline-sphere,
                 imported-polyhedra, spline-cone, imported-pieces, split-pieces, one-sphere, one-sphere-incidence,
-                piece-forms, piece-trees, imported-joints, primitive-chains, prism-leaves]
+                piece-forms, piece-trees, imported-joints, primitive-chains, prism-leaves, plane-parts]
     steps:
       - uses: actions/checkout@v4.2.2
       - run: rustup toolchain install stable --profile minimal
@@ -256,6 +256,9 @@ jobs:
       - name: Verify the imported bodies' chains led by a prism leaf independent reference (S9e.4b.4b.2a)
         if: matrix.group == 'prism-leaves'
         run: target/math-oracle-venv/bin/python rust/tools/generate_prism_leaves_boolean_fixtures.py --check --workers 4
+      - name: Verify the imported bodies' flats, prisms of one cap and pockets independent reference (S9e.4b.4b.2b.1)
+        if: matrix.group == 'plane-parts'
+        run: target/math-oracle-venv/bin/python rust/tools/generate_plane_parts_boolean_fixtures.py --check --workers 4
 
   pinned-degree-oracle:
     name: Degree elevation / source-pinned OCCT
