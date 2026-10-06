@@ -10930,6 +10930,9 @@ Decisions for S9, recorded before its code (2026-09-28):
     corpus and its regressions (3,571), none failing;
     `tests/curved_booleans.rs` under the emulated glibc `hypot` with debug
     assertions and overflow checks, the new test 6.6 s.
+    Campaigns at `298fcf3a` (600 s each, sampled replays, every switch on):
+    `boolean` clean, 929 runs, the slowest input 30 s under
+    AddressSanitizer; `split` clean, 1,353 runs, the slowest 11 s.
   * **Where S9 stands (2026-09-30, paused).** Done and pushed: S9a to S9d
     (every sub-step with its DRAW survey and a clean campaign), S9e.1
     (campaign clean at `51c08edf`) and S9e.2 (`8e060c67`), S9f's decisions
