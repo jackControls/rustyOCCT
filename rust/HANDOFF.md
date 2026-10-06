@@ -423,8 +423,8 @@ then for S9e.4b.3c.3b (branch `s9e4b3c3b`, over `s9c2-kernel` at `e8940c22`).
    primitive and several hulls: a groove or boss on a body not convex in
    its planes, a primitive bitten twice, a sphere's disc or a cylinder's
    flat or oblique end with another form; the fuzz target's 4 refusals
-   importing) is implemented (pending its capture's Linux record, the DRAW
-   survey and the campaigns); then
+   importing) is implemented (campaigns clean at `699b9b85`; pending its
+   capture's Linux record and the DRAW survey); then
    **S9e.4b.4**, the S9e text's plan in full
    (joints of two circles, prisms with walls of two directions, bodies of
    several curved surfaces: 21 cases; a body of one curved face needing a

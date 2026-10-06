@@ -8521,7 +8521,10 @@ Decisions for S9, recorded before its code (2026-09-28):
     (55 evaluating on both backends, S9e.4b.3c.2's 13 and `G4` among them;
     `I6` refused for its tool's own tangency, `buc60926` at its frustum's
     apex), none refused as S9e.4b.3c's; native DRAW's statuses as before.
-    Pending: the capture's Linux record, the DRAW survey and the campaigns.
+    Pending: the capture's Linux record and the DRAW survey (its trial moves
+    no case). Campaigns at `699b9b85` (600 s each, sampled replays, every
+    switch on): `boolean` clean, 978 runs, the slowest input 22 s under
+    AddressSanitizer; `split` clean, 1,241 runs, the slowest 16 s.
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces
