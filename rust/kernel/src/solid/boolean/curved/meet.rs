@@ -184,6 +184,22 @@ pub(super) fn cyl_pair(
             let c2 = [l[0].clone(), l[1].clone()];
             let d = [&c2[0] - &cx[0], &c2[1] - &cx[1]];
             let dist2 = &d[0] * &d[0] + &d[1] * &d[1];
+            // S9e.4b.4a: two circles within the resolution of one and not
+            // one (an imported arc taken through its ends beside a partner
+            // on its stored circle) leave a sliver thinner than the
+            // resolution between the walls wherever their faces meet: as
+            // S9a's boundaries in one frame and S9e.4b.3c.1's spheres.
+            let same = dist2 == zero() && rx == ry;
+            if !(apart_boxes || same) {
+                let res = px.tolerance.linear().max(py.tolerance.linear());
+                let near = crate::solid::split::rational_f64(&dist2).sqrt()
+                    + crate::solid::split::rational_f64(&(rx - ry)).abs();
+                if near <= res {
+                    return Err(Error::Degenerate(
+                        "two cylinders within the resolution of one cylinder",
+                    ));
+                }
+            }
             if dist2 == zero() {
                 return Ok(if rx == ry {
                     CylPair::Same

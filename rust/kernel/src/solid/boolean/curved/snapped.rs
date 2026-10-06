@@ -1,5 +1,6 @@
 //! S9e.4b.1: an imported prism's arcs' ends taken onto their circles
-//! (REVIEW_NOTES.md, "S9e.4b refined").
+//! (REVIEW_NOTES.md, "S9e.4b refined"); S9e.4b.4a: its arcs of two circles
+//! meeting at a joint taken through their ends ("S9e.4b.4 refined").
 //!
 //! S9e.4a's construction of an imported prism rounds its stored vertices'
 //! local coordinates once in its bottom cap's stored frame, and its arcs'
@@ -15,9 +16,22 @@
 //! rounded point; an end already on its circle stays. The ends move by at
 //! most their distance from the circle plus `r 2^-52`, within the
 //! resolution (the profile's validation holds every arc's ends within the
-//! resolution of its circle). A joint of arcs of two different circles off
-//! either is S9e.4b.4's: their common point is a quadratic surd, which a
-//! profile segment's rational ends do not hold.
+//! resolution of its circle).
+//!
+//! S9e.4b.4a: where arcs of two different circles meet at a joint whose
+//! rounded point lies off either (a crossing joint: four discs' common, a
+//! fillet chain, an arc tangent inside another), their common point is a
+//! quadratic surd, which a profile segment's rational ends do not hold.
+//! Instead each arc ending there whose circle no other arc of the path
+//! shares is taken through its two ends: its circle in the exact model the
+//! one through both, of centre `a + rho e` from its start `a`, `e` the
+//! rational unit vector nearest the stored centre's direction (the same
+//! half-angle tangent) and `rho = |b - a|^2 / (2 (b - a) . e)` exactly, its
+//! centre and radius within the resolution of the stored ones. The joint is
+//! then its rounded point, or the point of an arc's circle kept (a circle
+//! several arcs share, or one meeting lines only). A joint tangent in the
+//! body OCCT was given is tangent in no rounded data; the arrangement
+//! decides it by its exact turn, as a line tangent to its arc.
 use super::model::P2;
 use super::num::int;
 use crate::profile::Segment;
@@ -31,46 +45,94 @@ fn on(c: &P2, r: &R, p: &P2) -> bool {
     &dx * &dx + &dy * &dy == r * r
 }
 
-/// The circle's rational point nearest `p`'s direction from its centre:
-/// `c + r ((1 - s^2), 2 s) / (1 + s^2)` where `p`'s `dx` is not negative,
-/// `c + r (-(1 - s^2), 2 s) / (1 + s^2)` where it is, `s` the binary64
-/// rounding of `dy / (r + |dx|)` (the half-angle tangent from the nearer
-/// end of the circle's `x` diameter, `|s| <= 1` within rounding); `p`
-/// itself where it is on the circle.
+/// The rational unit vector nearest `d`'s direction where `|d|` is about
+/// `len`: `(+-(1 - s^2), 2 s) / (1 + s^2)`, its `x` of `d`'s sign, `s` the
+/// binary64 rounding of `d_y / (len + |d_x|)` (the half-angle tangent from
+/// the nearer end of the `x` diameter, `|s| <= 1` within rounding).
+fn unit(d: &P2, len: &R) -> P2 {
+    let right = d[0] >= zero();
+    let den = if right { len + &d[0] } else { len - &d[0] };
+    let s = q(rational_f64(&(&d[1] / &den)));
+    let one = int(1);
+    let w = &one + &s * &s;
+    let a = (&one - &s * &s) / &w;
+    [if right { a } else { -a }, int(2) * &s / &w]
+}
+
+/// The circle's rational point nearest `p`'s direction from its centre
+/// (`c + r unit(p - c)`); `p` itself where it is on the circle.
 pub(super) fn onto(c: &P2, r: &R, p: &P2) -> P2 {
     if on(c, r, p) {
         return p.clone();
     }
-    let (dx, dy) = (&p[0] - &c[0], &p[1] - &c[1]);
-    let right = dx >= zero();
-    let den = if right { r + &dx } else { r - &dx };
-    let s = q(rational_f64(&(&dy / &den)));
-    let one = int(1);
-    let w = &one + &s * &s;
-    let a = r * (&one - &s * &s) / &w;
-    let b = r * (int(2) * &s) / &w;
-    [if right { &c[0] + a } else { &c[0] - a }, &c[1] + b]
+    let e = unit(&[&p[0] - &c[0], &p[1] - &c[1]], r);
+    [&c[0] + r * &e[0], &c[1] + r * &e[1]]
 }
 
-/// A path's points with every arc's ends on its circle: each point taken
-/// onto the circle of the arc ending or starting there.
-pub(super) fn points(points: &[Point2], segments: &[Segment]) -> Result<Vec<P2>> {
+/// S9e.4b.4a: the circle through `a` and `b` whose centre lies from `a` in
+/// the rational direction `e` nearest the stored centre `c`'s (`unit`, the
+/// distance `|c - a|` about `r`), of radius `rho = |b - a|^2 / (2 (b - a) .
+/// e)`, so that `|(b - a) - rho e|^2 = |b - a|^2 - 2 rho (b - a) . e +
+/// rho^2 = rho^2`. A chord seen from its end along the radius there has
+/// `(b - a) . e > 0`, so for ends within rounding of the stored circle
+/// `rho` is positive.
+fn through(a: &P2, b: &P2, c: &P2, r: &R) -> Option<(P2, R)> {
+    let e = unit(&[&c[0] - &a[0], &c[1] - &a[1]], r);
+    let ab = [&b[0] - &a[0], &b[1] - &a[1]];
+    let den = int(2) * (&ab[0] * &e[0] + &ab[1] * &e[1]);
+    if den <= zero() {
+        return None;
+    }
+    let rho = (&ab[0] * &ab[0] + &ab[1] * &ab[1]) / den;
+    Some(([&a[0] + &rho * &e[0], &a[1] + &rho * &e[1]], rho))
+}
+
+/// A path's points and its arcs' circles for the exact model, every arc's
+/// ends on its circle (the module's rules): the points, and per segment the
+/// circle an arc is taken through its ends on (S9e.4b.4a), `None` where it
+/// keeps its stored circle. `tol` bounds how far a circle taken through its
+/// ends may lie from the stored one (the body's resolution).
+#[allow(clippy::type_complexity)]
+pub(super) fn path(
+    points: &[Point2],
+    segments: &[Segment],
+    tol: f64,
+) -> Result<(Vec<P2>, Vec<Option<(P2, R)>>)> {
     let n = points.len();
-    let circle = |s: &Segment| match s {
-        Segment::Arc { center, radius, .. } => Some(([q(center.x), q(center.y)], q(*radius))),
+    let stored = |j: usize| match &segments[j % n] {
+        Segment::Arc { center, radius, .. } => Some((center.x, center.y, *radius)),
         _ => None,
     };
+    let circle = |j: usize| stored(j).map(|(x, y, r)| ([q(x), q(y)], q(r)));
+    let point = |j: usize| [q(points[j % n].x), q(points[j % n].y)];
+    // A circle another arc of the path shares stays (a seam-split circle).
+    let shared = |j: usize| {
+        let c = stored(j);
+        c.is_some() && (0..n).any(|k| k != j % n && stored(k) == c)
+    };
+    // Joint `j`, between segments `j - 1` and `j`: arcs of two circles
+    // meeting at a rounded point off either.
+    let crossing = |j: usize| match (circle(j + n - 1), circle(j)) {
+        (Some(x), Some(y)) if x != y => {
+            let p = point(j);
+            !(on(&x.0, &x.1, &p) && on(&y.0, &y.1, &p))
+        }
+        _ => false,
+    };
+    let through_ends: Vec<bool> = (0..n)
+        .map(|j| stored(j).is_some() && !shared(j) && (crossing(j) || crossing(j + 1)))
+        .collect();
+    let kept = |j: usize| circle(j).filter(|_| !through_ends[j % n]);
     let mut out = Vec::with_capacity(n);
     for j in 0..n {
-        let p = [q(points[j].x), q(points[j].y)];
-        let (before, after) = (circle(&segments[(j + n - 1) % n]), circle(&segments[j]));
-        out.push(match (before, after) {
+        let p = point(j);
+        out.push(match (kept(j + n - 1), kept(j)) {
             (Some(x), Some(y)) if x != y => {
                 if on(&x.0, &x.1, &p) && on(&y.0, &y.1, &p) {
                     p
                 } else {
                     return Err(Error::OutOfDomain(
-                        "an imported prism's arcs of two circles meeting at a joint (S9e.4b.4)",
+                        "an imported prism's joint of two circles each holding several arcs (S9e.4b.4)",
                     ));
                 }
             }
@@ -78,7 +140,27 @@ pub(super) fn points(points: &[Point2], segments: &[Segment]) -> Result<Vec<P2>>
             (None, None) => p,
         });
     }
-    Ok(out)
+    let mut circles = Vec::with_capacity(n);
+    for (j, taken) in through_ends.iter().enumerate() {
+        if !taken {
+            circles.push(None);
+            continue;
+        }
+        let (c, r) = circle(j).expect("an arc");
+        let fit = through(&out[j], &out[(j + 1) % n], &c, &r);
+        let off = |x: &R, y: &R| rational_f64(&(x - y)).abs() > tol;
+        match fit {
+            Some((c2, r2)) if !(off(&c2[0], &c[0]) || off(&c2[1], &c[1]) || off(&r2, &r)) => {
+                circles.push(Some((c2, r2)));
+            }
+            _ => {
+                return Err(Error::Degenerate(
+                    "an imported prism's arc too short to take through its ends",
+                ))
+            }
+        }
+    }
+    Ok((out, circles))
 }
 
 #[cfg(test)]
@@ -87,6 +169,14 @@ mod tests {
 
     fn p(x: f64, y: f64) -> P2 {
         [q(x), q(y)]
+    }
+
+    fn arc(cx: f64, cy: f64, r: f64, ccw: bool) -> Segment {
+        Segment::Arc {
+            center: Point2::new(cx, cy),
+            radius: r,
+            ccw,
+        }
     }
 
     #[test]
@@ -114,14 +204,8 @@ mod tests {
     #[test]
     fn joints_take_their_arcs_points_once() {
         // A stadium's arc end off its circle shares the moved point with
-        // its line; two arcs of one circle share theirs; two circles are
-        // refused unless the point lies on both.
+        // its line; two arcs of one circle share theirs.
         let line = Segment::Line;
-        let arc = |cx: f64, cy: f64, r: f64| Segment::Arc {
-            center: Point2::new(cx, cy),
-            radius: r,
-            ccw: true,
-        };
         let pts = [
             Point2::new(-3.0, -2.0),
             Point2::new(3.0, -2.0000000000000004),
@@ -130,29 +214,106 @@ mod tests {
         ];
         let segs = [
             line.clone(),
-            arc(3.0, 0.0, 2.0),
+            arc(3.0, 0.0, 2.0, true),
             line.clone(),
-            arc(-3.0, 0.0, 2.0),
+            arc(-3.0, 0.0, 2.0, true),
         ];
-        let out = points(&pts, &segs).unwrap();
+        let (out, circles) = path(&pts, &segs, 1e-7).unwrap();
         assert!(on(&p(3.0, 0.0), &q(2.0), &out[1]));
         assert_ne!(out[1], p(3.0, -2.0000000000000004));
         assert_eq!(out[2], p(3.0, 2.0));
+        assert!(circles.iter().all(Option::is_none));
         let halves = [Point2::new(5.5, 0.1), Point2::new(0.5, 0.1)];
         let both = [
-            arc(3.0, 0.1, 2.5000000000000004),
-            arc(3.0, 0.1, 2.5000000000000004),
+            arc(3.0, 0.1, 2.5000000000000004, true),
+            arc(3.0, 0.1, 2.5000000000000004, true),
         ];
-        let out = points(&halves, &both).unwrap();
+        let (out, circles) = path(&halves, &both, 1e-7).unwrap();
         assert!(out
             .iter()
             .all(|x| on(&p(3.0, 0.1), &q(2.5000000000000004), x)));
-        let lens = [Point2::new(0.0, -4.0), Point2::new(0.0, 4.0)];
-        assert!(points(&lens, &[arc(-3.0, 0.0, 5.0), arc(3.0, 0.0, 5.0)]).is_ok());
+        assert!(circles.iter().all(Option::is_none));
+    }
+
+    /// S9e.4b.4a: a lens whose joints lie on both circles keeps them; one
+    /// whose joint rounds off either takes both arcs through their ends,
+    /// each new circle through both its ends exactly, within rounding of
+    /// the stored one.
+    #[test]
+    fn arcs_of_two_circles_are_taken_through_their_ends() {
+        let segs = [arc(-3.0, 0.0, 5.0, true), arc(3.0, 0.0, 5.0, true)];
+        let exact = [Point2::new(0.0, -4.0), Point2::new(0.0, 4.0)];
+        let (out, circles) = path(&exact, &segs, 1e-7).unwrap();
+        assert_eq!(out, vec![p(0.0, -4.0), p(0.0, 4.0)]);
+        assert!(circles.iter().all(Option::is_none));
         let off = [Point2::new(0.0, -4.000000000000001), Point2::new(0.0, 4.0)];
+        let (out, circles) = path(&off, &segs, 1e-7).unwrap();
+        assert_eq!(out, vec![p(0.0, -4.000000000000001), p(0.0, 4.0)]);
+        for (j, (stored, c)) in [(p(-3.0, 0.0), 5.0), (p(3.0, 0.0), 5.0)]
+            .into_iter()
+            .enumerate()
+        {
+            let (centre, radius) = circles[j].clone().expect("taken through its ends");
+            assert!(on(&centre, &radius, &out[j]) && on(&centre, &radius, &out[(j + 1) % 2]));
+            let near = |x: &R, y: &R| rational_f64(&(x - y)).abs() <= 1e-14;
+            assert!(near(&centre[0], &stored[0]) && near(&centre[1], &stored[1]));
+            assert!(near(&radius, &q(c)));
+        }
+        // Two arcs tangent from either side (an S curve between lines): the
+        // joint off either, both arcs taken through their ends, the lines'
+        // joints on the new circles.
+        let pts = [
+            Point2::new(-4.0, -3.0),
+            Point2::new(4.0, -3.0),
+            Point2::new(4.0, 1.0),
+            Point2::new(2.0000000000000004, 3.0),
+            Point2::new(0.0, 5.0),
+            Point2::new(-4.0, 5.0),
+        ];
+        let segs = [
+            Segment::Line,
+            Segment::Line,
+            arc(2.0, 1.0, 2.0, true),
+            arc(2.0, 5.0, 2.0, false),
+            Segment::Line,
+            Segment::Line,
+        ];
+        let (out, circles) = path(&pts, &segs, 1e-7).unwrap();
+        assert_eq!(out[3], p(2.0000000000000004, 3.0));
+        for j in [2, 3] {
+            let (centre, radius) = circles[j].clone().expect("taken through its ends");
+            assert!(on(&centre, &radius, &out[j]) && on(&centre, &radius, &out[j + 1]));
+        }
+        assert!(circles[0].is_none() && circles[5].is_none());
+    }
+
+    /// A joint of two circles each holding other arcs is refused (none can
+    /// move); an arc whose circle through its ends lies off the stored one
+    /// by more than the tolerance is degenerate.
+    #[test]
+    fn shared_circles_and_short_arcs_are_refused() {
+        let split = [
+            Point2::new(0.0, -4.000000000000001),
+            Point2::new(2.0, 0.0),
+            Point2::new(0.0, 4.0),
+            Point2::new(-2.0, 0.0),
+        ];
+        let segs = [
+            arc(-3.0, 0.0, 5.0, true),
+            arc(-3.0, 0.0, 5.0, true),
+            arc(3.0, 0.0, 5.0, true),
+            arc(3.0, 0.0, 5.0, true),
+        ];
         assert!(matches!(
-            points(&off, &[arc(-3.0, 0.0, 5.0), arc(3.0, 0.0, 5.0)]),
-            Err(Error::OutOfDomain(_))
+            path(&split, &segs, 1e-7),
+            Err(Error::OutOfDomain(m)) if m.contains("several arcs")
+        ));
+        let segs = [arc(-3.0, 0.0, 5.0, true), arc(3.0, 0.0, 5.0, true)];
+        let far = [Point2::new(0.0, -4.000001), Point2::new(0.0, 4.0)];
+        assert!(path(&far, &segs, 1e-5).is_ok());
+        assert!(matches!(
+            path(&far, &segs, 1e-9),
+            Err(Error::Degenerate(m)) if m.contains("too short")
         ));
     }
 

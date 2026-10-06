@@ -1,23 +1,27 @@
-//! S9e.4b.1: imported prisms whose arcs' ends round off their circles in
-//! their caps' frames (bodies OCCT wrote to `.brep` files), given to
-//! Booleans, against the independent reference (`fixtures/boolean-imported-
-//! arcs-*` from `tools/generate_imported_arcs_boolean_fixtures.py`, the
-//! bodies under `fixtures/imported/`): each case's Boolean (or chain) with
-//! its imported inputs made by `Solid::imported_with`, decided on S9e.4a's
-//! construction with every arc's ends taken onto its circle. Each case runs
-//! once (on a few threads) for the checks that read its result.
+//! S9e.4b.4a: imported prisms whose arcs of two circles meet at a joint
+//! (bodies OCCT wrote to `.brep` files: four discs' common, a pointed arch,
+//! an arc tangent inside another, two circles crossing at a small angle),
+//! given to Booleans, against the independent reference
+//! (`fixtures/boolean-imported-joints-*` from
+//! `tools/generate_imported_joints_boolean_fixtures.py`, the bodies under
+//! `fixtures/imported/`): each case's Boolean (or chain) with its imported
+//! inputs made by `Solid::imported_with`, decided on S9e.4a's construction
+//! with each arc ending at such a joint taken through its two ends. Each
+//! case runs once (on a few threads) for the checks that read its result.
 #[path = "support/boolean_protocol.rs"]
 #[allow(dead_code)]
 mod protocol;
 use rusty_occt::history::{self, Resolution};
 use rusty_occt::identity::OperationId;
-use rusty_occt::{Error, Location, Point3, Solid};
+use rusty_occt::{
+    Boundary, Error, Frame3, Location, Point2, Point3, Profile, Segment, Solid, Tolerance, Vec3,
+};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::OnceLock;
 
 fn cases() -> Vec<protocol::Case> {
     protocol::cases(include_str!(
-        "../../fixtures/boolean-imported-arcs-cases.txt"
+        "../../fixtures/boolean-imported-joints-cases.txt"
     ))
 }
 
@@ -62,7 +66,7 @@ type Expected = std::collections::BTreeMap<String, (String, Option<(usize, [f64;
 
 fn expected() -> Expected {
     let mut expect = std::collections::BTreeMap::new();
-    for line in include_str!("../../fixtures/boolean-imported-arcs-expected.tsv")
+    for line in include_str!("../../fixtures/boolean-imported-joints-expected.tsv")
         .lines()
         .filter(|l| !l.starts_with('#'))
     {
@@ -164,9 +168,9 @@ fn every_case_matches_the_reference() {
     );
 }
 
-/// The declared refusals name their reasons: the coplanar box and the
-/// tangent box as S9's (the lens's two circles at a joint, S9e.4b.4's
-/// before, evaluate since S9e.4b.4a: its arcs taken through their ends).
+/// The declared refusals name their reasons: the split lens's joint of two
+/// circles each holding other arcs as S9e.4b.4's, the rod on the quad's
+/// stored circle as two surfaces within rounding of one (S9's).
 #[test]
 fn refusals_name_their_reasons() {
     for (name, run) in runs() {
@@ -174,17 +178,16 @@ fn refusals_name_their_reasons() {
             Err(Error::Degenerate(m) | Error::OutOfDomain(m)) => *m,
             _ => "",
         };
-        if name.starts_with("lens_box") {
-            assert!(run.is_ok(), "{name}: {reason}");
-        }
-        if name.starts_with("slot_flush") {
-            assert_eq!(
-                reason, "two faces within the resolution of one plane",
-                "{name}"
+        if name.starts_with("split_lens") {
+            assert!(
+                matches!(run, Err(Error::OutOfDomain(_)))
+                    && reason
+                        == "an imported prism's joint of two circles each holding several arcs (S9e.4b.4)",
+                "{name}: {reason}"
             );
         }
-        if name.starts_with("slot_kiss") {
-            assert!(reason.contains("tangency"), "{name}: {reason}");
+        if name.starts_with("quad_seat") {
+            assert!(matches!(run, Err(Error::Degenerate(_))), "{name}: {reason}");
         }
     }
 }
@@ -237,7 +240,7 @@ fn histories_are_complete_over_the_imported_ids() {
 
 #[test]
 fn results_are_deterministic_and_move_rigidly() {
-    use rusty_occt::{RigidTransform, Vec3};
+    use rusty_occt::RigidTransform;
     let motion =
         RigidTransform::rotation(Point3::new(1.0, 0.0, 0.0), Vec3::new(1.0, 2.0, 2.0), 0.5)
             .unwrap();
@@ -286,27 +289,28 @@ fn results_are_deterministic_and_move_rigidly() {
 /// Both inputs moved rigidly keep the reference's volumes: translated, and
 /// turned where no face of one input is exactly parallel to the other's
 /// cylinder (a turn rounds such a pair into S9's `Degenerate` "a plane
-/// within rounding of a cylinder's direction"); an imported prism's arcs'
-/// ends are taken onto their circles again in the moved frame.
+/// within rounding of a cylinder's direction"); an imported prism's arcs
+/// are taken through their ends again in the moved frame.
 #[test]
 fn moved_inputs_keep_their_volumes() {
-    use rusty_occt::{RigidTransform, Vec3};
+    use rusty_occt::RigidTransform;
     let shift = RigidTransform::translation(Vec3::new(0.5, -0.25, 1.0)).unwrap();
     let turn = RigidTransform::rotation(Point3::new(1.0, 0.0, 0.0), Vec3::new(1.0, 2.0, 2.0), 0.5)
         .unwrap();
     let expect = expected();
     let all = cases();
     for (name, turned) in [
-        ("slot_box_cut", false),
-        ("box_slot_common", false),
-        ("slot_rod_cut", false),
-        ("slot_ball_fuse", true),
-        ("halves_box_cut", false),
-        ("rounded_slab_cut", false),
-        ("notch_box_common", false),
+        ("quad_box_cut", false),
+        ("box_quad_common", false),
+        ("quad_rod_cut", true),
+        ("quad_ball_fuse", true),
+        ("arch_box_common", false),
+        ("arch_slab_cut", false),
+        ("cam_box_fuse", false),
+        ("cam_rod_cut", true),
+        ("blade_box_cut", false),
         ("both_fuse", true),
         ("both_cut", true),
-        ("lens_box_cut", false),
     ] {
         let case = all.iter().find(|c| c.name == name).unwrap();
         let motions = if turned {
@@ -339,23 +343,47 @@ fn body(name: &str, op: u64) -> Result<Solid, Error> {
     Solid::imported_with(OperationId(op), topology, resolution).map(|(s, _)| s)
 }
 
-/// Every body imports as S9e.4a's construction (the lens too: its joints
-/// are taken through only in a Boolean's exact model), its mass in closed form,
-/// its stored vertices on its boundary and points off it classified.
+/// A circular segment's area beyond its chord: `r^2 (t - sin t) / 2` for
+/// the arc's angle `t`.
+fn segment(r: f64, t: f64) -> f64 {
+    r * r * (t - t.sin()) / 2.0
+}
+
+/// Every body imports as S9e.4a's construction (its joints taken through
+/// only in a Boolean's exact model), its mass its profile's closed form (a
+/// polygon and its arcs' segments) times its height, its stored vertices
+/// on its boundary and points off it classified.
 #[test]
 fn imported_bodies_are_their_constructions() {
-    use std::f64::consts::PI;
+    use std::f64::consts::{FRAC_PI_2, PI};
+    let theta = 2.0 * 0.6f64.asin();
+    let blade_a = 2.0 * 0.28f64.asin();
+    let blade_b = FRAC_PI_2 - (2.5f64 / 6.0).atan();
     let bodies = [
-        ("slot", 5.0 * (24.0 + 4.0 * PI), [5.0, 4.5, 2.0]),
-        ("halves_turn", 5.0 * 6.25 * PI, [5.0, 3.9, 2.5]),
-        ("rounded", 3.0 * (40.0 - 4.0 + PI), [5.0, 5.0, 1.5]),
+        // Four discs' common: the square and four segments of angle 2 asin(3/5).
         (
-            "notch",
-            4.0 * (64.0 + 25.0 * (0.9272952180016122 - 0.48)),
-            [6.0, 4.0, 1.5],
+            "quad",
+            4.0 * (36.0 + 4.0 * segment(5.0, theta)),
+            [5.0, 5.0, 2.0],
+        ),
+        // A triangle of base 4 and height 4, two segments of angle atan(4/3).
+        (
+            "arch",
+            3.0 * (8.0 + 2.0 * segment(5.0, (4.0f64 / 3.0).atan())),
+            [4.25, 4.3, 1.0],
         ),
         (
-            "lens",
+            "cam",
+            3.0 * (35.5 + segment(5.0, PI - (4.0f64 / 3.0).atan()) + segment(3.0, FRAC_PI_2)),
+            [5.0, 5.0, 1.5],
+        ),
+        (
+            "blade",
+            3.0 * (120.0 + segment(12.5, blade_a) + segment(6.5, blade_b)),
+            [5.0, 3.0, 1.5],
+        ),
+        (
+            "split_lens",
             4.0 * (25.0 * 2.0 * 0.9272952180016122 - 24.0),
             [5.0, 3.0, 2.5],
         ),
@@ -389,13 +417,162 @@ fn imported_bodies_are_their_constructions() {
     }
 }
 
+/// The kernel's own prisms whose arcs of two circles meet at rational
+/// points (four discs' common, a lens, an S curve, an arc tangent inside
+/// another), each in a turned frame, written by the kernel's writer, read
+/// back and imported (their joints rounded off both circles by the frames
+/// normalized again), give each Boolean with a box and a rod the kernel's
+/// own results' volumes within `1e-9`.
+#[test]
+fn kernel_written_joints_import_as_themselves() {
+    use rusty_occt::occt_brep::{import, read, write};
+    let tol = Tolerance::new(1e-7, 1e-9).unwrap();
+    let arc = |cx: f64, cy: f64, r: f64, ccw: bool| Segment::Arc {
+        center: Point2::new(cx, cy),
+        radius: r,
+        ccw,
+    };
+    let frame = |o: (f64, f64, f64), x: (f64, f64)| {
+        Frame3::new(
+            Point3::new(o.0, o.1, o.2),
+            Vec3::new(0.0, 0.0, 1.0),
+            Vec3::new(x.0, x.1, 0.0),
+            tol,
+        )
+        .unwrap()
+    };
+    let prism = |pts: &[(f64, f64)], segs: Vec<Segment>, f: Frame3, h: f64| {
+        let pts = pts.iter().map(|&(x, y)| Point2::new(x, y)).collect();
+        let b = Boundary::path(pts, segs, tol).unwrap();
+        Solid::extrude_with(
+            OperationId(1),
+            Profile::new(b, vec![], tol).unwrap(),
+            f,
+            0.0,
+            h,
+        )
+        .unwrap()
+        .0
+    };
+    let upright = |outline: Boundary, z0: f64, z1: f64| {
+        let f = frame((0.0, 0.0, 0.0), (1.0, 0.0));
+        Solid::extrude_with(
+            OperationId(2),
+            Profile::new(outline, vec![], tol).unwrap(),
+            f,
+            z0,
+            z1,
+        )
+        .unwrap()
+        .0
+    };
+    let square = |x0: f64, y0: f64, x1: f64, y1: f64| {
+        Boundary::polygon(
+            vec![
+                Point2::new(x0, y0),
+                Point2::new(x1, y0),
+                Point2::new(x1, y1),
+                Point2::new(x0, y1),
+            ],
+            tol,
+        )
+        .unwrap()
+    };
+    let (t30, r125, tilt) = ((0.8660254037844386, 0.5), (12.0, 5.0), (0.6, 0.8));
+    let bodies = [
+        prism(
+            &[(3.0, -3.0), (3.0, 3.0), (-3.0, 3.0), (-3.0, -3.0)],
+            vec![
+                arc(-1.0, 0.0, 5.0, true),
+                arc(0.0, -1.0, 5.0, true),
+                arc(1.0, 0.0, 5.0, true),
+                arc(0.0, 1.0, 5.0, true),
+            ],
+            frame((5.0, 5.0, 0.0), r125),
+            4.0,
+        ),
+        prism(
+            &[(0.0, -4.0), (0.0, 4.0)],
+            vec![arc(-3.0, 0.0, 5.0, true), arc(3.0, 0.0, 5.0, true)],
+            frame((5.0, 5.0, 0.0), tilt),
+            4.0,
+        ),
+        prism(
+            &[
+                (-4.0, -3.0),
+                (4.0, -3.0),
+                (4.0, 1.0),
+                (2.0, 3.0),
+                (0.0, 5.0),
+                (-4.0, 5.0),
+            ],
+            vec![
+                Segment::Line,
+                Segment::Line,
+                arc(2.0, 1.0, 2.0, true),
+                arc(2.0, 5.0, 2.0, false),
+                Segment::Line,
+                Segment::Line,
+            ],
+            frame((5.0, 3.0, 0.0), t30),
+            3.0,
+        ),
+        prism(
+            &[(-3.0, -4.0), (5.0, 0.0), (2.0, 3.0), (-3.0, 3.0)],
+            vec![
+                arc(0.0, 0.0, 5.0, true),
+                arc(2.0, 0.0, 3.0, true),
+                Segment::Line,
+                Segment::Line,
+            ],
+            frame((5.0, 5.0, 0.0), r125),
+            3.0,
+        ),
+    ];
+    let tools = [
+        upright(square(6.0, 6.0, 12.0, 12.0), 1.0, 2.5),
+        upright(
+            Boundary::circle(Point2::new(7.5, 4.75), 1.0, tol).unwrap(),
+            -3.0,
+            8.0,
+        ),
+    ];
+    let volume = |r: Result<(Vec<Solid>, rusty_occt::history::History), Error>| {
+        r.map(|(out, _)| out.iter().map(|s| s.mass_properties().volume).sum::<f64>())
+    };
+    for (k, solid) in bodies.iter().enumerate() {
+        let text = write(solid.topology(), solid.resolution().linear()).unwrap();
+        let doc = read(&text).unwrap();
+        let [stored] = <[_; 1]>::try_from(import(&doc).solids).unwrap();
+        let (again, _) =
+            Solid::imported_with(OperationId(3), stored.result.unwrap(), stored.tolerance).unwrap();
+        for tool in &tools {
+            for op in 0..3 {
+                let run = |s: &Solid| match op {
+                    0 => volume(s.fuse(OperationId(5), tool)),
+                    1 => volume(s.cut(OperationId(5), tool)),
+                    _ => volume(s.common(OperationId(5), tool)),
+                };
+                let (direct, via) = (run(solid), run(&again));
+                match (&direct, &via) {
+                    (Ok(x), Ok(y)) => assert!(
+                        (x - y).abs() <= 1e-9 * x.abs().max(1.0),
+                        "body {k} op {op}: {x} {y}"
+                    ),
+                    _ => panic!("body {k} op {op}: {direct:?} {via:?}"),
+                }
+            }
+        }
+    }
+}
+
 /// The kernel stores the frames the reference swept, bit for bit (the
 /// solids built from rows; the imported ones' are the converter's).
 #[test]
 fn stored_frames_are_the_reference_inputs() {
     let hex = |x: f64| format!("{:016x}", x.to_bits());
     let cases = cases();
-    for row in include_str!("../../fixtures/boolean-imported-arcs-frames.tsv")
+    for row in include_str!("../../fixtures/boolean-imported-joints-frames.tsv")
         .lines()
         .filter(|l| !l.starts_with('#'))
     {

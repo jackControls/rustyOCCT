@@ -70,6 +70,10 @@
 //! cut by the turned box again, its volume the chained cut's. S9e.4b.3a:
 //! a first result of one sphere, cylinder or cone face and plane faces too
 //! (a plane piece, its primitive common its planes' half-spaces).
+//! S9e.4b.4a: a lens prism in the object's frame given the chosen operation
+//! with the tool, and again once written, read back and imported, its arcs
+//! of two circles taken through their ends where their joints round off
+//! both (`JOINTS`).
 use crate::analytic_intersections::Bytes;
 use crate::split::{profile, spline_profile};
 use rusty_occt::identity::OperationId;
@@ -155,6 +159,14 @@ const GIVEN_MET: bool = true;
 /// (S9e.4b.2: an imported polyhedron on its stored vertices), or of one
 /// sphere, cylinder or cone face and planes (S9e.4b.3a: a plane piece). On.
 const IMPORTED: bool = true;
+
+/// Whether a lens prism (two arcs of circles about `(+-3k, 0)` of radius
+/// `5k` meeting at `(0, +-4k)`) in the object's frame is given the chosen
+/// operation with the tool, then written, read back, imported and given it
+/// again, by the chained byte's next bit (S9e.4b.4a: in the tilted frame its
+/// joints round off both circles once read back, each arc taken through its
+/// ends). On.
+const JOINTS: bool = true;
 
 /// Whether a spline prism meets a line prism in frames with different
 /// axes (S9f.1's spline walls in the curved engine: creases, generatrices
@@ -795,16 +807,61 @@ pub fn check_boolean(data: &[u8]) {
             }
         }
     }
+    // S9e.4b.4a: a lens in the object's frame given the chosen operation
+    // with the tool, and once written, read back and imported (`JOINTS`):
+    // where both evaluate, the same volume within 1e-9.
+    if IMPORTED && JOINTS && (chained / 24) % 2 == 1 {
+        if let Some(lens) = lens_prism(fa, s1, h, tolerance) {
+            if let Some(again) = reimported(&lens) {
+                let op = |s: &Solid| match chained % 3 {
+                    0 => s.fuse(OperationId(13), &tool),
+                    1 => s.cut(OperationId(13), &tool),
+                    _ => s.common(OperationId(13), &tool),
+                };
+                if let (Some(x), Some(y)) = (run(op(&lens)), run(op(&again))) {
+                    assert!(
+                        near(volume(&x), volume(&y)),
+                        "imported lens {} for {}",
+                        volume(&y),
+                        volume(&x)
+                    );
+                }
+            }
+        }
+    }
     for out in [&fused, &cut, &common].into_iter().flatten() {
         moves(out);
     }
 }
 
+/// A lens of two arcs of circles about `(+-3k, 0)` of radius `5k` meeting at
+/// `(0, +-4k)`, `k = s / 8` (dyadic, every number exact), over `[0, h]` in
+/// `frame` (S9e.4b.4a).
+fn lens_prism(frame: Frame3, s: f64, h: f64, tolerance: Tolerance) -> Option<Solid> {
+    let k = s / 8.0;
+    let arc = |cx: f64| Segment::Arc {
+        center: Point2::new(cx, 0.0),
+        radius: 5.0 * k,
+        ccw: true,
+    };
+    let outline = Boundary::path(
+        vec![Point2::new(0.0, -4.0 * k), Point2::new(0.0, 4.0 * k)],
+        vec![arc(-3.0 * k), arc(3.0 * k)],
+        tolerance,
+    )
+    .ok()?;
+    let profile = Profile::new(outline, vec![], tolerance).ok()?;
+    Solid::extrude_with(OperationId(12), profile, frame, 0.0, h)
+        .ok()
+        .map(|(s, _)| s)
+}
+
 /// A solid written by the kernel's `.brep` writer, read back and imported
 /// (S9e.4a); none where the writer, the reader or the recognition refuses
 /// it (a spline prism, S9f). Arcs off their circles once rounded are taken
-/// onto them by the Boolean's model (S9e.4b.1); a joint of two arcs of
-/// different circles rounded off either is refused there (S9e.4b.4).
+/// onto them by the Boolean's model (S9e.4b.1); arcs of different circles
+/// meeting at a joint rounded off either are taken through their ends
+/// there (S9e.4b.4a).
 fn reimported(s: &Solid) -> Option<Solid> {
     use rusty_occt::occt_brep::{import, read, write};
     let text = write(s.topology(), s.resolution().linear()).ok()?;

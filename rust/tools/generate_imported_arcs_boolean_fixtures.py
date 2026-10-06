@@ -38,7 +38,7 @@ about `(5, 0)` of radius 5 to `(8, 4)` (crossing the lines at an angle), back
 to `(0, 4)`, in the `TURN30` frame at `(9/4, 1/8, -1/2)`, height 4; `lens`, two
 arcs of circles of radius 5 about `(-3, 0)` and `(3, 0)` meeting at `(0,
 -4)` and `(0, 4)`, in the `TURN30` frame at `(5, 3, 1/2)`, height 4 (two
-circles at a joint: S9e.4b.4's).
+circles at a joint: S9e.4b.4a's arcs taken through their ends).
 
 Cases (each the three operations): `slot_box`, the slot and a box across
 one of its arc ends; `box_slot`, the box and the slot as the tool;
@@ -47,11 +47,11 @@ and a ball across its arc wall; `halves_box`, the split circle and a box
 across its seam; `rounded_slab`, the rounded rectangle and a `TILT` slab;
 `notch_box`, the notch and a box across its arc's crossing joint; `both`,
 the notch and the slot, both imported; `chain_slot`, the slot less the rod,
-then with the box. Declared `degenerate`: `slot_flush`, a box in the `TILT`
+then with the box; `lens_box`, the lens and the box (declared `unsupported`
+until S9e.4b.4a). Declared `degenerate`: `slot_flush`, a box in the `TILT`
 frame on the slot's flat wall's plane (two faces within the resolution of
 one plane); `slot_kiss`, a box in the `TILT` frame whose wall touches the
-slot's arc wall along a generatrix. Declared `unsupported`: `lens_box`, the
-lens (S9e.4b.4) and the box.
+slot's arc wall along a generatrix.
 
 The reference is the construction OCCT was given, through S9e.3a's chained
 reference with S9e.4a's checks (`generate_imported_boolean_fixtures.
@@ -199,7 +199,6 @@ def group(name, klass, specs, outcomes, first=None, reason=None, kind=None):
 FLUSH = ('a box in the slot\'s frame on the plane of its flat wall (coplanar in the construction, within the '
          'resolution of one plane in the imported body)')
 KISS = 'a box\'s wall touching the imported slot\'s arc wall along a generatrix'
-LENS = 'S9e.4b.4: the imported prism\'s arcs of two circles meeting at a joint'
 
 
 def cases():
@@ -226,7 +225,7 @@ def cases():
                  {'fuse': 1, 'cut': 1, 'common': 0}, reason=KISS)
     out += group('lens_box', 'prism', [imported('lens'), prism([square(4.0, -2.0, 6.0, 12.0)], at('XY', (0, 0, 1)),
                                                                0.0, 1.5)],
-                 three, kind='unsupported', reason=LENS)
+                 three)
     return out
 
 
