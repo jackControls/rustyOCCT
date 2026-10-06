@@ -200,7 +200,6 @@ pub(super) fn model(s: &Solid, op: Operand) -> Result<Prism> {
 /// assembly (`out`, under the first Boolean `first`): the solid `direct` of
 /// them, its slots the stored ones (S9e.1), or else the one matched to the
 /// stored topology (S9e.2; S9e.4b.3a's plane pieces).
-#[allow(clippy::too_many_lines)]
 pub(super) fn built(
     s: &Solid,
     op: Operand,
@@ -209,8 +208,38 @@ pub(super) fn built(
     first: Op2,
     direct: Option<usize>,
 ) -> Result<Prism> {
-    let t = &s.topology;
-    let tol = s.resolution().linear();
+    let stored = Stored {
+        topology: &s.topology,
+        resolution: s.resolution(),
+        frame: s.frame,
+        poles: super::pieces::is_piece(s),
+    };
+    built_on(&stored, op, arr, out, first, direct)
+}
+
+/// What a given model is matched to and named by: a solid's stored
+/// topology, or (S9e.4b.3c.3b) an inner Boolean's own assembly in a
+/// piece's tree.
+pub(super) struct Stored<'a> {
+    pub(super) topology: &'a crate::topology::Topology,
+    pub(super) resolution: crate::Tolerance,
+    pub(super) frame: crate::Frame3,
+    /// An imported piece's stored poles off its loops may stay unmatched.
+    pub(super) poles: bool,
+}
+
+/// [`built`] on a stored topology.
+#[allow(clippy::too_many_lines)]
+pub(super) fn built_on(
+    s: &Stored<'_>,
+    op: Operand,
+    arr: Arr,
+    out: Vec<(Component, Made)>,
+    first: Op2,
+    direct: Option<usize>,
+) -> Result<Prism> {
+    let t = s.topology;
+    let tol = s.resolution.linear();
     let differ = || Error::ComputationLimit("a given result rebuilt differently");
     // The given solid among the re-run's and its slots' stored ones.
     let (k, slots) = if let Some(k) = direct {
@@ -242,7 +271,7 @@ pub(super) fn built(
         // re-run solid that matches.
         // S9e.4b.3c.3: an imported piece's stored poles off its loops may
         // stay unmatched (OCCT's vertex loops).
-        let poles = super::pieces::is_piece(s);
+        let poles = s.poles;
         let mut found = None;
         for (c, (component, _)) in out.iter().enumerate() {
             if let Some(m) = super::matched::matched_poles(&component.parts, t, tol, poles) {
@@ -502,16 +531,16 @@ pub(super) fn built(
     }
     let boxes = leaf.iter().map(|&(o, f)| leaves[o].boxes[f]).collect();
     // The first input's frame, or the primitive's where a piece's hull is
-    // first (S9e.4b.3c.3: the hull less the primitive).
+    // first (S9e.4b.3c.3: the hull less the primitive; S9e.4b.3c.3b: a
+    // given leaf of hulls alone in a piece's tree passed by too).
     let f = leaves
         .iter()
-        .find(|m| m.hull.is_none())
-        .unwrap_or(&leaves[0])
-        .f
+        .find_map(primitive_frame)
+        .unwrap_or(&leaves[0].f)
         .clone();
     Ok(Prism {
         frame: s.frame,
-        tolerance: s.resolution(),
+        tolerance: s.resolution,
         region,
         f,
         lo: zero(),
@@ -542,6 +571,18 @@ pub(super) fn built(
         })),
         hull: None,
     })
+}
+
+/// A model's primitive frame: its own, a hull's none, a given model's its
+/// first leaf's that has one.
+fn primitive_frame(m: &Prism) -> Option<&super::model::Affine> {
+    if m.hull.is_some() {
+        return None;
+    }
+    match &m.given {
+        Some(g) => g.leaves.iter().find_map(primitive_frame),
+        None => Some(&m.f),
+    }
 }
 
 impl Given {

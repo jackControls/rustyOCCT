@@ -8191,6 +8191,337 @@ Decisions for S9, recorded before its code (2026-09-28):
     5.3 in the last survey), the restore cases 0.1 to 3.6 s
     (`bcommon_complex/B9`), the rollex 0.5. No case fails, crashes or
     panics; no kernel change.
+  * **S9e.4b.3c.3b refined, before its code (2026-10-05).** Why it is
+    refused today: S9e.4b.3c.3a tries a body of one sphere, cylinder or cone
+    face and plane faces as one Boolean of its primitive and the convex hull
+    of its other planes (the common, the hull less the primitive, the bite,
+    the boss) and refuses one no form's model matches
+    (`OutOfDomain("an imported plane piece other than one Boolean of its
+    primitive and its planes' hull (S9e.4b.3c.3b)")`). Replayed with debug
+    assertions, the `boolean` fuzz target's `IMPORTED` stage refuses 4 first
+    results so, two bodies twice each, read off the kernel's writer's files:
+    a box `[0, 1.25] x [0, 2.25] x [0, 2.25]` fused with a ball's half (a
+    ball of radius 2.8125 about `(0.375, -0.125, 1.125)` and the half-space
+    below its equator's plane, its disc a face of the body, the plane cutting
+    the box: its primitive common its disc's half-space fused with the box,
+    no single form), and a U prism on a turned frame less a ball about its
+    end's corner (three of its planes through the ball's centre, the ball
+    through its whole thickness: the hull less the primitive, the hull not
+    convex). The survey's restore cases hold none (its last S9e.4b.3c cases
+    are `bcut_complex/G4`, evaluating since S9e.4b.3c.3a, and `I6` and
+    `bugs/modalg_1/buc60926`, `Degenerate` for their own tangency and apex),
+    so no DRAW case is expected to move. Decisions. (1) *Sub-steps.*
+    **S9e.4b.3c.3b** (this step): a body of one curved face and plane faces
+    as a Boolean tree of its primitive and the convex hulls of its planes, one
+    level of pockets (2): a union of the primitive's common with its ends and
+    a hull (the fuzz target's ball's half fused with a box, a sphere's disc
+    with another form, a cylinder's flat along its axis on a boss), a
+    primitive bitten twice, a boss, groove or bite on or by a body not convex
+    in its planes (the U prism's groove), a primitive's end not normal to its
+    axis; deeper trees (a pocket within a pocket, a bite by a body whose own
+    pockets are not convex: a tooth left between a U's arms inside the
+    primitive) stay refused, now as S9e.4b.4's, with bodies of several
+    curved faces. (2) *The decomposition*, deterministic, read off the stored
+    topology: (a) the curved face, its primitive as S9e.4b.3c.3a's (a whole
+    sphere; a cylinder or a cone over the curved face's own axial range,
+    past each end by a quarter of it but at a cap, clamped at a cone's
+    apex), its material inside its quadric or outside it; (b) each edge of
+    two faces convex or concave: at its curve's middle point, the first
+    face's outward normal against the direction into the second face from
+    the edge (the second's outward normal across its loop's tangent there),
+    convex where it leans away from the first face's material; within
+    `1e-9` of none (the faces tangent along it) the body's own tangency, as
+    (5); (c) caps as S9e.4b.3c.3a's (plane faces normal to a cylinder's or a
+    cone's axis at an end of the curved face's range, facing away from it,
+    or into it outside the quadric) are the primitive's ends and in no
+    group; (d) two groups of the other plane faces: the primitive's (faces
+    sharing an edge with the curved face convex where its material lies
+    inside the quadric, concave where outside: they trim the primitive) and
+    the other (sharing a concave edge, convex outside: they bound what is
+    joined to it or cut by it); a face sharing edges of both kinds with the
+    curved face is decomposed by neither (refused, (5)); every other plane
+    face joins, in rounds over the faces in order until none joins, the
+    group of a face it shares a convex edge with, else of one it shares a
+    concave edge with, a face reached from both groups at once in one round
+    refused; (e) each group's region: its faces connected through concave
+    edges between two of its own (convexity taken in the region's material:
+    for the primitive's group outside the quadric the faces turned over and
+    their edges' kinds reversed) form pockets, components of at least two
+    faces in the order of their first faces, each the convex hull of its
+    faces' planes turned over (S9e.4b.3c.3a's bite); its other faces' planes
+    bound its hull (two faces on one plane facing one way one plane, as
+    S9e.4b.3c.3a's), none for a group of pockets alone; its region the hull
+    less its pockets in turn; (f) the body: with its curved face's material
+    inside the quadric, the primitive common the primitive's group's region,
+    fused with the other group's region; outside, the other group's region
+    less that; an empty group drops its Boolean. (3) *The tree.* Every
+    Boolean takes two exact models: the primitive's model (S9d's, the seams
+    tried in turn as now), hull leaf models (`pieces.rs`'s `Hull`, bounded
+    by S9e.4b.3a's cube) and the given models of inner Booleans. The
+    primitive's group's region is applied to the primitive one hull at a
+    time (its hull common, then each pocket cut), the other group's region
+    built from its hull less each pocket, the last Boolean the fuse or the
+    cut; at most four Booleans (a deeper tree is S9e.4b.4's). An inner
+    Boolean's result is its given model (S9e.1's: the re-run's assembly its
+    own slots, under ids of the piece's construction operation, no stored
+    topology), arranged in the next Boolean as S9e.3a's given leaves are;
+    the last Boolean's given model is matched to the stored topology by
+    S9e.2's match (every stored vertex within the resolution of the
+    model's, edges through their points, faces by their edges), its ids the
+    stored ones, so a Boolean's history is over them as now; the stored
+    vertices split rims (S9e.4b.3c.1's `split_at`) in every Boolean of the
+    tree; the given model's frame the leaf holding the primitive's. Numbers:
+    the engine's own, no new field or degree. (4) *Recognition.* S9e.4b.3c.3a's
+    forms are tried first, unchanged (their one-Boolean models); a body none
+    matches is decomposed, and its tree tried where it is not one of those
+    forms (one Boolean of the primitive and one hull: already tried); the
+    tree's model matching the stored topology is the body (the decomposition
+    kept with the piece: a rigid motion reads it off the moved stored
+    topology again), else `OutOfDomain("an imported plane piece other than
+    a Boolean tree of its primitive and its planes' hulls (S9e.4b.4)")`, a
+    Boolean's other refusal in the tree (S9's, raised in its own
+    arrangement) reported. Classification: the tree's set functions over the
+    primitive's location and each hull's sides within the resolution (a
+    common the lesser, a fuse the greater, a cut the first's common the
+    second's reversed); bounds and mass as S9e.4b.3c.3a's. (5) *Degenerate
+    and refused.* S9's rules unchanged in every Boolean of the tree; a
+    tangency in any of them, or an edge of the curved face along which a
+    plane face is within `1e-9` of tangent to it, is the body's own,
+    `Degenerate("an imported plane piece whose curved face is tangent to its
+    plane faces")` as S9e.4b.3c.3a's; two faces on one plane facing apart
+    within one group as S9e.4b.3c.3a's. Refused as S9e.4b.4's: a face of
+    both kinds against the curved face or reached by both groups, more than
+    four Booleans, and a tree whose model does not match (a pocket within a
+    pocket, a pocket not convex). (6) *Fuzzing.* The `IMPORTED` stage
+    unchanged: the replay measures the bodies now imported (the 4 above
+    expected). (7) *Evidence first.* Bodies OCCT writes in one Boolean (a
+    `write` block; a U prism is a prism of a profile of lines), every
+    section a circle or a line (a sphere's planes its frame's parallels' or
+    meridians'; a cylinder's oblique section an ellipse the reader does not
+    take, so a primitive's oblique end is tested on the kernel's own
+    topologies, imported directly as S9e.4b.3a's split pieces were):
+    `form_u_scoop` (a U prism on `SKEW4` less a ball centred on its top face
+    above its notch, the ball's axis along the notch's walls' normal: the
+    top face a meridian plane, the walls parallels' planes, the floor out of
+    reach), `form_u_boss` (a U prism on the world's axes fused with a
+    cylindrical boss from one face to a cap), `form_bites` (a cylinder on the
+    world's axes less a U prism along its axis between its caps whose two
+    arms bite its wall: bitten twice, by a body not convex), `form_cap_boss`
+    (a box fused with a ball's zone whose disc lies below the box, the ball
+    meeting only the box's planes normal to its axis), `form_cap_pocket` (a
+    box less a ball's zone above a parallel's plane inside it: a dish with a
+    flat floor) and `form_dee_boss` (a box fused with a cylinder along `x`
+    whose axis lies on its top face, flattened by a plane along its axis
+    above it); declared `degenerate` `form_u_notch` (`bcut_complex/I6`'s
+    notch on a body not convex: a U prism less a cylinder tangent to two of
+    its faces) and declared `unsupported` `form_tooth` (a cylinder less a U
+    prism whose notch lies inside the cylinder: a tooth left between the
+    arms, a pocket within a pocket, S9e.4b.4's); cases of each against rods, slabs, balls and boxes, the
+    body the tool, two imported and a chain; S9e.3a's chained reference on
+    the constructions OCCT was given with S9e.4b.3c.3a's checks and each
+    body's closed form where it has one (`generate_piece_trees_boolean_
+    fixtures.py --check`, a CI group `piece-trees`,
+    `test_piece_trees_boolean_reference.py`); a native capture keyed on the
+    refusal it removes (`compare_piece_trees_boolean.py`, `imported.rs`'s
+    refusal of a piece other than one Boolean of its primitive and its
+    planes' hull); then the kernel and its tests (`tests/piece_tree_
+    booleans.rs`: every fixture within `1e-9` enclosures, the degenerate
+    refused, histories complete, deterministic, moved rigidly; the fuzz
+    target's two bodies, a cylinder with an oblique end fused with a box and
+    a ball's half with a box built by the kernel and imported, their
+    Booleans the kernel's own results').
+  * **S9e.4b.3c.3b evidence (2026-10-05).** Eight bodies OCCT wrote
+    (`boolean-piece-trees-bodies.txt`, `write` blocks of one solid's rows, a
+    `boolean` row and the other's rows, written by
+    `compare_piece_trees_boolean.py --write-bodies` to
+    `rust/fixtures/imported/form_*.brep`), each one Boolean of a primitive
+    and a prism of lines (a box, or a U: a body not convex in its planes),
+    every section a circle or a line: `form_u_scoop` (a U prism `12 x 8 x 6`
+    on `SKEW4`, its slot `[4, 12] x [3, 5]`, less a ball of radius 5/2
+    centred on the top face of one arm, the ball's frame as S9e.4b.3c.3a's
+    scoop's: the top face a meridian plane, the arm's walls parallels'
+    planes, the groove crossing the arm into the slot, the top face in two
+    faces on one plane and the arms' ends two faces on one plane whose
+    stored frames OCCT rounds apart; the fuzz target's ball's groove in a U),
+    `form_u_boss` (a U prism on the world's axes fused with a cylindrical
+    boss of radius 3/2 from its base's top face to a cap), `form_bites` (a
+    cylinder of radius 3 on the world's axes less a U prism along its axis
+    between its caps, its two arms biting the wall from outside, the seam
+    between them: a primitive bitten twice, by a body not convex),
+    `form_cap_boss` (a box on `SKEW` fused with an upper hemisphere of radius
+    3 on its frame whose disc lies 1 below the box, the ball meeting the
+    box's bottom alone, a parallel's plane; the fuzz target's ball's half
+    with a box), `form_cap_pocket` (a box on `SKEW2` less such a hemisphere
+    whose disc lies 2 inside it: a dish with a flat floor), `form_dee_boss` (a
+    box on the world's axes fused with a prism along `x` of a disc of radius
+    5/2 less a segment, its flat a plane along the axis with its ends
+    rational, the box's top face through the axis, the arc's seam beyond the
+    flat: a cylinder's end not normal to its axis), declared `degenerate`
+    `form_u_notch` (a U prism less a cylinder of radius 3 along `z` about the
+    middle of its base's end face, tangent to the two faces it meets) and
+    declared `unsupported` `form_tooth` (a cylinder less a U prism whose base
+    and slot lie inside it, a tooth left between the arms).
+    `generate_piece_trees_boolean_fixtures.py --check`: 30 cases of 10
+    groups (24 solid, 3 declared `degenerate`, 3 `unsupported`; 24 of class
+    `pieces`, 3 `both`, 3 `chain`): `u_scoop_rod` (an upright rod through the
+    groove), `pieces` (the hemisphere's boss and the flattened boss, both
+    imported), `bites_box` (a `TILT` box across one bite), `rod_cap_pocket`
+    (a `TILT` rod less the dish, the body the tool), `u_boss_slab` (a `TILT`
+    slab across the boss and the slot), `cap_boss_rod` (a rod along `x`
+    through the disc), `chain_dee` (the flattened boss less a rod, then with
+    a `TILT` slab), `dee_boss_ball` (a ball across the flat); declared
+    `unsupported` `tooth_rod` (a pocket within a pocket, S9e.4b.4's) and
+    `degenerate` `u_notch_rod` (the notch, its wall tangent to its own
+    faces). The reference is the constructions OCCT was given through
+    S9e.3a's chained reference, with S9e.4b.3c.3a's checks relative to the
+    case's size: the two families within 1.6e-35, each solid's closed form
+    9.7e-41, each body's closed form 4.5e-37 (the U boss, the hemisphere's
+    boss and dish on their boxes' stored axes, the flattened boss), the pair
+    identities 1.4e-41 and the area identity 4.8e-41 (where no two inputs
+    share a surface), Monte Carlo 2.5 standard errors (100,000 points a
+    group), quadrature estimates 1.2e-32, every meeting's sine at least 0.11
+    and events at least 1.9e-6 of their range apart outside the declared
+    groups (and `rod_cap_pocket`'s events, below), solid counts by rays at
+    two resolutions with S9e.4b.3c.1's join; the declared groups' checks
+    kept apart within 1.1e-21. Every file read independently
+    (`stored_records`): its faces one sphere or cylinder and planes, every
+    stored vertex within 4.5e-16 of the size on the construction's surfaces.
+    `test_piece_trees_boolean_reference.py` checks the hemispheres' and the
+    flattened boss's closed forms against quadrature, the U boss's against
+    its area, the chained reference on the flattened boss against its
+    closed form, the reference's U prisms against OCCT's profiles (one area,
+    the slot's box past the open end and both caps, a reflex corner), the
+    reference's hemispheres, the frames keeping every section a circle or a
+    line and every seam off its body, the bodies' declared refusals, the
+    case list and its protocol rows and the files apart from every earlier
+    set's. The generator's check is a CI group of its own (`piece-trees`,
+    15 minutes on four workers locally, 11 under Python 3.12); Python 3.9 and 3.12 write the same
+    files. Corrections from the evidence, amending the refined decisions'
+    plan (7): (a) the reference models convex profiles and whole spheres
+    only, so it takes each U prism as the box of its outer planes less its
+    slot's box (past the open end and both caps) and each hemisphere as its
+    ball common a cylinder from its equator's plane (twice its radius wide,
+    four radii high): the same sets; the dish's cylinder's base, through the
+    ball's rounded centre, lies within rounding of a family line of the
+    dish's box's walls, so `rod_cap_pocket`'s events are found twice
+    rounding apart there and its spacing is not checked (its sines and gaps
+    are); (b) the reference's cost grows with a case's faces (the first set,
+    with boxes and slabs as partners and a box less a slot in every U, ran
+    over half an hour on four workers), so the partners are rods where they
+    can be, the chain the flattened boss's and `pieces` the hemisphere's boss
+    with the flattened boss; a rod across the bitten cylinder meets its
+    bites' lines along its axis, irrational lines
+    (`ComputationLimit("an irrational line against a cylinder")`,
+    S9e.4b.3c.3a's), so its partner stays a box; (c) the U boss is 11 long:
+    at 10 the arms' end plane was a face of S9e.4b.3c.3a's cube about its
+    bite form's primitive, facing it, so the current import refused it as
+    `Degenerate("an imported plane piece's two faces on one plane facing
+    apart")` rather than as this step's; (d) partners moved: the flattened
+    boss's ball off its box's face and its cap's plane (tangent), the
+    hemisphere's rod from the box's normal (a plane along a cylinder's axis
+    within rounding, S9's refusal) to the world's `x`, the U boss's slab
+    thicker and the chain's slab higher (solids within two grid spacings at
+    the coarse resolution), the bitten cylinder's box and the flattened boss
+    off round coordinates (events of different features a rounding apart).
+    The capture `occt-boolean-piece-trees-preimplementation`
+    (`compare_piece_trees_boolean.py`, keyed on the refusal the step removes,
+    `imported.rs`'s `OutOfDomain("an imported plane piece other than one
+    Boolean of its primitive and its planes' hull (S9e.4b.3c.3b)")`; the
+    kernel's probe `unsupported` on all 30, every body refused on import by
+    that refusal): every result valid, 27 matching (within 2e-8 of the
+    reference), 3 reviewed: the U's groove's, the flattened boss's ball's
+    and the chain's commons, volumes up to 4.0e-7 relative and centres up to
+    5.8e-8 of the case's size off by BRepGProp's default integration (a
+    sphere's or a cylinder's faces met by planes and other quadrics), within
+    4.8e-9 measured adaptively at 1e-10 and 1e-12 by a diagnostic build.
+    S9e.4b.3c.3b's kernel next.
+  * **S9e.4b.3c.3b implemented** (`solid/imported.rs`'s `Tree`: the bends of
+    the stored edges, the faces' groups, each group's hull and pockets, the
+    tree, its classification; `curved/pieces.rs`: the tree's Booleans in turn,
+    an inner one's assembly named under an operation of its own and given to
+    the next as its given model; `curved/given.rs`: `built_on`, a given model
+    on a stored topology or an inner assembly, its frame its first leaf's
+    holding the primitive; `topology.rs`: an inner assembly's unchecked
+    topology), as the refined decisions describe: a body of one sphere,
+    cylinder or cone face and plane faces that no form of S9e.4b.3c.3a's
+    matches is decomposed into a Boolean tree of its primitive and the convex
+    hulls of its planes, the first tree whose given model matches its stored
+    topology the body, none matching `OutOfDomain("an imported plane piece
+    other than a Boolean tree of its primitive and its planes' hulls
+    (S9e.4b.4)")` (the forms' mismatch too). All 30 fixtures as declared (24
+    within the kernel's enclosures, each at most `1e-9` wide; the U's notch's
+    3 refused as `Degenerate("an imported plane piece whose curved face is
+    tangent to its plane faces")`, read off its edges' bends before any tree;
+    the tooth's 3 as S9e.4b.4's), every history complete over the imported
+    bodies' stored ids, the U's two arm ends on one plane each continuing
+    apart, results deterministic and moved rigidly, both inputs translated and
+    turned keeping the reference's volumes, every body its tree (its volume
+    its closed form, points in and off it classified, its stored vertices on
+    its boundary), and the kernel's own bodies of trees imported, their
+    Booleans with a turned box the kernel's own results': the `boolean` fuzz
+    target's two (a box fused with a ball's half whose disc plane cuts it, a U
+    prism less a ball about its end's corner) and a rod bitten twice by a U,
+    written by its writer and read back, and a cylinder's piece of an oblique
+    plane fused with a box (its end an ellipse, which the reader does not
+    take), its topology imported directly (`tests/piece_tree_booleans.rs`,
+    8.1 s in release, 9.0 s at `opt-level` 2 with debug assertions, 8.7 s in
+    release with debug assertions under the emulated correctly rounded
+    `hypot`, where the pieces' earlier test files pass too). Amendments, from
+    the implementation: (a) the groups: an edge of the kind no seam between
+    the groups takes (convex, but concave for the primitive's group outside
+    the quadric: within a hull, or between a hull and its pocket) keeps its
+    faces in one group, every other face joining through such edges; a
+    component of faces met only across the other kind (a pocket's own edges,
+    or the seam where the groups are fused or cut) is tried in the other group
+    than the faces it meets and in the same, in turn (the same first where it
+    meets the other group or a face of a pocket; at most three such
+    components), the match the arbiter. The refined decisions' rounds through
+    convex then concave edges put the fuzz target's box, whose faces meet only
+    the ball's half's disc, with the disc; (b) inside the quadric the union is
+    tried two ways, the primitive common its group's region fused with the
+    other's, and the primitive common both regions' union, the latter first
+    where no face of the other group meets the curved face: the fuzz target's
+    box lies within the ball, its bottom face hidden, so its hull is open
+    below and only the primitive bounds it; (c) planes of faces within the
+    resolution of one plane facing one way (a U prism's two arm ends, whose
+    stored frames OCCT rounds apart) take the first's frame, so the hull takes
+    them as one plane (S9e.4b.3c.3a's exact test of one plane missed them, and
+    the U's groove was a face too many); (d) only the first tree's refusal
+    other than a mismatch is reported, a later choice's being a tree the body
+    is not (a later tree of the tooth's met S9's `Degenerate("a vertex of one
+    input on the other's face")`); (e) the tree's hulls are bounded by a cube about the
+    primitive whose half side reaches past every stored vertex, twice and
+    `3/8` more (S9e.4b.3c.3a's cube about the primitive alone met the U boss's
+    arms' end plane), each hull's and inner Boolean's entities under an
+    operation of their own. `compare_piece_trees_boolean.py` 22 matches and 8
+    reviewed (the 3 captured and, with the kernel, entity counts: the kernel's
+    meetings of a cylinder with a ball split at their turning points into
+    S9d.2's graphs where OCCT's are one approximated edge, OCCT's unified
+    result keeping a boss's cylinder's seam edge), every enclosure within the
+    reference; every other comparison of `HANDOFF.md`'s table unchanged with 0
+    failures (and `compare_split.py` 72/56, `compare_brep.py --family spline`
+    10/3); the release suite (628 tests) and the tools' unit tests (344)
+    passing, the ledger unchanged. The `boolean` fuzz target's `IMPORTED`
+    stage: replayed with debug assertions, 92 first results of the corpus's
+    1,467 inputs and regressions reach it, 23 imported and cut within the
+    chained cut's volume (the 4 refused as this step's among them: the box
+    with a ball's half and the U's groove, twice each), 63 not written by the
+    kernel's writer, 6 read back with pcurves off their edges, none refused.
+    Replays with debug assertions, one process an input, natively and under
+    the emulated correctly rounded `hypot`: the boolean corpus and its
+    regressions (1,467 inputs) and the split corpus and its regressions
+    (3,570), the slowest 6.6 s and 3.2 s (6.3 s and 2.7 s emulated), no
+    failure but two inputs another campaign added to the local corpus after
+    this branch's base, which fail on that base alike (a boolean input's
+    `coordinates cannot resolve the requested linear tolerance`, natively and
+    emulated; a split input's `a piece below its plane`, emulated only). A
+    trial of the DRAW survey's 171 restore cases the import reaches, on the
+    Rust adapter and natively (not the survey: nothing registered): no case
+    moves with this step, every status and reason S9e.4b.3c.3a's trial found
+    (55 evaluating on both backends, S9e.4b.3c.2's 13 and `G4` among them;
+    `I6` refused for its tool's own tangency, `buc60926` at its frustum's
+    apex), none refused as S9e.4b.3c's; native DRAW's statuses as before.
+    Pending: the capture's Linux record, the DRAW survey and the campaigns.
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces

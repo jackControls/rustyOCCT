@@ -32,7 +32,8 @@ then for the DRAW survey of S9e.4b.3c.1 and the switches' speed-up (branch
 then for S9e.4b.3c.2 (branch `s9e4b3c2`, over `s9c2-kernel` at `f4b584f7`),
 then for S9e.4b.3c.3a (branch `s9e4b3c3`, over `s9c2-kernel` at `8a55a3e6`),
 then for the DRAW survey of S9e.4b.3c.2 and S9e.4b.3c.3a (branch
-`s9-draw-8`, over `s9c2-kernel` at `b9c7ae1b`).
+`s9-draw-8`, over `s9c2-kernel` at `b9c7ae1b`),
+then for S9e.4b.3c.3b (branch `s9e4b3c3b`, over `s9c2-kernel` at `e8940c22`).
 
 ## Where things stand
 
@@ -333,6 +334,27 @@ then for the DRAW survey of S9e.4b.3c.2 and S9e.4b.3c.3a (branch
   volume and is registered (1,128 cases with S9e.4b.3c.2's 13), `I6` and
   `buc60926` are refused as it found; no other status, reason or audited
   value moves.
+- **S9e.4b.3c.3b implemented** (branch `s9e4b3c3b`): an imported body of one
+  curved face and plane faces that no single form matches as a Boolean tree
+  of its primitive and several convex hulls of its planes
+  (`solid/imported.rs`'s `Tree`, `curved/pieces.rs`): its stored edges'
+  bends group its plane faces into the primitive's (trimming it) and the
+  other's (fused with it, or cutting it outside the quadric), each group's
+  region its hull less its pockets (faces joined by concave edges, their
+  planes turned over), each grouping and union tried in turn with S9e.2's
+  match the arbiter, every inner Boolean's result given to the next as its
+  given model (`curved/given.rs`'s `built_on`); planes within the
+  resolution of one plane one plane of a hull; a curved face tangent to
+  its plane faces named for the body; a pocket within a pocket
+  S9e.4b.4's. Decisions ("S9e.4b.3c.3b refined"), 30 cases on 8 bodies OCCT
+  wrote (`generate_piece_trees_boolean_fixtures.py`, the chained reference
+  with each body's closed form) captured before the kernel (27 matching, 3
+  reviewed), the kernel within the reference on all 24 solid cases, the
+  U's notch refused for its tangency and the tooth as S9e.4b.4's; the fuzz
+  target's 4 refused first results import (23 of its 92 imported first
+  results). A trial of the survey's 171 restore cases the import reaches,
+  on both backends: no case moves (55 evaluate on both, S9e.4b.3c.2's and
+  S9e.4b.3c.3a's as their trials found; none is refused as S9e.4b.3c's).
 - **CI.** Both workflows ("Rust kernel", "Rust geometry fuzzing") were green
   at `6c221525`. They had been red from S7 until 2026-09-29, unnoticed;
   check them after every push (see "Working rules").
@@ -355,9 +377,9 @@ then for the DRAW survey of S9e.4b.3c.2 and S9e.4b.3c.3a (branch
 2. **The Linux records and reviews** of the recaptured
    `occt-boolean-spline-crossing-preimplementation` and of the
    spline-sphere, spline-cone, imported-polyhedra, imported-arcs,
-   imported-pieces, split-pieces, one-sphere, one-sphere-incidence and
-   piece-forms captures from CI's run, as every capture's. `SPLINE_SPHERE` and
-   `SPLINE_CONE` are on since the loops' certified integrals were sped up
+   imported-pieces, split-pieces, one-sphere, one-sphere-incidence,
+   piece-forms and piece-trees captures from CI's run, as every capture's.
+   `SPLINE_SPHERE` and `SPLINE_CONE` are on since the loops' certified integrals were sped up
    (branch `loop-integrals`; REVIEW_NOTES.md's "Certified integrals beside
    spline walls' loops"), and the campaign with both on is clean at
    `cfeab65d` (803 runs, the slowest input 52 s under AddressSanitizer, an
@@ -397,13 +419,16 @@ then for the DRAW survey of S9e.4b.3c.2 and S9e.4b.3c.3a (branch
    two faces on one plane; `bcut_complex/G4` evaluating in its trial) is
    implemented with its DRAW survey (`s9-draw-8` at `b9c7ae1b`: `G4`
    registered, 1,128 cases) and clean campaigns at `e8940c22` (pending its
-   capture's Linux record); next **S9e.4b.3c.3b**, bodies of one curved face needing
-   more than one hull (a groove in a body not convex in its planes, a
-   primitive bitten twice, a sphere's ends with another form: the fuzz
-   target's 4 remaining refusals); then
+   capture's Linux record); **S9e.4b.3c.3b** (a Boolean tree of the
+   primitive and several hulls: a groove or boss on a body not convex in
+   its planes, a primitive bitten twice, a sphere's disc or a cylinder's
+   flat or oblique end with another form; the fuzz target's 4 refusals
+   importing) is implemented (pending its capture's Linux record, the DRAW
+   survey and the campaigns); then
    **S9e.4b.4**, the S9e text's plan in full
    (joints of two circles, prisms with walls of two directions, bodies of
-   several curved surfaces: 21 cases; an imported polyhedron against
+   several curved surfaces: 21 cases; a body of one curved face needing a
+   deeper tree, a pocket within a pocket; an imported polyhedron against
    curved faces, or with a cavity). The reader's header check refuses
    OCCT 8.1's version-3 `.brep` (`(c) Open Cascade`; 27 dataset files,
    none among the surveyed restore cases): widening it needs a survey of
@@ -526,6 +551,7 @@ Each comparison takes `--occt-root target/spline-linear-preflight/pinned-sdk/ins
 | `compare_one_sphere_boolean.py` | 8 / 14 (the kernel within the reference on all 20 solid and empty cases, the 2 degenerate refused; the 3 exact incidences solid since S9e.4b.3c.2) |
 | `compare_one_sphere_incidence_boolean.py` | 42 / 3 (the kernel within the reference on all 33 solid and empty cases, the 12 degenerate refused) |
 | `compare_piece_forms_boolean.py` | 20 / 19 (the kernel within the reference on all 33 solid cases, the 6 degenerate refused) |
+| `compare_piece_trees_boolean.py` | 22 / 8 (the kernel within the reference on all 24 solid cases, the 3 degenerate refused, the tooth's 3 `unsupported`, S9e.4b.4's) |
 
 Every one must report 0 failures; since S9f.1 also `compare_split.py`
 (72 / 56) and `compare_brep.py --family spline` (10 / 3), which share its
