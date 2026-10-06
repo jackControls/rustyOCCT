@@ -52,7 +52,11 @@ hulls (a groove or boss on a U, a primitive bitten twice, a sphere's disc
 or a cylinder's flat with a box: `solid/imported.rs`'s `Tree`,
 `curved/pieces.rs`), and S9e.4b.4a's imported prisms whose arcs of two
 circles meet at a joint, each such arc taken through its two ends
-(`curved/snapped.rs`).
+(`curved/snapped.rs`), and S9e.4b.4b.1's imported bodies of several
+sphere, cylinder and cone faces whose plane faces are their primitives'
+ends, a Boolean chain of those primitives (a stepped shaft, a cup, a dome
+and a pin on one ball: `solid/imported.rs`'s `primitives_piece`,
+`curved/pieces.rs`).
 
 ## Contract
 
@@ -1247,6 +1251,39 @@ piece's edge along its cylinder's section by a plane along its axis (a
 slot's rim, its base a quadratic surd) meets another cylinder only where it is apart from it (no
 real root); elsewhere it stays `ComputationLimit`.
 
+A body of several sphere, cylinder and cone faces whose plane faces are all
+ends of their primitives is S9e.4b.4b.1's: a Boolean chain of its
+primitives (`imported.rs`'s `primitives_piece`: `bfuse_complex/E5`'s
+stepped shaft, `bcut_complex/G9`'s dome and pin on one ball). The curved
+faces on one stored surface are one primitive's: a whole ball on its stored
+frame, or a cylinder or a cone over its faces' axial range, past each end
+by a quarter of it but at a cap (a plane face normal to its axis at that end
+facing away from the range, or into it where the primitive's material lies
+outside its quadric: a blind bore's floor), and past the other primitives'
+bounds too where it is the first, cut or in common; a cylinder or a cone
+whose stored axis lies within the resolution of an earlier primitive's is
+built on that one's frame, so coaxial primitives share one exact axis and
+their caps on one plane one height. Widest first (a sphere's radius, a
+cylinder's, a cone's widest end), each next one is cut where its material
+lies outside its quadric, in common where its faces meet the earlier ones'
+curved faces along convex edges, fused where along concave edges or none;
+each Boolean is S9e.4b.3c.3b's tree's, the last one's given model matched to
+the stored topology. The arrangement splits a cylinder's or a cone's meeting
+with a sphere at a stored vertex within the resolution of it as a sphere's
+circles (`Arr::split_at`, at the carrier's rational unit direction nearest
+the vertex's), turns it with OCCT's stored circle the way its carrier's
+angle does (`flip`, a ring by `ring_about`), and takes a given meeting of
+two curved faces against a face of the partner on one surface with one of
+its faces as lying on it (no three surfaces' points there). A body's own
+faces tangent along an edge are `Degenerate("an imported body of several
+primitives whose faces are tangent along an edge")`; plane faces other than
+the primitives' ends `OutOfDomain(... (S9e.4b.4b.2))` (`bfuse_complex/K1`'s
+rounded box), checked first; faces of one surface on different sides, a
+widest primitive whose material lies outside it, a primitive meeting the
+earlier ones along both kinds of edge and a chain the match rejects
+`OutOfDomain("an imported body of several primitives other than a Boolean
+chain of them (S9e.4b.4c)")`.
+
 Refused: a joint of two arcs whose circles each hold other arcs of the
 path, off either (`OutOfDomain`, S9e.4b.4: neither circle can move); an
 imported polyhedron against a solid with curved faces or edges, or a result
@@ -1255,9 +1292,12 @@ curved engine decides on constructions); a polyhedron with a cavity or
 several shells (S9e.4b.4); a plane piece no Boolean tree of its primitive
 and its planes' hulls matches (a pocket within a pocket: `OutOfDomain`,
 S9e.4b.4); a piece whose planes pass through its cone's
-apex (`Degenerate`, S9's rule: `shading_132`); a torus's v-segment or wedge
-and every other body of curved faces (`OutOfDomain`, S9e.4b: a general
-body on its stored surfaces); spline faces or edges (S9f); S9's
+apex (`Degenerate`, S9's rule: `shading_132`); a body of several
+primitives with plane faces other than their ends (`OutOfDomain`,
+S9e.4b.4b.2) or no Boolean chain of them (`OutOfDomain`, S9e.4b.4c); a
+torus's v-segment or wedge and every other body of curved faces, a torus
+among several among them (`OutOfDomain`, S9e.4b: a general body on its
+stored surfaces); spline faces or edges (S9f); S9's
 degeneracies unchanged (an
 imported cylinder tangent to the partner's wall, a box on the plane of an
 imported prism's wall, a corner of one input on the other's face, a slab
@@ -3554,6 +3594,44 @@ multiple root; and the engine's rules.
   refused as two cylinders within the resolution of one cylinder (each
   tool on a stored circle of the part's arcs), `bug4993_1` and `_2` as two
   faces within the resolution of one plane.
+* **S9e.4b.4b.1 evidence (imported bodies of several primitives), before
+  its kernel code.** 8 bodies written by OCCT, each one Boolean of two
+  coaxial primitives, every section a circle (E5's stepped shaft, a cup with
+  a blind bore, G9's dome and pin on one ball, a bead, a knob; declared
+  `degenerate` a capsule, tangent along its rim, given to no case for the
+  reference's cost there, and declared `unsupported` K1's rounded box less a
+  cylinder) under `rust/fixtures/imported/`.
+  `generate_primitive_chains_boolean_fixtures.py --check` writes
+  `boolean-primitive-chains-cases.txt`, `-expected.tsv`, `-frames.tsv` and
+  `-bodies.txt`: 24 cases (8 groups; 21 solid, 3 unsupported) against a
+  ball, `TILT` boxes and slabs, as object and tool, the dome and the pin
+  both imported and a chain, from S9e.3a's chained reference on the
+  constructions OCCT was given (two families 1.8e-35, each body's closed
+  form 4.3e-42, Monte Carlo 2.7 standard errors), every stored vertex
+  within 2.3e-14 of the size on its construction.
+  `compare_primitive_chains_boolean.py` reproduces
+  `occt-boolean-primitive-chains-preimplementation` (keyed on
+  `imported.rs`'s general refusal's text before the step, the probe
+  `unsupported` on all 24 before it): every result valid, 20 match, 4
+  reviewed (the cup's ball cases, OCCT's faces bounded by its approximated
+  quartics of tolerance up to 8.0e-6; the knob's common, BRepGProp's
+  default integration).
+* **Kernel (S9e.4b.4b.1).** `tests/primitive_chain_booleans.rs`: all 24
+  fixtures as the reference (21 within the kernel's enclosures, each at most
+  `1e-9` wide; the rounded box `OutOfDomain` as S9e.4b.4b.2's), every
+  history complete over the imported bodies' stored ids, results
+  deterministic and moved rigidly, moved inputs keeping the reference's
+  volumes, every body its chain, the capsule refused for its own tangency,
+  and the kernel's own stepped shaft, cup and comb written, read back and
+  imported giving its own Booleans' volumes.
+  `compare_primitive_chains_boolean.py`: 14 matches and 10 reviewed (the
+  native measures and, with the kernel, entity counts: its meetings of a
+  cylinder with a ball split at their turning points, OCCT's seams). A
+  trial of the targeted DRAW restore cases: `bfuse_complex/E5`,
+  `bcut_complex/G9` and `bugs/modalg_2/bug417` evaluate on both backends
+  with every check; `bugs/modalg_6/bug28773` is refused as two cylinders'
+  axes within rounding of parallel (its tube's disc frame leaning 2.2e-33
+  off its walls), `bfuse_complex/K1` as S9e.4b.4b.2's.
 * **Fuzzing.** The `boolean` target (`FUZZING.md`): the split target's line
   and arc profiles, the tool offset exactly in the axis-aligned frame or
   sharing the tilted one's origin, heights equal, spanning, overlapping,
@@ -3570,7 +3648,8 @@ multiple root; and the engine's rules.
   chained stage's first result of plane faces too, imported and cut by the
   turned box again, its volume the chained cut's; since S9e.4b.3a a first
   result of one sphere, cylinder or cone face and plane faces too, a plane
-  piece); S9e.4b.4a: a lens in the object's frame given the chosen
+  piece; since S9e.4b.4b.1 one of several such faces too, a Boolean chain
+  of their primitives); S9e.4b.4a: a lens in the object's frame given the chosen
   operation, then written, read back, imported and given it again, both
   volumes equal (`JOINTS`, by the chained byte's next bit; in the tilted
   frame its joints round off both circles once read back).

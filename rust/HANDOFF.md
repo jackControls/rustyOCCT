@@ -36,7 +36,8 @@ then for the DRAW survey of S9e.4b.3c.2 and S9e.4b.3c.3a (branch
 then for S9e.4b.3c.3b (branch `s9e4b3c3b`, over `s9c2-kernel` at `e8940c22`),
 then for S9e.4b.4a (branch `s9e4b4`, over `s9c2-kernel` at `699b9b85`),
 then for the DRAW survey of S9e.4b.3c.3b, S9e.4b.4a and the scheduled
-replay's fixes (branch `s9-draw-9`, over `s9c2-kernel` at `16121052`).
+replay's fixes (branch `s9-draw-9`, over `s9c2-kernel` at `16121052`),
+then for S9e.4b.4b.1 (branch `s9e4b4b`, over `s9c2-kernel` at `64673ebd`).
 
 ## Where things stand
 
@@ -417,7 +418,8 @@ replay's fixes (branch `s9-draw-9`, over `s9c2-kernel` at `16121052`).
    `occt-boolean-spline-crossing-preimplementation` and of the
    spline-sphere, spline-cone, imported-polyhedra, imported-arcs,
    imported-pieces, split-pieces, one-sphere, one-sphere-incidence,
-   piece-forms and piece-trees captures from CI's run, as every capture's.
+   piece-forms, piece-trees and primitive-chains captures from CI's run, as
+   every capture's.
    `SPLINE_SPHERE` and `SPLINE_CONE` are on since the loops' certified integrals were sped up
    (branch `loop-integrals`; REVIEW_NOTES.md's "Certified integrals beside
    spline walls' loops"), and the campaign with both on is clean at
@@ -473,11 +475,17 @@ replay's fixes (branch `s9-draw-9`, over `s9c2-kernel` at `16121052`).
    the 6 restore cases of two circles at a joint) is implemented with its
    DRAW survey (`s9-draw-9` at `16121052`: `P4` registered, 1,129 cases;
    `E8`, `D5` and `E1` refused by the parallel cylinders' rule; pending
-   its capture's Linux record and the campaigns); next
-   **S9e.4b.4b** (bodies of several primitives' curved faces as trees with
-   a leaf per primitive: `bfuse_complex/E5`'s and `bug28773`'s stepped
-   shafts, `K1`'s rounded box with a boss along another axis,
-   `bcut_complex/G9`'s and `bug417`'s dome and pin on one sphere), then
+   its capture's Linux record and the campaigns); **S9e.4b.4b**, split in
+   "S9e.4b.4b refined": **S9e.4b.4b.1** (bodies of several sphere,
+   cylinder and cone faces whose plane faces are all their primitives'
+   ends, a Boolean chain of the primitives widest first, coaxial ones on
+   one frame: `bfuse_complex/E5`'s stepped shaft and `bcut_complex/G9`'s
+   and `bug417`'s dome and pin on one ball evaluating in its trial,
+   `bug28773` refused by S9's rule, its tube's disc frame leaning 2.2e-33
+   off its walls) is implemented (pending its DRAW survey, its capture's
+   Linux record and the campaigns); next **S9e.4b.4b.2** (such bodies with
+   other plane faces, and prisms among the leaves: `K1`'s rounded box less
+   a cylinder), then
    **S9e.4b.4c** (deeper trees, a pocket within a pocket; an imported
    polyhedron against curved faces or with a cavity) and **S9e.4b.4d**
    (turned bodies of smooth joins and nearly degenerate surfaces,
@@ -606,6 +614,7 @@ Each comparison takes `--occt-root target/spline-linear-preflight/pinned-sdk/ins
 | `compare_piece_forms_boolean.py` | 20 / 19 (the kernel within the reference on all 33 solid cases, the 6 degenerate refused) |
 | `compare_piece_trees_boolean.py` | 22 / 8 (the kernel within the reference on all 24 solid cases, the 3 degenerate refused, the tooth's 3 `unsupported`, S9e.4b.4's) |
 | `compare_imported_joints_boolean.py` | 36 / 3 (the kernel within the reference on all 33 solid cases, the 3 degenerate refused, the split lens's 3 `unsupported`, S9e.4b.4's) |
+| `compare_primitive_chains_boolean.py` | 14 / 10 (the kernel within the reference on all 21 solid cases, the rounded box's 3 `unsupported`, S9e.4b.4b.2's) |
 
 Every one must report 0 failures; since S9f.1 also `compare_split.py`
 (72 / 56) and `compare_brep.py --family spline` (10 / 3), which share its

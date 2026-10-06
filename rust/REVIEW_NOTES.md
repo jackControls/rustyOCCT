@@ -9121,6 +9121,81 @@ Decisions for S9, recorded before its code (2026-09-28):
     common within 4.0e-9; and the knob's common with a box, its volume 2.2e-8
     off by the default integration, 2.3e-11 adaptively. S9e.4b.4b.1's kernel
     next.
+  * **S9e.4b.4b.1 implemented** (`solid/imported.rs`'s `primitives_piece`:
+    the primitives of a body of several sphere, cylinder and cone faces,
+    their Booleans and frames, `Piece`'s other primitives and
+    `Tree::Primitive(i)`, the classification by the chain; `curved/pieces.rs`:
+    every primitive in the tree's Booleans, each at a seam of its own, a
+    body's sphere among its primitives for one-sphere pairs, its own tangency
+    and mismatch named for it; `curved/graph.rs`, `curved/given.rs`,
+    `curved/assemble.rs` and `curved/procedural.rs`: the three changes of the
+    arrangement), as the refined decisions describe with the evidence's
+    amendments: a body of several sphere, cylinder and cone faces whose
+    plane faces are all ends of their primitives is a Boolean chain of
+    those primitives, widest first, each next one cut where its material
+    lies outside its quadric, in common along convex edges with the earlier
+    ones' curved faces, fused otherwise; the first primitive and those in
+    common or cut reach past the other primitives' bounds along their axes,
+    those fused a quarter of their faces' range past their open ends;
+    coaxial ones on one frame. All 24 fixtures as declared (21 within the
+    kernel's enclosures, each at most `1e-9` wide; the rounded box's 3
+    `OutOfDomain("an imported body of several primitives with plane faces
+    other than their ends (S9e.4b.4b.2)")`), every history complete over
+    the imported bodies' stored ids, results deterministic and moved
+    rigidly, both inputs translated and turned keeping the reference's
+    volumes, every body its chain (its closed-form volume, points in and off
+    it classified, its stored vertices on its boundary), the capsule refused
+    on import as `Degenerate("an imported body of several primitives whose
+    faces are tangent along an edge")`, and the kernel's own stepped shaft,
+    cup and comb (a disc fused with a tube from below, its bore a third
+    primitive) written by its writer, read back and imported, each Boolean
+    with a turned rod its own result's volume
+    (`tests/primitive_chain_booleans.rs`, 7.9 s in release on a host at load
+    10 to 18, 6.6 s at `opt-level` 2 with debug assertions, 6.5 s in release
+    with debug assertions under the emulated correctly rounded `hypot`,
+    where the pieces' and the joints' earlier test files pass too).
+    `compare_primitive_chains_boolean.py` 14 matches and 10 reviewed (the 4
+    captured and, with the kernel, entity counts: the kernel's meetings of
+    the cup's two cylinders with the ball split at their turning points into
+    S9d.2's graphs where OCCT's are approximated edges, OCCT's unified
+    results keeping its closed surfaces' seams), every enclosure within the
+    reference; every comparison of `HANDOFF.md`'s table unchanged with 0
+    failures (and `compare_split.py` 72/56, `compare_brep.py --family
+    spline` 10/3, `compare_brep_io.py` 6,835/7, `compare_step.py` 23/6 on
+    STEP-b's SDK); the release suite (646 tests) and the tools' unit tests
+    (355) passing, the ledger unchanged. Amendments, from the
+    implementation: (a) the kernel's writer writes circles alone, and a
+    Boolean on a given result of coaxial cylinders stores its rings as
+    ellipses of equal axes, so the kernel's comb is two Booleans (a disc
+    fused with a tube prism), not `bug28773`'s five; (b) `split_at`'s
+    meetings are placed at the rational unit direction nearest the stored
+    vertex's by the half-angle tangent rounded once (`unit_near`), a binary64
+    division correctly rounded on every host. The `boolean` fuzz target's
+    `IMPORTED` stage takes the chained stage's first results of several
+    sphere, cylinder and cone faces too: replayed with debug assertions, 80
+    such first results of the corpus's 1,468 inputs and regressions reach
+    it, 26 imported and cut within the chained cut's volume, 51 not written
+    by the kernel's writer (their meetings no circles), 3 refused as
+    S9e.4b.4b.2's (a plane face other than the primitives' ends). Replays
+    with debug assertions, one process an input, natively and under the
+    emulated correctly rounded `hypot`: the boolean corpus and its
+    regressions (1,468 inputs) and the split corpus and its regressions
+    (3,571), no failure, the slowest 9.1 s and 2.0 s (6.4 s and 1.5 s
+    emulated) on a host at load 10 to 18. A trial of the targeted DRAW
+    restore cases on the Rust adapter and natively (not the survey: nothing
+    registered): `bfuse_complex/E5` (its area 1,831,656.94, native DRAW's
+    printed 1.83166e6), `bcut_complex/G9` and `bugs/modalg_2/bug417` (their
+    area 2,814.0138, native's 2814.01) evaluate on both backends with every
+    check; `bugs/modalg_6/bug28773` is `Degenerate("two cylinders' axes
+    within rounding of parallel")` (its tube `_1` S9e.4a's prism on its
+    bottom disc's stored frame, leaning 2.2e-33 off `_2`'s primitives on the
+    walls' axis), `bfuse_complex/K1` S9e.4b.4b.2's (plane faces other than
+    its primitives' ends); `bugs/modalg_2/bug476_1` to `_8` (`OCC485a`, its
+    tori among its faces) keep the general refusal, under its new text.
+    Open: S9e.4b.4b.2 (K1's rounded box less a cylinder: hulls with several
+    primitives, prism leaves); `bug28773`'s tube would need S9e.4a's prisms
+    on their walls' axes. Pending: its DRAW survey, its capture's Linux record
+    and the campaigns.
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces
