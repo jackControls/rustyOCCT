@@ -47,7 +47,10 @@
 //! it, cut from the chain). S9e.4b.4c.1: a polyhedron may hold cavities (one
 //! solid region of several shells), and against curved faces its stored
 //! triangles are a leaf of the curved engine (`boolean::curved::meshes`).
-//! Every other body is S9e.4b's.
+//! S9e.4b.4c.2a: a tree's pocket may hold pockets of its own (a tooth, a
+//! post or an island standing in it), its hull the planes of its faces that
+//! leave its boundary on one side, its other faces its own pockets, nested
+//! at most three deep (`pocket`). Every other body is S9e.4b's.
 use super::{replayable, Construction, Context, Solid};
 use crate::history::{History, Relation};
 use crate::identity::{
@@ -1182,12 +1185,12 @@ fn axial_range(t: &Topology, frame: &Frame3) -> (f64, f64) {
 }
 
 /// A body of one curved face and planes that is no Boolean tree of its
-/// primitive and its planes' hulls (S9e.4b.3c.3b: one of a pocket within a
-/// pocket, S9e.4b.4's).
+/// primitive and its planes' hulls (S9e.4b.3c.3b), its pockets nested at most
+/// `DEPTH` deep in at most `BOOLEANS` Booleans (S9e.4b.4c.2a).
 pub(crate) fn not_its_primitive() -> Error {
     Error::OutOfDomain(
-        "an imported plane piece other than a Boolean tree of its primitive and its planes' hulls \
-         (S9e.4b.4)",
+        "an imported plane piece other than a Boolean tree of its primitive and its planes' hulls, \
+         its pockets nested at most three deep (S9e.4b.4)",
     )
 }
 
@@ -1532,12 +1535,20 @@ fn find(root: &mut [usize], x: usize) -> usize {
     x
 }
 
-/// A group's region: its hull's planes and its pockets' (faces joined by
-/// edges concave in the region's material, components of two faces or
-/// more in the order of their first faces, turned over); `turned` for the
+/// A group's region: its hull's planes and its pockets (faces joined by
+/// edges concave in the region's material, components of two faces or more
+/// in the order of their first faces, turned over); `turned` for the
 /// primitive's group outside the quadric (its faces turned over, its edges'
-/// bends reversed).
-type Region = (Vec<(Frame3, bool)>, Vec<Vec<(Frame3, bool)>>);
+/// bends reversed). S9e.4b.4c.2a: each pocket its own region (`pocket`),
+/// its hull less its own pockets in turn.
+type Region = (Vec<(Frame3, bool)>, Vec<Tree>);
+
+/// S9e.4b.4c.2a: how deep pockets nest (a pocket, its pocket, and that
+/// one's).
+const DEPTH: usize = 3;
+
+/// S9e.4b.4c.2a: the most Booleans a body's tree takes.
+const BOOLEANS: usize = 8;
 
 fn group_region(
     t: &Topology,
@@ -1565,20 +1576,112 @@ fn group_region(
         }
     }
     let mut hull = Vec::new();
-    let mut pockets: BTreeMap<usize, Vec<(Frame3, bool)>> = BTreeMap::new();
+    let mut components: BTreeMap<usize, Vec<usize>> = BTreeMap::new();
     for &i in members {
         if pocketed[i] {
             let r = find(&mut root, i);
-            pockets.entry(r).or_default().push(plane_of(t, i, !turned)?);
+            components.entry(r).or_default().push(i);
         } else {
             hull.push(plane_of(t, i, turned)?);
         }
     }
+    let pockets = components
+        .into_values()
+        .map(|faces| pocket(t, bends, &faces, !turned, tolerance, 1))
+        .collect::<Result<Vec<_>>>()?;
+    Ok((one_plane(hull, tolerance.linear()), pockets))
+}
+
+/// S9e.4b.4c.2a: a pocket's region (its material the region's turned over,
+/// `turned`) at a depth of pockets: its hull the planes of its faces that
+/// leave every boundary point of its faces (`boundary_points`) on its
+/// material's side within the resolution, less each component of its other
+/// faces (joined by their edges, in the order of their first faces) as a
+/// pocket of its own, turned over again; at most `DEPTH` deep. A convex
+/// pocket is its hull alone (S9e.4b.3c.3b's); a pocket none of whose faces
+/// is on its hull, or holding pockets past the depth, is refused. Not by the
+/// bends alone: a U island's notch's back wall meets only the notch's sides
+/// and the pocket's floor, along edges convex in the pocket's material, yet
+/// its plane cuts the pocket in two; by the planes' sides it is the
+/// island's, whose region then has the notch as its pocket.
+fn pocket(
+    t: &Topology,
+    bends: &[(usize, usize, Bend)],
+    faces: &[usize],
+    turned: bool,
+    tolerance: Tolerance,
+    depth: usize,
+) -> Result<Tree> {
     let tol = tolerance.linear();
-    Ok((
-        one_plane(hull, tol),
-        pockets.into_values().map(|k| one_plane(k, tol)).collect(),
-    ))
+    let n = t.faces().len();
+    let corners: Vec<Point3> = faces.iter().flat_map(|&i| boundary_points(t, i)).collect();
+    let mut hull = Vec::new();
+    let mut rest = Vec::new();
+    for &i in faces {
+        let (frame, into) = plane_of(t, i, turned)?;
+        let apart = corners.iter().any(|&p| {
+            let d = frame.coordinates(p)[2];
+            if into {
+                d < -tol
+            } else {
+                d > tol
+            }
+        });
+        if apart {
+            rest.push(i);
+        } else {
+            hull.push((frame, into));
+        }
+    }
+    // A pocket of its own pockets alone bounds nothing.
+    if hull.is_empty() {
+        return Err(not_its_primitive());
+    }
+    let mut root: Vec<usize> = (0..n).collect();
+    for &(a, b, _) in bends {
+        if rest.contains(&a) && rest.contains(&b) {
+            let (x, y) = (find(&mut root, a), find(&mut root, b));
+            root[x.max(y)] = x.min(y);
+        }
+    }
+    let mut components: BTreeMap<usize, Vec<usize>> = BTreeMap::new();
+    for &i in &rest {
+        let r = find(&mut root, i);
+        components.entry(r).or_default().push(i);
+    }
+    // A pocket's own pockets past the depth: a tree too deep.
+    if !components.is_empty() && depth >= DEPTH {
+        return Err(not_its_primitive());
+    }
+    let mut tree = Tree::Hull(one_plane(hull, tol));
+    for own in components.into_values() {
+        let x = pocket(t, bends, &own, !turned, tolerance, depth + 1)?;
+        tree = Tree::Op(Op2::Cut, Box::new(tree), Box::new(x));
+    }
+    Ok(tree)
+}
+
+/// A face's boundary points: its edges' ends and 15 points along each
+/// edge's stored curve (`face_range`'s), a vertex loop's vertex.
+fn boundary_points(t: &Topology, fi: usize) -> Vec<Point3> {
+    let mut out = Vec::new();
+    for l in &t.faces()[fi].loops {
+        match &t.loops()[l.index()] {
+            Loop::Edges { fins, .. } => {
+                for f in fins {
+                    let e = &t.edges()[t.fins()[f.index()].edge.index()];
+                    for v in [e.start, e.end].into_iter().flatten() {
+                        out.push(t.vertices()[v.index()].position);
+                    }
+                    for k in 1..16 {
+                        out.push(e.curve.point(f64::from(k) / 16.0));
+                    }
+                }
+            }
+            Loop::Vertex(v) => out.push(t.vertices()[v.index()].position),
+        }
+    }
+    out
 }
 
 /// Planes of faces within the resolution of one plane (two walls of a U
@@ -1808,10 +1911,10 @@ fn tree_piece(
     };
     let (p_hull, p_pockets) = group_region(t, &bends, &members(0), outside, tolerance)?;
     let (o_hull, o_pockets) = group_region(t, &bends, &members(1), false, tolerance)?;
-    let cut = |x: Tree, pockets: Vec<Vec<(Frame3, bool)>>| {
-        pockets.into_iter().fold(x, |x, k| {
-            Tree::Op(Op2::Cut, Box::new(x), Box::new(Tree::Hull(k)))
-        })
+    let cut = |x: Tree, pockets: Vec<Tree>| {
+        pockets
+            .into_iter()
+            .fold(x, |x, k| Tree::Op(Op2::Cut, Box::new(x), Box::new(k)))
     };
     let others = !o_hull.is_empty() || !o_pockets.is_empty();
     // A group of pockets alone outside the primitive bounds nothing.
@@ -1850,7 +1953,7 @@ fn tree_piece(
         }
     };
     let choices = grouped * variants;
-    if !(1..=4).contains(&tree.booleans()) {
+    if !(1..=BOOLEANS).contains(&tree.booleans()) {
         return Err(not_its_primitive());
     }
     let piece = Piece {

@@ -1,0 +1,147 @@
+case well_rod_fuse
+brep imported/deep_well.brep
+boolean fuse
+plane 1.0 -1.0 -1.0 0.0 0.0 1.0 0.9230769230769231 0.38461538461538464 -0.0
+wire C 1.2211538461538463 -0.23076923076923073 -1.0 0.375
+prism 0.0 0.0 8.5
+end
+case well_rod_cut
+brep imported/deep_well.brep
+boolean cut
+plane 1.0 -1.0 -1.0 0.0 0.0 1.0 0.9230769230769231 0.38461538461538464 -0.0
+wire C 1.2211538461538463 -0.23076923076923073 -1.0 0.375
+prism 0.0 0.0 8.5
+end
+case well_rod_common
+brep imported/deep_well.brep
+boolean common
+plane 1.0 -1.0 -1.0 0.0 0.0 1.0 0.9230769230769231 0.38461538461538464 -0.0
+wire C 1.2211538461538463 -0.23076923076923073 -1.0 0.375
+prism 0.0 0.0 8.5
+end
+case post_cyl_fuse
+brep imported/deep_post.brep
+boolean fuse
+brep imported/cyl.brep
+end
+case post_cyl_cut
+brep imported/deep_post.brep
+boolean cut
+brep imported/cyl.brep
+end
+case post_cyl_common
+brep imported/deep_post.brep
+boolean common
+brep imported/cyl.brep
+end
+case chain_post_fuse
+brep imported/deep_post.brep
+boolean cut
+plane 4.875 3.125 -2.25 0.0 0.0 1.0 0.47058823529411764 0.8823529411764706 -0.0
+wire C 5.213235294117647 3.2279411764705883 -2.25 0.375
+prism 0.0 0.0 8.0
+then fuse
+plane 4.875 3.125 -0.25 0.0 0.0 1.0 0.47058823529411764 0.8823529411764706 -0.0
+wire C 7.25735294117647 4.404411764705882 -0.25 0.625
+prism 0.0 0.0 7.0
+end
+case chain_post_cut
+brep imported/deep_post.brep
+boolean cut
+plane 4.875 3.125 -2.25 0.0 0.0 1.0 0.47058823529411764 0.8823529411764706 -0.0
+wire C 5.213235294117647 3.2279411764705883 -2.25 0.375
+prism 0.0 0.0 8.0
+then cut
+plane 4.875 3.125 -0.25 0.0 0.0 1.0 0.47058823529411764 0.8823529411764706 -0.0
+wire C 7.25735294117647 4.404411764705882 -0.25 0.625
+prism 0.0 0.0 7.0
+end
+case chain_post_common
+brep imported/deep_post.brep
+boolean cut
+plane 4.875 3.125 -2.25 0.0 0.0 1.0 0.47058823529411764 0.8823529411764706 -0.0
+wire C 5.213235294117647 3.2279411764705883 -2.25 0.375
+prism 0.0 0.0 8.0
+then common
+plane 4.875 3.125 -0.25 0.0 0.0 1.0 0.47058823529411764 0.8823529411764706 -0.0
+wire C 7.25735294117647 4.404411764705882 -0.25 0.625
+prism 0.0 0.0 7.0
+end
+case rod_post_fuse
+plane 4.875 3.125 -2.25 0.0 0.0 1.0 0.47058823529411764 0.8823529411764706 -0.0
+wire C 4.125 2.25 -2.25 0.375
+prism 0.0 0.0 8.0
+boolean fuse
+brep imported/deep_post.brep
+end
+case rod_post_cut
+plane 4.875 3.125 -2.25 0.0 0.0 1.0 0.47058823529411764 0.8823529411764706 -0.0
+wire C 4.125 2.25 -2.25 0.375
+prism 0.0 0.0 8.0
+boolean cut
+brep imported/deep_post.brep
+end
+case rod_post_common
+plane 4.875 3.125 -2.25 0.0 0.0 1.0 0.47058823529411764 0.8823529411764706 -0.0
+wire C 4.125 2.25 -2.25 0.375
+prism 0.0 0.0 8.0
+boolean common
+brep imported/deep_post.brep
+end
+case post_rod_fuse
+brep imported/deep_post.brep
+boolean fuse
+plane 4.875 3.125 -2.25 0.0 0.0 1.0 0.47058823529411764 0.8823529411764706 -0.0
+wire C 5.242647058823529 4.345588235294118 -2.25 0.5
+prism 0.0 0.0 8.0
+end
+case post_rod_cut
+brep imported/deep_post.brep
+boolean cut
+plane 4.875 3.125 -2.25 0.0 0.0 1.0 0.47058823529411764 0.8823529411764706 -0.0
+wire C 5.242647058823529 4.345588235294118 -2.25 0.5
+prism 0.0 0.0 8.0
+end
+case post_rod_common
+brep imported/deep_post.brep
+boolean common
+plane 4.875 3.125 -2.25 0.0 0.0 1.0 0.47058823529411764 0.8823529411764706 -0.0
+wire C 5.242647058823529 4.345588235294118 -2.25 0.5
+prism 0.0 0.0 8.0
+end
+case tooth_pin_fuse
+brep imported/form_tooth.brep
+boolean fuse
+plane 0.0 0.0 -1.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire C 2.125 3.75 -1.0 0.3125
+prism 0.0 0.0 8.0
+end
+case tooth_pin_cut
+brep imported/form_tooth.brep
+boolean cut
+plane 0.0 0.0 -1.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire C 2.125 3.75 -1.0 0.3125
+prism 0.0 0.0 8.0
+end
+case tooth_pin_common
+brep imported/form_tooth.brep
+boolean common
+plane 0.0 0.0 -1.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire C 2.125 3.75 -1.0 0.3125
+prism 0.0 0.0 8.0
+end
+case post_touch_fuse
+brep imported/deep_post.brep
+boolean fuse
+sphere 4.875 3.125 5.75 0.0 0.0 1.0 1.0 0.0 0.0 1.0 -1.5707963267948966 1.5707963267948966
+end
+case post_touch_cut
+brep imported/deep_post.brep
+boolean cut
+sphere 4.875 3.125 5.75 0.0 0.0 1.0 1.0 0.0 0.0 1.0 -1.5707963267948966 1.5707963267948966
+end
+case post_touch_common
+brep imported/deep_post.brep
+boolean common
+sphere 4.875 3.125 5.75 0.0 0.0 1.0 1.0 0.0 0.0 1.0 -1.5707963267948966 1.5707963267948966
+end

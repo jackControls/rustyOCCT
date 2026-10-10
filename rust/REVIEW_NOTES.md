@@ -10398,6 +10398,291 @@ Decisions for S9, recorded before its code (2026-09-28):
     from its own working directory; run again with an absolute one it
     passes on both backends, as in every case of the full run above.) No
     kernel change.
+  * **S9e.4b.4c.2 refined, before its code (2026-10-10).** Why each class
+    is refused today. (a) *A pocket within a pocket in one curved face's
+    tree*: S9e.4b.3c.3b decomposes a body of one sphere, cylinder or cone
+    face and plane faces into groups whose regions are a convex hull less
+    pockets, each pocket the faces joined by concave edges taken as the
+    convex hull of their planes turned over (`imported.rs`'s
+    `group_region`); a pocket whose faces are not convex (a tooth or a post
+    standing in it, an island, an L) gives a hull that is not the pocket, the
+    tree's model does not match the stored topology, and the body is
+    `OutOfDomain("an imported plane piece other than a Boolean tree of its
+    primitive and its planes' hulls (S9e.4b.4)")`: S9e.4b.3c.3b's `tooth`
+    (`tooth_rod`'s 3 cases, declared `unsupported`). (b) *Deeper chains of
+    several primitives*: a component of S9e.4b.4b.2b.1's other plane faces
+    with edges of both kinds (a pocket holding a post, a flat with a groove)
+    is S9e.4b.4b.2b.2's `OutOfDomain`, and a chain whose model does not match
+    `OutOfDomain("an imported body of several primitives other than a
+    Boolean chain of them (S9e.4b.4c)")`. Where they occur: none of the DRAW
+    survey's 171 restore cases the import reaches is refused for either (the
+    survey at `ef5d66fd`: 59 evaluating on both backends, 76 refused by S9's
+    rules, 31 bodies none of the kernel's constructions, 3 spline bodies, 2
+    arguments of several solids), so no DRAW case is expected to move; in
+    the `boolean` fuzz target's replay at `37732abc` (the corpus's 1,441
+    inputs and the 35 regressions, an instrumented build not committed:
+    every file the kernel's writer writes and the reader reads back given to
+    the import) 2,214 imports, 1,741 imported and 473 refused, every refusal
+    a spline face or edge (S9f's): nothing reaches (a) or (b), so the fuzz
+    target needs a stage of its own (7). Decisions. (1) *Sub-steps*, by what
+    each unlocks: **S9e.4b.4c.2a** (this step): (a), a pocket's own pockets
+    in one curved face's trees, recursively within limits (4); it unlocks
+    the tooth, a post or an island standing in a pocket and a pocket not
+    convex in its planes, on a sphere's, cylinder's or cone's body, and the
+    fuzz target's stage; **S9e.4b.4c.2b**: (b), after S9e.4b.4b.2b.2 (whose
+    mixed components it extends to nested ones), with the cases that step
+    and its fuzz stage find. (2) *Representation.* S9e.4b.3c.3b's `Tree`
+    unchanged: a pocket is a subtree, its hull (`Tree::Hull`) less each of
+    its own pockets in turn (`Tree::Op(Cut, ...)`), each of those likewise;
+    every hull bounded by the tree's cube (S9e.4b.3c.3b's amendment (e)),
+    each inner Boolean (two hulls, or a hull and an inner result) arranged,
+    assembled and given to the next as its given model (`pieces.rs`'s
+    `Tree::node`, which takes any tree), the stored vertices splitting rims
+    in every one, the root's model matched to the stored topology by S9e.2's
+    match, its ids the stored ones, so a Boolean's history is over them as
+    now. Numbers: the engine's own, no new field or degree (a nested pocket's
+    Booleans are of planes alone until the root's with the primitive). (3)
+    *Finding them.* The groups and each group's hull and pockets as S9e.4b.3c.3b's
+    (the stored edges' bends, `groups` and `group_region` unchanged). Within
+    a pocket (its material the region's turned over), its hull is the planes
+    of its faces that leave every boundary point of its faces (their stored
+    vertices and 15 points along each edge's stored curve) on the material's
+    side within the resolution; its other faces, in components through
+    their edges in the order of their first faces, are its own pockets, each
+    the region of its faces in its own material (turned over again), found
+    the same way. A convex pocket has every face on its hull, so every body
+    S9e.4b.3c.3b imports keeps its tree. Not by the bends alone: in a U
+    island standing in a pocket, the back wall of the U's notch meets only
+    the notch's sides and the pocket's floor, along edges convex in the
+    pocket's material, so the bends would leave it on the pocket's hull,
+    where its plane cuts the pocket in two; the planes' sides take it into
+    the island, whose own region then has the notch as its pocket. (4)
+    *Limits*, deterministic: pockets nested at most three deep (a pocket,
+    its own pocket, and that one's: the U island's notch), at most eight
+    Booleans in a tree (S9e.4b.3c.3b's four); S9e.4b.3c.3b's choices of
+    groups unchanged (at most three components met across the other kind,
+    two ways inside the quadric), each grouping's tree one tree. A deeper or
+    larger tree, or a pocket none of whose faces is on its hull, is refused,
+    the refusal's text naming the limit: `OutOfDomain("an imported plane
+    piece other than a Boolean tree of its primitive and its planes' hulls,
+    its pockets nested at most three deep (S9e.4b.4)")`, the present text
+    gone (the step's key). (5) *Classification, bounds and mass* as
+    S9e.4b.3c.3b's: the tree's set functions over the primitive's location
+    and each hull's sides within the resolution (`Tree::rank`, recursive
+    already), bounds and mass by the stored topology; a rigid motion reads
+    the tree off the moved stored topology again. (6) *Degenerate and
+    refused.* S9's rules unchanged in every Boolean of the tree, the nested
+    pockets' Booleans of hulls among them; a tangency in any of them the
+    body's own `Degenerate("an imported plane piece whose curved face is
+    tangent to its plane faces")` as S9e.4b.3c.3b's; two faces on one plane
+    facing apart within one hull as S9e.4b.3c.3a's; a Boolean's other
+    refusal in the tree reported as S9e.4b.3c.3b's (the first choice's
+    only). Staying refused: trees past the limits (4), (b)'s chains
+    (S9e.4b.4c.2b's), a pocket within a pocket of a body of several
+    primitives. (7) *Fuzzing.* A stage of its own (`NESTED`): by the chained
+    byte's next bit, the kernel's own cylinder on the object's frame less a
+    prism on that frame of a square with a square hole (a post in a pocket)
+    or, by the bit after it, with a U-shaped hole (a U island, its notch a
+    pocket of its own: three deep), from inside the cylinder up past its top,
+    written, read back and imported, the kernel's body and the import each
+    cut by the chained stage's partner: where both evaluate, one volume.
+    (8) *Evidence first.* Bodies OCCT writes in one Boolean (a `write`
+    block), every section a circle or a line: S9e.4b.3c.3b's `tooth` (its
+    file read again), `post` (a cylinder on a turned frame less a prism of a
+    square with a square hole from inside it past its top cap: a post in a
+    pocket, its top on the cap's plane) and `well` (a frustum on the world's
+    axes less a prism of a square with a U-shaped hole from inside it past
+    its top cap: a U island in a square pocket, its notch a pocket of its
+    own, three deep); cases against rods, the body the tool, two imported
+    (the tooth and S9e.4a's ball), a chain, and a declared `degenerate` ball
+    resting on the post's top; the reference S9e.3a's chained reference on
+    the constructions OCCT was given (a square with a square hole its box
+    less the hole's box, a U-shaped hole its box less the notch's box, the
+    tooth's U S9e.4b.3c.3b's), with S9e.4b.3c.3a's checks and each body's
+    closed form (`generate_deep_trees_boolean_fixtures.py --check`, a CI
+    group `deep-trees`, `test_deep_trees_boolean_reference.py`); a native
+    capture keyed on the refusal the step removes
+    (`compare_deep_trees_boolean.py`, `imported.rs`'s present text); then the
+    kernel and its tests (`tests/deep_tree_booleans.rs`: every fixture
+    within `1e-9` enclosures, the degenerate refused, histories over the
+    stored ids, deterministic, moved rigidly; the kernel's own post, well
+    and a tree four deep written, read back and imported, the last refused
+    with the new text), S9e.4b.3c.3b's `tooth_rod` declared solid with it,
+    and the DRAW trial of the restore cases the import reaches.
+  * **S9e.4b.4c.2a evidence (2026-10-10).** Bodies OCCT wrote:
+    S9e.4b.3c.3b's `tooth` (its file read again: a cylinder of radius 3
+    about `(4, 4)` over `[0, 6]` less a U prism over `[2, 9/2]` entering its
+    wall, its slot inside the cylinder, a tooth standing in the pocket: two
+    deep) and this step's `post` and `well`
+    (`boolean-deep-trees-bodies.txt`, a `write` block of a cylinder's rows, a
+    `boolean cut` row and a prism of a square with a hole, written by
+    `compare_deep_trees_boolean.py --write-bodies` to
+    `rust/fixtures/imported/deep_*.brep`): `post`, a cylinder of radius 4
+    over `[0, 6]` on `R815` (the world's `z` its normal, its `x` turned to
+    `(8, 15, 0) / 17`) less a prism of the square `[-5/2, 5/2]^2` with the
+    hole `[-1, 1]^2` over `[3, 7]` (a post standing in a square pocket from
+    the cap, its top on the cap's plane: two deep); `well`, a cylinder of
+    radius 4 over `[0, 13/2]` on `R125` less a prism of the same square with
+    a U-shaped hole (the square `[-3/2, 3/2]^2` less its notch `[-1/2, 3/2] x
+    [-1/2, 1/2]`, open toward `+x`) over `[5/2, 15/2]` (a U island standing
+    in a square pocket, its notch a pocket of the island's: three deep).
+    `generate_deep_trees_boolean_fixtures.py --check`: 21 cases of 7 groups
+    (18 solid, 3 `degenerate`; 15 of class `pieces`, 3 `both`, 3 `chain`):
+    `tooth_pin` (an upright rod through the tooth's wall into the pocket),
+    `post_rod` (an upright rod on the post's frame through the post's wall),
+    `well_rod` (an upright rod through the island's arm into its notch),
+    `rod_post` (an upright rod less the post, through its wall: the body the
+    tool, its cut two solids), `post_cyl` (the post and S9e.4a's imported
+    cylinder across the post, the pocket's two walls and the post's
+    cylinder), `chain_post` (the post less a rod through the post, then with
+    a rod through the pocket's wall), and declared `degenerate` `post_touch`
+    (a ball of radius 1 resting on the post's top at its centre, exactly:
+    `Degenerate("a tangency between the inputs (S9c)")`). The reference is
+    S9e.3a's chained reference on the constructions OCCT was given (a square
+    with a square hole its box less the hole's box past both caps, with a U
+    hole its box less the U's box less the notch's box past the U's open
+    side and both caps, the tooth's U S9e.4b.3c.3b's), with S9e.4b.3c.3a's
+    checks relative to the case's size: the two families within 8.4e-36,
+    each solid's closed form 6.8e-36, each body's closed form 2.4e-37 (the
+    post `96 pi - 63`, the well `104 pi - 72`, each times its stored axes'
+    determinant), the pair identities 1.4e-41 and the area identity 9.8e-41
+    (where no two inputs share a surface), Monte Carlo 3.4 standard errors
+    (100,000 points a group), quadrature estimates 1.3e-32, every meeting's
+    sine at least 1.0 and events at least 8.9e-5 of their range apart
+    outside the declared group, solid counts by rays at two resolutions;
+    the declared group's checks kept apart within 6.8e-36. Every file read
+    independently (`stored_records`): its curved face one cylinder, every
+    stored vertex on the construction's surfaces (within 0 of the size at
+    the reference's precision). `test_deep_trees_boolean_reference.py`
+    checks each body's closed form against quadratures of its sections, the
+    chained reference on the holed prisms against their areas, the
+    reference's sets against OCCT's profiles (the square and its hole, one
+    area, the hole's and the notch's boxes past the caps and the U's open
+    side), every part's place (each pocket from inside its cylinder past its
+    cap, its square's corners inside the wall, the post and the island inside
+    their squares, the pockets' depths), the partners' places (each rod
+    across the wall it is to cross within its face, S9e.4a's cylinder 0.27 at
+    least from tangency with every plane of the post and its top above the
+    cap), the declared case, the case list and its protocol rows and the new
+    bodies' files apart from every earlier set's. The generator's check is a
+    CI group of its own (`deep-trees`, 10.8 minutes on four workers
+    locally under Python 3.9, 8.7 under 3.12); Python 3.9 and 3.12
+    write the same files. Corrections from the evidence and a draft of the
+    step's code (not committed) run on the cases, amending the refined
+    decisions' plan (8): (a) the post on a frame turned off the world's `z`
+    (`SKEW2`) was refused on import as S9's `Degenerate("a plane within
+    rounding of a cylinder's direction")`: its pocket's walls, OCCT's stored
+    planes along the cylinder's turned axis, lie within rounding of it, and
+    S9e.4b.3c.3b's trees take a hull plane on its stored frame (a chain's
+    leaf takes its walls on the leaf's axes, S9e.4b.4b.2b.1's `plane_along`
+    only a plane normal to an axis), so the bodies stand on frames turned
+    about the world's `z`, their walls' normals in the world's `xy` exactly;
+    a tree's planes along a turned primitive's axis are left open; (b) the
+    reference's cost: a first set with the well on a frustum, a `TILT` rod
+    less the well, S9e.4a's ball across the post and the chain's `TILT` slab
+    ran over 37 minutes of a worker for each of its three slowest groups,
+    so the partners stand along the bodies' axes (but the declared ball),
+    the well's primitive is a cylinder (the kernel's tests take a frustum's)
+    and the notch's box ends inside the square (reaching its wall, one plane
+    of two of the reference's solids, it made the well's group 25 minutes
+    and more where it now takes 7); (c) the declared ball's refusal is S9c's
+    tangency, the ball and the post's top meeting exactly (not S9d.1's
+    rounding). The draft found every solid case within the reference's
+    volume and the declared one refused so. The capture
+    `occt-boolean-deep-trees-preimplementation`
+    (`compare_deep_trees_boolean.py`, keyed on the refusal the step removes:
+    `imported.rs`'s `OutOfDomain("an imported plane piece other than a
+    Boolean tree of its primitive and its planes' hulls (S9e.4b.4)")`, whose
+    text the step changes; the kernel's probe `unsupported` on all 21 before
+    the code, every body refused on import by it): every result valid, 20
+    matching (within 2e-8 of the reference: no meeting OCCT approximates),
+    1 reviewed, in `occt-boolean-deep-trees-divergences.json`: the touching
+    ball's fuse, which OCCT keeps as two solids touching at a point where the
+    reference's rays count one, their totals the reference's within 1.2e-15.
+    S9e.4b.4c.2a's kernel next.
+  * **S9e.4b.4c.2a implemented** (`solid/imported.rs`'s `pocket`: a
+    pocket's region at a depth of pockets, its hull the planes of its faces
+    leaving every boundary point of its faces (`boundary_points`) on its
+    material's side within the resolution, its other faces' components its
+    own pockets turned over again; `group_region` giving each pocket's
+    subtree; the limits `DEPTH` and `BOOLEANS`; `curved/pieces.rs`
+    unchanged: its `Tree::node` takes any tree), as the refined decisions
+    describe: a pocket within a pocket of a body of one curved face and plane
+    faces is its hull less its own pockets, nested at most three deep in at
+    most eight Booleans, the first tree whose model matches the stored
+    topology the body; a deeper or larger tree, or a pocket none of whose
+    faces is on its hull, `OutOfDomain("an imported plane piece other than a
+    Boolean tree of its primitive and its planes' hulls, its pockets nested
+    at most three deep (S9e.4b.4)")`. All 21 fixtures as declared (18 within
+    the kernel's enclosures, each at most `1e-9` wide; the touching ball
+    `Degenerate("a tangency between the inputs (S9c)")`), every history
+    complete over the imported bodies' stored ids, results deterministic and
+    moved rigidly, both inputs translated and turned keeping the reference's
+    volumes, every body its tree (its volume its closed form or, the tooth's,
+    the reference's, points in its material inside and in each depth's
+    pockets outside, its stored vertices on its boundary), and the kernel's
+    own bodies of nested pockets written by its writer, read back and
+    imported: a post and a U island in a square pocket of a cylinder (the
+    `boolean` fuzz target's `NESTED` bodies, on the world's axes and turned
+    about its `z`) and of a frustum, their Booleans with a turned box the
+    kernel's own results' (all 15 evaluating), and a U island whose notch
+    holds a tongue (four deep) refused with the new text
+    (`tests/deep_tree_booleans.rs`, 5.1 to 9.5 s in release on a host at
+    load 6 to 19, 5.9 s at `opt-level` 2 with debug assertions, 7.2 s in release
+    with debug assertions and overflow checks under the emulated correctly
+    rounded `hypot`, where the piece trees', piece forms', plane parts',
+    prism leaves', primitive chains' and polyhedra against curved faces'
+    test files pass too). S9e.4b.3c.3b's `tooth_rod`, declared `unsupported`
+    until now, is solid within its reference
+    (`generate_piece_trees_boolean_fixtures.py` declares it so, its margins
+    checked with the others': its fixtures written again in 23 minutes on
+    four workers at load 12 to 31, only the tooth's rows changing; `tests/piece_tree_booleans.rs`'s tooth imports, its volume its
+    rod's cut and common's). `compare_deep_trees_boolean.py` 20 matches and
+    1 reviewed (the captured one; the kernel's entity counts OCCT's), the
+    kernel within the reference on all 18 solid cases, the 3 degenerate
+    refused; `compare_piece_trees_boolean.py` 22 and 8, the kernel within
+    the reference on all 27 solid cases (the tooth's 3 now among them, their
+    entity counts OCCT's); every other comparison of `HANDOFF.md`'s table
+    unchanged with 0 failures (and `compare_split.py` 72/56,
+    `compare_brep.py --family spline` 10/3); the release suite (680
+    tests) and the tools' unit tests (378) passing, the ledger unchanged.
+    Amendments, from the implementation: (a) on a frame turned off the
+    world's `z` (the fuzz target's tilted one), a post's walls along its
+    cylinder's axis are exact on macOS's `hypot` but within rounding of the
+    axis under a correctly rounded one, where its import is S9's
+    `Degenerate("a plane within rounding of a cylinder's direction")`: the
+    kernel's tests take frames turned about the world's `z`, and the fuzz
+    stage's import refused there is skipped (evidence (a)'s open item); (b)
+    the U-shaped hole of the fuzz stage is chosen by `MESHES`'s bit (the bit
+    before the stage's own; the chained byte has none after it). The
+    `boolean` fuzz target's `NESTED` stage (the chained byte's bit 96, the
+    U by bit 48): replayed (an instrumented build, not committed), 325 of the
+    corpus's 1,476 inputs and regressions reach it (98 posts, 227 U
+    islands), every body built and imported, 237 evaluating both ways with
+    one volume, 14 refused alike (13 a tangency between the inputs, 1 a
+    thin result), 72 where the kernel's own body is refused by S9's rounding
+    rules (a plane within rounding of a cylinder's direction, two cylinders'
+    axes within rounding of parallel: the turned partner's frame against the
+    tilted cylinder's), its import evaluating in 68 and refused as a piece
+    thinner than the resolution in 4, and 2 the other way (S9d.1's near miss
+    of the ball partner); no other import moves (2,066 imported,
+    the 473 refused all spline faces or edges, S9f's). Replays with debug
+    assertions, one process an input, natively and under the emulated
+    correctly rounded `hypot` (with overflow checks): the boolean corpus and
+    its regressions (1,476 inputs) and the split corpus and its regressions
+    (3,571), no failure, the slowest 9.5 s and 2.6 s natively on a host at
+    load 15 to 18 (9.8 s and 83 s emulated, the emulation's `hypot` exact by
+    big rationals). A trial of the 171 DRAW restore cases the import
+    reaches (2,139 cases restoring a shape and giving a Boolean, the public
+    dataset, 120 seconds a case, four at once, on the Rust adapter, and the
+    171 natively; not the survey: nothing registered): no case moves, 59
+    evaluating on both backends, 76 refused by S9's rules, 31 bodies none of
+    the kernel's constructions, 3 spline bodies and 2 arguments of several
+    solids, none refused as a tree or a chain; native DRAW's statuses as
+    before (147 evaluating, 24 unsupported). Open: S9e.4b.4c.2b (nested
+    chains of several primitives, after S9e.4b.4b.2b.2); a tree's planes
+    along a turned primitive's axis within rounding of it (evidence (a)).
+    Pending: its capture's Linux record and its campaigns.
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces

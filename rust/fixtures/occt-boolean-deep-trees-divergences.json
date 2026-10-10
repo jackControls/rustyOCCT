@@ -1,0 +1,17 @@
+{
+  "note": "Reviewed differences of the S9e.4b.4c.2a capture (occt-boolean-deep-trees-preimplementation): each fingerprinted by its native row; the touching ball's fuse OCCT keeps as two solids.",
+  "reviews": [
+    {
+      "case": "post_touch_fuse",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "c6a4f5d2ac207ded6b0196d2b73a623af3c1b024e629b0204ebe3f1d403935bf",
+      "differences": [
+        "solids"
+      ],
+      "reason": "BRepAlgoAPI's result is valid; the post fused with a ball of radius 1 resting on the post's top at its centre (the declared degenerate group, the kernel refusing it as a tangency between the inputs): OCCT keeps the ball (volume 4 pi / 3) and the post as two solids touching at that point, where the reference's rays count their union one; the two solids' volumes and areas sum to the reference's totals within 1.2e-15 relative (the post alone its closed form).",
+      "independent_evidence": "chained_curved_boolean_reference.py's rows on the constructions OCCT was given (generate_deep_trees_boolean_fixtures.py --check, identical under Python 3.9 and 3.12) agree two ways (each face swept by two independent families of curves) within 8.4e-36, every solid's measures from its faces within 6.8e-36 of its closed form, each body's within 2.4e-37 of its own (the post 96 pi - 63, the well 104 pi - 72, each times its stored axes' determinant), the pair identities within 1.4e-41, and Monte Carlo within 3.4 standard errors; its solid counts are the declared ones by rays at two resolutions; every stored vertex of the imported files lies on its construction's surfaces.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    }
+  ]
+}

@@ -1,19 +1,20 @@
-//! S9e.4b.3c.3b: imported bodies of one sphere or cylinder face and plane
-//! faces that are a Boolean tree of their primitive and several convex hulls
-//! of their planes (a U prism's groove and boss, a cylinder bitten twice by
-//! a U, a hemisphere's disc fused with or cut from a box, a flattened
-//! cylindrical boss) given to Booleans, against the independent reference
-//! (`fixtures/boolean-piece-trees-*` from
-//! `tools/generate_piece_trees_boolean_fixtures.py`, the bodies under
-//! `fixtures/imported/`); the `boolean` fuzz target's two bodies, a
-//! cylinder's oblique end and a primitive bitten twice built by the kernel
-//! and imported. Each case runs once (on a few threads) for the checks that
-//! read its result.
+//! S9e.4b.4c.2a: imported bodies of one cylinder or cone face and plane faces
+//! that are a Boolean tree of their primitive and convex hulls of their
+//! planes whose pockets hold pockets of their own (S9e.4b.3c.3b's tooth, a
+//! post standing in a pocket, a U island whose notch is a pocket again, on
+//! cylinders),
+//! given to Booleans, against the independent reference
+//! (`fixtures/boolean-deep-trees-*` from
+//! `tools/generate_deep_trees_boolean_fixtures.py`, the bodies under
+//! `fixtures/imported/`); the kernel's own such bodies (the `boolean` fuzz
+//! target's `NESTED` ones among them) written, read back and imported, and a
+//! tree four deep refused. Each case runs once (on a few threads) for the
+//! checks that read its result.
 #[path = "support/boolean_protocol.rs"]
 #[allow(dead_code)]
 mod protocol;
 use rusty_occt::history::{self, History, Resolution};
-use rusty_occt::identity::{EntityId, OperationId};
+use rusty_occt::identity::OperationId;
 use rusty_occt::{
     Boundary, Error, Frame3, Location, Point2, Point3, Profile, RigidTransform, Solid, Tolerance,
     Vec3,
@@ -23,7 +24,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::OnceLock;
 
 fn cases() -> Vec<protocol::Case> {
-    protocol::cases(include_str!("../../fixtures/boolean-piece-trees-cases.txt"))
+    protocol::cases(include_str!("../../fixtures/boolean-deep-trees-cases.txt"))
 }
 
 /// `f` over the cases on at most six threads, in the cases' order.
@@ -67,7 +68,7 @@ type Expected = BTreeMap<String, (String, String, Option<(usize, [f64; 2])>)>;
 
 fn expected() -> Expected {
     let mut expect = BTreeMap::new();
-    for line in include_str!("../../fixtures/boolean-piece-trees-expected.tsv")
+    for line in include_str!("../../fixtures/boolean-deep-trees-expected.tsv")
         .lines()
         .filter(|l| !l.starts_with('#'))
     {
@@ -128,7 +129,7 @@ fn within(out: &[Solid], count: usize, v: [f64; 2]) -> Result<(), String> {
 }
 
 /// Every case as declared: solid within the reference's enclosures, the
-/// degenerate and unsupported refused for their declared reasons.
+/// degenerate refused for their declared reasons.
 #[test]
 fn every_case_matches_the_reference() {
     let expect = expected();
@@ -223,50 +224,6 @@ fn histories_are_complete_over_the_imported_ids() {
     assert!(failures.is_empty(), "{failures:#?}");
 }
 
-/// What an input entity became in the result.
-fn targets(h: &History, id: EntityId) -> Vec<EntityId> {
-    match h.resolve(id) {
-        Resolution::Same(x) => vec![x],
-        Resolution::Split(v) => v,
-        Resolution::Merged { into, .. } => vec![into],
-        Resolution::Deleted | Resolution::Unknown => Vec::new(),
-    }
-}
-
-/// The U's two arm ends on one plane (one plane of its hull, their stored
-/// frames rounded apart) each continue into the rod's fuse with the groove,
-/// as themselves or split, never merged into one another.
-#[test]
-fn faces_on_one_plane_keep_their_ids() {
-    let all: BTreeMap<&str, _> = runs().iter().map(|(n, r)| (n.as_str(), r)).collect();
-    let Ok((a, _, out, h)) = all["u_scoop_rod_fuse"] else {
-        panic!("the groove and the rod's fuse")
-    };
-    let t = a.topology();
-    // The stored faces normal to the U's `x` at its open end: the arms'.
-    let x = Vec3::new(-7.0, -4.0, 4.0) * (1.0 / 9.0);
-    let end = Point3::new(1.0, 2.0, 0.5) + x * 12.0;
-    let mut arms = Vec::new();
-    for (k, f) in t.faces().iter().enumerate() {
-        if let rusty_occt::topology::Surface::Plane(frame) = &f.surface {
-            let along = frame.normal().cross(x).length() < 1e-9;
-            if along && (frame.origin() - end).dot(x).abs() < 1e-9 {
-                arms.push(
-                    t.id_of(rusty_occt::topology::Slot::Face(
-                        rusty_occt::topology::FaceId::new(k),
-                    ))
-                    .unwrap(),
-                );
-            }
-        }
-    }
-    assert_eq!(arms.len(), 2, "the U's arm ends");
-    let outs: Vec<Vec<EntityId>> = arms.iter().map(|&id| targets(h, id)).collect();
-    assert!(outs.iter().all(|o| !o.is_empty()), "{outs:?}");
-    assert!(outs[0].iter().all(|x| !outs[1].contains(x)), "{outs:?}");
-    assert!(!out.is_empty());
-}
-
 #[test]
 fn results_are_deterministic_and_move_rigidly() {
     let motion =
@@ -324,12 +281,11 @@ fn moved_inputs_keep_their_volumes() {
     let expect = expected();
     let all = cases();
     for name in [
-        "u_scoop_rod_cut",
-        "u_boss_slab_common",
-        "bites_box_cut",
-        "cap_boss_rod_fuse",
-        "rod_cap_pocket_cut",
-        "dee_boss_ball_common",
+        "tooth_pin_cut",
+        "post_rod_common",
+        "well_rod_fuse",
+        "rod_post_cut",
+        "post_cyl_cut",
     ] {
         let case = all.iter().find(|c| c.name == name).unwrap();
         for (k, motion) in [shift, turn].into_iter().enumerate() {
@@ -369,69 +325,69 @@ fn frame(o: [f64; 3], n: [f64; 3], x: [f64; 3]) -> Frame3 {
     Frame3::new(Point3::new(o[0], o[1], o[2]), v(n), v(x), tolerance()).unwrap()
 }
 
-/// Every body imports as its tree (its model matched on import), its
-/// volume its closed form where it has one, its stored vertices on its
-/// boundary, a point in its material inside and one in a part its tree
-/// removes outside; the U's notch is refused for its own tangency; the tooth
-/// (a pocket within a pocket, S9e.4b.4c.2a's since) imports, its volume its
-/// rod's cut and common's.
+/// Every body imports as its tree (its model matched on import), its volume
+/// its closed form where it has one (the tooth's the reference's), its stored
+/// vertices on its boundary, points in its material inside and points in its
+/// pockets (each depth's) outside.
 #[test]
 fn imported_bodies_are_their_trees() {
     use std::f64::consts::PI;
-    let segment = |r: f64, d: f64| r * r * (d / r).acos() - d * (r * r - d * d).sqrt();
-    let skew4 = frame([1.0, 2.0, 0.5], [4.0, 1.0, 8.0], [-7.0, -4.0, 4.0]);
-    let skew = frame([1.0, 2.0, 0.5], [8.0, 4.0, 1.0], [-1.0, 4.0, -8.0]);
-    let skew2 = frame([0.5, 1.0, 1.5], [4.0, 4.0, 7.0], [1.0, -8.0, 4.0]);
+    let post = frame([4.875, 3.125, -1.25], [0.0, 0.0, 1.0], [8.0, 15.0, 0.0]);
+    let well = frame([1.0, -1.0, 0.0], [0.0, 0.0, 1.0], [12.0, 5.0, 0.0]);
     let at = |f: Frame3, u: f64, v: f64, w: f64| f.point(Point2::new(u, v), w).to_array();
+    // The tooth's volume: its cases' cut and common with the pin.
+    let expect = expected();
+    let tooth =
+        expect["tooth_pin_cut"].2.unwrap().1[0] + expect["tooth_pin_common"].2.unwrap().1[0];
     let bodies = [
         (
-            "form_u_scoop",
-            None,
-            at(skew4, 2.0, 2.0, 3.0),
-            at(skew4, 8.0, 1.5, 5.5),
+            "form_tooth",
+            tooth,
+            vec![[2.5, 3.75, 3.25], [3.5, 4.0, 3.25], [4.0, 4.0, 1.0]],
+            vec![[1.5, 3.75, 3.25], [2.5, 2.75, 3.25], [2.5, 5.0, 4.0]],
         ),
         (
-            "form_u_boss",
-            Some(304.0 + 6.75 * PI),
-            [2.5, 4.0, 6.0],
-            [8.0, 4.0, 2.0],
-        ),
-        ("form_bites", None, [4.0, 4.0, 3.0], [2.5, 6.0, 3.0]),
-        (
-            "form_cap_boss",
-            Some(384.0 + 26.0 * PI / 3.0),
-            at(skew, 4.0, 4.0, -0.5),
-            at(skew, 0.5, 0.5, -0.5),
+            "deep_post",
+            96.0 * PI - 63.0,
+            vec![
+                at(post, 0.0, 0.0, 4.5),
+                at(post, 3.0, 0.0, 4.5),
+                at(post, 1.5, 0.0, 2.0),
+            ],
+            vec![at(post, 1.75, 0.0, 4.5), at(post, -0.5, 1.5, 3.5)],
         ),
         (
-            "form_cap_pocket",
-            Some(256.0 - 46.0 * PI / 3.0),
-            at(skew2, 1.0, 1.0, 1.0),
-            at(skew2, 4.0, 4.0, 3.0),
-        ),
-        (
-            "form_dee_boss",
-            Some(300.0 + 6.0 * (3.125 * PI - segment(2.5, 1.5) / 2.0)),
-            [8.0, 1.0, 4.5],
-            [8.0, 3.0, 4.5],
+            "deep_well",
+            104.0 * PI - 72.0,
+            vec![
+                at(well, 0.0, 1.0, 4.0),
+                at(well, -1.0, 0.0, 5.0),
+                at(well, 0.0, 0.0, 1.5),
+                at(well, 3.5, 0.0, 5.0),
+            ],
+            vec![
+                at(well, 0.5, 0.0, 4.0),
+                at(well, 2.0, 0.0, 4.0),
+                at(well, 0.0, -2.0, 3.0),
+            ],
         ),
     ];
     for (name, volume, inside, outside) in bodies {
         let s = body(name, 91).unwrap_or_else(|e| panic!("{name}: {e}"));
         let m = s.mass_properties();
-        if let Some(volume) = volume {
-            assert!(
-                (m.volume - volume).abs() <= 1e-9 * volume,
-                "{name}: {} for {volume}",
-                m.volume
-            );
-        }
-        for (p, want) in [(inside, Location::Inside), (outside, Location::Outside)] {
-            assert_eq!(
-                s.classify(Point3::new(p[0], p[1], p[2])).unwrap(),
-                want,
-                "{name} {p:?}"
-            );
+        assert!(
+            (m.volume - volume).abs() <= 1e-9 * volume,
+            "{name}: {} for {volume}",
+            m.volume
+        );
+        for (points, want) in [(inside, Location::Inside), (outside, Location::Outside)] {
+            for p in points {
+                assert_eq!(
+                    s.classify(Point3::new(p[0], p[1], p[2])).unwrap(),
+                    want,
+                    "{name} {p:?}"
+                );
+            }
         }
         for v in s.topology().vertices() {
             assert_eq!(
@@ -441,29 +397,11 @@ fn imported_bodies_are_their_trees() {
             );
         }
     }
-    match body("form_u_notch", 91) {
-        Err(Error::Degenerate(m)) => assert_eq!(
-            m,
-            "an imported plane piece whose curved face is tangent to its plane faces"
-        ),
-        other => panic!("form_u_notch: {:?}", other.map(|_| ())),
-    }
-    let tooth = body("form_tooth", 91).unwrap_or_else(|e| panic!("form_tooth: {e}"));
-    let expect = expected();
-    let volume = ["tooth_rod_cut", "tooth_rod_common"]
-        .iter()
-        .map(|n| expect[*n].2.unwrap().1[0])
-        .sum::<f64>();
-    let got = tooth.mass_properties().volume;
-    assert!((got - volume).abs() <= 1e-9 * volume, "{got} for {volume}");
-    for v in tooth.topology().vertices() {
-        assert_eq!(tooth.classify(v.position).unwrap(), Location::Boundary);
-    }
 }
 
-/// A prism of a profile on a frame over `[h0, h1]`.
-fn prism(f: Frame3, outline: Boundary, h0: f64, h1: f64, op: u64) -> Solid {
-    let profile = Profile::new(outline, vec![], tolerance()).unwrap();
+/// A prism of a profile with holes on a frame over `[h0, h1]`.
+fn prism(f: Frame3, outline: Boundary, holes: Vec<Boundary>, h0: f64, h1: f64, op: u64) -> Solid {
+    let profile = Profile::new(outline, holes, tolerance()).unwrap();
     Solid::extrude_with(OperationId(op), profile, f, h0, h1)
         .unwrap()
         .0
@@ -474,147 +412,98 @@ fn polygon(points: &[(f64, f64)]) -> Boundary {
     Boundary::polygon(pts, tolerance()).unwrap()
 }
 
-fn rectangle(x0: f64, y0: f64, x1: f64, y1: f64) -> Boundary {
-    polygon(&[(x0, y0), (x1, y0), (x1, y1), (x0, y1)])
+fn square(a: f64) -> Boundary {
+    polygon(&[(-a, -a), (a, -a), (a, a), (-a, a)])
 }
 
-/// A U: the rectangle `[x0, x1] x [y0, y1]` less the slot `[s0, x1] x [t0,
-/// t1]`.
-fn u_shape(x0: f64, y0: f64, x1: f64, y1: f64, s0: f64, t0: f64, t1: f64) -> Boundary {
+/// A U of half side `a` less its notch `[-b, a] x [-c, c]`, open toward `+x`.
+fn u_shape(a: f64, b: f64, c: f64) -> Boundary {
     polygon(&[
-        (x0, y0),
-        (x1, y0),
-        (x1, t0),
-        (s0, t0),
-        (s0, t1),
-        (x1, t1),
-        (x1, y1),
-        (x0, y1),
+        (-a, -a),
+        (a, -a),
+        (a, -c),
+        (-b, -c),
+        (-b, c),
+        (a, c),
+        (a, a),
+        (-a, a),
     ])
 }
 
 /// A solid written by the kernel's writer, read back and imported.
-fn reimported(s: &Solid, op: u64) -> Solid {
+fn reimported(s: &Solid, op: u64) -> Result<Solid, Error> {
     use rusty_occt::occt_brep::{import, read, write};
     let text = write(s.topology(), s.resolution().linear()).unwrap();
     let doc = read(&text).unwrap();
     let [solid] = <[_; 1]>::try_from(import(&doc).solids).unwrap();
-    Solid::imported_with(OperationId(op), solid.result.unwrap(), solid.tolerance)
-        .unwrap()
-        .0
+    Solid::imported_with(OperationId(op), solid.result.unwrap(), solid.tolerance).map(|x| x.0)
 }
 
-/// The kernel's own bodies of trees, imported: the `boolean` fuzz target's
-/// two (a box fused with a ball's half whose disc plane cuts it; a U prism
-/// less a ball about its end's corner), a rod bitten twice by a U, written
-/// by its writer and read back; a cylinder's piece of an oblique plane
-/// fused with a box (its end an ellipse, which the reader does not take),
-/// its topology imported directly. Each its tree: its volume, and its
-/// Booleans with a turned box, the kernel's own results'.
+fn one(r: rusty_occt::Result<(Vec<Solid>, History)>) -> Solid {
+    let (out, _) = r.unwrap();
+    assert_eq!(out.len(), 1);
+    out.into_iter().next().unwrap()
+}
+
+/// The kernel's own bodies of nested pockets, written by its writer, read
+/// back and imported: a post and a U island in a square pocket of a
+/// cylinder (the `boolean` fuzz target's `NESTED` bodies, on the world's
+/// axes and turned about its `z`) and of a frustum; each its tree, its
+/// volume, its stored vertices on its boundary, and its Booleans with a
+/// turned box the kernel's own results', all 15 evaluating. A U island whose notch holds a
+/// tongue (pockets four deep) is refused with the limit's text.
 #[test]
 fn kernel_bodies_imported_as_trees() {
     let tol = tolerance();
-    let half = std::f64::consts::FRAC_PI_2;
     let world = frame([0.0, 0.0, 0.0], [0.0, 0.0, 1.0], [1.0, 0.0, 0.0]);
-    let one = |r: rusty_occt::Result<(Vec<Solid>, History)>| {
-        let (out, _) = r.unwrap();
-        assert_eq!(out.len(), 1);
-        out.into_iter().next().unwrap()
+    // Turned about the world's `z`: walls along a cylinder's axis turned off
+    // it (the fuzz target's tilted frame) lie within rounding of its
+    // direction under a correctly rounded `hypot` (S9's refusal of a plane
+    // within rounding of a cylinder's direction), on macOS's exactly.
+    let turned = frame([1.0, -2.0, 0.5], [0.0, 0.0, 1.0], [3.0, 4.0, 0.0]);
+    let beside = frame([1.5, 1.0, 0.0], [0.0, 0.0, 1.0], [1.0, 0.0, 0.0]);
+    // The fuzz target's: a cylinder of radius `s` over `[0, h + 1]` less a
+    // square of half side `5k` with a hole over `[(h + 1) / 2, h + 2]`, `k =
+    // s / 8`.
+    let nested = |f: Frame3, s: f64, h: f64, u: bool, op: u64| {
+        let k = s / 8.0;
+        let hole = if u {
+            u_shape(3.0 * k, k, k)
+        } else {
+            square(2.0 * k)
+        };
+        let top = h + 1.0;
+        let cylinder = Solid::cylinder_with(OperationId(op), f, s, 0.0, top, tol)
+            .unwrap()
+            .0;
+        let ring = prism(f, square(5.0 * k), vec![hole], top / 2.0, top + 1.0, op + 1);
+        one(cylinder.cut(OperationId(op + 2), &ring))
     };
-    // The fuzz target's ball's half: the ball's frame turned about `z`.
-    let ball_half = Solid::sphere_with(
-        OperationId(2),
-        frame([0.375, -0.125, 1.125], [0.0, 0.0, 1.0], [0.6, 0.8, 0.0]),
-        2.8125,
-        -half,
-        0.0,
-        tol,
-    )
-    .unwrap()
-    .0;
-    let block = prism(world, rectangle(0.0, 0.0, 1.25, 2.25), 0.0, 2.25, 1);
-    // The fuzz target's U: on a turned frame, a ball about its end's corner
-    // (its frame's origin) through its whole thickness.
-    let g = frame([1.0, -2.0, 0.5], [0.0, 0.6, 0.8], [1.0, 0.0, 0.0]);
-    let u = prism(
-        g,
-        u_shape(0.0, 0.0, 11.25, 3.0, 3.75, 1.0, 2.0),
-        0.0,
-        0.75,
-        3,
-    );
-    let corner = Solid::sphere_with(OperationId(4), g, 1.6875, -half, half, tol)
+    let frustum = Solid::cone_with(OperationId(30), world, 5.0, 4.0, 6.0, tol)
         .unwrap()
         .0;
-    // A rod bitten twice by a U along its axis between its caps.
-    let rod = Solid::cylinder_with(
-        OperationId(5),
-        frame([4.0, 4.0, 0.0], [0.0, 0.0, 1.0], [1.0, 0.0, 0.0]),
-        3.0,
-        0.0,
-        6.0,
-        tol,
-    )
-    .unwrap()
-    .0;
-    let fork = prism(
+    let well = prism(
         world,
-        u_shape(-3.0, 1.5, 3.5, 6.5, -1.0, 2.5, 5.5),
-        2.0,
-        4.5,
-        6,
+        square(2.5),
+        vec![u_shape(1.5, 0.5, 0.5)],
+        2.5,
+        7.0,
+        31,
     );
-    // A cylinder's piece of an oblique plane fused with a box holding its
-    // lower end: its end an ellipse.
-    let cylinder = Solid::cylinder_with(
-        OperationId(10),
-        frame([5.0, 5.0, -1.0], [0.0, 0.0, 1.0], [1.0, 0.0, 0.0]),
-        2.0,
-        0.0,
-        8.0,
-        tol,
-    )
-    .unwrap()
-    .0;
-    let (pieces, _) = cylinder
-        .split_by_plane(
-            OperationId(11),
-            frame([5.0, 5.0, 4.0], [0.6, 0.0, 0.8], [0.0, 1.0, 0.0]),
-        )
-        .unwrap();
-    let low = pieces
-        .into_iter()
-        .map(|(_, s)| s)
-        .min_by(|a, b| a.bounds().min.z.total_cmp(&b.bounds().min.z))
-        .unwrap();
-    let base = prism(world, rectangle(1.0, 1.0, 9.0, 9.0), -2.0, 1.0, 12);
-    let oblique = one(base.fuse(OperationId(13), &low));
-    let written = [
-        ("ball's half", one(block.fuse(OperationId(7), &ball_half))),
-        ("U's corner", one(u.cut(OperationId(8), &corner))),
-        ("rod bitten twice", one(rod.cut(OperationId(9), &fork))),
+    let bodies = [
+        ("post", nested(world, 4.0, 1.75, false, 10)),
+        ("island", nested(beside, 3.0, 1.25, true, 13)),
+        ("turned post", nested(turned, 3.0, 1.5, false, 16)),
+        ("turned island", nested(turned, 4.0, 0.75, true, 19)),
+        ("well", one(frustum.cut(OperationId(32), &well))),
     ];
-    let mut bodies: Vec<(&str, Solid, Solid)> = written
-        .into_iter()
-        .map(|(name, s)| {
-            let i = reimported(&s, 50);
-            (name, s, i)
-        })
-        .collect();
-    let i = Solid::imported_with(
-        OperationId(50),
-        oblique.topology().clone(),
-        oblique.resolution(),
-    )
-    .unwrap()
-    .0;
-    bodies.push(("oblique end", oblique, i));
     let probe = prism(
-        frame([2.5, 2.0, 0.25], [0.0, 3.0, 4.0], [3.0, 0.0, 4.0]),
-        rectangle(0.0, 0.0, 3.0, 3.0),
+        frame([0.25, -0.5, 1.25], [3.0, 0.0, 4.0], [0.0, 1.0, 0.0]),
+        square(1.25),
+        vec![],
         0.0,
         2.5,
-        14,
+        40,
     );
     let volume = |r: rusty_occt::Result<(Vec<Solid>, History)>| -> f64 {
         r.unwrap()
@@ -623,7 +512,9 @@ fn kernel_bodies_imported_as_trees() {
             .map(|s| s.mass_properties().volume)
             .sum()
     };
-    for (name, s, i) in &bodies {
+    let mut evaluated = 0;
+    for (name, s) in &bodies {
+        let i = reimported(s, 50).unwrap_or_else(|e| panic!("{name}: {e}"));
         let (v0, v1) = (s.mass_properties().volume, i.mass_properties().volume);
         assert!((v0 - v1).abs() <= 1e-9 * v0, "{name}: {v1} for {v0}");
         for v in i.topology().vertices() {
@@ -651,10 +542,42 @@ fn kernel_bodies_imported_as_trees() {
                 (Ok(d), Ok(a)) => {
                     let (d, a) = (volume(Ok(d)), volume(Ok(a)));
                     assert!((d - a).abs() <= 1e-9 * d.max(1.0), "{name}: {a} for {d}");
+                    evaluated += 1;
                 }
                 (Err(d), Err(a)) => assert_eq!(d, a, "{name}"),
                 (d, a) => panic!("{name}: {:?} and {:?}", d.map(|_| ()), a.map(|_| ())),
             }
         }
+    }
+    assert_eq!(evaluated, 15);
+    // Four deep: the U island's notch holds a tongue from its back wall.
+    let tongue = polygon(&[
+        (-1.5, -1.5),
+        (1.5, -1.5),
+        (1.5, -0.75),
+        (-0.75, -0.75),
+        (-0.75, -0.25),
+        (0.75, -0.25),
+        (0.75, 0.25),
+        (-0.75, 0.25),
+        (-0.75, 0.75),
+        (1.5, 0.75),
+        (1.5, 1.5),
+        (-1.5, 1.5),
+    ]);
+    let cylinder = Solid::cylinder_with(OperationId(70), world, 4.0, 0.0, 6.0, tol)
+        .unwrap()
+        .0;
+    let deep = one(cylinder.cut(
+        OperationId(72),
+        &prism(world, square(2.5), vec![tongue], 3.0, 7.0, 71),
+    ));
+    match reimported(&deep, 50) {
+        Err(Error::OutOfDomain(m)) => assert_eq!(
+            m,
+            "an imported plane piece other than a Boolean tree of its primitive and its planes' \
+             hulls, its pockets nested at most three deep (S9e.4b.4)"
+        ),
+        other => panic!("four deep: {:?}", other.map(|_| ())),
     }
 }
