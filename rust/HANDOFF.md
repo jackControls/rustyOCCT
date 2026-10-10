@@ -43,7 +43,9 @@ then for the DRAW survey of S9e.4b.4b.1 (branch `s9-draw-10`, over
 then for S9e.4b.4b.2a (branch `s9e4b4b2`, over `s9c2-kernel` at `c62470a3`),
 then for S9e.4b.4b.2b.1 (branch `s9e4b4b2b`, over `s9c2-kernel` at `298fcf3a`),
 then for the DRAW survey of S9e.4b.4b.2a, S9e.4b.4b.2b.1 and the cylinder
-pairs' fixes (branch `s9-draw-11`, over `s9c2-kernel` at `826346b7`).
+pairs' fixes (branch `s9-draw-11`, over `s9c2-kernel` at `826346b7`),
+then for equal cylinders' tangent points where their axes cross (branch
+`steinmetz-tangency`, over `rust-kernel` at `d1869f2f`).
 
 ## Where things stand
 

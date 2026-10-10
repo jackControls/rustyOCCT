@@ -1127,6 +1127,22 @@ pub(super) fn arrange_shared(models: [Prism; 2]) -> Result<Arr> {
         };
         for (k, x) in points.iter().enumerate() {
             match (models[0].in_face(*fa, x), models[1].in_face(*fb, x)) {
+                // Equal cylinders' ellipses cross where the two surfaces are
+                // tangent (their normals both along the axes' common
+                // perpendicular). Outward normals opposite there, the
+                // inputs touch each other at the point (a bore against a
+                // rod of its radius across it): a tangency between the
+                // inputs, refused for every operation as one touching
+                // outside is. Normals alike (whole rods, overlapping
+                // there), the point is a vertex of the arrangement.
+                (Loc::In, Loc::In)
+                    if matches!(pair, CylPair::Crossing(_))
+                        && qqdot(&models[0].normal_at(*fa, x), &models[1].normal_at(*fb, x))
+                            .sign()
+                            == Ordering::Less =>
+                {
+                    return Err(tangency());
+                }
                 (Loc::In, Loc::In) => {
                     vx.push(Vx {
                         p: x.clone(),

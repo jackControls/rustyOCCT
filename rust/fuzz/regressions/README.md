@@ -1562,9 +1562,11 @@ fuse reached the validator and failed (`unexpected error invalid
 topology: non_manifold_vertex`) at `d38d3bb6`. A shell whose edges at a
 vertex fall into more than one fan (linked where a loop runs from one to
 the next) is now `Degenerate("a result touching itself at a vertex")`
-(`curved/assemble.rs`); the cut, a manifold solid, evaluates
-(`tests/curved_booleans.rs`, `a_stadium_on_its_side_through_an_equal_hole`
-with the cut's closed form, and
+(`curved/assemble.rs`). Since "Equal cylinders with crossing axes"
+(REVIEW_NOTES.md, the user's decision: contact only) the faces' outward
+normals there are opposite, the inputs touching, and every operation is a
+tangency between the inputs (`tests/curved_booleans.rs`,
+`a_stadium_on_its_side_through_an_equal_hole` and
 `a_hole_and_a_rod_of_its_radius_crossing_it_touch_at_two_points`). It
 replays in 0.1 s with debug assertions; of its 3,570 single-byte mutations
 1,527 failed alike before (every one `non_manifold_vertex`) and none now.

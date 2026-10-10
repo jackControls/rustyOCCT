@@ -11228,6 +11228,15 @@ Decisions for S9, recorded before its code (2026-09-28):
     glibc `hypot` with debug assertions and overflow checks (8.6 s). DRAW
     survey: that of S9e.4b.4b.2a, S9e.4b.4b.2b.1 and the cylinder pairs'
     fixes at `826346b7` (no case refused so, none moving with the rule).
+    Superseded in part (2026-10-09) by "Equal cylinders with crossing axes"
+    (branch `steinmetz-tangency`, the user's decision: contact only): where
+    the faces' outward normals are opposite at those points (a hole and a
+    rod of its radius, the stadium through the hole) the inputs touch, a
+    tangency between the inputs in every operation, so the cut no longer
+    evaluates and the fuse and common are refused as that tangency before
+    the assembly; the two tests above assert it. The assembly's check of a
+    shell touching itself at a vertex stays, with that note's fallback in
+    `polyhedra.rs`, for any other path.
   * **Crossing cylinders near a node, enclosures past the resolution
     (2026-10-06).** The open item the previous note left: radii `1` and `1 +
     2^-k` crossing, between the near-node rule's margin and exact
@@ -11963,6 +11972,44 @@ Decisions for S9, recorded before its code (2026-09-28):
   constructor's numbers in its frame: 20 upstream cases of two cones
   evaluate, the other 41 are the kernel's `Degenerate`, and the bridge
   tests two spheres and a torus with its moved copy.
+* **Equal cylinders with crossing axes (S9c.1, found against
+  `bfuse_complex/K1`'s part bore and tool rod), done (2026-10-09).** A
+  plate's round hole of radius 1.5 along `y` against a rod of the same
+  radius along `x` whose axis crosses the hole's at a right angle (exact
+  frames, the plate built or a box already cut by a rod along `y`) gave
+  three answers: the fuse `InvalidTopology("non_manifold_vertex")` (one
+  shell touching itself, which the curved and polyhedral results' builder
+  passed on as invalid), the cut one solid and the common `Degenerate`
+  (solids touching at a vertex), where a rod of radius 1 tangent to the
+  hole at one point is a tangency between the inputs for all three. Why:
+  S9c.1's two ellipses of equal circular cylinders with meeting axes cross
+  at the two ends of the cylinders' common extent across the axes' common
+  perpendicular, where the surfaces are tangent (both normals along it),
+  and `curved/graph.rs` took those points as vertices whatever the faces'
+  sides. Refusing every such point (S9c.2a's rule for a single node, and
+  S9c.2b's for the pair in turned frames) would also refuse the whole
+  rods' fuse and common, which do not touch themselves: S9c.1's
+  `steinmetz_fuse` and `steinmetz_common`, and the registered upstream
+  cases `bfuse_complex/J5`, `bopfuse_simple/ZD8` and `ZE1` and
+  `bopcommon_simple/ZD8` and `ZE1`. Decision (the user's, 2026-10-09):
+  contact only. A crossing point inside both faces where the faces'
+  outward normals are opposite (the inputs touching each other there: a
+  bore against a rod of its radius across it) is a tangency between the
+  inputs, `Degenerate` for every operation; where they are alike (whole
+  rods, overlapping there) it stays a vertex, the fuse and common
+  evaluating and the cut touching itself as before (the exact sign of
+  the normals' dot product, `normal_at` on both models, given and imported
+  ones too). Also, S9a's rule now holds for the curved and polyhedral
+  results (`polyhedra.rs`'s `solid`): a result whose validation finds a
+  non-manifold vertex is `Degenerate` ("a result touching itself at a
+  vertex"), never `InvalidTopology`.
+  `tests/curved_booleans.rs`'s `equal_crossing_cylinders_are_a_tangency`:
+  the plate built and as a cut box against the crossing rod and the
+  tangent rod, each operation either way round, the tangency; the bore as
+  a whole rod against the crossing rod, the Steinmetz fuse and common
+  (`16 r^3 / 3`) and the cut `Degenerate`. S9c.1's fixtures, its
+  comparison (42 matches, 2 reviewed) and the five upstream cases
+  unchanged.
 
 * **The Boolean captures' Linux records, open: CI has no observations to
   take them from.** S9e.4b and S9f.3's notes leave each capture's Linux

@@ -303,18 +303,15 @@ fn two_arcs_of_one_circle_are_its_circle() {
 
 /// A slab's round hole and a rod of its radius whose axis crosses the
 /// hole's at right angles (exact frames, S9c.1's two ellipses): the walls
-/// are tangent where the ellipses cross. The cut keeps the rod's wall's
-/// outside there and evaluates (the slab less the hole, less the rod over
-/// the slab's width, plus the Steinmetz common of the hole and the rod,
-/// `16 r^3 / 3`); the fuse's void is the hole's two halves either side of
-/// the rod, touching at those points, and the common the rod's two halves
-/// either side of the hole: `Degenerate`, as a Steinmetz cut is. The fuse
-/// failed validation instead (`InvalidTopology("non_manifold_vertex")`,
-/// the boolean fuzz target's crash) until the assembly checked each shell
-/// for touching itself at a vertex. Crossing at another angle (turned
-/// frames) the pair is a tangency, in the tilted frame a near node, all
-/// three operations refused; radii apart by more than the resolution
-/// evaluate with the pair identities.
+/// are tangent where the ellipses cross, the faces' outward normals
+/// opposite there, the inputs touching each other: a tangency between the
+/// inputs in every operation, either way round ("Equal cylinders with
+/// crossing axes", the user's decision: contact only). The fuse failed
+/// validation before (`InvalidTopology("non_manifold_vertex")`, the boolean
+/// fuzz target's crash). Crossing at another angle (turned frames) the pair
+/// is a tangency, in the tilted frame a near node, all three operations
+/// refused; radii apart by more than the resolution evaluate with the pair
+/// identities.
 #[test]
 fn a_hole_and_a_rod_of_its_radius_crossing_it_touch_at_two_points() {
     use rusty_occt::identity::OperationId;
@@ -359,30 +356,12 @@ fn a_hole_and_a_rod_of_its_radius_crossing_it_touch_at_two_points() {
     let xy = Frame3::xy();
     let side = fr([0.0; 3], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0]);
     let (a, b) = (holed(xy, 1.0), rod(side, 1.0));
-    let itself = "a result touching itself at a vertex";
-    let two = "solids touching at a vertex";
-    refused(a.fuse(OperationId(3), &b), itself);
-    refused(a.common(OperationId(5), &b), two);
-    let (cut, _) = a.cut(OperationId(4), &b).unwrap();
-    let want = 144.0 - 10.0 * std::f64::consts::PI + 16.0 / 3.0;
-    assert_eq!(cut.len(), 1);
-    assert!(
-        (volume(&cut) - want).abs() <= 1e-9 * want,
-        "{}",
-        volume(&cut)
-    );
-    // The other way round: the same fuse and common; the rod less the slab
-    // is its two ends past the slab and the Steinmetz solid in the hole.
-    refused(b.fuse(OperationId(3), &a), itself);
-    refused(b.common(OperationId(5), &a), two);
-    let (rest, _) = b.cut(OperationId(4), &a).unwrap();
-    let want = 2.0 * std::f64::consts::PI + 16.0 / 3.0;
-    assert_eq!(rest.len(), 3);
-    assert!(
-        (volume(&rest) - want).abs() <= 1e-9 * want,
-        "{}",
-        volume(&rest)
-    );
+    let touching = "a tangency between the inputs (S9c)";
+    for (x, y) in [(&a, &b), (&b, &a)] {
+        refused(x.fuse(OperationId(3), y), touching);
+        refused(x.cut(OperationId(4), y), touching);
+        refused(x.common(OperationId(5), y), touching);
+    }
     // Turned frames: the tilted frame's near node, an oblique crossing's
     // tangency, in every operation.
     let tilted = (
@@ -419,9 +398,9 @@ fn a_hole_and_a_rod_of_its_radius_crossing_it_touch_at_two_points() {
 /// (`fuzz/regressions/boolean/replay-47992d6f….bin`): a square with a round
 /// hole of radius 1 and a stadium of that radius on its side, its first
 /// arc's axis crossing the hole's at its height's middle, so the walls are
-/// tangent at the arc's middle. The fuse and the common (each one solid,
-/// the stadium's flat end joining the common's two halves) touch
-/// themselves there; the cut evaluates.
+/// tangent at the arc's middle with the faces' outward normals opposite:
+/// a tangency between the inputs in every operation (the fuse failed
+/// validation before).
 #[test]
 fn a_stadium_on_its_side_through_an_equal_hole() {
     use rusty_occt::identity::OperationId;
@@ -459,22 +438,16 @@ fn a_stadium_on_its_side_through_an_equal_hole() {
     let (a, _) = Solid::extrude_with(OperationId(1), a, Frame3::xy(), 0.0, h).unwrap();
     let b = Profile::new(stadium, vec![], t).unwrap();
     let (b, _) = Solid::extrude_with(OperationId(2), b, side, -1.0, h + 1.0).unwrap();
-    for r in [a.fuse(OperationId(3), &b), a.common(OperationId(5), &b)] {
+    for r in [
+        a.fuse(OperationId(3), &b),
+        a.cut(OperationId(4), &b),
+        a.common(OperationId(5), &b),
+    ] {
         match r {
-            Err(Error::Degenerate(m)) => assert_eq!(m, "a result touching itself at a vertex"),
+            Err(Error::Degenerate(m)) => assert_eq!(m, "a tangency between the inputs (S9c)"),
             other => panic!("{:?}", other.map(|(o, _)| o.len())),
         }
     }
-    // The stadium lies within the square's slab; within the hole it holds
-    // the hole's half towards its flat side over its height 2 and half the
-    // Steinmetz solid of the hole and its arc, `8 / 3`.
-    let pi = std::f64::consts::PI;
-    let common = (2.5 + pi) * 4.25 - (pi + 8.0 / 3.0);
-    let want = (25.0 - pi) * h - common;
-    let (cut, _) = a.cut(OperationId(4), &b).unwrap();
-    assert_eq!(cut.len(), 1);
-    let v = cut[0].mass_properties().volume;
-    assert!((v - want).abs() <= 1e-9 * want, "{v} for {want}");
 }
 
 /// Radii `1` and `1 + 2^-k` crossing (a rod and a rod, a slab's hole and a
@@ -586,5 +559,93 @@ fn crossing_cylinders_near_a_node_are_refused_or_valid() {
         let (va, vb) = (a.mass_properties().volume, b.mass_properties().volume);
         assert!((f - (va + vb - m)).abs() <= 1e-9 * f, "fuse {f}");
         assert!((c - (va - m)).abs() <= 1e-9 * va, "cut {c}");
+    }
+}
+
+/// Equal cylinders whose axes cross at a right angle (exact frames) are
+/// tangent at the two points where their ellipses cross. A plate's round
+/// hole against a rod of its radius across it (the Steinmetz pair of
+/// `bfuse_complex/K1`'s part bore and tool rod), as built and as a box
+/// already cut by a rod along the hole, touch each other there (outward
+/// normals opposite): each operation, either way round, is refused as a
+/// tangency between the inputs, as a rod tangent to the hole at one point
+/// is. The fuse escaped as an invalid topology (the result touching itself
+/// at the two points), the cut evaluated and the common was refused as two
+/// solids touching. Whole rods overlap there (normals alike): their fuse
+/// and common are the Steinmetz solids, their cut touches itself.
+#[test]
+fn equal_crossing_cylinders_are_a_tangency() {
+    use rusty_occt::identity::OperationId;
+    use rusty_occt::{Boundary, Error, Frame3, Point2, Point3, Profile, Solid, Tolerance, Vec3};
+    let tol = Tolerance::new(1e-7, 1e-12).unwrap();
+    let frame = |n: Vec3, x: Vec3| Frame3::new(Point3::new(1.0, 2.0, 0.5), n, x, tol).unwrap();
+    // The plate's frame along y, the rods' along x.
+    let along_y = frame(Vec3::new(0.0, 1.0, 0.0), Vec3::new(0.0, 0.0, 1.0));
+    let along_x = frame(Vec3::new(1.0, 0.0, 0.0), Vec3::new(0.0, 1.0, 0.0));
+    let rectangle = || {
+        Boundary::polygon(
+            vec![
+                Point2::new(0.0, 0.0),
+                Point2::new(6.0, 0.0),
+                Point2::new(6.0, 9.0),
+                Point2::new(0.0, 9.0),
+            ],
+            tol,
+        )
+        .unwrap()
+    };
+    let circle = |x: f64, y: f64, r: f64| Boundary::circle(Point2::new(x, y), r, tol).unwrap();
+    let prism = |outer: Boundary, holes: Vec<Boundary>, op: u64, f: Frame3, h: [f64; 2]| {
+        let profile = Profile::new(outer, holes, tol).unwrap();
+        Solid::extrude_with(OperationId(op), profile, f, h[0], h[1])
+            .unwrap()
+            .0
+    };
+    // The hole about (3, 4.5) of radius 1.5: its axis x = 5.5, z = 3.5.
+    let holed = prism(
+        rectangle(),
+        vec![circle(3.0, 4.5, 1.5)],
+        1,
+        along_y,
+        [0.0, 9.0],
+    );
+    let block = prism(rectangle(), vec![], 1, along_y, [0.0, 9.0]);
+    let bore = prism(circle(3.0, 4.5, 1.5), vec![], 2, along_y, [-1.0, 10.0]);
+    let (cut, _) = block.cut(OperationId(3), &bore).unwrap();
+    assert_eq!(cut.len(), 1);
+    // The rod's axis y = 6.5, z = 3.5 crosses the hole's at a right angle;
+    // a rod of radius 1 about z = 1 touches the hole at one point.
+    let crossing = prism(circle(4.5, 3.0, 1.5), vec![], 4, along_x, [-1.0, 10.0]);
+    let touching = prism(circle(4.5, 0.5, 1.0), vec![], 4, along_x, [-1.0, 10.0]);
+    let tangency = Error::Degenerate("a tangency between the inputs (S9c)");
+    for (name, plate) in [("holed", &holed), ("cut", &cut[0])] {
+        for (rod_name, rod) in [("crossing", &crossing), ("touching", &touching)] {
+            for (a, b) in [(plate, rod), (rod, plate)] {
+                let outcomes = [
+                    a.fuse(OperationId(5), b).map(|r| r.0.len()),
+                    a.cut(OperationId(5), b).map(|r| r.0.len()),
+                    a.common(OperationId(5), b).map(|r| r.0.len()),
+                ];
+                for outcome in outcomes {
+                    assert_eq!(outcome, Err(tangency.clone()), "{name} and {rod_name}");
+                }
+            }
+        }
+    }
+    // The bore as a rod against the crossing rod: both of radius 1.5 and
+    // length 11, their common 16 r^3 / 3.
+    let volume = |out: Vec<Solid>| out.iter().map(|s| s.mass_properties().volume).sum::<f64>();
+    let (r, length) = (1.5f64, 11.0f64);
+    let common = 16.0 * r.powi(3) / 3.0;
+    let fuse = 2.0 * std::f64::consts::PI * r * r * length - common;
+    for (a, b) in [(&bore, &crossing), (&crossing, &bore)] {
+        let f = volume(a.fuse(OperationId(5), b).unwrap().0);
+        let m = volume(a.common(OperationId(5), b).unwrap().0);
+        assert!((f - fuse).abs() <= 1e-9 * fuse, "fuse {f}");
+        assert!((m - common).abs() <= 1e-9 * common, "common {m}");
+        assert!(matches!(
+            a.cut(OperationId(5), b),
+            Err(Error::Degenerate(_))
+        ));
     }
 }
