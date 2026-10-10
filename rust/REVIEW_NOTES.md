@@ -10327,8 +10327,69 @@ Decisions for S9, recorded before its code (2026-09-28):
     undecided beside a plane face holding a section's projected pcurve (the
     kernel's own cavity bodies alike), the validator's track's; a ball within
     the resolution of a plane but missing it (S9d.1's rule refuses only a
-    crossing within it), found by the evidence's draft. Pending: its DRAW
-    survey, its capture's Linux record and its campaigns.
+    crossing within it), found by the evidence's draft. Pending: its
+    capture's Linux record and its campaigns. DRAW survey: below (no case
+    moving with this step, as its trial found).
+  * **DRAW survey of S9e.4b.4c.1, the near miss of a sphere and the user's
+    crossing cylinders (2026-10-10, `UPSTREAM_TESTS.md`).** At `44204e18`
+    (`s9c2-kernel` with equal cylinders' crossing points refused as a
+    tangency where the inputs touch there, the user's decision (branch
+    `steinmetz-tangency`, merged at `c4fe7b0a`), the comparisons' 600 s
+    native timeout, the STEP reader's binary64 vertex location, `split`'s
+    sharded replay, S9e.4b.4c.1 with its cavity assembly (`0d94a92a`) and a
+    sphere missing a plane face or another sphere within the resolution
+    refused (`762225af`); the public dataset, 120 seconds a case, four at
+    once, on a host at load 11 to 16). None of the three kernel changes
+    moves any case. The 1,802 self-contained cases of the Boolean group on
+    both backends: every status, every refusal's reason and every error
+    the last survey's (`826346b7`) field for field, 987 evaluating and
+    registered, 592 refused, 223 unsupported on both, none failing or
+    timing out; no case is refused with S9d.1's reason ("a plane crossing a
+    sphere within the resolution of tangency"). The 1,814 cases restoring a
+    shape for a Boolean on the Rust adapter, and the 171 the import reaches
+    on native DRAW too: on both backends every status and reason the last
+    survey's but four statuses on the Rust adapter, the cases that timed
+    out at the last survey's load (`bugs/modalg_1/buc60532`, `_1`, `_2`
+    and `bugs/modalg_6/bug23585`), which end in 98 to 104 s now,
+    unsupported as in the surveys before it (the reader takes no
+    `SurfaceOfLinearExtrusion`; `tolerance`); the four of the last five
+    surveys (`bugs/modalg_1/buc60531_1`, `_2`, `bugs/modalg_5/bug23849_1`,
+    `_3`) time out at their first restores as before. Of the 171: 59
+    evaluate on both backends, 76 are refused by S9's rules
+    (`bfuse_complex/K1` a tangency between the inputs and
+    `bugs/modalg_6/bug28773` axes within rounding of parallel, as before),
+    31 are bodies none of the kernel's constructions, 3 spline bodies (S9f)
+    and 2 arguments of several solids, none an imported polyhedron against
+    curved faces or with a cavity; 24 are unsupported natively too. Where
+    the rules are reached: an instrumented build of `44204e18` (not
+    committed: a line written at each new path) run on the Rust adapter
+    over the 1,802 cases and the 171, its statuses and reasons the
+    survey's: 670 reach the curved engine's arrangement, and none reaches
+    the crossing cylinders' new tangency (`K1` is refused before it, as at
+    `1ebd6a03`), a near miss of a sphere (no candidate within the
+    resolution), an imported polyhedron's triangles as a leaf, an import
+    or an assembly holding a cavity (several cavities, every shell's
+    orientation tried, S9b's containment on a far fragment's plane) or the
+    polyhedral results' non-manifold vertex fallback. No case moved, so no
+    replay at the parents (`0d94a92a`, `1ebd6a03`) was needed. No case
+    fails, crashes or panics on either backend (the 276 restore cases
+    `failed` on the Rust adapter are the reader's validator rejecting their
+    files, as before). The volume audit (`vprops` and `sprops` before each
+    `checkprops`, both backends, the 1,046 audited before): both backends'
+    values the last audit's bit for bit on all 1,046 (no moved value, the
+    largest relative move 0), the statuses the same, the same 35
+    disagreements. No case newly evaluates, so none is registered (1,132
+    cases), and the ledger does not change (`--ledger` holds). A full
+    contract run of the manifest holds on both backends with the dataset
+    (30 seconds a case), the slowest Boolean case 5.4 s
+    (`bopcut_simple/ZK8`, on a host at load 6 to 10; 9.8 in the last
+    survey at load 7 to 21), the restore cases 0.1 to 3.1 s
+    (`bcommon_complex/B9`), E5, G9 and `bug417` 1.0, 2.0 and 2.1 s, the
+    rollex 0.4. (A first run with a relative output directory failed only
+    the derived `explode_selector`, native DRAW not finding its picks file
+    from its own working directory; run again with an absolute one it
+    passes on both backends, as in every case of the full run above.) No
+    kernel change.
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces
@@ -12400,7 +12461,9 @@ Decisions for S9, recorded before its code (2026-09-28):
   a whole rod against the crossing rod, the Steinmetz fuse and common
   (`16 r^3 / 3`) and the cut `Degenerate`. S9c.1's fixtures, its
   comparison (42 matches, 2 reviewed) and the five upstream cases
-  unchanged.
+  unchanged. DRAW survey: that of S9e.4b.4c.1, the near miss of a sphere
+  and the user's crossing cylinders at `44204e18` (no case reaching the
+  new tangency, none moving).
 * **A ball within the resolution of a plane face (S9d.1, found by
   S9e.4b.4c.1's evidence), done (2026-10-10).** A ball resting on an
   imported octahedron's face `x + y + z = 18`, its radius the distance
@@ -12483,7 +12546,9 @@ Decisions for S9, recorded before its code (2026-09-28):
   with debug assertions without a failure (the slowest 7.6 s and 1.8 s),
   and so do the kept input's 4,335 single-byte mutations; the new tests
   under the emulated glibc `hypot` with debug assertions and overflow
-  checks (`sphere_booleans`, 3.5 s).
+  checks (`sphere_booleans`, 3.5 s). DRAW survey: that of S9e.4b.4c.1, the
+  near miss of a sphere and the user's crossing cylinders at `44204e18`
+  (no case reaching a near miss, none moving).
 
 * **The Boolean captures' Linux records, open: CI has no observations to
   take them from.** S9e.4b and S9f.3's notes leave each capture's Linux

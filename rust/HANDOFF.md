@@ -46,7 +46,10 @@ then for the DRAW survey of S9e.4b.4b.2a, S9e.4b.4b.2b.1 and the cylinder
 pairs' fixes (branch `s9-draw-11`, over `s9c2-kernel` at `826346b7`),
 then for equal cylinders' tangent points where their axes cross (branch
 `steinmetz-tangency`, over `rust-kernel` at `d1869f2f`),
-then for S9e.4b.4c.1 (branch `s9e4b4c`, over `s9c2-kernel` at `c3ce4d42`).
+then for S9e.4b.4c.1 (branch `s9e4b4c`, over `s9c2-kernel` at `c3ce4d42`),
+then for the DRAW survey of S9e.4b.4c.1, the near miss of a sphere and
+the user's crossing cylinders (branch `s9-draw-12`, over `s9c2-kernel` at
+`44204e18`).
 
 ## Where things stand
 
@@ -63,11 +66,11 @@ then for S9e.4b.4c.1 (branch `s9e4b4c`, over `s9c2-kernel` at `c3ce4d42`).
   arcs, and one solid of a result of several (S9e.2, `curved/matched.rs`),
   results of spheres, cones and tori, deeper chains and given results
   against spheres, cones and tori (S9e.3a, `curved/chain.rs`), each with its
-  DRAW survey (the last full survey, that of S9e.4b.4b.2a, S9e.4b.4b.2b.1
-  and the cylinder pairs' fixes at `826346b7`, branch `s9-draw-11`: the
-  Boolean group's 987 cases and 59 restore cases registered, none failing,
-  no case moving but `bfuse_complex/K1`'s reason, both backends' audited
-  values those of `c62470a3`'s bit for bit) and a clean campaign (S9e.3a's and S9f.1's at `b2765f20`, 989
+  DRAW survey (the last full survey, that of S9e.4b.4c.1, the near miss of
+  a sphere and the user's crossing cylinders at `44204e18`, branch
+  `s9-draw-12`: the Boolean group's 987 cases and 59 restore cases
+  registered, none failing, no case moving, both backends' audited values
+  those of `826346b7`'s bit for bit) and a clean campaign (S9e.3a's and S9f.1's at `b2765f20`, 989
   runs).
 - **S9f.1 done.** Spline prisms against polyhedral prisms in any position
   (`curved/spline_walls.rs`), with its survey and campaign as above.
@@ -471,8 +474,11 @@ then for S9e.4b.4c.1 (branch `s9e4b4c`, over `s9c2-kernel` at `c3ce4d42`).
   `box_void` imported. The fuzz target's `MESHES` stage (the chained cut
   imported and the kernel's own, each less a ball): 15 inputs reach it, 11
   evaluating alike. A trial of the survey's 171 restore cases the import
-  reaches: no case moves (59 evaluating on both backends, `bfuse_complex/K1` a tangency between the inputs and `bugs/modalg_6/bug28773` axes within rounding of parallel as before, none reaching an imported polyhedron against curved faces or a cavity; native DRAW's statuses as before). Pending its DRAW survey, its capture's Linux record and
-  its campaigns.
+  reaches: no case moves (59 evaluating on both backends, `bfuse_complex/K1` a tangency between the inputs and `bugs/modalg_6/bug28773` axes within rounding of parallel as before, none reaching an imported polyhedron against curved faces or a cavity; native DRAW's statuses as before). Its DRAW survey (with the near
+  miss's and the crossing cylinders', branch `s9-draw-12` at `44204e18`):
+  no case moving, none reaching an imported polyhedron's triangles or a
+  cavity, nothing registered. Pending its capture's Linux record and its
+  campaigns.
 - **CI.** Both workflows ("Rust kernel", "Rust geometry fuzzing") were green
   at `6c221525`. They had been red from S7 until 2026-09-29, unnoticed;
   check them after every push (see "Working rules").
@@ -530,6 +536,9 @@ then for S9e.4b.4c.1 (branch `s9e4b4c`, over `s9c2-kernel` at `c3ce4d42`).
    S9e.4b.4b.2b.1 and the cylinder pairs' fixes at `826346b7` (branch
    `s9-draw-11`: neither fix moving any case, `bfuse_complex/K1` refused as
    a tangency between the inputs as S9e.4b.4b.2a's trial found, nothing
+   registered), that of S9e.4b.4c.1, the near miss of a sphere and the
+   user's crossing cylinders at `44204e18` (branch `s9-draw-12`: no case
+   moving and none reaching the three changes' paths, nothing
    registered).
 3. **S9e.4b**, split in "S9e.4b refined": S9e.4b.1 (arcs rounded off
    their circles) and S9e.4b.2 (polyhedra other than prisms, on their
@@ -601,8 +610,9 @@ then for S9e.4b.4c.1 (branch `s9e4b4c`, over `s9c2-kernel` at `c3ce4d42`).
    own fused stack of prisms given to a Boolean, refused as an edge of one
    input on a face of the other), then
    **S9e.4b.4c**, split in "S9e.4b.4c refined": **S9e.4b.4c.1** (an imported
-   polyhedron against curved faces or with a cavity) is implemented (pending
-   its DRAW survey, its capture's Linux record and its campaigns); next
+   polyhedron against curved faces or with a cavity) is implemented with its
+   DRAW survey (`s9-draw-12` at `44204e18`: no case moving, nothing
+   registered; pending its capture's Linux record and its campaigns); next
    **S9e.4b.4c.2** (deeper trees, a pocket within a pocket: S9e.4b.3c.3b's
    tooth, chains no model matches) and **S9e.4b.4d**
    (turned bodies of smooth joins and nearly degenerate surfaces,
@@ -626,7 +636,9 @@ then for S9e.4b.4c.1 (branch `s9e4b4c`, over `s9c2-kernel` at `c3ce4d42`).
    plane lies just outside the face (within about `sqrt(2 r res)` of its
    edge) comes within the resolution of the edge or a vertex with no rule:
    the inputs then evaluate apart by less than the resolution, as the
-   plane face's case did before.
+   plane face's case did before. No DRAW case has a sphere missing a plane
+   or another sphere within the resolution, in a face or not (the survey
+   at `44204e18`, branch `s9-draw-12`, by an instrumented build).
 
 Refused by design and staying refused (each documented): a tangency between
 the inputs, a cavity beside several solids, spline segments along one curve
