@@ -13947,6 +13947,16 @@ Decisions for S9, recorded before its code (2026-09-28):
   tangent cone of edges), and a closed edge whose curve is nearest the
   surface at its own vertex (the edge rule takes only points strictly
   inside an edge, the vertex rule a smooth vertex as a half turn).
+  At `efa8d39f` (`rust-kernel` with this rule), before its campaigns, the
+  local boolean corpus's sharded full replay (four shards, FUZZING.md's
+  commands; 1,442 inputs, 345 to 385 a shard, 1,601 to 2,060 s each under
+  AddressSanitizer on a host shared with an agent's builds, the slowest
+  input 52 s, 1,160 MB at most) passed every shard and its check, which
+  wrote the manifest: the sampled campaign's startup had grown to 3,209 s
+  of its hour at `69c2c27f` with 377 inputs new since the last full
+  replay. Campaigns at `efa8d39f` (600 s each, sampled replays, every
+  switch on): `boolean` clean, 364 runs (the startup's replay 713 s), the
+  slowest input 29 s; `split` clean, 1,219 runs, the slowest 10 s.
 
 * **The Boolean captures' Linux records, open: CI has no observations to
   take them from.** S9e.4b and S9f.3's notes leave each capture's Linux
