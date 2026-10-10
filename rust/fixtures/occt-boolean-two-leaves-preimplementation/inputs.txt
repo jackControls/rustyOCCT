@@ -1,0 +1,147 @@
+case cross_pocketed_fuse
+brep imported/two_cross.brep
+boolean fuse
+brep imported/two_pocketed.brep
+end
+case cross_pocketed_cut
+brep imported/two_cross.brep
+boolean cut
+brep imported/two_pocketed.brep
+end
+case cross_pocketed_common
+brep imported/two_cross.brep
+boolean common
+brep imported/two_pocketed.brep
+end
+case chain_through_fuse
+brep imported/two_through.brep
+boolean cut
+plane 2.0 1.0 -1.5 0.0 0.0 1.0 0.28 0.96 -0.0
+wire C 0.2400000000000002 5.68 -1.5 0.75
+prism 0.0 0.0 6.0
+then fuse
+plane 2.0 1.0 1.5 0.0 0.0 1.0 0.28 0.96 -0.0
+wire P 4 1.4800000000000004 6.359999999999999 1.5 2.6000000000000005 10.200000000000001 1.5 -0.27999999999999936 11.040000000000001 1.5 -1.3999999999999995 7.2 1.5
+prism 0.0 0.0 1.5
+end
+case chain_through_cut
+brep imported/two_through.brep
+boolean cut
+plane 2.0 1.0 -1.5 0.0 0.0 1.0 0.28 0.96 -0.0
+wire C 0.2400000000000002 5.68 -1.5 0.75
+prism 0.0 0.0 6.0
+then cut
+plane 2.0 1.0 1.5 0.0 0.0 1.0 0.28 0.96 -0.0
+wire P 4 1.4800000000000004 6.359999999999999 1.5 2.6000000000000005 10.200000000000001 1.5 -0.27999999999999936 11.040000000000001 1.5 -1.3999999999999995 7.2 1.5
+prism 0.0 0.0 1.5
+end
+case chain_through_common
+brep imported/two_through.brep
+boolean cut
+plane 2.0 1.0 -1.5 0.0 0.0 1.0 0.28 0.96 -0.0
+wire C 0.2400000000000002 5.68 -1.5 0.75
+prism 0.0 0.0 6.0
+then common
+plane 2.0 1.0 1.5 0.0 0.0 1.0 0.28 0.96 -0.0
+wire P 4 1.4800000000000004 6.359999999999999 1.5 2.6000000000000005 10.200000000000001 1.5 -0.27999999999999936 11.040000000000001 1.5 -1.3999999999999995 7.2 1.5
+prism 0.0 0.0 1.5
+end
+case through_rod_fuse
+brep imported/two_through.brep
+boolean fuse
+plane 2.0 1.0 -1.5 0.0 0.0 1.0 0.28 0.96 -0.0
+wire C 1.1500000000000004 8.8 -1.5 1.0
+prism 0.0 0.0 6.0
+end
+case through_rod_cut
+brep imported/two_through.brep
+boolean cut
+plane 2.0 1.0 -1.5 0.0 0.0 1.0 0.28 0.96 -0.0
+wire C 1.1500000000000004 8.8 -1.5 1.0
+prism 0.0 0.0 6.0
+end
+case through_rod_common
+brep imported/two_through.brep
+boolean common
+plane 2.0 1.0 -1.5 0.0 0.0 1.0 0.28 0.96 -0.0
+wire C 1.1500000000000004 8.8 -1.5 1.0
+prism 0.0 0.0 6.0
+end
+case cross_rod_fuse
+brep imported/two_cross.brep
+boolean fuse
+plane 0.0 0.0 -1.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire C 5.0 0.5 -1.0 0.75
+prism 0.0 0.0 6.0
+end
+case cross_rod_cut
+brep imported/two_cross.brep
+boolean cut
+plane 0.0 0.0 -1.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire C 5.0 0.5 -1.0 0.75
+prism 0.0 0.0 6.0
+end
+case cross_rod_common
+brep imported/two_cross.brep
+boolean common
+plane 0.0 0.0 -1.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire C 5.0 0.5 -1.0 0.75
+prism 0.0 0.0 6.0
+end
+case pocketed_rod_fuse
+brep imported/two_pocketed.brep
+boolean fuse
+plane 7.0 -1.5 -0.25 0.0 0.0 1.0 0.47058823529411764 0.8823529411764706 -0.0
+wire C 8.779411764705882 2.3676470588235294 -0.25 0.5
+prism 0.0 0.0 5.0
+end
+case pocketed_rod_cut
+brep imported/two_pocketed.brep
+boolean cut
+plane 7.0 -1.5 -0.25 0.0 0.0 1.0 0.47058823529411764 0.8823529411764706 -0.0
+wire C 8.779411764705882 2.3676470588235294 -0.25 0.5
+prism 0.0 0.0 5.0
+end
+case pocketed_rod_common
+brep imported/two_pocketed.brep
+boolean common
+plane 7.0 -1.5 -0.25 0.0 0.0 1.0 0.47058823529411764 0.8823529411764706 -0.0
+wire C 8.779411764705882 2.3676470588235294 -0.25 0.5
+prism 0.0 0.0 5.0
+end
+case rod_cross_fuse
+plane 0.0 0.0 -1.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire C 1.0 2.0 -1.0 0.5
+prism 0.0 0.0 6.0
+boolean fuse
+brep imported/two_cross.brep
+end
+case rod_cross_cut
+plane 0.0 0.0 -1.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire C 1.0 2.0 -1.0 0.5
+prism 0.0 0.0 6.0
+boolean cut
+brep imported/two_cross.brep
+end
+case rod_cross_common
+plane 0.0 0.0 -1.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire C 1.0 2.0 -1.0 0.5
+prism 0.0 0.0 6.0
+boolean common
+brep imported/two_cross.brep
+end
+case through_touch_fuse
+brep imported/two_through.brep
+boolean fuse
+sphere 0.24 5.68 4.5 0.0 0.0 1.0 1.0 0.0 0.0 1.0 -1.5707963267948966 1.5707963267948966
+end
+case through_touch_cut
+brep imported/two_through.brep
+boolean cut
+sphere 0.24 5.68 4.5 0.0 0.0 1.0 1.0 0.0 0.0 1.0 -1.5707963267948966 1.5707963267948966
+end
+case through_touch_common
+brep imported/two_through.brep
+boolean common
+sphere 0.24 5.68 4.5 0.0 0.0 1.0 1.0 0.0 0.0 1.0 -1.5707963267948966 1.5707963267948966
+end
