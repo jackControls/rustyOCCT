@@ -115,7 +115,7 @@ jobs:
                 given-curved, given-met, spline-parallel, spline-crossing, imported, imported-arcs, spline-sphere,
                 imported-polyhedra, spline-cone, imported-pieces, split-pieces, one-sphere, one-sphere-incidence,
                 piece-forms, piece-trees, imported-joints, primitive-chains, prism-leaves, plane-parts,
-                polyhedra-curved]
+                polyhedra-curved, deep-trees]
     steps:
       - uses: actions/checkout@v4.2.2
       - run: rustup toolchain install stable --profile minimal
@@ -263,6 +263,9 @@ jobs:
       - name: Verify the imported polyhedra against curved faces independent reference (S9e.4b.4c.1)
         if: matrix.group == 'polyhedra-curved'
         run: target/math-oracle-venv/bin/python rust/tools/generate_polyhedra_curved_boolean_fixtures.py --check --workers 4
+      - name: Verify the imported plane pieces' nested pockets independent reference (S9e.4b.4c.2a)
+        if: matrix.group == 'deep-trees'
+        run: target/math-oracle-venv/bin/python rust/tools/generate_deep_trees_boolean_fixtures.py --check --workers 4
 
   pinned-degree-oracle:
     name: Degree elevation / source-pinned OCCT

@@ -10506,6 +10506,86 @@ Decisions for S9, recorded before its code (2026-09-28):
     and a tree four deep written, read back and imported, the last refused
     with the new text), S9e.4b.3c.3b's `tooth_rod` declared solid with it,
     and the DRAW trial of the restore cases the import reaches.
+  * **S9e.4b.4c.2a evidence (2026-10-10).** Bodies OCCT wrote:
+    S9e.4b.3c.3b's `tooth` (its file read again: a cylinder of radius 3
+    about `(4, 4)` over `[0, 6]` less a U prism over `[2, 9/2]` entering its
+    wall, its slot inside the cylinder, a tooth standing in the pocket: two
+    deep) and this step's `post` and `well`
+    (`boolean-deep-trees-bodies.txt`, a `write` block of a cylinder's rows, a
+    `boolean cut` row and a prism of a square with a hole, written by
+    `compare_deep_trees_boolean.py --write-bodies` to
+    `rust/fixtures/imported/deep_*.brep`): `post`, a cylinder of radius 4
+    over `[0, 6]` on `R815` (the world's `z` its normal, its `x` turned to
+    `(8, 15, 0) / 17`) less a prism of the square `[-5/2, 5/2]^2` with the
+    hole `[-1, 1]^2` over `[3, 7]` (a post standing in a square pocket from
+    the cap, its top on the cap's plane: two deep); `well`, a cylinder of
+    radius 4 over `[0, 13/2]` on `R125` less a prism of the same square with
+    a U-shaped hole (the square `[-3/2, 3/2]^2` less its notch `[-1/2, 3/2] x
+    [-1/2, 1/2]`, open toward `+x`) over `[5/2, 15/2]` (a U island standing
+    in a square pocket, its notch a pocket of the island's: three deep).
+    `generate_deep_trees_boolean_fixtures.py --check`: 21 cases of 7 groups
+    (18 solid, 3 `degenerate`; 15 of class `pieces`, 3 `both`, 3 `chain`):
+    `tooth_pin` (an upright rod through the tooth's wall into the pocket),
+    `post_rod` (an upright rod on the post's frame through the post's wall),
+    `well_rod` (an upright rod through the island's arm into its notch),
+    `rod_post` (an upright rod less the post, through its wall: the body the
+    tool, its cut two solids), `post_cyl` (the post and S9e.4a's imported
+    cylinder across the post, the pocket's two walls and the post's
+    cylinder), `chain_post` (the post less a rod through the post, then with
+    a rod through the pocket's wall), and declared `degenerate` `post_touch`
+    (a ball of radius 1 resting on the post's top at its centre, exactly:
+    `Degenerate("a tangency between the inputs (S9c)")`). The reference is
+    S9e.3a's chained reference on the constructions OCCT was given (a square
+    with a square hole its box less the hole's box past both caps, with a U
+    hole its box less the U's box less the notch's box past the U's open
+    side and both caps, the tooth's U S9e.4b.3c.3b's), with S9e.4b.3c.3a's
+    checks relative to the case's size: the two families within 8.4e-36,
+    each solid's closed form 6.8e-36, each body's closed form 2.4e-37 (the
+    post `96 pi - 63`, the well `104 pi - 72`, each times its stored axes'
+    determinant), the pair identities 1.4e-41 and the area identity 9.8e-41
+    (where no two inputs share a surface), Monte Carlo 3.4 standard errors
+    (100,000 points a group), quadrature estimates 1.3e-32, every meeting's
+    sine at least 1.0 and events at least 8.9e-5 of their range apart
+    outside the declared group, solid counts by rays at two resolutions;
+    the declared group's checks kept apart within 6.8e-36. Every file read
+    independently (`stored_records`): its curved face one cylinder, every
+    stored vertex on the construction's surfaces (within 0 of the size at
+    the reference's precision). `test_deep_trees_boolean_reference.py`
+    checks each body's closed form against quadratures of its sections, the
+    chained reference on the holed prisms against their areas, the
+    reference's sets against OCCT's profiles (the square and its hole, one
+    area, the hole's and the notch's boxes past the caps and the U's open
+    side), every part's place (each pocket from inside its cylinder past its
+    cap, its square's corners inside the wall, the post and the island inside
+    their squares, the pockets' depths), the partners' places (each rod
+    across the wall it is to cross within its face, S9e.4a's cylinder 0.27 at
+    least from tangency with every plane of the post and its top above the
+    cap), the declared case, the case list and its protocol rows and the new
+    bodies' files apart from every earlier set's. The generator's check is a
+    CI group of its own (`deep-trees`, 10.8 minutes on four workers
+    locally under Python 3.9, 8.7 under 3.12); Python 3.9 and 3.12
+    write the same files. Corrections from the evidence and a draft of the
+    step's code (not committed) run on the cases, amending the refined
+    decisions' plan (8): (a) the post on a frame turned off the world's `z`
+    (`SKEW2`) was refused on import as S9's `Degenerate("a plane within
+    rounding of a cylinder's direction")`: its pocket's walls, OCCT's stored
+    planes along the cylinder's turned axis, lie within rounding of it, and
+    S9e.4b.3c.3b's trees take a hull plane on its stored frame (a chain's
+    leaf takes its walls on the leaf's axes, S9e.4b.4b.2b.1's `plane_along`
+    only a plane normal to an axis), so the bodies stand on frames turned
+    about the world's `z`, their walls' normals in the world's `xy` exactly;
+    a tree's planes along a turned primitive's axis are left open; (b) the
+    reference's cost: a first set with the well on a frustum, a `TILT` rod
+    less the well, S9e.4a's ball across the post and the chain's `TILT` slab
+    ran over 37 minutes of a worker for each of its three slowest groups,
+    so the partners stand along the bodies' axes (but the declared ball),
+    the well's primitive is a cylinder (the kernel's tests take a frustum's)
+    and the notch's box ends inside the square (reaching its wall, one plane
+    of two of the reference's solids, it made the well's group 25 minutes
+    and more where it now takes 7); (c) the declared ball's refusal is S9c's
+    tangency, the ball and the post's top meeting exactly (not S9d.1's
+    rounding). The draft found every solid case within the reference's
+    volume and the declared one refused so.
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces
