@@ -12647,7 +12647,81 @@ Decisions for S9, recorded before its code (2026-09-28):
   inputs' 7,905 single-byte mutations; the new test under the emulated
   glibc `hypot` with debug assertions and overflow checks
   (`sphere_booleans`, 2.5 s; the new test 0.45 s at opt-level 2 with
-  debug assertions).
+  debug assertions). DRAW survey: below (no case within the resolution
+  of an edge or vertex, none moving).
+* **DRAW survey of the edge and vertex near miss (2026-10-10,
+  `UPSTREAM_TESTS.md`).** At `ef5d66fd` (`s9c2-kernel` at `44f24f0b` with
+  "A ball within the resolution of an edge or vertex" merged, branch
+  `fix-ball-near-edge` at `605dc9d2`: `edge_near_misses` after
+  `near_miss`, and `near_miss` run for every pair of faces before the
+  pierces instead of among the sections; the public dataset, 120 seconds
+  a case, four at once, on a host at load 9 to 20). No case moves. The
+  1,802 self-contained cases of the Boolean group on both backends: every
+  status, every refusal's reason and every error the last survey's
+  (`44204e18`) field for field, 987 evaluating and registered, 592
+  refused, 223 unsupported on both, none failing or timing out; none is
+  refused with the new reasons ("a sphere within the resolution of
+  tangency to an edge (S9d.1)", "a sphere within the resolution of a
+  vertex (S9d.1)") or the near miss's. The 1,814 cases restoring a shape
+  for a Boolean on the Rust adapter (910 unsupported, 561 needing private
+  data, 276 `failed` by the reader's validator rejecting their files, 59
+  evaluating, 8 timing out), and the 171 the import reaches on native
+  DRAW too: every status and reason the last survey's on both backends,
+  but `bugs/modalg_1/buc60532`, `_1`, `_2` and `bugs/modalg_6/bug23585`,
+  which ended in 98 to 104 s at the last survey's load and timed out at
+  120 s at this one (as in the survey before it); run again alone with
+  300 s they end unsupported in 73 to 103 s with their reasons as before
+  (the reader takes no `SurfaceOfLinearExtrusion`; `tolerance`), before
+  any Boolean. `bugs/modalg_1/buc60531_1`, `_2`,
+  `bugs/modalg_5/bug23849_1` and `_3` time out at their first restores as
+  before. Of the 171: 59 evaluate on both backends, 76 are refused by S9's
+  rules, 31 are bodies none of the kernel's constructions, 3 spline bodies
+  (S9f) and 2 arguments of several solids; 24 are unsupported natively
+  too. Where the rule is reached: an instrumented build of `ef5d66fd` (not
+  committed: a line written the first time a case takes each path) run on
+  the Rust adapter over the 1,802 cases and the 171, its statuses and
+  reasons the survey's: 670 (554 and 116) reach the curved engine's
+  arrangement and 566 (473 and 93) the near miss in its new place, every
+  one of them the pierces too. 153 of the 566 (133 and 20) stop before the
+  sections, where the near miss ran before, refused by a later rule (86 a
+  tangency between the inputs, 31 a vertex of one input on the other's
+  face, 16 two meetings within rounding along an arc, 13 a meeting at
+  every seam tried, 6 an edge meeting an edge, 1 an imported plane piece
+  tangent to its plane faces): the near miss now runs in those cases, but
+  no pair of faces among the 566 gives it a candidate (no sphere within
+  the resolution of a plane or another sphere), so the reordering moves
+  none. `edge_near_misses`: 114 cases (70 and 44) hold a sphere face in
+  the arrangement, the other input's edges whose boxes meet it widened by
+  the resolution lines in 64, circles in 34, conics in 42 and other curves
+  (no rule) in 2 (`bcut_complex/G9`, `bugs/modalg_2/bug417`); 17 have a
+  nearest point strictly inside an edge (`bopcommon_simple/ZP9` and the
+  restore cases `bcommon_complex/B7` to `B9`, `bcut_complex/D6` to `D9`,
+  `E1`, `E2`, `bfuse_complex/C1` to `C3`, `bugs/modalg_1/buc60409_1` to
+  `_3` and `buc60704`), 73 a vertex in the sphere's widened box, 69 of
+  them a vertex exactly on the sphere (left to the incidences' rules, as
+  the rule leaves them). No edge's or vertex's distance from a sphere's
+  centre lies within the resolution of its radius otherwise: no case
+  reaches the sphere's nearest point, its face's membership, the gap's
+  membership or either refusal. A control run on the instrumented worker
+  took each path it should: a ball of radius 3 on a box's diagonal,
+  `4e-14` beyond touching its corner, refused with the vertex reason
+  through the band and the gap's membership; one whose centre lies on an
+  edge, its nearest point found but far outside the band; one `1e-12`
+  off a side's plane refused by the near miss on the face. No case moved, so no replay at the parent (`44f24f0b`) was
+  needed. No case fails, crashes or panics on either backend. The volume
+  audit (`vprops` and `sprops` before each `checkprops`, both backends,
+  the 1,046 audited before): both backends' values the last audit's bit
+  for bit on all 1,046 (no moved value, the largest relative move 0), the
+  statuses the same, the same 35 disagreements. No case newly evaluates,
+  so none is registered (1,132 cases), and the ledger does not change
+  (`--ledger` holds). A full contract run of the manifest holds on both
+  backends with the dataset (30 seconds a case, an absolute output
+  directory, so that the derived `explode_selector` finds its picks
+  file), every status that of the last survey's run, the slowest Boolean
+  case 3.8 s (`bopfuse_simple/ZK8`, on a host at load 5 to 10; 5.4 in the
+  last survey at load 6 to 10), the restore cases 0.1 to 3.3 s
+  (`bcommon_complex/B9`), E5, G9 and `bug417` 0.7, 1.3 and 1.3 s, the
+  rollex 0.4 to 0.8. No kernel change.
 
 * **The Boolean captures' Linux records, open: CI has no observations to
   take them from.** S9e.4b and S9f.3's notes leave each capture's Linux

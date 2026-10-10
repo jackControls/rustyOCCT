@@ -49,7 +49,9 @@ then for equal cylinders' tangent points where their axes cross (branch
 then for S9e.4b.4c.1 (branch `s9e4b4c`, over `s9c2-kernel` at `c3ce4d42`),
 then for the DRAW survey of S9e.4b.4c.1, the near miss of a sphere and
 the user's crossing cylinders (branch `s9-draw-12`, over `s9c2-kernel` at
-`44204e18`).
+`44204e18`),
+then for the DRAW survey of the edge and vertex near miss (branch
+`s9-draw-13`, over `s9c2-kernel` at `ef5d66fd`).
 
 ## Where things stand
 
@@ -66,11 +68,10 @@ the user's crossing cylinders (branch `s9-draw-12`, over `s9c2-kernel` at
   arcs, and one solid of a result of several (S9e.2, `curved/matched.rs`),
   results of spheres, cones and tori, deeper chains and given results
   against spheres, cones and tori (S9e.3a, `curved/chain.rs`), each with its
-  DRAW survey (the last full survey, that of S9e.4b.4c.1, the near miss of
-  a sphere and the user's crossing cylinders at `44204e18`, branch
-  `s9-draw-12`: the Boolean group's 987 cases and 59 restore cases
-  registered, none failing, no case moving, both backends' audited values
-  those of `826346b7`'s bit for bit) and a clean campaign (S9e.3a's and S9f.1's at `b2765f20`, 989
+  DRAW survey (the last full survey, that of the edge and vertex near
+  miss at `ef5d66fd`, branch `s9-draw-13`: the Boolean group's 987 cases
+  and 59 restore cases registered, none failing, no case moving, both
+  backends' audited values those of `44204e18`'s bit for bit) and a clean campaign (S9e.3a's and S9f.1's at `b2765f20`, 989
   runs).
 - **S9f.1 done.** Spline prisms against polyhedral prisms in any position
   (`curved/spline_walls.rs`), with its survey and campaign as above.
@@ -539,7 +540,9 @@ the user's crossing cylinders (branch `s9-draw-12`, over `s9c2-kernel` at
    registered), that of S9e.4b.4c.1, the near miss of a sphere and the
    user's crossing cylinders at `44204e18` (branch `s9-draw-12`: no case
    moving and none reaching the three changes' paths, nothing
-   registered).
+   registered), that of the edge and vertex near miss at `ef5d66fd`
+   (branch `s9-draw-13`: no case moving, none within the resolution of an
+   edge or vertex, nothing registered).
 3. **S9e.4b**, split in "S9e.4b refined": S9e.4b.1 (arcs rounded off
    their circles) and S9e.4b.2 (polyhedra other than prisms, on their
    stored vertices) are implemented with their DRAW surveys and
@@ -641,7 +644,10 @@ the user's crossing cylinders (branch `s9-draw-12`, over `s9c2-kernel` at
    ball crossing a rod's wall by `1e-12 r` ran for over ten minutes
    before it was stopped; no DRAW case has a sphere missing a plane or another sphere
    within the resolution, in a face or not (the survey at `44204e18`,
-   branch `s9-draw-12`, by an instrumented build).
+   branch `s9-draw-12`, by an instrumented build), nor an edge or a
+   vertex within the resolution of a sphere (the survey at `ef5d66fd`,
+   branch `s9-draw-13`: 114 cases test a sphere face against the other
+   input's edges and vertices, none within the band).
 
 Refused by design and staying refused (each documented): a tangency between
 the inputs, a cavity beside several solids, spline segments along one curve

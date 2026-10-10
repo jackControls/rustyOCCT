@@ -1941,6 +1941,45 @@ every case, the slowest Boolean case 5.4 seconds (`bopcut_simple/ZK8`, on
 a host at load 6 to 10), the restore cases 0.1 to 3.1
 (`bcommon_complex/B9`), the rollex 0.4.
 
+**The edge and vertex near miss: the Boolean group and the restore
+cases.** Both sets were run again after a sphere within the resolution of
+another input's edge or vertex was refused as S9d.1's near tangency, the
+near miss of a plane or a sphere now tried for every pair of faces before
+the pierces (2026-10-10, at `ef5d66fd`, the public dataset, 120 seconds a
+case, four at once). No case moves. The 1,802 self-contained cases of the
+Boolean group on both backends: every status, reason and error is the last
+survey's (`44204e18`) field for field, 987 evaluating, every one
+registered, 592 refused, 223 unsupported on both; none fails or times out,
+and none is refused with the new reasons. The 1,814 restore cases on the
+Rust adapter, and the 171 the import reaches on native DRAW too: every
+status and reason is the last survey's on both backends, but
+`bugs/modalg_1/buc60532`, `buc60532_1`, `buc60532_2` and
+`bugs/modalg_6/bug23585`, which time out at this survey's load as in the
+one before the last; run alone with 300 seconds they end unsupported in 73
+to 103 seconds with their reasons as before, in the reader or the script
+before any Boolean. `bugs/modalg_1/buc60531_1`, `_2`,
+`bugs/modalg_5/bug23849_1` and `_3` time out at their first restores as
+before. Of the 171, 59 evaluate on both backends, 76 are refused by S9's
+rules, 31 are bodies none of the kernel's constructions, 3 have spline
+faces (S9f) and 2 give the next Boolean several solids; native DRAW does
+not evaluate 24 of them. An instrumented build (not committed) over the
+1,802 and the 171: 114 cases hold a sphere face against the other input's
+edges and vertices, 17 with a nearest point inside an edge and 69 with a
+vertex exactly on the sphere, but none has an edge or a vertex within the
+resolution of a sphere otherwise, and no pair of faces gives the near miss
+a candidate in its new place (153 cases run it now that stopped before
+reaching it), so no case can move with the change.
+
+The volume audit (`vprops` and `sprops` before each `checkprops`, both
+backends, the 1,046 audited before): both backends' values are the last
+audit's bit for bit on all 1,046, the statuses the same, and the same 35
+disagreements remain. No case newly evaluates, so none is registered
+(1,132 cases); the ledger does not change. A full contract run of the
+manifest (both backends, the dataset present, 30 seconds a case, an
+absolute output directory) holds for every case, the slowest Boolean case
+3.8 seconds (`bopfuse_simple/ZK8`, on a host at load 5 to 10), the restore
+cases 0.1 to 3.3 (`bcommon_complex/B9`), the rollex 0.4 to 0.8.
+
 Three more `intss` cases run on the Rust adapter but are not registered,
 because the contract admits no failing status: `bug23178`, `bug28222_2` and
 `bug28222_3` count the pieces IntPatch splits its walking lines into (6, 4
