@@ -67,8 +67,9 @@ base's plane (on it in the construction, within the resolution of it in the
 file, whose base corners are roundings), their fuse declared `degenerate`
 (S9's rules: their faces meet within the resolution, a face using an edge
 both ways), the cut and the common the construction's (two stored base
-corners on the slab's plane, two off it on the pyramid's side by 7e-16). Declared `unsupported`: `hollow_slab`, the box
-with a cavity (S9e.4b.4).
+corners on the slab's plane, two off it on the pyramid's side by 7e-16); `hollow_slab`, the box
+with a cavity and a `TILT` slab through it (declared `unsupported` until
+S9e.4b.4c.1 took polyhedra with a cavity).
 
 The reference is the construction OCCT was given
 (`imported_polyhedra_boolean_reference.py`: every solid as convex cells in
@@ -357,7 +358,6 @@ def group(name, klass, specs, outcomes, first=None, swapped=False, reason=None, 
 
 FLUSH = ('a slab on the plane of the imported pyramid\'s base (on it in the construction, its stored corners '
          'within the resolution of it): their fuse')
-HOLLOW = 'S9e.4b.4: an imported polyhedron with a cavity'
 
 
 def cases():
@@ -394,8 +394,7 @@ def cases():
                                                  prism([square(-2.0, -2.0, 10.0, 10.0)], at('TILTX', (1, 1, 0)),
                                                        0.0, 2.0)],
                  {'fuse': 2, 'cut': 1, 'common': 0}, reason=FLUSH, refused=('fuse',))
-    out += group('hollow_slab', 'polyhedron', [imported('hollow'), SLAB], {'fuse': 1, 'cut': 2, 'common': 1},
-                 kind='unsupported', reason=HOLLOW)
+    out += group('hollow_slab', 'polyhedron', [imported('hollow'), SLAB], {'fuse': 1, 'cut': 2, 'common': 1})
     return out
 
 

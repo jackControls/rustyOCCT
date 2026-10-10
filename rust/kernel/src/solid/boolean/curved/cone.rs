@@ -668,5 +668,6 @@ pub(super) fn model(solid: &Solid, op: Operand, seam: &R) -> Result<Prism> {
         ring: None,
         given: None,
         hull: None,
+        mesh: None,
     })
 }

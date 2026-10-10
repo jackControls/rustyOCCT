@@ -401,6 +401,10 @@ pub(super) struct Prism {
     /// A convex body of planes' half-spaces (S9e.4b.3a): its faces are its
     /// planes' polygons, its membership every half-space.
     pub(super) hull: Option<Box<super::pieces::Hull>>,
+    /// An imported polyhedron's closed surface of triangles (S9e.4b.4c.1):
+    /// its faces are its stored faces' triangles, its membership a ray's
+    /// parity.
+    pub(super) mesh: Option<Box<super::meshes::Mesh>>,
 }
 
 fn out_of_domain(what: &'static str) -> Error {
@@ -759,6 +763,7 @@ impl Prism {
             ring: None,
             given: None,
             hull: None,
+            mesh: None,
         };
         prism.check_slots(solid)?;
         prism.boxes = (0..prism.faces.len()).map(|i| prism.face_box(i)).collect();
@@ -848,6 +853,13 @@ impl Prism {
             hi[k] += m;
         }
         (lo, hi)
+    }
+
+    /// Whether its solid may hold a cavity (S9e.4b.4c.1): an imported
+    /// polyhedron of several shells, or a given result whose solid has one.
+    pub(super) fn may_hold_cavities(&self) -> bool {
+        self.mesh.as_ref().is_some_and(|m| m.shells() > 1)
+            || self.given.as_ref().is_some_and(|g| g.cavities)
     }
 
     /// A face's own model and index: the model itself, or for a given
@@ -1206,6 +1218,9 @@ impl Prism {
         if let Some(h) = &self.hull {
             return h.member(p, dirs);
         }
+        if let Some(m) = &self.mesh {
+            return m.member(p, dirs);
+        }
         if let Some(ball) = &self.ball {
             return ball.member(p, dirs);
         }
@@ -1263,6 +1278,9 @@ impl Prism {
         }
         if let Some(h) = &self.hull {
             return h.in_face(fi, p);
+        }
+        if let Some(m) = &self.mesh {
+            return m.in_face(fi, p);
         }
         if let Some(ball) = &self.ball {
             return match self.faces[fi].kind {

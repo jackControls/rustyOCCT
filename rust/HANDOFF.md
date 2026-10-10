@@ -45,7 +45,8 @@ then for S9e.4b.4b.2b.1 (branch `s9e4b4b2b`, over `s9c2-kernel` at `298fcf3a`),
 then for the DRAW survey of S9e.4b.4b.2a, S9e.4b.4b.2b.1 and the cylinder
 pairs' fixes (branch `s9-draw-11`, over `s9c2-kernel` at `826346b7`),
 then for equal cylinders' tangent points where their axes cross (branch
-`steinmetz-tangency`, over `rust-kernel` at `d1869f2f`).
+`steinmetz-tangency`, over `rust-kernel` at `d1869f2f`),
+then for S9e.4b.4c.1 (branch `s9e4b4c`, over `s9c2-kernel` at `c3ce4d42`).
 
 ## Where things stand
 
@@ -449,6 +450,29 @@ then for equal cylinders' tangent points where their axes cross (branch
   import reaches, on both backends: no case moves (59 evaluate on both).
   Its DRAW survey (branch `s9-draw-11` at `826346b7`, above): no case
   moving with it.
+- **S9e.4b.4c.1 implemented** (branch `s9e4b4c`): imported polyhedra against
+  curved faces, their results given to Booleans of curved faces, and
+  polyhedra with cavities: the polyhedron's stored triangles a leaf of the
+  curved engine (`curved/meshes.rs`: each triangle a model face on its exact
+  plane named by its stored face, the stored edges and the diagonals its
+  edges, membership by an exact ray's parity, a pushed point decided by the
+  wedges of the triangles at it), one solid region of several shells a
+  polyhedron in both engines, each cavity of a result a shell and a void
+  region of its own (`assemble.rs`, `polyhedra.rs`; both put every cavity in
+  one shell before, a split cavity a disconnected shell), every shell's
+  orientation tried where an input holds a cavity. Decisions ("S9e.4b.4c
+  refined", with the split S9e.4b.4c.1 and S9e.4b.4c.2), 34 cases on S9e.4b.2's
+  and S9e.4a's bodies and one cavity OCCT wrote
+  (`generate_polyhedra_curved_boolean_fixtures.py`, a reference of its own
+  with convex hulls, `polyhedra_curved_boolean_reference.py`) captured before
+  the kernel (32 matching, 2 reviewed), the kernel within the reference on
+  all 30 solid cases, the touching ball refused and the inner ball's fuse a
+  cavity among several solids; S9e.4b.2's `hollow_slab` solid, STEP-b's
+  `box_void` imported. The fuzz target's `MESHES` stage (the chained cut
+  imported and the kernel's own, each less a ball): 15 inputs reach it, 11
+  evaluating alike. A trial of the survey's 171 restore cases the import
+  reaches: no case moves (59 evaluating on both backends, `bfuse_complex/K1` a tangency between the inputs and `bugs/modalg_6/bug28773` axes within rounding of parallel as before, none reaching an imported polyhedron against curved faces or a cavity; native DRAW's statuses as before). Pending its DRAW survey, its capture's Linux record and
+  its campaigns.
 - **CI.** Both workflows ("Rust kernel", "Rust geometry fuzzing") were green
   at `6c221525`. They had been red from S7 until 2026-09-29, unnoticed;
   check them after every push (see "Working rules").
@@ -472,14 +496,15 @@ then for equal cylinders' tangent points where their axes cross (branch
    `occt-boolean-spline-crossing-preimplementation` and of the
    spline-sphere, spline-cone, imported-polyhedra, imported-arcs,
    imported-pieces, split-pieces, one-sphere, one-sphere-incidence,
-   piece-forms, piece-trees, primitive-chains, prism-leaves and plane-parts
-   captures (with imported-joints'), and in fact of every Boolean capture
+   piece-forms, piece-trees, primitive-chains, prism-leaves, plane-parts and
+   polyhedra-curved captures (with imported-joints'), and in fact of every Boolean capture
    but S9a.1's two prisms (`occt-boolean-preimplementation`): CI runs
    only `compare_boolean.py`'s default set, so its
    `source-pinned-brep-results` artifact holds no other set's
    `native-observed.txt` (checked at `d1869f2f`, runs 37438561216 and
    37454728856, and at `64673ebd`, run 37415799498), and none of the
-   other 38 captures has ever had a `platform-linux/` record. They stay
+   other 39 captures (S9e.4b.4c.1's among them) has ever had a
+   `platform-linux/` record. They stay
    pending until the B-rep job also runs those comparisons (each set's
    compare script on the job's pinned SDK, its output directory added to
    the artifact) and a green run uploads their observations; see
@@ -575,8 +600,11 @@ then for equal cylinders' tangent points where their axes cross (branch
    mixed pockets and components, two leaves of two caps each; the kernel's
    own fused stack of prisms given to a Boolean, refused as an edge of one
    input on a face of the other), then
-   **S9e.4b.4c** (deeper trees, a pocket within a pocket; an imported
-   polyhedron against curved faces or with a cavity) and **S9e.4b.4d**
+   **S9e.4b.4c**, split in "S9e.4b.4c refined": **S9e.4b.4c.1** (an imported
+   polyhedron against curved faces or with a cavity) is implemented (pending
+   its DRAW survey, its capture's Linux record and its campaigns); next
+   **S9e.4b.4c.2** (deeper trees, a pocket within a pocket: S9e.4b.3c.3b's
+   tooth, chains no model matches) and **S9e.4b.4d**
    (turned bodies of smooth joins and nearly degenerate surfaces,
    `bug476_1` to `_8`'s `OCC485a`: refused until a decision of their
    own). The reader's header check refuses
@@ -695,7 +723,7 @@ Each comparison takes `--occt-root target/spline-linear-preflight/pinned-sdk/ins
 | `compare_imported_boolean.py` | 54 / 15 (the kernel within the reference on all 57 solid cases, the 12 degenerate refused: since S9e.4b.1 the 3 turned profiles' corner on the box's) |
 | `compare_imported_arcs_boolean.py` | 27 / 9 (the kernel within the reference on all 30 solid cases, the 6 degenerate refused; the lens's 3 solid since S9e.4b.4a) |
 | `compare_spline_sphere_boolean.py` | 4 / 29 (the kernel within the reference on all 27 results, the 6 degenerate refused, none `unsupported`) |
-| `compare_imported_polyhedra_boolean.py` | 47 / 1 (the kernel within the reference on all 44 solid and empty cases, the flush fuse refused, the cavity `unsupported`, S9e.4b.4's) |
+| `compare_imported_polyhedra_boolean.py` | 47 / 1 (the kernel within the reference on all 47 solid and empty cases, the flush fuse refused; the cavity's 3 solid since S9e.4b.4c.1) |
 | `compare_spline_cone_boolean.py` | 4 / 23 (the kernel within the reference on all 21 results, the 6 degenerate refused, none `unsupported`) |
 | `compare_imported_pieces_boolean.py` | 30 / 15 (the kernel within the reference on all 39 solid cases, the 6 degenerate refused; the one-sphere cases solid since S9e.4b.3c.1, the bitten ball's since S9e.4b.3c.3a, two of them reviewed for OCCT's seam and pole edges) |
 | `compare_split_pieces_boolean.py` | 26 / 22 (the kernel within the reference on all 42 solid and empty cases, the 6 degenerate refused; the one-sphere cases solid since S9e.4b.3c.1) |
@@ -707,6 +735,7 @@ Each comparison takes `--occt-root target/spline-linear-preflight/pinned-sdk/ins
 | `compare_primitive_chains_boolean.py` | 14 / 10 (the kernel within the reference on all 24 solid cases; the rounded box's 3 solid since S9e.4b.4b.2a) |
 | `compare_prism_leaves_boolean.py` | 15 / 9 (the kernel within the reference on all 21 solid cases, the 3 degenerate refused) |
 | `compare_plane_parts_boolean.py` | 15 / 9 (the kernel within the reference on all 21 solid cases, the 3 degenerate refused) |
+| `compare_polyhedra_curved_boolean.py` | 18 / 16 (the kernel within the reference on all 30 solid cases, the 3 degenerate refused, the inner ball's fuse `unsupported`: a cavity among several solids) |
 
 Every one must report 0 failures; since S9f.1 also `compare_split.py`
 (72 / 56) and `compare_brep.py --family spline` (10 / 3), which share its

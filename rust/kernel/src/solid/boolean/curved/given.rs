@@ -81,6 +81,9 @@ pub(super) struct Given {
     /// with its curve's parameter (S9e.3a: a line's none, its direction
     /// runs from its start).
     pub(super) places: Vec<Option<([Pos; 2], bool)>>,
+    /// Whether the given solid has a cavity (S9e.4b.4c.1: its faces alone
+    /// may close a cavity of the next result).
+    pub(super) cavities: bool,
 }
 
 /// Whether a solid has an arc (a prism) or a face other than a plane, or is
@@ -148,15 +151,8 @@ fn construction(s: &Solid) -> Result<(Polyhedron, bool)> {
                 Some((sub, _)) => sub,
                 None => poly.as_ref().clone(),
             };
-            // S9e.4b.2: an imported polyhedron has no construction to re-run.
-            if [&poly.a, &poly.b]
-                .iter()
-                .any(|x| crate::solid::boolean::polyhedra::imported::is_imported(x))
-            {
-                return Err(out_of_domain(
-                    "an imported polyhedron's result given to a Boolean of curved faces (S9e.4b.4)",
-                ));
-            }
+            // S9e.4b.4c.1: an imported polyhedron stands as itself (its
+            // stored model of triangles, `meshes.rs`).
             let direct = super::applies(&poly);
             Ok((poly, direct))
         }
@@ -579,15 +575,20 @@ pub(super) fn built_on(
             solids,
             solid: (out.len() > 1).then_some(k),
             places,
+            cavities: t
+                .regions()
+                .iter()
+                .any(|r| r.kind == crate::topology::RegionKind::Solid && r.shells.len() > 1),
         })),
         hull: None,
+        mesh: None,
     })
 }
 
 /// A model's primitive frame: its own, a hull's none, a given model's its
 /// first leaf's that has one.
 fn primitive_frame(m: &Prism) -> Option<&super::model::Affine> {
-    if m.hull.is_some() {
+    if m.hull.is_some() || m.mesh.is_some() {
         return None;
     }
     match &m.given {

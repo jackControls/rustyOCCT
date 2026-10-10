@@ -2048,7 +2048,13 @@ pub(super) fn build(poly: &Polyhedron) -> Result<Vec<Component>> {
             all.extend(c);
         }
         all.sort_unstable();
-        let cavity_faces: BTreeSet<usize> = held[index].iter().flatten().copied().collect();
+        // Each cavity's groups by its index (S9e.4b.4c.1: an imported
+        // polyhedron's cavity split by the other input, or two kept).
+        let cavity_faces: BTreeMap<usize, usize> = held[index]
+            .iter()
+            .enumerate()
+            .flat_map(|(k, c)| c.iter().map(move |&g| (g, k)))
+            .collect();
         let face_id: BTreeMap<usize, FaceId> = all
             .iter()
             .enumerate()
@@ -2088,9 +2094,9 @@ pub(super) fn build(poly: &Polyhedron) -> Result<Vec<Component>> {
                 fins: Vec::new(),
             });
         }
-        let has_cavity = !cavity_faces.is_empty();
+        let cavities = held[index].len();
         for &gi in &all {
-            let inner = cavity_faces.contains(&gi);
+            let cavity = cavity_faces.get(&gi).copied();
             let mut loop_ids = Vec::new();
             for fins in &built[gi].loops {
                 let mut fids = Vec::new();
@@ -2112,14 +2118,14 @@ pub(super) fn build(poly: &Polyhedron) -> Result<Vec<Component>> {
                 surface: built[gi].surface.clone(),
                 sense: Orientation::Forward,
                 loops: loop_ids,
-                front: if inner { ShellId(2) } else { ShellId(0) },
-                back: if inner { ShellId(3) } else { ShellId(1) },
+                front: cavity.map_or(ShellId(0), |c| ShellId(2 + 2 * c)),
+                back: cavity.map_or(ShellId(1), |c| ShellId(3 + 2 * c)),
                 enclosure: None,
             });
         }
-        let sides = |inner: bool, side: Side| -> Vec<(FaceId, Side)> {
+        let sides = |want: Option<usize>, side: Side| -> Vec<(FaceId, Side)> {
             all.iter()
-                .filter(|g| cavity_faces.contains(g) == inner)
+                .filter(|g| cavity_faces.get(g).copied() == want)
                 .map(|g| (face_id[g], side))
                 .collect()
         };
@@ -2130,8 +2136,8 @@ pub(super) fn build(poly: &Polyhedron) -> Result<Vec<Component>> {
             acorn_vertices: Vec::new(),
         };
         p.shells = vec![
-            shell(1, sides(false, Side::Front)),
-            shell(0, sides(false, Side::Back)),
+            shell(1, sides(None, Side::Front)),
+            shell(0, sides(None, Side::Back)),
         ];
         p.regions = vec![
             Region {
@@ -2143,13 +2149,14 @@ pub(super) fn build(poly: &Polyhedron) -> Result<Vec<Component>> {
                 shells: vec![ShellId(0)],
             },
         ];
-        if has_cavity {
-            p.shells.push(shell(1, sides(true, Side::Front)));
-            p.shells.push(shell(2, sides(true, Side::Back)));
-            p.regions[1].shells.push(ShellId(2));
+        // Each cavity a shell of the solid and a void region of its own.
+        for c in 0..cavities {
+            p.shells.push(shell(1, sides(Some(c), Side::Front)));
+            p.shells.push(shell(2 + c, sides(Some(c), Side::Back)));
+            p.regions[1].shells.push(ShellId(2 + 2 * c));
             p.regions.push(Region {
                 kind: RegionKind::Void,
-                shells: vec![ShellId(3)],
+                shells: vec![ShellId(3 + 2 * c)],
             });
         }
 
@@ -2261,9 +2268,9 @@ pub(super) fn build(poly: &Polyhedron) -> Result<Vec<Component>> {
             EntityKind::Region,
             Role::Region,
         ));
-        if has_cavity {
+        for c in 0..cavities {
             plans.push((
-                Slot::Region(RegionId(2)),
+                Slot::Region(RegionId(2 + c)),
                 Vec::new(),
                 vec![models[1].region],
                 EntityKind::Region,
@@ -2299,9 +2306,6 @@ fn encloses(frags: &[Frag], groups: &[Vec<usize>], faces: &[usize], p: &V) -> Op
                 if t < zero() {
                     continue;
                 }
-                if t == zero() {
-                    continue 'dirs;
-                }
                 let x = add(p, &scale(&d, &t));
                 // Inside the convex cycle: every edge's side the same.
                 let mut sign = 0i8;
@@ -2324,6 +2328,15 @@ fn encloses(frags: &[Frag], groups: &[Vec<usize>], faces: &[usize], p: &V) -> Op
                         sign = 2;
                         break;
                     }
+                }
+                // A point on a fragment's plane (S9e.4b.4c.1: a cavity's
+                // corner on the plane of the outer shell's face elsewhere)
+                // is undecided only within the fragment.
+                if t == zero() {
+                    if sign != 2 {
+                        continue 'dirs;
+                    }
+                    continue;
                 }
                 if sign != 2 {
                     count += 1;

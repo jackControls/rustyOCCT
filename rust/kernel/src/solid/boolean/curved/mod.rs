@@ -28,6 +28,7 @@ mod given;
 mod graph;
 pub(crate) mod matched;
 mod meet;
+mod meshes;
 mod model;
 mod num;
 pub(crate) mod pieces;
@@ -195,6 +196,13 @@ pub(super) fn applies(poly: &Polyhedron) -> bool {
     if given::applies(&poly.a, &poly.b) || given::applies(&poly.b, &poly.a) {
         return true;
     }
+    // S9e.4b.4c.1: an imported polyhedron against a solid with curved faces
+    // or edges (a given result's too).
+    let planar = |s: &crate::Solid| super::polyhedra::imported::planar(&s.topology);
+    let mesh = meshes::is_mesh;
+    if (mesh(&poly.a) && !planar(&poly.b)) || (!planar(&poly.a) && mesh(&poly.b)) {
+        return true;
+    }
     // S9e.4b.3a: an imported plane piece of a sphere, a cylinder or a cone
     // against a prism, a sphere, a cone, a torus or another piece.
     let piece = pieces::is_piece;
@@ -243,6 +251,8 @@ fn model_of(s: &crate::Solid, op: Operand, seam: &R, one_sphere: bool) -> Result
         // S9e.4b.3a: an imported plane piece, its primitive common its
         // planes' half-spaces.
         Construction::Imported(_) if pieces::is_piece(s) => pieces::model(s, op, first),
+        // S9e.4b.4c.1: an imported polyhedron, its stored triangles.
+        Construction::Imported(_) if meshes::is_mesh(s) => meshes::model(s, op),
         // S9e.4b.3b: a split piece, its primitive common its plane's
         // half-space.
         Construction::Clipped(_) | Construction::Half(_) => splits::model(s, op, first),

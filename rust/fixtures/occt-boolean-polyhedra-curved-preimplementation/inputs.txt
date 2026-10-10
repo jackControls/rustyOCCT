@@ -1,0 +1,218 @@
+case hollow_ball_fuse
+brep imported/hollow.brep
+boolean fuse
+sphere 8.375 5.125 4.875 0.0 0.0 1.0 1.0 0.0 0.0 2.0625 -1.5707963267948966 1.5707963267948966
+end
+case hollow_ball_cut
+brep imported/hollow.brep
+boolean cut
+sphere 8.375 5.125 4.875 0.0 0.0 1.0 1.0 0.0 0.0 2.0625 -1.5707963267948966 1.5707963267948966
+end
+case hollow_ball_common
+brep imported/hollow.brep
+boolean common
+sphere 8.375 5.125 4.875 0.0 0.0 1.0 1.0 0.0 0.0 2.0625 -1.5707963267948966 1.5707963267948966
+end
+case cavity_slab_fuse
+brep imported/poly_cavity.brep
+boolean fuse
+plane 0.0 0.0 8.4375 0.0 0.6 0.8 1.0 -0.0 0.0
+wire P 4 -3.5 2.0 6.9375 10.5 2.0 6.9375 10.5 13.600000000000001 -1.7624999999999993 -3.5 13.600000000000001 -1.7624999999999993
+prism 0.0 0.6 0.8
+end
+case cavity_slab_cut
+brep imported/poly_cavity.brep
+boolean cut
+plane 0.0 0.0 8.4375 0.0 0.6 0.8 1.0 -0.0 0.0
+wire P 4 -3.5 2.0 6.9375 10.5 2.0 6.9375 10.5 13.600000000000001 -1.7624999999999993 -3.5 13.600000000000001 -1.7624999999999993
+prism 0.0 0.6 0.8
+end
+case cavity_slab_common
+brep imported/poly_cavity.brep
+boolean common
+plane 0.0 0.0 8.4375 0.0 0.6 0.8 1.0 -0.0 0.0
+wire P 4 -3.5 2.0 6.9375 10.5 2.0 6.9375 10.5 13.600000000000001 -1.7624999999999993 -3.5 13.600000000000001 -1.7624999999999993
+prism 0.0 0.6 0.8
+end
+case chain_pyramid_fuse
+brep imported/pyramid.brep
+boolean cut
+plane 0.0 0.0 -2.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire P 4 6.5 -1.0 -2.0 11.0 -1.0 -2.0 11.0 4.25 -2.0 6.5 4.25 -2.0
+prism 0.0 0.0 10.0
+then fuse
+sphere 4.875 3.75 2.5 0.0 0.0 1.0 1.0 0.0 0.0 2.5 -1.5707963267948966 1.5707963267948966
+end
+case chain_pyramid_cut
+brep imported/pyramid.brep
+boolean cut
+plane 0.0 0.0 -2.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire P 4 6.5 -1.0 -2.0 11.0 -1.0 -2.0 11.0 4.25 -2.0 6.5 4.25 -2.0
+prism 0.0 0.0 10.0
+then cut
+sphere 4.875 3.75 2.5 0.0 0.0 1.0 1.0 0.0 0.0 2.5 -1.5707963267948966 1.5707963267948966
+end
+case chain_pyramid_common
+brep imported/pyramid.brep
+boolean cut
+plane 0.0 0.0 -2.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire P 4 6.5 -1.0 -2.0 11.0 -1.0 -2.0 11.0 4.25 -2.0 6.5 4.25 -2.0
+prism 0.0 0.0 10.0
+then common
+sphere 4.875 3.75 2.5 0.0 0.0 1.0 1.0 0.0 0.0 2.5 -1.5707963267948966 1.5707963267948966
+end
+case chain_wedge_fuse
+brep imported/wedge.brep
+boolean cut
+plane 0.0 0.0 -1.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire C 5.25 4.5 -1.0 1.25
+prism 0.0 0.0 10.0
+then fuse
+plane 6.125 4.6 1.7999999999999998 0.0 0.6 0.8 1.0 -0.0 0.0
+wire P 4 4.125 3.4 2.6999999999999997 8.125 3.4 2.6999999999999997 8.125 5.800000000000001 0.8999999999999999 4.125 5.800000000000001 0.8999999999999999
+prism 0.0 1.7999999999999998 2.4000000000000004
+end
+case chain_wedge_cut
+brep imported/wedge.brep
+boolean cut
+plane 0.0 0.0 -1.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire C 5.25 4.5 -1.0 1.25
+prism 0.0 0.0 10.0
+then cut
+plane 6.125 4.6 1.7999999999999998 0.0 0.6 0.8 1.0 -0.0 0.0
+wire P 4 4.125 3.4 2.6999999999999997 8.125 3.4 2.6999999999999997 8.125 5.800000000000001 0.8999999999999999 4.125 5.800000000000001 0.8999999999999999
+prism 0.0 1.7999999999999998 2.4000000000000004
+end
+case chain_wedge_common
+brep imported/wedge.brep
+boolean cut
+plane 0.0 0.0 -1.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire C 5.25 4.5 -1.0 1.25
+prism 0.0 0.0 10.0
+then common
+plane 6.125 4.6 1.7999999999999998 0.0 0.6 0.8 1.0 -0.0 0.0
+wire P 4 4.125 3.4 2.6999999999999997 8.125 3.4 2.6999999999999997 8.125 5.800000000000001 0.8999999999999999 4.125 5.800000000000001 0.8999999999999999
+prism 0.0 1.7999999999999998 2.4000000000000004
+end
+case notched_ball_fuse
+brep imported/notched.brep
+boolean fuse
+sphere 7.5 8.25 2.75 0.0 0.0 1.0 1.0 0.0 0.0 2.0 -1.5707963267948966 1.5707963267948966
+end
+case notched_ball_cut
+brep imported/notched.brep
+boolean cut
+sphere 7.5 8.25 2.75 0.0 0.0 1.0 1.0 0.0 0.0 2.0 -1.5707963267948966 1.5707963267948966
+end
+case notched_ball_common
+brep imported/notched.brep
+boolean common
+sphere 7.5 8.25 2.75 0.0 0.0 1.0 1.0 0.0 0.0 2.0 -1.5707963267948966 1.5707963267948966
+end
+case tetra_ball_fuse
+brep imported/tetra.brep
+boolean fuse
+brep imported/ball.brep
+end
+case tetra_ball_cut
+brep imported/tetra.brep
+boolean cut
+brep imported/ball.brep
+end
+case tetra_ball_common
+brep imported/tetra.brep
+boolean common
+brep imported/ball.brep
+end
+case pyramid_rod_fuse
+brep imported/pyramid.brep
+boolean fuse
+plane 0.0 0.0 -3.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire C 4.75 4.375 -3.0 1.25
+prism 0.0 0.0 12.0
+end
+case pyramid_rod_cut
+brep imported/pyramid.brep
+boolean cut
+plane 0.0 0.0 -3.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire C 4.75 4.375 -3.0 1.25
+prism 0.0 0.0 12.0
+end
+case pyramid_rod_common
+brep imported/pyramid.brep
+boolean common
+plane 0.0 0.0 -3.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire C 4.75 4.375 -3.0 1.25
+prism 0.0 0.0 12.0
+end
+case wedge_ball_fuse
+brep imported/wedge.brep
+boolean fuse
+sphere 4.25 5.5 6.625 0.0 0.0 1.0 1.0 0.0 0.0 2.0 -1.5707963267948966 1.5707963267948966
+end
+case wedge_ball_cut
+brep imported/wedge.brep
+boolean cut
+sphere 4.25 5.5 6.625 0.0 0.0 1.0 1.0 0.0 0.0 2.0 -1.5707963267948966 1.5707963267948966
+end
+case wedge_ball_common
+brep imported/wedge.brep
+boolean common
+sphere 4.25 5.5 6.625 0.0 0.0 1.0 1.0 0.0 0.0 2.0 -1.5707963267948966 1.5707963267948966
+end
+case octa_cone_fuse
+brep imported/octa.brep
+boolean fuse
+cone 4.375 5.75 -1.0 0.0 0.0 1.0 1.0 0.0 0.0 2.25 0.75 10.0
+end
+case octa_cone_cut
+brep imported/octa.brep
+boolean cut
+cone 4.375 5.75 -1.0 0.0 0.0 1.0 1.0 0.0 0.0 2.25 0.75 10.0
+end
+case octa_cone_common
+brep imported/octa.brep
+boolean common
+cone 4.375 5.75 -1.0 0.0 0.0 1.0 1.0 0.0 0.0 2.25 0.75 10.0
+end
+case rod_truncated_fuse
+plane 3.5 0.15000000000000036 -3.3000000000000007 0.0 0.6 0.8 1.0 -0.0 0.0
+wire C 3.5 0.15000000000000036 -3.3000000000000007 1.0
+prism 0.0 7.199999999999999 9.600000000000001
+boolean fuse
+brep imported/truncated.brep
+end
+case rod_truncated_cut
+plane 3.5 0.15000000000000036 -3.3000000000000007 0.0 0.6 0.8 1.0 -0.0 0.0
+wire C 3.5 0.15000000000000036 -3.3000000000000007 1.0
+prism 0.0 7.199999999999999 9.600000000000001
+boolean cut
+brep imported/truncated.brep
+end
+case rod_truncated_common
+plane 3.5 0.15000000000000036 -3.3000000000000007 0.0 0.6 0.8 1.0 -0.0 0.0
+wire C 3.5 0.15000000000000036 -3.3000000000000007 1.0
+prism 0.0 7.199999999999999 9.600000000000001
+boolean common
+brep imported/truncated.brep
+end
+case tetra_touch_fuse
+brep imported/tetra.brep
+boolean fuse
+sphere 4.0 4.5 1.0 0.0 0.0 1.0 1.0 0.0 0.0 1.5 -1.5707963267948966 1.5707963267948966
+end
+case tetra_touch_cut
+brep imported/tetra.brep
+boolean cut
+sphere 4.0 4.5 1.0 0.0 0.0 1.0 1.0 0.0 0.0 1.5 -1.5707963267948966 1.5707963267948966
+end
+case tetra_touch_common
+brep imported/tetra.brep
+boolean common
+sphere 4.0 4.5 1.0 0.0 0.0 1.0 1.0 0.0 0.0 1.5 -1.5707963267948966 1.5707963267948966
+end
+case hollow_inner_fuse
+brep imported/hollow.brep
+boolean fuse
+sphere 5.125 4.875 5.25 0.0 0.0 1.0 1.0 0.0 0.0 1.25 -1.5707963267948966 1.5707963267948966
+end

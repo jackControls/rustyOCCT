@@ -44,7 +44,10 @@
 //! other end hidden in the part it stands on), flats (a part common the hull
 //! of planes it meets along convex edges) and pockets (the hull of planes
 //! joined along concave edges turned over, less the primitives standing in
-//! it, cut from the chain). Every other body is S9e.4b's.
+//! it, cut from the chain). S9e.4b.4c.1: a polyhedron may hold cavities (one
+//! solid region of several shells), and against curved faces its stored
+//! triangles are a leaf of the curved engine (`boolean::curved::meshes`).
+//! Every other body is S9e.4b's.
 use super::{replayable, Construction, Context, Solid};
 use crate::history::{History, Relation};
 use crate::identity::{
@@ -316,12 +319,14 @@ impl Solid {
             .and_then(|r| names(&r, &topology, resolution).map(|n| (r, n)));
         let (recognized, names) = match construction {
             Ok((r, n)) => (Recognized::Construction(Box::new(r)), n),
+            // S9e.4b.4c.1: or with cavities (one solid region, its shells
+            // the outer one and its voids').
             Err(e) if planar(&topology) => {
-                if !one_shell(&topology) {
+                if !one_region(&topology) {
                     return Err(match e {
-                        Error::OutOfDomain(_) => Error::OutOfDomain(
-                            "an imported polyhedron with a cavity or several shells (S9e.4b.4)",
-                        ),
+                        Error::OutOfDomain(_) => {
+                            Error::OutOfDomain("an imported polyhedron of several solids (S9e.4b)")
+                        }
                         e => e,
                     });
                 }
@@ -668,6 +673,16 @@ fn one_shell(t: &Topology) -> bool {
         .filter(|r| r.kind == RegionKind::Solid)
         .collect();
     solids.len() == 1 && solids[0].shells.len() == 1
+}
+
+/// One solid region, of one shell or several (S9e.4b.4c.1: a polyhedron's
+/// cavities).
+fn one_region(t: &Topology) -> bool {
+    t.regions()
+        .iter()
+        .filter(|r| r.kind == RegionKind::Solid)
+        .count()
+        == 1
 }
 
 /// The construction's bounds widened by the stored edges'.

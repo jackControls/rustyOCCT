@@ -384,8 +384,9 @@ fn imported_solids_are_their_constructions() {
 /// A STEP body is imported the same way: OCCT's STEP solids of the import
 /// track's fixtures, decided on their constructions (a box, cylinders, a
 /// sphere, a hemisphere, cones and a torus, a prism of lines, a plate with a
-/// hole), each cut by a box through it, the cut and the common its volume;
-/// a body with a cavity and a spline prism refused.
+/// hole; S9e.4b.4c.1: a box with a cavity, a polyhedron on its stored
+/// vertices), each cut by a box through it, the cut and the common its
+/// volume; a spline prism refused.
 #[test]
 fn step_solids_are_imported_too() {
     use rusty_occt::step;
@@ -411,6 +412,8 @@ fn step_solids_are_imported_too() {
         "torus",
         "l_prism",
         "plate_hole",
+        // S9e.4b.4c.1: a polyhedron with a cavity (a `BREP_WITH_VOIDS`).
+        "box_void",
     ] {
         for (k, (t, tol)) in solids(name).into_iter().enumerate() {
             let s = Solid::imported_with(OperationId(91 + k as u64), t, tol)
@@ -450,7 +453,7 @@ fn step_solids_are_imported_too() {
             assert!(c > 0.0 && m > 0.0, "{name}: {c} {m}");
         }
     }
-    for (name, why) in [("box_void", "S9e.4b"), ("bspline_prism", "S9f")] {
+    for (name, why) in [("bspline_prism", "S9f")] {
         for (t, tol) in solids(name) {
             match Solid::imported_with(OperationId(91), t, tol) {
                 Err(Error::OutOfDomain(m)) => assert!(m.contains(why), "{name}: {m}"),

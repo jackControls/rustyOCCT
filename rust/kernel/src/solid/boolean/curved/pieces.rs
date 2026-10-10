@@ -396,6 +396,7 @@ pub(super) fn hull_of(
             planes: all,
             face_plane,
         })),
+        mesh: None,
     })
 }
 

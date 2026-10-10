@@ -552,13 +552,24 @@ pub(super) fn assemble_made(arr: &Arr, op: Op2) -> Result<Vec<(Component, Made)>
         .iter()
         .map(|sh| op == Op2::Cut && sh.iter().all(|&fi| faces[fi].op == 1))
         .collect();
+    // S9e.4b.4c.1: where an input holds a cavity (an imported polyhedron's
+    // void, or a given result's), a shell of its faces alone may be its
+    // cavity kept or, turned over in a cut, a solid: every shell of one
+    // input's faces is tried too where a shell of both inputs' is not the
+    // only one, the preset tool's shell among them.
+    let single = |sh: &[usize]| {
+        sh.iter().all(|&fi| faces[fi].op == 0) || sh.iter().all(|&fi| faces[fi].op == 1)
+    };
+    let alone = shells.len() > 1 && shells.iter().filter(|sh| single(sh)).count() > 0;
+    let cavities_held = alone && arr.models.iter().any(Prism::may_hold_cavities);
     if shells.len() > 1 {
         for si in 0..shells.len() {
             let both = shells[si].iter().any(|&fi| faces[fi].op == 0)
                 && shells[si].iter().any(|&fi| faces[fi].op == 1);
-            if is_cavity[si] || !both {
+            if !cavities_held && (is_cavity[si] || !both) {
                 continue;
             }
+            is_cavity[si] = false;
             let (alone, _) = build_component(
                 arr,
                 &names,
@@ -568,7 +579,7 @@ pub(super) fn assemble_made(arr: &Arr, op: Op2) -> Result<Vec<(Component, Made)>
                 &fins_of,
                 &points,
                 &shells[si],
-                &BTreeSet::new(),
+                &BTreeMap::new(),
                 &info,
             )?;
             if let Err(issues) = crate::topology::Topology::from_parts(
@@ -592,10 +603,12 @@ pub(super) fn assemble_made(arr: &Arr, op: Op2) -> Result<Vec<(Component, Made)>
     let mut out = Vec::new();
     for &si in &outers {
         let mut all: Vec<usize> = shells[si].clone();
-        let mut inner: BTreeSet<usize> = BTreeSet::new();
-        for &c in &cavities {
+        // Each cavity's faces by its index (S9e.4b.4c.1: an imported
+        // polyhedron's cavity split by the other input, or two kept).
+        let mut inner: BTreeMap<usize, usize> = BTreeMap::new();
+        for (k, &c) in cavities.iter().enumerate() {
             all.extend(&shells[c]);
-            inner.extend(&shells[c]);
+            inner.extend(shells[c].iter().map(|&fi| (fi, k)));
         }
         out.push(build_component(
             arr, &names, op, &faces, &redges, &fins_of, &points, &all, &inner, &info,
@@ -631,7 +644,7 @@ fn build_component(
     fins_of: &FinsOf<'_>,
     points: &BTreeMap<usize, Point3>,
     all: &[usize],
-    inner: &BTreeSet<usize>,
+    inner: &BTreeMap<usize, usize>,
     info: &BTreeMap<EntityId, (Operand, Role)>,
 ) -> Result<(Component, Made)> {
     let mut p = TopologyParts::default();
@@ -677,7 +690,7 @@ fn build_component(
             fins: Vec::new(),
         });
     }
-    let has_cavity = !inner.is_empty();
+    let cavities = inner.values().max().map_or(0, |k| k + 1);
     // Poles added to sphere faces whose loops wind once: (vertex, operand,
     // model face).
     let mut poles: Vec<(VertexId, usize, usize)> = Vec::new();
@@ -906,20 +919,20 @@ fn build_component(
                 poles.push((vid, rf.op, rf.face));
             }
         }
-        let is_inner = inner.contains(&fi);
+        let cavity = inner.get(&fi).copied();
         p.faces.push(Face {
             surface,
             sense,
             loops: loop_ids,
-            front: if is_inner { ShellId(2) } else { ShellId(0) },
-            back: if is_inner { ShellId(3) } else { ShellId(1) },
+            front: cavity.map_or(ShellId(0), |c| ShellId(2 + 2 * c)),
+            back: cavity.map_or(ShellId(1), |c| ShellId(3 + 2 * c)),
             enclosure: None,
         });
     }
-    let sides = |want_inner: bool, side: Side| -> Vec<(FaceId, Side)> {
+    let sides = |want: Option<usize>, side: Side| -> Vec<(FaceId, Side)> {
         all.iter()
             .enumerate()
-            .filter(|(_, fi)| inner.contains(fi) == want_inner)
+            .filter(|(_, fi)| inner.get(fi).copied() == want)
             .map(|(k, _)| (FaceId(k), side))
             .collect()
     };
@@ -930,8 +943,8 @@ fn build_component(
         acorn_vertices: Vec::new(),
     };
     p.shells = vec![
-        shell(1, sides(false, Side::Front)),
-        shell(0, sides(false, Side::Back)),
+        shell(1, sides(None, Side::Front)),
+        shell(0, sides(None, Side::Back)),
     ];
     p.regions = vec![
         Region {
@@ -943,13 +956,14 @@ fn build_component(
             shells: vec![ShellId(0)],
         },
     ];
-    if has_cavity {
-        p.shells.push(shell(1, sides(true, Side::Front)));
-        p.shells.push(shell(2, sides(true, Side::Back)));
-        p.regions[1].shells.push(ShellId(2));
+    // Each cavity a shell of the solid and a void region of its own.
+    for c in 0..cavities {
+        p.shells.push(shell(1, sides(Some(c), Side::Front)));
+        p.shells.push(shell(2 + c, sides(Some(c), Side::Back)));
+        p.regions[1].shells.push(ShellId(2 + 2 * c));
         p.regions.push(Region {
             kind: RegionKind::Void,
-            shells: vec![ShellId(3)],
+            shells: vec![ShellId(3 + 2 * c)],
         });
     }
     // Plans.
@@ -1124,9 +1138,9 @@ fn build_component(
         EntityKind::Region,
         Role::Region,
     ));
-    if has_cavity {
+    for c in 0..cavities {
         plans.push((
-            Slot::Region(RegionId(2)),
+            Slot::Region(RegionId(2 + c)),
             Vec::new(),
             vec![arr.models[1].region],
             EntityKind::Region,
