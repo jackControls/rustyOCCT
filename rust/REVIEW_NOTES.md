@@ -13348,6 +13348,10 @@ Decisions for S9, recorded before its code (2026-09-28):
   inputs) and its 36 regressions and the split corpus (3,551) and its 20
   regressions replay with debug assertions without a failure (the
   slowest 11.7 s and 2.7 s, on a host at load 15 to 35).
+  Campaigns at `247d0e61`, with this note's rule (600 s each, sampled
+  replays, every switch on): `boolean` clean, 961 runs, the slowest input
+  16 s under AddressSanitizer (the startup's replay 1,657 s of its 3,600);
+  `split` clean, 1,222 runs, the slowest under a second.
 
 * **The Boolean captures' Linux records, open: CI has no observations to
   take them from.** S9e.4b and S9f.3's notes leave each capture's Linux
