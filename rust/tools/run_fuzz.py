@@ -558,7 +558,9 @@ SCHEDULE_ONLY_TARGETS = {'surface_knots', 'degree_elevation', 'surface_editing'}
 # 2efa1ec7, up from 1,242 s of startup at 85104dc3 on the same inputs.
 # split: CI's 1,749 inputs overran the hour at c3ce4d42; eight shards of
 # them take 250 to 413 s of CPU each under ASan on the development Mac.
-REPLAY_SHARDS = {'boolean': 4, 'degree_elevation': 4, 'split': 8}
+# analytic_intersections: CI's 1,556 inputs took 2,599 s of startup at
+# c3ce4d42, and 1,602 overran the hour at 47e086c5.
+REPLAY_SHARDS = {'boolean': 4, 'degree_elevation': 4, 'split': 8, 'analytic_intersections': 4}
 
 
 def manifest_path(target):

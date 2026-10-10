@@ -661,8 +661,10 @@ then for S9e.4b.4c.2a (branch `s9e4b4c2`, over `s9c2-kernel` at `37732abc`).
    the restores it opens.
 4. **S9's acceptance** (U6): kernel and fuzz CI green at the accepted
    revision, the schedule run's full replays green (boolean and
-   `degree_elevation` are sharded across four jobs and `split` across
-   eight, each plus a completeness check, `REPLAY_SHARDS`), and a clean
+   `degree_elevation` are sharded across four jobs, `split` across
+   eight and `analytic_intersections` across four (since its replay
+   overran the hour at `47e086c5`), each plus a completeness check,
+   `REPLAY_SHARDS`), and a clean
    local 600 s campaign; record it in
    `BOOLEAN.md` and mark S9 done in `REVIEW_NOTES.md`.
 5. **Near misses with no rule yet** (from REVIEW_NOTES.md's "A ball

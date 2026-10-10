@@ -140,7 +140,7 @@ jobs:
     timeout-minutes: 15
     strategy:
       matrix:
-        target: [boolean, degree_elevation, split]
+        target: [analytic_intersections, boolean, degree_elevation, split]
     steps:
       - uses: actions/checkout@v4.2.2
       - name: Restore evolving corpus
@@ -168,9 +168,10 @@ jobs:
     strategy:
       fail-fast: false
       # Each target's shards are run_fuzz.py's REPLAY_SHARDS[target]: four
-      # for boolean and degree_elevation, eight for split.
+      # for boolean, degree_elevation and analytic_intersections, eight for
+      # split.
       matrix:
-        target: [boolean, degree_elevation, split]
+        target: [analytic_intersections, boolean, degree_elevation, split]
         shard: [0, 1, 2, 3, 4, 5, 6, 7]
         exclude:
           - {target: boolean, shard: 4}
@@ -181,6 +182,10 @@ jobs:
           - {target: degree_elevation, shard: 5}
           - {target: degree_elevation, shard: 6}
           - {target: degree_elevation, shard: 7}
+          - {target: analytic_intersections, shard: 4}
+          - {target: analytic_intersections, shard: 5}
+          - {target: analytic_intersections, shard: 6}
+          - {target: analytic_intersections, shard: 7}
     env:
       NIGHTLY: nightly-2026-09-22
     steps:
@@ -223,7 +228,7 @@ jobs:
     timeout-minutes: 15
     strategy:
       matrix:
-        target: [boolean, degree_elevation, split]
+        target: [analytic_intersections, boolean, degree_elevation, split]
     steps:
       - uses: actions/checkout@v4.2.2
       - uses: actions/download-artifact@v4.3.0

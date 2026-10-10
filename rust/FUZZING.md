@@ -195,7 +195,7 @@ replay. `boolean` is heading there: CI's 356 inputs took 1,242 s of startup
 at `85104dc3` and 2,108 s at `2efa1ec7` (a 275 s build, the slowest input
 42 s), the same inputs growing slower with each curved family, and the
 local corpus of 1,421 inputs exceeds the hour under AddressSanitizer. For
-the targets in `run_fuzz.py`'s `REPLAY_SHARDS` (`boolean` and `degree_elevation`, four shards each; the latter's full replay reached 256 of its 485 inputs in the hour on the first scheduled run after the split; `split`, eight shards, below) the
+the targets in `run_fuzz.py`'s `REPLAY_SHARDS` (`boolean` and `degree_elevation`, four shards each; the latter's full replay reached 256 of its 485 inputs in the hour on the first scheduled run after the split; `split`, eight shards, and `analytic_intersections`, four, below) the
 schedule and manual campaigns split the full replay across jobs of the run:
 
 1. `Replay snapshot` restores the corpus, seeds it and publishes it as an
@@ -259,6 +259,12 @@ corpus takes about 650 to 1,100 s and one of the local corpus's size
 about 1,500 s, after a build of about 300 s: well inside its hour, where
 four shards would take about half of it now and all of it at the local
 corpus's size.
+
+`analytic_intersections` joined at `47e086c5`, four shards: its full
+replay took 2,599 s of the startup hour on CI's 1,556 inputs at
+`c3ce4d42` (the slowest input 16 s), and CI's 1,602 inputs did not
+finish their startup in the hour at `47e086c5` (exit 124, no failing
+input). A shard of them takes about 650 to 900 s on CI after the build.
 
 Retained corpora are minimised weekly (R12 of `REVIEW_NOTES.md`): on Sundays
 the fuzzing workflow runs `run_fuzz.py --minimize` instead of a campaign. It
