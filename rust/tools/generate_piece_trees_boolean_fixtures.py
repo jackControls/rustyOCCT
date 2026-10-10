@@ -59,9 +59,10 @@ top face through its axis (a cylinder's end not normal to its axis);
 declared `degenerate`: `u_notch`, a U prism less a cylinder of radius 3
 along `z` about the middle of its base's end face, tangent to the two
 faces it meets (`bcut_complex/I6`'s notch on a body not convex; its frame's
-`x` reversed: its seam off the body); declared `unsupported`: `tooth`, a
-cylinder less a U prism whose base and slot lie inside it, a tooth left
-between the arms (a pocket within a pocket, S9e.4b.4's).
+`x` reversed: its seam off the body); `tooth`, a cylinder less a U prism
+whose base and slot lie inside it, a tooth left between the arms (a pocket
+within a pocket: declared `unsupported` until S9e.4b.4c.2a took a pocket's
+own pockets).
 
 Cases (each the three operations): `u_scoop_rod`, the U's groove and an
 upright rod through it; `u_boss_slab`, the U's boss and a `TILT` slab
@@ -72,8 +73,8 @@ along `x` through its disc; `rod_cap_pocket`, a `TILT` rod less the dish
 its flat; `pieces`, the hemisphere's boss and the flattened boss, both
 imported; `chain_dee`, the flattened boss less a rod, then with a `TILT`
 slab. Declared `degenerate`: `u_notch_rod`, the U's notch (its wall
-tangent to its own faces) and a rod; declared `unsupported`: `tooth_rod`,
-the tooth and a rod. (The partners are rods where they can be: the
+tangent to its own faces) and a rod; `tooth_rod`, the tooth and a rod
+(declared `unsupported` until S9e.4b.4c.2a). (The partners are rods where they can be: the
 reference's cost grows with the faces of a case.)
 
 The reference is the construction OCCT was given, through S9e.3a's chained
@@ -268,10 +269,7 @@ def make_bodies():
              kind='degenerate', reason='an imported plane piece whose curved face is tangent to its plane faces'),
         Body('tooth', cylinder(BITES_FRAME, 4.0, 4.0, 3.0, 0.0, 6.0), 'cut',
              Slotted(BITES_FRAME, 2.0, 4.5, (-3.0, 2.5, 3.0, 5.5), (2.0, 3.0, 3.5, 4.5)), 0,
-             'the capped cylinder less a U-shaped pocket holding a tooth (a pocket within a pocket)',
-             kind='unsupported',
-             reason='an imported plane piece other than a Boolean tree of its primitive and its planes\' hulls '
-                    '(S9e.4b.4)'),
+             'the capped cylinder less a U-shaped pocket holding a tooth (a pocket within a pocket)'),
     ]
     return {b.name: b for b in out}
 

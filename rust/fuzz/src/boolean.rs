@@ -80,7 +80,11 @@
 //! both (`JOINTS`). S9e.4b.4c.1: the chained cut's first solid of plane
 //! faces written, read back and imported (a polyhedron on its stored
 //! vertices in the curved engine) and the kernel's own cut each less a ball
-//! about the turned box's axis, the same volume (`MESHES`).
+//! about the turned box's axis, the same volume (`MESHES`). S9e.4b.4c.2a:
+//! the kernel's own cylinder on the object's frame less a prism of a square
+//! with a square or a U-shaped hole from inside it past its top (a post or
+//! a U island standing in a pocket, pockets two or three deep) and its
+//! import, each cut by the turned box, the same volume (`NESTED`).
 use crate::analytic_intersections::Bytes;
 use crate::split::{profile, spline_profile};
 use rusty_occt::identity::OperationId;
@@ -181,6 +185,14 @@ const JOINTS: bool = true;
 /// kernel's own cut are each cut by a ball about the box's axis, by the
 /// chained byte's next bit. On.
 const MESHES: bool = true;
+
+/// Whether the kernel's own cylinder on the object's frame less a prism of
+/// a square with a square hole (a post in a pocket) or a U-shaped hole (a U
+/// island, its notch a pocket of its own), from inside it past its top,
+/// written, read back and imported (S9e.4b.4c.2a: a tree whose pockets
+/// nest), and the kernel's body are each cut by the chained stage's
+/// partner, by the chained byte's next bit (the U by `MESHES`'s). On.
+const NESTED: bool = true;
 
 /// Whether a spline prism meets a line prism in frames with different
 /// axes (S9f.1's spline walls in the curved engine: creases, generatrices
@@ -835,6 +847,30 @@ pub fn check_boolean(data: &[u8]) {
                 }
             }
         }
+        // S9e.4b.4c.2a: by the chained byte's next bit, the kernel's own
+        // cylinder on the object's frame less a square with a square hole
+        // (a post in a pocket) or, by `MESHES`'s bit, a U-shaped hole (a U
+        // island, its notch a pocket of its own) from inside it past its
+        // top, written, read back and imported, each cut by the chained
+        // stage's partner: where both evaluate, the same volume (`NESTED`).
+        if IMPORTED && NESTED && (chained / 96) % 2 == 1 {
+            let u = (chained / 48) % 2 == 1;
+            if let Some(body) = nested_body(fa, s1, h, u, tolerance) {
+                if let Some(again) = reimported(&body) {
+                    if let (Some(x), Some(y)) = (
+                        run(body.cut(OperationId(23), &box_)),
+                        run(again.cut(OperationId(24), &box_)),
+                    ) {
+                        assert!(
+                            near(volume(&x), volume(&y)),
+                            "imported nested pockets {} for {}",
+                            volume(&y),
+                            volume(&x)
+                        );
+                    }
+                }
+            }
+        }
     }
     // S9e.4a: the object written by the kernel's writer, read back and
     // imported (`IMPORTED`), given the chosen operation with the same tool:
@@ -904,6 +940,55 @@ fn lens_prism(frame: Frame3, s: f64, h: f64, tolerance: Tolerance) -> Option<Sol
     Solid::extrude_with(OperationId(12), profile, frame, 0.0, h)
         .ok()
         .map(|(s, _)| s)
+}
+
+/// A cylinder of radius `s` over `[0, h + 1]` on `frame` less a prism on it
+/// over `[(h + 1) / 2, h + 2]` of the square of half side `5k` (`k = s / 8`,
+/// dyadic) with a square hole of half side `2k` (a post in a pocket) or,
+/// where `u`, a U-shaped hole, the square of half side `3k` less its notch
+/// `[-k, 3k] x [-k, k]` (a U island, its notch a pocket of its own)
+/// (S9e.4b.4c.2a).
+fn nested_body(frame: Frame3, s: f64, h: f64, u: bool, tolerance: Tolerance) -> Option<Solid> {
+    let k = s / 8.0;
+    let square = |a: f64| {
+        Boundary::polygon(
+            vec![
+                Point2::new(-a, -a),
+                Point2::new(a, -a),
+                Point2::new(a, a),
+                Point2::new(-a, a),
+            ],
+            tolerance,
+        )
+    };
+    let hole = if u {
+        let p = |x: f64, y: f64| Point2::new(x * k, y * k);
+        Boundary::polygon(
+            vec![
+                p(-3.0, -3.0),
+                p(3.0, -3.0),
+                p(3.0, -1.0),
+                p(-1.0, -1.0),
+                p(-1.0, 1.0),
+                p(3.0, 1.0),
+                p(3.0, 3.0),
+                p(-3.0, 3.0),
+            ],
+            tolerance,
+        )
+    } else {
+        square(2.0 * k)
+    }
+    .ok()?;
+    let profile = Profile::new(square(5.0 * k).ok()?, vec![hole], tolerance).ok()?;
+    let top = h + 1.0;
+    let (cylinder, _) =
+        Solid::cylinder_with(OperationId(20), frame, s, 0.0, top, tolerance).ok()?;
+    let (ring, _) =
+        Solid::extrude_with(OperationId(21), profile, frame, top / 2.0, top + 1.0).ok()?;
+    let (out, _) = cylinder.cut(OperationId(22), &ring).ok()?;
+    let [body] = <[Solid; 1]>::try_from(out).ok()?;
+    Some(body)
 }
 
 /// A solid written by the kernel's `.brep` writer, read back and imported

@@ -47,14 +47,11 @@ dee_boss_ball_cut	expect solid S9e.4b.3c.3b pieces
 dee_boss_ball_cut	result 1 340.857310103551982345695 333.9098704842924337323683 8.319749603561736416158292 0.8311301080943410968399795 1.37560396293226926960397
 dee_boss_ball_common	expect solid S9e.4b.3c.3b pieces
 dee_boss_ball_common	result 1 9.660766813726411517444977 29.77522259595125213527098 7.75 2.073962028806930112979002 4.002742735081065707137192
-tooth_rod_fuse	expect unsupported S9e.4b.3c.3b pieces
-tooth_rod_fuse	reason an imported plane piece other than a Boolean tree of its primitive and its planes' hulls (S9e.4b.4)
+tooth_rod_fuse	expect solid S9e.4b.3c.3b pieces
 tooth_rod_fuse	result 1 161.6565367856006928499264 200.9261872722396387339314 4.166846279597466845027955 4.0 2.982178638623781403986069
-tooth_rod_cut	expect unsupported S9e.4b.3c.3b pieces
-tooth_rod_cut	reason an imported plane piece other than a Boolean tree of its primitive and its planes' hulls (S9e.4b.4)
+tooth_rod_cut	expect solid S9e.4b.3c.3b pieces
 tooth_rod_cut	result 1 147.5193698444466232768445 216.2414514584898807714367 4.087002980067417961144037 4.0 2.980470770964368934219459
-tooth_rod_common	expect unsupported S9e.4b.3c.3b pieces
-tooth_rod_common	reason an imported plane piece other than a Boolean tree of its primitive and its planes' hulls (S9e.4b.4)
+tooth_rod_common	expect solid S9e.4b.3c.3b pieces
 tooth_rod_common	result 1 10.60287520586555217981142 31.80862561759665653943426 5.0 4.0 3.0
 u_notch_rod_fuse	expect degenerate S9e.4b.3c.3b pieces
 u_notch_rod_fuse	reason an imported plane piece whose curved face is tangent to its plane faces

@@ -130,16 +130,15 @@ class PieceTreesReferenceTests(unittest.TestCase):
         for b in fixtures.BODIES.values():
             self.assertTrue(b.why, b.name)
             self.assertIn(b.op, ('fuse', 'cut'))
-        self.assertEqual({b.name for b in fixtures.BODIES.values() if b.kind}, {'u_notch', 'tooth'})
+        self.assertEqual({b.name for b in fixtures.BODIES.values() if b.kind}, {'u_notch'})
         self.assertEqual(fixtures.BODIES['u_notch'].kind, 'degenerate')
-        self.assertEqual(fixtures.BODIES['tooth'].kind, 'unsupported')
 
     def test_cases(self):
         listed = fixtures.all_cases()
         fixtures.validate(listed)
         self.assertEqual(len(listed), 30)
         kinds = {k: sum(1 for c in listed if c.kind == k) for k in ('solid', 'empty', 'degenerate', 'unsupported')}
-        self.assertEqual(kinds, {'solid': 24, 'empty': 0, 'degenerate': 3, 'unsupported': 3})
+        self.assertEqual(kinds, {'solid': 27, 'empty': 0, 'degenerate': 3, 'unsupported': 0})
         for klass in fixtures.CLASSES:
             self.assertTrue(any(c.klass == klass for c in listed), klass)
         for name in ('u_scoop_rod_fuse', 'rod_cap_pocket_cut', 'pieces_common', 'chain_dee_cut'):
