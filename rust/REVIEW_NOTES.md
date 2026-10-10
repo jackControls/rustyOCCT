@@ -10032,6 +10032,89 @@ Decisions for S9, recorded before its code (2026-09-28):
     back and imported), S9e.4b.2's `hollow_slab` declared solid with it and
     STEP-b's `box_void` imported, and the DRAW trial of the restore cases
     the import reaches.
+  * **S9e.4b.4c.1 evidence (2026-10-09).** Bodies OCCT wrote: S9e.4b.2's
+    `pyramid`, `truncated`, `wedge`, `tetra`, `octa`, `notched` and
+    `hollow` (their files read again), S9e.4a's `ball`, and this step's
+    `cavity` (`boolean-polyhedra-curved-bodies.txt`, a `write` block of two
+    `box` rows about a `boolean cut`, written by
+    `compare_polyhedra_curved_boolean.py --write-bodies` to
+    `rust/fixtures/imported/poly_cavity.brep`: a box `10 x 8 x 6` in the
+    `TURN30` frame at `(1, 2, 0)` less a box `3 x 2.5 x 2` in the `TILT` frame
+    at `(7/4, 51/8, 3)` inside it, its inner corners at least 1.35 inside the
+    outer box in its chart). `generate_polyhedra_curved_boolean_fixtures.py
+    --check`: 34 cases of 12 groups (30 solid, 3 `degenerate`, 1
+    `unsupported`; 18 of class `curved`, 3 `both`, 6 `chain`, 7 `cavity`):
+    `pyramid_rod` (an upright rod through the pyramid's tilted base and its
+    lower face, crossing the base's diagonal), `wedge_ball` (a ball across
+    the wedge's slanted top and its back face), `octa_cone` (an upright
+    frustum through two of the octahedron's faces), `rod_truncated` (a `TILT`
+    rod less the truncated pyramid: the body the tool, its cut two solids),
+    `notched_ball` (a ball in the notched box's notch), `tetra_ball` (the
+    tetrahedron and S9e.4a's imported ball), `chain_pyramid` (the pyramid
+    less a box across its corner, S9b's polyhedral result, then with a ball),
+    `chain_wedge` (the wedge less an upright rod, a curved result, then with
+    a `TILT` box, their common two solids), `hollow_ball` (a ball through the
+    hollow box's wall `x = 10` into its cavity across its wall `x = 7`: the
+    fuse keeps the cavity, the cut opens it), `cavity_slab` (a `TILT` slab
+    through the turned cavity parallel to its faces: the fuse's cavity in
+    two, the cut two solids), declared `degenerate` `tetra_touch` (a ball of
+    radius 3/2 resting on the tetrahedron's base at `(4, 9/2, -1/2)`, its
+    corners' heights `-1/2` exactly: `Degenerate("a tangency between the
+    inputs (S9c)")`) and declared `unsupported` `hollow_inner_fuse` (a ball
+    inside the hollow box's cavity: `OutOfDomain("a cavity among several
+    solids (S9c)")`). The reference (`polyhedra_curved_boolean_reference.py`)
+    is S9e.3a's chained reference with a convex hull of exact points as an
+    input (its faces' planes, their chords' two families, its exact closed
+    form, its binary64 rays), each body the construction OCCT was given (a
+    wedge's corners on its frame's stored axes, a polyhedron's binary64
+    points, a Boolean of boxes its two prisms), with S9e.4b.3c.3a's checks
+    relative to the case's size: the two families within 4.2e-36, each
+    solid's closed form 8.7e-41, each body's closed form 1.0e-41 (the
+    hulls' exact volumes, the hollow box's 936, the cavity's boxes times
+    their axes' determinants), the pair identities 1.3e-41 and the area
+    identity 8.9e-41, Monte Carlo 2.7 standard errors (100,000 points a
+    group), quadrature estimates 1.0e-32, every meeting's sine at least 0.27
+    and events at least 8.0e-6 of their range apart outside the declared
+    groups (the notched ball's spacing below), solid counts by rays at two
+    resolutions; the declared groups' checks kept apart within 4.7e-41.
+    Every file read independently (`stored_records`): its faces planes (the
+    ball's a sphere), every stored vertex within 2.2e-16 of the size on its
+    construction's planes. `test_polyhedra_curved_boolean_reference.py`
+    checks the hull input (a cube's and a skew tetrahedron's faces and exact
+    volumes, their sweep against their closed form, their binary64 rays), each
+    body the construction S9e.4b.2 or S9e.4a gave OCCT (the hulls' points
+    and volumes S9e.4b.2's, the Booleans of boxes its rows), the cavity's
+    inner box inside its outer box and its volume, the slab between the
+    cavity's faces and past the outer box's corners, the partners' places
+    (the hollow box's ball crossing its two walls within those faces and
+    tangent to no plane of either box, the inner ball inside the cavity, the
+    touching ball's foot on the tetrahedron's base inside it), the case list
+    and its protocol rows and the new body's file apart from every earlier
+    set's. The generator's check is a CI group of its own
+    (`polyhedra-curved`, 9.7 minutes on four workers locally under Python
+    3.9, 6.1 under 3.12); Python 3.9 and 3.12 write the same files.
+    Corrections from the evidence, amending the refined decisions' plan (8),
+    each found by the reference or by a draft of the step's code (not
+    committed) run on the cases: (a) the hollow box's ball first lay tangent
+    to the cavity's planes `z = 7` and `y = 3` outside their faces (the
+    draft `Degenerate("a tangency between the inputs (S9c)")`), and the
+    chain's `TILT` box was tangent to the wedge's bore, so both moved; (b) a
+    ball resting on the octahedron's face `x + y + z = 18` (its radius the
+    distance `sqrt(3) / 2` rounded down) misses the plane by 4.6e-17, which
+    S9d.1's rule (a plane crossing a sphere within the resolution of
+    tangency) does not refuse: the draft fused them into two solids; the
+    declared case is a ball tangent to the tetrahedron's base exactly; (c) a
+    rod through the cavity leaves a void ring in the fuse whose containment
+    the validator's rays leave undecided (the kernel's own hollow box
+    alike), so the cavities' partners are a ball through one wall and a slab;
+    (d) a slab reaching far past the turned cavity's box made the reference's
+    ray count join the cut's two solids (its spacing past the gap between
+    them), so its sides lie just past the box's corners; (e) the notched
+    box's corners where its notch's wall meets the box's edges are events
+    of two of the box's planes on that wall at one height, found twice
+    2.6e-16 apart, so `notched_ball`'s spacing is not checked (its sines and
+    gaps are). Every solid case of the draft lay within the reference's
+    volume.
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces
