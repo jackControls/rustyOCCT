@@ -85,6 +85,12 @@
 //! with a square or a U-shaped hole from inside it past its top (a post or
 //! a U island standing in a pocket, pockets two or three deep) and its
 //! import, each cut by the turned box, the same volume (`NESTED`).
+//! S9e.4b.4b.2b.2a: by the input's 17th byte (past those it decodes), the
+//! kernel's own box on the object's frame fused with a stadium through both
+//! its caps (two prism leaves, the stadium's walls split by the box) or a
+//! stadium plate less a square turned about its axis from inside it past its
+//! top (a lone leaf with a pocket), and its import, each cut by the chained
+//! stage's partner, the same volume (`LEAVES`).
 use crate::analytic_intersections::Bytes;
 use crate::split::{profile, spline_profile};
 use rusty_occt::identity::OperationId;
@@ -193,6 +199,14 @@ const MESHES: bool = true;
 /// nest), and the kernel's body are each cut by the chained stage's
 /// partner, by the chained byte's next bit (the U by `MESHES`'s). On.
 const NESTED: bool = true;
+
+/// Whether the kernel's own box on the object's frame fused with a stadium
+/// through both its caps (two prism leaves) or, by the byte's next bit, a
+/// stadium plate less a turned square from inside it past its top (a lone
+/// leaf with a pocket), written, read back and imported (S9e.4b.4b.2b.2a),
+/// and the kernel's body are each cut by the chained stage's partner, by the
+/// input's 17th byte (at or above 128: earlier inputs decode as before). On.
+const LEAVES: bool = true;
 
 /// Whether a spline prism meets a line prism in frames with different
 /// axes (S9f.1's spline walls in the curved engine: creases, generatrices
@@ -871,6 +885,30 @@ pub fn check_boolean(data: &[u8]) {
                 }
             }
         }
+        // S9e.4b.4b.2b.2a: by the input's 17th byte (read there, so earlier
+        // inputs decode as before), the kernel's own two prism leaves (a box
+        // with a stadium through it) or, by its next bit, a lone leaf with a
+        // pocket (a stadium plate less a turned square from its top),
+        // written, read back and imported, each cut by the chained stage's
+        // partner: where both evaluate, the same volume (`LEAVES`).
+        let leaves = data.get(16).copied().filter(|k| *k >= 128);
+        if let (true, true, Some(k)) = (IMPORTED, LEAVES, leaves) {
+            if let Some(body) = leaves_body(fa, s1, h, k >= 192, tolerance) {
+                if let Some(again) = reimported(&body) {
+                    if let (Some(x), Some(y)) = (
+                        run(body.cut(OperationId(26), &box_)),
+                        run(again.cut(OperationId(27), &box_)),
+                    ) {
+                        assert!(
+                            near(volume(&x), volume(&y)),
+                            "imported prism leaves {} for {}",
+                            volume(&y),
+                            volume(&x)
+                        );
+                    }
+                }
+            }
+        }
     }
     // S9e.4a: the object written by the kernel's writer, read back and
     // imported (`IMPORTED`), given the chosen operation with the same tool:
@@ -987,6 +1025,70 @@ fn nested_body(frame: Frame3, s: f64, h: f64, u: bool, tolerance: Tolerance) -> 
     let (ring, _) =
         Solid::extrude_with(OperationId(21), profile, frame, top / 2.0, top + 1.0).ok()?;
     let (out, _) = cylinder.cut(OperationId(22), &ring).ok()?;
+    let [body] = <[Solid; 1]>::try_from(out).ok()?;
+    Some(body)
+}
+
+/// The kernel's own two prism leaves on `frame` (`k = s / 8`, dyadic): the
+/// box of the square of half side `5k` over `[0, h]` fused with a stadium
+/// (half discs of radius `2k` about `(-k, k)` and `(k, k)`) over `[-h / 2,
+/// 3h / 2]`, through both its caps; or, where `pocket`, a stadium (half discs
+/// of radius `3k` about `(-2k, 0)` and `(2k, 0)`) over `[0, h]` less a
+/// square of half side `3k / 2` on the frame turned about its axis (its `x`
+/// along `3 x + 4 y`) over `[h / 2, 2h]`, from inside it past its top
+/// (S9e.4b.4b.2b.2a).
+fn leaves_body(frame: Frame3, s: f64, h: f64, pocket: bool, tolerance: Tolerance) -> Option<Solid> {
+    let k = s / 8.0;
+    let stadium = |c: f64, y: f64, r: f64| {
+        let arc = |x: f64| Segment::Arc {
+            center: Point2::new(x, y),
+            radius: r,
+            ccw: true,
+        };
+        Boundary::path(
+            vec![
+                Point2::new(-c, y - r),
+                Point2::new(c, y - r),
+                Point2::new(c, y + r),
+                Point2::new(-c, y + r),
+            ],
+            vec![Segment::Line, arc(c), Segment::Line, arc(-c)],
+            tolerance,
+        )
+    };
+    let square = |a: f64| {
+        Boundary::polygon(
+            vec![
+                Point2::new(-a, -a),
+                Point2::new(a, -a),
+                Point2::new(a, a),
+                Point2::new(-a, a),
+            ],
+            tolerance,
+        )
+    };
+    let prism = |b: Boundary, f: Frame3, h0: f64, h1: f64, op: u64| {
+        let profile = Profile::new(b, vec![], tolerance).ok()?;
+        Solid::extrude_with(OperationId(op), profile, f, h0, h1)
+            .ok()
+            .map(|(s, _)| s)
+    };
+    let (out, _) = if pocket {
+        let plate = prism(stadium(2.0 * k, 0.0, 3.0 * k).ok()?, frame, 0.0, h, 28)?;
+        let turned = Frame3::new(
+            frame.origin(),
+            frame.normal(),
+            frame.x() * 3.0 + frame.y() * 4.0,
+            tolerance,
+        )
+        .ok()?;
+        let hole = prism(square(1.5 * k).ok()?, turned, h / 2.0, 2.0 * h, 29)?;
+        plate.cut(OperationId(30), &hole).ok()?
+    } else {
+        let block = prism(square(5.0 * k).ok()?, frame, 0.0, h, 28)?;
+        let rod = prism(stadium(k, k, 2.0 * k).ok()?, frame, -h / 2.0, 1.5 * h, 29)?;
+        block.fuse(OperationId(30), &rod).ok()?
+    };
     let [body] = <[Solid; 1]>::try_from(out).ok()?;
     Some(body)
 }

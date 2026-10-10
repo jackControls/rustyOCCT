@@ -10754,6 +10754,357 @@ Decisions for S9, recorded before its code (2026-09-28):
     agents' builds and DRAW runs): `boolean` clean, 843 runs, the slowest
     input 37 s under AddressSanitizer (the startup's replay 3,209 s of its
     3,600 at that load); `split` clean, 869 runs, the slowest 19 s.
+  * **S9e.4b.4b.2b.2 refined, before its code (2026-10-10).** Why it is
+    refused today: S9e.4b.4b.2b.1's chains (the primitives alone, then each
+    prism leaf, then each with the other plane faces: prisms of one cap,
+    flats of one part, pockets with their teeth) take every face of a body of
+    several sphere, cylinder and cone faces as one leaf's, one primitive's
+    or one such part's; any other is refused (`OutOfDomain("an imported body
+    of several primitives with plane faces other than their ends, a prism's,
+    a flat or a pocket (S9e.4b.4b.2b.2)")`, `imported.rs`'s
+    `not_their_faces`), and where no chain takes a leaf's walls their
+    tangent joints are the body's own tangency (`Degenerate("an imported
+    body of several primitives whose faces are tangent along an edge")`,
+    reported where no chain gives another refusal). *Reach, measured before
+    choosing* (at `ae733749`, an instrumented build, not committed: every
+    solid result of the `boolean` fuzz target's three operations, its
+    chained cut and common and its `IMPORTED` stage's first result, and the
+    `split` target's pieces given to Booleans and those Booleans' results
+    (`PIECE_BOOLEANS`), each written by the kernel's writer, read back and
+    imported, release builds, one process an input; the boolean corpus and
+    its regressions, 1,478 files, and the split corpus and its
+    regressions, 3,571): 3,677 results imported, 1,056 refused (785
+    distinct bodies: 560 spline faces or edges, S9f's; 172 of one curved
+    face or of plane faces, S9's rules and S9e.4b.4's trees; 53 of several
+    primitives), 6,726 not written (curves the writer does not hold) and
+    101 not converted; the `IMPORTED` stage's own first results none refused
+    (239 imported, 110 not written, 8 not converted) and no split piece a
+    body of several primitives. The 53 (45 inputs: 49 results of the
+    boolean target's operations and chained cuts, 4 of `PIECE_BOOLEANS`'
+    Booleans; 14 with S9e.4b.4b.2b.2's text, 31 as the body's own
+    tangency, 8 as no chain), read off their files: the kernel's own
+    stadium, U, polygon and holed prisms and boxes fused, cut and in common
+    on one axis or crossing ones, and the chained turned box: (a) two
+    prisms each with both its caps (a stadium through a box, a stadium on a
+    stadium, a box across a U), neither the leaf of the other's chain; (b)
+    a leaf's walls split by the other part, each piece a face of its own
+    and, in the kernel's writer's files, on a cylinder of its own (its
+    stored origin moved along the axis), so a piece below the other part
+    reaches no top cap and no leaf holds the wall; (c) a leaf alone with a
+    pocket (a stadium plate less the turned box from inside it past its
+    top): S9e.4b.4b.2b.1 takes the other plane faces only beside a
+    primitive or a prism of one cap; (d) a pocket's floor whose walls rise
+    to its rim taken as a prism of one cap (`bosses`: its walls along its
+    inward normal) whose prism is empty, its chain refused; and the rest:
+    a component of plane faces of both kinds (a step or a notch where a box
+    cuts a prism's cap at its rim), a pocket meeting a part along edges of
+    both kinds or a prism along concave edges, a flat meeting several
+    parts (a hull across parts), a prism's wall on another prism's (flush,
+    one face of both: a pentagon standing on a stadium's line wall), a
+    stadium crossing another and parting it in two (three prisms). The DRAW
+    restore cases: a run of the 2,410 cases restoring a shape and giving a
+    Boolean (the public dataset, 120 seconds a case, four at once, on the
+    Rust adapter at `ae733749`, a release worker): 59 evaluate, 35 refused
+    on import (31 as bodies none of the kernel's constructions, S9e.4b's
+    general text, 3 spline bodies, 1 a plane piece's own tangency), none a
+    body of several primitives: no DRAW case is expected to move.
+    Decisions. (1) *Sub-steps*, by what each unlocks: **S9e.4b.4b.2b.2a**
+    (this step): (a) to (d), two leaves and what they need; a draft of it
+    (not committed) imports 19 of the 53 (19 inputs), every one its model
+    matched to its stored topology, and moves no other import;
+    **S9e.4b.4b.2b.2b**: the rest of S9e.4b.4b.2b's list (the other 34:
+    a flat meeting several parts in 10, a component of both kinds in 9, a
+    pocket meeting a part along both kinds or a prism along concave edges in
+    9, a pair's or a chain's Booleans refused by S9's rules in 13 (5 the
+    flush walls' tangency, 2 a piece thinner than the resolution, 6 others),
+    5 none of those forms; a body may show several): hulls across several
+    parts, a convex group of planes meeting the parts along concave edges
+    alone (a polyhedral boss), a prism with both caps cut at their rims
+    (its profile read off its walls), mixed pockets and components, three
+    leaves or more, and the kernel's own fused stack of prisms given to a
+    Boolean (refused as an edge of one input on a face of the other). (2)
+    *Finding them*, from the stored faces and edges. (a) *Faces on one
+    surface* (`one_surface`): besides equal stored surfaces and planes
+    within the resolution of one plane facing one way, two cylinder faces
+    whose stored axes lie on one line within the resolution (parallel within
+    `1e-9`, each origin within the resolution of the other's axis) with
+    radii within it and their material on one side of their quadric: a
+    wall another part splits, stored on a surface of its own a piece. (b)
+    *A leaf* (S9e.4b.4b.2a's `leaves`): a wall across a loop of the bottom
+    cap reaches the top cap through any face on its surface, and rises from
+    the bottom along its inward normal (its faces' range along it, on the
+    bottom's stored frame turned to it, past the resolution): a piece below
+    the bottom cap, of a part the cap is cut from, is not its wall. (c)
+    *Two leaves*: the leaves' distinct face sets in the order of their first
+    leaves, at most the first six; for each two of them with no face in
+    common (in that order), the leaves of the two sets whose axes are
+    parallel within `1e-9` where any are (the first such two in order),
+    else the first of each; each such pair in both orders. (d) *A prism of
+    one cap* (`bosses`): its walls rise from its cap along its inward
+    normal past the resolution, else it is no boss (a pocket's floor). (3)
+    *The chain*: S9e.4b.4b.2b.1's with the first leaf leading and the
+    second next (a prism parallel to the first within `1e-9` on its axes
+    bit for bit at its own stored origin, `Frame3::at`, as S9e.4b.4b.2b.1's
+    bosses), fused where its faces meet the first's along concave edges
+    alone, in common where along convex edges alone, else no chain; then
+    the prisms of one cap, the primitives, flats and pockets as
+    S9e.4b.4b.2b.1's; a lone leaf takes the other plane faces (pockets and
+    flats) as a part with them. The order tried: S9e.4b.4b.2b.1's choices
+    unchanged first (the primitives alone, each leaf, each leaf with the
+    other plane faces, the primitives with them), then each pair alone,
+    then each pair with the other plane faces: every body S9e.4b.4b.2b.1
+    imports keeps its chain. Each Boolean is S9e.4b.3c.3b's tree's (an inner
+    one's assembly its given model, the stored vertices splitting rims in
+    every one), the last one's given model matched to the stored topology
+    by S9e.2's match, its ids the stored ones; the first chain whose model
+    matches the body (`Piece`'s choice, read off the moved stored topology
+    again by a rigid motion). Numbers: the engine's own and S9e.4a's
+    prism's, no new field or degree. (4) *Limits*, deterministic: two
+    leaves at most, the first six distinct face sets (30 pairs at most,
+    each in both orders), the existing limits of the primitives, prisms of
+    one cap, flats and pockets. (5) *Its other queries* are S9e.4b.4b.2b.1's:
+    classification by the chain's set functions, bounds every part's
+    widened by the stored edges', mass by the stored topology, a result
+    given to another Boolean S9e.3a's. (6) *Degenerate and refused.* S9's
+    rules unchanged in every Boolean of the chain; a tangency in one of them
+    or between the body's own faces along an edge (but within one leaf, its
+    walls' joints) the body's own `Degenerate("an imported body of several
+    primitives whose faces are tangent along an edge")`, as S9e.4b.4b.2a's;
+    a lone leaf's chain whose model does not match `OutOfDomain(... other
+    than a Boolean chain of them (S9e.4b.4c))` (S9e.4b.4b.1's, not a plane
+    piece's text). Refused as S9e.4b.4b.2b.2b's: the rest of (1),
+    `OutOfDomain("an imported body of several primitives with plane faces
+    other than their ends, one or two prisms', a flat or a pocket
+    (S9e.4b.4b.2b.2b)")`, replacing S9e.4b.4b.2b.1's text (the step's key);
+    of the chains tried the first refusal their Booleans give is reported,
+    else the body's own tangency, else S9e.4b.4b.2b.2b's. Staying open: a
+    pocket's walls along a turned leaf's axis within rounding of it (S9's
+    `Degenerate("a plane within rounding of a cylinder's direction")`, the
+    trees' open item of S9e.4b.4c.2a's evidence (a)): the evidence's
+    pocketed plate stands on a frame turned about the world's `z`. (7)
+    *Fuzzing.* The `IMPORTED` stage reaches none of the 53, so a stage of
+    its own (`LEAVES`): by the input's byte after those it decodes (its
+    17th, at or above 128; so earlier inputs decode as before, 180 of the
+    corpus's 1,442 inputs taking it), the kernel's own box on the object's
+    frame fused with a stadium through both its caps (two leaves, the
+    stadium's walls split by the box) or, by the byte's next bit, a stadium
+    plate less a square turned about its axis from inside it past its top
+    (a lone leaf with a pocket), written, read back and imported, each cut
+    by the chained stage's partner: where both evaluate, one volume. (8)
+    *Evidence first.* Bodies OCCT writes in one Boolean (a `write` block),
+    every section a circle or a line: `through` (a box on `SKEW2` fused with
+    a stadium on its frame through both its caps: two leaves, the stadium's
+    walls split by the box), `tee` (a stadium on the world's axes fused with
+    a box along `x` across its top, past its walls: two leaves on crossing
+    axes, the box's bottom split by the stadium) and `pocketed` (a stadium
+    plate on a frame turned about the world's `z` less a square box turned
+    about the plate's axis from inside it past its top: a lone leaf with a
+    pocket); cases of each against rods along the bodies' axes, the body the
+    tool, two imported (the tee and the pocketed plate, their axes
+    parallel), a chain, and a declared `degenerate` ball resting on the
+    stadium's top cap; the reference S9e.3a's chained reference on the
+    constructions OCCT was given with S9e.4b.3c.3a's checks and each body's
+    closed form (`generate_two_leaves_boolean_fixtures.py --check`, a CI
+    group `two-leaves`, `test_two_leaves_boolean_reference.py`); a native
+    capture keyed on the refusal the step removes
+    (`compare_two_leaves_boolean.py`, `imported.rs`'s present text ending "a
+    flat or a pocket (S9e.4b.4b.2b.2)"); then the kernel and its tests
+    (`tests/two_leaf_booleans.rs`: every fixture within `1e-9` enclosures,
+    the degenerate refused, histories over the stored ids, deterministic,
+    moved rigidly; the kernel's own through on a turned frame, the fuzz
+    stage's bodies and the measurement's bodies rebuilt by the kernel,
+    written, read back and imported), and a DRAW trial of the restore cases
+    the import reaches.
+  * **S9e.4b.4b.2b.2a evidence (2026-10-10).** Three bodies OCCT wrote
+    (`boolean-two-leaves-bodies.txt`, `write` blocks of one prism's rows, a
+    `boolean` row and the other's, written by `compare_two_leaves_boolean.py
+    --write-bodies` to `rust/fixtures/imported/two_*.brep`), each one
+    Boolean of two prisms, every section a circle or a line: `through` (a
+    box `[0, 8] x [0, 6]` over `[0, 2]` on `R724`, the world's `z` its
+    normal and its `x` turned to `(7, 24, 0) / 25`, fused with a stadium of
+    half discs of radius 3/2 about `(2, 3)` and `(6, 3)` on its axes over
+    `[-1, 3]`: two leaves on one axis, the stadium's walls parted by the box
+    into faces below and above it), `cross` (a stadium of half discs of
+    radius 2 about `(0, 0)` and `(4, 0)` over `[0, 3]` on the world's axes
+    fused with a box along `x`, `[-4, 8] x [-1, 1] x [1, 2]`, through both
+    its arc walls: two leaves on crossing axes, the box's walls parted in
+    two by the stadium) and `pocketed` (a stadium plate of half discs of
+    radius 5/2 about `(0, 0)` and `(6, 0)` over `[0, 5/2]` on `R815` less a
+    square box `[-3/2, 3/2]^2` on `R125` about the plate's point `(3, 0)`
+    over `[1, 4]`: a lone leaf with a pocket turned about its axis).
+    `generate_two_leaves_boolean_fixtures.py --check`: 21 cases of 7 groups
+    (18 solid, 3 `degenerate`; 15 of class `pieces`, 3 `both`, 3 `chain`):
+    `through_rod` (an upright rod on the through's frame across the
+    stadium's arc end and the box's wall), `cross_rod` (an upright rod
+    through the stadium and the arm's wall), `pocketed_rod` (an upright rod
+    through the pocket's wall and floor), `rod_cross` (an upright rod less
+    the cross across the stadium's line wall: the body the tool),
+    `cross_pocketed` (both imported, the plate across the cross's stadium
+    and arm, their axes parallel; the cut two solids, the plate parting the
+    arm), `chain_through` (the through less an upright rod through the
+    stadium, then with a box on its frame across the box's wall and top and
+    the stadium), and declared `degenerate` `through_touch` (a ball of
+    radius 1 resting on the stadium's top cap at a point, exactly:
+    `Degenerate("a tangency between the inputs (S9c)")`). The reference is
+    S9e.3a's chained reference on the constructions OCCT was given (each
+    body its Boolean of two prisms), with S9e.4b.3c.3a's checks relative to
+    the case's size: the two families within 6.7e-31, each solid's closed
+    form 9.5e-37, each body's closed form 2.1e-32 (the through `120 + 9 pi /
+    2`, the cross `64 + 32 pi / 3 - 2 sqrt 3`, the pocketed plate `123 / 2 +
+    125 pi / 8`, each section times its stored axes' determinant), the pair
+    identities 2.9e-42 and the area identity 4.6e-41, Monte Carlo 3.1
+    standard errors (100,000 points a group), quadrature estimates 6.4e-33,
+    every meeting's sine at least 0.38 and events at least 1.3e-3 of their
+    range apart outside the declared group, solid counts by rays at two
+    resolutions; the declared group's checks kept apart within 3.8e-31.
+    Every file read independently (`stored_records`): its curved faces
+    cylinders, every stored vertex on the constructions' surfaces (within 0
+    of the size at the reference's precision).
+    `test_two_leaves_boolean_reference.py` checks each body's closed form
+    against quadratures of its sections (the cross by heights: the stadium's
+    section, its union with the arm's band, the stadium's again), the
+    chained reference on the cross against its closed form, every part's
+    place (the stadium inside the box's footprint by 1/2 and through both
+    its caps, the arm through the stadium's arc walls between its caps, the
+    pocket's corners inside the plate's outline by 1/4 from inside it past
+    its top, both normals the world's `z` exactly), the partners' places,
+    the declared ball (its centre on the stadium's centre line 1 above its
+    top cap), the case list and its protocol rows and the files apart from
+    every earlier set's. The generator's check is a CI group of its own
+    (`two-leaves`, 6.3 minutes on four workers locally under Python 3.9, 4.3
+    under 3.12); Python 3.9 and 3.12 write the same files. Corrections from
+    the evidence and a draft of the step's code (not committed) run on the
+    cases, amending the refined decisions' plan (8): (a) the through on
+    `SKEW2` (a frame turned off the world's `z`): the draft builds its
+    leaves on the box's stored cap frame (the converter's frame normalized
+    again), so the through's rods, on the construction's frame, lay within
+    rounding of parallel to its stadium, `Degenerate("two cylinders' axes
+    within rounding of parallel")` in all six of its pieces' cases, so the
+    through stands on a frame turned about the world's `z` (the kernel's
+    tests take the kernel's own through on `SKEW2`, imported and given to a
+    box turned off its axis); (b) the declared ball, the through's frame's
+    normal exact, rests on the top cap exactly: S9c's tangency (on `SKEW2`
+    it was S9d.1's rounding); (c) a stage's or a test's partner along a
+    tilted leaf's axis lies within rounding of the import's leaves likewise
+    (the kernel's own body on that frame exactly), so the kernel's tests
+    turn their probes off every axis; (d) the planned `tee` (the box across
+    the stadium's top, past its walls, its walls whole) imported before the
+    code (a first capture's kernel probe evaluated its six cases within the
+    reference: S9e.4b.4b.2b.1's chain of the stadium's leaf and the box as a
+    prism of one cap read off its far cap, bounded by a flat at the near
+    one), so the box passes through the stadium's arc walls instead, its
+    walls parted in two (`cross`). The draft found every solid case within
+    the reference's volume and the declared one refused so, and its `LEAVES`
+    stage (measured below with the kernel) builds and imports both bodies.
+    The capture `occt-boolean-two-leaves-preimplementation`
+    (`compare_two_leaves_boolean.py`, keyed on the refusal the step removes:
+    `imported.rs`'s `OutOfDomain("an imported body of several primitives
+    with plane faces other than their ends, a prism's, a flat or a pocket
+    (S9e.4b.4b.2b.2)")`, whose text the step changes; the kernel's probe
+    `unsupported` on all 21 before the code, every body refused on import:
+    the through and the cross as `OutOfDomain("an imported body of several
+    primitives other than a Boolean chain of them (S9e.4b.4c)")` (OCCT keeps
+    each stadium's parted walls on one stored surface, the chain of the
+    primitives alone not matching), the pocketed plate as the body's own
+    tangency, `Degenerate("an imported body of several primitives whose
+    faces are tangent along an edge")`, which the comparison counts
+    `unsupported` before the code): every result valid, 20 matching (within
+    2e-8 of the reference: no meeting OCCT approximates), 1 reviewed, in
+    `occt-boolean-two-leaves-divergences.json`: the touching ball's fuse,
+    which OCCT keeps as two solids touching at a point where the reference's
+    rays count one, their totals the reference's within 4.3e-16.
+    S9e.4b.4b.2b.2a's kernel next.
+  * **S9e.4b.4b.2b.2a implemented** (`solid/imported.rs`'s `leaf_pairs`,
+    `rises`, `one_surface`'s coaxial cylinders, `leaves` and `bosses` with
+    the rising walls, `chain_piece` over the leaves given and a lone leaf
+    with the other plane faces, `Piece`'s `chain`; `curved/pieces.rs` naming
+    a chain's refusals by it), as the refined decisions describe: a leaf's
+    wall another part parts reaches the top cap through any face on its
+    surface (cylinders whose stored axes lie on one line within the
+    resolution with radii within it, their material on one side, one
+    surface), every wall of a leaf and of a prism of one cap rising from its
+    cap along its inward normal; after S9e.4b.4b.2b.1's chains, each pair of
+    leaves (of the first six distinct face sets, each two with no face in
+    common, the parallel leaves of the two where any are, both orders),
+    alone and then with the other plane faces, the second fused with the
+    first or in common with it by how their edges bend, on its axes bit for
+    bit where parallel; a lone leaf with the other plane faces; the first
+    whose model matches the stored topology the body; the refusal's text now
+    `OutOfDomain("an imported body of several primitives with plane faces
+    other than their ends, one or two prisms', a flat or a pocket
+    (S9e.4b.4b.2b.2b)")` (the notch so). All 21 fixtures as declared (18
+    within the kernel's enclosures, each at most `1e-9` wide; the touching
+    ball `Degenerate("a tangency between the inputs (S9c)")`), every history
+    complete over the imported bodies' stored ids, results deterministic and
+    moved rigidly, both inputs translated and turned keeping the reference's
+    volumes, every body its two leaves or its lone leaf with its pocket (its
+    closed-form volume, points in and off it classified, its stored vertices
+    on its boundary), S9e.4b.4b.2a's notch refused with the new text, and
+    the kernel's own through on `SKEW2` and the `boolean` fuzz target's
+    `LEAVES` bodies (two leaves on the world's axes and on its tilted frame,
+    a lone leaf with a pocket on the world's axes) written by its writer,
+    read back and imported, their Booleans with a box turned off every axis
+    the kernel's own results' (`tests/two_leaf_booleans.rs`, 6.1 s in
+    release, 5.7 s at `opt-level` 2 with debug assertions, both on a host at
+    load 6 to 18, 120 s in release with debug assertions and overflow checks
+    under the emulated correctly rounded `hypot`, beside the release suite,
+    where the plane parts', prism leaves', primitive chains', deep trees',
+    piece trees' and piece forms' test files pass too).
+    `compare_two_leaves_boolean.py` 18 matches and 3 reviewed (the captured
+    one and, with the kernel, entity counts: OCCT's unified results keeping
+    a rod's seam edge), the kernel within the reference on all 18 solid
+    cases, the 3 degenerate refused; every other comparison of
+    `HANDOFF.md`'s table unchanged with 0 failures; the release suite (691
+    tests) and the tools' unit tests (384) passing, the ledger unchanged;
+    S9e.4b.4b.2a's and S9e.4b.4b.2b.1's notch tests with the new text.
+    Amendments, from the implementation: (a) a pocket's floor and a prism of
+    one cap are told apart by its walls rising from it (decision (2)(d)),
+    and a leaf's walls the same way (decision (2)(b)): without the second, a
+    box's bottom cap took the stadium's wall pieces below it as a hole's
+    walls (they reach its top through the pieces above), a leaf no pair can
+    use; (b) a lone leaf's chain is named for a body of several primitives
+    (`Piece`'s `chain`), its mismatch `OutOfDomain(... other than a Boolean
+    chain of them (S9e.4b.4c))` rather than a plane piece's text; (c) the
+    kernel refuses its own pocketed plate on the fuzz target's tilted frame
+    (the turned square's walls within rounding of its axis), so the `LEAVES`
+    stage builds that variant on the world's axes alone. The `boolean` fuzz
+    target's `LEAVES` stage (by the input's 17th byte, at or above 128):
+    replayed (release, an instrumented build, not committed), 188 of the
+    corpus's 1,478 inputs and regressions reach it, 127 bodies built (70
+    with two leaves, 33 on the world's axes and 37 on the tilted frame; 57
+    lone leaves with a pocket; the 61 tilted pocketed plates not built) and
+    every one imported, 96 evaluating both ways with one volume, 10 refused
+    alike, 21 where the kernel's own body's cut by the turned box is refused
+    by S9's rounding rules (13 a plane within rounding of a cylinder's
+    direction, 6 two cylinders' axes within rounding of parallel, 1 S9d.1's
+    near miss, 1 a thin result) and its import's evaluates. The
+    measurement's probes again (every result of both targets written, read
+    back and imported): 19 of the 53 bodies of several primitives import (17
+    results of the boolean target's operations and chained cuts, 2 of
+    `PIECE_BOOLEANS`' Booleans), every one of the 2,498 bodies imported
+    before still imported, 9 refused with the new text,
+    the rest as before or by S9's rules in a pair's Booleans. Replays with
+    debug assertions, one process an input, natively and under the emulated
+    correctly rounded `hypot` (with overflow checks): the boolean corpus and
+    its regressions (1,478 inputs) and the split corpus and its regressions
+    (3,571), no failure, the slowest 12.3 s and 2.1 s natively on a host at
+    load 9 to 18 (16.5 s and 84 s emulated, the emulation's `hypot` exact by
+    big rationals). A trial of the DRAW restore cases giving a Boolean (the
+    2,410 of the reach's selection, the public dataset, 120 seconds a case,
+    four at once, on the Rust adapter, and the 172 the import reaches
+    natively; not the survey: nothing registered): no case the import
+    reaches moves (59 evaluating on both backends, 31 bodies none of the
+    kernel's constructions, 3 spline bodies, 2 arguments of several solids,
+    the rest refused by S9's rules as before), none refused as a body of
+    several primitives; four cases that timed out at their first restores in
+    the reach's run at its load end before any Boolean (unsupported or
+    rejected by the reader's validator); native DRAW 148 evaluating, 24
+    unsupported, as before. Open: S9e.4b.4b.2b.2b (the other 34 of the 53:
+    hulls across several parts, polyhedral bosses, a prism cut at both caps'
+    rims, mixed pockets and components, three leaves, flush walls, the
+    kernel's own fused stack given to a Boolean); a pocket's walls along a
+    turned leaf's axis within rounding of it. Pending: its capture's Linux
+    record, its DRAW survey and its campaigns.
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces

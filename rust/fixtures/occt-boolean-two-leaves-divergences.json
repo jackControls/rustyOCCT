@@ -1,0 +1,41 @@
+{
+  "note": "Reviewed differences of the S9e.4b.4b.2b.2a capture (occt-boolean-two-leaves-preimplementation): each fingerprinted by its native row; the touching ball's fuse OCCT keeps as two solids, and, with the kernel, entity counts (OCCT's rod seams).",
+  "reviews": [
+    {
+      "case": "through_touch_fuse",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "77deb7cf7b0c4bbc3b1e69f8b550d3b88c77e9e65a5890cc6a5d58fb7868fa17",
+      "differences": [
+        "solids"
+      ],
+      "reason": "BRepAlgoAPI's result is valid; the through (a box with a stadium through it) fused with a ball of radius 1 resting on the stadium's top cap at a point (the declared degenerate group, the kernel refusing it as a tangency between the inputs): OCCT keeps the ball (volume 4 pi / 3) and the through as two solids touching at that point, where the reference's rays count their union one; the two solids' volumes and areas sum to the reference's totals within 4.3e-16 relative (the through alone its closed form).",
+      "independent_evidence": "chained_curved_boolean_reference.py's rows on the constructions OCCT was given (generate_two_leaves_boolean_fixtures.py --check, identical under Python 3.9 and 3.12) agree two ways (each face swept by two independent families of curves) within 6.7e-31, every solid's measures from its faces within 9.5e-37 of its closed form, each body's within 2.1e-32 of its own (the through 120 + 9 pi / 2, the cross 64 + 32 pi / 3 - 2 sqrt 3, the pocketed plate 123 / 2 + 125 pi / 8, each section times its stored axes' determinant), the pair identities within 2.9e-42, and Monte Carlo within 3.1 standard errors; its solid counts are the declared ones by rays at two resolutions; every stored vertex of the imported files lies on its construction's surfaces.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "rod_cross_fuse",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "d9bb7b3f519d0275e7d23b2b396c4cbba5e1c43ebf2cd6b10af80b5a919aa910",
+      "differences": [
+        "rust_entity_counts"
+      ],
+      "reason": "BRepAlgoAPI's result is valid with the reference's solid count and its measures within 2e-8 of the reference. With the kernel, entity counts: the faces and vertices agree; OCCT's unified result keeps the rod's seam edge on its cylinder (an upright rod across the stadium's line wall fused with the cross), which the kernel's faces do not hold ((20, 46, 30) unified, the kernel's (20, 45, 30)); the kernel's enclosures are within the reference.",
+      "independent_evidence": "chained_curved_boolean_reference.py's rows on the constructions OCCT was given (generate_two_leaves_boolean_fixtures.py --check, identical under Python 3.9 and 3.12) agree two ways (each face swept by two independent families of curves) within 6.7e-31, every solid's measures from its faces within 9.5e-37 of its closed form, each body's within 2.1e-32 of its own (the through 120 + 9 pi / 2, the cross 64 + 32 pi / 3 - 2 sqrt 3, the pocketed plate 123 / 2 + 125 pi / 8, each section times its stored axes' determinant), the pair identities within 2.9e-42, and Monte Carlo within 3.1 standard errors; its solid counts are the declared ones by rays at two resolutions; every stored vertex of the imported files lies on its construction's surfaces.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "rod_cross_cut",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "b12cf0f5200065c65de7c9b23ab6412616607e4baf65b77f170c4dc2db8b406c",
+      "differences": [
+        "rust_entity_counts"
+      ],
+      "reason": "BRepAlgoAPI's result is valid with the reference's solid count and its measures within 2e-8 of the reference. With the kernel, entity counts: the faces and vertices agree; OCCT's unified result keeps the rod's seam edge on its cylinder (an upright rod across the stadium's line wall less the cross), which the kernel's faces do not hold ((6, 10, 6) unified, the kernel's (6, 9, 6)); the kernel's enclosures are within the reference.",
+      "independent_evidence": "chained_curved_boolean_reference.py's rows on the constructions OCCT was given (generate_two_leaves_boolean_fixtures.py --check, identical under Python 3.9 and 3.12) agree two ways (each face swept by two independent families of curves) within 6.7e-31, every solid's measures from its faces within 9.5e-37 of its closed form, each body's within 2.1e-32 of its own (the through 120 + 9 pi / 2, the cross 64 + 32 pi / 3 - 2 sqrt 3, the pocketed plate 123 / 2 + 125 pi / 8, each section times its stored axes' determinant), the pair identities within 2.9e-42, and Monte Carlo within 3.1 standard errors; its solid counts are the declared ones by rays at two resolutions; every stored vertex of the imported files lies on its construction's surfaces.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    }
+  ]
+}

@@ -707,8 +707,9 @@ pub(super) fn model(s: &Solid, op: Operand, first: Option<&R>) -> Result<Prism> 
         // with its own planes (S9e.4b.3c.3: a notch whose wall is tangent to
         // the faces it meets), not between a Boolean's inputs.
         // S9e.4b.4b.1: a body of several primitives' own tangency and
-        // mismatch are named for it.
-        let several = !piece.others.is_empty();
+        // mismatch are named for it (S9e.4b.4b.2b.2a: a lone leaf's with its
+        // pockets too).
+        let several = piece.chain;
         let (arr, out) = arranged(piece, s.resolution(), first, &stored).map_err(|e| match e {
             Error::Degenerate(m) if m.contains("tangen") && several => Error::Degenerate(
                 "an imported body of several primitives whose faces are tangent along an edge",

@@ -371,7 +371,7 @@ fn circle(cx: f64, cy: f64, r: f64) -> Boundary {
 /// matched on import), its volume its closed form, its stored vertices on
 /// its boundary, points in its material inside and points its parts remove
 /// outside; S9e.4b.4b.2a's notch (both caps cut at its rim) is refused as
-/// S9e.4b.4b.2b.2's.
+/// S9e.4b.4b.2b.2b's.
 #[test]
 fn imported_bodies_are_their_chains() {
     use std::f64::consts::PI;
@@ -449,8 +449,8 @@ fn imported_bodies_are_their_chains() {
     match body("leaf_notch", 91) {
         Err(Error::OutOfDomain(m)) => assert_eq!(
             m,
-            "an imported body of several primitives with plane faces other than their ends, a \
-             prism's, a flat or a pocket (S9e.4b.4b.2b.2)"
+            "an imported body of several primitives with plane faces other than their ends, one or \
+             two prisms', a flat or a pocket (S9e.4b.4b.2b.2b)"
         ),
         other => panic!("leaf_notch: {:?}", other.map(|_| ())),
     }
