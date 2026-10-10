@@ -12,7 +12,8 @@
 //! sharing a face would meet along slivers where their stored points agree).
 //! A face whose stored vertices are coplanar exactly is that plane, joined
 //! with any face on it; a face they fold is `Degenerate`; against a body
-//! with curved faces or edges it is S9e.4b.4's.
+//! with curved faces or edges (S9e.4b.4c.1) its triangles are a leaf of the
+//! curved engine (`curved::meshes`). Its shells may hold cavities.
 use super::{approx3, parity, stored_model, vq, Inside, Polyhedron};
 use crate::profile::boolean::Operand;
 use crate::solid::{Construction, Solid};
@@ -25,7 +26,7 @@ pub(crate) fn is_imported(s: &Solid) -> bool {
 }
 
 /// Whether every face is a plane and every edge a line.
-pub(super) fn planar(t: &Topology) -> bool {
+pub(crate) fn planar(t: &Topology) -> bool {
     t.faces()
         .iter()
         .all(|f| matches!(f.surface, Surface::Plane(_)))
@@ -34,21 +35,59 @@ pub(super) fn planar(t: &Topology) -> bool {
             .all(|e| matches!(e.curve, Curve3::LineSegment { .. }))
 }
 
-/// Whether a Boolean has an imported polyhedron among its inputs (then
-/// decided on the stored models, never the curved engine), or
-/// `OutOfDomain` where its partner has curved faces or edges (S9e.4b.4).
+/// Whether a Boolean has an imported polyhedron among its inputs against a
+/// body of plane faces and line edges (then decided on the stored models);
+/// against curved faces or edges (S9e.4b.4c.1) the curved engine's, the
+/// polyhedron its stored triangles (`curved::meshes`).
 pub(super) fn involved(poly: &Polyhedron) -> Result<bool> {
     let (a, b) = (is_imported(&poly.a), is_imported(&poly.b));
     if (a && !planar(&poly.b.topology)) || (b && !planar(&poly.a.topology)) {
-        return Err(Error::OutOfDomain(
-            "an imported polyhedron against curved faces (S9e.4b.4)",
-        ));
+        return Ok(false);
     }
     Ok(a || b)
 }
 
 pub(super) fn folded() -> Error {
     Error::Degenerate("an imported face folded by its stored vertices")
+}
+
+/// S9e.4b.4c.1: an imported polyhedron's stored model as the curved
+/// engine's leaf: each stored face's triangles (the face's index, its
+/// corners counter-clockwise about its outward normal), every corner a
+/// stored vertex exactly; `ComputationLimit` where a face's triangles are
+/// not of its own vertices (its trapezoids zipped).
+pub(crate) fn triangles(
+    solid: &Solid,
+) -> Result<Vec<(usize, [[num_rational::BigRational; 3]; 3])>> {
+    use crate::topology::{FaceId, Slot};
+    use std::collections::{BTreeMap, BTreeSet};
+    let model = stored_model(solid, Operand::A)?;
+    let t = &solid.topology;
+    let index: BTreeMap<crate::identity::EntityId, usize> = (0..t.faces().len())
+        .filter_map(|i| t.id_of(Slot::Face(FaceId(i))).map(|id| (id, i)))
+        .collect();
+    let stored: BTreeSet<super::V> = t
+        .vertices()
+        .iter()
+        .map(|v| vq(v.position - Point3::ORIGIN))
+        .collect();
+    let mut out = Vec::new();
+    for face in &model.faces {
+        let fi = *index
+            .get(&face.id)
+            .ok_or(Error::InvalidTopology("an imported polyhedron's face"))?;
+        for piece in &face.pieces {
+            let [a, b, c] = <[super::V; 3]>::try_from(piece.clone())
+                .map_err(|_| Error::InvalidTopology("an imported polyhedron's triangle"))?;
+            if ![&a, &b, &c].iter().all(|p| stored.contains(*p)) {
+                return Err(Error::ComputationLimit(
+                    "an imported polyhedron's face not cut into triangles of its own vertices",
+                ));
+            }
+            out.push((fi, [a, b, c]));
+        }
+    }
+    Ok(out)
 }
 
 /// The stored model of an imported polyhedron builds (its faces' triangles

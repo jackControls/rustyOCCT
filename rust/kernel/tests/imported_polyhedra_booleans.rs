@@ -165,8 +165,9 @@ fn every_case_matches_the_reference() {
     );
 }
 
-/// The declared refusals name their reasons: the cavity as S9e.4b.4's, the
-/// fuse of the slab on the pyramid's base's plane as S9's `Degenerate`.
+/// The declared refusal names its reason: the fuse of the slab on the
+/// pyramid's base's plane as S9's `Degenerate` (the cavity's cases solid since
+/// S9e.4b.4c.1).
 #[test]
 fn refusals_name_their_reasons() {
     for (name, run) in runs() {
@@ -174,12 +175,6 @@ fn refusals_name_their_reasons() {
             Err(Error::Degenerate(m) | Error::OutOfDomain(m)) => *m,
             _ => "",
         };
-        if name.starts_with("hollow_slab") {
-            assert!(
-                matches!(run, Err(Error::OutOfDomain(_))) && reason.contains("cavity"),
-                "{name}: {reason}"
-            );
-        }
         if name == "pyramid_flush_fuse" {
             assert!(matches!(run, Err(Error::Degenerate(_))), "{name}: {reason}");
         }
@@ -330,7 +325,7 @@ fn body(name: &str, op: u64) -> Result<Solid, Error> {
 }
 
 /// Every body imports (a polyhedron on its stored vertices; `ridge` as
-/// S9e.4a's prism; `hollow`, with a cavity, refused as S9e.4b.4's), its mass
+/// S9e.4a's prism; `hollow` with its cavity since S9e.4b.4c.1), its mass
 /// its construction's (the reference's exact volumes), its stored vertices
 /// on its boundary and points off it classified.
 #[test]
@@ -350,6 +345,7 @@ fn imported_bodies_are_their_constructions() {
         ("ridge", 470.25, [7.0, 6.2081, 3.3134]),
         ("vane_up", 49.0 / 6.0, [5.0, 5.0, 5.2092]),
         ("vane_down", 49.0, [5.0, 5.0, 3.7449]),
+        ("hollow", 936.0, [1.5, 5.0, 5.0]),
     ];
     for (name, volume, inside) in bodies {
         let s = body(name, 91).unwrap_or_else(|e| panic!("{name}: {e}"));
@@ -383,16 +379,20 @@ fn imported_bodies_are_their_constructions() {
             );
         }
     }
-    match body("hollow", 91) {
-        Err(Error::OutOfDomain(m)) => assert!(m.contains("S9e.4b.4"), "{m}"),
-        other => panic!("hollow: {:?}", other.map(|_| ())),
-    }
+    // The hollow box's cavity is outside it.
+    let hollow = body("hollow", 91).unwrap();
+    assert_eq!(
+        hollow.classify(Point3::new(5.0, 5.0, 5.0)).unwrap(),
+        Location::Outside
+    );
 }
 
 /// An imported polyhedron against a body with curved faces, and a result of
-/// one given to a Boolean with curved faces, are S9e.4b.4's.
+/// one given to a Boolean with curved faces, evaluate since S9e.4b.4c.1 (the
+/// polyhedron's stored triangles a leaf of the curved engine): the pair
+/// identities hold.
 #[test]
-fn curved_partners_are_refused() {
+fn curved_partners_evaluate() {
     use rusty_occt::{Boundary, Frame3, Point2, Profile, Tolerance, Vec3};
     let tolerance = Tolerance::default();
     let rod = |op: u64| {
@@ -403,16 +403,18 @@ fn curved_partners_are_refused() {
             .unwrap()
             .0
     };
+    let volume = |out: &[Solid]| out.iter().map(|s| s.mass_properties().volume).sum::<f64>();
     let pyramid = body("pyramid", 91).unwrap();
-    for out in [
-        pyramid.cut(OperationId(93), &rod(92)),
-        rod(92).fuse(OperationId(93), &pyramid),
-    ] {
-        match out {
-            Err(Error::OutOfDomain(m)) => assert!(m.contains("S9e.4b.4"), "{m}"),
-            other => panic!("{:?}", other.map(|_| ())),
-        }
-    }
+    let (r, p) = (rod(92), pyramid.mass_properties().volume);
+    let vr = r.mass_properties().volume;
+    let fuse = volume(&r.fuse(OperationId(93), &pyramid).unwrap().0);
+    let cut = volume(&pyramid.cut(OperationId(93), &r).unwrap().0);
+    let common = volume(&pyramid.common(OperationId(93), &r).unwrap().0);
+    assert!(
+        (fuse + common - p - vr).abs() <= 1e-9 * p,
+        "{fuse} {common}"
+    );
+    assert!((cut + common - p).abs() <= 1e-9 * p, "{cut} {common}");
     let frame = Frame3::new(Point3::new(0.0, 0.0, 3.0), Vec3::Z, Vec3::X, tolerance).unwrap();
     let square = Boundary::polygon(
         vec![
@@ -435,10 +437,10 @@ fn curved_partners_are_refused() {
     .0;
     let (cut, _) = pyramid.cut(OperationId(95), &box_).unwrap();
     let [first] = <[Solid; 1]>::try_from(cut).unwrap();
-    match first.cut(OperationId(96), &rod(97)) {
-        Err(Error::OutOfDomain(m)) => assert!(m.contains("S9e.4b.4"), "{m}"),
-        other => panic!("{:?}", other.map(|_| ())),
-    }
+    let v = first.mass_properties().volume;
+    let cut = volume(&first.cut(OperationId(96), &rod(97)).unwrap().0);
+    let common = volume(&first.common(OperationId(96), &rod(97)).unwrap().0);
+    assert!((cut + common - v).abs() <= 1e-9 * v, "{cut} {common}");
 }
 
 /// The kernel stores the frames the reference swept, bit for bit (the

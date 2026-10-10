@@ -77,7 +77,10 @@
 //! S9e.4b.4a: a lens prism in the object's frame given the chosen operation
 //! with the tool, and again once written, read back and imported, its arcs
 //! of two circles taken through their ends where their joints round off
-//! both (`JOINTS`).
+//! both (`JOINTS`). S9e.4b.4c.1: the chained cut's first solid of plane
+//! faces written, read back and imported (a polyhedron on its stored
+//! vertices in the curved engine) and the kernel's own cut each less a ball
+//! about the turned box's axis, the same volume (`MESHES`).
 use crate::analytic_intersections::Bytes;
 use crate::split::{profile, spline_profile};
 use rusty_occt::identity::OperationId;
@@ -171,6 +174,13 @@ const IMPORTED: bool = true;
 /// joints round off both circles once read back, each arc taken through its
 /// ends). On.
 const JOINTS: bool = true;
+
+/// Whether the chained cut's first solid of plane faces (no prism: the
+/// turned box's hole in it), written, read back and imported (S9e.4b.4c.1:
+/// a polyhedron on its stored vertices in the curved engine), and the
+/// kernel's own cut are each cut by a ball about the box's axis, by the
+/// chained byte's next bit. On.
+const MESHES: bool = true;
 
 /// Whether a spline prism meets a line prism in frames with different
 /// axes (S9f.1's spline walls in the curved engine: creases, generatrices
@@ -785,6 +795,41 @@ pub fn check_boolean(data: &[u8]) {
                             "imported result cut {} for {}",
                             volume(&out),
                             volume(c)
+                        );
+                    }
+                }
+            }
+            // S9e.4b.4c.1: by the chained byte's next bit, the chained cut's
+            // first solid of plane faces (its turned box's hole in it: no
+            // prism) written, read back and imported (a polyhedron on its
+            // stored vertices, a cavity's too) and the kernel's own cut each
+            // less a ball about the box's axis crossing the hole's walls:
+            // where both evaluate, the same volume (`MESHES`).
+            let cut = c.as_ref().and_then(|c| c.first()).filter(|s| {
+                s.topology().faces().len() <= 16
+                    && s.topology()
+                        .faces()
+                        .iter()
+                        .all(|f| matches!(f.surface, S::Plane(_)))
+            });
+            if let (true, Some(cut)) = (IMPORTED && MESHES && (chained / 48) % 2 == 1, cut) {
+                let centre = origin + fa.normal() * (0.5 * h);
+                let ball = Frame3::new(centre, fa.normal(), fa.x() * 3.0 + fa.y() * 4.0, tolerance)
+                    .ok()
+                    .and_then(|f| {
+                        let half = std::f64::consts::FRAC_PI_2;
+                        Solid::sphere_with(OperationId(14), f, 1.25, -half, half, tolerance).ok()
+                    });
+                if let (Some((ball, _)), Some(again)) = (ball, reimported(cut)) {
+                    if let (Some(x), Some(y)) = (
+                        run(cut.cut(OperationId(15), &ball)),
+                        run(again.cut(OperationId(16), &ball)),
+                    ) {
+                        assert!(
+                            near(volume(&x), volume(&y)),
+                            "imported polyhedron less a ball {} for {}",
+                            volume(&y),
+                            volume(&x)
                         );
                     }
                 }

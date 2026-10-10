@@ -90,12 +90,9 @@ pyramid_flush_cut	expect solid S9e.4b.2 polyhedron
 pyramid_flush_cut	result 1 127.9999999999999971578291 179.3776408148476569287441 5.0 4.59999999999999997779554 2.300000000000000377475828
 pyramid_flush_common	expect empty S9e.4b.2 polyhedron
 pyramid_flush_common	empty
-hollow_slab_fuse	expect unsupported S9e.4b.2 polyhedron
-hollow_slab_fuse	reason S9e.4b.4: an imported polyhedron with a cavity
+hollow_slab_fuse	expect solid S9e.4b.2 polyhedron
 hollow_slab_fuse	result 1 1666.312499999999967911085 1754.06249999999992843433 5.0 2.922789842841603839337007 4.115576122426015581139179
-hollow_slab_cut	expect unsupported S9e.4b.2 polyhedron
-hollow_slab_cut	reason S9e.4b.4: an imported polyhedron with a cavity
+hollow_slab_cut	expect solid S9e.4b.2 polyhedron
 hollow_slab_cut	result 2 856.3124999999999858966981 742.5625000000000100856823 5.0 5.2618422012991752421437 5.312705276987081299396972
-hollow_slab_common	expect unsupported S9e.4b.2 polyhedron
-hollow_slab_common	reason S9e.4b.4: an imported polyhedron with a cavity
+hollow_slab_common	expect solid S9e.4b.2 polyhedron
 hollow_slab_common	result 1 79.68750000000001410330186 165.9375000000000228046748 5.0 2.18627450980392211874488 1.639705882352941133948854

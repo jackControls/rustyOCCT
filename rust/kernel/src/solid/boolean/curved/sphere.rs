@@ -582,6 +582,7 @@ pub(super) fn model(solid: &Solid, op: Operand, seam: &R) -> Result<Prism> {
         ring: None,
         given: None,
         hull: None,
+        mesh: None,
     };
     let reach = rational_f64(&r) * (1.0 + 1e-9) + 1e-9;
     let c = out.f.o.clone().map(|x| rational_f64(&x));

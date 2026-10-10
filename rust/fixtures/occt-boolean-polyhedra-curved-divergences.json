@@ -1,5 +1,5 @@
 {
-  "note": "Reviewed differences of the S9e.4b.4c.1 capture (occt-boolean-polyhedra-curved-preimplementation): each fingerprinted by its native row; the measures BRepGProp's default integration leaves off the reference (the wedge's common within 3.2e-10 adaptively, the tetrahedron's with the imported ball within 4.0e-08, no closer than its edges' tolerance).",
+  "note": "Reviewed differences of the S9e.4b.4c.1 capture (occt-boolean-polyhedra-curved-preimplementation): each fingerprinted by its native row; the measures BRepGProp's default integration leaves off the reference (the wedge's common within 3.2e-10 adaptively, the tetrahedron's with the imported ball within 4.0e-08, no closer than its edges' tolerance); and, with the kernel, entity counts (its meetings across a stored face's triangles split at their diagonals, OCCT's seams).",
   "reviews": [
     {
       "case": "tetra_ball_common",
@@ -19,9 +19,178 @@
       "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
       "native_sha256": "79036615ca92f6e0c01a7e53792fd0d79f70b66bc57374f5bdc70ef7da7506de",
       "differences": [
-        "measure"
+        "measure",
+        "rust_entity_counts"
       ],
-      "reason": "BRepAlgoAPI's result is valid with the reference's solid count; the imported wedge (slanted, in the R125 frame) in common with a ball across its slanted top and its back face: its volume 2.1e-08 and area 1.9e-08 relative and its centre 3.2e-09 of the case's size from the reference with BRepGProp's default integration, 3.2e-10, 1.7e-10 and 1.4e-11 with an adaptive accuracy of 1e-10 and of 1e-12 alike (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe); its edges' tolerance at most 1.2e-07 (none of its 3 edges a B-spline).",
+      "reason": "BRepAlgoAPI's result is valid with the reference's solid count; the imported wedge (slanted, in the R125 frame) in common with a ball across its slanted top and its back face: its volume 2.1e-08 and area 1.9e-08 relative and its centre 3.2e-09 of the case's size from the reference with BRepGProp's default integration, 3.2e-10, 1.7e-10 and 1.4e-11 with an adaptive accuracy of 1e-10 and of 1e-12 alike (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe); its edges' tolerance at most 1.2e-07 (none of its 3 edges a B-spline). With the kernel, entity counts: the faces agree; the ball's meetings with the wedge's slanted faces, each such face of corners rounded in a turned frame two triangles on planes within rounding of each other, cross their diagonals, a vertex there between a meeting's pieces on the two planes, where OCCT's one edge crosses the face (faces, edges and vertices (2, 3, 2) unified, the kernel's (2, 5, 4)); the kernel's enclosures are within the reference.",
+      "independent_evidence": "polyhedra_curved_boolean_reference.py's rows on the constructions OCCT was given (generate_polyhedra_curved_boolean_fixtures.py --check, identical under Python 3.9 and 3.12) agree two ways (each face swept by two independent families of curves) within 4.2e-36, every solid's measures from its faces within 8.7e-41 of its closed form, each body's within 1.0e-41 of its own (the hulls' exact volumes), the pair identities within 1.3e-41, and Monte Carlo within 2.7 standard errors; its solid counts are the declared ones by rays at two resolutions; every stored vertex of the imported files lies on its construction's planes within 2.2e-16 of the size.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "hollow_ball_fuse",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "506f4271553ce504cf7f2c78b99073617ab98b6c694d8bb3794c9001f681731f",
+      "differences": [
+        "rust_entity_counts"
+      ],
+      "reason": "BRepAlgoAPI's result is valid with the reference's solid count and measures. With the kernel, entity counts: the faces agree; OCCT's unified result keeps its sphere's seam and divides its circles there, where the kernel's circles on the hollow box's walls are closed edges (faces, edges and vertices (14, 27, 18) unified, the kernel's (14, 26, 18)); the kernel's enclosures are within the reference.",
+      "independent_evidence": "polyhedra_curved_boolean_reference.py's rows on the constructions OCCT was given (generate_polyhedra_curved_boolean_fixtures.py --check, identical under Python 3.9 and 3.12) agree two ways (each face swept by two independent families of curves) within 4.2e-36, every solid's measures from its faces within 8.7e-41 of its closed form, each body's within 1.0e-41 of its own (the hulls' exact volumes), the pair identities within 1.3e-41, and Monte Carlo within 2.7 standard errors; its solid counts are the declared ones by rays at two resolutions; every stored vertex of the imported files lies on its construction's planes within 2.2e-16 of the size.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "hollow_ball_cut",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "276e9fac830110358709b596e440fa2f0bf811f4463835d8e95d86176c83a12f",
+      "differences": [
+        "rust_entity_counts"
+      ],
+      "reason": "BRepAlgoAPI's result is valid with the reference's solid count and measures. With the kernel, entity counts: the faces agree; OCCT's unified result keeps its sphere's seam and divides its circles there, where the kernel's circles on the hollow box's walls are closed edges (faces, edges and vertices (13, 31, 21) unified, the kernel's (13, 26, 18)); the kernel's enclosures are within the reference.",
+      "independent_evidence": "polyhedra_curved_boolean_reference.py's rows on the constructions OCCT was given (generate_polyhedra_curved_boolean_fixtures.py --check, identical under Python 3.9 and 3.12) agree two ways (each face swept by two independent families of curves) within 4.2e-36, every solid's measures from its faces within 8.7e-41 of its closed form, each body's within 1.0e-41 of its own (the hulls' exact volumes), the pair identities within 1.3e-41, and Monte Carlo within 2.7 standard errors; its solid counts are the declared ones by rays at two resolutions; every stored vertex of the imported files lies on its construction's planes within 2.2e-16 of the size.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "hollow_ball_common",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "a1c2ae44ee8a1731475a0f4dacbf788271885026f00f6a7c2564597db44484fc",
+      "differences": [
+        "rust_entity_counts"
+      ],
+      "reason": "BRepAlgoAPI's result is valid with the reference's solid count and measures. With the kernel, entity counts: the faces agree; OCCT's unified result keeps its sphere's seam and divides its circles there, where the kernel's circles on the hollow box's walls are closed edges (faces, edges and vertices (3, 7, 5) unified, the kernel's (3, 2, 2)); the kernel's enclosures are within the reference.",
+      "independent_evidence": "polyhedra_curved_boolean_reference.py's rows on the constructions OCCT was given (generate_polyhedra_curved_boolean_fixtures.py --check, identical under Python 3.9 and 3.12) agree two ways (each face swept by two independent families of curves) within 4.2e-36, every solid's measures from its faces within 8.7e-41 of its closed form, each body's within 1.0e-41 of its own (the hulls' exact volumes), the pair identities within 1.3e-41, and Monte Carlo within 2.7 standard errors; its solid counts are the declared ones by rays at two resolutions; every stored vertex of the imported files lies on its construction's planes within 2.2e-16 of the size.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "chain_wedge_fuse",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "94b68cbf1616d99981dfc4af1e6e09587f3454aae36327845d53d3ef13b293ab",
+      "differences": [
+        "rust_entity_counts"
+      ],
+      "reason": "BRepAlgoAPI's result is valid with the reference's solid count and measures. With the kernel, entity counts: OCCT's unified result keeps the bore's cylinder in three faces divided at its seam where the kernel's are two (the planes alike), and their seam edges (faces, edges and vertices (23, 64, 43) unified, the kernel's (22, 60, 40)); the kernel's enclosures are within the reference.",
+      "independent_evidence": "polyhedra_curved_boolean_reference.py's rows on the constructions OCCT was given (generate_polyhedra_curved_boolean_fixtures.py --check, identical under Python 3.9 and 3.12) agree two ways (each face swept by two independent families of curves) within 4.2e-36, every solid's measures from its faces within 8.7e-41 of its closed form, each body's within 1.0e-41 of its own (the hulls' exact volumes), the pair identities within 1.3e-41, and Monte Carlo within 2.7 standard errors; its solid counts are the declared ones by rays at two resolutions; every stored vertex of the imported files lies on its construction's planes within 2.2e-16 of the size.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "chain_wedge_cut",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "395a08193c5ba0bcd45e7e1e1f1c85dde46ed21cf8e4f05bc618827f95593d97",
+      "differences": [
+        "rust_entity_counts"
+      ],
+      "reason": "BRepAlgoAPI's result is valid with the reference's solid count and measures. With the kernel, entity counts: OCCT's unified result keeps the bore's cylinder in three faces divided at its seam where the kernel's are two (the planes alike), and their seam edges (faces, edges and vertices (22, 61, 41) unified, the kernel's (21, 57, 38)); the kernel's enclosures are within the reference.",
+      "independent_evidence": "polyhedra_curved_boolean_reference.py's rows on the constructions OCCT was given (generate_polyhedra_curved_boolean_fixtures.py --check, identical under Python 3.9 and 3.12) agree two ways (each face swept by two independent families of curves) within 4.2e-36, every solid's measures from its faces within 8.7e-41 of its closed form, each body's within 1.0e-41 of its own (the hulls' exact volumes), the pair identities within 1.3e-41, and Monte Carlo within 2.7 standard errors; its solid counts are the declared ones by rays at two resolutions; every stored vertex of the imported files lies on its construction's planes within 2.2e-16 of the size.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "chain_wedge_common",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "e1114ab3466d927d87f27a90d817363f5b5c2f7bf6be288492a391a2f56eda33",
+      "differences": [
+        "rust_entity_counts"
+      ],
+      "reason": "BRepAlgoAPI's result is valid with the reference's solid count and measures. With the kernel, entity counts: the faces agree; OCCT's unified result keeps the bore's cylinder's seam edges (faces, edges and vertices (4, 6, 4), (13, 35, 24) unified, the kernel's (4, 6, 4), (13, 33, 22)); the kernel's enclosures are within the reference.",
+      "independent_evidence": "polyhedra_curved_boolean_reference.py's rows on the constructions OCCT was given (generate_polyhedra_curved_boolean_fixtures.py --check, identical under Python 3.9 and 3.12) agree two ways (each face swept by two independent families of curves) within 4.2e-36, every solid's measures from its faces within 8.7e-41 of its closed form, each body's within 1.0e-41 of its own (the hulls' exact volumes), the pair identities within 1.3e-41, and Monte Carlo within 2.7 standard errors; its solid counts are the declared ones by rays at two resolutions; every stored vertex of the imported files lies on its construction's planes within 2.2e-16 of the size.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "notched_ball_fuse",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "c70e38a05e1efa3d5828c2324b7a55b5612ca9ba75d719bcf9f4081a610f4e90",
+      "differences": [
+        "rust_entity_counts"
+      ],
+      "reason": "BRepAlgoAPI's result is valid with the reference's solid count and measures. With the kernel, entity counts: the faces agree; the ball's meetings with the notch's faces (on the skew box's planes), each such face of corners rounded in a turned frame two triangles on planes within rounding of each other, cross their diagonals, a vertex there between a meeting's pieces on the two planes, where OCCT's one edge crosses the face (faces, edges and vertices (12, 28, 19) unified, the kernel's (12, 35, 26)); the kernel's enclosures are within the reference.",
+      "independent_evidence": "polyhedra_curved_boolean_reference.py's rows on the constructions OCCT was given (generate_polyhedra_curved_boolean_fixtures.py --check, identical under Python 3.9 and 3.12) agree two ways (each face swept by two independent families of curves) within 4.2e-36, every solid's measures from its faces within 8.7e-41 of its closed form, each body's within 1.0e-41 of its own (the hulls' exact volumes), the pair identities within 1.3e-41, and Monte Carlo within 2.7 standard errors; its solid counts are the declared ones by rays at two resolutions; every stored vertex of the imported files lies on its construction's planes within 2.2e-16 of the size.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "notched_ball_cut",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "43e70f9834a70825b43958ca11282f60669a3428c8de221adad9cd622d29f2fb",
+      "differences": [
+        "rust_entity_counts"
+      ],
+      "reason": "BRepAlgoAPI's result is valid with the reference's solid count and measures. With the kernel, entity counts: the faces agree; the ball's meetings with the notch's faces (on the skew box's planes), each such face of corners rounded in a turned frame two triangles on planes within rounding of each other, cross their diagonals, a vertex there between a meeting's pieces on the two planes, where OCCT's one edge crosses the face (faces, edges and vertices (10, 31, 21) unified, the kernel's (10, 35, 26)); the kernel's enclosures are within the reference.",
+      "independent_evidence": "polyhedra_curved_boolean_reference.py's rows on the constructions OCCT was given (generate_polyhedra_curved_boolean_fixtures.py --check, identical under Python 3.9 and 3.12) agree two ways (each face swept by two independent families of curves) within 4.2e-36, every solid's measures from its faces within 8.7e-41 of its closed form, each body's within 1.0e-41 of its own (the hulls' exact volumes), the pair identities within 1.3e-41, and Monte Carlo within 2.7 standard errors; its solid counts are the declared ones by rays at two resolutions; every stored vertex of the imported files lies on its construction's planes within 2.2e-16 of the size.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "notched_ball_common",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "68ca4120fefcb84988363aa5fce9bbe21fd625d595309ba48c594d5caf4f18d8",
+      "differences": [
+        "rust_entity_counts"
+      ],
+      "reason": "BRepAlgoAPI's result is valid with the reference's solid count and measures. With the kernel, entity counts: the faces agree; the ball's meetings with the notch's faces (on the skew box's planes), each such face of corners rounded in a turned frame two triangles on planes within rounding of each other, cross their diagonals, a vertex there between a meeting's pieces on the two planes, where OCCT's one edge crosses the face (faces, edges and vertices (6, 13, 9) unified, the kernel's (6, 17, 14)); the kernel's enclosures are within the reference.",
+      "independent_evidence": "polyhedra_curved_boolean_reference.py's rows on the constructions OCCT was given (generate_polyhedra_curved_boolean_fixtures.py --check, identical under Python 3.9 and 3.12) agree two ways (each face swept by two independent families of curves) within 4.2e-36, every solid's measures from its faces within 8.7e-41 of its closed form, each body's within 1.0e-41 of its own (the hulls' exact volumes), the pair identities within 1.3e-41, and Monte Carlo within 2.7 standard errors; its solid counts are the declared ones by rays at two resolutions; every stored vertex of the imported files lies on its construction's planes within 2.2e-16 of the size.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "wedge_ball_fuse",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "6fc93747294101c99e8204373f31e37742dd07088ecc925c9fd58fac8a6a2f7f",
+      "differences": [
+        "rust_entity_counts"
+      ],
+      "reason": "BRepAlgoAPI's result is valid with the reference's solid count and measures. With the kernel, entity counts: the faces agree; the ball's meetings with the wedge's slanted faces, each such face of corners rounded in a turned frame two triangles on planes within rounding of each other, cross their diagonals, a vertex there between a meeting's pieces on the two planes, where OCCT's one edge crosses the face (faces, edges and vertices (7, 15, 10) unified, the kernel's (7, 17, 12)); the kernel's enclosures are within the reference.",
+      "independent_evidence": "polyhedra_curved_boolean_reference.py's rows on the constructions OCCT was given (generate_polyhedra_curved_boolean_fixtures.py --check, identical under Python 3.9 and 3.12) agree two ways (each face swept by two independent families of curves) within 4.2e-36, every solid's measures from its faces within 8.7e-41 of its closed form, each body's within 1.0e-41 of its own (the hulls' exact volumes), the pair identities within 1.3e-41, and Monte Carlo within 2.7 standard errors; its solid counts are the declared ones by rays at two resolutions; every stored vertex of the imported files lies on its construction's planes within 2.2e-16 of the size.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "wedge_ball_cut",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "1d74a3b2456aea42e4850c8a4a279342cd4a0acb415ad4470ea3de80c923112c",
+      "differences": [
+        "rust_entity_counts"
+      ],
+      "reason": "BRepAlgoAPI's result is valid with the reference's solid count and measures. With the kernel, entity counts: the faces agree; the ball's meetings with the wedge's slanted faces, each such face of corners rounded in a turned frame two triangles on planes within rounding of each other, cross their diagonals, a vertex there between a meeting's pieces on the two planes, where OCCT's one edge crosses the face (faces, edges and vertices (7, 15, 10) unified, the kernel's (7, 17, 12)); the kernel's enclosures are within the reference.",
+      "independent_evidence": "polyhedra_curved_boolean_reference.py's rows on the constructions OCCT was given (generate_polyhedra_curved_boolean_fixtures.py --check, identical under Python 3.9 and 3.12) agree two ways (each face swept by two independent families of curves) within 4.2e-36, every solid's measures from its faces within 8.7e-41 of its closed form, each body's within 1.0e-41 of its own (the hulls' exact volumes), the pair identities within 1.3e-41, and Monte Carlo within 2.7 standard errors; its solid counts are the declared ones by rays at two resolutions; every stored vertex of the imported files lies on its construction's planes within 2.2e-16 of the size.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "rod_truncated_fuse",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "9272ea61441622b9fbb9a466864df032c385128d14978d00e1838c888f3d970d",
+      "differences": [
+        "rust_entity_counts"
+      ],
+      "reason": "BRepAlgoAPI's result is valid with the reference's solid count and measures. With the kernel, entity counts: the faces agree; the rod's meetings with the truncated pyramid's faces, each such face of corners rounded in a turned frame two triangles on planes within rounding of each other, cross their diagonals, a vertex there between a meeting's pieces on the two planes, where OCCT's one edge crosses the face (faces, edges and vertices (10, 24, 16) unified, the kernel's (10, 26, 18)); the kernel's enclosures are within the reference.",
+      "independent_evidence": "polyhedra_curved_boolean_reference.py's rows on the constructions OCCT was given (generate_polyhedra_curved_boolean_fixtures.py --check, identical under Python 3.9 and 3.12) agree two ways (each face swept by two independent families of curves) within 4.2e-36, every solid's measures from its faces within 8.7e-41 of its closed form, each body's within 1.0e-41 of its own (the hulls' exact volumes), the pair identities within 1.3e-41, and Monte Carlo within 2.7 standard errors; its solid counts are the declared ones by rays at two resolutions; every stored vertex of the imported files lies on its construction's planes within 2.2e-16 of the size.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "rod_truncated_cut",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "4288e07e77674b5fcdcebf494a4241353f4645d4cac333ea61e67e47308eabcc",
+      "differences": [
+        "rust_entity_counts"
+      ],
+      "reason": "BRepAlgoAPI's result is valid with the reference's solid count and measures. With the kernel, entity counts: the faces agree; the rod's meetings with the truncated pyramid's faces, each such face of corners rounded in a turned frame two triangles on planes within rounding of each other, cross their diagonals, a vertex there between a meeting's pieces on the two planes, where OCCT's one edge crosses the face (faces, edges and vertices (4, 6, 4), (4, 6, 4) unified, the kernel's (4, 6, 4), (4, 8, 6)); the kernel's enclosures are within the reference.",
+      "independent_evidence": "polyhedra_curved_boolean_reference.py's rows on the constructions OCCT was given (generate_polyhedra_curved_boolean_fixtures.py --check, identical under Python 3.9 and 3.12) agree two ways (each face swept by two independent families of curves) within 4.2e-36, every solid's measures from its faces within 8.7e-41 of its closed form, each body's within 1.0e-41 of its own (the hulls' exact volumes), the pair identities within 1.3e-41, and Monte Carlo within 2.7 standard errors; its solid counts are the declared ones by rays at two resolutions; every stored vertex of the imported files lies on its construction's planes within 2.2e-16 of the size.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "rod_truncated_common",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "da16ab4e9218ac6158bb30c570b80a90aa0614d18eacc003fcf09125da6ffd32",
+      "differences": [
+        "rust_entity_counts"
+      ],
+      "reason": "BRepAlgoAPI's result is valid with the reference's solid count and measures. With the kernel, entity counts: the faces agree; the rod's meetings with the truncated pyramid's faces, each such face of corners rounded in a turned frame two triangles on planes within rounding of each other, cross their diagonals, a vertex there between a meeting's pieces on the two planes, where OCCT's one edge crosses the face (faces, edges and vertices (5, 9, 6) unified, the kernel's (5, 11, 8)); the kernel's enclosures are within the reference.",
       "independent_evidence": "polyhedra_curved_boolean_reference.py's rows on the constructions OCCT was given (generate_polyhedra_curved_boolean_fixtures.py --check, identical under Python 3.9 and 3.12) agree two ways (each face swept by two independent families of curves) within 4.2e-36, every solid's measures from its faces within 8.7e-41 of its closed form, each body's within 1.0e-41 of its own (the hulls' exact volumes), the pair identities within 1.3e-41, and Monte Carlo within 2.7 standard errors; its solid counts are the declared ones by rays at two resolutions; every stored vertex of the imported files lies on its construction's planes within 2.2e-16 of the size.",
       "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
     }
