@@ -49,7 +49,12 @@ import subprocess
 import sys
 
 from build_pinned_occt import SOURCE, digest
+import compare_brep
 from compare_brep import review_for, run, sha, write
+
+# The native Boolean runs of the larger sets (cones, tori, spline walls) take
+# close to compare_brep's 120 s on a loaded host; the probe already has 600.
+compare_brep.TIMEOUT = max(compare_brep.TIMEOUT, 600)
 from compare_brep_io import TOOLKITS, build
 from compare_curve_surface import platform_record
 from compare_degree_elevation import verify_sdk
