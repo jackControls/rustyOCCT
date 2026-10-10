@@ -148,6 +148,55 @@ fn boxes_meet(a: &([f64; 3], [f64; 3]), b: &([f64; 3], [f64; 3])) -> bool {
     (0..3).all(|k| a.0[k] <= b.1[k] && b.0[k] <= a.1[k])
 }
 
+/// A sphere missing a plane or another sphere within the resolution `res`
+/// of tangency, their nearest points in both faces and the gap between
+/// them outside either input, is `Degenerate` as crossing it within the
+/// resolution is (S9d.1's sections): the inputs lie no farther apart than
+/// the resolution (a ball resting on a turned face but for rounding was
+/// fused with it into two solids), or one lies inside the other behind a
+/// wall thinner than it (a ball inside a box, cut from it as a cavity).
+/// A gap inside both inputs (each face's outward normal pointing away from
+/// the other face: a slab's floor beneath a dimple's sphere, the faces'
+/// materials overlapping there) is no contact, as equal rods overlapping
+/// at their tangent points are not ("Equal cylinders with crossing axes"),
+/// and neither are nearest points outside either face (a zone's sphere
+/// tangent to a plane beyond its rims, a ball beside a face's plane past
+/// its edges).
+fn near_miss(models: &[Prism; 2], fa: usize, fb: usize, res: f64) -> Result<()> {
+    use super::sphere::plane_near_miss;
+    use super::spheres::spheres_near_miss;
+    let ((va, ia), (vb, ib)) = (models[0].view(fa), models[1].view(fb));
+    let points = match (&va.faces[ia].surf, &vb.faces[ib].surf) {
+        (Surf::Plane { p, m }, Surf::Sphere { c, r }) => plane_near_miss(c, r, p, m, res),
+        (Surf::Sphere { c, r }, Surf::Plane { p, m }) => {
+            plane_near_miss(c, r, p, m, res).map(|(foot, near)| (near, foot))
+        }
+        (Surf::Sphere { c: c1, r: r1 }, Surf::Sphere { c: c2, r: r2 }) => {
+            spheres_near_miss(c1, r1, c2, r2, res)
+        }
+        _ => None,
+    };
+    let Some((a, b)) = points else {
+        return Ok(());
+    };
+    if models[0].in_face(fa, &a) == Loc::Out || models[1].in_face(fb, &b) == Loc::Out {
+        return Ok(());
+    }
+    // The gap from `a` to `b` lies inside an input where its face's
+    // outward normal points away from the other face.
+    let d = qsub(&b, &a);
+    let inside = [
+        qqdot(&models[0].normal_at(fa, &a), &d).sign() == Ordering::Less,
+        qqdot(&models[1].normal_at(fb, &b), &d).sign() == Ordering::Greater,
+    ];
+    if inside == [true, true] {
+        return Ok(());
+    }
+    Err(Error::Degenerate(
+        "a plane crossing a sphere within the resolution of tangency (S9d.1)",
+    ))
+}
+
 /// Whether two faces of one model lie on one quadric (a circle's halves, a
 /// sphere's hemispheres).
 fn same_quadric(a: &Surf, b: &Surf) -> bool {
@@ -1296,8 +1345,14 @@ pub(super) fn arrange_shared(models: [Prism; 2]) -> Result<Arr> {
     }
     // Sections.
     let mut secs: Vec<Sec> = Vec::new();
+    let wide = |b: &([f64; 3], [f64; 3])| (b.0.map(|x| x - res), b.1.map(|x| x + res));
     for fa in 0..models[0].faces.len() {
         for fb in 0..models[1].faces.len() {
+            // The faces' boxes are padded far less than the resolution: a
+            // gap of it between a ball and a level face leaves them apart.
+            if boxes_meet(&wide(&models[0].boxes[fa]), &models[1].boxes[fb]) {
+                near_miss(&models, fa, fb, res)?;
+            }
             if !boxes_meet(&models[0].boxes[fa], &models[1].boxes[fb]) {
                 continue;
             }

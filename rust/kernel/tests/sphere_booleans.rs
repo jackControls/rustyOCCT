@@ -456,8 +456,10 @@ fn wedges_through_a_spheres_poles() {
 /// radius 1.25 about the turned box's frame but for rounding (4e-16 inside
 /// it), met it in a circle of radius 1e-8 the validator refused as a
 /// degenerate curve, for the stadium and for its cut given again. A box's
-/// wall `2^-24` inside an upright sphere is refused alike; `2^-24` outside
-/// it (a gap, no meeting) and `2^-16` inside or outside it evaluate.
+/// wall `2^-24` inside an upright sphere is refused alike, and `2^-24`
+/// outside it too (a gap within the resolution, the ball inside the box:
+/// `a_ball_within_the_resolution_of_a_plane_face_is_degenerate`); `2^-16`
+/// inside or outside it evaluate.
 #[test]
 fn a_wall_crossing_within_the_resolution_of_tangency_is_degenerate() {
     use rusty_occt::identity::OperationId;
@@ -571,13 +573,318 @@ fn a_wall_crossing_within_the_resolution_of_tangency_is_degenerate() {
     };
     let tiny = 2f64.powi(-24);
     degenerate("box", &block, &sphere(tiny));
+    degenerate("box gap", &block, &sphere(-tiny));
     let ball = 4.0 * std::f64::consts::PI * r * r * r / 3.0;
-    for e in [-tiny, 2f64.powi(-16), -(2f64.powi(-16))] {
+    for e in [2f64.powi(-16), -(2f64.powi(-16))] {
         // The common: the ball less the cap of height `e` past the wall.
         let k = e.max(0.0);
         let cap = std::f64::consts::PI * k * k * (3.0 * r - k) / 3.0;
         let common = block.common(OperationId(5), &sphere(e)).unwrap().0;
         let v: f64 = common.iter().map(|s| s.mass_properties().volume).sum();
         assert!((v - (ball - cap)).abs() <= 1e-9 * ball, "{e}: {v}");
+    }
+}
+
+/// A ball within the resolution of tangency to a plane face is `Degenerate`
+/// on either side of it (S9d.1's sections): missing the face's plane by a
+/// gap no wider than the resolution it was a miss, and a ball resting on a
+/// turned face but for rounding (an imported octahedron's face missed by
+/// 4.6e-17) was fused with it into two solids, a ball inside a box cut
+/// from it as a cavity behind a wall thinner than the resolution. Each
+/// ball is placed by an exact search over its centre's last bits (the
+/// frames' axes are rounded by each host's `hypot`): its distance from the
+/// face's exact plane (the model's: a cap's through `o + h n` normal to
+/// `x * y`, a wall's through its run's start normal to `d * n`) within a
+/// factor of two of `r (1 + d)`, for `d` from `1e-17` to `1e-8` on either
+/// side, the ball outside the body or inside it: on a turned box's top
+/// (its foot inside the face and on its edge), a triangular prism's
+/// slanted wall in a frame turned about two axes, that prism less a box (a
+/// polyhedral result given), a level box's top (its faces' boxes, padded
+/// far less than the resolution, apart by the gap) and two balls apart or
+/// nested (their nearest points). Every operation is refused with the
+/// existing rule's reason; `1e-6` of the radius on either side evaluates,
+/// in the pair identities, and so do nearest points outside either face
+/// (the foot past the top's edge, a zone whose sphere the top's plane
+/// misses above its rims) and a gap inside both inputs (a slab's floor
+/// beneath a dimple's sphere; a block below the dimple, the gap outside
+/// it, is refused).
+#[test]
+fn a_ball_within_the_resolution_of_a_plane_face_is_degenerate() {
+    use num_rational::BigRational as R;
+    use rusty_occt::identity::OperationId;
+    use rusty_occt::{Boundary, Error, Frame3, Point2, Point3, Profile, Solid, Tolerance, Vec3};
+    type V = [R; 3];
+    let tol = Tolerance::default();
+    let q = |x: f64| R::from_float(x).unwrap();
+    let v = |a: [f64; 3]| a.map(q);
+    let add = |a: &V, b: &V| [&a[0] + &b[0], &a[1] + &b[1], &a[2] + &b[2]];
+    let sub = |a: &V, b: &V| [&a[0] - &b[0], &a[1] - &b[1], &a[2] - &b[2]];
+    let scale = |a: &V, s: &R| [&a[0] * s, &a[1] * s, &a[2] * s];
+    let dot = |a: &V, b: &V| &a[0] * &b[0] + &a[1] * &b[1] + &a[2] * &b[2];
+    let cross = |a: &V, b: &V| {
+        [
+            &a[1] * &b[2] - &a[2] * &b[1],
+            &a[2] * &b[0] - &a[0] * &b[2],
+            &a[0] * &b[1] - &a[1] * &b[0],
+        ]
+    };
+    let frame = |o: [f64; 3], n: [f64; 3], x: [f64; 3]| {
+        Frame3::new(
+            Point3::new(o[0], o[1], o[2]),
+            Vec3::new(n[0], n[1], n[2]),
+            Vec3::new(x[0], x[1], x[2]),
+            tol,
+        )
+        .unwrap()
+    };
+    let axes = |f: &Frame3| {
+        [
+            f.origin().to_array(),
+            f.x().to_array(),
+            f.y().to_array(),
+            f.normal().to_array(),
+        ]
+        .map(v)
+    };
+    let prism = |f: Frame3, pts: &[(f64, f64)], hi: f64| {
+        let b =
+            Boundary::polygon(pts.iter().map(|&(x, y)| Point2::new(x, y)).collect(), tol).unwrap();
+        Solid::extrude_with(
+            OperationId(1),
+            Profile::new(b, vec![], tol).unwrap(),
+            f,
+            0.0,
+            hi,
+        )
+        .unwrap()
+        .0
+    };
+    let ball = |c: [f64; 3], r: f64, op: u64| {
+        let half = std::f64::consts::FRAC_PI_2;
+        let f = frame(c, [0.0, 0.0, 1.0], [1.0, 0.0, 0.0]);
+        Solid::sphere_with(OperationId(op), f, r, -half, half, tol)
+            .unwrap()
+            .0
+    };
+    // A face's exact plane and its binary64 unit normal: a cap at `h`, the
+    // wall over the run `a -> b`.
+    let cap = |f: &Frame3, h: f64| {
+        let a = axes(f);
+        let p = add(&a[0], &scale(&a[3], &q(h)));
+        (p, cross(&a[1], &a[2]), f.normal().to_array())
+    };
+    let wall = |f: &Frame3, a: (f64, f64), b: (f64, f64)| {
+        let x = axes(f);
+        let p = add(&x[0], &add(&scale(&x[1], &q(a.0)), &scale(&x[2], &q(a.1))));
+        let d = add(&scale(&x[1], &q(b.0 - a.0)), &scale(&x[2], &q(b.1 - a.1)));
+        let u = (f.x() * (b.0 - a.0) + f.y() * (b.1 - a.1))
+            .cross(f.normal())
+            .normalized()
+            .unwrap();
+        (p, cross(&d, &x[3]), u.to_array())
+    };
+    // `k` ulps up (away from zero for a negative value).
+    let step = |x: f64, k: i64| f64::from_bits((x.to_bits() as i64 + k) as u64);
+    // A centre near `c0` whose squared distance `dist2` lies within
+    // `[(want + lo)^2, (want + hi)^2]` for the band about `gap`, over its
+    // coordinates' last bits.
+    let search = |c0: [f64; 3], dist2: &dyn Fn([f64; 3]) -> R, want: &R, gap: f64| {
+        let (lo, hi) = if gap > 0.0 {
+            (gap / 2.0, gap * 2.0)
+        } else {
+            (gap * 2.0, gap / 2.0)
+        };
+        let (a, b) = (want + q(lo), want + q(hi));
+        let (a, b) = (&a * &a, &b * &b);
+        for k in 0..=12i64 {
+            for i in -k..=k {
+                for j in -k..=k {
+                    for l in -k..=k {
+                        if i.abs().max(j.abs()).max(l.abs()) != k {
+                            continue;
+                        }
+                        let c = [step(c0[0], i), step(c0[1], j), step(c0[2], l)];
+                        let d2 = dist2(c);
+                        if a <= d2 && d2 <= b {
+                            return c;
+                        }
+                    }
+                }
+            }
+        }
+        panic!("no centre near {c0:?} for a gap of {gap:e}");
+    };
+    // A ball's centre at `foot + side r (1 + d) u`, its distance from the
+    // plane `(p, m)` in the band about `r (1 + d)`.
+    let place = |foot: [f64; 3], r: f64, d: f64, side: f64, face: &(V, V, [f64; 3])| {
+        let (p, m, u) = face;
+        let c0 = [0, 1, 2].map(|k| foot[k] + side * r * (1.0 + d) * u[k]);
+        let mm = dot(m, m);
+        let dist2 = |c: [f64; 3]| {
+            let off = dot(m, &sub(&v(c), p));
+            &off * &off / &mm
+        };
+        search(c0, &dist2, &q(r), d * r)
+    };
+    let refused = |what: &str, body: &Solid, b: &Solid| {
+        for (op, out) in [
+            ("fuse", body.fuse(OperationId(3), b)),
+            ("cut", body.cut(OperationId(4), b)),
+            ("cut back", b.cut(OperationId(4), body)),
+            ("common", body.common(OperationId(5), b)),
+        ] {
+            assert!(
+                matches!(&out, Err(Error::Degenerate(m))
+                    if *m == "a plane crossing a sphere within the resolution of tangency (S9d.1)"),
+                "{what} {op}: {:?}",
+                out.map(|x| x.0.len())
+            );
+        }
+    };
+    let volume = |s: &[Solid]| s.iter().map(|x| x.mass_properties().volume).sum::<f64>();
+    // Beyond the resolution every operation evaluates, the fuse `fused`
+    // solids, in the pair identities.
+    let evaluates = |what: &str, body: &Solid, b: &Solid, fused: usize| {
+        let f = body.fuse(OperationId(3), b).unwrap().0;
+        let c = body.cut(OperationId(4), b).unwrap().0;
+        let m = body.common(OperationId(5), b).unwrap().0;
+        assert_eq!(f.len(), fused, "{what}");
+        let (va, vb) = (body.mass_properties().volume, b.mass_properties().volume);
+        let near = |x: f64, y: f64| (x - y).abs() <= 1e-9 * (va + vb);
+        assert!(near(volume(&f), va + vb - volume(&m)), "{what} fuse");
+        assert!(near(volume(&c), va - volume(&m)), "{what} cut");
+    };
+
+    // A box turned off the world's axes (the boolean target's tilted
+    // frame), its top: the foot inside the face, on its edge and past it.
+    let tilt = frame([1.0, -2.0, 0.5], [0.0, 3.0, 4.0], [1.0, 0.0, 0.0]);
+    let tilted = prism(
+        tilt,
+        &[(-3.0, -2.0), (3.0, -2.0), (3.0, 2.0), (-3.0, 2.0)],
+        4.0,
+    );
+    let top = cap(&tilt, 4.0);
+    let foot = tilt.point(Point2::new(0.5, 0.25), 4.0).to_array();
+    for side in [1.0, -1.0] {
+        for d in [1e-17, 1e-15, -1e-15, 1e-12, -1e-12, 1e-8] {
+            let b = ball(place(foot, 1.5, d, side, &top), 1.5, 9);
+            refused(&format!("turned box {side} {d:e}"), &tilted, &b);
+        }
+    }
+    // On the top's edge, then past it (the ball 3.3e-5 from the edge: no
+    // contact, evaluating as before).
+    let edge = tilt.point(Point2::new(3.0, 0.25), 4.0).to_array();
+    let b = ball(place(edge, 1.5, 1e-12, 1.0, &top), 1.5, 9);
+    refused("turned box's edge", &tilted, &b);
+    let past = tilt.point(Point2::new(3.01, 0.25), 4.0).to_array();
+    let b = ball(place(past, 1.5, 1e-12, 1.0, &top), 1.5, 9);
+    evaluates("past the turned box's edge", &tilted, &b, 2);
+    // A zone of a sphere the top's plane misses within the resolution
+    // above its rims (the boolean target's zone under a prism's top): no
+    // contact, evaluating; a whole ball there is refused.
+    let c = place(foot, 1.5, 1e-12, -1.0, &top);
+    let about = Frame3::new(Point3::new(c[0], c[1], c[2]), tilt.normal(), tilt.x(), tol).unwrap();
+    let (zone, _) = Solid::sphere_with(OperationId(9), about, 1.5, -0.5, 0.75, tol).unwrap();
+    evaluates("a zone under the turned box's top", &tilted, &zone, 1);
+    refused(
+        "a ball under the turned box's top",
+        &tilted,
+        &ball(c, 1.5, 9),
+    );
+    for (d, side, fused) in [(1e-6, 1.0, 2), (-1e-6, 1.0, 1), (1e-6, -1.0, 1)] {
+        let b = ball(place(foot, 1.5, d, side, &top), 1.5, 9);
+        evaluates(&format!("turned box {side} {d:e}"), &tilted, &b, fused);
+    }
+    // The box less a ball through its top (a dimple, given) against a slab
+    // across the top whose floor its sphere misses within the resolution:
+    // the gap inside both inputs (their materials overlapping there, the
+    // boolean target's and S9e.4b.4b.2's chained dimple), evaluating; a
+    // block below the dimple with its top on that plane leaves the gap
+    // outside the block, a wall thinner than the resolution: refused.
+    let floor = Frame3::new(
+        tilt.point(Point2::new(0.0, 0.0), 3.0),
+        tilt.normal(),
+        tilt.x(),
+        tol,
+    )
+    .unwrap();
+    let square = [(-8.0, -8.0), (8.0, -8.0), (8.0, 8.0), (-8.0, 8.0)];
+    let slab = |lo: f64, hi: f64| {
+        let b = Boundary::polygon(
+            square.iter().map(|&(x, y)| Point2::new(x, y)).collect(),
+            tol,
+        )
+        .unwrap();
+        let p = Profile::new(b, vec![], tol).unwrap();
+        Solid::extrude_with(OperationId(21), p, floor, lo, hi)
+            .unwrap()
+            .0
+    };
+    let foot = floor.point(Point2::new(0.5, 0.25), 0.0).to_array();
+    let c = place(foot, 1.5, 1e-12, 1.0, &cap(&floor, 0.0));
+    let dimple = tilted.cut(OperationId(20), &ball(c, 1.5, 9)).unwrap().0;
+    assert_eq!(dimple.len(), 1);
+    evaluates("a dimple under a slab", &dimple[0], &slab(0.0, 2.0), 1);
+    refused("a dimple over a block", &dimple[0], &slab(-2.0, 0.0));
+
+    // A triangular prism in a frame turned about two axes, its slanted
+    // wall; then less a box across its top (a polyhedral result given).
+    let turn = frame([0.25, 0.5, -1.0], [1.0, 2.0, 2.0], [2.0, 1.0, -2.0]);
+    let tri = prism(turn, &[(0.0, 0.0), (4.0, 0.0), (0.0, 3.0)], 5.0);
+    let slant = wall(&turn, (4.0, 0.0), (0.0, 3.0));
+    let foot = turn.point(Point2::new(2.0, 1.5), 2.5).to_array();
+    let lid = Solid::box_at(
+        Point3::new(-20.0, -20.0, foot[2] + 1.0),
+        Vec3::new(40.0, 40.0, 40.0),
+        tol,
+    )
+    .unwrap();
+    let given = tri.cut(OperationId(2), &lid).unwrap().0;
+    assert_eq!(given.len(), 1);
+    for side in [1.0, -1.0] {
+        for d in [1e-16, -1e-16, 1e-10] {
+            let b = ball(place(foot, 0.75, d, side, &slant), 0.75, 9);
+            refused(&format!("slanted wall {side} {d:e}"), &tri, &b);
+            refused(&format!("given wall {side} {d:e}"), &given[0], &b);
+        }
+    }
+    for (d, fused) in [(1e-6, 2), (-1e-6, 1)] {
+        let b = ball(place(foot, 0.75, d, 1.0, &slant), 0.75, 9);
+        evaluates(&format!("slanted wall {d:e}"), &tri, &b, fused);
+        evaluates(&format!("given wall {d:e}"), &given[0], &b, fused);
+    }
+
+    // A level box's top: a gap wider than its faces' boxes' padding.
+    let up = frame([0.0; 3], [0.0, 0.0, 1.0], [1.0, 0.0, 0.0]);
+    let level = prism(
+        up,
+        &[(-4.0, -4.0), (4.0, -4.0), (4.0, 4.0), (-4.0, 4.0)],
+        8.0,
+    );
+    let top = cap(&up, 8.0);
+    for side in [1.0, -1.0] {
+        for d in [1e-8, -1e-8, 1e-12] {
+            let b = ball(place([0.5, 0.25, 8.0], 1.5, d, side, &top), 1.5, 9);
+            refused(&format!("level box {side} {d:e}"), &level, &b);
+        }
+    }
+    let b = ball(place([0.5, 0.25, 8.0], 1.5, 1e-6, 1.0, &top), 1.5, 9);
+    evaluates("level box", &level, &b, 2);
+
+    // Two balls apart or nested within the resolution of tangency.
+    let (c1, r1, r2) = ([0.25, -0.5, 0.125], 1.5, 0.75);
+    let first = ball(c1, r1, 8);
+    let u = [1.0 / 3.0, 2.0 / 3.0, 2.0 / 3.0];
+    let dist2 = |c: [f64; 3]| {
+        let w = sub(&v(c), &v(c1));
+        dot(&w, &w)
+    };
+    for (what, side) in [("apart", 1.0), ("nested", -1.0)] {
+        let want = q(r1 + side * r2);
+        for d in [1e-12, -1e-12] {
+            let c0 = [0, 1, 2].map(|k| c1[k] + (r1 + side * r2 * (1.0 + d)) * u[k]);
+            let c = search(c0, &dist2, &want, side * d * r2);
+            refused(&format!("balls {what} {d:e}"), &first, &ball(c, r2, 9));
+        }
     }
 }

@@ -4702,7 +4702,9 @@ Decisions for S9, recorded before its code (2026-09-28):
     as S9d.2c's circles are (`sphere::plane_section`, also for two spheres'
     radical plane;
     `fuzz/regressions/boolean/crash-d238291d9edbe60570ae31479609845872d763c0.bin`,
-    `tests/sphere_booleans.rs`).
+    `tests/sphere_booleans.rs`). Amended (2026-10-10) by "A ball within
+    the resolution of a plane face": missing the sphere within the
+    resolution, the nearest points in both faces, is `Degenerate` too.
     Campaign: the boolean campaign at `b2765f20` (600 s, a sampled
     replay) clean, 989 runs, the slowest input 22 s under
     AddressSanitizer (the first, at `6582f379`, found `d238291d`, a wall
@@ -12399,6 +12401,89 @@ Decisions for S9, recorded before its code (2026-09-28):
   (`16 r^3 / 3`) and the cut `Degenerate`. S9c.1's fixtures, its
   comparison (42 matches, 2 reviewed) and the five upstream cases
   unchanged.
+* **A ball within the resolution of a plane face (S9d.1, found by
+  S9e.4b.4c.1's evidence), done (2026-10-10).** A ball resting on an
+  imported octahedron's face `x + y + z = 18`, its radius the distance
+  `sqrt(3) / 2` rounded down, misses the face's plane by 4.6e-17, and
+  S9e.4b.4c.1's draft fused them into two solids. It is S9's own: with
+  kernel-built bodies, a ball outside or inside a box turned off the
+  world's axes, a triangular prism's slanted wall in a frame turned about
+  two axes, that prism less a box (a polyhedral result given), a level
+  box's top and two balls, each ball placed at `r (1 + d)` from the
+  face's exact plane for `d` in `+-1e-17`, `+-1e-16`, `+-1e-15`,
+  `+-1e-12`, `+-1e-10` and `+-1e-8`, in fuse, cut both ways and common:
+  every crossing (`d < 0`) was refused by S9d.1's amendment ("a plane
+  crossing a sphere within the resolution of tangency"), an exact
+  tangency (the level box) as a tangency between the inputs, and every
+  miss (`d > 0`) evaluated: outside, the fuse two solids and the common
+  empty; inside, the cut a cavity behind a wall thinner than the
+  resolution; two balls apart or nested alike; at `+-1e-6` (beyond the
+  resolution) every operation evaluated correctly. The level box's top
+  was missed by a gap of `1.5e-8` without its section even being taken,
+  the faces' boxes padded by `1e-9` relative only. Why: `plane_section`
+  took a plane missing the sphere as no meeting at any gap; the crossing
+  rule was written for the validator's tiny circle (the local campaign's
+  tilted stadium), and the gap side was left a miss on purpose
+  (`tests/sphere_booleans.rs` held a box's wall `2^-24` past a ball inside
+  it evaluating). The fix (`curved/graph.rs`'s `near_miss`, over
+  `sphere::plane_near_miss` and `spheres::spheres_near_miss`), tried for
+  every pair of faces whose boxes meet once one is widened by the
+  resolution: a sphere missing a plane within the resolution of tangency
+  (its centre's distance at most `r + res`), or two spheres apart or
+  nested by at most the resolution, is `Degenerate` with the existing
+  rule's reason where (a) both nearest points lie in their faces (the
+  plane's point nearest the centre in the plane face and the sphere's
+  point nearest the plane, exact in `|m|`'s quadratic field, in the
+  sphere's; for two spheres each one's point nearest the other) and (b)
+  the gap between them lies outside either input (by each face's outward
+  normal at its point, `normal_at`, given faces reversed as stored): the
+  inputs touching across it, or one inside the other behind a wall
+  thinner than the resolution. A gap inside both inputs is no contact,
+  as equal rods overlapping at their tangent points are not ("Equal
+  cylinders with crossing axes", the user's decision: contact only):
+  `compare_prism_leaves_boolean.py`'s `chain_dimple` (S9e.4b.4b.2b.1, the
+  imported dimple less a rod, then with a `TILT` slab whose floor lies
+  tangent to the dimple's sphere but for rounding, the slab's material and
+  the dimple's both over the gap) evaluates as before, where a first draft
+  of the rule without (b) refused its three operations. Nearest points
+  outside a face are no contact either and evaluate as before: a ball
+  beside a turned top's plane past its edge (3.3e-5 from the edge), a
+  zone whose sphere a top's plane misses above its rim. Unchanged: the
+  crossing rule (on the whole plane wherever the faces' boxes meet),
+  exact tangencies, the validator. Open (HANDOFF): a sphere within the
+  resolution of a face's edge or vertex, its nearest point on the plane
+  just outside the face (the turned box's ball `1e-12` off its top's
+  plane with its foot `1e-6` to `1e-3` past the edge still fused into two
+  solids). On S9e.4b.4c.1's branch (an imported polyhedron's triangles on
+  their exact planes in the same arrangement) the change applies as it
+  stands: the octahedron's ball at the rounded radius, an ulp above it
+  and below, outside and inside the face, refused in every operation,
+  `1e-6` either side evaluating; the imported tetrahedron's touching ball
+  raised by an ulp, `1e-12` and `1e-8` refused; its
+  `polyhedra_curved_booleans`, `imported_polyhedra_booleans`,
+  `given_curved_booleans`, `prism_leaf_booleans` and `sphere_booleans`
+  passing. Tests: `tests/sphere_booleans.rs`'s
+  `a_ball_within_the_resolution_of_a_plane_face_is_degenerate` (each ball
+  placed by an exact search over its centre's last bits, so the frames'
+  rounding on either host's `hypot` keeps every gap within a factor of two
+  of its target; a dimple under a slab evaluating, a block below it
+  refused), and
+  `a_wall_crossing_within_the_resolution_of_tangency_is_degenerate`
+  refusing the box's wall `2^-24` past the ball inside it. Of the boolean
+  corpus's inputs 8 reach such a miss, 3 refused now and 5 evaluating as
+  before (nearest points outside a face); one is kept
+  (`fuzz/regressions/boolean/replay-64bb37b33d0bdcc8d63e9e099fb9d1386cb0ad63.bin`:
+  the chained ball 1.1e-17 above a frustum's base inside it, its cut a
+  cavity under a floor that thin before). Checks: fmt, clippy (release,
+  all targets), the 1.85 check, the fuzz crate's fmt, the release suite
+  (666 tests); every comparison of HANDOFF's table unchanged with 0
+  failures (39 runs on the pinned SDK, `compare_prism_leaves_boolean.py`
+  15/9 among them); the boolean corpus (1,438 inputs) and its 33
+  regressions and the split corpus (3,551) and its 20 regressions replay
+  with debug assertions without a failure (the slowest 7.6 s and 1.8 s),
+  and so do the kept input's 4,335 single-byte mutations; the new tests
+  under the emulated glibc `hypot` with debug assertions and overflow
+  checks (`sphere_booleans`, 3.5 s).
 
 * **The Boolean captures' Linux records, open: CI has no observations to
   take them from.** S9e.4b and S9f.3's notes leave each capture's Linux
