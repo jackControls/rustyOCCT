@@ -1169,6 +1169,7 @@ pub(super) fn arrange_shared(models: [Prism; 2]) -> Result<Arr> {
     }
     edge_near_misses(&models, res)?;
     super::near::edge_faces(&models, res)?;
+    super::near::vertex_faces(&models, res)?;
     // Pierces: every edge against every face of the other.
     for o in 0..2 {
         let (me, other) = (&models[o], &models[1 - o]);

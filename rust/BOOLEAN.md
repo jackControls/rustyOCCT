@@ -519,7 +519,22 @@ lens's top plane but for rounding; a face running along it, its direction
 into the face in the surface's tangent plane exactly or within the
 `10^-12` the faces' own rules take as parallel, decided exactly, is a
 tangency or incidence of the two faces, theirs: S9c.1's rod and a turned
-box on its tangent plane; `near::edge_faces`). The
+box on its tangent plane; `near::edge_faces`). So is an input vertex
+within the resolution of a plane, cylinder or cone face of the other ("a
+vertex within the resolution of a face"; its input's id, its faces on
+more than one surface), the surface's point near its foot in the face,
+where its input's boundary leaves it strictly on one side of the
+surface's level: each edge's direction away from it and each face's
+sector there (convex, spanned by its two edges' directions; a reflex,
+half-turn or undecided sector no contact of the vertex's own) against the
+gradient exactly, none within the `10^-12` band (a face along the
+surface: the faces' own) and all of one sign (both signs: an edge or face
+heading toward the surface, its own sections); crossing it, and missing
+it where the gap lies outside either input (`near::vertex_faces`, after
+the edge rule; the polyhedral engine likewise on its exact planes, every
+convex face piece at the vertex giving the directions to its corners,
+`polyhedra::vertex_near_misses`: two boxes, one's corner `1e-12` off the
+other's face, were two solids). The
 validator decides a ray against a whole sphere (a cavity in a sphere); a
 result's bounds hold its spheres' boxes. A sphere against a cylinder or
 another sphere is S9d.2's.

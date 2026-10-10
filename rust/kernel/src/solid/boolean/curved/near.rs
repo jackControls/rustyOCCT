@@ -4,8 +4,10 @@
 //! sphere, and `edge_near_misses` an edge or a vertex against a sphere;
 //! here a sphere against a cylinder or a cone face (`sphere_quadrics`), an
 //! edge's line, conic, circle or other curve against a plane, cylinder or
-//! cone face (`edge_faces`), and the points of other curves nearest a
-//! sphere for `edge_near_misses` (`nearest_on_run`), by the same rule:
+//! cone face (`edge_faces`), a vertex against such a face (`vertex_faces`,
+//! "A vertex within the resolution of a face"), and the points of other
+//! curves nearest a sphere for `edge_near_misses` (`nearest_on_run`), by
+//! the same rule:
 //! within the resolution of tangency, crossing is `Degenerate`, and missing
 //! where the gap lies outside either input; a gap inside both inputs
 //! evaluates.
@@ -19,6 +21,7 @@ use crate::solid::split::{q, rational_f64, zero};
 use crate::{Error, Result};
 use num_rational::BigRational as R;
 use std::cmp::Ordering;
+use std::collections::BTreeMap;
 use std::f64::consts::{PI, TAU};
 
 /// A sphere within the resolution of tangency to a cylinder or cone face.
@@ -26,6 +29,8 @@ pub(super) const NEAR_QUADRIC: &str =
     "a sphere within the resolution of tangency to a cylinder or cone (S9d.2)";
 /// An edge within the resolution of tangency to a face of the other input.
 pub(super) const NEAR_FACE: &str = "an edge within the resolution of tangency to a face (S9d.2)";
+/// A vertex within the resolution of a face of the other input.
+pub(super) const NEAR_VERTEX_FACE: &str = "a vertex within the resolution of a face (S9d.2)";
 
 /// A face's surface: a plane, or a cylinder or a cone on its model's frame
 /// (its local coordinates `(u, v, w)`).
@@ -511,18 +516,7 @@ fn edge_face(
 /// runs along the surface: no contact of the edge's own.
 fn leaves_away(em: &Prism, ei: usize, quad: &Quad, a: &QV, extremum: Ordering) -> bool {
     let e = &em.edges[ei];
-    let pos = place(&e.curve, a);
-    let mut t = super::meet::tangent(&e.curve, &pos, a);
-    // The running direction: a line's from its start's key to its end's,
-    // other curves' with their parameter or against it.
-    let (from, to, with) = edge_places(em, ei);
-    let forward = match (&e.curve, &from, &to) {
-        (Crv::Line { .. }, Pos::T(s0), Pos::T(s1)) => s0.cmp(s1) == Ordering::Less,
-        _ => with,
-    };
-    if !forward {
-        t = t.map(|x| x.neg());
-    }
+    let t = running(em, ei, a);
     let g = quad.gradient(a);
     let away = [0, 1].map(|k| {
         let n = em.normal_at(e.faces[k], a);
@@ -537,6 +531,24 @@ fn leaves_away(em: &Prism, ei: usize, quad: &Quad, a: &QV, extremum: Ordering) -
         qqdot(&g, &inward).sign()
     });
     away.iter().all(|s| *s != extremum && *s != Ordering::Equal)
+}
+
+/// An edge's tangent at its point `a` along its run from its start to its
+/// end: a line's from its start's key to its end's, other curves' with
+/// their parameter or against it.
+fn running(em: &Prism, ei: usize, a: &QV) -> QV {
+    let e = &em.edges[ei];
+    let t = super::meet::tangent(&e.curve, &place(&e.curve, a), a);
+    let (from, to, with) = edge_places(em, ei);
+    let forward = match (&e.curve, &from, &to) {
+        (Crv::Line { .. }, Pos::T(s0), Pos::T(s1)) => s0.cmp(s1) == Ordering::Less,
+        _ => with,
+    };
+    if forward {
+        t
+    } else {
+        t.map(|x| x.neg())
+    }
 }
 
 /// Whether a direction `w` lies in the tangent plane of a surface whose
@@ -711,6 +723,175 @@ fn search(at: &dyn Fn(f64) -> ([f64; 3], [f64; 3]), quad: &Quad) -> Vec<(f64, Or
         out.push((0.5 * lo + 0.5 * hi, kind));
     }
     out
+}
+
+// ------------------------------------------------------- vertices
+
+/// An input vertex within the resolution of a plane, cylinder or cone face
+/// of the other input (S9d.2, REVIEW_NOTES.md's "A vertex within the
+/// resolution of a face"), the surface's point near its foot in the face
+/// and its input's boundary leaving it strictly on one side of the
+/// surface's level through it (`corner`), is `Degenerate` crossing the
+/// surface and missing it where the gap lies outside either input, as an
+/// edge is (`edge_faces`): a cube's corner `1e-12` off a rod's wall was
+/// fused with it into two solids, a cube inside a rod cut from it as a
+/// cavity behind a wall thinner than the resolution. A vertex on the
+/// surface exactly is the incidences'; one whose boundary runs along the
+/// surface (within the faces' parallel band) or crosses its level there is
+/// no contact of its own. Seams' and poles' vertices (without an input's
+/// id) and those among faces of one surface are none, as at a sphere.
+pub(super) fn vertex_faces(models: &[Prism; 2], res: f64) -> Result<()> {
+    let wide = |b: &([f64; 3], [f64; 3])| (b.0.map(|x| x - res), b.1.map(|x| x + res));
+    for o in 0..2 {
+        let (vm, qm) = (&models[o], &models[1 - o]);
+        // Each vertex's edge ends: the edge and whether it starts there.
+        let mut ends: Vec<Vec<(usize, bool)>> = vec![Vec::new(); vm.verts.len()];
+        for (ei, e) in vm.edges.iter().enumerate() {
+            ends[e.start].push((ei, true));
+            ends[e.end].push((ei, false));
+        }
+        for (v, mv) in vm.verts.iter().enumerate() {
+            let faces: Vec<usize> = ends[v]
+                .iter()
+                .flat_map(|&(ei, _)| vm.edges[ei].faces)
+                .collect();
+            if mv.id.is_none()
+                || faces.is_empty()
+                || faces.iter().all(|&f| one_surface(vm, faces[0], f))
+            {
+                continue;
+            }
+            let x = qv_f64(&mv.p);
+            for fq in 0..qm.faces.len() {
+                let b = wide(&qm.boxes[fq]);
+                if !(0..3).all(|k| b.0[k] <= x[k] && x[k] <= b.1[k]) {
+                    continue;
+                }
+                let Some(quad) = Quad::of(qm, fq) else {
+                    continue;
+                };
+                vertex_face(vm, &ends[v], &mv.p, qm, fq, &quad, res)?;
+            }
+        }
+    }
+    Ok(())
+}
+
+/// `vertex_faces`' rule at a vertex `a` of `vm`, its edge ends `ends`.
+fn vertex_face(
+    vm: &Prism,
+    ends: &[(usize, bool)],
+    a: &QV,
+    qm: &Prism,
+    fq: usize,
+    quad: &Quad,
+    res: f64,
+) -> Result<()> {
+    let side = quad.value(a).sign();
+    if side == Ordering::Equal {
+        // On the surface: the incidences' own rules.
+        return Ok(());
+    }
+    let Some(s) = quad.foot(a) else {
+        return Ok(());
+    };
+    let gap = qsub(&s, a);
+    let tol = q(res);
+    if qqdot(&gap, &gap).add_r(&-(&tol * &tol)).sign() == Ordering::Greater {
+        return Ok(());
+    }
+    if qm.in_face(fq, &s) == Loc::Out {
+        return Ok(());
+    }
+    let Some(extremum) = corner(vm, ends, quad, a) else {
+        return Ok(());
+    };
+    // A least value below the surface, or a greatest above it: the corner
+    // crosses it.
+    if side == extremum {
+        return Err(Error::Degenerate(NEAR_VERTEX_FACE));
+    }
+    let inside = [
+        vm.member(a, std::slice::from_ref(&gap)) == Loc::In,
+        qm.member(&s, &[gap.map(|x| x.neg())]) == Loc::In,
+    ];
+    if inside == [true, true] {
+        return Ok(());
+    }
+    Err(Error::Degenerate(NEAR_VERTEX_FACE))
+}
+
+/// Whether the surface's function at a vertex `a` of `m` is least
+/// (`Less`) or greatest (`Greater`) on its input's boundary there, to first
+/// order and strictly: every edge's direction away from the vertex and
+/// every face's sector between its two edge ends there on one side of the
+/// surface's tangent plane, decided exactly against its gradient at the
+/// vertex. A face's sector is convex where its second edge's direction lies
+/// on the face's side of its first (the face's direction into it from the
+/// first edge, its outward normal across the edge's running tangent), and
+/// is then spanned by the two (the faces' directions into them from their
+/// edges lie outside an acute sector: they are not taken). `None` (no
+/// contact of the vertex's own) where a sector is reflex or a half turn or
+/// a face has other than two edge ends there (an edge closed at the
+/// vertex, a face touching itself), where a direction lies within the
+/// faces' parallel band of the tangent plane (`along`: the faces' own
+/// tangency or incidence, U1's box on a rod's tangent plane), or where the
+/// directions take both signs (an edge or a face heading toward the
+/// surface: its own sections).
+fn corner(m: &Prism, ends: &[(usize, bool)], quad: &Quad, a: &QV) -> Option<Ordering> {
+    // Each face's edge ends: the direction away from the vertex, the
+    // edge's running tangent and the face's side of it.
+    let mut at_face: BTreeMap<usize, Vec<(QV, QV, usize)>> = BTreeMap::new();
+    let mut dirs: Vec<QV> = Vec::new();
+    for &(ei, start) in ends {
+        let t = running(m, ei, a);
+        let away = if start {
+            t.clone()
+        } else {
+            t.clone().map(|x| x.neg())
+        };
+        for (k, &f) in m.edges[ei].faces.iter().enumerate() {
+            at_face
+                .entry(f)
+                .or_default()
+                .push((away.clone(), t.clone(), k));
+        }
+        dirs.push(away);
+    }
+    for (&f, list) in &at_face {
+        let [(_, t, k), (second, ..)] = list.as_slice() else {
+            return None;
+        };
+        let n = m.normal_at(f, a);
+        let into = if *k == 0 {
+            qcross(&n, t)
+        } else {
+            qcross(t, &n)
+        };
+        if qqdot(&into, second).sign() != Ordering::Greater {
+            return None;
+        }
+    }
+    let g = quad.gradient(a);
+    let mut sign = None;
+    for w in &dirs {
+        if along(&g, w) {
+            return None;
+        }
+        let s = qqdot(&g, w).sign();
+        if sign.is_some_and(|x| x != s) {
+            return None;
+        }
+        sign = Some(s);
+    }
+    // Rising along every direction: least there.
+    sign.map(|s| {
+        if s == Ordering::Greater {
+            Ordering::Less
+        } else {
+            Ordering::Greater
+        }
+    })
 }
 
 // ------------------------------------------------------- other curves

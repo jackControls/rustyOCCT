@@ -1263,6 +1263,105 @@ fn inside(model: &Model, p: &V, d: &V) -> bool {
     }
 }
 
+/// A vertex within the resolution of a face of the other input (S9d.2,
+/// REVIEW_NOTES.md's "A vertex within the resolution of a face"; the
+/// curved engine's `near::vertex_faces` on exact planes): a vertex off a
+/// face piece's plane by at most `res`, its foot in the piece's closure,
+/// whose input's boundary leaves it strictly on one side of the plane (the
+/// directions from it to the corners of every convex face piece holding it,
+/// none within the faces' parallel band of the plane: the sine of its
+/// angle at most `10^-12`), is `Degenerate` crossing the plane and missing
+/// it where the gap lies outside either input. Two boxes, one's corner
+/// `1e-12` off the other's face, were fused into two solids. A vertex on
+/// the plane, one whose boundary runs along it or crosses it there, and a
+/// gap inside both inputs are no contact of the vertex's own.
+fn vertex_near_misses(models: &[Model; 2], res: f64) -> Result<()> {
+    let tol2 = q(res) * q(res);
+    let band = R::from_integer(BigInt::from(10).pow(24));
+    for k in 0..2 {
+        let (vm, fm) = (&models[k], &models[1 - k]);
+        let boxes: Vec<([f64; 3], [f64; 3])> = fm
+            .faces
+            .iter()
+            .map(|f| {
+                let (lo, hi) = float_box(&f.pieces.concat());
+                (lo.map(|x| x - res), hi.map(|x| x + res))
+            })
+            .collect();
+        for (p, _) in &vm.vertices {
+            let x = approx3(p);
+            for (face, b) in fm.faces.iter().zip(&boxes) {
+                if !(0..3).all(|i| b.0[i] <= x[i] && x[i] <= b.1[i]) {
+                    continue;
+                }
+                let n = &face.plane.n;
+                let s = face.plane.eval(p);
+                let nn = dot(n, n);
+                if s == zero() || &s * &s > &tol2 * &nn {
+                    continue;
+                }
+                let foot = sub(p, &scale(n, &(&s / &nn)));
+                if !face.pieces.iter().any(|piece| holds_point(piece, &foot)) {
+                    continue;
+                }
+                // The boundary's directions from the vertex, each against
+                // the plane's normal.
+                let mut sign = None;
+                let mut contact = true;
+                'pieces: for f in &vm.faces {
+                    if f.plane.eval(p) != zero() {
+                        continue;
+                    }
+                    for piece in f.pieces.iter().filter(|piece| holds_point(piece, p)) {
+                        for c in piece.iter().filter(|c| *c != p) {
+                            let w = sub(c, p);
+                            let d = dot(n, &w);
+                            if &d * &d * &band <= &nn * dot(&w, &w) {
+                                contact = false;
+                                break 'pieces;
+                            }
+                            let ds = d.cmp(&zero());
+                            if sign.is_some_and(|x| x != ds) {
+                                contact = false;
+                                break 'pieces;
+                            }
+                            sign = Some(ds);
+                        }
+                    }
+                }
+                let Some(rising) = sign.filter(|_| contact) else {
+                    continue;
+                };
+                // Least where every direction rises: below the plane (inside
+                // its face's input) it crosses it, as does a greatest above.
+                let least = rising == std::cmp::Ordering::Greater;
+                if (s < zero()) == least {
+                    return Err(Error::Degenerate(NEAR_VERTEX_FACE));
+                }
+                let gap = sub(&foot, p);
+                if inside(vm, p, &gap) && inside(fm, &foot, &neg(&gap)) {
+                    continue;
+                }
+                return Err(Error::Degenerate(NEAR_VERTEX_FACE));
+            }
+        }
+    }
+    Ok(())
+}
+
+/// A vertex within the resolution of a face of the other input (as the
+/// curved engine's).
+const NEAR_VERTEX_FACE: &str = "a vertex within the resolution of a face (S9d.2)";
+
+/// Whether a point on a convex planar cycle's plane lies in its closure.
+fn holds_point(poly: &[V], x: &V) -> bool {
+    let normal = area2(poly);
+    (0..poly.len()).all(|m| {
+        let (a, b) = (&poly[m], &poly[(m + 1) % poly.len()]);
+        dot(&cross(&sub(b, a), &sub(x, a)), &normal) >= zero()
+    })
+}
+
 /// Whether a point off a closed surface of triangles lies inside it: the
 /// parity of a ray's crossings (the ray's sides of the triangle's edges
 /// agreeing and the plane ahead), retried in other directions when the ray
@@ -1468,6 +1567,7 @@ pub(super) fn build(poly: &Polyhedron) -> Result<Vec<Component>> {
     }
     let tolerance = poly.tolerance();
     let models = [model(&poly.a, Operand::A)?, model(&poly.b, Operand::B)?];
+    vertex_near_misses(&models, tolerance.linear())?;
     // Each input entity's operand and role.
     let info: BTreeMap<EntityId, (Operand, Role)> = models
         .iter()
