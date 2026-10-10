@@ -12871,7 +12871,114 @@ Decisions for S9, recorded before its code (2026-09-28):
   `given_met_booleans`, `curved_booleans` and `spline_crossing_booleans`
   under the emulated glibc `hypot` with debug assertions and overflow
   checks (`near_miss_booleans` 4.5 s; 5.0 s at opt-level 2 with debug
-  assertions).
+  assertions). DRAW survey: below (the edge rule refuses 10 registered
+  cases that evaluated, open).
+* **DRAW survey of the curved near misses (2026-10-10,
+  `UPSTREAM_TESTS.md`).** At `f9e54f0d` (`s9c2-kernel` at `37732abc` with
+  "A ball within the resolution of a cylinder or cone, and edges within it
+  of a face" merged, branch `fix-near-miss-curved` at `53eb9782`:
+  `near::sphere_quadrics` before the meetings, `near::edge_faces` after
+  `edge_near_misses`, `near::nearest_on_run` for its other curves, and
+  `projection::rise_jet`'s narrower jets; the public dataset, 120 seconds
+  a case, four at once, on a host at load 6 to 24). **Ten registered cases
+  move: the edge rule refuses them, and the contract run fails for those
+  ten (open).** The 1,802 self-contained cases of the Boolean group on
+  both backends: native DRAW every status, reason and error the last
+  survey's (`ef5d66fd`) field for field; on the Rust adapter 80 cases
+  move, all to "an edge within the resolution of tangency to a face
+  (S9d.2)": `bopfuse_simple`, `bopcut_simple`, `bopcommon_simple` and
+  `boptuc_simple`'s `U1` and `Y5` (S9c.1's cylinder and a box turned 30
+  degrees about z, one of its faces on the cylinder's tangent plane;
+  registered, evaluating with every audited value agreeing with native
+  DRAW's) and 72 refused before by other rules (40 a result and 24 a piece
+  thinner than the resolution, 8 two meetings within rounding along an
+  arc: the same grids' boxes turned 45 or -45 degrees, `R2` to `Y3`); 979
+  evaluate, every one registered, 600 refused, 223 unsupported on both,
+  none failing or timing out; none is refused with the sphere's new
+  reason. The 1,814 restore cases on the Rust adapter (916 unsupported, 561
+  needing private data, 276 `failed` by the reader's validator, 57
+  evaluating, 4 timing out): `boolean/bfuse_complex/L3` and
+  `bopcommon_complex/K5` (registered, evaluating) and
+  `bugs/moddata_1/bug160_1` to `_6` (their Boolean evaluating before, the
+  case stopping at `explode result f`; native DRAW evaluates 5, the sixth a
+  known failure) are refused with the edge rule's reason, and so are
+  `bcut_complex/P9`, `bopfuse_complex/K4` (a piece thinner than the
+  resolution before), `bfuse_complex/C4`, `C5` (a plane within rounding of
+  a cylinder's direction) and `bugs/modalg_1/bug14777` (a tangency between
+  the inputs); `bugs/modalg_1/buc60532`, `_1`, `_2` and
+  `bugs/modalg_6/bug23585` end unsupported as before in 105 to 118 s (timed
+  out at the last survey's load), and `buc60531_1`, `_2`,
+  `bugs/modalg_5/bug23849_1` and `_3` time out at their first restores as
+  before. The 171 the import reaches on native DRAW too: native every
+  status and reason as before; 57 evaluate on both backends, 78 are
+  refused by S9's rules, 31 are bodies none of the kernel's constructions,
+  3 spline bodies and 2 arguments of several solids; 24 unsupported
+  natively. Where the rules are reached: an instrumented build of
+  `f9e54f0d` (not committed: a line written the first time a case takes
+  each path) over the 1,802 and the 171, its statuses and reasons the
+  survey's: 670 (554 and 116) reach the curved arrangement, 643 (530 and
+  113) `sphere_quadrics`; 74 (68 and 6) hold a sphere face whose widened
+  box meets a cylinder face (2 a cone face too), the nearest point found
+  in each, 32 tangent exactly or centred on the axis (all refused further
+  on as a tangency between the inputs), the others deeper or farther than
+  the resolution: none in the band, no refusal. `edge_faces`: 566 (473
+  and 93) run it, their edges' boxes meeting a plane face in pairs of
+  lines (224 cases), conics (409) and circles (26), a cylinder face in
+  lines (144) and conics (110), a cone face in lines (54) and conics
+  (104), and other curves against each (2: `bcut_complex/G9`,
+  `bugs/modalg_2/bug417`, none settled); 352 have an extremum strictly
+  inside an edge, 56 a point exactly on the surface; 97 (86 and 11) a
+  point within the resolution (a case counted under each outcome its
+  points reach): off the face in 30, a face heading toward the surface in
+  29, the gap inside both inputs in 1 (`bugs/modalg_4/bug763`, refused
+  further on as before), and 87 (80 and 7) refused, 69 crossing and 18
+  missing, every gap at rounding (`2.3e-17`
+  to `5.7e-15`; `1.4e-14` to `5.1e-14` in `bopfuse_complex/K4`,
+  `bug14777` and `L3`), every one a conic (a cylinder's cap circle in the
+  other input's frame) against a plane face, `L3`'s against a cylinder
+  face. Why: in 85 of the 87 one of the edge's faces, the cylinder's wall,
+  runs from its cap circle exactly along the surface (`leaves_away`'s sign
+  zero, which counts as leaving it): the turned box's face lies on the
+  wall's tangent plane but for the frame's rounding, a tangency along a
+  ruling the faces' own rules decided before, and the cap circle's least
+  distance to the plane is that rounding. The other two (`C4`, `C5`) have
+  both faces strictly leaving and were refused before. A scratch build
+  (not committed) with `leaves_away` taking a face at sign zero as no
+  contact returns 91 of the 93 cases (the 87 and `bug160`) to the last
+  survey's statuses and reasons, the ten registered cases evaluating with
+  every Rust value the last audit's bit for bit, `C4` and `C5` keeping the
+  new reason; it still refuses the instrumented build's controls and
+  passes `near_miss_booleans` (release) but was not checked further. A
+  minimal reproducer (DRAW, the Rust adapter): `pcylinder c 1 2; box b
+  -0.5 -2 0 1 1 2; trotate b 0 0 0 0 0 1 30; bcut result c b` (a block
+  outside the cylinder, its face on the tangent plane) evaluated at the
+  parent (`47e086c5`: the cylinder's volume `2 pi`, the common empty) and
+  is refused now as missing the face by `1.1e-16`; `U1` itself (`bop`,
+  `bopfuse` of `pcylinder b1 1 2` and `box b2 -r -1 0 2*r 1+r 2`, `r =
+  sqrt(3)/2`, turned 30 degrees about z) as missing by `1.13e-16`. The
+  level block (no rounding) evaluates as before. `nearest_on_run`: 2 cases
+  (`G9`, `bug417`) reach it, no point within twice the resolution.
+  `rise_jet`: no case reaches it, so the jet change cannot move a value.
+  Controls on the instrumented worker took each path: a ball of radius
+  0.75 `1e-12` off a rod's wall and `1e-12` into it (refused, missing and
+  crossing), a dome turned by 0.3 whose rim circle misses and crosses a
+  box's top by `1e-11` (refused through the edge rule's band), a ball
+  about a rod's dimple rim within `1.6e-12` of it (refused by the sphere's
+  edge rule through `nearest_on_run`, with `rise_jet` taken), and each
+  beyond the resolution evaluating. No case fails, crashes or panics on
+  either backend. The volume audit (both backends, the 1,046 audited
+  before): both backends' values the last audit's bit for bit on the
+  1,036 still evaluating (no moved value, the largest relative move 0),
+  native statuses the same, the 35 disagreements as before and the ten
+  refused cases without values (45). No case newly evaluates, so none is
+  registered (1,132 cases), and the ledger does not change (`--ledger`
+  holds). A full contract run of the manifest with the dataset (both
+  backends, 30 seconds a case, an absolute output directory) holds for
+  every case but the ten, `unsupported` where `viewer_skipped` is
+  expected (the manifest is not changed: their refusal is the open item);
+  the slowest Boolean case 3.8 s (`bopfuse_simple/ZK8`, on a host at load
+  3 to 21), the restore cases 0.1 to 3.1 s (`bcommon_complex/B9`), E5, G9
+  and `bug417` 1.2 s each, the rollex 0.5 to 0.6. No kernel change.
 
 * **The edge rule's faces along the surface (amending the note above,
   found by the DRAW survey at `f9e54f0d`), done (2026-10-10).** The edge
