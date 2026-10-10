@@ -10129,6 +10129,83 @@ Decisions for S9, recorded before its code (2026-09-28):
     tolerance, 1.3e-7, none a B-spline; its fuse and cut within the
     comparison's limit, 2.6e-9 and 8.0e-9 adaptively). S9e.4b.4c.1's kernel
     next.
+  * **S9e.4b.4c.1 implemented** (`solid/boolean/curved/meshes.rs`: the
+    polyhedron's stored triangles as a leaf model, `Mesh::member` and
+    `in_face`; `polyhedra/imported.rs`'s `triangles` and `involved`;
+    `curved/mod.rs`'s `applies` and `model_of`; `model.rs`'s `mesh` and
+    `may_hold_cavities`; `given.rs` without its refusal and with the given
+    solid's `cavities`; `assemble.rs` and `polyhedra.rs`: each cavity a shell
+    and a void region of its own, every shell's orientation tried where an
+    input holds a cavity, S9b's containment of a cavity's point on a far
+    fragment's plane; `imported.rs`: one solid region of several shells a
+    polyhedron), as the refined decisions describe. All 34 fixtures as
+    declared (30 within the kernel's enclosures, each at most `1e-9` wide;
+    the touching ball `Degenerate("a tangency between the inputs (S9c)")`,
+    the hollow box's inner ball's fuse `OutOfDomain("a cavity among several
+    solids (S9c)")`), every history complete over the imported bodies'
+    stored ids, results deterministic and moved rigidly, both inputs
+    translated and turned keeping the reference's volumes, every body its
+    stored triangles (its volume its construction's, points in its material
+    inside and in its cavity outside, its stored vertices on its boundary),
+    the kernel's own notched and hollow boxes written by its writer, read
+    back and imported, their Booleans with a leaning rod and a ball the
+    kernel's own results' (15 of 16 evaluating, the hollow box's fuse with
+    the rod through its cavity refused alike: its void a ring the
+    validator's rays leave undecided), and the hollow box's cavity split in
+    two by a slab and that result given to a ball, each cavity a shell of
+    its own (`tests/polyhedra_curved_booleans.rs`, 6.8 s in release on a host
+    at load 12 to 37, 7.5 s at `opt-level` 2 with debug assertions, 9.0 s in
+    release with debug assertions and overflow checks under the emulated
+    correctly rounded `hypot`, where the imported polyhedra's, imported
+    bodies', plane parts', prism leaves', primitive chains' and piece trees'
+    test files pass too). S9e.4b.2's `hollow_slab`, declared `unsupported`
+    until now, is solid within its reference
+    (`generate_imported_polyhedra_boolean_fixtures.py` declares it so, its
+    margins checked; `tests/imported_polyhedra_booleans.rs`'s hollow box
+    imports and a pyramid against a cylinder and a result of it given with
+    a cylinder evaluate with the pair identities), and STEP-b's `box_void`
+    imports, its cut and common by a box its volume
+    (`tests/imported_booleans.rs`). `compare_polyhedra_curved_boolean.py` 18
+    matches and 16 reviewed (the 2 captured and, with the kernel, entity
+    counts: the kernel's meetings with a stored face of corners rounded in a
+    turned frame cross its triangles' diagonals at vertices where OCCT's one
+    edge crosses the face, OCCT's unified results keeping its sphere's and
+    the bore's seams), every enclosure within the reference;
+    `compare_imported_polyhedra_boolean.py` 47 and 1, the kernel within the
+    reference on all 47 solid and empty cases; every other comparison of
+    `HANDOFF.md`'s table unchanged with 0 failures; the release suite (668
+    tests) and the tools' unit tests (371) passing, the ledger unchanged. The
+    `boolean` fuzz target's `MESHES` stage (the chained cut's first solid of
+    plane faces written, read back and imported, and the kernel's own cut,
+    each less a ball about the turned box's axis, by the chained byte's next
+    bit): replayed (an instrumented build, not committed), 15 of the
+    corpus's 1,470 inputs and regressions reach it, 11 evaluating both ways
+    with one volume, 2 refused alike as a tangency and 2 where the kernel's
+    own polyhedral cut given is `ComputationLimit("a given result rebuilt
+    differently")` (S9e.2's match) and the import a tangency; the `IMPORTED`
+    stage's planar first result cut by a round partner that S9e.4b.2
+    refused evaluates (37 such cuts, none refused). Replays with debug
+    assertions, one process an input, natively and under the emulated
+    correctly rounded `hypot` (with overflow checks): the boolean corpus and
+    its regressions (1,470 inputs) and the split corpus and its regressions
+    (3,571), no failure, the slowest 15.0 s and 4.5 s natively on a host at
+    load 30 to 80 (15.0 s and 97 s emulated at that load: the emulation's
+    `hypot` exact by big rationals, a split input 33 s emulated where 0.17 s
+    natively at load 7). A trial of the survey's 171 restore cases the
+    import reaches, on the Rust adapter and natively (not the survey: nothing
+    registered): no case moves with this step, 59 evaluating on both
+    backends as before, `bfuse_complex/K1` refused as a tangency between the
+    inputs and `bugs/modalg_6/bug28773` as two cylinders' axes within
+    rounding of parallel as S9e.4b.4b.2a's trial found, none reaching an
+    imported polyhedron against curved faces or a cavity; native DRAW's
+    statuses as before (147 evaluating, 24 unsupported). Open:
+    S9e.4b.4c.2 (deeper trees: a pocket within a pocket, chains no model
+    matches); a kept cavity's containment the validator's rays leave
+    undecided beside a plane face holding a section's projected pcurve (the
+    kernel's own cavity bodies alike), the validator's track's; a ball within
+    the resolution of a plane but missing it (S9d.1's rule refuses only a
+    crossing within it), found by the evidence's draft. Pending: its DRAW
+    survey, its capture's Linux record and its campaigns.
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces

@@ -62,7 +62,9 @@ a dome or a conical pocket: `solid/imported.rs`'s `leaves`), and
 S9e.4b.4b.2b.1's with a primitive's flat, a prism of one cap or a pocket (a
 ball's half with a frustum on its disc, a prism under or on another, a plate
 less a slot holding a crescent: `solid/imported.rs`'s `bosses` and
-`chain_piece`).
+`chain_piece`), and S9e.4b.4c.1's imported polyhedra against curved faces
+and with cavities, their stored triangles a leaf of the curved engine
+(`curved/meshes.rs`).
 
 ## Contract
 
@@ -1140,6 +1142,18 @@ stored vertices fold is `Degenerate`. An imported prism of lines against an
 imported polyhedron is decided on its stored vertices too, not S9e.4a's
 construction, whose corners re-derived from rounded local coordinates can
 miss the vertices two files share by an ulp (`bopfuse_complex/K5`).
+S9e.4b.4c.1: against a solid with curved faces or edges, and in a result of
+one given to a Boolean of curved faces, the polyhedron is a leaf of the
+curved engine (`curved/meshes.rs`): each triangle of its stored model a
+model face on its exact plane, named by its stored face (so a result face
+of one stored face joins its triangles' pieces across their diagonals), each
+triangle's edge a line between stored vertices named by the stored edge with
+those ends (a diagonal by none), its membership the parity of an exact ray's
+crossings, a point on its surface pushed along directions decided by the
+wedges of the triangles holding it. A body of one solid region of several
+shells (a cavity) is such a polyhedron too, in both engines; each cavity of
+a result is a shell and a void region of its own, and where an input holds
+a cavity the curved assembly tries every shell's orientation.
 
 An imported body of one sphere, cylinder or cone face and plane faces that
 is none of S9e.4a's constructions is S9e.4b.3a's plane piece
@@ -1338,11 +1352,10 @@ chain the match rejects `OutOfDomain("an imported body of several primitives oth
 chain of them (S9e.4b.4c)")`.
 
 Refused: a joint of two arcs whose circles each hold other arcs of the
-path, off either (`OutOfDomain`, S9e.4b.4: neither circle can move); an
-imported polyhedron against a solid with curved faces or edges, or a result
-of one given to a Boolean of curved faces (`OutOfDomain`, S9e.4b.4: the
-curved engine decides on constructions); a polyhedron with a cavity or
-several shells (S9e.4b.4); a plane piece no Boolean tree of its primitive
+path, off either (`OutOfDomain`, S9e.4b.4: neither circle can move); a
+polyhedron of several solids (S9e.4b), a cavity among several solids (S9c,
+by design), a kept cavity whose containment the validator's rays leave
+undecided (`ComputationLimit`, as the kernel's own); a plane piece no Boolean tree of its primitive
 and its planes' hulls matches (a pocket within a pocket: `OutOfDomain`,
 S9e.4b.4); a piece whose planes pass through its cone's
 apex (`Degenerate`, S9's rule: `shading_132`); a body of several
@@ -3767,6 +3780,43 @@ multiple root; and the engine's rules.
   cases the import reaches: no case moves (59 evaluating on both backends,
   `bfuse_complex/K1` a tangency between the inputs as S9e.4b.4b.2a's trial
   found).
+* **S9e.4b.4c.1 evidence (imported polyhedra against curved faces and with
+  cavities), before its kernel code.** S9e.4b.2's bodies (a pyramid, a
+  frustum of one, a slanted wedge, a tetrahedron, an octahedron, a notched
+  box, a hollow box) and S9e.4a's ball read again, and one body OCCT wrote (a
+  box in a turned frame less a box in another inside it: a cavity whose faces
+  are two triangles each) under `rust/fixtures/imported/poly_cavity.brep`.
+  `generate_polyhedra_curved_boolean_fixtures.py --check` writes
+  `boolean-polyhedra-curved-cases.txt`, `-expected.tsv`, `-frames.tsv` and
+  `-bodies.txt`: 34 cases (12 groups; 30 solid, 3 degenerate: a ball
+  tangent to the tetrahedron's base, 1 unsupported: a ball inside the hollow
+  box's cavity fused, a cavity among several solids) against rods, balls
+  and a frustum, as object and tool, the tetrahedron and the imported ball,
+  two chains and the cavities' ball and slab, from
+  `polyhedra_curved_boolean_reference.py` (S9e.3a's chained reference with
+  convex hulls of exact points; two families 4.2e-36, each body's closed
+  form 1.0e-41, Monte Carlo 2.7 standard errors), every stored vertex within
+  2.2e-16 of the size on its construction's planes.
+  `compare_polyhedra_curved_boolean.py` reproduces
+  `occt-boolean-polyhedra-curved-preimplementation` (keyed on
+  `polyhedra/imported.rs`'s refusal of an imported polyhedron against curved
+  faces, the probe `unsupported` on all 34 before the step): every result
+  valid, 32 match, 2 reviewed (BRepGProp's default integration; the
+  tetrahedron's common with the ball no closer than its edges' tolerance).
+* **Kernel (S9e.4b.4c.1).** `tests/polyhedra_curved_booleans.rs`: all 34
+  fixtures as the reference (30 within the kernel's enclosures, each at most
+  `1e-9` wide; the touching ball `Degenerate`, the inner ball's fuse a cavity
+  among several solids), every history complete over the imported bodies'
+  stored ids, results deterministic and moved rigidly, moved inputs keeping
+  the reference's volumes, every body its stored triangles (its cavity
+  outside it), the kernel's own notched and hollow boxes written, read back
+  and imported (their Booleans with a rod and a ball the kernel's own
+  results'), and a cavity split in two by a slab given to a ball.
+  `compare_polyhedra_curved_boolean.py`: 18 matches and 16 reviewed (the
+  native measures and, with the kernel, entity counts: its meetings across a
+  stored face's diagonals, OCCT's seams). S9e.4b.2's `hollow_slab` solid
+  with it, STEP-b's `box_void` imported. A trial of the 171 DRAW restore
+  cases the import reaches: no case moves (59 evaluating on both backends, `bfuse_complex/K1` a tangency between the inputs and `bugs/modalg_6/bug28773` axes within rounding of parallel as before, none reaching an imported polyhedron against curved faces or a cavity; native DRAW's statuses as before).
 * **Fuzzing.** The `boolean` target (`FUZZING.md`): the split target's line
   and arc profiles, the tool offset exactly in the axis-aligned frame or
   sharing the tilted one's origin, heights equal, spanning, overlapping,
@@ -3789,7 +3839,10 @@ multiple root; and the engine's rules.
   S9e.4b.4a: a lens in the object's frame given the chosen
   operation, then written, read back, imported and given it again, both
   volumes equal (`JOINTS`, by the chained byte's next bit; in the tilted
-  frame its joints round off both circles once read back).
+  frame its joints round off both circles once read back); S9e.4b.4c.1: the
+  chained cut's first solid of plane faces written, read back and imported
+  and the kernel's own cut each less a ball about the turned box's axis, one
+  volume (`MESHES`, by the chained byte's next bit).
 
 ## DRAW commands
 
