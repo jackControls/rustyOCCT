@@ -203,6 +203,14 @@ impl Polyhedron {
         let topology =
             Topology::from_parts(component.parts.with_measured_enclosures(), self.tolerance())
                 .map_err(|issues| {
+                    // S9a's rule: a result touching itself at a vertex (one
+                    // shell's faces about it in two fans) is degenerate.
+                    if issues
+                        .iter()
+                        .any(|i| i.kind == crate::topology::IssueKind::NonManifoldVertex)
+                    {
+                        return Error::Degenerate("a result touching itself at a vertex");
+                    }
                     // Undecided, not invalid (S9d.4b.1, S9d.4b.2a).
                     if let Some(e) = super::undecided(&issues) {
                         return e;

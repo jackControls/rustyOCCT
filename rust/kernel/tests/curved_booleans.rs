@@ -300,3 +300,91 @@ fn two_arcs_of_one_circle_are_its_circle() {
         );
     }
 }
+
+/// Equal cylinders whose axes cross at a right angle (exact frames) are
+/// tangent at the two points where their ellipses cross. A plate's round
+/// hole against a rod of its radius across it (the Steinmetz pair of
+/// `bfuse_complex/K1`'s part bore and tool rod), as built and as a box
+/// already cut by a rod along the hole, touch each other there (outward
+/// normals opposite): each operation, either way round, is refused as a
+/// tangency between the inputs, as a rod tangent to the hole at one point
+/// is. The fuse escaped as an invalid topology (the result touching itself
+/// at the two points), the cut evaluated and the common was refused as two
+/// solids touching. Whole rods overlap there (normals alike): their fuse
+/// and common are the Steinmetz solids, their cut touches itself.
+#[test]
+fn equal_crossing_cylinders_are_a_tangency() {
+    use rusty_occt::identity::OperationId;
+    use rusty_occt::{Boundary, Error, Frame3, Point2, Point3, Profile, Solid, Tolerance, Vec3};
+    let tol = Tolerance::new(1e-7, 1e-12).unwrap();
+    let frame = |n: Vec3, x: Vec3| Frame3::new(Point3::new(1.0, 2.0, 0.5), n, x, tol).unwrap();
+    // The plate's frame along y, the rods' along x.
+    let along_y = frame(Vec3::new(0.0, 1.0, 0.0), Vec3::new(0.0, 0.0, 1.0));
+    let along_x = frame(Vec3::new(1.0, 0.0, 0.0), Vec3::new(0.0, 1.0, 0.0));
+    let rectangle = || {
+        Boundary::polygon(
+            vec![
+                Point2::new(0.0, 0.0),
+                Point2::new(6.0, 0.0),
+                Point2::new(6.0, 9.0),
+                Point2::new(0.0, 9.0),
+            ],
+            tol,
+        )
+        .unwrap()
+    };
+    let circle = |x: f64, y: f64, r: f64| Boundary::circle(Point2::new(x, y), r, tol).unwrap();
+    let prism = |outer: Boundary, holes: Vec<Boundary>, op: u64, f: Frame3, h: [f64; 2]| {
+        let profile = Profile::new(outer, holes, tol).unwrap();
+        Solid::extrude_with(OperationId(op), profile, f, h[0], h[1])
+            .unwrap()
+            .0
+    };
+    // The hole about (3, 4.5) of radius 1.5: its axis x = 5.5, z = 3.5.
+    let holed = prism(
+        rectangle(),
+        vec![circle(3.0, 4.5, 1.5)],
+        1,
+        along_y,
+        [0.0, 9.0],
+    );
+    let block = prism(rectangle(), vec![], 1, along_y, [0.0, 9.0]);
+    let bore = prism(circle(3.0, 4.5, 1.5), vec![], 2, along_y, [-1.0, 10.0]);
+    let (cut, _) = block.cut(OperationId(3), &bore).unwrap();
+    assert_eq!(cut.len(), 1);
+    // The rod's axis y = 6.5, z = 3.5 crosses the hole's at a right angle;
+    // a rod of radius 1 about z = 1 touches the hole at one point.
+    let crossing = prism(circle(4.5, 3.0, 1.5), vec![], 4, along_x, [-1.0, 10.0]);
+    let touching = prism(circle(4.5, 0.5, 1.0), vec![], 4, along_x, [-1.0, 10.0]);
+    let tangency = Error::Degenerate("a tangency between the inputs (S9c)");
+    for (name, plate) in [("holed", &holed), ("cut", &cut[0])] {
+        for (rod_name, rod) in [("crossing", &crossing), ("touching", &touching)] {
+            for (a, b) in [(plate, rod), (rod, plate)] {
+                let outcomes = [
+                    a.fuse(OperationId(5), b).map(|r| r.0.len()),
+                    a.cut(OperationId(5), b).map(|r| r.0.len()),
+                    a.common(OperationId(5), b).map(|r| r.0.len()),
+                ];
+                for outcome in outcomes {
+                    assert_eq!(outcome, Err(tangency.clone()), "{name} and {rod_name}");
+                }
+            }
+        }
+    }
+    // The bore as a rod against the crossing rod: both of radius 1.5 and
+    // length 11, their common 16 r^3 / 3.
+    let volume = |out: Vec<Solid>| out.iter().map(|s| s.mass_properties().volume).sum::<f64>();
+    let (r, length) = (1.5f64, 11.0f64);
+    let common = 16.0 * r.powi(3) / 3.0;
+    let fuse = 2.0 * std::f64::consts::PI * r * r * length - common;
+    for (a, b) in [(&bore, &crossing), (&crossing, &bore)] {
+        let f = volume(a.fuse(OperationId(5), b).unwrap().0);
+        let m = volume(a.common(OperationId(5), b).unwrap().0);
+        assert!((f - fuse).abs() <= 1e-9 * fuse, "fuse {f}");
+        assert!((m - common).abs() <= 1e-9 * common, "common {m}");
+        assert!(matches!(
+            a.cut(OperationId(5), b),
+            Err(Error::Degenerate(_))
+        ));
+    }
+}

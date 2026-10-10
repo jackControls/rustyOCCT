@@ -270,7 +270,12 @@ input meets a face surface of the other in a quadratic surd `a + b sqrt(d)`
 circles), kept where it lies strictly inside both the edge and the face's
 region (a vertex of one on the other's surface, an edge meeting an edge,
 or a tangency is `Degenerate`); the two ellipses of equal circular
-cylinders whose axes cross add their two crossing points. Two faces'
+cylinders whose axes cross add their two crossing points, where the
+surfaces are tangent: inside both faces with the faces' outward normals
+opposite there (the inputs touching each other, a bore against a rod of its
+radius across it) they are a tangency between the inputs, `Degenerate` for
+every operation; with the normals alike (whole rods, overlapping there)
+they are vertices. Two faces'
 surfaces meet in lines, generatrices, plane sections of cylinders (the
 cylinder's `w = a0 + a1 cos t + a2 sin t` as a conic `c + a cos t + b sin t`)
 or those two ellipses; each branch is split at the vertices on it and its
@@ -3632,6 +3637,23 @@ multiple root; and the engine's rules.
   with every check; `bugs/modalg_6/bug28773` is refused as two cylinders'
   axes within rounding of parallel (its tube's disc frame leaning 2.2e-33
   off its walls), `bfuse_complex/K1` as S9e.4b.4b.2's.
+* **Equal cylinders with crossing axes (S9c.1's tangent points).** A
+  plate's round hole against a rod of its radius whose axis crosses the
+  hole's at a right angle (`K1`'s part bore and tool rod, built or as a box
+  already cut by a rod) gave an `InvalidTopology` fuse, a cut and a
+  `Degenerate` common. The two points where the equal cylinders' ellipses
+  cross, the surfaces tangent there, are now a tangency between the inputs
+  where they lie inside both faces with the faces' outward normals opposite
+  (the inputs touching each other there), every operation `Degenerate` as
+  a rod tangent to the hole at one point is; whole rods (normals alike)
+  keep their Steinmetz fuse and common, their cut touching itself. A result
+  found touching itself at a vertex is `Degenerate` on every path
+  (REVIEW_NOTES.md's "Equal cylinders with crossing axes").
+  `tests/curved_booleans.rs`'s `equal_crossing_cylinders_are_a_tangency`;
+  S9c.1's fixtures and `compare_curved_boolean.py` (42 matches, 2
+  reviewed) unchanged, and the upstream whole-rod cases
+  `bfuse_complex/J5`, `bopfuse_simple/ZD8` and `ZE1` and
+  `bopcommon_simple/ZD8` and `ZE1` still evaluating.
 * **Fuzzing.** The `boolean` target (`FUZZING.md`): the split target's line
   and arc profiles, the tool offset exactly in the axis-aligned frame or
   sharing the tilted one's origin, heights equal, spanning, overlapping,

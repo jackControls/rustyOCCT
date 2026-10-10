@@ -37,7 +37,9 @@ then for S9e.4b.3c.3b (branch `s9e4b3c3b`, over `s9c2-kernel` at `e8940c22`),
 then for S9e.4b.4a (branch `s9e4b4`, over `s9c2-kernel` at `699b9b85`),
 then for the DRAW survey of S9e.4b.3c.3b, S9e.4b.4a and the scheduled
 replay's fixes (branch `s9-draw-9`, over `s9c2-kernel` at `16121052`),
-then for S9e.4b.4b.1 (branch `s9e4b4b`, over `s9c2-kernel` at `64673ebd`).
+then for S9e.4b.4b.1 (branch `s9e4b4b`, over `s9c2-kernel` at `64673ebd`),
+then for equal cylinders' tangent points where their axes cross (branch
+`steinmetz-tangency`, over `rust-kernel` at `d1869f2f`).
 
 ## Where things stand
 
