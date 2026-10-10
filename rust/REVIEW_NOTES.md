@@ -13353,6 +13353,91 @@ Decisions for S9, recorded before its code (2026-09-28):
   16 s under AddressSanitizer (the startup's replay 1,657 s of its 3,600);
   `split` clean, 1,222 runs, the slowest under a second.
 
+* **A vertex within the resolution of a face refined, before its code
+  (2026-10-10; HANDOFF's item 5 (a)).** Why it is evaluated today: the
+  near-miss rules hold a sphere against a face, an edge or a vertex, and an
+  edge's curve against a plane, cylinder or cone face at a point strictly
+  inside the edge where the surface's function along it is least or
+  greatest; a line has no such point against a plane, and a corner's
+  extremum lies at its end. So a cube's corner `1e-12` to `1e-9` off a
+  rod's wall is fused with it into two solids, a cube inside a rod with its
+  corner that near the wall is cut from it as a cavity behind a wall
+  thinner than the resolution, and two boxes, one's corner that near the
+  other's face, are fused into two solids by the polyhedral engine (S9b),
+  which has no near-miss rule at all. The user's decision holds ("contact
+  only"): within the resolution of contact, without a decided contact, the
+  pair is refused as a near miss with a named reason. Decisions:
+  - **Within the resolution**: an input vertex (with an input's id, its
+    faces on more than one surface: seams' and poles' vertices and those
+    among faces of one surface are none, as at a sphere) not on the other
+    input's plane, cylinder or cone surface exactly (on it, the
+    incidences' rules: "a vertex of one input on the other's face"),
+    whose distance from the surface's point near its foot is at most the
+    resolution, that point in the face (on its boundary too). The point is
+    the edge rule's (`near::Quad::foot`): a plane's foot exactly, a
+    cylinder's or a cone's a rational point of it toward the binary64 foot,
+    off the true foot by rounding, far below the resolution; the distance
+    is compared exactly. In the curved engine (`near.rs`, after the edge
+    rule, before the pierces) for every vertex in a face's box widened by
+    the resolution; in the polyhedral engine (`polyhedra.rs`, before the
+    fragments) for every vertex against every face piece of the other on
+    its exact plane (the foot exact, its piece's closure deciding the
+    face).
+  - **The tangent cone against the surface**: the vertex is a contact of
+    its own only where its input's boundary leaves it strictly on one side
+    of the surface's level through it, its directions decided exactly
+    against the surface's gradient at the vertex (in the vertex's field,
+    as the edge rule's `leaves_away`). The directions: each edge at the
+    vertex along its tangent away from it (both ways for an edge closed
+    there); each face at the vertex has a sector there between its two
+    edge ends, convex where the second's direction lies on the face's side
+    of the first (the face's direction into it from the first edge, its
+    outward normal across the edge's running tangent, against the second's
+    direction, exactly), and then spanned by those two directions (a
+    face's directions into it from its edges lie outside an acute sector:
+    they are not taken). A reflex sector (more than a half turn: an L's
+    inner corner on its cap, a curved face's sector past a half turn)
+    cannot lie in an open half-space, and a face with other than two edge
+    ends there (an edge closed at the vertex, a face touching itself) is
+    not decided: no contact of the vertex's own. In the polyhedral engine
+    every convex face piece holding the vertex, the directions to its
+    corners (the face's sector the union of its pieces'). A direction within
+    the faces' parallel band (`along`: the sine of its angle to the tangent
+    plane at most `10^-12`, `(g . w)^2 10^24 <= |g|^2 |w|^2`, exactly)
+    runs along the surface: the faces' own tangency or incidence (U1's and
+    Y5's box on a rod's tangent plane, a box's edge on a ruling within
+    rounding, a box on another's face but for a frame's rounding), no
+    contact of the vertex's own. Directions of both signs: the boundary
+    crosses the level there, an edge or a face heading toward the surface,
+    whose own sections (the pierces, the edge rule) are the arrangement's;
+    no contact of the vertex's own. All of one strict sign: the vertex is
+    a strict local extremum of the surface's function on its input's
+    boundary (first order dominating), least where they rise.
+  - **Refused**: a least value below the surface or a greatest above it
+    (the corner through it by at most the resolution: crossing), and a
+    miss where the gap lies outside either input by each one's membership
+    at its point pushed across it (the vertex's toward the surface, the
+    face's point back toward the vertex), as every near-miss rule: "a
+    vertex within the resolution of a face (S9d.2)", in both engines.
+  - **No contact, evaluating as before**: a gap inside both inputs (a
+    cavity's corner whose input's material crosses the surface beyond the
+    resolution, the other's material over it); a vertex exactly on the
+    surface; a foot outside the face (within the resolution of the face's
+    edge or vertex: edges and vertices near each other have no rule, open);
+    directions along the surface or of both signs; vertices against a
+    sphere (S9d.1's vertex rule), a torus or a spline face (no rule, item
+    5 (c)); a cone's apex (one surface: no tangent cone of edges, open).
+    Beyond the resolution nothing changes. Prisms of one frame (S9a) never
+    reach it: each vertex has an edge along every wall and cap.
+  - **Evidence**: `tests/vertex_near_miss_booleans.rs`, a cube on its
+    corner (its three edges leaving the surface) `1e-12`, `1e-11` and
+    `1e-9` outside a rod's wall, inside a rod toward its wall, outside a
+    frustum's wall, and above a box's top, in a level frame, one turned
+    about the axis and one turned off it; positive controls: a corner on
+    the face exactly, a corner `0.1` into the other body, and U1's
+    configuration (a box on a rod's tangent plane turned by 30 degrees,
+    its edge on the ruling and its corners within rounding of the wall).
+
 * **The Boolean captures' Linux records, open: CI has no observations to
   take them from.** S9e.4b and S9f.3's notes leave each capture's Linux
   record pending until CI's run, but the B-rep job runs only
