@@ -375,7 +375,8 @@ fn sphere_quadric(
 /// plane, a line along a cylinder's axis, a circle about it) has no such
 /// points: the faces' own rules hold those. Edges between faces on one
 /// surface and seams' edges are none, as at a sphere; an edge one of whose
-/// faces heads toward the surface is no contact (`leaves_away`).
+/// faces heads toward the surface, or runs along it, is no contact
+/// (`leaves_away`).
 pub(super) fn edge_faces(models: &[Prism; 2], res: f64) -> Result<()> {
     let wide = |b: &([f64; 3], [f64; 3])| (b.0.map(|x| x - res), b.1.map(|x| x + res));
     for o in 0..2 {
@@ -478,7 +479,11 @@ fn edge_face(
     // crosses it there, the inputs overlapping beyond the resolution, and
     // its section near the edge is the arrangement's own (S9f.2b.2's
     // `lens_tilt_loop`: a rod's top rim on a lens's top plane but for the
-    // turned frame's rounding, its wall through the plane).
+    // turned frame's rounding, its wall through the plane). A face running
+    // along the surface there (a rod's wall on a box's face on its tangent
+    // plane, the cap circle within rounding of the plane) is a tangency or
+    // an incidence of the two faces, the faces' own rules' (S9c.1's turned
+    // box on a rod's tangent plane evaluating as before).
     if !leaves_away(em, ei, quad, a, extremum) {
         return Ok(());
     }
@@ -501,7 +506,9 @@ fn edge_face(
 /// the surface: the function's gradient against each face's direction into
 /// it from the edge (its outward normal across the edge's running tangent,
 /// the face on the left `n x t`, on the right `t x n`) positive at a least
-/// value, negative at a greatest, or zero.
+/// value, negative at a greatest. A face whose direction lies in the
+/// surface's tangent plane there, exactly or within rounding (`along`),
+/// runs along the surface: no contact of the edge's own.
 fn leaves_away(em: &Prism, ei: usize, quad: &Quad, a: &QV, extremum: Ordering) -> bool {
     let e = &em.edges[ei];
     let pos = place(&e.curve, a);
@@ -524,9 +531,25 @@ fn leaves_away(em: &Prism, ei: usize, quad: &Quad, a: &QV, extremum: Ordering) -
         } else {
             qcross(&t, &n)
         };
+        if along(&g, &inward) {
+            return Ordering::Equal;
+        }
         qqdot(&g, &inward).sign()
     });
-    away.iter().all(|s| *s != extremum)
+    away.iter().all(|s| *s != extremum && *s != Ordering::Equal)
+}
+
+/// Whether a direction `w` lies in the tangent plane of a surface whose
+/// gradient is `g`, exactly or within rounding: the sine of its angle to
+/// the plane at most `10^-12` (`(g . w)^2 10^24 <= |g|^2 |w|^2`, decided
+/// exactly), the band in which the faces' own rules take a plane or an
+/// axis along a cylinder's direction (`meet::within_rounding_of_parallel`,
+/// a plane within rounding of a cylinder's direction): a direction whose
+/// sign there an ulp of a turned frame decides is theirs.
+fn along(g: &QV, w: &QV) -> bool {
+    let d = qqdot(g, w);
+    let lhs = d.mul(&d).scale(&int(10).pow(24));
+    lhs.sub(&qqdot(g, g).mul(&qqdot(w, w))).sign() != Ordering::Greater
 }
 
 /// The points of a curve where the surface's function along it is least

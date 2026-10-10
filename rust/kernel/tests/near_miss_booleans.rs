@@ -8,8 +8,8 @@
 use num_rational::BigRational as R;
 use rusty_occt::identity::OperationId;
 use rusty_occt::{
-    BSplineCurve2, Boundary, Error, Frame3, Point2, Point3, Profile, Segment, Solid, Tolerance,
-    Vec3,
+    BSplineCurve2, Boundary, Error, Frame3, Point2, Point3, Profile, RigidTransform, Segment,
+    Solid, Tolerance, Vec3,
 };
 
 type V = [R; 3];
@@ -528,5 +528,106 @@ fn a_ball_within_the_resolution_of_a_meeting_or_spline_edge_is_degenerate() {
             }
             evaluates(&format!("{name} {what}"), body, &at(1e-6), 2);
         }
+    }
+}
+
+/// A face running along the other input's surface where its edge passes
+/// within the resolution of it is no near miss: the faces' own rules decide
+/// that tangency or incidence (`curved/near.rs`'s `leaves_away`). The edge
+/// rule had refused S9c.1's DRAW cases (`bop*_simple` U1 and Y5): a rod's
+/// cap circle within rounding of a turned box's face on the rod's tangent
+/// plane, the rod's wall running along that face, taken as leaving it. A
+/// rod of radius 1 and height 2 and a box with a face on its tangent plane
+/// `y = -1`, outside the rod (the reproducer) or overlapping it (U1's),
+/// level, turned by 30 degrees about the rod's axis, and turned with the
+/// rod about tilted axes, evaluate as before the edge rule: the cut the
+/// rod's `2 pi`, the common empty (the level fuse refused as two results
+/// touching, as before). A rod leaning by `1e-15` or `1e-13` toward a
+/// box's face on its tangent plane, within the `10^-12` band the faces' own
+/// rules take as parallel, is refused by their tangency rule as before
+/// whichever way the lean rounds; leaning by `1e-11` or `1e-9`, its top cap
+/// circle through the face, by the edge rule.
+#[test]
+fn a_face_running_along_the_surface_is_no_near_miss() {
+    let tau = std::f64::consts::TAU;
+    let xy = frame([0.0; 3], [0.0, 0.0, 1.0], [1.0, 0.0, 0.0]);
+    let rod = Solid::cylinder_with(OperationId(1), xy, 1.0, 0.0, 2.0, tol())
+        .unwrap()
+        .0;
+    let block = |o: [f64; 3], s: [f64; 3]| {
+        Solid::box_at(
+            Point3::new(o[0], o[1], o[2]),
+            Vec3::new(s[0], s[1], s[2]),
+            tol(),
+        )
+        .unwrap()
+    };
+    let turn = |s: &Solid, axis: [f64; 3], degrees: f64| {
+        let t = RigidTransform::rotation(
+            Point3::new(0.0, 0.0, 0.0),
+            Vec3::new(axis[0], axis[1], axis[2]),
+            degrees.to_radians(),
+        )
+        .unwrap();
+        s.transform_with(OperationId(8), t).unwrap().0
+    };
+    let z = [0.0, 0.0, 1.0];
+    // Outside the rod: the cut the rod, the common empty, the fuse two
+    // solids touching along the ruling.
+    let outside = |what: &str, a: &Solid, b: &Solid| {
+        let cut = volume(&a.cut(OperationId(4), b).unwrap().0);
+        assert!((cut - tau).abs() <= 1e-12, "{what} cut {cut}");
+        let common = a.common(OperationId(5), b).unwrap().0;
+        assert!(common.is_empty(), "{what} common");
+        evaluates(what, a, b, 2);
+    };
+    let out = block([-0.5, -2.0, 0.0], [1.0, 1.0, 2.0]);
+    outside("turned", &rod, &turn(&out, z, 30.0));
+    // Level: the cap circle on the face exactly, the edge rule's incidence.
+    let level_cut = volume(&rod.cut(OperationId(4), &out).unwrap().0);
+    assert!((level_cut - tau).abs() <= 1e-12, "level cut");
+    assert!(rod.common(OperationId(5), &out).unwrap().0.is_empty());
+    assert!(matches!(
+        rod.fuse(OperationId(3), &out),
+        Err(Error::Degenerate("two results touching"))
+    ));
+    // Tilted: the rod and a taller box (its caps clear of the rod's)
+    // turned by 30 degrees about the rod's axis, both turned again.
+    let tall = turn(&block([-0.5, -2.0, -0.5], [1.0, 1.0, 3.0]), z, 30.0);
+    for (axis, degrees) in [
+        ([1.0, 0.0, 0.0], 17.0),
+        ([1.0, 2.0, 3.0], 40.0),
+        ([0.0, 3.0, 4.0], 25.0),
+    ] {
+        let what = format!("tilted {axis:?} {degrees}");
+        outside(
+            &what,
+            &turn(&rod, axis, degrees),
+            &turn(&tall, axis, degrees),
+        );
+    }
+    // U1's box, `[-r, r] x [-1, r] x [0, 2]` with `r = sqrt(3) / 2`, turned
+    // by 30 degrees: overlapping the rod, one solid.
+    let r = 3f64.sqrt() / 2.0;
+    let u1 = turn(&block([-r, -1.0, 0.0], [2.0 * r, 1.0 + r, 2.0]), z, 30.0);
+    evaluates("U1", &rod, &u1, 1);
+    // A rod leaning toward a box's face on `x = 1`, the box taller than it.
+    let face = block([1.0, -0.5, -0.5], [1.0, 1.0, 3.0]);
+    let leaning = |e: f64| {
+        let f = frame([0.0; 3], [e, 0.0, 1.0], [1.0, 0.0, 0.0]);
+        Solid::cylinder_with(OperationId(1), f, 1.0, 0.0, 2.0, tol())
+            .unwrap()
+            .0
+    };
+    for e in [1e-15, -1e-15, 1e-13, -1e-13] {
+        refused(
+            &format!("leaning {e:e}"),
+            &leaning(e),
+            &face,
+            "a tangency between the inputs (S9c)",
+        );
+    }
+    for e in [1e-11, 1e-9] {
+        refused(&format!("leaning {e:e}"), &leaning(e), &face, NEAR_FACE);
     }
 }
