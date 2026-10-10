@@ -4706,7 +4706,10 @@ Decisions for S9, recorded before its code (2026-09-28):
     the resolution of a plane face": missing the sphere within the
     resolution, the nearest points in both faces, is `Degenerate` too;
     and by "A ball within the resolution of an edge or vertex": a sphere
-    within it of an edge's curve or a vertex of the other input too.
+    within it of an edge's curve or a vertex of the other input too; and
+    by "A ball within the resolution of a cylinder or cone, and edges
+    within it of a face": a sphere within it of a cylinder or cone face,
+    and an edge within it of a plane, cylinder or cone face.
     Campaign: the boolean campaign at `b2765f20` (600 s, a sampled
     replay) clean, 989 runs, the slowest input 22 s under
     AddressSanitizer (the first, at `6582f379`, found `d238291d`, a wall
@@ -12583,6 +12586,146 @@ Decisions for S9, recorded before its code (2026-09-28):
   glibc `hypot` with debug assertions and overflow checks
   (`sphere_booleans`, 2.5 s; the new test 0.45 s at opt-level 2 with
   debug assertions).
+
+* **A ball within the resolution of a cylinder or cone, and edges within
+  it of a face (S9d.2, the open items of "A ball within the resolution of
+  an edge or vertex"), done (2026-10-10).** That note left a sphere
+  against a cylinder or cone face, a circle edge against a plane face,
+  other curves near a sphere and a slow crossing open. Reproduced with
+  kernel-built and given bodies in a level and a turned frame, each ball
+  or edge placed by an exact search over its last bits (in the frame's
+  local coordinates) or in binary64 where the gaps are far wider than its
+  rounding, `d` in `+-1e-15`, `+-1e-12`, `+-1e-9` and `+-1e-6` of the
+  radius, in fuse, cut both ways and common: a ball of radius `0.75` by a
+  rod's wall (radius 1), inside a rod (radius 2), in a block's round hole,
+  by and inside a frustum's wall, a block's cavity inside a rod by its
+  wall; a dome (a hemisphere turned by 0.3) whose rim circle misses a
+  box's top, a rod turned alike whose bottom cap circle misses it, a rod's
+  cap circle on another rod's wall; and balls on the rims of a rod's hole
+  (a rod less a crossing rod: a meeting of two cylinders), of a rod's
+  dimple (a rod less a ball), of a torus less a block above its equator
+  (a torus section) and on a spline dome prism's top cap edge. Every miss
+  within the resolution (`d > 0` to `1e-9`) evaluated wrongly where it was
+  not refused by another rule: outside, the fuse two solids and the common
+  empty; inside a rod or in a hole, the cut a cavity or a pocket behind a
+  wall thinner than the resolution (the rods' and the inner frustum's at
+  `1e-15` were refused as "two cylinders' section within the resolution of
+  a node", S9c's rule on the meeting's discriminant). Crossings within it
+  were refused by turns as a piece or result thinner than the resolution,
+  a node, by the validator (`uncertified_pcurve_off_edge`,
+  `uncertified_shell_orientation`, `an open Boolean of arcs in any
+  position`), as unrepresentable mass properties or a `ComputationLimit`
+  of the loop's winding, or evaluated (most fuses and cuts at `-1e-9`).
+  Beyond the resolution every miss evaluated; a ball crossing a rod's wall
+  by `1e-6` of its radius took 52 to 60 s an operation, `1e-5` 18 s,
+  `1e-4` 5 s, and `1e-12` (the reported case) would have taken hours.
+  Why the crossing was slow: the validator's integrals along the meeting's
+  piece over the height (`Curve3::Rise`, `projection::rise_jet`) take
+  `u = phi + acos(g(w) / s(w))` on jets over each piece of the fraction;
+  on a loop shallower than its size `|g / s|` stays within about the
+  depth of one, while `g = g0 + g1 w + g2 w^2` taken in `w` (3.25 from
+  the frame's origin) spreads over a piece by its terms' slopes (`2e-5`
+  of the piece), so the jets were undefined (`acos` past one) on every
+  piece wider than `2^-26` of the fraction: 46,400 pieces an integral at
+  `1e-6`, about `5e7` at `1e-12`, seven integrals an operation. It
+  terminates, but the fuzz target's 60 s limit would report it. Fixes:
+  (1) `rise_jet` takes `acos(g / s)` as the angle of `(g, sqrt((s - g)
+  (s + g)))`, each of `g`, `s - g` and `s + g` a quadratic in `w` about
+  the middle of the piece's heights (`s`'s sign taken into `g`, none where
+  `s` may vanish, as its division refused before): the same function, its
+  enclosures narrower, the `1e-6` crossing's operations 0.04 s each, every
+  certificate as before. (2) `curved/near.rs`'s `sphere_quadrics`, before
+  the meetings are found: a sphere within the resolution of tangency to a
+  cylinder or a cone face, the surface's point nearest the centre exact
+  in the quadratic field of the centre's distance from the axis (on the
+  frame's local axes: the nearest within rounding in a turned frame; a
+  cone's the foot on its generatrix in the plane through the axis) in
+  its face and the sphere's point toward it (a rational point of the
+  sphere to rounding) in its, is `Degenerate` ("a sphere within the
+  resolution of tangency to a cylinder or cone (S9d.2)") crossing it, and
+  missing it where the gap lies outside either input by each input's
+  membership at its point pushed across it; a gap inside both (the
+  cavity) evaluates. (3) `edge_faces`, after `edge_near_misses`: an input
+  edge's line, conic or circle within the resolution of tangency to a
+  plane, cylinder or cone face of the other input ("an edge within the
+  resolution of tangency to a face (S9d.2)"), at a point strictly inside
+  the edge where the surface's function along it is least or greatest
+  (exact where it is linear or quadratic along the curve: a conic's or a
+  circle's points against a plane in the quadratic field of the normal's
+  reach along it, a line's against a cylinder or a cone at a rational
+  parameter; else a rational point at each extremum found in binary64,
+  the derivative's root bisected to rounding) and the surface's point
+  nearest it in the face (a plane's foot exact, a cylinder's or a cone's
+  a rational point of it to rounding), crossing it, and missing it where
+  the gap lies outside either input. A function constant along the edge
+  (a circle parallel to a plane, a line along a cylinder's axis, a circle
+  about it) has no such point, the faces' own rules holding those. Only a
+  contact counts: both of the edge's faces must leave its point away from
+  the surface (the gradient against each face's direction into it from
+  the edge, its outward normal across the running tangent); where one
+  heads toward the surface it crosses it there, the inputs overlapping
+  beyond the resolution, and that face's section near the edge is the
+  arrangement's own, as before. Found by the suite: S9f.2b.2's
+  `lens_tilt_loop` (a rod's top rim on a lens's top plane but for the
+  turned frame's rounding, 2.8e-16 above it, its wall through the plane;
+  OCCT and the reference a solid) and `crossing_cylinders_near_a_node_are_refused_or_valid`'s
+  standing slab at `k = 40` (its hole's rim crossing the rod's wall by
+  `9e-13`, the slab's floor through it) were refused by a first draft
+  without this condition and evaluate as before. (4) Other curves (a
+  given result's meetings of two curved faces, cone, torus and spline
+  curves, a spline prism's cap edges; `near::Run`): their points nearest a
+  sphere for `edge_near_misses`, and their extrema against a plane,
+  cylinder or cone face for `edge_faces`, at rational parameters found in
+  binary64 over the curve's own samples, settled by bisection on the exact
+  sign of the derivative along the curve (the exact point's tangent), and
+  only where the binary64 gap is within twice the resolution (exact points
+  cost); a gap below `2^-80` is an incidence (the point stands for one
+  the surface passes through but for its rounding: S9e.3b's `peg_kiss`, a
+  ball through a given meeting's point tangent to it, refused by its own
+  rule as before, which a first draft's unsettled point, `1e-16` off,
+  took as a near miss). Unchanged: the plane, sphere, edge and vertex
+  rules (their reasons first where they hold), exact incidences, the
+  validator's certificates. Open (HANDOFF, item 5): a vertex within the
+  resolution of a plane, cylinder or cone face (a cube's corner `1e-12`
+  off a rod's wall still fused into two solids), cylinders and cones
+  against each other beyond S9c's node rule, tori and spline walls, and
+  the shallow crossing's common (refused by the validator as before).
+  Tests:
+  `tests/near_miss_booleans.rs`'s
+  `a_ball_within_the_resolution_of_a_cylinder_or_cone_is_degenerate`,
+  `an_edge_within_the_resolution_of_a_face_is_degenerate` and
+  `a_ball_within_the_resolution_of_a_meeting_or_spline_edge_is_degenerate`
+  (every case above, `1e-15` or `1e-12` to `1e-9` either side refused with
+  the new reasons or the edge rule's, `1e-6` evaluating in the pair
+  identities, the rod and hole crossed by `1e-6` evaluating, the cavity's
+  and a blind hole's floor's gaps inside both inputs evaluating and the
+  floor over a block refused), all failing at the base; and
+  `projection.rs`'s `a_shallow_loops_rise_has_jets_over_the_whole_piece`
+  (the `1e-12` crossing's rise, its jets undefined over the piece before).
+  Of the boolean corpus's inputs and regressions (1,476) 39 reach such
+  a point, all in the edge rule (lines against cylinders, conics and
+  circles against planes and cylinders, a given result's other curves
+  against planes and cylinders; none a sphere against a cylinder or cone
+  or near another curve): 18 refused now (16 refused further on before:
+  a piece thinner than the resolution, a tangency between the inputs, a
+  plane within rounding of a cylinder's direction, two meetings of a given
+  meeting within the resolution, a sphere's circle within the resolution
+  of tangency; 2 evaluated: a chained cut and common, a first result's
+  conic edge on the turned box's face but for 5.6e-17), 1 with the gap
+  inside both inputs and 20 whose edge's face heads toward the surface
+  evaluating as before. One is kept
+  (`fuzz/regressions/boolean/replay-ed5e02c59263cf7962712111f10a7e4637c56181.bin`). Checks: fmt, clippy (release, all targets), the 1.85 check, the fuzz
+  crate's fmt and check, the release suite (678 tests); every comparison
+  of HANDOFF's table unchanged with 0 failures (40 runs on the pinned
+  SDK); the boolean corpus (1,441 inputs) and its 36 regressions and the
+  split corpus (3,551) and its 20 regressions replay with debug
+  assertions without a failure (the slowest 5.2 s and 1.3 s, on a loaded
+  host), and so do the kept input's 5,100 single-byte mutations (3,651 of
+  them refused by the new rule, the slowest 1.2 s); the new tests and
+  `given_met_booleans`, `curved_booleans` and `spline_crossing_booleans`
+  under the emulated glibc `hypot` with debug assertions and overflow
+  checks (`near_miss_booleans` 4.5 s; 5.0 s at opt-level 2 with debug
+  assertions).
 
 * **The Boolean captures' Linux records, open: CI has no observations to
   take them from.** S9e.4b and S9f.3's notes leave each capture's Linux

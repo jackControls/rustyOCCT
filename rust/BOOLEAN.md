@@ -494,7 +494,26 @@ resolution of a vertex"):
 crossing it wherever so, missing it where the gap lies outside either
 input by each one's membership at its point pushed across it
 (`graph::edge_near_misses`, after `near_miss`; edges between faces on one
-surface and seams' edges and vertices are none). The
+surface and seams' edges and vertices are none; on a given result's
+meetings of curved faces, cone, torus and spline curves the nearest point
+at a rational parameter at each least distance found in binary64,
+`near::nearest_on_run`). A sphere within the resolution of tangency to a
+cylinder or a cone face ("a sphere within the resolution of tangency to a
+cylinder or cone"), its point nearest the centre exact in the quadratic
+field of the centre's distance from the axis (on the local axes, a turned
+frame's within rounding) and in the face, the sphere's toward it in its
+face, is `Degenerate` by the same rule, before the meetings are found
+(`near::sphere_quadrics`); and so is an input edge's line, conic or circle,
+or a given result's other curve, within the resolution of tangency to a
+plane, cylinder or cone face of the other input ("an edge within the
+resolution of tangency to a face"), at a point strictly inside the edge
+where the surface's function along it is least or greatest (exact where
+it is linear or quadratic along the curve, else a rational point at an
+extremum found in binary64) and the surface's point nearest it in the face,
+where both of the edge's faces leave the point away from the surface (a
+face heading toward it crosses it there, and its section near the edge is
+the arrangement's own: S9f.2b.2's `lens_tilt_loop`, a rod's top rim on a
+lens's top plane but for rounding; `near::edge_faces`). The
 validator decides a ray against a whole sphere (a cavity in a sphere); a
 result's bounds hold its spheres' boxes. A sphere against a cylinder or
 another sphere is S9d.2's.
