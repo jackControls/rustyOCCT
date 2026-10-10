@@ -631,23 +631,37 @@ then for the DRAW survey of the edge and vertex near miss (branch
    local 600 s campaign; record it in
    `BOOLEAN.md` and mark S9 done in `REVIEW_NOTES.md`.
 5. **Near misses with no rule yet** (from REVIEW_NOTES.md's "A ball
-   within the resolution of an edge or vertex", branch
-   `fix-ball-near-edge`, which closed the edge and vertex case: a sphere
-   within the resolution of an input edge's line, circle or conic, or of
-   a vertex, is `Degenerate` crossing it, and missing it where the gap
-   lies outside either input): a ball missing a rod's cylinder wall
-   within the resolution (`1e-12` to `1e-9` of its radius) is fused with
-   it into two solids, and so is a dome whose rim circle misses a box's
-   top within it. A sphere against a cylinder or cone face, and a circle
-   edge against a plane face, have no near-miss rule, nor do edges on
-   meetings of two curved faces, torus or spline curves near a sphere; a
-   ball crossing a rod's wall by `1e-12 r` ran for over ten minutes
-   before it was stopped; no DRAW case has a sphere missing a plane or another sphere
-   within the resolution, in a face or not (the survey at `44204e18`,
-   branch `s9-draw-12`, by an instrumented build), nor an edge or a
-   vertex within the resolution of a sphere (the survey at `ef5d66fd`,
-   branch `s9-draw-13`: 114 cases test a sphere face against the other
-   input's edges and vertices, none within the band).
+   within the resolution of a cylinder or cone, and edges within it of a
+   face", branch `fix-near-miss-curved`, which closed a sphere against a
+   cylinder or cone face, an edge's line, conic, circle or other curve
+   against a plane, cylinder or cone face, other curves (meetings of two
+   curved faces, cone, torus and spline curves) near a sphere, and the
+   shallow crossing's hours in the validator's integrals). Open: (a) a
+   vertex within the resolution of a plane, cylinder or cone face (only a
+   sphere's has a rule): a cube's corner `1e-12` to `1e-9` off a rod's
+   wall in a level frame is fused with it into two solids; a rule needs
+   the vertex's tangent cone (its edges' and, where a curved face's
+   sector is reflex, its faces' directions) against the surface. (b) An
+   edge one of whose faces heads toward the other's surface at its near
+   point is no contact and evaluates as before (S9f.2b.2's
+   `lens_tilt_loop`, a rim on a plane but for rounding with its wall
+   through it, OCCT and the reference a solid), where the sphere's edge
+   rule refuses the like case. (c) Faces with no near-miss rule of their
+   own: cylinders and cones against each other beyond S9c's node rule
+   (their edges' extrema hold a ruling tangent to a wall only where it
+   ends on an edge), tori and spline walls against anything (their
+   tangency rules only), and edges against torus or spline faces. (d)
+   Beyond the resolution a ball crossing a rod's wall now evaluates its
+   fuse and cuts in milliseconds, but its common (a lens thinner than the
+   validator's enclosures) stays refused (`uncertified_shell_orientation`
+   at `1e-6` of the radius) as before; the other procedural curves' jets
+   (meetings over the angle, torus curves) were not measured on shallow
+   loops. Points found in binary64 (a turned frame's quadric's nearest
+   point, a conic's or another curve's extremum) hold to rounding: a gap
+   below `2^-80` on another curve is an incidence, the incidences' rules. No DRAW case has a sphere missing a plane or another sphere within the
+   resolution (the survey at `44204e18`, branch `s9-draw-12`), nor an edge
+   or a vertex within the resolution of a sphere (the survey at
+   `ef5d66fd`, branch `s9-draw-13`).
 
 Refused by design and staying refused (each documented): a tangency between
 the inputs, a cavity beside several solids, spline segments along one curve

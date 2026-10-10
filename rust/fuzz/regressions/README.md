@@ -1658,3 +1658,28 @@ further on before, 7 evaluated) and 3 evaluating as before, the sphere's
 nearest point outside its face. They replay in 0.7 s and 0.3 s with debug
 assertions, and their 7,905 single-byte mutations replay without a
 failure.
+
+## Boolean: an edge within the resolution of a face
+
+`boolean/replay-ed5e02c59263cf7962712111f10a7e4637c56181.bin` is a corpus
+input (20 bytes) that decodes a plate with a round hole against a
+rectangle's prism in the axis-aligned frames; the chained byte gives one
+operation's first result (a curved solid) to the turned box. A conic edge
+of that result lies on the box's face's plane but for rounding, 5.6e-17
+off it, the edge's point where the plane's function along it is least
+strictly inside the edge and its foot in the face, both of the edge's
+faces leaving it away from the plane and the gap outside both inputs: the
+chained cut and common each evaluated to one solid, the inputs taken as
+clear there. An input edge's line, conic, circle or other curve within
+the resolution of tangency to a plane, cylinder or cone face of the other
+input is now `Degenerate` ("an edge within the resolution of tangency to a
+face (S9d.2)"): crossing it, and missing it where the gap lies outside
+either input, where both of the edge's faces leave it away from the
+surface (`curved/near.rs`'s `edge_faces`; `tests/near_miss_booleans.rs`).
+Of the corpus's inputs and regressions (1,476) 39 reach such a point, 18
+refused now (16 refused further on before, 2 evaluated: this input and
+`877c7bc5`, alike), 1 with the gap inside both inputs and 20 whose edge's
+face heads toward the surface evaluating as before; none reaches a sphere
+against a cylinder or cone face, nor a sphere near another curve. It
+replays in 0.2 s with debug assertions, and its 5,100 single-byte
+mutations replay without a failure (the slowest 1.2 s).

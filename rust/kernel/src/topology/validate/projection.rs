@@ -1131,22 +1131,54 @@ fn meet_jet<T: Real>(m: &Meet, fraction: &Jet<T>) -> Option<MeetJet<T>> {
 
 /// The jets of a cylinder's and a sphere's meeting over the height (S9d.2b)
 /// in the fraction: `u = phi + sign acos(g(w) / rho)`, the world point.
+///
+/// `acos(q)`, `q = g / s` with `s = rho radius(w)`, is the angle of `(g,
+/// sqrt((s - g) (s + g)))`, each of `g`, `s - g` and `s + g` a quadratic in
+/// `w` taken about the middle of the piece's heights: on a loop shallower
+/// than its size (a sphere crossing the cylinder by `1e-6` of its radius)
+/// `|q|` stays within about that depth of one, and `g` taken in `w` far
+/// from the frame's origin spreads over a piece by its terms' slopes, not
+/// its own, so `|q|` passed one on all but pieces of `2^-26` of the fraction
+/// and the integrals along it ran for an hour (the same function, its
+/// enclosures narrower).
 fn rise_jet<T: Real>(m: &Rise, fraction: &Jet<T>) -> Option<[Jet<T>; 3]> {
     let w = fraction.scale(&c(m.sweep)).add_constant(&c(m.start));
     let ([a, b], g) = m.coefficients();
     let rho = c::<T>(a).square().add(&c::<T>(b).square()).sqrt();
     // The carrier's radius at the height (a cone's varies, S9d.3b.2).
     let (ca, sa) = T::cos_sin(&c(m.half_angle));
-    let radius = w.scale(&sa.div(&ca)?).add_constant(&c(m.radius));
-    let q = w
-        .square()
-        .scale(&c(g[2]))
-        .add(&w.scale(&c(g[1])))
-        .add_constant(&c(g[0]))
-        .div(&radius.scale(&rho))?;
+    let slope = sa.div(&ca)?;
+    let radius = w.scale(&slope).add_constant(&c(m.radius));
+    // Each quadratic `k0 + k1 w + k2 w^2` about the heights' middle `wm`.
+    let (lo, hi) = w.c[0].bounds_f64();
+    let wm = c::<T>(0.5 * lo + 0.5 * hi);
+    let dw = w.add_constant(&wm.neg());
+    let about = |k: [T; 3]| {
+        let k0 = k[0].add(&k[1].mul(&wm)).add(&k[2].mul(&wm).mul(&wm));
+        let k1 = k[1].add(&k[2].mul(&wm).mul(&c(2.0)));
+        dw.square()
+            .scale(&k[2])
+            .add(&dw.scale(&k1))
+            .add_constant(&k0)
+    };
+    let g = g.map(c::<T>);
+    let s = [rho.mul(&c(m.radius)), rho.mul(&slope), c(0.0)];
+    let gq = about(g.clone());
+    let minus = about([0, 1, 2].map(|k| s[k].sub(&g[k])));
+    let plus = about([0, 1, 2].map(|k| s[k].add(&g[k])));
+    let y = minus.mul(&plus).sqrt()?;
+    // `q = g / s` is defined where `s` certainly is not zero (the carrier's
+    // apex, a sphere centred on its axis: none), its sign taken into `g`.
+    let x = match radius.scale(&rho).c[0].sign() {
+        Some(std::cmp::Ordering::Greater) => gq,
+        Some(std::cmp::Ordering::Less) => gq.neg(),
+        _ => return None,
+    };
     // `phi` is the curve's binary64 constant (its definition's `atan2`).
     let phi = c::<T>(b.atan2(a));
-    let u = acos_jet(&q)?.scale(&c(m.sign)).add_constant(&phi);
+    let u = angle_near(&y, &x, std::f64::consts::FRAC_PI_2)?
+        .scale(&c(m.sign))
+        .add_constant(&phi);
     let (co, si) = u.cos_sin();
     let mut out = world(&m.frame, &co.mul(&radius), &si.mul(&radius));
     let n = m.frame.normal().to_array();
@@ -1920,6 +1952,40 @@ mod tests {
                     let (lo, hi) = j.c[1].bounds_f64();
                     assert!((slope - 0.5 * (lo + hi)).abs() < 1e-6, "{slope} {lo} {hi}");
                 }
+            }
+        }
+    }
+
+    /// A ball of radius 0.75 crossing a rod of radius 1 (its frame's origin
+    /// 3.25 below the ball) by `1e-12` of its radius meets it in a loop
+    /// `1.8e-6` high, `|q|` within `3e-13` of one: its rise's jets over the
+    /// whole piece are defined and enclose its points (`acos(q)` taken with
+    /// `g`, `s - g` and `s + g` about the heights' middle: as written in `w`
+    /// they spread by `2e-5` over the piece and left the jets undefined on
+    /// all but pieces of `2^-26` of it, the integrals along it an hour).
+    #[test]
+    fn a_shallow_loops_rise_has_jets_over_the_whole_piece() {
+        let cyl = frame([0.0, 0.0, -3.0], [0.0, 0.0, 1.0], [1.0, 0.0, 0.0]);
+        let m = Rise {
+            frame: cyl,
+            radius: 1.0,
+            half_angle: 0.0,
+            centre: Point3::new(1.74999999999925, 0.0, 0.25),
+            sphere_radius: 0.75,
+            sign: -1.0,
+            start: 3.2499990814005173,
+            sweep: 1.83719896584833e-6,
+        };
+        let whole = Fast::exact_f64(0.0).union(&Fast::exact_f64(1.0));
+        let jet = rise_jet(&m, &Jet::variable(whole, ORDER + 1)).expect("jets over the piece");
+        for k in 0..=8 {
+            let p = m.point(k as f64 / 8.0);
+            for (i, j) in jet.iter().enumerate() {
+                let (lo, hi) = j.c[0].bounds_f64();
+                assert!(
+                    lo <= [p.x, p.y, p.z][i] && [p.x, p.y, p.z][i] <= hi,
+                    "{k} {i}"
+                );
             }
         }
     }
