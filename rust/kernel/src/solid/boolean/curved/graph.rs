@@ -197,6 +197,264 @@ fn near_miss(models: &[Prism; 2], fa: usize, fb: usize, res: f64) -> Result<()> 
     ))
 }
 
+/// A sphere within the resolution of an edge: one missing or crossing an
+/// edge's curve within it.
+const NEAR_EDGE: &str = "a sphere within the resolution of tangency to an edge (S9d.1)";
+/// A sphere within the resolution of a vertex.
+const NEAR_VERTEX: &str = "a sphere within the resolution of a vertex (S9d.1)";
+
+/// S9d.1's near miss at a face's edges and vertices (`near_miss` holds a
+/// sphere against a face's interior): a sphere whose distance from an
+/// input edge's curve (its nearest point strictly inside the edge) or from
+/// an input vertex lies within the resolution `res` of its radius, the
+/// sphere's point nearest it in its face, is `Degenerate`, as a plane face
+/// within it is. A ball resting on a box's edge but for rounding (its
+/// nearest point on the top's plane just past the edge, the plane missed
+/// or crossed by more than the resolution) was fused with it into two
+/// solids, a ball inside an L's reflex edge cut from it behind a wall
+/// thinner than the resolution. Crossing within it is refused wherever the
+/// faces hold the nearest points, as `plane_section`'s crossing is (the
+/// edge pierces the sphere along a chord whose sagitta is no deeper than
+/// the resolution, or the sphere passes that near the vertex: sections and
+/// pieces that narrow); missing it only where the gap lies outside either
+/// input (`near_miss`'s contact: each input's membership at its point
+/// pushed across the gap). An edge between faces on one surface (a mesh's
+/// diagonal, a split's great circle) and a seam's edges and vertices
+/// (without an input's id) are none: the surface's own rules hold them.
+fn edge_near_misses(models: &[Prism; 2], res: f64) -> Result<()> {
+    let wide = |b: &([f64; 3], [f64; 3])| (b.0.map(|x| x - res), b.1.map(|x| x + res));
+    for s in 0..2 {
+        let (sm, om) = (&models[s], &models[1 - s]);
+        // Each vertex's faces (through its edges).
+        let mut at_vertex: Vec<BTreeSet<usize>> = vec![BTreeSet::new(); om.verts.len()];
+        for e in &om.edges {
+            for v in [e.start, e.end] {
+                at_vertex[v].extend(e.faces);
+            }
+        }
+        let views: Vec<[f64; 3]> = om.verts.iter().map(|v| qv_f64(&v.p)).collect();
+        for fs in 0..sm.faces.len() {
+            let (vm, vi) = sm.view(fs);
+            let Surf::Sphere { c, r } = &vm.faces[vi].surf else {
+                continue;
+            };
+            let sbox = wide(&sm.boxes[fs]);
+            for (ei, e) in om.edges.iter().enumerate() {
+                if e.id.is_none() || one_surface(om, e.faces[0], e.faces[1]) {
+                    continue;
+                }
+                let ebox = intersect(&om.boxes[e.faces[0]], &om.boxes[e.faces[1]]);
+                if !boxes_meet(&ebox, &sbox) {
+                    continue;
+                }
+                for a in edge_nearest(om, ei, c) {
+                    sphere_near(sm, fs, c, r, om, &a, res, NEAR_EDGE)?;
+                }
+            }
+            for (v, mv) in om.verts.iter().enumerate() {
+                let faces: Vec<usize> = at_vertex[v].iter().copied().collect();
+                let several = faces.iter().any(|&f| !one_surface(om, faces[0], f));
+                let x = views[v];
+                if mv.id.is_none()
+                    || !several
+                    || !(0..3).all(|k| sbox.0[k] <= x[k] && x[k] <= sbox.1[k])
+                {
+                    continue;
+                }
+                sphere_near(sm, fs, c, r, om, &mv.p, res, NEAR_VERTEX)?;
+            }
+        }
+    }
+    Ok(())
+}
+
+/// Whether two faces of a model lie on one surface: one plane, or one
+/// quadric of one primitive model.
+fn one_surface(m: &Prism, f: usize, g: usize) -> bool {
+    let ((vf, i), (vg, j)) = (m.view(f), m.view(g));
+    match (&vf.faces[i].surf, &vg.faces[j].surf) {
+        (Surf::Plane { p, m: n }, Surf::Plane { p: p2, m: n2 }) => {
+            is_zero(&cross(n, n2)) && dot(n, &sub(p2, p)) == zero()
+        }
+        (Surf::Sphere { c, r }, Surf::Sphere { c: c2, r: r2 }) => c == c2 && r == r2,
+        (a, b) => std::ptr::eq(vf, vg) && same_quadric(a, b),
+    }
+}
+
+/// The points of an edge nearest a point `c` strictly inside it: a line's
+/// foot, a circle's point toward `c` (exact, in the quadratic field of the
+/// projection's length), and on a conic that is no circle exactly (a turned
+/// frame's arc, an oblique cut's ellipse) a rational point of it at each
+/// local least distance to rounding (its distance exceeding the least by
+/// far less than the resolution). Other curves have none.
+fn edge_nearest(m: &Prism, ei: usize, c: &V) -> Vec<QV> {
+    let e = &m.edges[ei];
+    let found: Vec<QV> = match &e.curve {
+        Crv::Line { p, d } => {
+            let t = qdot(&qsub(&qv(c), p), d).scale(&(int(1) / dot(d, d)));
+            vec![qadd(p, &qscale(d, &t))]
+        }
+        Crv::Circle(circ) => circle_nearest(&circ.c, &circ.x, &circ.y, &circ.r2, c)
+            .into_iter()
+            .collect(),
+        Crv::Conic { c: o, a, b } => {
+            if dot(a, b) == zero() && dot(a, a) == dot(b, b) {
+                circle_nearest(o, a, b, &dot(a, a), c).into_iter().collect()
+            } else {
+                conic_nearest(o, a, b, c)
+            }
+        }
+        _ => Vec::new(),
+    };
+    let (s, t, with) = edge_places(m, ei);
+    found
+        .into_iter()
+        .filter(|x| strictly_within(&place(&e.curve, x), &s, &t, with) == Some(true))
+        .collect()
+}
+
+/// The point of the circle about `o` in the plane of the orthogonal `x`
+/// and `y`, of radius squared `r2`, nearest `c` (none on its axis).
+fn circle_nearest(o: &V, x: &V, y: &V, r2: &R, c: &V) -> Option<QV> {
+    if dot(x, y) != zero() {
+        return None;
+    }
+    let n = cross(x, y);
+    let w = sub(c, o);
+    let u = sub(&w, &scale(&n, &(dot(&n, &w) / dot(&n, &n))));
+    let l = dot(&u, &u);
+    if l == zero() {
+        return None;
+    }
+    // `o + u sqrt(r2 / l)`, `sqrt(r2 / l) = sqrt(r2 l) / l`.
+    let k = r2 * &l;
+    Some([0, 1, 2].map(|i| Qd::new(o[i].clone(), &u[i] / &l, k.clone())))
+}
+
+/// Rational points of the conic `o + a cos + b sin` at its local least
+/// distances from `c`, to rounding: each sampled minimum narrowed in
+/// binary64, its half angle's tangent taken as a rational.
+fn conic_nearest(o: &V, a: &V, b: &V, c: &V) -> Vec<QV> {
+    use crate::solid::split::rational_f64;
+    let f = |v: &V| v.clone().map(|x| rational_f64(&x));
+    let (fo, fa, fb, fc) = (f(o), f(a), f(b), f(c));
+    let d2 = |t: f64| {
+        let (cs, sn) = (t.cos(), t.sin());
+        (0..3)
+            .map(|k| (fo[k] + fa[k] * cs + fb[k] * sn - fc[k]).powi(2))
+            .sum::<f64>()
+    };
+    const N: usize = 64;
+    let step = std::f64::consts::TAU / N as f64;
+    let at: Vec<f64> = (0..N).map(|i| d2(i as f64 * step)).collect();
+    let mut out = Vec::new();
+    for i in 0..N {
+        let (prev, next) = (at[(i + N - 1) % N], at[(i + 1) % N]);
+        if !(at[i] <= prev && at[i] < next) {
+            continue;
+        }
+        // Golden-section search over the neighbouring samples.
+        let (mut lo, mut hi) = ((i as f64 - 1.0) * step, (i as f64 + 1.0) * step);
+        let g = (5f64.sqrt() - 1.0) / 2.0;
+        for _ in 0..80 {
+            let (x1, x2) = (hi - g * (hi - lo), lo + g * (hi - lo));
+            if d2(x1) < d2(x2) {
+                hi = x2;
+            } else {
+                lo = x1;
+            }
+        }
+        let t = (lo + hi) / 2.0;
+        // The rational point at the half angle's tangent `s` (about the
+        // opposite direction near a half turn).
+        let flip = t.cos() < 0.0;
+        let s = q((if flip { t - std::f64::consts::PI } else { t } / 2.0).tan());
+        let den = int(1) + &s * &s;
+        let (cs, sn) = ((int(1) - &s * &s) / &den, int(2) * &s / &den);
+        let (cs, sn) = if flip { (-cs, -sn) } else { (cs, sn) };
+        out.push(super::meet::conic_point(
+            o,
+            a,
+            b,
+            &[Qd::rat(cs), Qd::rat(sn)],
+        ));
+    }
+    out
+}
+
+/// A rational point of the sphere about `c` of radius `r` toward the
+/// direction `w` (to rounding: a stereographic image of its unit
+/// direction's).
+fn sphere_toward(c: &V, r: &R, w: [f64; 3]) -> V {
+    let len = (w[0] * w[0] + w[1] * w[1] + w[2] * w[2]).sqrt();
+    let u = w.map(|x| x / len);
+    // From the pole opposite the direction's side of the `z = 0` plane.
+    let up = u[2] >= 0.0;
+    let den = if up { 1.0 + u[2] } else { 1.0 - u[2] };
+    let (x, y) = (q(u[0] / den), q(u[1] / den));
+    let ss = &x * &x + &y * &y;
+    let k = int(1) + &ss;
+    let z = if up { int(1) - &ss } else { &ss - int(1) };
+    let unit = [int(2) * &x / &k, int(2) * &y / &k, z / &k];
+    add(c, &scale(&unit, r))
+}
+
+/// `edge_near_misses`'s rule at a point `a` of an edge or a vertex of
+/// model `om` against face `fs` of model `sm` on the sphere `(c, r)`.
+#[allow(clippy::too_many_arguments)]
+fn sphere_near(
+    sm: &Prism,
+    fs: usize,
+    c: &V,
+    r: &R,
+    om: &Prism,
+    a: &QV,
+    res: f64,
+    why: &'static str,
+) -> Result<()> {
+    let w = qsub(a, &qv(c));
+    let dd = qqdot(&w, &w);
+    let side = dd.add_r(&-(r * r)).sign();
+    if side == Ordering::Equal {
+        // On the sphere: the inputs' incidences' own rules.
+        return Ok(());
+    }
+    let hi = r + q(res);
+    if dd.add_r(&-(&hi * &hi)).sign() == Ordering::Greater {
+        return Ok(());
+    }
+    let lo = r - q(res);
+    if sign(&lo) == Ordering::Greater && dd.add_r(&-(&lo * &lo)).sign() == Ordering::Less {
+        return Ok(());
+    }
+    // The sphere's point nearest `a`, `c + r w / |w|`: exact where `|w|^2`
+    // and `w` are rational, else a rational point of the sphere toward it.
+    let rational: Option<Vec<&R>> = w.iter().map(|x| x.rational()).collect();
+    let b = match (dd.rational(), rational) {
+        (Some(dd), Some(w)) => {
+            let k = r / dd;
+            [0, 1, 2].map(|i| Qd::new(c[i].clone(), &k * w[i], dd.clone()))
+        }
+        _ => qv(&sphere_toward(c, r, qv_f64(&w))),
+    };
+    if sm.in_face(fs, &b) == Loc::Out {
+        return Ok(());
+    }
+    if side == Ordering::Less {
+        return Err(Error::Degenerate(why));
+    }
+    // The gap from `a` to `b` lies inside an input where its material holds
+    // its point pushed across it.
+    let inside = [
+        om.member(a, &[qsub(&qv(c), a)]) == Loc::In,
+        sm.member(&b, std::slice::from_ref(&w)) == Loc::In,
+    ];
+    if inside == [true, true] {
+        return Ok(());
+    }
+    Err(Error::Degenerate(why))
+}
+
 /// Whether two faces of one model lie on one quadric (a circle's halves, a
 /// sphere's hemispheres).
 fn same_quadric(a: &Surf, b: &Surf) -> bool {
@@ -888,6 +1146,19 @@ pub(super) fn arrange_shared(models: [Prism; 2]) -> Result<Arr> {
     if seamy {
         return Err(seam());
     }
+    // A sphere missing a face within the resolution (S9d.1), at its
+    // interior first, then at its edges and vertices. The faces' boxes are
+    // padded far less than the resolution: a gap of it between a ball and
+    // a level face leaves them apart.
+    let wide = |b: &([f64; 3], [f64; 3])| (b.0.map(|x| x - res), b.1.map(|x| x + res));
+    for fa in 0..models[0].faces.len() {
+        for fb in 0..models[1].faces.len() {
+            if boxes_meet(&wide(&models[0].boxes[fa]), &models[1].boxes[fb]) {
+                near_miss(&models, fa, fb, res)?;
+            }
+        }
+    }
+    edge_near_misses(&models, res)?;
     // Pierces: every edge against every face of the other.
     for o in 0..2 {
         let (me, other) = (&models[o], &models[1 - o]);
@@ -1345,14 +1616,8 @@ pub(super) fn arrange_shared(models: [Prism; 2]) -> Result<Arr> {
     }
     // Sections.
     let mut secs: Vec<Sec> = Vec::new();
-    let wide = |b: &([f64; 3], [f64; 3])| (b.0.map(|x| x - res), b.1.map(|x| x + res));
     for fa in 0..models[0].faces.len() {
         for fb in 0..models[1].faces.len() {
-            // The faces' boxes are padded far less than the resolution: a
-            // gap of it between a ball and a level face leaves them apart.
-            if boxes_meet(&wide(&models[0].boxes[fa]), &models[1].boxes[fb]) {
-                near_miss(&models, fa, fb, res)?;
-            }
             if !boxes_meet(&models[0].boxes[fa], &models[1].boxes[fb]) {
                 continue;
             }

@@ -1626,3 +1626,35 @@ a given result's side wall) and 5 evaluating as before, their nearest
 points outside a face (a zone whose sphere a top's plane misses above its
 rim among them). It replays in 0.1 s with debug assertions, and its 4,335
 single-byte mutations replay without a failure.
+
+## Boolean: a ball within the resolution of an edge or vertex
+
+`boolean/replay-3c4a35d6c964300d64d6fc1c88df8b74f73507c4.bin` is a corpus
+input (15 bytes) that decodes two of the split target's spline prisms in
+the tilted frame, the tool's heights inside the object's; the chained byte
+gives the common's one solid to the `GIVEN_BALL` sphere of radius `1.25`
+about the frame's point `(0.5, 0.25)` at height `0.75`. The sphere misses
+a line edge of that solid near `(2.25, -0.55, 0.35)` by 7.1e-17, the
+edge's point nearest the centre inside the edge and the sphere's nearest
+it in its face, the gap outside an input: the chained cut evaluated to
+two solids (0.654 of the solid's 3.05 left), the sphere taken as clear of
+that edge.
+`boolean/replay-b57899d2f27016ec7ae55f1e146063e63ecde3f0.bin` (16 bytes)
+decodes a U prism in the tilted frame against the whole sphere tool of
+radius `2.25` about the frame's origin; the chained byte's `JOINTS` bit
+gives the lens prism (`k = 0.5625`, its tips at `(0, +-2.25)`) the fuse
+with the sphere, and again once written, read back and imported: the
+lens's tips on its bottom cap lie on the sphere but for the frame's
+rounding, 1e-16 inside it, and both fuses evaluated to one solid. A
+sphere within the resolution of an input edge's line, circle or conic, or
+of an input vertex, the sphere's nearest point in its face, is now
+`Degenerate` ("a sphere within the resolution of tangency to an edge
+(S9d.1)", "a sphere within the resolution of a vertex (S9d.1)"): crossing
+it, and missing it where the gap lies outside either input
+(`curved/graph.rs`'s `edge_near_misses`; `tests/sphere_booleans.rs`,
+`a_ball_within_the_resolution_of_an_edge_or_vertex_is_degenerate`). Of
+the corpus's inputs 15 reach such a distance, 12 refused now (5 refused
+further on before, 7 evaluated) and 3 evaluating as before, the sphere's
+nearest point outside its face. They replay in 0.7 s and 0.3 s with debug
+assertions, and their 7,905 single-byte mutations replay without a
+failure.

@@ -627,18 +627,21 @@ the user's crossing cylinders (branch `s9-draw-12`, over `s9c2-kernel` at
    eight, each plus a completeness check, `REPLAY_SHARDS`), and a clean
    local 600 s campaign; record it in
    `BOOLEAN.md` and mark S9 done in `REVIEW_NOTES.md`.
-5. **A sphere within the resolution of a face's edge or vertex** (from
-   REVIEW_NOTES.md's "A ball within the resolution of a plane face",
-   branch `fix-ball-near-plane`): a sphere missing a plane face, or
-   another sphere, within the resolution is `Degenerate` where both
-   nearest points lie in the faces (the gap outside either input), but
-   one whose nearest point on the
-   plane lies just outside the face (within about `sqrt(2 r res)` of its
-   edge) comes within the resolution of the edge or a vertex with no rule:
-   the inputs then evaluate apart by less than the resolution, as the
-   plane face's case did before. No DRAW case has a sphere missing a plane
-   or another sphere within the resolution, in a face or not (the survey
-   at `44204e18`, branch `s9-draw-12`, by an instrumented build).
+5. **Near misses with no rule yet** (from REVIEW_NOTES.md's "A ball
+   within the resolution of an edge or vertex", branch
+   `fix-ball-near-edge`, which closed the edge and vertex case: a sphere
+   within the resolution of an input edge's line, circle or conic, or of
+   a vertex, is `Degenerate` crossing it, and missing it where the gap
+   lies outside either input): a ball missing a rod's cylinder wall
+   within the resolution (`1e-12` to `1e-9` of its radius) is fused with
+   it into two solids, and so is a dome whose rim circle misses a box's
+   top within it. A sphere against a cylinder or cone face, and a circle
+   edge against a plane face, have no near-miss rule, nor do edges on
+   meetings of two curved faces, torus or spline curves near a sphere; a
+   ball crossing a rod's wall by `1e-12 r` ran for over ten minutes
+   before it was stopped; no DRAW case has a sphere missing a plane or another sphere
+   within the resolution, in a face or not (the survey at `44204e18`,
+   branch `s9-draw-12`, by an instrumented build).
 
 Refused by design and staying refused (each documented): a tangency between
 the inputs, a cavity beside several solids, spline segments along one curve

@@ -4704,7 +4704,9 @@ Decisions for S9, recorded before its code (2026-09-28):
     `fuzz/regressions/boolean/crash-d238291d9edbe60570ae31479609845872d763c0.bin`,
     `tests/sphere_booleans.rs`). Amended (2026-10-10) by "A ball within
     the resolution of a plane face": missing the sphere within the
-    resolution, the nearest points in both faces, is `Degenerate` too.
+    resolution, the nearest points in both faces, is `Degenerate` too;
+    and by "A ball within the resolution of an edge or vertex": a sphere
+    within it of an edge's curve or a vertex of the other input too.
     Campaign: the boolean campaign at `b2765f20` (600 s, a sampled
     replay) clean, 989 runs, the slowest input 22 s under
     AddressSanitizer (the first, at `6582f379`, found `d238291d`, a wall
@@ -12549,6 +12551,103 @@ Decisions for S9, recorded before its code (2026-09-28):
   checks (`sphere_booleans`, 3.5 s). DRAW survey: that of S9e.4b.4c.1, the
   near miss of a sphere and the user's crossing cylinders at `44204e18`
   (no case reaching a near miss, none moving).
+* **A ball within the resolution of an edge or vertex (S9d.1, the open
+  item of "A ball within the resolution of a plane face"), done
+  (2026-10-10).** That note's rule holds a sphere against a face's
+  interior only: a ball whose nearest point on the face's plane lies just
+  past the face (within about `sqrt(2 r res)` of its edge) comes within the
+  resolution of the edge or a vertex with no rule. Reproduced with
+  kernel-built and imported bodies, each ball placed by an exact search
+  over its centre's last bits at `r (1 + d)` from the edge's exact line
+  or circle or the vertex, `d` in `0` (the nearest found), `+-1e-15`,
+  `+-1e-12`, `+-1e-9` and `+-1e-6`, in fuse, cut both ways and common: a
+  level and a turned box's top edge (the ball's foot on the top's plane
+  `1e-6 r` and `1e-3 r` past the edge, and on the faces' bisector) and
+  corner (on the diagonal, and with its foot past both edges), an L's
+  reflex edge from inside, a stadium's straight cap edge and its arc's rim
+  (a cylinder wall's edge with its cap), a rod's rim, an imported
+  octahedron's edge and vertex, and a hemisphere's rim circle (an edge
+  between a sphere and its disc). Every miss within the resolution
+  (`d > 0` to `1e-9`) evaluated wrongly: outside, the fuse two solids and
+  the common empty, where the inputs touch but for less than the
+  resolution; inside the L, the cut a wall thinner than the resolution at
+  its reflex edge. Crossings within it (`d < 0`) were refused as a piece
+  thinner than the resolution, by the validator (`uncertified_pcurve_off_edge`,
+  `uncertified_shell_orientation`), as unrepresentable mass properties, by
+  the plane's crossing rule where the foot lay `1e-6 r` past the edge, or
+  as a section through a sphere's pole off its meridians (the octahedron's
+  vertex on the ball's axis), or the fuse and cuts evaluated over an
+  overlap no deeper than the resolution while the common was refused by
+  the validator (most edges at `-1e-9`; `1e-3 r` past the level box's
+  edge and beside the octahedron's face at `-1e-12`). At `+-1e-6` every
+  case evaluated as before but for a few commons of a crossing `1.5e-6`
+  deep, refused by the validator before and after. Why: `near_miss` looks only
+  at the faces' nearest points, both inside the faces, and the pierces of
+  an edge through a sphere along a chord no deeper than the resolution are
+  taken as any others. The fix (`curved/graph.rs`'s `edge_near_misses`,
+  run for every sphere face of one input against the other's edges and
+  vertices whose boxes meet it widened by the resolution, after
+  `near_miss`, which now runs for all faces before the pierces): a sphere
+  whose distance from an edge's curve (its nearest point strictly inside
+  the edge) or from a vertex lies within the resolution of its radius,
+  the sphere's point nearest it in its face, is `Degenerate` ("a sphere
+  within the resolution of tangency to an edge (S9d.1)", "a sphere within
+  the resolution of a vertex (S9d.1)"): crossing it wherever so, as
+  `plane_section`'s crossing is; missing it only where the gap lies
+  outside either input, `near_miss`'s contact, by each input's membership
+  at its point pushed across the gap (the edge's or vertex's model at it
+  toward the centre, the sphere's model at its point away from it). The
+  distances are exact: a line's foot; a circle's point toward the centre
+  (a sphere's rim or section, a level frame's arc), exact in the
+  quadratic field of the centre's projection's length; a conic that is
+  no circle exactly (a turned frame's arc, within rounding of one; an
+  oblique cut's ellipse) at a rational point of it at each local least
+  distance found in binary64, so that its distance exceeds the least by
+  far less than the resolution. The sphere's nearest point is exact where
+  its distance squared is rational, else a rational point of the sphere
+  toward it (its face's membership decided there). Edges between faces
+  on one surface (a mesh's diagonals, a split's great circle, a seam) and
+  seams' edges and vertices (without an input's id) are none, their
+  surfaces' rules holding them; other curves (meetings of two curved
+  faces, torus and spline curves) have no such rule yet. A gap inside both
+  inputs evaluates as before: a cavity's sphere (a block less the ball)
+  within the resolution of the L's reflex edge inside its material,
+  fuse, common and the cavity less the L one solid each (the cut a cavity
+  among several solids, refused as before). Unchanged: the plane and
+  sphere rules (their reasons first where they hold), exact incidences
+  (a vertex or an edge on the sphere exactly), the validator. Open, found
+  alongside (HANDOFF): a ball missing a rod's cylinder wall within the
+  resolution (`1e-12` to `1e-9` of its radius) is fused with it into two
+  solids, and so is a dome whose rim circle misses a box's top within it:
+  near misses of a sphere and a cylinder or cone face, and of a circle edge
+  and a plane face, have no rule; a ball crossing a rod's wall by
+  `1e-12 r` ran for over ten minutes before it was stopped. Tests:
+  `tests/sphere_booleans.rs`'s
+  `a_ball_within_the_resolution_of_an_edge_or_vertex_is_degenerate` (a
+  turned box's top edge, two ways, and corner, the L's reflex edge, a
+  level and a turned stadium's rim, the octahedron's edge and vertex and
+  the hemisphere's rim, `1e-15` to `1e-9` either side refused with the
+  new reasons, `1e-6` evaluating in the pair identities, and the cavity
+  at the reflex edge evaluating). Of the boolean corpus's inputs 15 reach
+  such a distance (in the main stage, the chained one or the lens),
+  12 refused now and 3 evaluating as before (the sphere's nearest point
+  outside its face); of the 12, 5 were refused further on before (4 by
+  the tangency rule, their gaps 2e-32 and less, one as a result thinner
+  than the resolution) and 7 evaluated (gaps of 5e-17 to 1e-16: two
+  chained cuts two solids, a lens whose tips lie on the sphere but for
+  rounding fused with it). Two are kept
+  (`fuzz/regressions/boolean/replay-3c4a35d6c964300d64d6fc1c88df8b74f73507c4.bin`
+  and `replay-b57899d2f27016ec7ae55f1e146063e63ecde3f0.bin`). Checks:
+  fmt, clippy (release, all targets), the 1.85 check, the fuzz crate's
+  fmt and check, the release suite (674 tests); every comparison of
+  HANDOFF's table unchanged with 0 failures (40 runs on the pinned SDK);
+  the boolean corpus (1,438 inputs) and its 35 regressions and the split
+  corpus (3,551) and its 20 regressions replay with debug assertions
+  without a failure (the slowest 3.9 s and 1.3 s), and so do the kept
+  inputs' 7,905 single-byte mutations; the new test under the emulated
+  glibc `hypot` with debug assertions and overflow checks
+  (`sphere_booleans`, 2.5 s; the new test 0.45 s at opt-level 2 with
+  debug assertions).
 
 * **The Boolean captures' Linux records, open: CI has no observations to
   take them from.** S9e.4b and S9f.3's notes leave each capture's Linux
