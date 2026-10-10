@@ -10585,7 +10585,18 @@ Decisions for S9, recorded before its code (2026-09-28):
     and more where it now takes 7); (c) the declared ball's refusal is S9c's
     tangency, the ball and the post's top meeting exactly (not S9d.1's
     rounding). The draft found every solid case within the reference's
-    volume and the declared one refused so.
+    volume and the declared one refused so. The capture
+    `occt-boolean-deep-trees-preimplementation`
+    (`compare_deep_trees_boolean.py`, keyed on the refusal the step removes:
+    `imported.rs`'s `OutOfDomain("an imported plane piece other than a
+    Boolean tree of its primitive and its planes' hulls (S9e.4b.4)")`, whose
+    text the step changes; the kernel's probe `unsupported` on all 21 before
+    the code, every body refused on import by it): every result valid, 20
+    matching (within 2e-8 of the reference: no meeting OCCT approximates),
+    1 reviewed, in `occt-boolean-deep-trees-divergences.json`: the touching
+    ball's fuse, which OCCT keeps as two solids touching at a point where the
+    reference's rays count one, their totals the reference's within 1.2e-15.
+    S9e.4b.4c.2a's kernel next.
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces
