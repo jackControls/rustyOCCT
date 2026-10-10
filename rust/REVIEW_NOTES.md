@@ -9579,8 +9579,10 @@ Decisions for S9, recorded before its code (2026-09-28):
     `InvalidTopology("non_manifold_vertex")`, the cut evaluating, the common
     `Degenerate("solids touching at a vertex")`, the imported K1 refused as
     a tangency), a task of its own (fixed since: a result touching itself at
-    a vertex, `9c06cdf3`). Pending: its DRAW survey and its capture's Linux
-    record. Campaigns at `3aba844c`, with the fix of a hole and a rod of its
+    a vertex, `9c06cdf3`). Pending: its capture's Linux record. DRAW
+    survey: that of S9e.4b.4b.2a, S9e.4b.4b.2b.1 and the cylinder pairs'
+    fixes, below (K1 refused as a tangency between the inputs, as its trial
+    found; nothing registered). Campaigns at `3aba844c`, with the fix of a hole and a rod of its
     radius crossing it (600 s each, sampled replays, every switch on):
     `boolean` clean, 892 runs, the slowest input 31 s under
     AddressSanitizer, its startup replay 2,200 s; `split` clean, 1,571 runs,
@@ -9891,10 +9893,63 @@ Decisions for S9, recorded before its code (2026-09-28):
     S9e.4b.4b.2b.2 (hulls across several parts, polyhedral bosses, the
     notch's prism cut at both caps' rims, mixed pockets and components, two
     leaves of two caps each); the kernel's own stack given to a Boolean (c).
-    Pending: its DRAW survey (its trial moves no case) and its capture's
-    Linux record. Campaigns at `c3ce4d42` (600 s each, sampled replays,
-    every switch on): `boolean` clean, 930 runs, the slowest input 24 s
-    under AddressSanitizer; `split` clean, 1,519 runs, none slow.
+    Pending: its capture's Linux record. DRAW survey: below (no case moving
+    with this step, as its trial found). Campaigns at `c3ce4d42` (600 s
+    each, sampled replays, every switch on): `boolean` clean, 930 runs, the
+    slowest input 24 s under AddressSanitizer; `split` clean, 1,519 runs,
+    none slow.
+  * **DRAW survey of S9e.4b.4b.2a, S9e.4b.4b.2b.1 and the cylinder pairs'
+    fixes (2026-10-09, `UPSTREAM_TESTS.md`).** At `826346b7` (`s9c2-kernel`
+    with S9e.4b.4b.2a, a result touching itself at a vertex refused
+    (`9c06cdf3`), the near node's wider margin for crossing cylinders
+    (`8dd43713`), S9e.4b.4b.2b.1 and their campaigns' records; the public
+    dataset, 120 seconds a case, four at once, on a host at load 8 to 18).
+    The two fixes are general rules of the curved engine; neither moves any
+    case. The 1,802 self-contained cases of the Boolean group on both
+    backends: every status, every refusal's reason and every error the last
+    survey's (`c62470a3`) field for field, 987 evaluating and registered,
+    592 refused, 223 unsupported on both, none failing or timing out; no
+    case is refused as `Degenerate("a result touching itself at a
+    vertex")`, and the near node (`two cylinders' section within the
+    resolution of a node`) refuses the same 8 (`ZD9` and `ZE2` of the four
+    `bop*_simple` grids). The 1,814 cases restoring a shape for a Boolean
+    on the Rust adapter, and the 171 the import reaches on native DRAW too:
+    native DRAW's every status and reason the last survey's; on the Rust
+    adapter one case moves, `bfuse_complex/K1`, from `OutOfDomain("an
+    imported body of several primitives with plane faces other than their
+    ends (S9e.4b.4b.2)")` to `Degenerate("a tangency between the inputs
+    (S9c)")`, as S9e.4b.4b.2a's trial found (its part imports as its
+    rounded box less its bore; its tool a rod of the bore's radius whose
+    axis crosses it, tangent at two points; native DRAW evaluates it). A
+    replay at `1cd7bb3a` (S9e.4b.4b.2a merged, before either fix) gives
+    K1 the same refusal, and the same statuses and reasons to the 28 cases
+    refused as a near node or as a result or face touching itself
+    (`bug29807_b1`'s near node and `bcut_complex/J3` among them): the
+    rules are not the cause of any move, and S9e.4b.4b.2b.1 moves none, as
+    its trial found. Of the 171: 59 evaluate on both backends, 76 are
+    refused by S9's rules, 31 are bodies none of the kernel's constructions
+    (the general refusal), 3 spline bodies (S9f) and 2 arguments of several
+    solids, none S9e.4b.4b.2b's; 24 are unsupported natively too. Eight
+    cases time out at their first restores: the four of the last four
+    surveys (`bugs/modalg_1/buc60531_1`, `_2`, `bugs/modalg_5/bug23849_1`,
+    `_3`) and, at this run's load, the reader's slowest besides
+    (`buc60532`, `_1`, `_2` and `bugs/modalg_6/bug23585`), which end alone
+    in 68 to 73 s (on a host at load 4 to 8), unsupported as before (the
+    reader takes no `SurfaceOfLinearExtrusion`; `tolerance`). No case
+    fails, crashes or panics on either backend (the 276 restore cases
+    `failed` on the Rust adapter are the reader's validator rejecting their
+    files, as before). The volume audit (`vprops` and `sprops` before each
+    `checkprops`, both backends, the 1,046 audited before): both backends'
+    values the last audit's bit for bit on all 1,046 (no moved value, the
+    largest relative move 0), the statuses the same, the same 35
+    disagreements. No case newly evaluates, so none is registered (1,132
+    cases), and the ledger does not change (`--ledger` holds). A full
+    contract run of the manifest holds on both backends with the dataset
+    (30 seconds a case), the slowest Boolean case 9.8 s
+    (`bopfuse_simple/ZK8`, on a host at load 7 to 21; 3.9 in the last
+    survey), the restore cases 0.2 to 7.0 s (`bcommon_complex/B9`), E5, G9
+    and `bug417` 0.9, 1.9 and 2.0 s, the rollex 0.7 to 1.8. No kernel
+    change.
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces
@@ -11170,7 +11225,9 @@ Decisions for S9, recorded before its code (2026-09-28):
     corpus and its regressions (3,571), none failing; of the input's 3,570
     single-byte mutations 1,527 failed alike before (every one
     `non_manifold_vertex`) and none after; the new tests under the emulated
-    glibc `hypot` with debug assertions and overflow checks (8.6 s).
+    glibc `hypot` with debug assertions and overflow checks (8.6 s). DRAW
+    survey: that of S9e.4b.4b.2a, S9e.4b.4b.2b.1 and the cylinder pairs'
+    fixes at `826346b7` (no case refused so, none moving with the rule).
   * **Crossing cylinders near a node, enclosures past the resolution
     (2026-10-06).** The open item the previous note left: radii `1` and `1 +
     2^-k` crossing, between the near-node rule's margin and exact
@@ -11242,7 +11299,10 @@ Decisions for S9, recorded before its code (2026-09-28):
     assertions and overflow checks, the new test 6.6 s.
     Campaigns at `298fcf3a` (600 s each, sampled replays, every switch on):
     `boolean` clean, 929 runs, the slowest input 30 s under
-    AddressSanitizer; `split` clean, 1,353 runs, the slowest 11 s.
+    AddressSanitizer; `split` clean, 1,353 runs, the slowest 11 s. DRAW
+    survey: that of S9e.4b.4b.2a, S9e.4b.4b.2b.1 and the cylinder pairs'
+    fixes at `826346b7` (the same 9 cases the near node, none moving with
+    the rule).
   * **Where S9 stands (2026-09-30, paused).** Done and pushed: S9a to S9d
     (every sub-step with its DRAW survey and a clean campaign), S9e.1
     (campaign clean at `51c08edf`) and S9e.2 (`8e060c67`), S9f's decisions

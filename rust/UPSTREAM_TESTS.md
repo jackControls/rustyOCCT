@@ -176,7 +176,7 @@ S9d.4b.2a and S9e.2, and 59 Booleans of restored solids, 16 of S9e.4a, 7
 of S9e.4b.1, 4 of S9e.4b.2, 14 of S9e.4b.3c.1, 13 of S9e.4b.3c.2, 1 of
 S9e.4b.3c.3a, 1 of S9e.4b.4a and 3 of S9e.4b.4b.1; S9c.2b.1, S9e.3a,
 S9f.1, S9e.3b, S9f.2a, S9f.2b.1, S9f.2b.2, S9f.3a, S9f.3b, S9e.4b.3a,
-S9e.4b.3b and S9e.4b.3c.3b add none).
+S9e.4b.3b, S9e.4b.3c.3b, S9e.4b.4b.2a and S9e.4b.4b.2b.1 add none).
 S8e registers the upstream `bsplit` group as capability sentinels: `boolean/splitter/A5`
 and `B5` and the 22 `bugs` cases that call `bsplit` (with `bug29333_1` and
 `bug29333_2`, registered before). They need S9's general builder: tools that
@@ -1861,6 +1861,45 @@ E5, G9 and `bug417` in 0.7, 1.4 and 1.3 seconds on the Rust adapter, the
 slowest Boolean case 3.9 seconds (`bopfuse_simple/ZK8`, on a host at load
 4 to 15; `bopcut_simple/ZK8` 5.8 in the last survey), the restore cases
 0.1 to 3.3 (`bcommon_complex/B9`), the rollex 0.4.
+
+**S9e.4b.4b.2a, S9e.4b.4b.2b.1 and the cylinder pairs' fixes: the Boolean
+group and the restore cases.** Both sets were run again after S9e.4b.4b.2a
+(such bodies led by a prism leaf), S9e.4b.4b.2b.1 (their other plane faces
+as a primitive's flat, a prism of one cap or a pocket) and two general
+rules of the curved engine, a result touching itself at a vertex refused
+and a wider near-node margin for crossing cylinders (2026-10-09, at
+`826346b7`, the public dataset, 120 seconds a case, four at once). Neither
+rule moves any case. The 1,802 self-contained cases of the Boolean group
+on both backends: every status, reason and error is the last survey's
+(`c62470a3`) field for field, 987 evaluating, every one registered, 592
+refused, 223 unsupported on both; none fails or times out. The 1,814
+restore cases on the Rust adapter, and the 171 the import reaches on native
+DRAW too: native DRAW's statuses and reasons are the last survey's, and on
+the Rust adapter one case moves, `bfuse_complex/K1`, now refused as a
+tangency between the inputs (its part imported as its rounded box less its
+bore, its tool a rod of the bore's radius whose axis crosses it) where it
+was refused as S9e.4b.4b.2's, as S9e.4b.4b.2a's trial found. Replayed at
+`1cd7bb3a` (S9e.4b.4b.2a, before either rule), K1 and the 28 cases refused
+as a near node or as a result or face touching itself keep the same
+refusals. Of the 171, 59 evaluate on both backends, 76 are refused by S9's
+rules, 31 are bodies none of the kernel's constructions, 3 have spline
+faces (S9f) and 2 give the next Boolean several solids; native DRAW does
+not evaluate 24 of them. Eight cases time out at their first restores: the
+four of the last four surveys (`bugs/modalg_1/buc60531_1`, `_2`,
+`bugs/modalg_5/bug23849_1`, `_3`) and, at this survey's load (8 to 18),
+`buc60532`, `buc60532_1`, `buc60532_2` and `bugs/modalg_6/bug23585`, which
+end alone in 68 to 73 seconds, unsupported as before.
+
+The volume audit (`vprops` and `sprops` before each `checkprops`, both
+backends, the 1,046 audited before): both backends' values are the last
+audit's bit for bit on all 1,046, the statuses the same, and the same 35
+disagreements remain, native off in each. No case newly evaluates, so none
+is registered (1,132 cases); the ledger does not change. A full contract
+run of the manifest (both backends, the dataset present, 30 seconds a case)
+holds for every case, the slowest Boolean case 9.8 seconds
+(`bopfuse_simple/ZK8`, on a host at load 7 to 21; 3.9 in the last
+survey), the restore cases 0.2 to 7.0 (`bcommon_complex/B9`), the rollex
+0.7 to 1.8.
 
 Three more `intss` cases run on the Rust adapter but are not registered,
 because the contract admits no failing status: `bug23178`, `bug28222_2` and

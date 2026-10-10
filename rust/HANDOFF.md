@@ -41,7 +41,9 @@ then for S9e.4b.4b.1 (branch `s9e4b4b`, over `s9c2-kernel` at `64673ebd`),
 then for the DRAW survey of S9e.4b.4b.1 (branch `s9-draw-10`, over
 `s9c2-kernel` at `c62470a3`),
 then for S9e.4b.4b.2a (branch `s9e4b4b2`, over `s9c2-kernel` at `c62470a3`),
-then for S9e.4b.4b.2b.1 (branch `s9e4b4b2b`, over `s9c2-kernel` at `298fcf3a`).
+then for S9e.4b.4b.2b.1 (branch `s9e4b4b2b`, over `s9c2-kernel` at `298fcf3a`),
+then for the DRAW survey of S9e.4b.4b.2a, S9e.4b.4b.2b.1 and the cylinder
+pairs' fixes (branch `s9-draw-11`, over `s9c2-kernel` at `826346b7`).
 
 ## Where things stand
 
@@ -58,10 +60,11 @@ then for S9e.4b.4b.2b.1 (branch `s9e4b4b2b`, over `s9c2-kernel` at `298fcf3a`).
   arcs, and one solid of a result of several (S9e.2, `curved/matched.rs`),
   results of spheres, cones and tori, deeper chains and given results
   against spheres, cones and tori (S9e.3a, `curved/chain.rs`), each with its
-  DRAW survey (the last full survey, that of S9e.4b.4b.1 at `c62470a3`,
-  branch `s9-draw-10`: the Boolean group's 987 cases and 59 restore cases
-  registered, none failing or timing out, both backends' audited values
-  those of `16121052`'s bit for bit) and a clean campaign (S9e.3a's and S9f.1's at `b2765f20`, 989
+  DRAW survey (the last full survey, that of S9e.4b.4b.2a, S9e.4b.4b.2b.1
+  and the cylinder pairs' fixes at `826346b7`, branch `s9-draw-11`: the
+  Boolean group's 987 cases and 59 restore cases registered, none failing,
+  no case moving but `bfuse_complex/K1`'s reason, both backends' audited
+  values those of `c62470a3`'s bit for bit) and a clean campaign (S9e.3a's and S9f.1's at `b2765f20`, 989
   runs).
 - **S9f.1 done.** Spline prisms against polyhedral prisms in any position
   (`curved/spline_walls.rs`), with its survey and campaign as above.
@@ -419,7 +422,10 @@ then for S9e.4b.4b.2b.1 (branch `s9e4b4b2b`, over `s9c2-kernel` at `298fcf3a`).
   (stacked prisms, a cone with a ball). A trial of the targeted DRAW
   restore cases, on both backends: `bfuse_complex/K1`'s part imports, the
   fuse refused as a tangency between the inputs; `bug28773` as before; `E5`,
-  `G9` and `bug417` evaluate.
+  `G9` and `bug417` evaluate. Its DRAW survey (with S9e.4b.4b.2b.1's and
+  the cylinder pairs' fixes', branch `s9-draw-11` at `826346b7`): K1 the one
+  case moving, refused so; nothing registered; neither fix moving any case
+  (replayed at `1cd7bb3a`, before them).
 - **S9e.4b.4b.2b.1 implemented** (branch `s9e4b4b2b`): such bodies with other
   plane faces, each of S9e.4b.4b.2a's chains tried again with them
   (`solid/imported.rs`'s `chain_piece` given the leaves, `bosses`,
@@ -439,6 +445,8 @@ then for S9e.4b.4b.2b.1 (branch `s9e4b4b2b`, over `s9c2-kernel` at `298fcf3a`).
   first results of several curved faces), the cake S9e.4b.4b.2a refused as
   its own tangency evaluates. A trial of the survey's 171 restore cases the
   import reaches, on both backends: no case moves (59 evaluate on both).
+  Its DRAW survey (branch `s9-draw-11` at `826346b7`, above): no case
+  moving with it.
 - **CI.** Both workflows ("Rust kernel", "Rust geometry fuzzing") were green
   at `6c221525`. They had been red from S7 until 2026-09-29, unnoticed;
   check them after every push (see "Working rules").
@@ -491,7 +499,11 @@ then for S9e.4b.4b.2b.1 (branch `s9e4b4b2b`, over `s9c2-kernel` at `298fcf3a`).
    `bcut_complex/P4` registered, the parallel cylinders' rule moving no
    registered case), that of S9e.4b.4b.1 at `c62470a3` (branch
    `s9-draw-10`: `bfuse_complex/E5`, `bcut_complex/G9` and
-   `bugs/modalg_2/bug417` registered, 1,132 cases).
+   `bugs/modalg_2/bug417` registered, 1,132 cases), that of S9e.4b.4b.2a,
+   S9e.4b.4b.2b.1 and the cylinder pairs' fixes at `826346b7` (branch
+   `s9-draw-11`: neither fix moving any case, `bfuse_complex/K1` refused as
+   a tangency between the inputs as S9e.4b.4b.2a's trial found, nothing
+   registered).
 3. **S9e.4b**, split in "S9e.4b refined": S9e.4b.1 (arcs rounded off
    their circles) and S9e.4b.2 (polyhedra other than prisms, on their
    stored vertices) are implemented with their DRAW surveys and
@@ -547,13 +559,15 @@ then for S9e.4b.4b.2b.1 (branch `s9e4b4b2b`, over `s9c2-kernel` at `298fcf3a`).
    **S9e.4b.4b.2a** (such bodies led by a prism leaf with both its caps,
    its walls' tangent joints its own: `K1`'s part imports as its rounded
    box less its bore, the case refused by S9's tangency, its tool a rod of
-   the bore's radius whose axis crosses it) is implemented (campaigns clean
-   at `3aba844c`; pending its DRAW survey and its capture's Linux record);
+   the bore's radius whose axis crosses it) is implemented with its DRAW
+   survey (`s9-draw-11` at `826346b7`: K1 refused so, nothing registered)
+   and clean campaigns at `3aba844c` (pending its capture's Linux record);
    **S9e.4b.4b.2b**, split in "S9e.4b.4b.2b refined": **S9e.4b.4b.2b.1**
    (other plane faces as a primitive's flat, a prism of one cap or a pocket
    with its teeth: the fuzz target's 3 such first results importing, no DRAW
-   case moving in its trial) is implemented (campaigns clean at
-   `c3ce4d42`; pending its DRAW survey and its capture's Linux record);
+   case moving in its trial) is implemented with its DRAW survey
+   (`s9-draw-11` at `826346b7`: no case moving) and clean campaigns at
+   `c3ce4d42` (pending its capture's Linux record);
    next **S9e.4b.4b.2b.2** (a hull
    across several parts, a polyhedral boss, a prism cut at both caps' rims,
    mixed pockets and components, two leaves of two caps each; the kernel's
