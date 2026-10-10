@@ -57,7 +57,8 @@ over `s9c2-kernel` at `f9e54f0d`),
 then for S9e.4b.4c.2a (branch `s9e4b4c2`, over `s9c2-kernel` at `37732abc`),
 then for the DRAW survey of the deeper trees (branch `s9-draw-15`, over
 `rust-kernel` at `69c2c27f`),
-then for S9e.4b.4b.2b.2a (branch `s9e4b4b2b2`, over `s9c2-kernel` at `ae733749`).
+then for S9e.4b.4b.2b.2a (branch `s9e4b4b2b2`, over `s9c2-kernel` at `ae733749`),
+then for S9e.4b.4b.2b.2b.1 (branch `s9e4b4b2b2b`, over `s9c2-kernel` at `92e22e11`).
 
 ## Where things stand
 
@@ -536,6 +537,36 @@ then for S9e.4b.4b.2b.2a (branch `s9e4b4b2b2`, over `s9c2-kernel` at `ae733749`)
   a pocket's walls along a turned leaf's axis within rounding of it.
   Campaigns clean at `9c56ad77`. Pending its capture's Linux record and its
   DRAW survey (with S9e.4b.4b.2b.2b's).
+- **S9e.4b.4b.2b.2b.1 implemented** (branch `s9e4b4b2b2b`): leaves whose cap
+  a pocket or another part cuts at its rim (a wall across the bottom cap's
+  loops ending at or below the top cap's plane, a wall of the outer loop
+  reaching it, a hole's walls all ending on another part a well) and a tooth
+  standing in a pocket to a leaf's cap running past it, the same chains as
+  before tried again over them after every other, any refusal of such a
+  chain one the body is not (`solid/imported.rs`'s `rim_leaves`,
+  `primitive_over`'s `skip`). Decisions ("S9e.4b.4b.2b.2b refined": the
+  reach measured again at `92e22e11`, 44 bodies of several primitives
+  refused, classified by form; split into S9e.4b.4b.2b.2b.1 and .2; the
+  evidence's amendments moving caps on one plane to .2 with the flush
+  walls), 18 cases on two bodies OCCT wrote
+  (`generate_rim_leaves_boolean_fixtures.py`, the chained reference with
+  each body's closed form) captured before the kernel (17 matching, 1
+  reviewed), the kernel within the reference on all 15 solid cases, the
+  touching ball refused; 9 of the 44 measured bodies import (4 pockets
+  across the rim, 5 overlaps), nothing else moving. The fuzz target's `RIMS`
+  stage (the kernel's own plate less a square with a round hole across its
+  rim, or fused with a ring over its arc end, imported and the kernel's own,
+  each cut by the chained partner): 149 of the local inputs reaching it,
+  every body imported, 55 evaluating both ways with one volume, the rest
+  refused by S9's rounding rules on one side or both, no volume differing. A
+  trial of the DRAW restore cases the import reaches: no case moves (51
+  cases on both backends; `bcut_complex/H2`'s body, the one the step newly
+  imports, still refused before its Boolean as an argument the adapter did
+  not make). Found beside it: a pre-existing panic of the curved engine
+  (`surds of one field` in a sphere's half's membership, the kernel's own
+  stack of two prisms cut by a ball, no import involved), left for a fix of
+  its own. Open: S9e.4b.4b.2b.2b.2. Pending its capture's Linux record, its
+  DRAW survey and its campaigns.
 - **CI.** Both workflows ("Rust kernel", "Rust geometry fuzzing") were green
   at `6c221525`. They had been red from S7 until 2026-09-29, unnoticed;
   check them after every push (see "Working rules").
@@ -560,13 +591,13 @@ then for S9e.4b.4b.2b.2a (branch `s9e4b4b2b2`, over `s9c2-kernel` at `ae733749`)
    spline-sphere, spline-cone, imported-polyhedra, imported-arcs,
    imported-pieces, split-pieces, one-sphere, one-sphere-incidence,
    piece-forms, piece-trees, primitive-chains, prism-leaves, plane-parts,
-   polyhedra-curved, deep-trees and two-leaves captures (with imported-joints'), and in fact of every Boolean capture
+   polyhedra-curved, deep-trees, two-leaves and rim-leaves captures (with imported-joints'), and in fact of every Boolean capture
    but S9a.1's two prisms (`occt-boolean-preimplementation`): CI runs
    only `compare_boolean.py`'s default set, so its
    `source-pinned-brep-results` artifact holds no other set's
    `native-observed.txt` (checked at `d1869f2f`, runs 37438561216 and
    37454728856, and at `64673ebd`, run 37415799498), and none of the
-   other 41 captures (S9e.4b.4c.1's, S9e.4b.4c.2a's and S9e.4b.4b.2b.2a's among them) has ever had a
+   other 42 captures (S9e.4b.4c.1's, S9e.4b.4c.2a's, S9e.4b.4b.2b.2a's and S9e.4b.4b.2b.2b.1's among them) has ever had a
    `platform-linux/` record. They stay
    pending until the B-rep job also runs those comparisons (each set's
    compare script on the job's pinned SDK, its output directory added to
@@ -672,11 +703,18 @@ then for S9e.4b.4b.2b.2a (branch `s9e4b4b2b2`, over `s9c2-kernel` at `ae733749`)
    (two prism leaves, a leaf's walls parted by another part, a lone leaf with
    a pocket: 19 of the 53 bodies the fuzz targets' results import as) is
    implemented with clean campaigns at `9c56ad77` (pending its capture's
-   Linux record and its DRAW survey, with S9e.4b.4b.2b.2b's); next **S9e.4b.4b.2b.2b** (the other 34: a hull across several
-   parts, a polyhedral boss, a prism cut at both caps' rims, mixed pockets
-   and components, three leaves, flush walls; the kernel's own fused stack
-   of prisms given to a Boolean, refused as an edge of one input on a face
-   of the other), then
+   Linux record and its DRAW survey, with S9e.4b.4b.2b.2b's);
+   **S9e.4b.4b.2b.2b**, split in "S9e.4b.4b.2b.2b refined" by
+   the reach measured again (44 bodies of several primitives refused, all
+   but three Booleans of two prisms on parallel axes): **S9e.4b.4b.2b.2b.1**
+   (leaves cut at their rim, a pocket's tooth to a leaf's cap: 9 of the 44
+   importing) is implemented (pending its capture's Linux record, its DRAW
+   survey and its campaigns); next **S9e.4b.4b.2b.2b.2** (leaves touching
+   along a face: flush walls, 16 bodies, and caps on one plane, 5 stacks,
+   both needing exact shared carriers or a given model of touching caps;
+   pockets open sideways; the rest of S9e.4b.4b.2b's list; of this step's
+   forms, 2 pockets flush with a line wall and a groove; 3 more stay refused
+   by S9's rules, 2 tangencies and a vertex on a face), then
    **S9e.4b.4c**, split in "S9e.4b.4c refined": **S9e.4b.4c.1** (an imported
    polyhedron against curved faces or with a cavity) is implemented with its
    DRAW survey (`s9-draw-12` at `44204e18`: no case moving, nothing
@@ -877,6 +915,7 @@ Each comparison takes `--occt-root target/spline-linear-preflight/pinned-sdk/ins
 | `compare_polyhedra_curved_boolean.py` | 18 / 16 (the kernel within the reference on all 30 solid cases, the 3 degenerate refused, the inner ball's fuse `unsupported`: a cavity among several solids) |
 | `compare_deep_trees_boolean.py` | 20 / 1 (the kernel within the reference on all 18 solid cases, the 3 degenerate refused) |
 | `compare_two_leaves_boolean.py` | 18 / 3 (the kernel within the reference on all 18 solid cases, the 3 degenerate refused) |
+| `compare_rim_leaves_boolean.py` | 17 / 1 (the kernel within the reference on all 15 solid cases, the 3 degenerate refused) |
 
 Every one must report 0 failures; since S9f.1 also `compare_split.py`
 (72 / 56) and `compare_brep.py --family spline` (10 / 3), which share its

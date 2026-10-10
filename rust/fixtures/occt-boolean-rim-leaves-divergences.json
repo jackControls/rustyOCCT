@@ -1,0 +1,17 @@
+{
+  "note": "Reviewed differences of the S9e.4b.4b.2b.2b.1 capture (occt-boolean-rim-leaves-preimplementation): each fingerprinted by its native row; the touching ball's fuse OCCT keeps as two solids.",
+  "reviews": [
+    {
+      "case": "well_touch_fuse",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "a51564a111eeeb2dd5e07e4dee4198cbf458ddb955b30efa65a2b4e8438aef16",
+      "differences": [
+        "solids"
+      ],
+      "reason": "BRepAlgoAPI's result is valid; the well (a stadium plate fused with a square with a square hole over its arc end) fused with a ball of radius 1 resting on the ring's top cap at a point (the declared degenerate group, the kernel refusing it as a tangency between the inputs): OCCT keeps the ball (volume 4 pi / 3) and the well as two solids touching at that point, where the reference's rays count their union one; the two solids' volumes and areas sum to the reference's totals within 2.7e-16 relative (the well alone its closed form, 93 + 75 pi / 8 + 25 / 4 asin 3/5).",
+      "independent_evidence": "chained_curved_boolean_reference.py's rows on the constructions OCCT was given (generate_rim_leaves_boolean_fixtures.py --check, identical under Python 3.9 and 3.12) agree two ways (each face swept by two independent families of curves) within 7.7e-32, every solid's measures from its faces within 6.6e-36 of its closed form, each body's within 2.9e-33 of its own (the post 60 + 199 pi / 16, the well 93 + 75 pi / 8 + 25 / 4 asin 3/5, each section times its stored axes' determinant), the pair identities within 6.1e-42, and Monte Carlo within 2.1 standard errors; its solid counts are the declared ones by rays at two resolutions; every stored vertex of the imported files lies on its construction's surfaces.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    }
+  ]
+}

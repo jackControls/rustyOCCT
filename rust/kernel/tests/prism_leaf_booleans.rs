@@ -336,7 +336,7 @@ fn cap(r: f64, d: f64) -> f64 {
 /// import), its volume its closed form, its stored vertices on its boundary,
 /// points in its material inside and points its chain removes outside; the
 /// post (on a fillet's circle) is refused for its own tangency and the notch
-/// (both caps cut at its rim: no prism leaf) as S9e.4b.4b.2b.2b's.
+/// (both caps cut at its rim: no prism leaf) as S9e.4b.4b.2b.2b.2's.
 #[test]
 fn imported_bodies_are_their_chains() {
     use std::f64::consts::PI;
@@ -421,7 +421,7 @@ fn imported_bodies_are_their_chains() {
         Err(Error::OutOfDomain(m)) => assert_eq!(
             m,
             "an imported body of several primitives with plane faces other than their ends, one or \
-             two prisms', a flat or a pocket (S9e.4b.4b.2b.2b)"
+             two prisms', a flat or a pocket (S9e.4b.4b.2b.2b.2)"
         ),
         other => panic!("leaf_notch: {:?}", other.map(|_| ())),
     }

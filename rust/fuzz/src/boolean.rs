@@ -90,7 +90,12 @@
 //! its caps (two prism leaves, the stadium's walls split by the box) or a
 //! stadium plate less a square turned about its axis from inside it past its
 //! top (a lone leaf with a pocket), and its import, each cut by the chained
-//! stage's partner, the same volume (`LEAVES`).
+//! stage's partner, the same volume (`LEAVES`). S9e.4b.4b.2b.2b.1: by the
+//! input's 18th byte, the kernel's own stadium plate less a square with a
+//! round hole across its rim from inside it past its top (a leaf cut at its
+//! rim with a post) or a stadium plate fused with a square with a square hole
+//! over its arc end (a well), and its import, each cut by the chained stage's
+//! partner, the same volume (`RIMS`).
 use crate::analytic_intersections::Bytes;
 use crate::split::{profile, spline_profile};
 use rusty_occt::identity::OperationId;
@@ -207,6 +212,15 @@ const NESTED: bool = true;
 /// and the kernel's body are each cut by the chained stage's partner, by the
 /// input's 17th byte (at or above 128: earlier inputs decode as before). On.
 const LEAVES: bool = true;
+
+/// Whether the kernel's own stadium plate on the object's frame less a square
+/// with a round hole across its rim from inside it past its top (a leaf cut
+/// at its rim, the hole's post a tooth to its top) or, by the byte's bit 6,
+/// fused with a square with a square hole over its arc end (its hole a well
+/// on the plate's top), written, read back and imported (S9e.4b.4b.2b.2b.1),
+/// and the kernel's body are each cut by the chained stage's partner, by the
+/// input's 18th byte (at or above 128: earlier inputs decode as before). On.
+const RIMS: bool = true;
 
 /// Whether a spline prism meets a line prism in frames with different
 /// axes (S9f.1's spline walls in the curved engine: creases, generatrices
@@ -909,6 +923,30 @@ pub fn check_boolean(data: &[u8]) {
                 }
             }
         }
+        // S9e.4b.4b.2b.2b.1: by the input's 18th byte (read there, so earlier
+        // inputs decode as before), the kernel's own leaf cut at its rim by a
+        // pocket with a post or, by its bit 6, a plate with a well standing on
+        // it (`rims_body`), written, read back and imported, each cut by the
+        // chained stage's partner: where both evaluate, the same volume
+        // (`RIMS`).
+        let rims = data.get(17).copied().filter(|k| *k >= 128);
+        if let (true, true, Some(k)) = (IMPORTED, RIMS, rims) {
+            if let Some(body) = rims_body(fa, s1, h, k >= 192, tolerance) {
+                if let Some(again) = reimported(&body) {
+                    if let (Some(x), Some(y)) = (
+                        run(body.cut(OperationId(34), &box_)),
+                        run(again.cut(OperationId(35), &box_)),
+                    ) {
+                        assert!(
+                            near(volume(&x), volume(&y)),
+                            "imported rim leaves {} for {}",
+                            volume(&y),
+                            volume(&x)
+                        );
+                    }
+                }
+            }
+        }
     }
     // S9e.4a: the object written by the kernel's writer, read back and
     // imported (`IMPORTED`), given the chosen operation with the same tool:
@@ -1088,6 +1126,99 @@ fn leaves_body(frame: Frame3, s: f64, h: f64, pocket: bool, tolerance: Tolerance
         let block = prism(square(5.0 * k).ok()?, frame, 0.0, h, 28)?;
         let rod = prism(stadium(k, k, 2.0 * k).ok()?, frame, -h / 2.0, 1.5 * h, 29)?;
         block.fuse(OperationId(30), &rod).ok()?
+    };
+    let [body] = <[Solid; 1]>::try_from(out).ok()?;
+    Some(body)
+}
+
+/// The kernel's own bodies of S9e.4b.4b.2b.2b.1 on `frame` (`k = s / 8`,
+/// dyadic): a stadium plate (half discs of radius `3k` about `(0, 0)` and
+/// `(4k, 0)`) over `[0, h]` less the square `[-6k, 2k] x [-6k, 6k]` with a
+/// hole of radius `3k / 2` about `(-k, k / 2)` over `[h / 2, 2h]` (the pocket
+/// across the plate's rim, the hole's post standing to its top); or, where
+/// `well`, on the frame turned about its axis (its `x` along `8 x + 15 y`) a
+/// stadium plate (half discs of radius `5k / 2` about `(0, 0)` and
+/// `(4k, 0)`) over `[0, h]` fused with the square `[5k / 4, 9k] x [-3k / 2,
+/// 3k / 2]` with the hole `[7k / 2, 11k / 2] x [-k / 2, k / 2]` over `[h / 2,
+/// 3h / 2]` (the ring's near wall and hole standing on the plate's top, its
+/// long walls across the plate's arc end at `x = 6k`: a rational crossing,
+/// every vertical edge rational; no edge on an arc's circle or its tangent,
+/// no wall on an arc's tangent plane).
+fn rims_body(frame: Frame3, s: f64, h: f64, well: bool, tolerance: Tolerance) -> Option<Solid> {
+    let k = s / 8.0;
+    let stadium = |cx: f64, cy: f64, length: f64, r: f64| {
+        let arc = |x: f64| Segment::Arc {
+            center: Point2::new(x, cy),
+            radius: r,
+            ccw: true,
+        };
+        Boundary::path(
+            vec![
+                Point2::new(cx, cy - r),
+                Point2::new(cx + length, cy - r),
+                Point2::new(cx + length, cy + r),
+                Point2::new(cx, cy + r),
+            ],
+            vec![Segment::Line, arc(cx + length), Segment::Line, arc(cx)],
+            tolerance,
+        )
+    };
+    let square = |x0: f64, y0: f64, x1: f64, y1: f64| {
+        Boundary::polygon(
+            vec![
+                Point2::new(x0, y0),
+                Point2::new(x1, y0),
+                Point2::new(x1, y1),
+                Point2::new(x0, y1),
+            ],
+            tolerance,
+        )
+    };
+    // The well on the frame turned about its axis (on the world's axes its
+    // walls' exact incidences are edges along the other leaf's surfaces in
+    // the import's model, and the kernel's own body's Booleans with a ball
+    // meet its arc walls' crossings in fields its sphere's sides do not mix).
+    let on = if well {
+        Frame3::new(
+            frame.origin(),
+            frame.normal(),
+            frame.x() * 8.0 + frame.y() * 15.0,
+            tolerance,
+        )
+        .ok()?
+    } else {
+        frame
+    };
+    let prism = |outer: Boundary, holes: Vec<Boundary>, h0: f64, h1: f64, op: u64| {
+        let profile = Profile::new(outer, holes, tolerance).ok()?;
+        Solid::extrude_with(OperationId(op), profile, on, h0, h1)
+            .ok()
+            .map(|(s, _)| s)
+    };
+    let (out, _) = if well {
+        let plate = prism(
+            stadium(0.0, 0.0, 4.0 * k, 2.5 * k).ok()?,
+            vec![],
+            0.0,
+            h,
+            31,
+        )?;
+        let hole = square(3.5 * k, -0.5 * k, 5.5 * k, 0.5 * k).ok()?;
+        let outer = square(1.25 * k, -1.5 * k, 9.0 * k, 1.5 * k).ok()?;
+        let ring = prism(outer, vec![hole], h / 2.0, 1.5 * h, 32)?;
+        plate.fuse(OperationId(33), &ring).ok()?
+    } else {
+        let plate = prism(
+            stadium(0.0, 0.0, 4.0 * k, 3.0 * k).ok()?,
+            vec![],
+            0.0,
+            h,
+            31,
+        )?;
+        let hole = Boundary::circle(Point2::new(-k, 0.5 * k), 1.5 * k, tolerance).ok()?;
+        let outer = square(-6.0 * k, -6.0 * k, 2.0 * k, 6.0 * k).ok()?;
+        let tool = prism(outer, vec![hole], h / 2.0, 2.0 * h, 32)?;
+        plate.cut(OperationId(33), &tool).ok()?
     };
     let [body] = <[Solid; 1]>::try_from(out).ok()?;
     Some(body)
