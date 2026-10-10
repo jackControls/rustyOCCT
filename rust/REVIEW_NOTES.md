@@ -12652,6 +12652,10 @@ Decisions for S9, recorded before its code (2026-09-28):
   (`sphere_booleans`, 2.5 s; the new test 0.45 s at opt-level 2 with
   debug assertions). DRAW survey: below (no case within the resolution
   of an edge or vertex, none moving).
+  Campaigns at `47e086c5`, with the plane face's and this note's rules (600
+  s each, sampled replays, every switch on): `boolean` clean, 953 runs, the
+  slowest input 19 s under AddressSanitizer; `split` clean, 1,215 runs, the
+  slowest 11 s.
 * **DRAW survey of the edge and vertex near miss (2026-10-10,
   `UPSTREAM_TESTS.md`).** At `ef5d66fd` (`s9c2-kernel` at `44f24f0b` with
   "A ball within the resolution of an edge or vertex" merged, branch
