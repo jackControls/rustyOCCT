@@ -1,0 +1,126 @@
+case post_well_fuse
+brep imported/rim_post.brep
+boolean fuse
+brep imported/rim_well.brep
+end
+case post_well_cut
+brep imported/rim_post.brep
+boolean cut
+brep imported/rim_well.brep
+end
+case post_well_common
+brep imported/rim_post.brep
+boolean common
+brep imported/rim_well.brep
+end
+case chain_post_fuse
+brep imported/rim_post.brep
+boolean cut
+plane 2.0 1.0 -0.5 0.0 0.0 1.0 0.47058823529411764 0.8823529411764706 -0.0
+wire C 3.9117647058823533 5.647058823529412 -0.5 0.75
+prism 0.0 0.0 5.0
+then fuse
+plane 2.0 1.0 2.25 0.0 0.0 1.0 0.47058823529411764 0.8823529411764706 -0.0
+wire P 4 3.808823529411765 1.7352941176470584 2.25 5.220588235294118 4.382352941176471 2.25 2.5735294117647056 5.794117647058823 2.25 1.1617647058823533 3.1470588235294112 2.25
+prism 0.0 0.0 1.5
+end
+case chain_post_cut
+brep imported/rim_post.brep
+boolean cut
+plane 2.0 1.0 -0.5 0.0 0.0 1.0 0.47058823529411764 0.8823529411764706 -0.0
+wire C 3.9117647058823533 5.647058823529412 -0.5 0.75
+prism 0.0 0.0 5.0
+then cut
+plane 2.0 1.0 2.25 0.0 0.0 1.0 0.47058823529411764 0.8823529411764706 -0.0
+wire P 4 3.808823529411765 1.7352941176470584 2.25 5.220588235294118 4.382352941176471 2.25 2.5735294117647056 5.794117647058823 2.25 1.1617647058823533 3.1470588235294112 2.25
+prism 0.0 0.0 1.5
+end
+case chain_post_common
+brep imported/rim_post.brep
+boolean cut
+plane 2.0 1.0 -0.5 0.0 0.0 1.0 0.47058823529411764 0.8823529411764706 -0.0
+wire C 3.9117647058823533 5.647058823529412 -0.5 0.75
+prism 0.0 0.0 5.0
+then common
+plane 2.0 1.0 2.25 0.0 0.0 1.0 0.47058823529411764 0.8823529411764706 -0.0
+wire P 4 3.808823529411765 1.7352941176470584 2.25 5.220588235294118 4.382352941176471 2.25 2.5735294117647056 5.794117647058823 2.25 1.1617647058823533 3.1470588235294112 2.25
+prism 0.0 0.0 1.5
+end
+case post_rod_fuse
+brep imported/rim_post.brep
+boolean fuse
+plane 2.0 1.0 -0.5 0.0 0.0 1.0 0.47058823529411764 0.8823529411764706 -0.0
+wire C 3.941176470588235 2.514705882352941 -0.5 0.75
+prism 0.0 0.0 5.0
+end
+case post_rod_cut
+brep imported/rim_post.brep
+boolean cut
+plane 2.0 1.0 -0.5 0.0 0.0 1.0 0.47058823529411764 0.8823529411764706 -0.0
+wire C 3.941176470588235 2.514705882352941 -0.5 0.75
+prism 0.0 0.0 5.0
+end
+case post_rod_common
+brep imported/rim_post.brep
+boolean common
+plane 2.0 1.0 -0.5 0.0 0.0 1.0 0.47058823529411764 0.8823529411764706 -0.0
+wire C 3.941176470588235 2.514705882352941 -0.5 0.75
+prism 0.0 0.0 5.0
+end
+case rod_post_fuse
+plane 2.0 1.0 -0.5 0.0 0.0 1.0 0.47058823529411764 0.8823529411764706 -0.0
+wire C 0.4411764705882353 1.2647058823529411 -0.5 0.75
+prism 0.0 0.0 5.0
+boolean fuse
+brep imported/rim_post.brep
+end
+case rod_post_cut
+plane 2.0 1.0 -0.5 0.0 0.0 1.0 0.47058823529411764 0.8823529411764706 -0.0
+wire C 0.4411764705882353 1.2647058823529411 -0.5 0.75
+prism 0.0 0.0 5.0
+boolean cut
+brep imported/rim_post.brep
+end
+case rod_post_common
+plane 2.0 1.0 -0.5 0.0 0.0 1.0 0.47058823529411764 0.8823529411764706 -0.0
+wire C 0.4411764705882353 1.2647058823529411 -0.5 0.75
+prism 0.0 0.0 5.0
+boolean common
+brep imported/rim_post.brep
+end
+case well_rod_fuse
+brep imported/rim_well.brep
+boolean fuse
+plane 1.0 0.5 -0.25 0.0 0.0 1.0 0.28 0.96 -0.0
+wire C 2.79 7.53 -0.25 0.5
+prism 0.0 0.0 5.0
+end
+case well_rod_cut
+brep imported/rim_well.brep
+boolean cut
+plane 1.0 0.5 -0.25 0.0 0.0 1.0 0.28 0.96 -0.0
+wire C 2.79 7.53 -0.25 0.5
+prism 0.0 0.0 5.0
+end
+case well_rod_common
+brep imported/rim_well.brep
+boolean common
+plane 1.0 0.5 -0.25 0.0 0.0 1.0 0.28 0.96 -0.0
+wire C 2.79 7.53 -0.25 0.5
+prism 0.0 0.0 5.0
+end
+case well_touch_fuse
+brep imported/rim_well.brep
+boolean fuse
+sphere 3.38 8.66 4.75 0.0 0.0 1.0 1.0 0.0 0.0 1.0 -1.5707963267948966 1.5707963267948966
+end
+case well_touch_cut
+brep imported/rim_well.brep
+boolean cut
+sphere 3.38 8.66 4.75 0.0 0.0 1.0 1.0 0.0 0.0 1.0 -1.5707963267948966 1.5707963267948966
+end
+case well_touch_common
+brep imported/rim_well.brep
+boolean common
+sphere 3.38 8.66 4.75 0.0 0.0 1.0 1.0 0.0 0.0 1.0 -1.5707963267948966 1.5707963267948966
+end
