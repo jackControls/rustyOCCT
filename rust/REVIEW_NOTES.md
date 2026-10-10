@@ -10749,7 +10749,11 @@ Decisions for S9, recorded before its code (2026-09-28):
     directory) holds for every case, the ten among them; the slowest
     Boolean case 5.0 s (`boptuc_simple/ZK8`), the restore cases 0.1 to
     5.3 s (`bcommon_complex/B9`), E5 1.9 s, G9 and `bug417` 2.0 s, the
-    rollex 0.7 to 0.8. No kernel change.
+    rollex 0.7 to 0.8. No kernel change. Campaigns at `69c2c27f` (600 s
+    each, sampled replays, every switch on, on a host shared with two
+    agents' builds and DRAW runs): `boolean` clean, 843 runs, the slowest
+    input 37 s under AddressSanitizer (the startup's replay 3,209 s of its
+    3,600 at that load); `split` clean, 869 runs, the slowest 19 s.
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces
