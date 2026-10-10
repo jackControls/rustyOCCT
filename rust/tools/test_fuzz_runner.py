@@ -230,8 +230,15 @@ class FuzzRunnerTests(unittest.TestCase):
         self.assertEqual(targets,{tuple(sorted(run_fuzz.REPLAY_SHARDS))})
         shards=re.findall(r'\n\s+shard: \[([^\]]*)\]',jobs)
         self.assertEqual(len(shards),1)
-        self.assertEqual({*run_fuzz.REPLAY_SHARDS.values()},{len(shards[0].split(','))})
-        self.assertEqual([int(k) for k in shards[0].split(',')],list(range(len(shards[0].split(',')))))
+        listed=[int(k) for k in shards[0].split(',')]
+        self.assertEqual(listed,list(range(len(listed))))
+        # The replay job's matrix less its exclusions: each target's shards.
+        excluded=re.findall(r'\n\s+- \{target: (\w+), shard: (\d+)\}',jobs)
+        self.assertEqual(len(excluded),len(set(excluded)))
+        jobs_of={t:[k for k in listed if (t,str(k)) not in excluded] for t in run_fuzz.REPLAY_SHARDS}
+        self.assertEqual(jobs_of,{t:list(range(n)) for t,n in run_fuzz.REPLAY_SHARDS.items()})
+        self.assertLessEqual({t for t,_ in excluded},set(run_fuzz.REPLAY_SHARDS))
+        self.assertEqual(len(listed),max(run_fuzz.REPLAY_SHARDS.values()))
         self.assertLessEqual(set(run_fuzz.REPLAY_SHARDS),set(run_fuzz.TARGETS))
 
     def test_requires_completed_mutation_after_corpus_replay(self):

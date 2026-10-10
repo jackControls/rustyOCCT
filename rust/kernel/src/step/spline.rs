@@ -3,10 +3,11 @@
 //! OCCT and other writers produce), the file's pcurves on spline surfaces,
 //! and where an edge's vertices lie on a spline or on a pcurve's image.
 //!
-//! Nothing here approximates: a located parameter is only a starting claim,
-//! which the validator certifies (the vertices on their edges, each pcurve
-//! against its edge at matching fractions), so a wrong location is an import
-//! failure with its issues, never a moved edge.
+//! Nothing here approximates the geometry: a located parameter, searched
+//! for in binary64, is only a starting claim, which the validator certifies
+//! (the vertices on their edges, each pcurve against its edge at matching
+//! fractions), so a wrong location is an import failure with its issues,
+//! never a moved edge.
 use super::import::{list, real, reference, Build, Named};
 use super::part21::{Instance, Parameter};
 use crate::occt_brep::read::{BSplineRecord, BSplineSurfaceRecord, Curve2 as Record2};
@@ -374,22 +375,192 @@ fn distance2(a: [f64; 3], b: [f64; 3]) -> f64 {
     (0..3).map(|k| (a[k] - b[k]) * (a[k] - b[k])).sum()
 }
 
-/// The parameter in `[lo, hi]` where `f` comes nearest `target`: an end
-/// within `tol` of it exactly (on a closed curve, where both are, the end
-/// for an edge's `last` vertex), else the best of samples spread over the
-/// spans between `breaks`, refined by golden-section search between its
-/// neighbours (OCCT's `ShapeAnalysis_Curve::Project` samples and refines
-/// alike). Deterministic; a point that does not evaluate is infinitely far.
+/// A knot vector for binary64 de Boor: its flat knots (a periodic vector's
+/// extended by a period at each end, as the kernel's) and its domain.
+struct Knots {
+    degree: usize,
+    poles: usize,
+    periodic: bool,
+    domain: (f64, f64),
+    flat: Vec<f64>,
+}
+
+impl Knots {
+    fn new(k: &KnotVector) -> Self {
+        let (degree, poles) = (k.degree(), k.pole_count());
+        let mut flat: Vec<f64> = k
+            .knots()
+            .iter()
+            .zip(k.multiplicities())
+            .flat_map(|(&x, &m)| std::iter::repeat_n(x, m))
+            .collect();
+        let domain = k.domain();
+        if k.is_periodic() {
+            let period = domain.1 - domain.0;
+            let first = k.multiplicities()[0];
+            let extension = degree + 1 - first;
+            let before = flat[poles - extension..poles].iter().map(|x| x - period);
+            let after = flat[first..first + extension].iter().map(|x| x + period);
+            flat = before.chain(flat.iter().copied()).chain(after).collect();
+        }
+        Self {
+            degree,
+            poles,
+            periodic: k.is_periodic(),
+            domain,
+            flat,
+        }
+    }
+
+    /// The parameter (a periodic one taken into the domain) and its span,
+    /// the domain's end in the last span; none outside a nonperiodic domain.
+    fn span(&self, u: f64) -> Option<(f64, usize)> {
+        let (a, b) = self.domain;
+        let u = if self.periodic {
+            let u = a + (u - a).rem_euclid(b - a);
+            if u < b {
+                u
+            } else {
+                a
+            }
+        } else if (a..=b).contains(&u) {
+            u
+        } else {
+            return None;
+        };
+        let at_end = !self.periodic && u == b;
+        let span = self
+            .flat
+            .partition_point(|k| if at_end { *k < u } else { *k <= u })
+            .checked_sub(1)?;
+        (span >= self.degree && span + self.degree < self.flat.len()).then_some((u, span))
+    }
+
+    /// The index of the `j`th of the span's `degree + 1` poles.
+    fn pole(&self, span: usize, j: usize) -> usize {
+        (span - self.degree + j) % self.poles
+    }
+
+    /// De Boor's blend of the span's homogeneous poles `d` at `u`.
+    fn blend(&self, u: f64, span: usize, d: &mut [[f64; 4]]) -> [f64; 4] {
+        let p = self.degree;
+        for r in 1..=p {
+            for j in (r..=p).rev() {
+                let i = span - p + j;
+                let width = self.flat[i + p + 1 - r] - self.flat[i];
+                let alpha = if width > 0.0 {
+                    (u - self.flat[i]) / width
+                } else {
+                    0.0
+                };
+                let below = d[j - 1];
+                for (x, b) in d[j].iter_mut().zip(below) {
+                    *x = (1.0 - alpha) * b + alpha * *x;
+                }
+            }
+        }
+        d[p]
+    }
+}
+
+fn homogeneous(p: Point3, w: f64) -> [f64; 4] {
+    [p.x * w, p.y * w, p.z * w, w]
+}
+
+fn dehomogenized(h: [f64; 4]) -> Option<[f64; 3]> {
+    let p = [h[0] / h[3], h[1] / h[3], h[2] / h[3]];
+    p.iter().all(|x| x.is_finite()).then_some(p)
+}
+
+/// A B-spline curve evaluated in binary64 (the location's search only).
+struct FastCurve {
+    knots: Knots,
+    poles: Vec<[f64; 4]>,
+}
+
+impl FastCurve {
+    fn new(c: &BSplineCurve3) -> Self {
+        Self {
+            knots: Knots::new(c.knot_vector()),
+            poles: c
+                .poles()
+                .iter()
+                .zip(c.weights())
+                .map(|(p, w)| homogeneous(*p, *w))
+                .collect(),
+        }
+    }
+
+    fn point(&self, u: f64) -> Option<[f64; 3]> {
+        let (u, span) = self.knots.span(u)?;
+        let mut d: Vec<[f64; 4]> = (0..=self.knots.degree)
+            .map(|j| self.poles[self.knots.pole(span, j)])
+            .collect();
+        dehomogenized(self.knots.blend(u, span, &mut d))
+    }
+}
+
+/// A B-spline surface evaluated in binary64 (the location's search only).
+struct FastSurface {
+    u: Knots,
+    v: Knots,
+    poles: Vec<[f64; 4]>,
+}
+
+impl FastSurface {
+    fn new(s: &BSplineSurface3) -> Self {
+        Self {
+            u: Knots::new(s.u_knots()),
+            v: Knots::new(s.v_knots()),
+            poles: s
+                .poles()
+                .iter()
+                .zip(s.weights())
+                .map(|(p, w)| homogeneous(*p, *w))
+                .collect(),
+        }
+    }
+
+    fn point(&self, u: f64, v: f64) -> Option<[f64; 3]> {
+        let (u, su) = self.u.span(u)?;
+        let (v, sv) = self.v.span(v)?;
+        let mut row = vec![[0.0; 4]; self.v.degree + 1];
+        let mut column: Vec<[f64; 4]> = (0..=self.u.degree)
+            .map(|i| {
+                let i = self.u.pole(su, i);
+                for (j, x) in row.iter_mut().enumerate() {
+                    *x = self.poles[i * self.v.poles + self.v.pole(sv, j)];
+                }
+                self.v.blend(v, sv, &mut row)
+            })
+            .collect();
+        dehomogenized(self.u.blend(u, su, &mut column))
+    }
+}
+
+/// The parameter in `[lo, hi]` where the curve comes nearest `target`: an
+/// end within `tol` of it, its point correctly rounded (`exact`; on a
+/// closed curve, where both are, the end for an edge's `last` vertex), else
+/// the best of samples spread over the spans between `breaks`, refined by
+/// golden-section search between its neighbours (OCCT's
+/// `ShapeAnalysis_Curve::Project` samples and refines alike), its points
+/// from binary64 de Boor (`fast`): the search's some two hundred points
+/// taken exactly cost seconds on a trimmed spline face (the `step` fuzz
+/// target's timeout `f692f018`), and its result is only the claim the
+/// validator certifies. Deterministic (no libm); a point that does not
+/// evaluate is infinitely far.
 fn locate(
-    f: &dyn Fn(f64) -> Option<[f64; 3]>,
+    exact: &dyn Fn(f64) -> Option<[f64; 3]>,
+    fast: &dyn Fn(f64) -> Option<[f64; 3]>,
     [lo, hi]: [f64; 2],
     breaks: &[f64],
     target: [f64; 3],
     tol: f64,
     last: bool,
 ) -> f64 {
-    let d = |t: f64| f(t).map_or(f64::INFINITY, |p| distance2(p, target));
-    match (d(lo) <= tol * tol, d(hi) <= tol * tol) {
+    let at_end = |t: f64| exact(t).is_some_and(|p| distance2(p, target) <= tol * tol);
+    let d = |t: f64| fast(t).map_or(f64::INFINITY, |p| distance2(p, target));
+    match (at_end(lo), at_end(hi)) {
         (true, true) => return if last { hi } else { lo },
         (true, false) => return lo,
         (false, true) => return hi,
@@ -448,15 +619,17 @@ pub(super) fn curve_range(
 ) -> Named<[f64; 2]> {
     let (a, b) = curve.domain();
     let f = |t: f64| curve.point(t).ok().map(p3);
+    let search = FastCurve::new(curve);
+    let fast = |t: f64| search.point(t);
     let breaks = curve.knots();
     if closed && !curve.is_periodic() {
         return Ok([a, b]);
     }
-    let first = locate(&f, [a, b], breaks, from, tol, false);
+    let first = locate(&f, &fast, [a, b], breaks, from, tol, false);
     if closed {
         return Ok([first, first + (b - a)]);
     }
-    let last = locate(&f, [a, b], breaks, to, tol, true);
+    let last = locate(&f, &fast, [a, b], breaks, to, tol, true);
     if curve.is_periodic() {
         return Ok([first, if last <= first { last + (b - a) } else { last }]);
     }
@@ -484,6 +657,19 @@ pub(super) fn pcurve_range(
         // Rounding may put a boundary point a hair outside the domain.
         let (u, v) = (u.clamp(u0, u1), v.clamp(v0, v1));
         surface.point(u, v).ok().map(p3)
+    };
+    let search = FastSurface::new(surface);
+    let trace = match &pcurve {
+        Pcurve::BSpline(c) => Some(FastCurve::new(c.1.as_curve3())),
+        Pcurve::Line { .. } => None,
+    };
+    let fast = |t: f64| {
+        let [u, v] = match (&pcurve, &trace) {
+            (Pcurve::Line { p, d }, _) => [p[0] + t * d[0], p[1] + t * d[1]],
+            (_, Some(c)) => c.point(t).map(|p| [p[0], p[1]])?,
+            _ => return None,
+        };
+        search.point(u.clamp(u0, u1), v.clamp(v0, v1))
     };
     let (domain, breaks) = match &pcurve {
         Pcurve::Line { p, d } => {
@@ -515,8 +701,8 @@ pub(super) fn pcurve_range(
         domain
     } else {
         [
-            locate(&image, domain, &breaks, from, tol, false),
-            locate(&image, domain, &breaks, to, tol, true),
+            locate(&image, &fast, domain, &breaks, from, tol, false),
+            locate(&image, &fast, domain, &breaks, to, tol, true),
         ]
     };
     let record = match pcurve {
@@ -558,6 +744,118 @@ mod tests {
             vec![3, 1, 1, 1, 3],
         )
         .unwrap()
+    }
+
+    fn near(a: [f64; 3], b: [f64; 3]) -> bool {
+        distance2(a, b).sqrt() <= 1e-13
+    }
+
+    /// The search's binary64 de Boor agrees with the kernel's correctly
+    /// rounded points: clamped, unclamped, periodic (inside and outside
+    /// its period) and rational, on curves and on a surface.
+    #[test]
+    fn binary64_search_points_agree_with_the_kernels() {
+        let periodic = BSplineCurve3::new_periodic(
+            3,
+            (0..6)
+                .map(|k| {
+                    let a = k as f64;
+                    Point3::new(a.cos(), a.sin(), 0.25 * a)
+                })
+                .collect(),
+            Some(vec![1.0, 2.0, 0.5, 1.0, 3.0, 1.5]),
+            vec![0.0, 0.5, 1.5, 2.0, 3.0, 3.25, 4.0],
+            vec![1; 7],
+        )
+        .unwrap();
+        let unclamped = BSplineCurve3::new(
+            2,
+            (0..5)
+                .map(|k| Point3::new(k as f64, (k * k) as f64 * 0.5, 1.0))
+                .collect(),
+            None,
+            vec![0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0],
+            vec![1; 8],
+        )
+        .unwrap();
+        for c in [loop_curve(), periodic, unclamped] {
+            let fast = FastCurve::new(&c);
+            let (a, b) = c.domain();
+            for k in 0..=200 {
+                let t = a + (b - a) * k as f64 / 200.0;
+                assert!(near(fast.point(t).unwrap(), p3(c.point(t).unwrap())), "{t}");
+                if c.is_periodic() {
+                    let t = t + 2.0 * (b - a);
+                    assert!(near(fast.point(t).unwrap(), p3(c.point(t).unwrap())), "{t}");
+                }
+            }
+            if !c.is_periodic() {
+                assert_eq!(fast.point(b + 1e-9), None);
+            }
+        }
+        let poles: Vec<Point3> = (0..20)
+            .map(|k| {
+                let (i, j) = ((k / 5) as f64, (k % 5) as f64);
+                Point3::new(3.0 * i, 2.0 * j, (i * j).sin())
+            })
+            .collect();
+        let weights = (0..20).map(|k| 1.0 + 0.125 * (k % 3) as f64).collect();
+        let s = BSplineSurface3::new(
+            KnotVector::new(3, vec![0.0, 1.0], vec![4, 4]).unwrap(),
+            KnotVector::new(2, vec![0.0, 0.25, 0.5, 1.0], vec![3, 1, 1, 3]).unwrap(),
+            poles,
+            Some(weights),
+        )
+        .unwrap();
+        let fast = FastSurface::new(&s);
+        for i in 0..=20 {
+            for j in 0..=20 {
+                let (u, v) = (i as f64 / 20.0, j as f64 / 20.0);
+                assert!(
+                    near(fast.point(u, v).unwrap(), p3(s.point(u, v).unwrap())),
+                    "{u} {v}"
+                );
+            }
+        }
+    }
+
+    /// Locating a vertex takes exact points only to test the ends: the
+    /// search (some two hundred points) is binary64 (the `step` target's
+    /// timeout `f692f018`, a trimmed face's vertex moved off its curves).
+    #[test]
+    fn a_located_vertex_is_searched_in_binary64() {
+        let c = loop_curve();
+        let fast = FastCurve::new(&c);
+        let calls = std::cell::Cell::new(0);
+        let exact = |t: f64| {
+            calls.set(calls.get() + 1);
+            c.point(t).ok().map(p3)
+        };
+        let (a, b) = c.domain();
+        let target = p3(c.point(2.5).unwrap());
+        let t = locate(
+            &exact,
+            &|t| fast.point(t),
+            [a, b],
+            c.knots(),
+            target,
+            1e-7,
+            false,
+        );
+        assert!((t - 2.5).abs() < 1e-9, "{t}");
+        assert_eq!(calls.get(), 2);
+        // Off the curve: the nearest point, still two exact points.
+        let t = locate(
+            &exact,
+            &|t| fast.point(t),
+            [a, b],
+            c.knots(),
+            [0.0, 2.0, 0.0],
+            1e-7,
+            false,
+        );
+        assert!((t - 1.0).abs() < 1e-6, "{t}");
+        assert_eq!(calls.get(), 4);
     }
 
     #[test]

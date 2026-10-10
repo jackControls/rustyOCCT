@@ -9895,6 +9895,69 @@ Decisions for S9, recorded before its code (2026-09-28):
     Linux record. Campaigns at `c3ce4d42` (600 s each, sampled replays,
     every switch on): `boolean` clean, 930 runs, the slowest input 24 s
     under AddressSanitizer; `split` clean, 1,519 runs, none slow.
+  * **CI's scheduled full replay at `c3ce4d42` (2026-10-07 to 10-09).**
+    Two jobs of the scheduled "Rust geometry fuzzing" runs failed, no
+    crash among them. (1) `Fuzz / split` exited 124 on all three runs
+    (`37629390970`, `37785997266`, `37936642519`): its full replay of
+    CI's 1,749 inputs had not finished its startup in the hour, the
+    artifacts only slow units (`66b4f249`, `7bd1734f`, `a8a7bafb`,
+    `27a0b6f9`, `cbf5efb7`). The full replay had been near the hour
+    (1,662 inputs, 3,523 s of startup at `d1869f2f`, green), and
+    S9e.4b.3b and S9e.4b.3c's `PIECE_BOOLEANS` stage made many inputs
+    slower. Fix: `split` joins `REPLAY_SHARDS` with eight shards (the
+    parallel track "The boolean target's full replay", below; the replay
+    job's matrix now lists shards up to eight and excludes `boolean`'s and
+    `degree_elevation`'s past their four). Replayed on the development
+    Mac under the sanitizer with the shard jobs' limits, CI's 1,749
+    inputs took 250 to 413 s of CPU a shard (2,729 s in all, every shard
+    passing, the slowest input 41 s at load 55, within the 60-second
+    limit) and the local corpus's first shard of 448 (of 3,551) 583 s: at
+    CI's 2.6 times, 650 to 1,100 s a shard of CI's corpus and about
+    1,500 s at the local corpus's size, plus a build, where one process
+    would take about 7,100 s. (2) `Fuzz / step` exited 1 on the last two
+    runs (job `113840241078` of `37936642519`, and `37785997266`):
+    `timeout-f692f018…` over the 20-second limit in the full replay. The
+    input is not a seed: the 10-07 campaign's mutation found it (a
+    15-second slow unit there) and CI kept it in the corpus. It mutates
+    the `bspline_trimmed` fixture: the trimmed face's corner `#70` moved
+    off both its edges' curves (`z = 0` for `0.75`) and the trim pcurve's
+    end `#85` a hair outside the surface (`u = 1.000000001`); the import
+    is an invalid body (`vertex_off_curve` twice, `uncertified_uv_gap`,
+    `enclosure_exceeds_resolution`). Not Linux's rounding and not a hang,
+    a real cost: 1.5 to 2.2 s in release on the Mac and 65 s under the
+    sanitizer, deterministic and finishing. Profiled, three quarters of it
+    was `step::spline::locate`: locating a vertex inside an edge (the
+    trimmed face's corners are inside its boundary curves and line
+    pcurves) samples about 65 points and refines with 100 golden-section
+    steps, and every point was the kernel's correctly rounded evaluation,
+    BigRational de Boor on a degree-9 curve and on the bicubic surface
+    through the pcurve; the unmutated fixture itself took 0.47 s for it.
+    The search is a claim the validator certifies, so it needs no exact
+    points: it now evaluates in binary64 de Boor on the homogeneous poles
+    (periodic vectors extended as the kernel's, no libm, deterministic),
+    the ends' tests within the tolerance still on correctly rounded
+    points; the validator's checks are unchanged. The input takes 0.56 s
+    in release and 4.4 s under the sanitizer (the validator's certified
+    enclosures the rest; 11.5 s at load 25 with three sanitizer replays
+    beside it), the companion slow unit `dd91a75e` (CI's 10 s) 0.55 and
+    2.4 s, the fixture 0.04 s. Of 3,122 inputs (the fixtures, the
+    regressions, CI's 2,506 and the local 743), 41 imports differ, each
+    in located parameters alone (at most `1.4e-8` relative, where a vertex
+    off its curve leaves the distance's minimum flat; the two valid
+    bodies among them in the last bit), none in a result or an issue; the
+    fixtures' imports are identical. The glibc emulation patch was not
+    applied (not permitted in this session): the search's hot path calls
+    no `hypot` and the cost reproduces on macOS. Regression:
+    `tests/step.rs`, `a_vertex_off_its_spline_edges_is_located_and_refused`
+    (the input's text, its issues and determinism), and in
+    `step/spline.rs` the binary64 points against the kernel's (clamped,
+    unclamped, periodic and rational curves, a rational surface) and the
+    search taking two exact points; both inputs in
+    `fuzz/regressions/step` with a README entry. Checks: fmt, clippy, the
+    1.85 check, the release suite (664 tests), the tools' tests (366),
+    `compare_step.py` with STEP-b's SDK (23 / 6, 0 failures), the step
+    corpora and regressions replayed with debug assertions (3,122 inputs,
+    no failure, the slowest 0.9 s).
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces
@@ -11297,6 +11360,18 @@ Decisions for S9, recorded before its code (2026-09-28):
   replayed the boolean corpus completely in its four shards, and the check
   job wrote its manifest; `degree_elevation`'s full replay reached 256 of
   its 485 inputs in the hour there, so it is sharded the same way now.
+
+  `split` is sharded too since its full replay overran the hour on the
+  schedule runs at `c3ce4d42` (CI's 1,749 inputs; "CI's scheduled full
+  replay at `c3ce4d42`" under S9): eight shards, the replay job's matrix
+  listing shards up to the largest count and excluding each target's
+  past its own (`test_fuzz_runner.py` holds the matrix less its
+  exclusions equal to `REPLAY_SHARDS`). Measured locally, a shard of CI's
+  corpus takes about 650 to 1,100 s on CI and one of the local corpus's
+  size (3,551 inputs) about 1,500 s. As for `boolean`, its scheduled
+  campaign now keeps no new inputs, and the Sunday minimisation still
+  merges the whole corpus in one process under the hour, which CI's
+  1,749 inputs would exceed (about 7,100 s on CI): open.
 * **Certified integrals along procedural meetings (S9d.4b.2b), done.** The
   validator's and mass's certified integrals along `Curve3::Toric` meetings
   on two tori took tens of seconds per Boolean under AddressSanitizer, and
@@ -12502,7 +12577,11 @@ Decisions for S9, recorded before its code (2026-09-28):
     curve used by one vertex runs its whole domain. A start at or after the
     end on a non-periodic curve is `EdgeRangeInverted`. The validator then
     certifies the vertices on the edge, so a wrong location is an import
-    failure with `vertex_off_curve`, never a moved edge.
+    failure with `vertex_off_curve`, never a moved edge. (Amended at the
+    fix of CI's scheduled `step` timeout, 2026-10-10: the ends are tested
+    on correctly rounded points, the samples and the refinement evaluate
+    in binary64 de Boor, the location being only the claim the validator
+    certifies.)
   * **The file's pcurves.** On a B-spline surface the edge's `SURFACE_CURVE`
     (or `SEAM_CURVE`) must carry a `PCURVE` whose `basis_surface` is the
     face's surface; its `DEFINITIONAL_REPRESENTATION` holds a 2D `LINE`
