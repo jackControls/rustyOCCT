@@ -10114,7 +10114,21 @@ Decisions for S9, recorded before its code (2026-09-28):
     of two of the box's planes on that wall at one height, found twice
     2.6e-16 apart, so `notched_ball`'s spacing is not checked (its sines and
     gaps are). Every solid case of the draft lay within the reference's
-    volume.
+    volume. The capture `occt-boolean-polyhedra-curved-preimplementation`
+    (`compare_polyhedra_curved_boolean.py`, keyed on the refusal the step
+    removes: `polyhedra/imported.rs`'s `OutOfDomain("an imported polyhedron
+    against curved faces (S9e.4b.4)")`; the kernel's probe `unsupported` on
+    all 34 before the code, every case refused as S9e.4b.4's: against curved
+    faces, a result given, or a cavity on import): every result valid with
+    the reference's solid counts, 32 matching (within 2e-8 of the
+    reference), 2 reviewed, in `occt-boolean-polyhedra-curved-
+    divergences.json`: the wedge's common with its ball (volume 2.1e-8
+    relative by BRepGProp's default integration, 3.2e-10 adaptively at 1e-10
+    and 1e-12 by a diagnostic build) and the tetrahedron's common with the
+    imported ball (4.4e-8, 4.0e-8 adaptively: no closer than its edges'
+    tolerance, 1.3e-7, none a B-spline; its fuse and cut within the
+    comparison's limit, 2.6e-9 and 8.0e-9 adaptively). S9e.4b.4c.1's kernel
+    next.
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces

@@ -1,0 +1,29 @@
+{
+  "note": "Reviewed differences of the S9e.4b.4c.1 capture (occt-boolean-polyhedra-curved-preimplementation): each fingerprinted by its native row; the measures BRepGProp's default integration leaves off the reference (the wedge's common within 3.2e-10 adaptively, the tetrahedron's with the imported ball within 4.0e-08, no closer than its edges' tolerance).",
+  "reviews": [
+    {
+      "case": "tetra_ball_common",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "e1dff37cba0c2808614c924728e8468bd918d848b04d9dd9a2ff919d8cb3236a",
+      "differences": [
+        "measure"
+      ],
+      "reason": "BRepAlgoAPI's result is valid with the reference's solid count; the imported tetrahedron (its points rounded in the TURN30 frame) in common with S9e.4a's imported ball (the tetrahedron's top corner inside the ball): its volume 4.4e-08 and area 2.2e-08 relative and its centre 4.4e-09 of the case's size from the reference with BRepGProp's default integration, 4.0e-08, 1.9e-08 and 4.2e-09 with an adaptive accuracy of 1e-10 and of 1e-12 alike (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe): no closer than its edges' tolerance, at most 1.3e-07 (none of its 9 edges a B-spline: OCCT's result lies within its tolerance of the construction, the fuse and the cut alike, 2.6e-09 and 8.0e-09 adaptively, within the comparison's limit).",
+      "independent_evidence": "polyhedra_curved_boolean_reference.py's rows on the constructions OCCT was given (generate_polyhedra_curved_boolean_fixtures.py --check, identical under Python 3.9 and 3.12) agree two ways (each face swept by two independent families of curves) within 4.2e-36, every solid's measures from its faces within 8.7e-41 of its closed form, each body's within 1.0e-41 of its own (the hulls' exact volumes), the pair identities within 1.3e-41, and Monte Carlo within 2.7 standard errors; its solid counts are the declared ones by rays at two resolutions; every stored vertex of the imported files lies on its construction's planes within 2.2e-16 of the size.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "wedge_ball_common",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "79036615ca92f6e0c01a7e53792fd0d79f70b66bc57374f5bdc70ef7da7506de",
+      "differences": [
+        "measure"
+      ],
+      "reason": "BRepAlgoAPI's result is valid with the reference's solid count; the imported wedge (slanted, in the R125 frame) in common with a ball across its slanted top and its back face: its volume 2.1e-08 and area 1.9e-08 relative and its centre 3.2e-09 of the case's size from the reference with BRepGProp's default integration, 3.2e-10, 1.7e-10 and 1.4e-11 with an adaptive accuracy of 1e-10 and of 1e-12 alike (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe); its edges' tolerance at most 1.2e-07 (none of its 3 edges a B-spline).",
+      "independent_evidence": "polyhedra_curved_boolean_reference.py's rows on the constructions OCCT was given (generate_polyhedra_curved_boolean_fixtures.py --check, identical under Python 3.9 and 3.12) agree two ways (each face swept by two independent families of curves) within 4.2e-36, every solid's measures from its faces within 8.7e-41 of its closed form, each body's within 1.0e-41 of its own (the hulls' exact volumes), the pair identities within 1.3e-41, and Monte Carlo within 2.7 standard errors; its solid counts are the declared ones by rays at two resolutions; every stored vertex of the imported files lies on its construction's planes within 2.2e-16 of the size.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    }
+  ]
+}
