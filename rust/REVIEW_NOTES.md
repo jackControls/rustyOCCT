@@ -12873,6 +12873,87 @@ Decisions for S9, recorded before its code (2026-09-28):
   checks (`near_miss_booleans` 4.5 s; 5.0 s at opt-level 2 with debug
   assertions).
 
+* **The edge rule's faces along the surface (amending the note above,
+  found by the DRAW survey at `f9e54f0d`), done (2026-10-10).** The edge
+  rule refused ten registered DRAW cases that evaluated before with
+  Rust's audited values matching native DRAW: `U1` and `Y5` of
+  `bopfuse_simple`, `bopcut_simple`, `bopcommon_simple` and
+  `boptuc_simple` (S9c.1's rod and a box turned by 30 degrees about its
+  axis, one box face on the rod's tangent plane) and the restore cases
+  `bfuse_complex/L3` and `bopcommon_complex/K5`. Reproduced with kernel
+  bodies: a rod of radius 1 and height 2 and a unit box on its tangent
+  plane `y = -1` (`box b -0.5 -2 0 1 1 2`) turned by 30 degrees, refused in
+  every operation, where `47e086c5` cut the rod's `2 pi` and left the
+  common empty. Why: the rod's cap circle lies within rounding (1e-16 to
+  5e-14) of the box face's plane at its point nearest it, and the rod's
+  wall runs along that plane from the circle, its direction into the wall
+  exactly in the plane; `leaves_away` took the gradient's sign zero as
+  leaving away, so a tangency along a ruling, which the faces' own rules
+  decide (the plane's generatrices on the cylinder), was refused as a near
+  miss. Fix (`curved/near.rs`'s `leaves_away` and `along`): a face whose
+  direction into it from the edge lies in the surface's tangent plane at
+  the point, exactly or within rounding, runs along the surface and is no
+  contact of the edge's own; the band is the faces' own rules' for a
+  direction along a surface (`meet::within_rounding_of_parallel`, a plane
+  within rounding of a cylinder's direction): the sine of the angle at
+  most `10^-12`, decided exactly (`(g . w)^2 10^24 <= |g|^2 |w|^2` in the
+  point's quadratic field). Why not sign zero alone: a direction within
+  rounding of the plane takes its sign from an ulp, and the faces' rules
+  hold such a pair as one class; a rod leaning by `+1e-15` or `+1e-13`
+  toward a box's face on its tangent plane (the box taller) was refused by
+  the edge rule where the lean rounds one way and by S9c's tangency rule
+  ("a tangency between the inputs (S9c)", as at `47e086c5`) the other way;
+  with the band both are S9c's. Beyond it the rule holds as before: leaning
+  by `1e-11` or `1e-9`, the top cap circle through the face, refused by the
+  edge rule (S9c's tangency rule's at `47e086c5`). The
+  positive controls of `near_miss_booleans` (the dome's and the turned
+  rod's rims leaving the box's top at 0.3, the cap circle on a rod's wall)
+  are refused as before, and `lens_tilt_loop` and
+  `crossing_cylinders_near_a_node_are_refused_or_valid` evaluate as
+  before. Not kept: `fuzz/regressions/boolean/replay-ed5e02c5...`, kept as
+  this rule's regression, is the same configuration (a round wall's rim of
+  radius 1.25 in a frame turned about its axis, the wall running along
+  the box's face, its tangent plane but for the frame's rounding, the gap
+  5.6e-17), and its chained cut and common evaluate again to one solid
+  each, as at `47e086c5`; no rule tells it from the ten DRAW cases, and it
+  stays kept as a replay of that tangency (`fuzz/regressions/README.md`).
+  Of the boolean corpus's inputs and regressions (1,477 files) 17 inputs
+  reach a face along the surface where the rule refused (12 with its
+  direction exactly in the tangent plane, 5 within the band only, which
+  sign zero alone would still refuse): 16 evaluate the refused operations
+  again as at `47e086c5` (one of `877c7bc5`'s volumes an ulp apart), one's
+  outcomes unchanged; 2 inputs are still refused by the rule. Tests:
+  `tests/near_miss_booleans.rs`'s
+  `a_face_running_along_the_surface_is_no_near_miss` (the reproducer
+  turned, its fuse two solids touching, the cut `2 pi` and the common
+  empty; level, the fuse refused as two results touching as before;
+  tilted with a taller box, the rod and box turned together about three
+  axes; U1's overlapping box, one solid; the leaning rods within and
+  beyond the band), failing at `f9e54f0d` and, at the leaning `+1e-15`
+  and `+1e-13`, with sign zero alone. DRAW (the survey's 93 affected
+  cases on the Rust adapter, against s9-draw-13): 91 every status and
+  reason as at s9-draw-13, the ten registered cases evaluating with
+  `vprops` and `sprops` values bit for bit as audited; `bfuse_complex/C4`
+  and `C5` (restored `box.brep` and `c2.brep`, unsupported as before)
+  now give the edge rule's reason for "a plane within rounding of a
+  cylinder's direction": a cylinder of radius 50 whose axis leaves the
+  box's bottom plane at `7.5e-8`, its circle's lowest point within
+  rounding of the plane, the wall leaving it at an angle far beyond the
+  band (a near miss by the rule's own terms; the earlier reason is
+  another pair's, decided after it). A full contract run of the manifest
+  on the Rust adapter with the dataset (an absolute output directory)
+  holds for all 1,132 cases (18 pass, 1,050 viewer-skipped, 53
+  unsupported, 11 private data; the slowest Boolean case 5.2 s,
+  `bopfuse_simple/ZK8`, on a loaded host). Checks: fmt, clippy
+  (release, all targets), the 1.85 check, the fuzz crate's fmt and check,
+  the release suite (679 tests); every comparison of HANDOFF's table
+  unchanged with 0 failures (40 runs on the pinned SDK, and
+  `compare_split.py`, `compare_brep.py --family spline`,
+  `compare_brep_io.py` and `compare_step.py`); the boolean corpus (1,441
+  inputs) and its 36 regressions and the split corpus (3,551) and its 20
+  regressions replay with debug assertions without a failure (the
+  slowest 11.7 s and 2.7 s, on a host at load 15 to 35).
+
 * **The Boolean captures' Linux records, open: CI has no observations to
   take them from.** S9e.4b and S9f.3's notes leave each capture's Linux
   record pending until CI's run, but the B-rep job runs only

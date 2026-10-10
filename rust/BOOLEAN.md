@@ -513,7 +513,11 @@ extremum found in binary64) and the surface's point nearest it in the face,
 where both of the edge's faces leave the point away from the surface (a
 face heading toward it crosses it there, and its section near the edge is
 the arrangement's own: S9f.2b.2's `lens_tilt_loop`, a rod's top rim on a
-lens's top plane but for rounding; `near::edge_faces`). The
+lens's top plane but for rounding; a face running along it, its direction
+into the face in the surface's tangent plane exactly or within the
+`10^-12` the faces' own rules take as parallel, decided exactly, is a
+tangency or incidence of the two faces, theirs: S9c.1's rod and a turned
+box on its tangent plane; `near::edge_faces`). The
 validator decides a ray against a whole sphere (a cavity in a sphere); a
 result's bounds hold its spheres' boxes. A sphere against a cylinder or
 another sphere is S9d.2's.

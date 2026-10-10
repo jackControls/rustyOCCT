@@ -646,10 +646,13 @@ then for the DRAW survey of the edge and vertex near miss (branch
    point is no contact and evaluates as before (S9f.2b.2's
    `lens_tilt_loop`, a rim on a plane but for rounding with its wall
    through it, OCCT and the reference a solid), where the sphere's edge
-   rule refuses the like case. (c) Faces with no near-miss rule of their
-   own: cylinders and cones against each other beyond S9c's node rule
-   (their edges' extrema hold a ruling tangent to a wall only where it
-   ends on an edge), tori and spline walls against anything (their
+   rule refuses the like case. One whose face runs along the surface
+   there (exactly or within `10^-12`) is no contact either, the faces' own
+   tangency or incidence (S9c.1's turned box on a rod's tangent plane,
+   DRAW's `bop*_simple` U1 and Y5, evaluating as before). (c) Faces with
+   no near-miss rule of their own: cylinders and cones against each other
+   beyond S9c's node rule (their edges' extrema hold a ruling tangent to
+   a wall only where it ends on an edge), tori and spline walls against anything (their
    tangency rules only), and edges against torus or spline faces. (d)
    Beyond the resolution a ball crossing a rod's wall now evaluates its
    fuse and cuts in milliseconds, but its common (a lens thinner than the

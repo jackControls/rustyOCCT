@@ -1683,3 +1683,18 @@ face heads toward the surface evaluating as before; none reaches a sphere
 against a cylinder or cone face, nor a sphere near another curve. It
 replays in 0.2 s with debug assertions, and its 5,100 single-byte
 mutations replay without a failure (the slowest 1.2 s).
+
+Amended (the edge rule's faces along the surface, REVIEW_NOTES.md): the
+conic is a round wall's rim (radius 1.25, its frame turned about the
+wall's axis) whose wall runs along the box's face, the plane its tangent
+plane but for the turned frame's rounding: a tangency along a ruling, the
+configuration of S9c.1's DRAW cases (`bop*_simple` U1 and Y5: a rod and a
+box turned on its tangent plane), which the rule refused alike. A face
+running along the surface at the edge's point (its direction into it in
+the tangent plane, exactly or within `10^-12`) is now no contact, the
+faces' own rules deciding; this input's chained cut and common evaluate
+again to one solid each, as before the rule, and it is kept as a replay
+of that tangency. Of the corpus's inputs and regressions 17 reach such a
+face: 16 (this one and `877c7bc5` among them) evaluate the operations the
+rule refused again as at `47e086c5` (one of `877c7bc5`'s volumes an ulp
+apart), and one's outcomes are unchanged.
