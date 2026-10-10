@@ -10332,6 +10332,9 @@ Decisions for S9, recorded before its code (2026-09-28):
     crossing within it), found by the evidence's draft. Pending: its
     capture's Linux record and its campaigns. DRAW survey: below (no case
     moving with this step, as its trial found).
+    Campaigns at `0d94a92a` (600 s each, sampled replays, every switch on,
+    the `MESHES` stage among them): `boolean` clean, 859 runs, the slowest
+    input 34 s under AddressSanitizer; `split` clean, 1,125 runs, none slow.
   * **DRAW survey of S9e.4b.4c.1, the near miss of a sphere and the user's
     crossing cylinders (2026-10-10, `UPSTREAM_TESTS.md`).** At `44204e18`
     (`s9c2-kernel` with equal cylinders' crossing points refused as a
