@@ -556,7 +556,9 @@ SCHEDULE_ONLY_TARGETS = {'surface_knots', 'degree_elevation', 'surface_editing'}
 # replay job's matrix must list the same shards (test_fuzz_runner.py).
 # boolean: 356 CI inputs replayed in 1,830 s after a 275 s build at
 # 2efa1ec7, up from 1,242 s of startup at 85104dc3 on the same inputs.
-REPLAY_SHARDS = {'boolean': 4, 'degree_elevation': 4}
+# split: CI's 1,749 inputs overran the hour at c3ce4d42; eight shards of
+# them take 250 to 413 s of CPU each under ASan on the development Mac.
+REPLAY_SHARDS = {'boolean': 4, 'degree_elevation': 4, 'split': 8}
 
 
 def manifest_path(target):

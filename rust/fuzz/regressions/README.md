@@ -944,6 +944,31 @@ span now runs over the span; every other one is written as before. The
 input replays in 0.05 s, and `tests/step.rs` round-trips the four spline
 bodies.
 
+## STEP: a trimmed spline face's corner moved off its edges (timeout)
+
+`step/timeout-f692f0182459ed62322c860e5d344cc5caa78ba6.bin` was found by
+the mutation of the scheduled campaign of 2026-10-07 at `c3ce4d42` (a
+15-second slow unit), kept in CI's corpus, and timed out its full replay
+on the next two schedule runs (over 20 s on Linux under AddressSanitizer;
+`step/slow-unit-dd91a75ed1cd0e7c6ee7accea08abd14ef8bceb1.bin`, 10 s, from
+the same replay). Both mutate the `bspline_trimmed` fixture: the corner
+`#70` moved to `z = 0`, off both its edges' curves, and (both inputs) the
+trim pcurve's end `#85` moved to `u = 1.000000001`, a hair outside the
+surface. Locating a vertex inside an edge (the trimmed face's corners are
+inside its boundary curves and line pcurves) samples about 65 points and
+refines with 100 golden-section steps, and every point was the kernel's
+correctly rounded exact evaluation (BigRational de Boor on a degree-9
+curve and a bicubic surface): 1.5 s in release and 65 s under the
+sanitizer on the development Mac for the timeout, 0.47 s in release for
+the unmutated fixture itself. The search now evaluates in binary64 (de
+Boor on the homogeneous poles, no libm), the ends' tests still exact; the
+location is only the claim the validator certifies. The inputs replay in
+0.56 and 0.55 s in release and 4.4 and 2.4 s under the sanitizer (11.5
+and 5.4 s at load 25 beside three other sanitizer replays; the
+validator's certified enclosures the rest), the fixture in 0.04 s; the
+import is the same failure with the same issues
+(`tests/step.rs`). The 20-second input limit is unchanged.
+
 ## Boolean: a tool filling the object's hole over part of its height
 
 `boolean/crash-769e2af11386b1251080b11d3dc937f416957d63.bin` was found by the

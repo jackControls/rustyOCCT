@@ -458,6 +458,40 @@ fn a_pcurve_off_its_edge_is_an_import_failure() {
     assert!(issues.iter().any(|i| i.kind == IssueKind::PcurveOffEdge));
 }
 
+/// The `step` fuzz target's timeout `f692f018` (`fuzz/regressions/step`):
+/// the trimmed face's corner moved off its two edges' curves and a pcurve's
+/// end a hair outside the surface. Locating the corner on each curve and
+/// pcurve image searched some two hundred correctly rounded points each,
+/// seconds per import; the search is binary64 now, and the import is the
+/// same failure with the same issues.
+#[test]
+fn a_vertex_off_its_spline_edges_is_located_and_refused() {
+    let text = edit(
+        &edit(
+            &fixture("bspline_trimmed"),
+            "#70=CARTESIAN_POINT('',(0.,3.,0.75));",
+            "#70=CARTESIAN_POINT('',(0.,3.,0.0));",
+        ),
+        "#85=CARTESIAN_POINT('',(1.,0.5));",
+        "#85=CARTESIAN_POINT('',(1.000000001,0.5));",
+    );
+    let imported = import(&text).unwrap();
+    assert_eq!(import(&text).unwrap(), imported);
+    let Err(Rejected::Invalid { issues, .. }) = &imported.bodies[0].result else {
+        panic!("{:?}", imported.bodies[0].result);
+    };
+    let kinds: Vec<_> = issues.iter().map(|i| i.kind).collect();
+    assert_eq!(
+        kinds,
+        [
+            IssueKind::VertexOffCurve,
+            IssueKind::VertexOffCurve,
+            IssueKind::UncertifiedUvGap,
+            IssueKind::EnclosureExceedsResolution,
+        ]
+    );
+}
+
 /// The spline bodies write as `.brep` and read back with their counts: a
 /// line pcurve on a spline surface, whose length is not its edge's span,
 /// runs over the span (the `step` fuzz target's first STEP-b finding,

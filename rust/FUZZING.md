@@ -195,7 +195,7 @@ replay. `boolean` is heading there: CI's 356 inputs took 1,242 s of startup
 at `85104dc3` and 2,108 s at `2efa1ec7` (a 275 s build, the slowest input
 42 s), the same inputs growing slower with each curved family, and the
 local corpus of 1,421 inputs exceeds the hour under AddressSanitizer. For
-the targets in `run_fuzz.py`'s `REPLAY_SHARDS` (`boolean` and `degree_elevation`, four shards each; the latter's full replay reached 256 of its 485 inputs in the hour on the first scheduled run after the split) the
+the targets in `run_fuzz.py`'s `REPLAY_SHARDS` (`boolean` and `degree_elevation`, four shards each; the latter's full replay reached 256 of its 485 inputs in the hour on the first scheduled run after the split; `split`, eight shards, below) the
 schedule and manual campaigns split the full replay across jobs of the run:
 
 1. `Replay snapshot` restores the corpus, seeds it and publishes it as an
@@ -221,14 +221,16 @@ The target's campaign job in the same run (`--scheduled`) replays its
 regressions and 64 inputs sampled with the run id (`"replay": "sharded"`,
 whatever the manifest), mutates for 600 seconds and writes no manifest; its
 new inputs, like a per-push sample's, are not retained. Acceptance of a
-sharded target needs the four `Full replay` jobs and `Full replay complete`
+sharded target needs its `Full replay` jobs and `Full replay complete`
 green on the schedule run, with its campaign. Each shard is its own process,
 so allocator state no longer accumulates across the whole corpus; every
 input still runs once under the sanitizer and its limits. The artifacts'
 names carry the run id only: re-running failed jobs reuses the snapshot and
 the green shards' reports. `REPLAY_SHARDS` and the workflow's shard matrix
-change together (a unit test holds them equal). Locally, the same shards and
-check run over `rust/fuzz/corpus/boolean`:
+change together: the replay job lists shards up to the largest count and
+excludes each target's shards past its own, and a unit test holds the
+matrix less its exclusions equal to `REPLAY_SHARDS`. Locally, the same
+shards and check run over `rust/fuzz/corpus/boolean`:
 
 ```sh
 for k in 0 1 2 3; do python3 rust/tools/run_fuzz.py --target boolean --replay-shard $k --report-dir target/replay-shards/$k; done
@@ -241,6 +243,22 @@ At `2efa1ec7` on the development Mac, CI's 356 `boolean` inputs split 80,
 544 MB at most), after one 167 s build; the check found each input once and
 wrote the manifest. At CI's 2.6 to 2.9 times that, a shard takes about a
 quarter of its hour.
+
+`split` joined at `c3ce4d42`, eight shards: its full replay had grown past
+the hour in one process (1,662 inputs in 3,523 s of startup at
+`d1869f2f`; at `c3ce4d42`, whose S9e.4b.3b and S9e.4b.3c added the
+`PIECE_BOOLEANS` stage, CI's 1,749 inputs did not finish their startup in
+the hour on three schedule runs, exit 124, slow units only). Replayed on
+the development Mac under the sanitizer with the shard jobs' limits, CI's
+1,749 inputs split 248, 213, 184, 210, 227, 214, 230 and 223 and took 413,
+279, 250, 288, 369, 323, 396 and 411 s of CPU (2,729 s in all; 394 to
+752 s each on a host at load 20 to 55, every shard passing, 432 MB at
+most); the local corpus's 3,551 inputs split 401 to 488, its first shard
+448 inputs in 583 s of CPU. At CI's 2.6 times the Mac, a shard of CI's
+corpus takes about 650 to 1,100 s and one of the local corpus's size
+about 1,500 s, after a build of about 300 s: well inside its hour, where
+four shards would take about half of it now and all of it at the local
+corpus's size.
 
 Retained corpora are minimised weekly (R12 of `REVIEW_NOTES.md`): on Sundays
 the fuzzing workflow runs `run_fuzz.py --minimize` instead of a campaign. It
