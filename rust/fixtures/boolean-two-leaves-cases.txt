@@ -1,0 +1,195 @@
+case cross_pocketed_fuse 1e-07
+op 91
+brep imported/two_cross.brep
+boolean fuse 93
+op 92
+brep imported/two_pocketed.brep
+end
+case cross_pocketed_cut 1e-07
+op 91
+brep imported/two_cross.brep
+boolean cut 93
+op 92
+brep imported/two_pocketed.brep
+end
+case cross_pocketed_common 1e-07
+op 91
+brep imported/two_cross.brep
+boolean common 93
+op 92
+brep imported/two_pocketed.brep
+end
+case chain_through_fuse 1e-07
+op 91
+brep imported/two_through.brep
+boolean cut 93
+op 92
+frame 2.0 1.0 0.5 0.0 0.0 1.0 7.0 24.0 0.0
+offsets -2.0 4.0
+boundary C 4.0 3.0 0.75
+then fuse 95
+op 94
+frame 2.0 1.0 0.5 0.0 0.0 1.0 7.0 24.0 0.0
+offsets 1.0 2.5
+boundary P 4 5.0 2.0 9.0 2.0 9.0 5.0 5.0 5.0
+end
+case chain_through_cut 1e-07
+op 91
+brep imported/two_through.brep
+boolean cut 93
+op 92
+frame 2.0 1.0 0.5 0.0 0.0 1.0 7.0 24.0 0.0
+offsets -2.0 4.0
+boundary C 4.0 3.0 0.75
+then cut 95
+op 94
+frame 2.0 1.0 0.5 0.0 0.0 1.0 7.0 24.0 0.0
+offsets 1.0 2.5
+boundary P 4 5.0 2.0 9.0 2.0 9.0 5.0 5.0 5.0
+end
+case chain_through_common 1e-07
+op 91
+brep imported/two_through.brep
+boolean cut 93
+op 92
+frame 2.0 1.0 0.5 0.0 0.0 1.0 7.0 24.0 0.0
+offsets -2.0 4.0
+boundary C 4.0 3.0 0.75
+then common 95
+op 94
+frame 2.0 1.0 0.5 0.0 0.0 1.0 7.0 24.0 0.0
+offsets 1.0 2.5
+boundary P 4 5.0 2.0 9.0 2.0 9.0 5.0 5.0 5.0
+end
+case through_rod_fuse 1e-07
+op 91
+brep imported/two_through.brep
+boolean fuse 93
+op 92
+frame 2.0 1.0 0.5 0.0 0.0 1.0 7.0 24.0 0.0
+offsets -2.0 4.0
+boundary C 7.25 3.0 1.0
+end
+case through_rod_cut 1e-07
+op 91
+brep imported/two_through.brep
+boolean cut 93
+op 92
+frame 2.0 1.0 0.5 0.0 0.0 1.0 7.0 24.0 0.0
+offsets -2.0 4.0
+boundary C 7.25 3.0 1.0
+end
+case through_rod_common 1e-07
+op 91
+brep imported/two_through.brep
+boolean common 93
+op 92
+frame 2.0 1.0 0.5 0.0 0.0 1.0 7.0 24.0 0.0
+offsets -2.0 4.0
+boundary C 7.25 3.0 1.0
+end
+case cross_rod_fuse 1e-07
+op 91
+brep imported/two_cross.brep
+boolean fuse 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -1.0 5.0
+boundary C 5.0 0.5 0.75
+end
+case cross_rod_cut 1e-07
+op 91
+brep imported/two_cross.brep
+boolean cut 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -1.0 5.0
+boundary C 5.0 0.5 0.75
+end
+case cross_rod_common 1e-07
+op 91
+brep imported/two_cross.brep
+boolean common 93
+op 92
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -1.0 5.0
+boundary C 5.0 0.5 0.75
+end
+case pocketed_rod_fuse 1e-07
+op 91
+brep imported/two_pocketed.brep
+boolean fuse 93
+op 92
+frame 7.0 -1.5 0.75 0.0 0.0 1.0 8.0 15.0 0.0
+offsets -1.0 4.0
+boundary C 4.25 0.25 0.5
+end
+case pocketed_rod_cut 1e-07
+op 91
+brep imported/two_pocketed.brep
+boolean cut 93
+op 92
+frame 7.0 -1.5 0.75 0.0 0.0 1.0 8.0 15.0 0.0
+offsets -1.0 4.0
+boundary C 4.25 0.25 0.5
+end
+case pocketed_rod_common 1e-07
+op 91
+brep imported/two_pocketed.brep
+boolean common 93
+op 92
+frame 7.0 -1.5 0.75 0.0 0.0 1.0 8.0 15.0 0.0
+offsets -1.0 4.0
+boundary C 4.25 0.25 0.5
+end
+case rod_cross_fuse 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -1.0 5.0
+boundary C 1.0 2.0 0.5
+boolean fuse 93
+op 92
+brep imported/two_cross.brep
+end
+case rod_cross_cut 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -1.0 5.0
+boundary C 1.0 2.0 0.5
+boolean cut 93
+op 92
+brep imported/two_cross.brep
+end
+case rod_cross_common 1e-07
+op 91
+frame 0.0 0.0 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -1.0 5.0
+boundary C 1.0 2.0 0.5
+boolean common 93
+op 92
+brep imported/two_cross.brep
+end
+case through_touch_fuse 1e-07
+op 91
+brep imported/two_through.brep
+boolean fuse 93
+op 92
+frame 0.24 5.68 4.5 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 1.0 -1.5707963267948966 1.5707963267948966
+end
+case through_touch_cut 1e-07
+op 91
+brep imported/two_through.brep
+boolean cut 93
+op 92
+frame 0.24 5.68 4.5 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 1.0 -1.5707963267948966 1.5707963267948966
+end
+case through_touch_common 1e-07
+op 91
+brep imported/two_through.brep
+boolean common 93
+op 92
+frame 0.24 5.68 4.5 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 1.0 -1.5707963267948966 1.5707963267948966
+end

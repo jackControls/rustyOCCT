@@ -10844,6 +10844,87 @@ Decisions for S9, recorded before its code (2026-09-28):
     stage's bodies and the measurement's bodies rebuilt by the kernel,
     written, read back and imported), and a DRAW trial of the restore cases
     the import reaches.
+  * **S9e.4b.4b.2b.2a evidence (2026-10-10).** Three bodies OCCT wrote
+    (`boolean-two-leaves-bodies.txt`, `write` blocks of one prism's rows, a
+    `boolean` row and the other's, written by `compare_two_leaves_boolean.py
+    --write-bodies` to `rust/fixtures/imported/two_*.brep`), each one
+    Boolean of two prisms, every section a circle or a line: `through` (a
+    box `[0, 8] x [0, 6]` over `[0, 2]` on `R724`, the world's `z` its
+    normal and its `x` turned to `(7, 24, 0) / 25`, fused with a stadium of
+    half discs of radius 3/2 about `(2, 3)` and `(6, 3)` on its axes over
+    `[-1, 3]`: two leaves on one axis, the stadium's walls parted by the box
+    into faces below and above it), `cross` (a stadium of half discs of
+    radius 2 about `(0, 0)` and `(4, 0)` over `[0, 3]` on the world's axes
+    fused with a box along `x`, `[-4, 8] x [-1, 1] x [1, 2]`, through both
+    its arc walls: two leaves on crossing axes, the box's walls parted in
+    two by the stadium) and `pocketed` (a stadium plate of half discs of
+    radius 5/2 about `(0, 0)` and `(6, 0)` over `[0, 5/2]` on `R815` less a
+    square box `[-3/2, 3/2]^2` on `R125` about the plate's point `(3, 0)`
+    over `[1, 4]`: a lone leaf with a pocket turned about its axis).
+    `generate_two_leaves_boolean_fixtures.py --check`: 21 cases of 7 groups
+    (18 solid, 3 `degenerate`; 15 of class `pieces`, 3 `both`, 3 `chain`):
+    `through_rod` (an upright rod on the through's frame across the
+    stadium's arc end and the box's wall), `cross_rod` (an upright rod
+    through the stadium and the arm's wall), `pocketed_rod` (an upright rod
+    through the pocket's wall and floor), `rod_cross` (an upright rod less
+    the cross across the stadium's line wall: the body the tool),
+    `cross_pocketed` (both imported, the plate across the cross's stadium
+    and arm, their axes parallel; the cut two solids, the plate parting the
+    arm), `chain_through` (the through less an upright rod through the
+    stadium, then with a box on its frame across the box's wall and top and
+    the stadium), and declared `degenerate` `through_touch` (a ball of
+    radius 1 resting on the stadium's top cap at a point, exactly:
+    `Degenerate("a tangency between the inputs (S9c)")`). The reference is
+    S9e.3a's chained reference on the constructions OCCT was given (each
+    body its Boolean of two prisms), with S9e.4b.3c.3a's checks relative to
+    the case's size: the two families within 6.7e-31, each solid's closed
+    form 9.5e-37, each body's closed form 2.1e-32 (the through `120 + 9 pi /
+    2`, the cross `64 + 32 pi / 3 - 2 sqrt 3`, the pocketed plate `123 / 2 +
+    125 pi / 8`, each section times its stored axes' determinant), the pair
+    identities 2.9e-42 and the area identity 4.6e-41, Monte Carlo 3.1
+    standard errors (100,000 points a group), quadrature estimates 6.4e-33,
+    every meeting's sine at least 0.38 and events at least 1.3e-3 of their
+    range apart outside the declared group, solid counts by rays at two
+    resolutions; the declared group's checks kept apart within 3.8e-31.
+    Every file read independently (`stored_records`): its curved faces
+    cylinders, every stored vertex on the constructions' surfaces (within 0
+    of the size at the reference's precision).
+    `test_two_leaves_boolean_reference.py` checks each body's closed form
+    against quadratures of its sections (the cross by heights: the stadium's
+    section, its union with the arm's band, the stadium's again), the
+    chained reference on the cross against its closed form, every part's
+    place (the stadium inside the box's footprint by 1/2 and through both
+    its caps, the arm through the stadium's arc walls between its caps, the
+    pocket's corners inside the plate's outline by 1/4 from inside it past
+    its top, both normals the world's `z` exactly), the partners' places,
+    the declared ball (its centre on the stadium's centre line 1 above its
+    top cap), the case list and its protocol rows and the files apart from
+    every earlier set's. The generator's check is a CI group of its own
+    (`two-leaves`, 6.3 minutes on four workers locally under Python 3.9, 4.3
+    under 3.12); Python 3.9 and 3.12 write the same files. Corrections from
+    the evidence and a draft of the step's code (not committed) run on the
+    cases, amending the refined decisions' plan (8): (a) the through on
+    `SKEW2` (a frame turned off the world's `z`): the draft builds its
+    leaves on the box's stored cap frame (the converter's frame normalized
+    again), so the through's rods, on the construction's frame, lay within
+    rounding of parallel to its stadium, `Degenerate("two cylinders' axes
+    within rounding of parallel")` in all six of its pieces' cases, so the
+    through stands on a frame turned about the world's `z` (the kernel's
+    tests take the kernel's own through on `SKEW2`, imported and given to a
+    box turned off its axis); (b) the declared ball, the through's frame's
+    normal exact, rests on the top cap exactly: S9c's tangency (on `SKEW2`
+    it was S9d.1's rounding); (c) a stage's or a test's partner along a
+    tilted leaf's axis lies within rounding of the import's leaves likewise
+    (the kernel's own body on that frame exactly), so the kernel's tests
+    turn their probes off every axis; (d) the planned `tee` (the box across
+    the stadium's top, past its walls, its walls whole) imported before the
+    code (a first capture's kernel probe evaluated its six cases within the
+    reference: S9e.4b.4b.2b.1's chain of the stadium's leaf and the box as a
+    prism of one cap read off its far cap, bounded by a flat at the near
+    one), so the box passes through the stadium's arc walls instead, its
+    walls parted in two (`cross`). The draft found every solid case within
+    the reference's volume and the declared one refused so, and its `LEAVES`
+    stage (measured below with the kernel) builds and imports both bodies.
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces
