@@ -589,6 +589,16 @@ then for equal cylinders' tangent points where their axes cross (branch
    eight, each plus a completeness check, `REPLAY_SHARDS`), and a clean
    local 600 s campaign; record it in
    `BOOLEAN.md` and mark S9 done in `REVIEW_NOTES.md`.
+5. **A sphere within the resolution of a face's edge or vertex** (from
+   REVIEW_NOTES.md's "A ball within the resolution of a plane face",
+   branch `fix-ball-near-plane`): a sphere missing a plane face, or
+   another sphere, within the resolution is `Degenerate` where both
+   nearest points lie in the faces (the gap outside either input), but
+   one whose nearest point on the
+   plane lies just outside the face (within about `sqrt(2 r res)` of its
+   edge) comes within the resolution of the edge or a vertex with no rule:
+   the inputs then evaluate apart by less than the resolution, as the
+   plane face's case did before.
 
 Refused by design and staying refused (each documented): a tangency between
 the inputs, a cavity beside several solids, spline segments along one curve

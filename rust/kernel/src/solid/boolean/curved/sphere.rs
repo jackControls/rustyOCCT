@@ -148,7 +148,10 @@ impl Circ {
 /// refused). A plane crossing the sphere within the resolution `res` of
 /// tangency is `Degenerate` too, as S9d.2c's circles are: a turned frame's
 /// rounding never leaves an exact tangency, and the plane would cut a cap
-/// no higher than the resolution, its circle as small as `1e-8`.
+/// no higher than the resolution, its circle as small as `1e-8`. Missing
+/// it within the resolution is refused where the faces hold the nearest
+/// points and the gap lies outside either input (`plane_near_miss`,
+/// `graph::near_miss`).
 pub(super) fn plane_section(c: &V, r: &R, p0: &V, m: &V, res: f64) -> Result<Option<Circ>> {
     let mm = dot(m, m);
     let off = dot(m, &sub(p0, c));
@@ -181,6 +184,29 @@ pub(super) fn plane_section(c: &V, r: &R, p0: &V, m: &V, res: f64) -> Result<Opt
         y,
         r2,
     }))
+}
+
+/// Where a sphere misses a plane within the resolution `res` of tangency
+/// (crossing it within the resolution is `plane_section`'s refusal): the
+/// plane's point nearest the centre and the sphere's point nearest the
+/// plane, exact (`None` where they meet or lie farther apart).
+pub(super) fn plane_near_miss(c: &V, r: &R, p0: &V, m: &V, res: f64) -> Option<(QV, QV)> {
+    let mm = dot(m, m);
+    let off = dot(m, &sub(p0, c));
+    let dd = &off * &off / &mm;
+    let hi = r + q(res);
+    if dd <= r * r || dd > &hi * &hi {
+        return None;
+    }
+    let foot = add(c, &scale(m, &(&off / &mm)));
+    // `c + r m / |m|` toward the plane, `|m| = sqrt(mm)`.
+    let k = if sign(&off) == Ordering::Greater {
+        r / &mm
+    } else {
+        -(r / &mm)
+    };
+    let near = [0, 1, 2].map(|i| Qd::new(c[i].clone(), &k * &m[i], mm.clone()));
+    Some((qv(&foot), near))
 }
 
 /// Where a line meets a sphere.

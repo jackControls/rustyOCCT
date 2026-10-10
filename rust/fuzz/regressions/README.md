@@ -1284,8 +1284,10 @@ was a circle of radius 1e-8, and the chained cut and common failed with
 `InvalidTopology(degenerate_curve)` (the plain stadium against the sphere
 too). A plane crossing a sphere within the resolution of tangency (a cap
 no higher than the resolution) is now `Degenerate`, as S9d.2c's circles
-within the resolution of tangency are; a plane missing it by less stays a
-miss (`tests/sphere_booleans.rs`,
+within the resolution of tangency are; a plane missing it by less stayed a
+miss (until "a ball within the resolution of a plane face", below:
+refused too where both faces hold the nearest points)
+(`tests/sphere_booleans.rs`,
 `a_wall_crossing_within_the_resolution_of_tangency_is_degenerate`). It
 replays in 0.3 s with debug assertions, and 348 single-byte mutations of
 it replay without a failure.
@@ -1595,3 +1597,32 @@ tangency between the inputs (`tests/curved_booleans.rs`,
 `a_hole_and_a_rod_of_its_radius_crossing_it_touch_at_two_points`). It
 replays in 0.1 s with debug assertions; of its 3,570 single-byte mutations
 1,527 failed alike before (every one `non_manifold_vertex`) and none now.
+
+## Boolean: a ball within the resolution of a plane face
+
+`boolean/replay-64bb37b33d0bdcc8d63e9e099fb9d1386cb0ad63.bin` is a corpus
+input (17 bytes) that decodes the split target's square with a square hole
+(half-widths `1.5` and `0.75`) over heights `0..0.75` in the tilted
+frame against a frustum tool over `-1..1.75` (radii `3.1875` and
+`1.59375`) holding it; the chained byte gives the fuse's one solid, the
+frustum, to the `GIVEN_BALL` sphere of radius `1.25` about the frame's
+point `(0.5, 0.25)` at height `0.25`. The ball's lowest point lies on the
+frustum's base disc at height `-1` but for the frame's rounding, 1.1e-17
+above it inside the frustum: the plane misses the sphere by far less than
+the resolution, a miss S9d.1's sections took as no meeting, so the chained
+cut was one solid with a cavity under a floor 1.1e-17 thick and the common
+the ball. A ball resting on an imported octahedron's face but for rounding
+was fused with it into two solids the same way (S9e.4b.4c.1's evidence).
+A sphere missing a plane or another sphere within the resolution of
+tangency, the nearest points of both in both faces and the gap between
+them outside either input, is now `Degenerate` with the existing rule's
+reason, as crossing within it is (`curved/graph.rs`'s `near_miss`;
+`tests/sphere_booleans.rs`,
+`a_ball_within_the_resolution_of_a_plane_face_is_degenerate`). Of the
+corpus's inputs 8 reach such a miss (in the main stage or the chained
+one), 3 refused now (this one, a polar cap whose pole lies on a spline
+prism's top, refused before by another rule, and the chained ball beside
+a given result's side wall) and 5 evaluating as before, their nearest
+points outside a face (a zone whose sphere a top's plane misses above its
+rim among them). It replays in 0.1 s with debug assertions, and its 4,335
+single-byte mutations replay without a failure.

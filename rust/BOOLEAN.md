@@ -469,9 +469,21 @@ axis's planes is `OutOfDomain`, and one other than a circle passing within
 rounding of it, or so near it (within about `1e-4` of a ball of radius
 `1.25`) that 256 anchors leave its projection's lift unpinned, is
 `ComputationLimit` (a ball centred within rounding on a parallel
-cylinder). The validator decides a ray against a whole sphere (a cavity in a
-sphere); a result's bounds hold its spheres' boxes. A sphere against a
-cylinder or another sphere is S9d.2's.
+cylinder). A plane within the resolution of tangency to a sphere is
+`Degenerate` ("a plane crossing a sphere within the resolution of
+tangency"): crossing it wherever the faces' boxes meet (a cap no higher
+than the resolution), and missing it where the plane's point nearest the
+centre lies in the plane face, the sphere's point nearest the plane in the
+sphere's, and the gap between them outside either input by the faces'
+outward normals (the inputs touching across it, or one inside the other
+behind a wall thinner than the resolution; their faces' boxes widened by
+it), as are two spheres apart or nested by at most the resolution with
+each one's point nearest the other in its face (`graph::near_miss`). A
+gap inside both inputs (a slab's floor beneath a dimple's sphere) is no
+contact, as equal rods overlapping at their tangent points are not. The
+validator decides a ray against a whole sphere (a cavity in a sphere); a
+result's bounds hold its spheres' boxes. A sphere against a cylinder or
+another sphere is S9d.2's.
 
 ### Spheres against cylinders and spheres (S9d.2a)
 

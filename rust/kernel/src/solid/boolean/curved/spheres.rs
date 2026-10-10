@@ -520,7 +520,8 @@ pub(super) struct Mixed {
 
 /// Two spheres' meeting: their radical plane's section (`None` apart), the
 /// same sphere refused, the plane crossing either sphere within the
-/// resolution `res` of tangency `Degenerate`.
+/// resolution `res` of tangency `Degenerate` (missing each other within it,
+/// `spheres_near_miss`).
 pub(super) fn sphere_sphere(c1: &V, r1: &R, c2: &V, r2: &R, res: f64) -> Result<Option<Circ>> {
     let m = sub(c2, c1);
     if is_zero(&m) {
@@ -529,6 +530,46 @@ pub(super) fn sphere_sphere(c1: &V, r1: &R, c2: &V, r2: &R, res: f64) -> Result<
     let (p0, m) = radical(c1, r1, c2, r2);
     plane_section(c2, r2, &p0, &m, res)?;
     plane_section(c1, r1, &p0, &m, res)
+}
+
+/// Where two spheres miss each other within the resolution `res` of
+/// tangency, apart or nested (their radical plane crossing either within
+/// it is `sphere_sphere`'s refusal): each sphere's point nearest the
+/// other, exact (`None` where they meet or lie farther apart).
+pub(super) fn spheres_near_miss(c1: &V, r1: &R, c2: &V, r2: &R, res: f64) -> Option<(QV, QV)> {
+    let d = sub(c2, c1);
+    let dd = dot(&d, &d);
+    if dd == zero() {
+        return None;
+    }
+    let res = q(res);
+    let sum = r1 + r2;
+    let diff = if r1 > r2 { r1 - r2 } else { r2 - r1 };
+    // Each point `c + s r d / |d|`, `|d| = sqrt(dd)`, by its side `s`.
+    let sides = if dd > &sum * &sum {
+        let hi = &sum + &res;
+        if dd > &hi * &hi {
+            return None;
+        }
+        [1, -1]
+    } else if dd < &diff * &diff {
+        let lo = &diff - &res;
+        if sign(&lo) == Ordering::Greater && dd < &lo * &lo {
+            return None;
+        }
+        if r1 > r2 {
+            [1, 1]
+        } else {
+            [-1, -1]
+        }
+    } else {
+        return None;
+    };
+    let at = |c: &V, r: &R, s: i64| {
+        let k = int(s) * r / &dd;
+        [0, 1, 2].map(|i| Qd::new(c[i].clone(), &k * &d[i], dd.clone()))
+    };
+    Some((at(c1, r1, sides[0]), at(c2, r2, sides[1])))
 }
 
 /// The radical plane of two spheres: a point and its normal.
