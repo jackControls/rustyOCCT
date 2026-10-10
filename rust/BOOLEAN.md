@@ -482,7 +482,19 @@ behind a wall thinner than the resolution; their faces' boxes widened by
 it), as are two spheres apart or nested by at most the resolution with
 each one's point nearest the other in its face (`graph::near_miss`). A
 gap inside both inputs (a slab's floor beneath a dimple's sphere) is no
-contact, as equal rods overlapping at their tangent points are not. The
+contact, as equal rods overlapping at their tangent points are not. A
+sphere whose distance from an input edge's line or circle (its nearest
+point strictly inside the edge: a line's foot, a circle's point exact in
+the quadratic field of the centre's projection, a conic that is no circle
+exactly at a rational point of it at its least distance to rounding) or
+from an input vertex lies within the resolution of its radius, the
+sphere's point nearest it in its face, is `Degenerate` too ("a sphere
+within the resolution of tangency to an edge", "a sphere within the
+resolution of a vertex"):
+crossing it wherever so, missing it where the gap lies outside either
+input by each one's membership at its point pushed across it
+(`graph::edge_near_misses`, after `near_miss`; edges between faces on one
+surface and seams' edges and vertices are none). The
 validator decides a ray against a whole sphere (a cavity in a sphere); a
 result's bounds hold its spheres' boxes. A sphere against a cylinder or
 another sphere is S9d.2's.

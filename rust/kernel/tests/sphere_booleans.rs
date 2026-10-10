@@ -888,3 +888,377 @@ fn a_ball_within_the_resolution_of_a_plane_face_is_degenerate() {
         }
     }
 }
+
+/// A ball within the resolution of an edge or a vertex of the other input
+/// is `Degenerate` on either side of it (S9d.1, as a plane face within it
+/// is): missing a face's plane past its edge it was a miss, and a ball
+/// resting on a box's edge or corner but for rounding was fused with it
+/// into two solids, a ball inside an L's reflex edge cut from it behind a
+/// wall thinner than the resolution; crossing it within the resolution
+/// evaluated, was refused by the validator or as a piece thinner than the
+/// resolution, by turns. Each ball's distance from the edge's exact line,
+/// its exact circle or the vertex lies within a factor of two of `r (1 +
+/// d)` (an exact search over its centre's last bits, the frames' axes
+/// rounded by each host's `hypot`), for `d` from `1e-15` to `1e-9` on
+/// either side: a turned box's top edge (the ball's foot on the top's plane
+/// `1e-3 r` past the edge, and the ball on the faces' bisector) and corner,
+/// an L's reflex edge from inside, a stadium's arc's rim (an exact circle;
+/// in a turned frame, a conic within rounding of one), an imported
+/// octahedron's edge and vertex and a hemisphere's rim circle. Every
+/// operation is refused; `1e-6` of the radius evaluates in the pair
+/// identities, and so does a gap inside both inputs (a cavity's sphere
+/// within the resolution of the L's reflex edge inside its material).
+#[test]
+fn a_ball_within_the_resolution_of_an_edge_or_vertex_is_degenerate() {
+    use num_rational::BigRational as R;
+    use rusty_occt::identity::OperationId;
+    use rusty_occt::{
+        Boundary, Error, Frame3, Point2, Point3, Profile, Segment, Solid, Tolerance, Vec3,
+    };
+    type V = [R; 3];
+    const EDGE: &str = "a sphere within the resolution of tangency to an edge (S9d.1)";
+    const VERTEX: &str = "a sphere within the resolution of a vertex (S9d.1)";
+    let tol = Tolerance::default();
+    let half = std::f64::consts::FRAC_PI_2;
+    let q = |x: f64| R::from_float(x).unwrap();
+    let v = |a: [f64; 3]| a.map(q);
+    let add = |a: &V, b: &V| [&a[0] + &b[0], &a[1] + &b[1], &a[2] + &b[2]];
+    let sub = |a: &V, b: &V| [&a[0] - &b[0], &a[1] - &b[1], &a[2] - &b[2]];
+    let scale = |a: &V, s: &R| [&a[0] * s, &a[1] * s, &a[2] * s];
+    let dot = |a: &V, b: &V| &a[0] * &b[0] + &a[1] * &b[1] + &a[2] * &b[2];
+    let unit = |a: [f64; 3]| {
+        let n = (a[0] * a[0] + a[1] * a[1] + a[2] * a[2]).sqrt();
+        a.map(|x| x / n)
+    };
+    let frame = |o: [f64; 3], n: [f64; 3], x: [f64; 3]| {
+        Frame3::new(
+            Point3::new(o[0], o[1], o[2]),
+            Vec3::new(n[0], n[1], n[2]),
+            Vec3::new(x[0], x[1], x[2]),
+            tol,
+        )
+        .unwrap()
+    };
+    // A frame's exact point `(u, v, w)`, as its model takes it.
+    let exact = |f: &Frame3, u: f64, w: f64, h: f64| {
+        let a = [
+            f.origin().to_array(),
+            f.x().to_array(),
+            f.y().to_array(),
+            f.normal().to_array(),
+        ]
+        .map(v);
+        let p = add(&a[0], &scale(&a[1], &q(u)));
+        add(&p, &add(&scale(&a[2], &q(w)), &scale(&a[3], &q(h))))
+    };
+    let prism = |f: Frame3, pts: &[(f64, f64)], lo: f64, hi: f64, op: u64| {
+        let b =
+            Boundary::polygon(pts.iter().map(|&(x, y)| Point2::new(x, y)).collect(), tol).unwrap();
+        Solid::extrude_with(
+            OperationId(op),
+            Profile::new(b, vec![], tol).unwrap(),
+            f,
+            lo,
+            hi,
+        )
+        .unwrap()
+        .0
+    };
+    let ball = |c: [f64; 3], r: f64| {
+        let f = frame(c, [0.0, 0.0, 1.0], [1.0, 0.0, 0.0]);
+        Solid::sphere_with(OperationId(9), f, r, -half, half, tol)
+            .unwrap()
+            .0
+    };
+    // `k` ulps up (away from zero for a negative value).
+    let step = |x: f64, k: i64| f64::from_bits((x.to_bits() as i64 + k) as u64);
+    // A centre near `c0` (its coordinates `held` kept) whose squared
+    // distance lies within `[(r + lo)^2, (r + hi)^2]` for the band about
+    // the gap `r d`, over its coordinates' last bits.
+    let search = |c0: [f64; 3], held: [bool; 3], dist2: &dyn Fn([f64; 3]) -> R, r: f64, d: f64| {
+        let gap = r * d;
+        let (lo, hi) = if gap > 0.0 {
+            (gap / 2.0, gap * 2.0)
+        } else {
+            (gap * 2.0, gap / 2.0)
+        };
+        let (a, b) = (q(r) + q(lo), q(r) + q(hi));
+        let (a, b) = (&a * &a, &b * &b);
+        let span = |k: i64, i: usize| if held[i] { 0..=0 } else { -k..=k };
+        for k in 0..=24i64 {
+            for i in span(k, 0) {
+                for j in span(k, 1) {
+                    for l in span(k, 2) {
+                        if i.abs().max(j.abs()).max(l.abs()) != k {
+                            continue;
+                        }
+                        let c = [step(c0[0], i), step(c0[1], j), step(c0[2], l)];
+                        let d2 = dist2(c);
+                        if a <= d2 && d2 <= b {
+                            return c;
+                        }
+                    }
+                }
+            }
+        }
+        panic!("no centre near {c0:?} for {d:e}");
+    };
+    let line = |p0: V, p1: V| {
+        let e = sub(&p1, &p0);
+        let ee = dot(&e, &e);
+        move |c: [f64; 3]| {
+            let w = sub(&v(c), &p0);
+            let t = dot(&w, &e);
+            dot(&w, &w) - &t * &t / &ee
+        }
+    };
+    let point = |p: V| {
+        move |c: [f64; 3]| {
+            let w = sub(&v(c), &p);
+            dot(&w, &w)
+        }
+    };
+    // A ball of radius `r` about `at + r (1 + d) u`, placed.
+    let near = |at: [f64; 3], u: [f64; 3], r: f64, d: f64, dist2: &dyn Fn([f64; 3]) -> R| {
+        let c0 = [0, 1, 2].map(|k| at[k] + r * (1.0 + d) * u[k]);
+        ball(search(c0, [false; 3], dist2, r, d), r)
+    };
+    let refused = |what: &str, body: &Solid, b: &Solid, why: &str| {
+        for (op, out) in [
+            ("fuse", body.fuse(OperationId(3), b)),
+            ("cut", body.cut(OperationId(4), b)),
+            ("cut back", b.cut(OperationId(4), body)),
+            ("common", body.common(OperationId(5), b)),
+        ] {
+            assert!(
+                matches!(&out, Err(Error::Degenerate(m)) if *m == why),
+                "{what} {op}: {:?}",
+                out.map(|x| x.0.len())
+            );
+        }
+    };
+    let volume = |s: &[Solid]| s.iter().map(|x| x.mass_properties().volume).sum::<f64>();
+    let evaluates = |what: &str, body: &Solid, b: &Solid, fused: usize| {
+        let f = body.fuse(OperationId(3), b).unwrap().0;
+        let c = body.cut(OperationId(4), b).unwrap().0;
+        let m = body.common(OperationId(5), b).unwrap().0;
+        assert_eq!(f.len(), fused, "{what}");
+        let (va, vb) = (body.mass_properties().volume, b.mass_properties().volume);
+        let close = |x: f64, y: f64| (x - y).abs() <= 1e-9 * (va + vb);
+        assert!(close(volume(&f), va + vb - volume(&m)), "{what} fuse");
+        assert!(close(volume(&c), va - volume(&m)), "{what} cut");
+    };
+    let within = [1e-15, -1e-15, 1e-12, -1e-12, 1e-9, -1e-9];
+
+    // A box turned off the world's axes: its top's edge at `u = 3` and its
+    // corner at `(3, 2, 4)`.
+    let tilt = frame([1.0, -2.0, 0.5], [0.0, 3.0, 4.0], [1.0, 0.0, 0.0]);
+    let tilted = prism(
+        tilt,
+        &[(-3.0, -2.0), (3.0, -2.0), (3.0, 2.0), (-3.0, 2.0)],
+        0.0,
+        4.0,
+        1,
+    );
+    let (n, x, y) = (tilt.normal(), tilt.x(), tilt.y());
+    let mix = |a: f64, b: f64, c: f64| unit((n * a + x * b + y * c).to_array());
+    let edge = line(exact(&tilt, 3.0, -2.0, 4.0), exact(&tilt, 3.0, 2.0, 4.0));
+    let foot = tilt.point(Point2::new(3.0, 0.25), 4.0).to_array();
+    for (dir, u) in [
+        ("past", mix(1.0, 1e-3, 0.0)),
+        ("bisector", mix(1.0, 1.0, 0.0)),
+    ] {
+        for d in within {
+            let b = near(foot, u, 1.5, d, &edge);
+            refused(&format!("turned box's edge {dir} {d:e}"), &tilted, &b, EDGE);
+        }
+    }
+    for (d, fused) in [(1e-6, 2), (-1e-6, 1)] {
+        let b = near(foot, mix(1.0, 1.0, 0.0), 1.5, d, &edge);
+        evaluates(&format!("turned box's edge {d:e}"), &tilted, &b, fused);
+    }
+    let corner = point(exact(&tilt, 3.0, 2.0, 4.0));
+    let at = tilt.point(Point2::new(3.0, 2.0), 4.0).to_array();
+    for d in [1e-12, -1e-12, 1e-9] {
+        let b = near(at, mix(1.0, 1.0, 1.0), 1.5, d, &corner);
+        refused(&format!("turned box's corner {d:e}"), &tilted, &b, VERTEX);
+    }
+    let b = near(at, mix(1.0, 1.0, 1.0), 1.5, 1e-6, &corner);
+    evaluates("turned box's corner", &tilted, &b, 2);
+
+    // An L's reflex edge, a ball inside it (a wall thinner than the
+    // resolution in the cut); a cavity's sphere there inside the L's
+    // material (the gap inside both inputs) evaluating.
+    let up = frame([0.0; 3], [0.0, 0.0, 1.0], [1.0, 0.0, 0.0]);
+    let ell = prism(
+        up,
+        &[
+            (0.0, 0.0),
+            (8.0, 0.0),
+            (8.0, 4.0),
+            (4.0, 4.0),
+            (4.0, 8.0),
+            (0.0, 8.0),
+        ],
+        0.0,
+        8.0,
+        1,
+    );
+    let reflex = line(exact(&up, 4.0, 4.0, 0.0), exact(&up, 4.0, 4.0, 8.0));
+    let inward = unit([-1.0, -1.0, 0.0]);
+    for d in [1e-12, -1e-12] {
+        let b = near([4.0, 4.0, 4.0], inward, 1.5, d, &reflex);
+        refused(&format!("L's reflex edge {d:e}"), &ell, &b, EDGE);
+    }
+    let b = near([4.0, 4.0, 4.0], inward, 1.5, 1e-6, &reflex);
+    evaluates("L's reflex edge", &ell, &b, 1);
+    let block = prism(
+        up,
+        &[(-2.0, -2.0), (10.0, -2.0), (10.0, 10.0), (-2.0, 10.0)],
+        -2.0,
+        10.0,
+        7,
+    );
+    let b = near([4.0, 4.0, 4.0], inward, 1.5, 1e-12, &reflex);
+    let hollow = block.cut(OperationId(2), &b).unwrap().0;
+    assert_eq!(hollow.len(), 1);
+    let fuse = ell.fuse(OperationId(3), &hollow[0]).unwrap().0;
+    let common = ell.common(OperationId(5), &hollow[0]).unwrap().0;
+    let back = hollow[0].cut(OperationId(4), &ell).unwrap().0;
+    assert_eq!((fuse.len(), common.len(), back.len()), (1, 1, 1));
+    let (vl, vh) = (
+        ell.mass_properties().volume,
+        hollow[0].mass_properties().volume,
+    );
+    assert!((volume(&fuse) - (vl + vh - volume(&common))).abs() <= 1e-9 * (vl + vh));
+    assert!((volume(&back) - (vh - volume(&common))).abs() <= 1e-9 * (vl + vh));
+
+    // A stadium's arc's rim about `(s, 0)` at its point `(s + t, 0, h)`:
+    // the ball on its plane `y = 0`, its distance from the exact circle
+    // `(|c_x - s| - t)^2 + (c_z - h)^2`.
+    let (s, t, h) = (2.75, 1.0, 1.75);
+    let stadium = |f: Frame3| {
+        let outer = Boundary::path(
+            vec![
+                Point2::new(0.0, -t),
+                Point2::new(s, -t),
+                Point2::new(s, t),
+                Point2::new(0.0, t),
+            ],
+            vec![
+                Segment::Line,
+                Segment::Arc {
+                    center: Point2::new(s, 0.0),
+                    radius: t,
+                    ccw: true,
+                },
+                Segment::Line,
+                Segment::Arc {
+                    center: Point2::new(0.0, 0.0),
+                    radius: t,
+                    ccw: true,
+                },
+            ],
+            tol,
+        )
+        .unwrap();
+        Solid::extrude_with(
+            OperationId(1),
+            Profile::new(outer, vec![], tol).unwrap(),
+            f,
+            0.0,
+            h,
+        )
+        .unwrap()
+        .0
+    };
+    let level = stadium(up);
+    let rim = |c: [f64; 3]| {
+        let c = v(c);
+        let (e, z) = (&c[0] - q(s + t), &c[2] - q(h));
+        &e * &e + &z * &z
+    };
+    let r = 0.75;
+    let rim_ball = |th: f64, d: f64| {
+        let c0 = [
+            s + t + r * (1.0 + d) * th.sin(),
+            0.0,
+            h + r * (1.0 + d) * th.cos(),
+        ];
+        ball(search(c0, [false, true, false], &rim, r, d), r)
+    };
+    for th in [1e-3, std::f64::consts::FRAC_PI_4] {
+        for d in within {
+            refused(
+                &format!("stadium's rim {th} {d:e}"),
+                &level,
+                &rim_ball(th, d),
+                EDGE,
+            );
+        }
+    }
+    evaluates(
+        "stadium's rim",
+        &level,
+        &rim_ball(std::f64::consts::FRAC_PI_4, 1e-6),
+        2,
+    );
+    // In the turned frame (a conic within rounding of a circle; gaps far
+    // wider than its rounding, placed in binary64).
+    let turned = stadium(tilt);
+    for (d, fused) in [(1e-9, 0), (-1e-9, 0), (1e-6, 2)] {
+        let k = r * (1.0 + d) * std::f64::consts::FRAC_1_SQRT_2;
+        let c = (tilt.x() * (s + t + k) + tilt.normal() * (h + k)).to_array();
+        let o = tilt.origin().to_array();
+        let b = ball([0, 1, 2].map(|i| o[i] + c[i]), r);
+        if fused == 0 {
+            refused(&format!("turned stadium's rim {d:e}"), &turned, &b, EDGE);
+        } else {
+            evaluates("turned stadium's rim", &turned, &b, fused);
+        }
+    }
+
+    // An imported octahedron (a polyhedron on its stored vertices): its edge
+    // from `(5, 5, 8)` to `(9, 5, 4)` and that vertex.
+    let (topology, resolution) = protocol::imported_topology("imported/octa.brep");
+    let octa = Solid::imported_with(OperationId(1), topology, resolution)
+        .unwrap()
+        .0;
+    let ridge = line(v([5.0, 5.0, 8.0]), v([9.0, 5.0, 4.0]));
+    let apex = point(v([5.0, 5.0, 8.0]));
+    let out = unit([1.0, 0.0, 1.0]);
+    for d in [1e-12, -1e-12, 1e-9] {
+        let b = near([7.0, 5.0, 6.0], out, 1.5, d, &ridge);
+        refused(&format!("octahedron's edge {d:e}"), &octa, &b, EDGE);
+        let b = near([5.0, 5.0, 8.0], unit([0.1, 0.2, 1.0]), 1.5, d, &apex);
+        refused(&format!("octahedron's vertex {d:e}"), &octa, &b, VERTEX);
+    }
+    for (d, fused) in [(1e-6, 2), (-1e-6, 1)] {
+        let b = near([7.0, 5.0, 6.0], out, 1.5, d, &ridge);
+        evaluates(&format!("octahedron's edge {d:e}"), &octa, &b, fused);
+    }
+
+    // A hemisphere below `z = 0`: its rim circle at `(2, 0, 0)`.
+    let (hemi, _) = Solid::sphere_with(OperationId(1), up, 2.0, -half, 0.0, tol).unwrap();
+    let circle = |c: [f64; 3]| {
+        let c = v(c);
+        let e = &c[0] - q(2.0);
+        &e * &e + &c[2] * &c[2]
+    };
+    let hemi_ball = |d: f64| {
+        let k = r * (1.0 + d) * std::f64::consts::FRAC_1_SQRT_2;
+        ball(
+            search([2.0 + k, 0.0, k], [false, true, false], &circle, r, d),
+            r,
+        )
+    };
+    for d in [1e-12, -1e-12, 1e-9] {
+        refused(
+            &format!("hemisphere's rim {d:e}"),
+            &hemi,
+            &hemi_ball(d),
+            EDGE,
+        );
+    }
+    evaluates("hemisphere's rim", &hemi, &hemi_ball(1e-6), 2);
+}
