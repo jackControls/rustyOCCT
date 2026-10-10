@@ -30,6 +30,7 @@ pub(crate) mod matched;
 mod meet;
 mod meshes;
 mod model;
+mod near;
 mod num;
 pub(crate) mod pieces;
 mod procedural;

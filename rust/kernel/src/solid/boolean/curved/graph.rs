@@ -144,7 +144,7 @@ pub(super) struct Arr {
     pub(super) shared: BTreeMap<usize, (usize, bool)>,
 }
 
-fn boxes_meet(a: &([f64; 3], [f64; 3]), b: &([f64; 3], [f64; 3])) -> bool {
+pub(super) fn boxes_meet(a: &([f64; 3], [f64; 3]), b: &([f64; 3], [f64; 3])) -> bool {
     (0..3).all(|k| a.0[k] <= b.1[k] && b.0[k] <= a.1[k])
 }
 
@@ -247,7 +247,7 @@ fn edge_near_misses(models: &[Prism; 2], res: f64) -> Result<()> {
                 if !boxes_meet(&ebox, &sbox) {
                     continue;
                 }
-                for a in edge_nearest(om, ei, c) {
+                for a in edge_nearest(om, ei, c, r, res) {
                     sphere_near(sm, fs, c, r, om, &a, res, NEAR_EDGE)?;
                 }
             }
@@ -270,7 +270,7 @@ fn edge_near_misses(models: &[Prism; 2], res: f64) -> Result<()> {
 
 /// Whether two faces of a model lie on one surface: one plane, or one
 /// quadric of one primitive model.
-fn one_surface(m: &Prism, f: usize, g: usize) -> bool {
+pub(super) fn one_surface(m: &Prism, f: usize, g: usize) -> bool {
     let ((vf, i), (vg, j)) = (m.view(f), m.view(g));
     match (&vf.faces[i].surf, &vg.faces[j].surf) {
         (Surf::Plane { p, m: n }, Surf::Plane { p: p2, m: n2 }) => {
@@ -286,8 +286,12 @@ fn one_surface(m: &Prism, f: usize, g: usize) -> bool {
 /// projection's length), and on a conic that is no circle exactly (a turned
 /// frame's arc, an oblique cut's ellipse) a rational point of it at each
 /// local least distance to rounding (its distance exceeding the least by
-/// far less than the resolution). Other curves have none.
-fn edge_nearest(m: &Prism, ei: usize, c: &V) -> Vec<QV> {
+/// far less than the resolution); on other curves (a given result's
+/// meetings of curved faces, cone, torus and spline curves) a point at a
+/// rational parameter at each local least distance found in binary64
+/// alike, a sphere through such a point but for that point's rounding
+/// left to the incidences' own rules (`near::nearest_on_run`).
+fn edge_nearest(m: &Prism, ei: usize, c: &V, r: &R, res: f64) -> Vec<QV> {
     let e = &m.edges[ei];
     let found: Vec<QV> = match &e.curve {
         Crv::Line { p, d } => {
@@ -304,7 +308,9 @@ fn edge_nearest(m: &Prism, ei: usize, c: &V) -> Vec<QV> {
                 conic_nearest(o, a, b, c)
             }
         }
-        _ => Vec::new(),
+        // Other curves (meetings, cone, torus and spline curves, S9d.2): at
+        // their least distances found in binary64.
+        _ => super::near::nearest_on_run(m, ei, c, r, res),
     };
     let (s, t, with) = edge_places(m, ei);
     found
@@ -385,7 +391,7 @@ fn conic_nearest(o: &V, a: &V, b: &V, c: &V) -> Vec<QV> {
 /// A rational point of the sphere about `c` of radius `r` toward the
 /// direction `w` (to rounding: a stereographic image of its unit
 /// direction's).
-fn sphere_toward(c: &V, r: &R, w: [f64; 3]) -> V {
+pub(super) fn sphere_toward(c: &V, r: &R, w: [f64; 3]) -> V {
     let len = (w[0] * w[0] + w[1] * w[1] + w[2] * w[2]).sqrt();
     let u = w.map(|x| x / len);
     // From the pole opposite the direction's side of the `z = 0` plane.
@@ -498,7 +504,7 @@ pub(super) fn edge_places(m: &Prism, ei: usize) -> (Pos, Pos, bool) {
 
 /// Whether a place lies strictly between two others along an edge running
 /// from `a` to `b` (with or against its parameter, `ccw`), `None` at an end.
-fn strictly_within(pos: &Pos, a: &Pos, b: &Pos, ccw: bool) -> Option<bool> {
+pub(super) fn strictly_within(pos: &Pos, a: &Pos, b: &Pos, ccw: bool) -> Option<bool> {
     match (pos, a, b) {
         (Pos::T(t), Pos::T(a), Pos::T(b)) => {
             let (lo, hi) = if a.cmp(b) == Ordering::Greater {
@@ -764,6 +770,9 @@ pub(super) fn arrange_shared(models: [Prism; 2]) -> Result<Arr> {
             pairs.insert((fa, fb), pair);
         }
     }
+    // A sphere within the resolution of tangency to a cylinder or a cone
+    // (S9d.2, `near.rs`), before their meetings are found.
+    super::near::sphere_quadrics(&models, res)?;
     // A cylinder and a sphere (S9d.2): rings over the cylinder's angle, or
     // apart.
     for fa in 0..models[0].faces.len() {
@@ -1159,6 +1168,7 @@ pub(super) fn arrange_shared(models: [Prism; 2]) -> Result<Arr> {
         }
     }
     edge_near_misses(&models, res)?;
+    super::near::edge_faces(&models, res)?;
     // Pierces: every edge against every face of the other.
     for o in 0..2 {
         let (me, other) = (&models[o], &models[1 - o]);
@@ -2203,7 +2213,10 @@ fn edge_at(m: &Prism, g: usize, x: &QV) -> Result<Option<(usize, Pos)>> {
     Ok(None)
 }
 
-fn intersect(a: &([f64; 3], [f64; 3]), b: &([f64; 3], [f64; 3])) -> ([f64; 3], [f64; 3]) {
+pub(super) fn intersect(
+    a: &([f64; 3], [f64; 3]),
+    b: &([f64; 3], [f64; 3]),
+) -> ([f64; 3], [f64; 3]) {
     let mut out = *a;
     for k in 0..3 {
         out.0[k] = a.0[k].max(b.0[k]);
