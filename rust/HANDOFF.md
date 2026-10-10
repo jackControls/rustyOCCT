@@ -533,8 +533,9 @@ then for S9e.4b.4b.2b.2a (branch `s9e4b4b2b2`, over `s9c2-kernel` at `ae733749`)
   a pocket, imported and the kernel's own, each cut by the chained partner):
   188 inputs reach it, 96 evaluating alike. A trial of the restore cases the import reaches: no case
   moves. Open: S9e.4b.4b.2b.2b;
-  a pocket's walls along a turned leaf's axis within rounding of it. Pending
-  its capture's Linux record, its DRAW survey and its campaigns.
+  a pocket's walls along a turned leaf's axis within rounding of it.
+  Campaigns clean at `9c56ad77`. Pending its capture's Linux record and its
+  DRAW survey (with S9e.4b.4b.2b.2b's).
 - **CI.** Both workflows ("Rust kernel", "Rust geometry fuzzing") were green
   at `6c221525`. They had been red from S7 until 2026-09-29, unnoticed;
   check them after every push (see "Working rules").
@@ -670,8 +671,8 @@ then for S9e.4b.4b.2b.2a (branch `s9e4b4b2b2`, over `s9c2-kernel` at `ae733749`)
    targets' reach (no DRAW restore case reaches it): **S9e.4b.4b.2b.2a**
    (two prism leaves, a leaf's walls parted by another part, a lone leaf with
    a pocket: 19 of the 53 bodies the fuzz targets' results import as) is
-   implemented (pending its capture's Linux record, its DRAW survey and its
-   campaigns); next **S9e.4b.4b.2b.2b** (the other 34: a hull across several
+   implemented with clean campaigns at `9c56ad77` (pending its capture's
+   Linux record and its DRAW survey, with S9e.4b.4b.2b.2b's); next **S9e.4b.4b.2b.2b** (the other 34: a hull across several
    parts, a polyhedral boss, a prism cut at both caps' rims, mixed pockets
    and components, three leaves, flush walls; the kernel's own fused stack
    of prisms given to a Boolean, refused as an edge of one input on a face

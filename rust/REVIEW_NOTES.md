@@ -10682,7 +10682,7 @@ Decisions for S9, recorded before its code (2026-09-28):
     before (147 evaluating, 24 unsupported). Open: S9e.4b.4c.2b (nested
     chains of several primitives, after S9e.4b.4b.2b.2); a tree's planes
     along a turned primitive's axis within rounding of it (evidence (a)).
-    Pending: its capture's Linux record and its campaigns.
+    Pending: its capture's Linux record (its campaigns: below).
   * **DRAW survey of the deeper trees (2026-10-10, `UPSTREAM_TESTS.md`).**
     At `69c2c27f` (`rust-kernel`, S9e.4b.4c.2a merged at `a9df6c00`, with
     the edge rule's faces along the surface from `fix-edge-rule-zero`; the
@@ -11104,7 +11104,12 @@ Decisions for S9, recorded before its code (2026-09-28):
     rims, mixed pockets and components, three leaves, flush walls, the
     kernel's own fused stack given to a Boolean); a pocket's walls along a
     turned leaf's axis within rounding of it. Pending: its capture's Linux
-    record, its DRAW survey and its campaigns.
+    record and its DRAW survey (to be taken with S9e.4b.4b.2b.2b's, no
+    restore case reaching either). Campaigns at `9c56ad77` (600 s each,
+    sampled replays, every switch on, on a host shared with an agent's
+    builds): `boolean` clean, 272 runs, the slowest input 31 s under
+    AddressSanitizer (the startup's replay 833 s); `split` clean, 1,593
+    runs, the slowest 10 s.
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces
