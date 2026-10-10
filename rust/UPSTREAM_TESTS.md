@@ -2067,6 +2067,27 @@ them; the slowest Boolean case 5.0 seconds (`boptuc_simple/ZK8`, on a host
 at load 7 to 19), the restore cases 0.1 to 5.3 (`bcommon_complex/B9`), the
 rollex 0.7 to 0.8.
 
+**The vertex near miss: a trial of the Boolean group and the restore
+cases.** A vertex within the resolution of a plane, cylinder or cone face
+of the other input is refused where its input's boundary leaves it
+strictly on one side of the surface (2026-10-10, branch
+`fix-vertex-near-miss` at `e007e670`; REVIEW_NOTES.md's "A vertex within
+the resolution of a face, done", which has the counts). An instrumented
+build of the debug worker on the Rust adapter over the 1,802
+self-contained cases and the 1,814 restore cases (120 seconds a case,
+four at once): 258 cases hold a vertex within the resolution of a face
+with its foot in the face, 254 of them no contact of the vertex's own and
+evaluating or refused further on as before, and 4 unregistered restore
+cases (`bcommon_complex/B8`, `bcut_complex/D8`, `D9` and
+`bfuse_complex/C2`, a vertex `1.3e-9` above a plane face, unsupported
+before as a piece thinner than the resolution) take the new reason. Every
+other status and reason is the survey's at `f9e54f0d` but for the 91
+cases the edge rule's fix returned and four restore cases timing out
+under load before any Boolean (unsupported as before run alone). No case
+newly evaluates and none evaluating is refused, so no value moves and
+none is registered (1,132 cases); a full contract run on both backends
+holds for every case.
+
 Three more `intss` cases run on the Rust adapter but are not registered,
 because the contract admits no failing status: `bug23178`, `bug28222_2` and
 `bug28222_3` count the pieces IntPatch splits its walking lines into (6, 4
