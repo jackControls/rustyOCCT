@@ -312,3 +312,43 @@ fn a_corner_on_through_or_along_a_face_evaluates_as_before() {
         1,
     );
 }
+
+/// A gap inside both inputs is no contact (as at an edge or a sphere): a
+/// block bitten from below by a cube on its corner, the bite's apex (a
+/// vertex whose faces all leave it downward, its block's material above
+/// it) `1e-12` below a slab's top or a rod's cap inside them, the block
+/// crossing the top beyond the resolution: every operation evaluates in
+/// the pair identities, as before the rule; the bite's apex `1e-12` above
+/// the top (its faces through it that near the apex: a crossing, refused
+/// as a face thinner than the resolution before) is refused.
+#[test]
+fn a_gap_inside_both_inputs_is_no_contact() {
+    for (name, f) in frames() {
+        let (u, v, w) = (f.x().to_array(), f.y().to_array(), f.normal().to_array());
+        let bitten = |d: f64| {
+            let block = prism(f, square(-0.6, 0.6), -0.45 + d, 0.5 + d, 1);
+            let bite = cube(
+                f.point(Point2::new(0.0, 0.0), d).to_array(),
+                neg(w),
+                v,
+                u,
+                3.0,
+            );
+            let mut out = block.cut(OperationId(6), &bite).unwrap().0;
+            assert_eq!(out.len(), 1, "{name} bitten");
+            out.remove(0)
+        };
+        let slab = prism(f, square(-2.0, 2.0), -2.0, 0.0, 2);
+        evaluates(&format!("{name} slab"), &bitten(-1e-12), &slab, 1);
+        refused(
+            &format!("{name} slab above"),
+            &bitten(1e-12),
+            &slab,
+            NEAR_VERTEX,
+        );
+        let rod = Solid::cylinder_with(OperationId(2), f, 1.0, -2.0, 0.0, tol())
+            .unwrap()
+            .0;
+        evaluates(&format!("{name} rod's cap"), &bitten(-1e-12), &rod, 1);
+    }
+}
