@@ -51,7 +51,9 @@ then for the DRAW survey of S9e.4b.4c.1, the near miss of a sphere and
 the user's crossing cylinders (branch `s9-draw-12`, over `s9c2-kernel` at
 `44204e18`),
 then for the DRAW survey of the edge and vertex near miss (branch
-`s9-draw-13`, over `s9c2-kernel` at `ef5d66fd`).
+`s9-draw-13`, over `s9c2-kernel` at `ef5d66fd`),
+then for the DRAW survey of the curved near misses (branch `s9-draw-14`,
+over `s9c2-kernel` at `f9e54f0d`).
 
 ## Where things stand
 
@@ -68,10 +70,13 @@ then for the DRAW survey of the edge and vertex near miss (branch
   arcs, and one solid of a result of several (S9e.2, `curved/matched.rs`),
   results of spheres, cones and tori, deeper chains and given results
   against spheres, cones and tori (S9e.3a, `curved/chain.rs`), each with its
-  DRAW survey (the last full survey, that of the edge and vertex near
-  miss at `ef5d66fd`, branch `s9-draw-13`: the Boolean group's 987 cases
-  and 59 restore cases registered, none failing, no case moving, both
-  backends' audited values those of `44204e18`'s bit for bit) and a clean campaign (S9e.3a's and S9f.1's at `b2765f20`, 989
+  DRAW survey (the last full survey, that of the curved near misses at
+  `f9e54f0d`, branch `s9-draw-14`: the Boolean group's 987 cases and 59
+  restore cases registered, ten of them, `U1` and `Y5` of the four
+  `bop*_simple` grids, `bfuse_complex/L3` and `bopcommon_complex/K5`, now
+  refused by the edge rule and failing the contract run (item 5), the
+  others none failing, both backends' audited values those of
+  `ef5d66fd`'s bit for bit) and a clean campaign (S9e.3a's and S9f.1's at `b2765f20`, 989
   runs).
 - **S9f.1 done.** Spline prisms against polyhedral prisms in any position
   (`curved/spline_walls.rs`), with its survey and campaign as above.
@@ -542,7 +547,9 @@ then for the DRAW survey of the edge and vertex near miss (branch
    moving and none reaching the three changes' paths, nothing
    registered), that of the edge and vertex near miss at `ef5d66fd`
    (branch `s9-draw-13`: no case moving, none within the resolution of an
-   edge or vertex, nothing registered).
+   edge or vertex, nothing registered), that of the curved near misses at
+   `f9e54f0d` (branch `s9-draw-14`: ten registered cases refused by the
+   edge rule, item 5; nothing registered).
 3. **S9e.4b**, split in "S9e.4b refined": S9e.4b.1 (arcs rounded off
    their circles) and S9e.4b.2 (polyhedra other than prisms, on their
    stored vertices) are implemented with their DRAW surveys and
@@ -636,7 +643,21 @@ then for the DRAW survey of the edge and vertex near miss (branch
    cylinder or cone face, an edge's line, conic, circle or other curve
    against a plane, cylinder or cone face, other curves (meetings of two
    curved faces, cone, torus and spline curves) near a sphere, and the
-   shallow crossing's hours in the validator's integrals). Open: (a) a
+   shallow crossing's hours in the validator's integrals). Open, first:
+   (0) the edge rule refuses ten registered DRAW cases that evaluated
+   with every audited value agreeing with native DRAW's (the survey at
+   `f9e54f0d`, branch `s9-draw-14`; the contract run fails for them):
+   `bop*_simple/U1` and `Y5` (a cylinder and a box turned 30 degrees, one
+   of its faces on the cylinder's tangent plane), `bfuse_complex/L3` and
+   `bopcommon_complex/K5`, and 77 cases refused before by other rules. In
+   each a cylinder's cap circle lies within rounding (`1e-16` to `5e-14`)
+   of the other face's surface where the cylinder's wall runs along it
+   (`leaves_away`'s sign zero counting as leaving): a tangency along a
+   ruling that the faces' own rules decided before. A scratch build
+   taking sign zero as no contact restored all ten bit for bit and kept
+   the near-miss tests passing, unchecked further; reproducer `pcylinder c
+   1 2; box b -0.5 -2 0 1 1 2; trotate b 0 0 0 0 0 1 30; bcut result c b`
+   (evaluated at `47e086c5`). (a) a
    vertex within the resolution of a plane, cylinder or cone face (only a
    sphere's has a rule): a cube's corner `1e-12` to `1e-9` off a rod's
    wall in a level frame is fused with it into two solids; a rule needs
@@ -661,7 +682,9 @@ then for the DRAW survey of the edge and vertex near miss (branch
    below `2^-80` on another curve is an incidence, the incidences' rules. No DRAW case has a sphere missing a plane or another sphere within the
    resolution (the survey at `44204e18`, branch `s9-draw-12`), nor an edge
    or a vertex within the resolution of a sphere (the survey at
-   `ef5d66fd`, branch `s9-draw-13`).
+   `ef5d66fd`, branch `s9-draw-13`), nor a sphere within it of a cylinder
+   or cone face, nor another curve within it of a sphere, and none reaches
+   the rise jets (the survey at `f9e54f0d`, branch `s9-draw-14`).
 
 Refused by design and staying refused (each documented): a tangency between
 the inputs, a cavity beside several solids, spline segments along one curve

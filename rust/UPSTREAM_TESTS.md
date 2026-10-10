@@ -1980,6 +1980,53 @@ absolute output directory) holds for every case, the slowest Boolean case
 3.8 seconds (`bopfuse_simple/ZK8`, on a host at load 5 to 10), the restore
 cases 0.1 to 3.3 (`bcommon_complex/B9`), the rollex 0.4 to 0.8.
 
+**The curved near misses: the Boolean group and the restore cases.** Both
+sets were run again after a sphere within the resolution of a cylinder or
+cone face and an edge within it of a plane, cylinder or cone face were
+refused (S9d.2), other curves taken near a sphere and the validator's
+rise jets narrowed (2026-10-10, at `f9e54f0d`, the public dataset, 120
+seconds a case, four at once). Ten registered cases move, refused as "an
+edge within the resolution of tangency to a face (S9d.2)":
+`bopfuse_simple`, `bopcut_simple`, `bopcommon_simple` and
+`boptuc_simple`'s `U1` and `Y5` (a cylinder and a box turned 30 degrees
+about z, one of its faces on the cylinder's tangent plane) and the restore
+cases `bfuse_complex/L3` and `bopcommon_complex/K5`; a full contract run
+fails for those ten and holds for every other case. The manifest is not
+changed: the refusal is an open item (`REVIEW_NOTES.md`, "DRAW survey of
+the curved near misses"; in all ten the cylinder's wall runs from its cap
+circle along the other face's surface but for a turned frame's rounding,
+and the cap circle's least distance from it, `1e-16` to `5e-14`, is taken
+as a near miss). The 1,802 self-contained cases: native DRAW every status,
+reason and error the last survey's (`ef5d66fd`) field for field; on the
+Rust adapter 80 cases move to the new reason, the 8 above and 72 refused
+before by other rules (a result or a piece thinner than the resolution,
+two meetings within rounding along an arc); 979 evaluate, every one
+registered, 600 are refused and 223 unsupported on both, none fails or
+times out. The 1,814 restore cases on the Rust adapter: `L3` and `K5`,
+and `bugs/moddata_1/bug160_1` to `_6` (their Boolean evaluating before,
+the case stopping at `explode`), `bcut_complex/P9`,
+`bopfuse_complex/K4`, `bfuse_complex/C4`, `C5` and
+`bugs/modalg_1/bug14777` (refused before by other rules) take the new
+reason; `bugs/modalg_1/buc60532`, `_1`, `_2` and
+`bugs/modalg_6/bug23585` end unsupported as before within the limit, and
+`buc60531_1`, `_2`, `bugs/modalg_5/bug23849_1` and `_3` time out at their
+first restores as before. Of the 171 the import reaches, native DRAW is
+as before; 57 evaluate on both backends and 78 are refused by S9's rules.
+An instrumented build (not committed) over the 1,802 and the 171: 74
+cases hold a sphere face near a cylinder or cone face, none within the
+resolution; 566 run the edge rule, 87 of them refused by it; 2 take
+another curve's points near a sphere, none within the resolution; none
+reaches the rise jets, so the jet change cannot move a value.
+
+The volume audit (`vprops` and `sprops` before each `checkprops`, both
+backends, the 1,046 audited before): both backends' values are the last
+audit's bit for bit on the 1,036 still evaluating, the statuses the same
+but the ten refused, and the same 35 disagreements remain beside those
+ten. No case newly evaluates, so none is registered (1,132 cases); the
+ledger does not change. The slowest Boolean case of the contract run is
+3.8 seconds (`bopfuse_simple/ZK8`, on a host at load 3 to 21), the restore
+cases 0.1 to 3.1 (`bcommon_complex/B9`), the rollex 0.5 to 0.6.
+
 Three more `intss` cases run on the Rust adapter but are not registered,
 because the contract admits no failing status: `bug23178`, `bug28222_2` and
 `bug28222_3` count the pieces IntPatch splits its walking lines into (6, 4
