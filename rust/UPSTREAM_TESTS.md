@@ -2027,6 +2027,46 @@ ledger does not change. The slowest Boolean case of the contract run is
 3.8 seconds (`bopfuse_simple/ZK8`, on a host at load 3 to 21), the restore
 cases 0.1 to 3.1 (`bcommon_complex/B9`), the rollex 0.5 to 0.6.
 
+**The deeper trees: the Boolean group and the restore cases.** Both sets
+were run again after an imported body of one curved face and plane faces
+was taken with pockets within its pockets, nested at most three deep in at
+most eight Booleans (S9e.4b.4c.2a), and after the edge rule took a face
+running along the other input's surface as no contact (2026-10-10, at
+`69c2c27f`, the public dataset, 120 seconds a case, four at once). The
+1,802 self-contained cases: native DRAW every status, reason and error the
+last survey's (`f9e54f0d`) field for field; on the Rust adapter the 80
+cases the edge rule refused there return, every field the survey's before
+it (`ef5d66fd`) on every case: `U1` and `Y5` of the four `bop*_simple`
+grids evaluate again and the 72 others take their earlier reasons; 987
+evaluate, every one registered, 592 are refused and 223 unsupported on
+both, none fails or times out. The 1,814 restore cases on the Rust
+adapter: `bfuse_complex/L3` and `bopcommon_complex/K5` evaluate again,
+`bcut_complex/P9`, `bopfuse_complex/K4`, `bugs/modalg_1/bug14777` and
+`bugs/moddata_1/bug160_1` to `_6` take their earlier reasons, and
+`bfuse_complex/C4` and `C5` keep the edge rule's; `bugs/modalg_1/buc60532`
+and `_1` time out at their restores (unsupported within the limit at the
+last survey, timing out at the one before), and the other timeouts are
+as before. Of the 171 the import reaches, native DRAW is as before; 59
+evaluate on both backends and 76 are refused by S9's rules. An
+instrumented build (not committed) over the 1,802 and the 171: 41 restore
+cases import a body of one curved face and plane faces, 39 of them as a
+form, 2 trying its tree (`bcut_complex/I6`, refused before its pockets as
+tangent, and `bugs/modalg_1/buc60926`, one pocket without pockets of its
+own in a tree of one Boolean, refused as before); none holds a pocket
+within a pocket or a tree of more than four Booleans, so the step cannot
+move a case.
+
+The volume audit (both backends, the 1,046 audited before): both
+backends' values are those of the audit before the last (`ef5d66fd`) bit
+for bit on all 1,046, the ten registered cases the last survey found
+refused among them, and the same 35 disagreements remain. No case newly
+evaluates, so none is registered (1,132 cases); the ledger does not
+change. A full contract run of the manifest (both backends, 30 seconds a
+case, an absolute output directory) holds for every case, the ten among
+them; the slowest Boolean case 5.0 seconds (`boptuc_simple/ZK8`, on a host
+at load 7 to 19), the restore cases 0.1 to 5.3 (`bcommon_complex/B9`), the
+rollex 0.7 to 0.8.
+
 Three more `intss` cases run on the Rust adapter but are not registered,
 because the contract admits no failing status: `bug23178`, `bug28222_2` and
 `bug28222_3` count the pieces IntPatch splits its walking lines into (6, 4

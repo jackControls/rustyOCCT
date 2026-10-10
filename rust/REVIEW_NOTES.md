@@ -10683,6 +10683,73 @@ Decisions for S9, recorded before its code (2026-09-28):
     chains of several primitives, after S9e.4b.4b.2b.2); a tree's planes
     along a turned primitive's axis within rounding of it (evidence (a)).
     Pending: its capture's Linux record and its campaigns.
+  * **DRAW survey of the deeper trees (2026-10-10, `UPSTREAM_TESTS.md`).**
+    At `69c2c27f` (`rust-kernel`, S9e.4b.4c.2a merged at `a9df6c00`, with
+    the edge rule's faces along the surface from `fix-edge-rule-zero`; the
+    public dataset, 120 seconds a case, four at once, on a host at load 7
+    to 19). **No case moves against the survey before the last
+    (`ef5d66fd`); against the last (`f9e54f0d`) only the edge rule's
+    regression returns.** The 1,802 self-contained cases of the Boolean
+    group on both backends: native DRAW every status, reason and error the
+    last survey's field for field; on the Rust adapter the 80 cases the edge
+    rule refused there take every field of the survey before it: `U1` and
+    `Y5` of `bopfuse_simple`, `bopcut_simple`, `bopcommon_simple` and
+    `boptuc_simple` evaluate again, and the 72 others take their earlier
+    reasons (40 a result and 24 a piece thinner than the resolution, 8 two
+    meetings within rounding along an arc); 987 evaluate, every one
+    registered, 592 are refused, 223 unsupported on both, none failing or
+    timing out. The 1,814 restore cases on the Rust adapter (912
+    unsupported, 561 needing private data, 276 `failed` by the reader's
+    validator, 59 evaluating, 6 timing out): `bfuse_complex/L3` and
+    `bopcommon_complex/K5` evaluate again, `bcut_complex/P9`,
+    `bopfuse_complex/K4` (a piece thinner than the resolution),
+    `bugs/modalg_1/bug14777` (a tangency between the inputs) and
+    `bugs/moddata_1/bug160_1` to `_6` (stopping at `explode result f`) take
+    their earlier reasons, `bfuse_complex/C4` and `C5` keep the edge rule's
+    (as its fix's note found, both faces leaving the plane);
+    `bugs/modalg_1/buc60532` and `_1` time out at their restores before any
+    Boolean (unsupported in 105 to 118 s at the last survey's load, timing
+    out at the one before), `_2` and `bugs/modalg_6/bug23585` end
+    unsupported in 116 and 109 s, and `buc60531_1`, `_2`,
+    `bugs/modalg_5/bug23849_1` and `_3` time out at their first restores as
+    before. The 171 the import reaches on native DRAW too: native every
+    status and reason as before (147 evaluating, 24 unsupported); 59
+    evaluate on both backends, 76 are refused by S9's rules, 31 are bodies
+    none of the kernel's constructions, 3 spline bodies and 2 arguments of
+    several solids, as in S9e.4b.4c.2a's trial. Where the step is reached:
+    an instrumented build of `69c2c27f` (not committed: a line written the
+    first time a case takes each path of `imported_piece`'s attempts,
+    `tree_piece`'s count of Booleans and `pocket`'s depths, its convex and
+    nested pockets and its two refusals) over the 1,802 and the 171, its
+    statuses and reasons the survey's: 41 restore cases import a body of
+    one curved face and plane faces (none of the self-contained cases), 39
+    of them as a form before any tree; 2 try a tree:
+    `bcut_complex/I6` refused before its regions (a curved face tangent to
+    its plane faces) and `bugs/modalg_1/buc60926`, whose tree has one
+    pocket of depth 1 with no pockets of its own and one Boolean (refused
+    as a plane through a cone's apex, its second choice no match, as
+    before). No case holds a pocket within a pocket, a tree of more than
+    four Booleans (the limit before the step) or a pocket the new rules
+    refuse, so the step cannot move a case. Controls on the instrumented
+    worker took the new paths: the evidence's well (`deep_well.brep`) cut
+    and fused with its rod imports as a tree three deep (pockets nested at
+    depths 1 and 2, a convex one at 3, three Booleans), the post
+    (`deep_post.brep`) and S9e.4b.3c.3b's tooth (`form_tooth.brep`) as
+    trees two deep (two Booleans), each evaluating, and the U scoop
+    (`form_u_scoop.brep`) imports with one convex pocket as before. No case fails,
+    crashes or panics on either backend. The volume audit (both backends,
+    the 1,046 audited before): both backends' values those of the audit
+    before the last (`ef5d66fd`) bit for bit on all 1,046 (against the last
+    audit, the 1,036 it evaluated bit for bit and the ten registered cases
+    with values again; no moved value, the largest relative move 0),
+    native statuses the same, the same 35 disagreements. No case newly
+    evaluates, so none is registered (1,132 cases), and the ledger does not
+    change (`--ledger` holds). A full contract run of the manifest with the
+    dataset (both backends, 30 seconds a case, an absolute output
+    directory) holds for every case, the ten among them; the slowest
+    Boolean case 5.0 s (`boptuc_simple/ZK8`), the restore cases 0.1 to
+    5.3 s (`bcommon_complex/B9`), E5 1.9 s, G9 and `bug417` 2.0 s, the
+    rollex 0.7 to 0.8. No kernel change.
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces
