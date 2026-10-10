@@ -643,21 +643,13 @@ over `s9c2-kernel` at `f9e54f0d`).
    cylinder or cone face, an edge's line, conic, circle or other curve
    against a plane, cylinder or cone face, other curves (meetings of two
    curved faces, cone, torus and spline curves) near a sphere, and the
-   shallow crossing's hours in the validator's integrals). Open, first:
-   (0) the edge rule refuses ten registered DRAW cases that evaluated
-   with every audited value agreeing with native DRAW's (the survey at
-   `f9e54f0d`, branch `s9-draw-14`; the contract run fails for them):
-   `bop*_simple/U1` and `Y5` (a cylinder and a box turned 30 degrees, one
-   of its faces on the cylinder's tangent plane), `bfuse_complex/L3` and
-   `bopcommon_complex/K5`, and 77 cases refused before by other rules. In
-   each a cylinder's cap circle lies within rounding (`1e-16` to `5e-14`)
-   of the other face's surface where the cylinder's wall runs along it
-   (`leaves_away`'s sign zero counting as leaving): a tangency along a
-   ruling that the faces' own rules decided before. A scratch build
-   taking sign zero as no contact restored all ten bit for bit and kept
-   the near-miss tests passing, unchecked further; reproducer `pcylinder c
-   1 2; box b -0.5 -2 0 1 1 2; trotate b 0 0 0 0 0 1 30; bcut result c b`
-   (evaluated at `47e086c5`). (a) a
+   shallow crossing's hours in the validator's integrals). The survey at `f9e54f0d` (branch `s9-draw-14`) found the edge rule
+   refusing ten registered DRAW cases (`bop*_simple/U1` and `Y5`,
+   `bfuse_complex/L3`, `bopcommon_complex/K5`: a cylinder's wall running
+   along the other face's surface from its cap circle); fixed on branch
+   `fix-edge-rule-zero` (a face along the surface within the parallel band
+   no contact), the ten evaluating again bit for bit and the full contract
+   run holding. Open: (a) a
    vertex within the resolution of a plane, cylinder or cone face (only a
    sphere's has a rule): a cube's corner `1e-12` to `1e-9` off a rod's
    wall in a level frame is fused with it into two solids; a rule needs

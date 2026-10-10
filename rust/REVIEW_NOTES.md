@@ -12979,6 +12979,9 @@ Decisions for S9, recorded before its code (2026-09-28):
   the slowest Boolean case 3.8 s (`bopfuse_simple/ZK8`, on a host at load
   3 to 21), the restore cases 0.1 to 3.1 s (`bcommon_complex/B9`), E5, G9
   and `bug417` 1.2 s each, the rollex 0.5 to 0.6. No kernel change.
+  Fixed since on branch `fix-edge-rule-zero` ("A face running along the
+  surface is no near miss"): the ten registered cases evaluate again bit
+  for bit as audited and the full contract run holds.
 
 * **The edge rule's faces along the surface (amending the note above,
   found by the DRAW survey at `f9e54f0d`), done (2026-10-10).** The edge
