@@ -54,7 +54,9 @@ then for the DRAW survey of the edge and vertex near miss (branch
 `s9-draw-13`, over `s9c2-kernel` at `ef5d66fd`),
 then for the DRAW survey of the curved near misses (branch `s9-draw-14`,
 over `s9c2-kernel` at `f9e54f0d`),
-then for S9e.4b.4c.2a (branch `s9e4b4c2`, over `s9c2-kernel` at `37732abc`).
+then for S9e.4b.4c.2a (branch `s9e4b4c2`, over `s9c2-kernel` at `37732abc`),
+then for the DRAW survey of the deeper trees (branch `s9-draw-15`, over
+`rust-kernel` at `69c2c27f`).
 
 ## Where things stand
 
@@ -71,13 +73,12 @@ then for S9e.4b.4c.2a (branch `s9e4b4c2`, over `s9c2-kernel` at `37732abc`).
   arcs, and one solid of a result of several (S9e.2, `curved/matched.rs`),
   results of spheres, cones and tori, deeper chains and given results
   against spheres, cones and tori (S9e.3a, `curved/chain.rs`), each with its
-  DRAW survey (the last full survey, that of the curved near misses at
-  `f9e54f0d`, branch `s9-draw-14`: the Boolean group's 987 cases and 59
-  restore cases registered, ten of them, `U1` and `Y5` of the four
-  `bop*_simple` grids, `bfuse_complex/L3` and `bopcommon_complex/K5`, now
-  refused by the edge rule and failing the contract run (item 5), the
-  others none failing, both backends' audited values those of
-  `ef5d66fd`'s bit for bit) and a clean campaign (S9e.3a's and S9f.1's at `b2765f20`, 989
+  DRAW survey (the last full survey, that of the deeper trees at
+  `69c2c27f`, branch `s9-draw-15`: the Boolean group's 987 cases and 59
+  restore cases registered, none failing, no case moving against
+  `ef5d66fd`'s survey, the ten the edge rule refused at `f9e54f0d`
+  evaluating again, both backends' audited values `ef5d66fd`'s bit for
+  bit) and a clean campaign (S9e.3a's and S9f.1's at `b2765f20`, 989
   runs).
 - **S9f.1 done.** Spline prisms against polyhedral prisms in any position
   (`curved/spline_walls.rs`), with its survey and campaign as above.
@@ -506,8 +507,10 @@ then for S9e.4b.4c.2a (branch `s9e4b4c2`, over `s9c2-kernel` at `37732abc`).
   the import reaches: no case moves. Open: a tree's planes along a turned
   primitive's axis, within rounding of it under a correctly rounded `hypot`
   (S9's refusal; the evidence's bodies stand on frames turned about the
-  world's `z`). Pending its capture's Linux record, its DRAW survey and its
-  campaigns.
+  world's `z`). Its DRAW survey (branch `s9-draw-15` at `69c2c27f`): no
+  case moving, none holding a pocket within a pocket (2 restore cases trying
+  a tree, neither nested), nothing registered. Pending its capture's Linux
+  record and its campaigns.
 - **CI.** Both workflows ("Rust kernel", "Rust geometry fuzzing") were green
   at `6c221525`. They had been red from S7 until 2026-09-29, unnoticed;
   check them after every push (see "Working rules").
@@ -572,7 +575,9 @@ then for S9e.4b.4c.2a (branch `s9e4b4c2`, over `s9c2-kernel` at `37732abc`).
    (branch `s9-draw-13`: no case moving, none within the resolution of an
    edge or vertex, nothing registered), that of the curved near misses at
    `f9e54f0d` (branch `s9-draw-14`: ten registered cases refused by the
-   edge rule, item 5; nothing registered).
+   edge rule, item 5; nothing registered), that of the deeper trees at
+   `69c2c27f` (branch `s9-draw-15`: the ten evaluating again, no other case
+   moving, none reaching a pocket within a pocket, nothing registered).
 3. **S9e.4b**, split in "S9e.4b refined": S9e.4b.1 (arcs rounded off
    their circles) and S9e.4b.2 (polyhedra other than prisms, on their
    stored vertices) are implemented with their DRAW surveys and
@@ -649,8 +654,10 @@ then for S9e.4b.4c.2a (branch `s9e4b4c2`, over `s9c2-kernel` at `37732abc`).
    record); **S9e.4b.4c.2**, split in "S9e.4b.4c.2 refined":
    **S9e.4b.4c.2a** (a pocket's own pockets in one curved face's trees:
    S9e.4b.3c.3b's tooth, a post or a U island in a pocket, three deep at
-   most; no DRAW case moving in its trial) is implemented (pending its
-   capture's Linux record, its DRAW survey and its campaigns); next
+   most; no DRAW case moving in its trial) is implemented with its DRAW
+   survey (`s9-draw-15` at `69c2c27f`: no case moving, none reaching a
+   pocket within a pocket, nothing registered; pending its capture's Linux
+   record and its campaigns); next
    **S9e.4b.4c.2b** (nested chains of several primitives and chains no model
    matches, after S9e.4b.4b.2b.2) and **S9e.4b.4d**
    (turned bodies of smooth joins and nearly degenerate surfaces,
@@ -679,7 +686,8 @@ then for S9e.4b.4c.2a (branch `s9e4b4c2`, over `s9c2-kernel` at `37732abc`).
    along the other face's surface from its cap circle); fixed on branch
    `fix-edge-rule-zero` (a face along the surface within the parallel band
    no contact), the ten evaluating again bit for bit and the full contract
-   run holding. (a) A vertex within the resolution of a plane, cylinder or
+   run holding (confirmed by the survey at `69c2c27f`, branch
+   `s9-draw-15`). (a) A vertex within the resolution of a plane, cylinder or
    cone face is closed on branch `fix-vertex-near-miss` (REVIEW_NOTES.md's
    "A vertex within the resolution of a face"): refused where its input's
    boundary leaves it strictly on one side of the surface (its edges'
