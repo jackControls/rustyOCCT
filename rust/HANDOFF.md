@@ -677,12 +677,20 @@ then for S9e.4b.4c.2a (branch `s9e4b4c2`, over `s9c2-kernel` at `37732abc`).
    along the other face's surface from its cap circle); fixed on branch
    `fix-edge-rule-zero` (a face along the surface within the parallel band
    no contact), the ten evaluating again bit for bit and the full contract
-   run holding. Open: (a) a
-   vertex within the resolution of a plane, cylinder or cone face (only a
-   sphere's has a rule): a cube's corner `1e-12` to `1e-9` off a rod's
-   wall in a level frame is fused with it into two solids; a rule needs
-   the vertex's tangent cone (its edges' and, where a curved face's
-   sector is reflex, its faces' directions) against the surface. (b) An
+   run holding. (a) A vertex within the resolution of a plane, cylinder or
+   cone face is closed on branch `fix-vertex-near-miss` (REVIEW_NOTES.md's
+   "A vertex within the resolution of a face"): refused where its input's
+   boundary leaves it strictly on one side of the surface (its edges'
+   directions and its faces' convex sectors against the gradient exactly,
+   none within the `10^-12` band), crossing it or missing it with the gap
+   outside either input, in the curved engine and the polyhedral one (two
+   boxes, one's corner `1e-12` off the other's face); its DRAW trial moves
+   no registered case (4 restore cases refused before as a piece thinner
+   than the resolution take its reason). Open beside it: a vertex or an
+   edge within the resolution of the other's edge or vertex (a foot just
+   outside the face; skew edges), a cone's apex (no tangent cone of
+   edges), and an edge's extremum at its own vertex (a closed edge's
+   vertex where its curve is nearest). (b) An
    edge one of whose faces heads toward the other's surface at its near
    point is no contact and evaluates as before (S9f.2b.2's
    `lens_tilt_loop`, a rim on a plane but for rounding with its wall
