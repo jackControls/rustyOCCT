@@ -51,7 +51,8 @@ then for the DRAW survey of S9e.4b.4c.1, the near miss of a sphere and
 the user's crossing cylinders (branch `s9-draw-12`, over `s9c2-kernel` at
 `44204e18`),
 then for the DRAW survey of the edge and vertex near miss (branch
-`s9-draw-13`, over `s9c2-kernel` at `ef5d66fd`).
+`s9-draw-13`, over `s9c2-kernel` at `ef5d66fd`),
+then for S9e.4b.4c.2a (branch `s9e4b4c2`, over `s9c2-kernel` at `37732abc`).
 
 ## Where things stand
 
@@ -478,7 +479,29 @@ then for the DRAW survey of the edge and vertex near miss (branch
   reaches: no case moves (59 evaluating on both backends, `bfuse_complex/K1` a tangency between the inputs and `bugs/modalg_6/bug28773` axes within rounding of parallel as before, none reaching an imported polyhedron against curved faces or a cavity; native DRAW's statuses as before). Its DRAW survey (with the near
   miss's and the crossing cylinders', branch `s9-draw-12` at `44204e18`):
   no case moving, none reaching an imported polyhedron's triangles or a
-  cavity, nothing registered. Pending its capture's Linux record and its
+  cavity, nothing registered. Campaigns clean at `0d94a92a`; pending its
+  capture's Linux record.
+- **S9e.4b.4c.2a implemented** (branch `s9e4b4c2`): a pocket within a pocket
+  of a body of one curved face and plane faces (S9e.4b.3c.3b's tree): within
+  a pocket, its hull the planes of its faces that leave every boundary point
+  of its faces on its material's side, its other faces' components its own
+  pockets turned over again (`solid/imported.rs`'s `pocket`), nested at most
+  three deep in at most eight Booleans, the match the arbiter; a deeper tree
+  refused with a text naming the limit. Decisions ("S9e.4b.4c.2 refined",
+  with the split S9e.4b.4c.2a and S9e.4b.4c.2b: nested chains of several
+  primitives, after S9e.4b.4b.2b.2), 21 cases on S9e.4b.3c.3b's tooth and two
+  bodies OCCT wrote, a post in a pocket and a U island whose notch is a pocket
+  again (`generate_deep_trees_boolean_fixtures.py`, the chained reference
+  with each body's closed form) captured before the kernel (20 matching, 1
+  reviewed), the kernel within the reference on all 18 solid cases, the
+  touching ball refused; S9e.4b.3c.3b's `tooth_rod` solid. The fuzz target's
+  `NESTED` stage (the kernel's own cylinder less a square with a square or a
+  U-shaped hole, imported and the kernel's own, each cut by the turned box):
+  325 inputs reach it, 237 evaluating alike. A trial of the 171 restore cases
+  the import reaches: no case moves. Open: a tree's planes along a turned
+  primitive's axis, within rounding of it under a correctly rounded `hypot`
+  (S9's refusal; the evidence's bodies stand on frames turned about the
+  world's `z`). Pending its capture's Linux record, its DRAW survey and its
   campaigns.
 - **CI.** Both workflows ("Rust kernel", "Rust geometry fuzzing") were green
   at `6c221525`. They had been red from S7 until 2026-09-29, unnoticed;
@@ -503,14 +526,14 @@ then for the DRAW survey of the edge and vertex near miss (branch
    `occt-boolean-spline-crossing-preimplementation` and of the
    spline-sphere, spline-cone, imported-polyhedra, imported-arcs,
    imported-pieces, split-pieces, one-sphere, one-sphere-incidence,
-   piece-forms, piece-trees, primitive-chains, prism-leaves, plane-parts and
-   polyhedra-curved captures (with imported-joints'), and in fact of every Boolean capture
+   piece-forms, piece-trees, primitive-chains, prism-leaves, plane-parts,
+   polyhedra-curved and deep-trees captures (with imported-joints'), and in fact of every Boolean capture
    but S9a.1's two prisms (`occt-boolean-preimplementation`): CI runs
    only `compare_boolean.py`'s default set, so its
    `source-pinned-brep-results` artifact holds no other set's
    `native-observed.txt` (checked at `d1869f2f`, runs 37438561216 and
    37454728856, and at `64673ebd`, run 37415799498), and none of the
-   other 39 captures (S9e.4b.4c.1's among them) has ever had a
+   other 40 captures (S9e.4b.4c.1's and S9e.4b.4c.2a's among them) has ever had a
    `platform-linux/` record. They stay
    pending until the B-rep job also runs those comparisons (each set's
    compare script on the job's pinned SDK, its output directory added to
@@ -615,9 +638,14 @@ then for the DRAW survey of the edge and vertex near miss (branch
    **S9e.4b.4c**, split in "S9e.4b.4c refined": **S9e.4b.4c.1** (an imported
    polyhedron against curved faces or with a cavity) is implemented with its
    DRAW survey (`s9-draw-12` at `44204e18`: no case moving, nothing
-   registered; pending its capture's Linux record and its campaigns); next
-   **S9e.4b.4c.2** (deeper trees, a pocket within a pocket: S9e.4b.3c.3b's
-   tooth, chains no model matches) and **S9e.4b.4d**
+   registered; campaigns clean at `0d94a92a`, pending its capture's Linux
+   record); **S9e.4b.4c.2**, split in "S9e.4b.4c.2 refined":
+   **S9e.4b.4c.2a** (a pocket's own pockets in one curved face's trees:
+   S9e.4b.3c.3b's tooth, a post or a U island in a pocket, three deep at
+   most; no DRAW case moving in its trial) is implemented (pending its
+   capture's Linux record, its DRAW survey and its campaigns); next
+   **S9e.4b.4c.2b** (nested chains of several primitives and chains no model
+   matches, after S9e.4b.4b.2b.2) and **S9e.4b.4d**
    (turned bodies of smooth joins and nearly degenerate surfaces,
    `bug476_1` to `_8`'s `OCC485a`: refused until a decision of their
    own). The reader's header check refuses
@@ -761,12 +789,13 @@ Each comparison takes `--occt-root target/spline-linear-preflight/pinned-sdk/ins
 | `compare_one_sphere_boolean.py` | 8 / 14 (the kernel within the reference on all 20 solid and empty cases, the 2 degenerate refused; the 3 exact incidences solid since S9e.4b.3c.2) |
 | `compare_one_sphere_incidence_boolean.py` | 42 / 3 (the kernel within the reference on all 33 solid and empty cases, the 12 degenerate refused) |
 | `compare_piece_forms_boolean.py` | 20 / 19 (the kernel within the reference on all 33 solid cases, the 6 degenerate refused) |
-| `compare_piece_trees_boolean.py` | 22 / 8 (the kernel within the reference on all 24 solid cases, the 3 degenerate refused, the tooth's 3 `unsupported`, S9e.4b.4's) |
+| `compare_piece_trees_boolean.py` | 22 / 8 (the kernel within the reference on all 27 solid cases, the 3 degenerate refused; the tooth's 3 solid since S9e.4b.4c.2a) |
 | `compare_imported_joints_boolean.py` | 36 / 3 (the kernel within the reference on all 33 solid cases, the 3 degenerate refused, the split lens's 3 `unsupported`, S9e.4b.4's) |
 | `compare_primitive_chains_boolean.py` | 14 / 10 (the kernel within the reference on all 24 solid cases; the rounded box's 3 solid since S9e.4b.4b.2a) |
 | `compare_prism_leaves_boolean.py` | 15 / 9 (the kernel within the reference on all 21 solid cases, the 3 degenerate refused) |
 | `compare_plane_parts_boolean.py` | 15 / 9 (the kernel within the reference on all 21 solid cases, the 3 degenerate refused) |
 | `compare_polyhedra_curved_boolean.py` | 18 / 16 (the kernel within the reference on all 30 solid cases, the 3 degenerate refused, the inner ball's fuse `unsupported`: a cavity among several solids) |
+| `compare_deep_trees_boolean.py` | 20 / 1 (the kernel within the reference on all 18 solid cases, the 3 degenerate refused) |
 
 Every one must report 0 failures; since S9f.1 also `compare_split.py`
 (72 / 56) and `compare_brep.py --family spline` (10 / 3), which share its

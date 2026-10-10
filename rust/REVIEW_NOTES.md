@@ -10597,6 +10597,89 @@ Decisions for S9, recorded before its code (2026-09-28):
     ball's fuse, which OCCT keeps as two solids touching at a point where the
     reference's rays count one, their totals the reference's within 1.2e-15.
     S9e.4b.4c.2a's kernel next.
+  * **S9e.4b.4c.2a implemented** (`solid/imported.rs`'s `pocket`: a
+    pocket's region at a depth of pockets, its hull the planes of its faces
+    leaving every boundary point of its faces (`boundary_points`) on its
+    material's side within the resolution, its other faces' components its
+    own pockets turned over again; `group_region` giving each pocket's
+    subtree; the limits `DEPTH` and `BOOLEANS`; `curved/pieces.rs`
+    unchanged: its `Tree::node` takes any tree), as the refined decisions
+    describe: a pocket within a pocket of a body of one curved face and plane
+    faces is its hull less its own pockets, nested at most three deep in at
+    most eight Booleans, the first tree whose model matches the stored
+    topology the body; a deeper or larger tree, or a pocket none of whose
+    faces is on its hull, `OutOfDomain("an imported plane piece other than a
+    Boolean tree of its primitive and its planes' hulls, its pockets nested
+    at most three deep (S9e.4b.4)")`. All 21 fixtures as declared (18 within
+    the kernel's enclosures, each at most `1e-9` wide; the touching ball
+    `Degenerate("a tangency between the inputs (S9c)")`), every history
+    complete over the imported bodies' stored ids, results deterministic and
+    moved rigidly, both inputs translated and turned keeping the reference's
+    volumes, every body its tree (its volume its closed form or, the tooth's,
+    the reference's, points in its material inside and in each depth's
+    pockets outside, its stored vertices on its boundary), and the kernel's
+    own bodies of nested pockets written by its writer, read back and
+    imported: a post and a U island in a square pocket of a cylinder (the
+    `boolean` fuzz target's `NESTED` bodies, on the world's axes and turned
+    about its `z`) and of a frustum, their Booleans with a turned box the
+    kernel's own results' (all 15 evaluating), and a U island whose notch
+    holds a tongue (four deep) refused with the new text
+    (`tests/deep_tree_booleans.rs`, 5.1 to 9.5 s in release on a host at
+    load 6 to 19, 5.9 s at `opt-level` 2 with debug assertions, 7.2 s in release
+    with debug assertions and overflow checks under the emulated correctly
+    rounded `hypot`, where the piece trees', piece forms', plane parts',
+    prism leaves', primitive chains' and polyhedra against curved faces'
+    test files pass too). S9e.4b.3c.3b's `tooth_rod`, declared `unsupported`
+    until now, is solid within its reference
+    (`generate_piece_trees_boolean_fixtures.py` declares it so, its margins
+    checked with the others': its fixtures written again in 23 minutes on
+    four workers at load 12 to 31, only the tooth's rows changing; `tests/piece_tree_booleans.rs`'s tooth imports, its volume its
+    rod's cut and common's). `compare_deep_trees_boolean.py` 20 matches and
+    1 reviewed (the captured one; the kernel's entity counts OCCT's), the
+    kernel within the reference on all 18 solid cases, the 3 degenerate
+    refused; `compare_piece_trees_boolean.py` 22 and 8, the kernel within
+    the reference on all 27 solid cases (the tooth's 3 now among them, their
+    entity counts OCCT's); every other comparison of `HANDOFF.md`'s table
+    unchanged with 0 failures (and `compare_split.py` 72/56,
+    `compare_brep.py --family spline` 10/3); the release suite (680
+    tests) and the tools' unit tests (378) passing, the ledger unchanged.
+    Amendments, from the implementation: (a) on a frame turned off the
+    world's `z` (the fuzz target's tilted one), a post's walls along its
+    cylinder's axis are exact on macOS's `hypot` but within rounding of the
+    axis under a correctly rounded one, where its import is S9's
+    `Degenerate("a plane within rounding of a cylinder's direction")`: the
+    kernel's tests take frames turned about the world's `z`, and the fuzz
+    stage's import refused there is skipped (evidence (a)'s open item); (b)
+    the U-shaped hole of the fuzz stage is chosen by `MESHES`'s bit (the bit
+    before the stage's own; the chained byte has none after it). The
+    `boolean` fuzz target's `NESTED` stage (the chained byte's bit 96, the
+    U by bit 48): replayed (an instrumented build, not committed), 325 of the
+    corpus's 1,476 inputs and regressions reach it (98 posts, 227 U
+    islands), every body built and imported, 237 evaluating both ways with
+    one volume, 14 refused alike (13 a tangency between the inputs, 1 a
+    thin result), 72 where the kernel's own body is refused by S9's rounding
+    rules (a plane within rounding of a cylinder's direction, two cylinders'
+    axes within rounding of parallel: the turned partner's frame against the
+    tilted cylinder's), its import evaluating in 68 and refused as a piece
+    thinner than the resolution in 4, and 2 the other way (S9d.1's near miss
+    of the ball partner); no other import moves (2,066 imported,
+    the 473 refused all spline faces or edges, S9f's). Replays with debug
+    assertions, one process an input, natively and under the emulated
+    correctly rounded `hypot` (with overflow checks): the boolean corpus and
+    its regressions (1,476 inputs) and the split corpus and its regressions
+    (3,571), no failure, the slowest 9.5 s and 2.6 s natively on a host at
+    load 15 to 18 (9.8 s and 83 s emulated, the emulation's `hypot` exact by
+    big rationals). A trial of the 171 DRAW restore cases the import
+    reaches (2,139 cases restoring a shape and giving a Boolean, the public
+    dataset, 120 seconds a case, four at once, on the Rust adapter, and the
+    171 natively; not the survey: nothing registered): no case moves, 59
+    evaluating on both backends, 76 refused by S9's rules, 31 bodies none of
+    the kernel's constructions, 3 spline bodies and 2 arguments of several
+    solids, none refused as a tree or a chain; native DRAW's statuses as
+    before (147 evaluating, 24 unsupported). Open: S9e.4b.4c.2b (nested
+    chains of several primitives, after S9e.4b.4b.2b.2); a tree's planes
+    along a turned primitive's axis within rounding of it (evidence (a)).
+    Pending: its capture's Linux record and its campaigns.
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces
