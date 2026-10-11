@@ -100,7 +100,12 @@
 //! heights standing out of its walls (two parts flush with them) or less a
 //! disc with a round hole within its heights across its end (a pocket open
 //! sideways round a post), and its import, each cut by the chained stage's
-//! partner, the same volume (`FLUSH`).
+//! partner, the same volume (`FLUSH`). S9e.4b.4b.2b.2b.3a: by the input's
+//! 20th byte, the kernel's own box fused with a stadium standing on its top
+//! across its corner (two leaves touching along their caps) or a square with
+//! a round hole under a stadium with a round hole hiding its top, and its
+//! import, each cut by the chained stage's partner, the same volume
+//! (`STACKS`).
 use crate::analytic_intersections::Bytes;
 use crate::split::{profile, spline_profile};
 use rusty_occt::identity::OperationId;
@@ -235,6 +240,15 @@ const RIMS: bool = true;
 /// cut by the chained stage's partner, by the input's 19th byte (at or above
 /// 128: earlier inputs decode as before). On.
 const FLUSH: bool = true;
+
+/// Whether the kernel's own box on the object's frame fused with a stadium
+/// standing on its top across its corner (two leaves touching along their
+/// caps) or, by the byte's bit 6, a square with a round hole under a stadium
+/// with a round hole hiding its top (a prism of one cap under a leaf),
+/// written, read back and imported (S9e.4b.4b.2b.2b.3a), and the kernel's
+/// body are each cut by the chained stage's partner, by the input's 20th
+/// byte (at or above 128: earlier inputs decode as before). On.
+const STACKS: bool = true;
 
 /// Whether a spline prism meets a line prism in frames with different
 /// axes (S9f.1's spline walls in the curved engine: creases, generatrices
@@ -985,6 +999,31 @@ pub fn check_boolean(data: &[u8]) {
                 }
             }
         }
+        // S9e.4b.4b.2b.2b.3a: by the input's 20th byte (read there, so earlier
+        // inputs decode as before), the kernel's own stack of two prisms whose
+        // caps touch: a box with a stadium standing on its top across its
+        // corner or, by its bit 6, a holed square under a holed stadium hiding
+        // its top (`stacks_body`), written, read back and imported, each cut
+        // by the chained stage's partner: where both evaluate, the same volume
+        // (`STACKS`).
+        let stacks = data.get(19).copied().filter(|k| *k >= 128);
+        if let (true, true, Some(k)) = (IMPORTED, STACKS, stacks) {
+            if let Some(body) = stacks_body(fa, s1, h, k >= 192, tolerance) {
+                if let Some(again) = reimported(&body) {
+                    if let (Some(x), Some(y)) = (
+                        run(body.cut(OperationId(43), &box_)),
+                        run(again.cut(OperationId(44), &box_)),
+                    ) {
+                        assert!(
+                            near(volume(&x), volume(&y)),
+                            "imported stacks {} for {}",
+                            volume(&y),
+                            volume(&x)
+                        );
+                    }
+                }
+            }
+        }
     }
     // S9e.4a: the object written by the kernel's writer, read back and
     // imported (`IMPORTED`), given the chosen operation with the same tool:
@@ -1313,6 +1352,102 @@ fn flush_body(frame: Frame3, s: f64, h: f64, void: bool, tolerance: Tolerance) -
         )?;
         plate.fuse(OperationId(38), &part).ok()?
     };
+    let [body] = <[Solid; 1]>::try_from(out).ok()?;
+    Some(body)
+}
+
+/// The kernel's own stacks of S9e.4b.4b.2b.2b.3a on the frame turned about
+/// `frame`'s axis (its `x` along `8 x + 15 y`: on the world's axes two walls
+/// of the leaves cross on the shared plane at a point where their faces'
+/// boxes only touch, which S9's plane rule takes for two faces within the
+/// resolution of one plane) (`k = s / 8`, dyadic, every crossing of the two
+/// outlines rational, no wall on another's circle's tangent): the box `[-3k, 3k] x [-2k, 2k]` over `[0, h]` fused
+/// with the stadium of half discs of radius `5k / 4` about `(k, k)` and `(5k,
+/// k)` over `[h, 2h]` (standing on its top across its corner, both caps
+/// partly exposed); or, where `cover`, the square `[-2k, 2k]^2` with a hole
+/// of radius `k` about the origin over `[0, h]` fused with the stadium of half
+/// discs of radius `3k` about `(0, 0)` and `(3k, 0)` with a hole of radius `k
+/// / 2` about `(k / 4, k / 4)` over `[h, 2h]` (hiding the square's top, its
+/// own hole opening into the square's).
+fn stacks_body(frame: Frame3, s: f64, h: f64, cover: bool, tolerance: Tolerance) -> Option<Solid> {
+    let k = s / 8.0;
+    let stadium = |cx: f64, cy: f64, length: f64, r: f64| {
+        let arc = |x: f64| Segment::Arc {
+            center: Point2::new(x, cy),
+            radius: r,
+            ccw: true,
+        };
+        Boundary::path(
+            vec![
+                Point2::new(cx, cy - r),
+                Point2::new(cx + length, cy - r),
+                Point2::new(cx + length, cy + r),
+                Point2::new(cx, cy + r),
+            ],
+            vec![Segment::Line, arc(cx + length), Segment::Line, arc(cx)],
+            tolerance,
+        )
+    };
+    let square = |x0: f64, y0: f64, x1: f64, y1: f64| {
+        Boundary::polygon(
+            vec![
+                Point2::new(x0, y0),
+                Point2::new(x1, y0),
+                Point2::new(x1, y1),
+                Point2::new(x0, y1),
+            ],
+            tolerance,
+        )
+    };
+    let on = Frame3::new(
+        frame.origin(),
+        frame.normal(),
+        frame.x() * 8.0 + frame.y() * 15.0,
+        tolerance,
+    )
+    .ok()?;
+    let prism = |outer: Boundary, holes: Vec<Boundary>, h0: f64, h1: f64, op: u64| {
+        let profile = Profile::new(outer, holes, tolerance).ok()?;
+        Solid::extrude_with(OperationId(op), profile, on, h0, h1)
+            .ok()
+            .map(|(s, _)| s)
+    };
+    let (lower, upper) = if cover {
+        let hole = Boundary::circle(Point2::new(0.0, 0.0), k, tolerance).ok()?;
+        let lower = prism(
+            square(-2.0 * k, -2.0 * k, 2.0 * k, 2.0 * k).ok()?,
+            vec![hole],
+            0.0,
+            h,
+            41,
+        )?;
+        let hole = Boundary::circle(Point2::new(0.25 * k, 0.25 * k), 0.5 * k, tolerance).ok()?;
+        let upper = prism(
+            stadium(0.0, 0.0, 3.0 * k, 3.0 * k).ok()?,
+            vec![hole],
+            h,
+            2.0 * h,
+            42,
+        )?;
+        (lower, upper)
+    } else {
+        let lower = prism(
+            square(-3.0 * k, -2.0 * k, 3.0 * k, 2.0 * k).ok()?,
+            vec![],
+            0.0,
+            h,
+            41,
+        )?;
+        let upper = prism(
+            stadium(k, k, 4.0 * k, 1.25 * k).ok()?,
+            vec![],
+            h,
+            2.0 * h,
+            42,
+        )?;
+        (lower, upper)
+    };
+    let (out, _) = lower.fuse(OperationId(43), &upper).ok()?;
     let [body] = <[Solid; 1]>::try_from(out).ok()?;
     Some(body)
 }
