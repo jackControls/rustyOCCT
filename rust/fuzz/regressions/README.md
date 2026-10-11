@@ -1730,3 +1730,38 @@ changes outcome (`01782c8e` reaches a pair and evaluates as before). It
 replays in 1.4 s with debug assertions, and its 4,335 single-byte
 mutations replay without a failure (the slowest 8.4 s, on a host at load
 20 to 26).
+
+## Boolean: a covered stack's import and the near-miss rules' binary64 work
+
+`boolean/timeout-d737f94ddbc216241e261b074a85b87351eddb7e.bin` (30 bytes)
+was saved by the 600-second campaign of the boolean target at `f0bebb1c`
+as a timeout. In the tilted frame (`s = 2.75`, `h = 1`) its bytes 16 to 19
+(each `0xf2`) switch on `LEAVES`, `RIMS`, `FLUSH` and `STACKS`: the well,
+the pocket open sideways and the covered stack are built, written, read
+back, imported and cut by the turned box (the pocket's body is not built
+in that frame). Alone under AddressSanitizer with the campaign's options
+(a 64 MB quarantine, five-frame stacks) it ran in 52 s at 317 MB, within
+the 60 s limit only on a quiet host; with the sanitizer's defaults it
+stopped at libFuzzer's 2,048 MB after 51 s with 27 MB live and 196 MB
+quarantined, the rest the allocator's and the 30-frame stack depot's: no
+leak. In release it took 79.5 G instructions and 18 MB: 22.6 G at
+`5b6a9220`, `16841446` and `663bb9b8`, 30.4 G at `32559655` (the edge and
+vertex near-miss rules) and 79.5 G at `f0bebb1c`, most of the `STACKS`
+stage's 49 G its covered stack's import: 51 chains tried, 7 built and
+checked as models, 2 of them repeats (the stadium's prism read through
+either face on the touching caps' plane), the stack's chain matching last.
+About half of every arrangement's time was the near-miss rules, most of
+it binary64 work done exactly or again: a conic's exact data rounded at
+each of a few hundred sample points, and exact extrema and closest points
+placed along their edges before their gaps were told. The import now
+builds each chain's model once, and those rules round a curve's data once
+and pass over extrema and lines binary64 puts beyond the resolution
+before any exact work (REVIEW_NOTES.md, "The boolean target's covered
+stack, a timeout at `f0bebb1c`"; `imported.rs`'s
+`a_stacks_chains_are_each_built_once`, `near.rs`'s
+`points_clearly_off_lie_beyond_the_resolution` and
+`lines_apart_beyond_twice_the_resolution`). No Boolean of the corpus
+changes outcome. The input takes 46.6 G in release (22 corpus inputs take
+more) and 798 G under AddressSanitizer against 1,350 G: side by side
+with `f0bebb1c`'s build on a host at load 13 to 15, 75 s against 125 s
+at 306 MB, about 31 s in proportion where it took 52 s.
