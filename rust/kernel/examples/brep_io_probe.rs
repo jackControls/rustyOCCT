@@ -4,7 +4,9 @@
 //! as `OUT/NAME.brep` and prints `NAME V E W F SH SO volume area cx cy cz`:
 //! synthesized counts and the kernel's exact mass properties.
 //! `corpus OUT` reads `.brep` paths on stdin, writes every solid it imports
-//! as `OUT/FILE-RECORD.brep` and prints `FILE RECORD V E W F SH SO`.
+//! as `OUT/FILE-RECORD.brep` and prints `FILE RECORD V E W F SH SO`; a row
+//! ending `unwritable` (here and in `free`) is a shape the writer cannot
+//! express, not written.
 //! `free OUT` (S6) reads `.brep` paths on stdin, writes every free shape it
 //! imports as `OUT/FILE-free-RECORD.brep` and prints `FILE RECORD KIND V E W
 //! F SH SO` and the certified area or length and centre (`lo hi` each) or
@@ -81,10 +83,18 @@ fn main() {
                     let Ok(topology) = &solid.result else {
                         continue;
                     };
-                    let text = write(topology, solid.tolerance.linear()).unwrap();
-                    let file = format!("{name}-{}.brep", solid.record);
-                    std::fs::write(out.join(file), text).unwrap();
-                    println!("{name} {} {}", solid.record, counts(topology.occt_counts()));
+                    // A shape the writer cannot express is listed, marked
+                    // and not written.
+                    let written = write(topology, solid.tolerance.linear()).map(|text| {
+                        let file = format!("{name}-{}.brep", solid.record);
+                        std::fs::write(out.join(file), text).unwrap();
+                    });
+                    println!(
+                        "{name} {} {}{}",
+                        solid.record,
+                        counts(topology.occt_counts()),
+                        if written.is_ok() { "" } else { " unwritable" }
+                    );
                 }
             }
         }
@@ -105,14 +115,16 @@ fn main() {
                         Kind::Edge => "Ed",
                         _ => "Ve",
                     };
-                    let text = write(topology, shape.tolerance.linear()).unwrap();
-                    let file = format!("{name}-free-{}.brep", shape.record);
-                    std::fs::write(out.join(file), text).unwrap();
+                    let written = write(topology, shape.tolerance.linear()).map(|text| {
+                        let file = format!("{name}-free-{}.brep", shape.record);
+                        std::fs::write(out.join(file), text).unwrap();
+                    });
                     println!(
-                        "{name} {} {kind} {} {}",
+                        "{name} {} {kind} {} {}{}",
                         shape.record,
                         counts(topology.occt_counts()),
-                        measure(topology)
+                        measure(topology),
+                        if written.is_ok() { "" } else { " unwritable" }
                     );
                 }
             }

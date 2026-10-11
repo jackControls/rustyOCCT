@@ -35,7 +35,14 @@ reviewed.
 The public dataset's version-3 texts (`CASCADE Topology V3, (c) Open
 Cascade`, HANDOFF's item 3) were read natively by both probes, unchanged,
 while the reader still refused their header (rust/fixtures/occt-brep-v3-capture,
-`--capture-v3 --v3-dataset DIR`); the dataset is local-only (U1).
+`--capture-v3 --v3-dataset DIR`); the dataset is local-only (U1). With
+`--v3-dataset DIR` they are compared too (`v3_*` in the report): the native
+reading as captured, the independent reader's counts native's, every file
+read by the kernel, every solid and free shape it imports with native's
+counts and a free shape's certified measure enclosing native's, and each
+written text read natively as one valid shape of the original's counts and
+properties. A shape the kernel imports but cannot measure or write is
+listed (`v3_not_measured`, `v3_unwritable`).
 """
 import argparse
 from fractions import Fraction
@@ -325,6 +332,126 @@ def v3_capture():
     if list(solids) != names or list(free) != names or list(metadata['rust_refusals']) != names:
         raise ValueError('version-3 capture does not cover its inputs in order')
     return solids, free, metadata
+
+
+def compare_v3(dataset, output, solid_probe, free_probe, report):
+    """The dataset's version-3 texts (HANDOFF's item 3): the native reading
+    as captured, the independent reader's counts native's, every file read
+    by the kernel, every solid and free shape it imports with native's
+    counts (a free shape's certified measure enclosing native's), and its
+    written text read natively valid with the same counts and properties."""
+    captured_solids, captured_free, metadata = v3_capture()
+    paths = v3_files(dataset)
+    if [str(p.relative_to(dataset)) for p in paths] != list(metadata['inputs_sha256']):
+        raise SystemExit('the version-3 texts differ from the captured ones')
+    for p in paths:
+        if digest(p) != metadata['inputs_sha256'][str(p.relative_to(dataset))]:
+            raise SystemExit('version-3 text changed: '+str(p.relative_to(dataset)))
+    records = [run(solid_probe[0], '\n'.join(map(str, paths)), solid_probe[1]),
+               run(free_probe[0], '\n'.join(map(str, paths)), free_probe[1])]
+    if any(r['exit_code'] != 0 for r in records):
+        raise SystemExit('native version-3 run failed: '+json.dumps(records)[:2000])
+    solids = {Path(k).name: v for k, v in parse(records[0]['stdout'], paths).items()}
+    free = {Path(k).name: v for k, v in parse_free(records[1]['stdout'], paths).items()}
+    for name in solids:
+        if ([s[:2] for s in solids[name]] != [s[:2] for s in captured_solids[name]]
+                or any(close(a[2], b[2]) > PROPERTY_BOUND for a, b in zip(solids[name], captured_solids[name]))
+                or [s[:3] for s in free[name]] != [s[:3] for s in captured_free[name]]
+                or any(measure_apart(a[3], b[3]) for a, b in zip(free[name], captured_free[name]))):
+            raise ValueError('native observation of version-3 '+name+' differs from the capture')
+    report.update(v3_files=len(paths), v3_reading={}, v3_solids_imported=0, v3_free_imported=0,
+                  v3_matches=[], v3_unwritable=[], v3_not_measured=[])
+    fail = lambda case, reason, **more: report['failures'].append(dict(case='v3 '+case, reason=reason, **more))
+    # The independent reader against native OCCT: records in the root's order.
+    native_solid, native_free = {}, {}
+    for p in paths:
+        text = p.read_text()
+        _, rows = brep_io_reference.summary(text)
+        free_rows = brep_io_reference.free_shapes(text)
+        if [c for _, _, c in rows] != [c for _, c, _ in solids[p.name]]:
+            fail(p.name, 'reader solid counts differ from native')
+        if [(k, c) for _, k, _, c in free_rows] != [(k, c) for k, _, c, _ in free[p.name]]:
+            fail(p.name, 'reader free shapes differ from native')
+        native_solid.update({(p.name, r): (c, n[2]) for (r, _, c), n in zip(rows, solids[p.name])})
+        native_free.update({(p.name, r): (k, c, n[3]) for (r, k, _, c), n in zip(free_rows, free[p.name])})
+    # The kernel reads every file.
+    for name, verdict in rust_reading(paths).items():
+        report['v3_reading'][name] = verdict
+        if not verdict.startswith('read V3 '):
+            fail(name, 'the kernel does not read it', rust=verdict)
+    written = output/'v3-written'
+    written.mkdir(parents=True, exist_ok=True)
+    for f in written.glob('*.brep'):
+        f.unlink()
+    probe = probe_executable()
+    listing = '\n'.join(map(str, paths))+'\n'
+    targets = []
+    for line in subprocess.run([probe, 'corpus', str(written)], input=listing, text=True,
+                               capture_output=True, timeout=600, check=True).stdout.splitlines():
+        w = line.split()
+        key, counts = (w[0], int(w[1])), tuple(int(x) for x in w[2:8])
+        report['v3_solids_imported'] += 1
+        if key not in native_solid or native_solid[key][0] != counts:
+            fail(f'{key[0]}-{key[1]}', 'imported solid counts differ from native', rust=counts,
+                 native=native_solid.get(key, [None])[0])
+            continue
+        if w[8:] == ['unwritable']:
+            report['v3_unwritable'].append(f'{key[0]}-{key[1]}')
+            continue
+        targets.append(('solid', f'{key[0]}-{key[1]}', written/f'{key[0]}-{key[1]}.brep', native_solid[key]))
+    for line in subprocess.run([probe, 'free', str(written)], input=listing, text=True,
+                               capture_output=True, timeout=600, check=True).stdout.splitlines():
+        w = line.split()
+        unwritable = w[-1] == 'unwritable'
+        w = w[:-1] if unwritable else w
+        case = f'{w[0]}-free-{w[1]}'
+        key, kind, counts = (w[0], int(w[1])), w[2], tuple(int(x) for x in w[3:9])
+        enclosure = None if w[9:] == ['-'] else list(zip(map(float, w[9::2]), map(float, w[10::2])))
+        report['v3_free_imported'] += 1
+        native = native_free.get(key)
+        if native is None or native[:2] != (kind, counts):
+            fail(case, 'imported free shape differs from native', rust=[kind, counts], native=native and native[:2])
+            continue
+        # A shape the kernel cannot measure or write is listed: neither is
+        # the header's.
+        if enclosure is None:
+            report['v3_not_measured'].append(case)
+        elif measure_outside(enclosure, native[2]):
+            fail(case, 'measure outside the enclosure: '+','.join(measure_outside(enclosure, native[2])),
+                 rust=enclosure, native=native[2])
+            continue
+        if unwritable:
+            report['v3_unwritable'].append(case)
+            continue
+        targets.append(('free', case, written/f'{case}.brep', (counts, native[2])))
+    # Each written text read natively: one valid shape of the original's
+    # counts and properties.
+    for kind, probe_pair, rows_of in [('solid', solid_probe, lambda out, ps: parse(out, ps)),
+                                      ('free', free_probe, lambda out, ps: parse_free(out, ps))]:
+        chosen = [t for t in targets if t[0] == kind]
+        if not chosen:
+            continue
+        ps = [t[2] for t in chosen]
+        record = run(probe_pair[0], '\n'.join(map(str, ps)), probe_pair[1])
+        if record['exit_code'] != 0:
+            raise SystemExit('native run on written version-3 shapes failed: '+json.dumps(record)[:2000])
+        rows = rows_of(record['stdout'], ps)
+        for _, case, path, (counts, props) in chosen:
+            got = rows[str(path)]
+            differences = []
+            if len(got) != 1:
+                differences.append('shape_count')
+            else:
+                verdict, got_counts, got_props = (got[0] if kind == 'solid' else got[0][1:])
+                differences += ['brepcheck_invalid'] if verdict != 'valid' else []
+                differences += ['counts'] if got_counts != counts else []
+                apart = (close(got_props, props) > PROPERTY_BOUND if kind == 'solid'
+                         else measure_apart(got_props, props))
+                differences += ['properties'] if apart else []
+            if differences:
+                fail(case, 'written text differs natively: '+','.join(differences), native=got)
+            else:
+                report['v3_matches'].append(case)
 
 
 def measure_apart(a, b):
@@ -698,6 +825,8 @@ def main():
         review = review_for(evidence, reviews)
         report['reviewed_differences' if review else 'failures'].append(
             review or dict(evidence, native=solids, expected=[counts, props]))
+    if args.v3_dataset:
+        compare_v3(args.v3_dataset.resolve(), output, (executable, env), (free_executable, free_env), report)
     metadata = {'source_reference': SOURCE, 'oracle': oracle, 'sdk_manifest_sha256': digest(args.sdk_manifest),
                 'source_sha256': digest(SOURCE_FILE), 'probe_sha256': digest(executable),
                 'adaptive_oracle': adaptive_oracle, 'adaptive_source_sha256': digest(ADAPTIVE_SOURCE),

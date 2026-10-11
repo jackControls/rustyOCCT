@@ -1,5 +1,6 @@
 """Independent reader of OCCT's .brep text (T2 of TOPOLOGY_MODEL.md), for the
-data/occ corpus, without Rust or OCCT.
+data/occ corpus and the public dataset's version-3 texts, without Rust or
+OCCT.
 
 It follows dox/specification/brep_format.md and the pinned
 BRepTools_ShapeSet / TopTools_LocationSet readers: matrix location records are
@@ -226,8 +227,13 @@ def read(text):
     while r.word() != 'Topology':
         pass
     version = int(r.word()[1])
-    r.word()
-    r.word()
+    # TopTools_ShapeSet's lines: versions 1 and 2 "(c) Matra-Datavision",
+    # version 3 "(c) Open Cascade".
+    assert r.word() == '(c)'
+    words = [r.word()]
+    if version == 3 and words == ['Open']:
+        words.append(r.word())
+    assert words == ['Matra-Datavision'] or (version == 3 and words == ['Open', 'Cascade'])
     assert r.word() == 'Locations'
     locations = []
     for _ in range(r.int()):

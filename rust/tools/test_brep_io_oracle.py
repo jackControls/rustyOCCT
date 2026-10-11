@@ -152,6 +152,19 @@ Co
         self.assertEqual(summary(text), ({}, []))
         with self.assertRaises(Exception):
             read(text.replace('Surfaces 1', 'Surfaces 2'))
+        # Version 3 (OCCT 7.6 on): its own line, and a normals flag and
+        # normals in each triangulation record.
+        v1 = 'CASCADE Topology V1, (c) Matra-Datavision'
+        mesh = text.replace('\nTriangulations 0', '\nTriangulations 1\n3 1 0 0.1\n0 0 0 1 0 0 0 1 0\n1 2 3')
+        v3 = mesh.replace(v1, 'CASCADE Topology V3, (c) Open Cascade').replace(
+            '3 1 0 0.1', '3 1 0 1 0.1').replace('1 2 3\n', '1 2 3\n0 0 1 0 0 1 0 0 1\n')
+        self.assertEqual(read(v3), read(mesh))
+        self.assertEqual(read(text.replace(v1, 'CASCADE Topology V3, (c) Matra-Datavision')), read(text))
+        for bad in ['CASCADE Topology V1, (c) Open Cascade', 'CASCADE Topology V3, (c) Open Cascad']:
+            with self.assertRaises(AssertionError):
+                read(text.replace(v1, bad))
+        with self.assertRaises(Exception):
+            read(v3.replace('3 1 0 1 0.1', '3 1 0 0.1'))
 
 
 if __name__ == '__main__':

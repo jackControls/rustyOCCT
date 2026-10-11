@@ -706,7 +706,11 @@ fn section(t: &mut Tokens, name: &'static str) -> Result<usize, BrepError> {
 /// line; nothing panics and no count allocates beyond the supported limit.
 pub fn read(text: &str) -> Result<Document, BrepError> {
     let mut t = Tokens::new(text);
-    // Header: optional DBRep line, then "CASCADE Topology Vn, (c) Matra-Datavision".
+    // Header: optional DBRep line, then OCCT's line for the version
+    // (`TopTools_ShapeSet::THE_ASCII_VERSIONS`): "CASCADE Topology V1, (c)
+    // Matra-Datavision", the same for V2, and "CASCADE Topology V3, (c) Open
+    // Cascade" (OCCT 7.6 on). Version 3 under the older copyright, which
+    // OCCT refuses and never writes, has always been read here and still is.
     let mut version = 0;
     while let Some(w) = t.peek() {
         t.at += 1;
@@ -718,7 +722,18 @@ pub fn read(text: &str) -> Result<Document, BrepError> {
                 _ => return Err(t.err("format version V1, V2 or V3")),
             };
             t.word("(c)")?;
-            t.word("Matra-Datavision")?;
+            match (version, t.peek()) {
+                (3, Some("Open")) => {
+                    t.at += 1;
+                    if t.peek() != Some("Cascade") {
+                        return Err(t.err("the version-3 copyright Open Cascade"));
+                    }
+                    t.at += 1;
+                }
+                (3, Some("Matra-Datavision")) => t.at += 1,
+                (3, _) => return Err(t.err("the version-3 copyright Open Cascade")),
+                _ => t.word("Matra-Datavision")?,
+            }
             break;
         }
         if t.at > 8 {

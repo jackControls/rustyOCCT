@@ -5,7 +5,7 @@ mod brep_protocol;
 #[path = "support/identity_protocol.rs"]
 #[allow(dead_code)]
 mod identity_protocol;
-use rusty_occt::occt_brep::{import, read, write, BrepError};
+use rusty_occt::occt_brep::{import, read, write, BrepError, Document};
 use rusty_occt::topology::Topology;
 use rusty_occt::Tolerance;
 use std::collections::BTreeMap;
@@ -197,6 +197,104 @@ const GEOMETRY: [&str; 21] = [
     "TrimmedCurve",
     "TrimmedCurve2d",
 ];
+
+/// OCCT 7.6 and later write format version 3 under `CASCADE Topology V3, (c)
+/// Open Cascade` (`TopTools_ShapeSet::THE_ASCII_VERSIONS`); its grammar is
+/// version 1's with a normals flag and normals in each triangulation record.
+#[test]
+fn version_three_reads_under_occt_line() {
+    let v1 = "CASCADE Topology V1, (c) Matra-Datavision";
+    let good = write(
+        identity_protocol::build(
+            &identity_protocol::cases(include_str!("../../fixtures/identity-cases.txt"))[0],
+        )
+        .topology(),
+        1e-7,
+    )
+    .unwrap();
+    let doc = read(&good).unwrap();
+    assert_eq!(doc.version, 1);
+    // The same document but its version, under either copyright, with LF or
+    // CRLF line ends.
+    for line in [
+        "CASCADE Topology V3, (c) Open Cascade",
+        "CASCADE Topology V3, (c) Matra-Datavision",
+    ] {
+        let text = good.replacen(v1, line, 1);
+        for text in [text.clone(), text.replace('\n', "\r\n")] {
+            let v3 = read(&text).unwrap();
+            assert_eq!(v3.version, 3);
+            assert_eq!(Document { version: 1, ..v3 }, doc, "{line}");
+        }
+    }
+
+    // Two triangulations, one with normals and one with UV nodes, and a
+    // face without a surface on the first: version 3 reads the normals flag
+    // and normals, version 1 has neither.
+    let text = |header: &str, v3: bool| {
+        let flag = |f: &str| if v3 { format!(" {f}") } else { String::new() };
+        let normals = if v3 { "0 0 1 0 0 1 0 0 1\n" } else { "" };
+        format!(
+            "DBRep_DrawableShape\n\n{header}\nLocations 0\nCurve2ds 0\nCurves 0\n\
+             Polygon3D 0\nPolygonOnTriangulations 0\nSurfaces 0\nTriangulations 2\n\
+             3 1 0{} 0.1\n0 0 0 1 0 0 0 1 0\n1 2 3\n{normals}\
+             3 1 1{} 0\n0 0 0 1 0 0 0 1 0\n0 0 1 0 0 1\n1 2 3\n\n\
+             TShapes 1\nFa\n0  1e-07 0 0\n2  1\n0101000\n*\n\n+1 0 \n0\n\n",
+            flag("1"),
+            flag("0"),
+        )
+    };
+    let v3_line = "CASCADE Topology V3, (c) Open Cascade";
+    let mesh = read(&text(v3_line, true)).unwrap();
+    assert_eq!((mesh.version, mesh.triangulations), (3, 2));
+    let older = read(&text(v1, false)).unwrap();
+    assert_eq!(
+        Document {
+            version: 3,
+            ..older
+        },
+        mesh
+    );
+    let im = import(&mesh);
+    assert!(im.solids.is_empty());
+    assert!(matches!(im.free.as_slice(), [f] if f.result.is_err()));
+    assert_eq!(im.unsupported, BTreeMap::from([("FaceWithoutSurface", 1)]));
+    // Without version 3's flags the records misread, and version 3's
+    // normals cut short are a typed error.
+    assert!(read(&text(v3_line, false)).is_err());
+    let short = text(v3_line, true).replacen("0 0 1 0 0 1 0 0 1\n", "0 0 1 0 0 1\n", 1);
+    assert!(matches!(read(&short), Err(BrepError::Syntax { .. })));
+
+    // Every other line is refused, with its reason and line.
+    let copyright = "the version-3 copyright Open Cascade";
+    let version = "format version V1, V2 or V3";
+    for (line, want, at) in [
+        (
+            "CASCADE Topology V1, (c) Open Cascade",
+            "Matra-Datavision",
+            3,
+        ),
+        (
+            "CASCADE Topology V2, (c) Open Cascade",
+            "Matra-Datavision",
+            3,
+        ),
+        ("CASCADE Topology V3, (c) Matra Datavision", copyright, 3),
+        ("CASCADE Topology V3, (c) Open Cascade2", copyright, 3),
+        ("CASCADE Topology V3, (c) Open", copyright, 4),
+        ("CASCADE Topology V3, (c)", copyright, 4),
+        ("CASCADE Topology V3, Open Cascade", "(c)", 3),
+        ("CASCADE Topology V3 (c) Open Cascade", version, 3),
+        ("Open CASCADE Topology V3 (c)", version, 3),
+        ("Open CASCADE Topology V4, (c) Open Cascade", version, 3),
+    ] {
+        let bad = good.replacen(v1, line, 1);
+        match read(&bad) {
+            Err(BrepError::Syntax { line: l, what }) => assert_eq!((l, what), (at, want), "{line}"),
+            other => panic!("{line}: {other:?}"),
+        }
+    }
+}
 
 /// The data/occ corpus against brep_io_reference.py: the same unsupported
 /// geometry records, the same solids, a cell topology exactly for the

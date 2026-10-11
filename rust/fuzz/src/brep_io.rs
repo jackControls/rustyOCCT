@@ -11,10 +11,12 @@
 //! edges, pcurves and surfaces with B-spline records. And (S6) the valid
 //! sheet, shell, wire and acorn fixtures and the face and wire bodies of a
 //! profile: written as free shapes, they round-trip, and every free shape
-//! of mutated text validates and round-trips or fails cleanly.
+//! of mutated text validates and round-trips or fails cleanly. A text that
+//! reads under the version-1 line with no triangulation reads to the same
+//! document under OCCT's version-3 line.
 use crate::identity::{build, cone_spec, spec, sphere_spec, torus_spec};
 use libfuzzer_sys::arbitrary::{Result, Unstructured};
-use rusty_occt::occt_brep::{import, read, write};
+use rusty_occt::occt_brep::{import, read, write, Document};
 use rusty_occt::topology::Topology;
 use rusty_occt::Tolerance;
 
@@ -183,9 +185,26 @@ fn round_trip(t: &Topology, tolerance: f64) -> bool {
     true
 }
 
+/// OCCT's version-1 and version-3 header lines (`TopTools_ShapeSet`).
+const V1: &str = "CASCADE Topology V1, (c) Matra-Datavision";
+const V3: &str = "CASCADE Topology V3, (c) Open Cascade";
+
 /// Mutated text never panics; what imports validates and round-trips.
 fn check_text(text: &str) {
     let Ok(doc) = read(text) else { return };
+    // Version 3 differs from version 1 only in its triangulation records:
+    // without one, a text that reads under the version-1 line reads to the
+    // same document under OCCT's version-3 line (when that line is the
+    // header the reader took: its first `Topology`).
+    let header = text.find(V1).map(|i| i + "CASCADE ".len());
+    if doc.version == 1
+        && doc.triangulations == 0
+        && header.is_some()
+        && header == text.find("Topology")
+    {
+        let v3 = read(&text.replacen(V1, V3, 1)).expect("the version-3 line reads");
+        assert!(v3.version == 3 && Document { version: 1, ..v3 } == doc);
+    }
     let im = import(&doc);
     let bodies = im
         .solids
