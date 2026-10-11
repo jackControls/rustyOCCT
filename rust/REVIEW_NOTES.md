@@ -14982,6 +14982,143 @@ Decisions for S9, recorded before its code (2026-09-28):
   runs, the slowest under a second; `boolean` clean, 274 runs, the slowest
   input 28 s; `split` clean, 1,501 runs.
 
+* **Edges and vertices within the resolution of each other refined,
+  before its code (2026-10-11; HANDOFF's item 5, the open items of "A
+  vertex within the resolution of a face, done").** Why they are evaluated
+  today: the near-miss rules hold a sphere against a face, an edge or a
+  vertex, an edge's curve against a plane, cylinder or cone face at a point
+  strictly inside it, and a vertex against such a face with its foot in
+  the face; nothing holds a vertex or an edge against the other input's
+  edges and vertices. So a cube's corner `1e-12` off a box's top edge or
+  corner (its foot on the top's plane just past the edge), a box's edge
+  passing `1e-12` from another box's edge across it (skew edges), or a
+  cube's corner by a rod's rim is fused with it into two solids, the
+  common empty. A cone's apex has no edges, so the vertex rule never sees
+  it: a cone standing `1e-12` under a slab is fused with it into two
+  solids. And a closed edge's or a circle's seam vertex is an end of its
+  edges, where the edge rules take no point, while the vertex rules skip
+  it (a seam's, without an input's id) or see it as a half turn: a ball
+  diagonally off a rod's rim whose nearest point is the rim's seam is
+  fused with it into two solids, where the same ball off any other point
+  of the rim is refused. The user's decision holds ("contact only"):
+  within the resolution of contact, without a decided contact, the pair
+  is refused as a near miss with a named reason. Taken here, in full: the
+  three items, but for the pairs of the second part below.
+  - **Pairs and their closest points.** Input vertices (with an input's
+    id, their faces on more than one surface, as the vertex rule's) and
+    a cone's apex; input edges (with an input's id, not between faces on
+    one surface, as the edge rule's) whose curve is a line, a conic or a
+    circle. Vertex and vertex: their gap. Vertex and edge: the edge's
+    point nearest the vertex strictly inside the edge. Edge and edge: a
+    line's and a line's, a line's and a conic's or a circle's closest
+    points, each strictly inside its edge. A point at an edge's end counts
+    as inside where the edge runs on through its vertex smoothly: the
+    edge closed there, or the vertex holding exactly two edge ends, both of
+    one input edge (a circle's halves at their seam); and so in the edge
+    rule (`edge_faces`) and at a sphere's seam vertices (`edge_nearest`)
+    too, item 3.
+  - **Within the resolution, decided exactly.** Vertex and vertex: the
+    squared gap, rational, against `res^2`. Vertex and line: the foot,
+    rational. Vertex and circle (a conic whose axes are orthogonal and of
+    one length, a sphere's circle): its point toward the vertex, exact in
+    the quadratic field of the projection's length (`circle_nearest`).
+    Line and line: the closest points of skew lines, rational
+    (`s = (b e - c d) / (a c - b^2)`, `t = (a e - b d) / (a c - b^2)`);
+    parallel lines have none (the vertex rules take their ends). Vertex and
+    conic (a turned frame's arc, a cone's rim, an oblique cut), and line
+    and conic or circle: each local least of the distance (to the vertex,
+    or to the line: `|w|^2 - (w . d)^2 / |d|^2`) found in binary64 over 64
+    samples of the curve's angle, then bracketed between two rational
+    points of the curve (their half angle's tangents dyadic) where the
+    derivative along it takes opposite exact signs, narrowed by bisection on
+    that sign; `U`, the exact distance at the bracket's middle point (to
+    the vertex, or to that point's exact foot on the line), bounds the
+    least from above, and `U - D` from below, `D` a rational bound of the
+    curve's movement over the bracket (the speed in the half angle's
+    tangent at most twice `|a| + |b|`, or for a circle twice its radius
+    times its basis's lengths' ratio, times the bracket's width; the
+    distance is 1-Lipschitz in the point). Within: `U <= res`. Apart:
+    `U - D > res`. Between (within rounding of the resolution itself), or
+    no bracket found where binary64 puts the least within twice the
+    resolution: `ComputationLimit` ("a near miss's least distance within
+    rounding of the resolution"), but only where the pair would be a
+    contact (below). Points of two different surds (a vertex of a given
+    result in one quadratic field, a circle's point in another) are not
+    combined: no rule (the second part).
+  - **What counts as contact.** A gap of zero is an exact crossing or an
+    incidence, the existing rules'. Otherwise the gap `n = b - a`, from the
+    first input's point to the second's, decides it: each input's boundary
+    at its point against `n`, exactly. A vertex's directions are the vertex
+    rule's tangent cone (its edges' directions away from it, each face's
+    convex sector between its two edge ends; a reflex sector, a half turn
+    or a face with other than two edge ends there undecided). A cone's
+    apex's are its rulings, `|k| (cos u X + sin u Y) + s N` in the frame's
+    axes, `s` the side the cone opens to: all of one strict sign against
+    `n` where `s C` has that sign and `C^2 > k^2 (A^2 + B^2)`, `(A, B, C)`
+    the gap's components along `X`, `Y`, `N`, exactly. An edge point's
+    are its two faces' directions into them from it (each outward normal
+    across the edge's running tangent, as the edge rule's `leaves_away`; the
+    edge's own tangent is the gap's normal plane's). A direction along the
+    gap's normal plane is the faces' own business, as in the vertex and edge
+    rules: `(n . w)^2 <= (10^-24 |n|^2 + rho^2) |w|^2`, the faces' angular
+    band plus the gap's own rounding, `rho = 2^(e - 48)`, `2^e` the least
+    power of two at least one and at least every coordinate of the two
+    points (a gap of rounding's size has no direction: U1's and Y5's box on
+    a rod's tangent plane, its bottom edge tangent to the rod's rim but for
+    rounding, its side face running along the gap's plane). For an apex,
+    the ruling nearest that plane, `|C| - |k| sqrt(A^2 + B^2)`, against
+    `sqrt((10^-24 |n|^2 + rho^2) (1 + k^2))`, decided by squaring. Each
+    boundary leaving its point strictly away from the other's (`n . w < 0`
+    on the first input's, `> 0` on the second's): missing, refused unless
+    the gap lies inside both inputs (each one's membership at its point
+    pushed across the gap, as every near-miss rule). Each heading strictly
+    toward the other's (both signs reversed): crossing, refused. Anything
+    else (a boundary with directions of both signs, along the plane, or
+    undecided) is no contact of the pair's own: an edge or a face heading
+    toward the other input crosses it there or comes within the resolution
+    of its face, the pierces' and the face rules' business. Where a vertex's
+    or an edge's point has its foot inside one of the other edge's faces,
+    that face heads toward it: the vertex or edge rule against the face holds
+    it, so the rules partition the cases.
+  - **Reasons**: "a vertex within the resolution of a vertex of the other
+    input (S9d.2)", "a vertex within the resolution of an edge of the
+    other input (S9d.2)", "two edges within the resolution of each other
+    (S9d.2)" (both engines); a cone's apex against a plane, cylinder or
+    cone face, by the vertex rule with the apex's rulings: "a cone's apex
+    within the resolution of a face (S9d.3)"; an edge's point at its smooth
+    end, the edge rule's and the sphere's reasons.
+  - **Where.** The curved engine: `near.rs`, after `vertex_faces` (which
+    takes the apex too), before the pierces: vertex and vertex, vertex and
+    edge, edge and edge, every pair whose boxes meet once one is widened by
+    the resolution. The polyhedral engine: `polyhedra.rs`, after
+    `vertex_near_misses`, on the models' exact vertices and edges (an edge
+    point's directions those to its face pieces' corners off its line).
+  - **No contact, evaluating as before**: a gap inside both inputs; an
+    incidence or an exact crossing; directions along the gap's plane, of
+    both signs or undecided; parallel lines; nearest points at an edge's
+    end where it does not run on smoothly (the vertex pairs take them).
+    Beyond the resolution nothing changes. Prisms of one frame (S9a) keep
+    their own engine and never reach it.
+  - **The second part, open (HANDOFF)**: a conic or circle edge against
+    another (two rods' rims passing within the resolution of each other at
+    a point), edges of other curves (meetings of two curved faces, cone,
+    torus and spline curves) against edges and vertices, points of two
+    different surds, an apex against a sphere's, torus or spline face; and
+    item 5's (b) to (d) as before.
+  - **Evidence**: `tests/edge_vertex_near_miss_booleans.rs`, in a level
+    frame, one turned off the world's z and one turned about it: a cube on
+    its corner `1e-12`, `1e-11` and `1e-9` diagonally off a slab's top edge
+    and corner (its foot past the edge) and off a rod's rim; a box's edge
+    across another's at those gaps (a block on its edge over a slab's top
+    edge, crossed); a cone standing under a slab's bottom and beside a
+    rod's wall at its apex; a ball and a cube's corner diagonally off a
+    rod's rim at its seam; each crossing within the resolution too, and
+    `1e-6` evaluating. Positive controls: exact edge crossings and a corner
+    on an edge (incidences), edges and corners `0.1` apart, U1's and Y5's
+    box on a rod's tangent plane (its corner on the ruling, its bottom edge
+    tangent to the rim), and the vertex rule's controls, evaluating as
+    before.
+
 * **CI budget (U6).** Per-push fuzz runs replay a bounded sample plus every
   regression and new seed; the daily schedule replays everything; the heavy
   exact targets run on schedule only; Windows runs a smoke subset per push
