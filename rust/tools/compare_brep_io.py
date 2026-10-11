@@ -31,6 +31,11 @@ after the kernel's reader existed (rust/fixtures/occt-brep-io-capture/NOTES.md);
 they depend on no Rust output and must stay unchanged. Differences need a
 fingerprinted review; timeouts, crashes and malformed output cannot be
 reviewed.
+
+The public dataset's version-3 texts (`CASCADE Topology V3, (c) Open
+Cascade`, HANDOFF's item 3) were read natively by both probes, unchanged,
+while the reader still refused their header (rust/fixtures/occt-brep-v3-capture,
+`--capture-v3 --v3-dataset DIR`); the dataset is local-only (U1).
 """
 import argparse
 from fractions import Fraction
@@ -60,6 +65,12 @@ FREE_CAPTURE = ROOT/'rust/fixtures/occt-free-shape-capture'
 # The same probe with adaptive surface integration (BRepGProp Eps 1e-12), run
 # only on files holding a face whose enclosure excludes the default measure.
 ADAPTIVE_SOURCE = ROOT/'rust/tools/occt_free_shape_adaptive_oracle.cpp'
+# The public dataset's version-3 texts (HANDOFF's item 3): read natively
+# with both probes above, unchanged, before the reader took their header.
+# The dataset is local-only (U1): the capture holds names, digests and
+# native observations, never a file's text.
+V3_CAPTURE = ROOT/'rust/fixtures/occt-brep-v3-capture'
+V3_LINE = b'CASCADE Topology V3, (c) Open Cascade'
 # Both native runs together took under a second; the deadline only bounds hangs.
 TIMEOUT = 600
 # The worst observed difference was 2.5e-14: volume and area relative to
@@ -199,6 +210,121 @@ def free_capture(observed):
                 measure_apart(a[3], b[3]) for a, b in zip(now, shapes)):
             raise ValueError('native free-shape observation of '+name+' differs from the capture')
     return captured
+
+
+def v3_files(dataset):
+    """The dataset's `.brep` texts whose header is OCCT's version-3 line, as
+    TopTools_ShapeSet::Read matches it (a whole line, its trailing CR
+    removed), in relative path order."""
+    found = []
+    for path in sorted(dataset.rglob('*.brep')):
+        with path.open('rb') as f:
+            head = f.read(512).split(b'\n')[:3]
+        if any(line.rstrip(b'\r') == V3_LINE for line in head):
+            found.append(path)
+    return found
+
+
+def probe_executable():
+    subprocess.run(['cargo', '+stable', 'build', '--release', '--locked', '--example', 'brep_io_probe'],
+                   cwd=ROOT, check=True)
+    return str(ROOT/'target/release/examples/brep_io_probe')
+
+
+def rust_reading(paths):
+    """{file name: the kernel's reading} (`brep_io_probe read`): `refused
+    ERROR`, or `read VERSION solids OK/ALL free OK/ALL unsupported ...`."""
+    rows = subprocess.run([probe_executable(), 'read', '-'], input='\n'.join(map(str, paths))+'\n',
+                          text=True, capture_output=True, timeout=600, check=True).stdout
+    out = {}
+    for line in rows.splitlines():
+        name, verdict = line.split(' ', 1)
+        out[name] = verdict
+    if list(out) != [p.name for p in paths]:
+        raise ValueError('the kernel probe does not cover every version-3 file in order')
+    return out
+
+
+def native_lines(observed, row):
+    lines = []
+    for name, shapes in observed.items():
+        lines.append(f'F {name} {len(shapes)}')
+        lines += [row(s) for s in shapes]
+    return '\n'.join(lines)+'\n'
+
+
+def capture_v3(prefix, output, sdk_manifest, dataset):
+    """Record the native reading of the dataset's version-3 texts by both
+    probes, unchanged, while the reader still refuses their header (each
+    refusal recorded), before any kernel code reads them."""
+    paths = v3_files(dataset)
+    names = [p.name for p in paths]
+    if not paths or len(set(names)) != len(names):
+        raise SystemExit('no version-3 texts, or two with one name, under '+str(dataset))
+    reading = rust_reading(paths)
+    if any(not v.startswith('refused ') for v in reading.values()):
+        raise SystemExit('the kernel reads a version-3 text already: not a pre-implementation capture')
+    executable, env, _, _ = build(prefix, output)
+    free_executable, free_env, _, _ = build(prefix, output, FREE_SOURCE, 'free-oracle')
+    records = [run(executable, '\n'.join(map(str, paths)), env),
+               run(free_executable, '\n'.join(map(str, paths)), free_env)]
+    if any(r['exit_code'] != 0 for r in records):
+        raise SystemExit('native version-3 run failed: '+json.dumps(records)[:2000])
+    solids = {Path(k).name: v for k, v in parse(records[0]['stdout'], paths).items()}
+    free = {Path(k).name: v for k, v in parse_free(records[1]['stdout'], paths).items()}
+    V3_CAPTURE.mkdir(parents=True, exist_ok=True)
+    (V3_CAPTURE/'native-solids.txt').write_text(native_lines(
+        solids, lambda s: ' '.join(['S', s[0], *map(str, s[1]), *map(repr, s[2])])))
+    (V3_CAPTURE/'native-free.txt').write_text(native_lines(
+        free, lambda s: ' '.join(['X', s[0], s[1], *map(str, s[2]), *map(repr, s[3])])))
+    status = subprocess.run(['git', 'status', '--porcelain', '--', 'rust'], cwd=ROOT, text=True,
+                            capture_output=True, check=True).stdout.splitlines()
+    revision = subprocess.run(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True, capture_output=True,
+                              check=True).stdout.strip()
+    write(V3_CAPTURE/'capture.json', {
+        'source_reference': SOURCE, 'oracle': next(iter(records[0]['stderr'].splitlines()), None),
+        'platform': sys.platform, 'rust_revision': revision,
+        'rust_v3_header_read': False, 'rust_refusals': reading, 'rust_worktree_uncommitted': status,
+        'sdk_manifest_sha256': digest(sdk_manifest),
+        'solid_probe_source_sha256': digest(SOURCE_FILE), 'free_probe_source_sha256': digest(FREE_SOURCE),
+        'solid_observations_sha256': digest(V3_CAPTURE/'native-solids.txt'),
+        'free_observations_sha256': digest(V3_CAPTURE/'native-free.txt'),
+        'inputs_sha256': {str(p.relative_to(dataset)): digest(p) for p in paths}})
+    return len(paths), sum(map(len, solids.values())), sum(map(len, free.values()))
+
+
+def v3_capture():
+    """The committed version-3 capture, checked as a clean pre-implementation
+    record of the probes as pinned: ({name: solid rows}, {name: free rows},
+    metadata)."""
+    metadata = json.loads((V3_CAPTURE/'capture.json').read_text())
+    if (metadata['source_reference'] != SOURCE or metadata['rust_v3_header_read']
+            or any(not v.startswith('refused ') for v in metadata['rust_refusals'].values())):
+        raise ValueError('version-3 capture is not a clean pre-implementation reference')
+    for key, name in [('solid_observations_sha256', 'native-solids.txt'),
+                      ('free_observations_sha256', 'native-free.txt')]:
+        if metadata[key] != digest(V3_CAPTURE/name):
+            raise ValueError('captured version-3 evidence changed: '+name)
+    if (metadata['solid_probe_source_sha256'] != digest(SOURCE_FILE)
+            or metadata['free_probe_source_sha256'] != digest(FREE_SOURCE)):
+        raise ValueError('a probe differs from the one the version-3 capture ran')
+    solids, free, current = {}, {}, None
+    for line in (V3_CAPTURE/'native-solids.txt').read_text().splitlines():
+        w = line.split()
+        if w[0] == 'F':
+            current = solids.setdefault(w[1], [])
+        else:
+            current.append((w[1], tuple(int(x) for x in w[2:8]), [float(x) for x in w[8:]]))
+    for line in (V3_CAPTURE/'native-free.txt').read_text().splitlines():
+        w = line.split()
+        if w[0] == 'F':
+            current = free.setdefault(w[1], [])
+        else:
+            current.append((w[1], w[2], tuple(int(x) for x in w[3:9]), [float(x) for x in w[9:]]))
+    names = [Path(k).name for k in metadata['inputs_sha256']]
+    if list(solids) != names or list(free) != names or list(metadata['rust_refusals']) != names:
+        raise ValueError('version-3 capture does not cover its inputs in order')
+    return solids, free, metadata
 
 
 def measure_apart(a, b):
@@ -365,6 +491,10 @@ def main():
                         help='write the corpus observations to the capture directory instead of checking them')
     parser.add_argument('--capture-free', action='store_true',
                         help='record the corpus free shapes (S6, before implementation only)')
+    parser.add_argument('--v3-dataset', type=Path,
+                        help="the public dataset's directory: compare its version-3 texts (local only, U1)")
+    parser.add_argument('--capture-v3', action='store_true',
+                        help='record the version-3 texts natively (with --v3-dataset, before implementation only)')
     args = parser.parse_args()
     output = args.output.resolve()
     output.mkdir(parents=True, exist_ok=True)
@@ -372,6 +502,12 @@ def main():
     verify_sdk(prefix, args.sdk_manifest)
     if args.capture_free:
         print('captured', capture_free(prefix, output, args.sdk_manifest), 'free shapes')
+        return
+    if args.capture_v3:
+        if not args.v3_dataset:
+            parser.error('--capture-v3 needs --v3-dataset')
+        files, solids, free = capture_v3(prefix, output, args.sdk_manifest, args.v3_dataset.resolve())
+        print('captured', files, 'version-3 texts:', solids, 'solids,', free, 'free shapes')
         return
     reference, reference_free = reference_rows()
     executable, env, loaded, command = build(prefix, output)

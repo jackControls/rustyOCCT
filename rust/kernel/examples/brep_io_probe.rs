@@ -13,7 +13,11 @@
 //! `NAME V E W F SH SO` and its certified measure. `parts OUT` (T-b of the
 //! tessellation track) reads B-rep line-protocol blocks
 //! (`tessellation-spline-cases.txt`, `mesh` rows ignored), writes each body
-//! as `OUT/NAME.brep` and prints `NAME V E W F SH SO`.
+//! as `OUT/NAME.brep` and prints `NAME V E W F SH SO`. `read -` reads
+//! `.brep` paths on stdin and prints, per file, `FILE refused ERROR` or `FILE
+//! read VERSION solids OK/ALL free OK/ALL unsupported NAME=N,...` (or `-`):
+//! the reader's verdict and the converter's outcome (the version-3 header's
+//! evidence and check).
 #[path = "../tests/support/brep_protocol.rs"]
 #[allow(dead_code)]
 mod brep_protocol;
@@ -141,6 +145,41 @@ fn main() {
                 let text = write(&topology, tolerance).unwrap_or_else(|e| panic!("{name}: {e:?}"));
                 std::fs::write(out.join(format!("{name}.brep")), text).unwrap();
                 println!("{name} {}", counts(topology.occt_counts()));
+            }
+        }
+        "read" => {
+            for path in input.lines().filter(|l| !l.trim().is_empty()) {
+                let path = std::path::Path::new(path);
+                let name = path.file_name().unwrap().to_string_lossy();
+                // As the DRAW adapter's restore: OCCT reads nothing after
+                // the root reference, so decode leniently.
+                let text = String::from_utf8_lossy(&std::fs::read(path).unwrap()).into_owned();
+                let doc = match read(&text) {
+                    Ok(doc) => doc,
+                    Err(e) => {
+                        println!("{name} refused {e}");
+                        continue;
+                    }
+                };
+                let imported = import(&doc);
+                let unsupported: Vec<String> = imported
+                    .unsupported
+                    .iter()
+                    .map(|(k, n)| format!("{k}={n}"))
+                    .collect();
+                println!(
+                    "{name} read V{} solids {}/{} free {}/{} unsupported {}",
+                    doc.version,
+                    imported.solids.iter().filter(|s| s.result.is_ok()).count(),
+                    imported.solids.len(),
+                    imported.free.iter().filter(|s| s.result.is_ok()).count(),
+                    imported.free.len(),
+                    if unsupported.is_empty() {
+                        "-".into()
+                    } else {
+                        unsupported.join(",")
+                    }
+                );
             }
         }
         other => panic!("mode {other}"),

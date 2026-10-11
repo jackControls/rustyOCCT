@@ -14911,6 +14911,19 @@ Decisions for S9, recorded before its code (2026-09-28):
     with the same counts and properties. A DRAW trial of the 16 cases on
     both backends, any case newly evaluating volume-audited and not
     registered.
+  - **Evidence, before the code** (`fixtures/occt-brep-v3-capture/`,
+    `compare_brep_io.py --capture-v3 --v3-dataset DIR` at `57ca4861`, the
+    kernel unchanged): the 26 texts' relative paths and digests, the
+    kernel's refusal of each (`line 3: expected Matra-Datavision`; line 2
+    in `bug32960`, which has no DBRep line) by `brep_io_probe read`, and
+    the pinned SDK's reading by both probes: OCCT reads every file, 11
+    solids (all valid: `bug28620`'s one, two in each of `bug32942` to
+    `bug32945` and `bug32960`) and 28 free shapes (20 faces, 6 wires, 2
+    edges; 9 faces invalid: `bug27170_f`'s, `bug32617`'s six and the two
+    faces without edges of `bug32737_free_verts` and `bug30175_box`).
+    `test_brep_io_oracle.py` checks the capture as a clean
+    pre-implementation record and the header match (a whole line, its CR
+    removed, never BinTools' line).
 
 * **CI budget (U6).** Per-push fuzz runs replay a bounded sample plus every
   regression and new seed; the daily schedule replays everything; the heavy

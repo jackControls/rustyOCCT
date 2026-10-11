@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
 """Deliberate failures for the .brep interop bridge and the independent reader."""
 import json
+from pathlib import Path
+import tempfile
 import unittest
 
 from brep_io_reference import IDENTITY, read, summary
-from compare_brep_io import (ADAPTIVE_SOURCE, CAPTURE, FREE_SOURCE, PROPERTY_BOUND, REVIEWS, close,
-                             measure_differences, original_capture, parse, review_measure)
+from compare_brep_io import (ADAPTIVE_SOURCE, CAPTURE, FREE_SOURCE, PROPERTY_BOUND, REVIEWS, V3_LINE,
+                             close, measure_differences, original_capture, parse, review_measure,
+                             v3_capture, v3_files)
 
 
 def captured():
@@ -32,6 +35,28 @@ class BrepIoOracle(unittest.TestCase):
                 original_capture(bad)
         with self.assertRaises(ValueError):
             original_capture({k: v for k, v in observed.items() if k != name})
+
+    def test_v3_capture_is_a_clean_pre_implementation_record(self):
+        solids, free, metadata = v3_capture()
+        self.assertEqual(len(metadata['inputs_sha256']), 26)
+        self.assertEqual(sum(map(len, solids.values())), 11)
+        self.assertEqual(sum(map(len, free.values())), 28)
+        self.assertTrue(all(v.startswith('refused line ') for v in metadata['rust_refusals'].values()))
+        self.assertIs(metadata['rust_v3_header_read'], False)
+
+    def test_v3_files_match_the_whole_header_line(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            (root/'sub').mkdir()
+            texts = {'a.brep': b'DBRep_DrawableShape\n\n'+V3_LINE+b'\nLocations 0\n',
+                     'sub/b.brep': V3_LINE+b'\r\nLocations 0\r\n',
+                     'c.brep': b'DBRep_DrawableShape\n\nCASCADE Topology V1, (c) Matra-Datavision\n',
+                     'd.brep': b'Open CASCADE Topology V3 (c)\n\x00\x01',
+                     'e.brep': V3_LINE+b' and more\n',
+                     'f.txt': V3_LINE+b'\n'}
+            for name, text in texts.items():
+                (root/name).write_bytes(text)
+            self.assertEqual([str(p.relative_to(root)) for p in v3_files(root)], ['a.brep', 'sub/b.brep'])
 
     def test_native_output_parses_or_fails(self):
         good = 'F a 1\nS valid 1 2 3 4 5 6 1 2 3 4 5\nF b 0\n'
