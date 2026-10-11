@@ -2135,6 +2135,37 @@ case, an absolute output directory, on a host at load 4 to 13) holds for
 every case, the slowest Boolean case 4.0 seconds (`bopfuse_simple/ZK8`),
 the restore cases 0.15 to 3.7 (`bcommon_complex/B9`), the rollex 0.5.
 
+**The version-3 `.brep` header: the cases loading the dataset's
+version-3 texts.** The reader took OCCT's version-3 line (`CASCADE
+Topology V3, (c) Open Cascade`, HANDOFF's item 3), which it had refused,
+at `cefd273a`. The public dataset has 26 such texts (REVIEW_NOTES.md, "The
+version-3 `.brep` header refined"); 16 cases load 19 of them, none
+registered: 14 by `restore` (`bugs/moddata_3/bug32557`,
+`bugs/mesh/bug32692_2`, `bug32767`, `pipe/bugs/bug32807`, `bug32818`,
+`bugs/modalg_7/bug32934`, `bugs/modalg_8/bug32942` to `bug32945` and
+`bug33173`, `bugs/fclasses/bug32960` and `bug32601`,
+`v3d/bugs/bug33664_1`), `cr/bugs/bug33170` by `brestore` and
+`bugs/moddata_3/bug33318` by `readfile`. All 16 were run on both backends
+before (`5b6a9220`) and after (2026-10-11, the public dataset, the debug
+worker, 120 seconds a case, four at once, on a host at load 7). Native
+DRAW is as before: none evaluates (14 unsupported at a command the bridge
+does not run, `bug32601` unverified, its only checks in the viewer, and
+`bug33664_1` failed, the bridge's viewer stub selecting nothing). On the
+Rust adapter 12 cases failed at the header before (`restore: line 3:
+expected Matra-Datavision`) and all 12 now restore: 10 move from `failed`
+to `unsupported`, at a construct the converter names (`bug32942` to
+`bug32945`, surfaces of revolution; `bug32767` and `bug32960`, rectangular
+trimmed surfaces) or at a later command (`nurbsconvert` in `bug32557`,
+`incmesh` in `bug32692_2`, `mksweep` in `bug32807`, `explode` without a
+type in `bug33173`); `bug32601` stays `failed`, now because the validator
+rejects `cone_bad_tri`'s face (`enclosure_unsound`, 25 seconds), and
+`bug33664_1` stays `failed`, now at the viewer stub's selection count as
+natively. `bug32818` (a `restore` without a name), `bug32934` (`pload
+ALL`), `bug33170` and `bug33318` stop before any restore, as before. No
+case newly evaluates, so none is audited or registered (1,132 cases); the
+four `bcommon` cases (`bug32942` to `bug32945`) are of the 1,814 restore
+cases' kind and now stop at the converter instead of the reader.
+
 Three more `intss` cases run on the Rust adapter but are not registered,
 because the contract admits no failing status: `bug23178`, `bug28222_2` and
 `bug28222_3` count the pieces IntPatch splits its walking lines into (6, 4
