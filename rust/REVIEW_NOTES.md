@@ -15674,6 +15674,13 @@ Decisions for S9, recorded before its code (2026-09-28):
   whose boundaries come within the resolution of each other without
   meeting) is left to the faces' own rules, as in the vertex and edge
   rules.
+  Campaigns at `32559655` (`rust-kernel` with this rule; 600 s each,
+  sampled replays, every switch on): `boolean` clean, 270 runs, the
+  slowest input 37 s; `split` clean, 1,194 runs. At `f0bebb1c` (with
+  S9e.4b.4b.2b.2b.3a) `split` is clean (714 runs) and `boolean` found one
+  input (`d737f94d...`, its bytes 19 and 20 set) ending in
+  libFuzzer's out-of-memory error alone (2,069 MB after 82 s under
+  AddressSanitizer), its fix open.
 
 * **CI budget (U6).** Per-push fuzz runs replay a bounded sample plus every
   regression and new seed; the daily schedule replays everything; the heavy
