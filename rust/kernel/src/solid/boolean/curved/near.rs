@@ -7,7 +7,9 @@
 //! cone face (`edge_faces`), a vertex against such a face (`vertex_faces`,
 //! "A vertex within the resolution of a face"; a cone's apex too), the
 //! inputs' vertices and edges against each other's (`edges_and_vertices`,
-//! "Edges and vertices within the resolution of each other"), and the
+//! "Edges and vertices within the resolution of each other"; two conic or
+//! circle edges, `conics_closest`, "Two conic edges within the resolution
+//! of each other"), and the
 //! points of other curves nearest a sphere for `edge_near_misses`
 //! (`nearest_on_run`), by the same rule:
 //! within the resolution of tangency, crossing is `Degenerate`, and missing
@@ -1092,7 +1094,8 @@ fn corner_dirs(m: &Prism, ends: &[(usize, bool)], a: &QV) -> Option<Vec<QV>> {
 /// (REVIEW_NOTES.md's "Edges and vertices within the resolution of each
 /// other"): a vertex (or a cone's apex) and a vertex, a vertex and an
 /// edge's point nearest it strictly inside the edge, and two edges' closest
-/// points strictly inside both (lines, a line and a conic or a circle),
+/// points strictly inside both (lines, a line and a conic or a circle, two
+/// conics or a conic and a circle),
 /// each point at an end where its edge runs on through it smoothly too
 /// (`smooth_end`). Each pair whose gap is within the resolution and not
 /// zero (an incidence or an exact crossing, the existing rules') is decided
@@ -1283,13 +1286,8 @@ fn pair(a: &End, b: &End, bracket: &Bracket, res: f64, why: &'static str) -> Res
         return Ok(());
     };
     let unsure = !within;
-    let rho2 = gap_rounding(&a.p, &b.p);
-    let sa = side(a.m, a.spot, &a.p, &n, Some(&rho2));
-    let sb = side(b.m, b.spot, &b.p, &n, Some(&rho2));
-    let missing = match (sa, sb) {
-        (Some(Ordering::Less), Some(Ordering::Greater)) => true,
-        (Some(Ordering::Greater), Some(Ordering::Less)) => false,
-        _ => return Ok(()),
+    let Some(missing) = contact(a, b, &n) else {
+        return Ok(());
     };
     if missing {
         let inside = [
@@ -1304,6 +1302,21 @@ fn pair(a: &End, b: &End, bracket: &Bracket, res: f64, why: &'static str) -> Res
         return Err(Error::ComputationLimit(NEAR_LIMIT));
     }
     Err(Error::Degenerate(why))
+}
+
+/// Whether the pair at `a` and `b` is a contact of its own against the gap
+/// `n = b - a` (`pair`'s test): `Some(true)` where each input's boundary
+/// leaves its point strictly away from the other's (missing), `Some(false)`
+/// where each heads strictly toward it (crossing), `None` otherwise.
+fn contact(a: &End, b: &End, n: &QV) -> Option<bool> {
+    let rho2 = gap_rounding(&a.p, &b.p);
+    let sa = side(a.m, a.spot, &a.p, n, Some(&rho2));
+    let sb = side(b.m, b.spot, &b.p, n, Some(&rho2));
+    match (sa, sb) {
+        (Some(Ordering::Less), Some(Ordering::Greater)) => Some(true),
+        (Some(Ordering::Greater), Some(Ordering::Less)) => Some(false),
+        _ => None,
+    }
 }
 
 /// `pair`'s gap from `a` to `b`, where it may be a near miss: `None` for
@@ -1402,7 +1415,9 @@ fn rational_point(p: &QV) -> Option<V> {
 /// The closest points of two edges inside both (`inside_edge`): of two
 /// lines (skew; parallel lines have none), exactly; of a line and a conic
 /// or a circle, each least of the distance from the curve to the line
-/// bracketed on the curve (`bracketed`), with its exact foot on the line.
+/// bracketed on the curve (`bracketed`), with its exact foot on the line;
+/// of two conics or circles, at each least found in binary64, decided
+/// exactly there or bracketed (`conics_closest`).
 fn closest_on_edges(
     ma: &Prism,
     ea: usize,
@@ -1437,6 +1452,9 @@ fn closest_on_edges(
             .map(|(on_curve, foot, k)| (foot, on_curve, k))
             .collect(),
         (Crv::Conic { .. } | Crv::Circle(_), Crv::Line { .. }) => line_and_curve(ca, cb, res),
+        (Crv::Conic { .. } | Crv::Circle(_), Crv::Conic { .. } | Crv::Circle(_)) => {
+            conics_closest(ma, ea, mb, eb, res)
+        }
         _ => Vec::new(),
     };
     // Only gaps `pair` takes (`gap_within`), told before the points' places
@@ -1717,6 +1735,363 @@ fn bisect(
     let mid = (&lo + &hi) / int(2);
     let (_, p) = at(&mid)?;
     Some((p, Bracket::Within(speed * (&hi - &lo))))
+}
+
+// --------------------------------------------------------- two conics
+
+/// A conic's or a circle's binary64 form `c + a cos + b sin` for the
+/// searches (a circle's on its basis orthonormalized and scaled by its
+/// radius: `Crv::Circle` places a point by the direction `x cos + y sin`
+/// scaled onto it), with the map from its angle to `curve_at`'s.
+struct Conic64 {
+    c: [f64; 3],
+    a: [f64; 3],
+    b: [f64; 3],
+    /// A circle's basis lengths `(|x|, |y|)`.
+    basis: Option<(f64, f64)>,
+}
+
+fn dot64(a: &[f64; 3], b: &[f64; 3]) -> f64 {
+    a[0] * b[0] + a[1] * b[1] + a[2] * b[2]
+}
+
+fn sub64(a: &[f64; 3], b: &[f64; 3]) -> [f64; 3] {
+    [a[0] - b[0], a[1] - b[1], a[2] - b[2]]
+}
+
+impl Conic64 {
+    fn of(crv: &Crv) -> Option<Self> {
+        let g = |v: &V| v.clone().map(|x| rational_f64(&x));
+        match crv {
+            Crv::Conic { c, a, b } => Some(Self {
+                c: g(c),
+                a: g(a),
+                b: g(b),
+                basis: None,
+            }),
+            Crv::Circle(circ) => {
+                let (x, y) = (g(&circ.x), g(&circ.y));
+                let (lx, ly) = (dot64(&x, &x).sqrt(), dot64(&y, &y).sqrt());
+                let r = rational_f64(&circ.r2).sqrt();
+                if !(lx > 0.0 && ly > 0.0 && r.is_finite()) {
+                    return None;
+                }
+                Some(Self {
+                    c: g(&circ.c),
+                    a: x.map(|v| r * v / lx),
+                    b: y.map(|v| r * v / ly),
+                    basis: Some((lx, ly)),
+                })
+            }
+            _ => None,
+        }
+    }
+
+    /// The point and its first and second derivatives at the angle `t`.
+    fn jet(&self, t: f64) -> [[f64; 3]; 3] {
+        let (cs, sn) = (t.cos(), t.sin());
+        let p = [0, 1, 2].map(|k| self.a[k] * cs + self.b[k] * sn);
+        [
+            [0, 1, 2].map(|k| self.c[k] + p[k]),
+            [0, 1, 2].map(|k| self.b[k] * cs - self.a[k] * sn),
+            p.map(|x| -x),
+        ]
+    }
+
+    /// A bound of the speed in the angle, `|a| + |b|`.
+    fn reach(&self) -> f64 {
+        dot64(&self.a, &self.a).sqrt() + dot64(&self.b, &self.b).sqrt()
+    }
+
+    /// `curve_at`'s half-angle tangent and flip at the angle `t`.
+    fn param(&self, t: f64) -> (f64, bool) {
+        let t = match self.basis {
+            None => t,
+            Some((lx, ly)) => (t.sin() / ly).atan2(t.cos() / lx),
+        };
+        let flip = t.cos() < 0.0;
+        let u = if flip { t - PI } else { t };
+        ((u.sin().atan2(u.cos()) / 2.0).tan(), flip)
+    }
+
+    /// The angle of the curve's point nearest `p`, from `s` by Newton's
+    /// method on the squared distance's derivative.
+    fn nearest(&self, p: &[f64; 3], mut s: f64) -> f64 {
+        for _ in 0..64 {
+            let [y, d1, d2] = self.jet(s);
+            let g = sub64(&y, p);
+            let (f1, f2) = (dot64(&g, &d1), dot64(&d1, &d1) + dot64(&g, &d2));
+            if f2.is_nan() || f2 <= 0.0 {
+                break;
+            }
+            let ds = (-f1 / f2).clamp(-0.25, 0.25);
+            if !ds.is_finite() {
+                break;
+            }
+            s += ds;
+            if ds.abs() <= 1e-16 * (1.0 + s.abs()) {
+                break;
+            }
+        }
+        s
+    }
+}
+
+/// The pairs of angles at the local leasts of the distance between two
+/// conics (their binary64 forms) within twice the resolution in binary64:
+/// over a grid of 64 angles of each, each node at most its eight
+/// neighbours (the angles wrapping) whose distance less the curves'
+/// movement over a step (`reach` times it, each curve) is within twice the
+/// resolution, refined by Newton's method on the gradient (`refine`), kept
+/// where its distance is within twice the resolution, once. Every pair of
+/// angles lies within half a step of a node in each, so the pair is passed
+/// over whole where no node is within that reach.
+fn conic_leasts(fa: &Conic64, fb: &Conic64, res: f64) -> Vec<(f64, f64)> {
+    const N: usize = 64;
+    let step = TAU / N as f64;
+    let pa: Vec<[f64; 3]> = (0..N).map(|i| fa.jet(i as f64 * step)[0]).collect();
+    let pb: Vec<[f64; 3]> = (0..N).map(|j| fb.jet(j as f64 * step)[0]).collect();
+    let reach = 2.0 * res + (fa.reach() + fb.reach()) * step;
+    let reach2 = reach * reach;
+    let mut d2 = vec![0.0; N * N];
+    let mut any = false;
+    for i in 0..N {
+        for j in 0..N {
+            let w = sub64(&pa[i], &pb[j]);
+            let v = dot64(&w, &w);
+            if !v.is_finite() {
+                return Vec::new();
+            }
+            any |= v <= reach2;
+            d2[i * N + j] = v;
+        }
+    }
+    let mut out: Vec<(f64, f64)> = Vec::new();
+    if !any {
+        return out;
+    }
+    let close = |p: f64, q: f64| {
+        let d = (p - q).rem_euclid(TAU);
+        d.min(TAU - d) <= 1e-9
+    };
+    for i in 0..N {
+        for j in 0..N {
+            let v = d2[i * N + j];
+            if v > reach2 {
+                continue;
+            }
+            let least = [N - 1, 0, 1].iter().all(|di| {
+                [N - 1, 0, 1]
+                    .iter()
+                    .all(|dj| v <= d2[((i + di) % N) * N + (j + dj) % N])
+            });
+            if !least {
+                continue;
+            }
+            let (t, s) = refine(fa, fb, i as f64 * step, j as f64 * step);
+            let w = sub64(&fa.jet(t)[0], &fb.jet(s)[0]);
+            let gap = dot64(&w, &w).sqrt();
+            if gap.is_nan() || gap > 2.0 * res {
+                continue;
+            }
+            if out.iter().any(|&(t0, s0)| close(t, t0) && close(s, s0)) {
+                continue;
+            }
+            out.push((t, s));
+        }
+    }
+    out
+}
+
+/// A least of two conics' distance about the angles `(t, s)`, by Newton's
+/// method on the gradient of `|A(t) - B(s)|^2`; one angle's step at a time
+/// where the Hessian is not definite (tangent or coincident curves).
+fn refine(fa: &Conic64, fb: &Conic64, mut t: f64, mut s: f64) -> (f64, f64) {
+    for it in 0..100 {
+        let [x, xa, xaa] = fa.jet(t);
+        let [y, yb, ybb] = fb.jet(s);
+        let g = sub64(&x, &y);
+        let (gt, gs) = (dot64(&g, &xa), -dot64(&g, &yb));
+        let h11 = dot64(&xa, &xa) + dot64(&g, &xaa);
+        let h22 = dot64(&yb, &yb) - dot64(&g, &ybb);
+        let h12 = -dot64(&xa, &yb);
+        let det = h11 * h22 - h12 * h12;
+        let (dt, ds) = if h11 > 0.0 && h22 > 0.0 && det > 1e-12 * h11 * h22 {
+            ((h12 * gs - h22 * gt) / det, (h12 * gt - h11 * gs) / det)
+        } else if it % 2 == 0 && h11 > 0.0 {
+            (-gt / h11, 0.0)
+        } else if h22 > 0.0 {
+            (0.0, -gs / h22)
+        } else {
+            break;
+        };
+        if !(dt.is_finite() && ds.is_finite()) {
+            break;
+        }
+        let (dt, ds) = (dt.clamp(-0.25, 0.25), ds.clamp(-0.25, 0.25));
+        t += dt;
+        s += ds;
+        if dt.abs() <= 1e-16 * (1.0 + t.abs()) && ds.abs() <= 1e-16 * (1.0 + s.abs()) {
+            break;
+        }
+    }
+    (t, s)
+}
+
+/// The closest points of two conic or circle edges of the inputs
+/// (REVIEW_NOTES.md's "Two conic edges within the resolution of each
+/// other"; two `Crv::Circle`s not: their points lie in fields of their
+/// own): at each least found in binary64 (`conic_leasts`) the curves' exact
+/// points at its angles' rational half-angle tangents (`curve_at`), none
+/// where their gap is zero or of rounding's size (`|n| <= rho`,
+/// `gap_rounding`: every direction then along the gap's plane, no contact);
+/// within the resolution, those points (the least at most their gap);
+/// beyond it, where the pair is a contact at those points inside both
+/// edges, the least bracketed (`conics_bracketed`), or those points
+/// unbracketed.
+fn conics_closest(
+    ma: &Prism,
+    ea: usize,
+    mb: &Prism,
+    eb: usize,
+    res: f64,
+) -> Vec<(QV, QV, Bracket)> {
+    let (ca, cb) = (&ma.edges[ea].curve, &mb.edges[eb].curve);
+    if matches!((ca, cb), (Crv::Circle(_), Crv::Circle(_))) {
+        return Vec::new();
+    }
+    let (Some(fa), Some(fb)) = (Conic64::of(ca), Conic64::of(cb)) else {
+        return Vec::new();
+    };
+    let tol = q(res);
+    let mut out = Vec::new();
+    for (t, s) in conic_leasts(&fa, &fb, res) {
+        let ((ua, fla), (ub, flb)) = (fa.param(t), fb.param(s));
+        let (Some((x, _)), Some((y, _))) = (curve_at(ca, &q(ua), fla), curve_at(cb, &q(ub), flb))
+        else {
+            continue;
+        };
+        if !one_field(&[&x, &y]) {
+            continue;
+        }
+        let n = qsub(&y, &x);
+        let nn = qqdot(&n, &n);
+        if nn.add_r(&-gap_rounding(&x, &y)).sign() != Ordering::Greater {
+            continue;
+        }
+        if nn.add_r(&-(&tol * &tol)).sign() != Ordering::Greater {
+            out.push((x, y, Bracket::Exact));
+            continue;
+        }
+        let (a, b) = (
+            End {
+                m: ma,
+                spot: &Spot::Edge(ea),
+                p: x.clone(),
+            },
+            End {
+                m: mb,
+                spot: &Spot::Edge(eb),
+                p: y.clone(),
+            },
+        );
+        if contact(&a, &b, &n).is_none() || !inside_edge(ma, ea, &x) || !inside_edge(mb, eb, &y) {
+            continue;
+        }
+        out.push(conics_bracketed((ca, &fa, t), (cb, &fb, s)).unwrap_or((
+            x,
+            y,
+            Bracket::Unbracketed,
+        )));
+    }
+    out
+}
+
+/// The inner curve of `conics_bracketed`: a circle exactly (its centre,
+/// basis and squared radius), or a conic bracketed about a binary64 angle
+/// (with its speed bound).
+enum Inner<'a> {
+    Round(&'a V, &'a V, &'a V, R),
+    Conic(&'a Crv, &'a Conic64, f64, R),
+}
+
+impl Inner<'_> {
+    /// The inner curve's point nearest the rational point `x` and a bound
+    /// of its distance from the nearest's: exactly on a circle
+    /// (`circle_nearest`), else bracketed on exact signs of `(y - x) . t`
+    /// (`bisect`) about the binary64 nearest angle.
+    fn nearest(&self, x: &QV) -> Option<(QV, R)> {
+        let xr = rational_point(x)?;
+        match self {
+            Inner::Round(c, a, b, r2) => {
+                super::graph::circle_nearest(c, a, b, r2, &xr).map(|y| (y, zero()))
+            }
+            Inner::Conic(crv, f, s, speed) => {
+                let s = f.nearest(&qv_f64(x), *s);
+                let (u, flip) = f.param(s);
+                let slope = |y: &QV, t: &QV| qqdot(&qsub(y, x), t).sign();
+                match bisect(crv, u, flip, &slope, speed)? {
+                    (y, Bracket::Within(r)) => Some((y, r)),
+                    _ => None,
+                }
+            }
+        }
+    }
+}
+
+/// Two conics' (or a conic's and a circle's) closest points about the
+/// angles found in binary64, bracketed: on the outer curve (a conic:
+/// rational points `x`), the exact distance to the inner one, its
+/// derivative's sign that of `(x - y) . t_A` at the inner curve's point
+/// `y` nearest `x` (`Inner::nearest`; the inner a circle exactly where
+/// either is), taken as zero within `|t_A| r_B` of it (`r_B` the bound of
+/// `y`'s distance from the nearest's), the outer bracket narrowed by
+/// `bisect` on it; the points (the first curve's first) and the bound
+/// `D_A + r_B` (the distance 1-Lipschitz in each point: the least over the
+/// bracket at least their gap less it).
+fn conics_bracketed(
+    first: (&Crv, &Conic64, f64),
+    second: (&Crv, &Conic64, f64),
+) -> Option<(QV, QV, Bracket)> {
+    let round = |c: &Crv| match c {
+        Crv::Circle(_) => true,
+        Crv::Conic { a, b, .. } => dot(a, b) == zero() && dot(a, a) == dot(b, b),
+        _ => false,
+    };
+    let swap = match (first.0, second.0) {
+        (Crv::Circle(_), _) => true,
+        (_, Crv::Circle(_)) => false,
+        (a, b) => round(a) && !round(b),
+    };
+    let ((co, fo, to), (ci, fi, si)) = if swap {
+        (second, first)
+    } else {
+        (first, second)
+    };
+    let speed_o = speed(co)?;
+    let inner = match ci {
+        Crv::Circle(circ) => Inner::Round(&circ.c, &circ.x, &circ.y, circ.r2.clone()),
+        Crv::Conic { c, a, b } if round(ci) => Inner::Round(c, a, b, dot(a, a)),
+        _ => Inner::Conic(ci, fi, si, speed(ci)?),
+    };
+    let slope = |x: &QV, ta: &QV| {
+        let Some((y, r)) = inner.nearest(x) else {
+            return Ordering::Equal;
+        };
+        let phi = qqdot(&qsub(x, &y), ta);
+        let lim = qqdot(ta, ta).scale(&(&r * &r));
+        if phi.mul(&phi).sub(&lim).sign() != Ordering::Greater {
+            return Ordering::Equal;
+        }
+        phi.sign()
+    };
+    let (u, flip) = fo.param(to);
+    let (x, Bracket::Within(da)) = bisect(co, u, flip, &slope, &speed_o)? else {
+        return None;
+    };
+    let (y, r) = inner.nearest(&x)?;
+    let bound = Bracket::Within(da + r);
+    Some(if swap { (y, x, bound) } else { (x, y, bound) })
 }
 
 // ------------------------------------------------------- other curves
@@ -2039,6 +2414,46 @@ mod tests {
         assert!((u - 1e-12).abs() < 1e-15, "{u}");
         assert!(sqrt_up(&q(2.0)) * sqrt_up(&q(2.0)) >= q(2.0));
         assert!(sqrt_down(&q(2.0)) * sqrt_down(&q(2.0)) <= q(2.0));
+    }
+
+    /// Two conics' least distance is found in binary64 and bracketed: a
+    /// turned frame's unit circle (no circle exactly) and a circle of
+    /// radius 0.5 standing over its point `(0.6, 0.8, 0)` across its
+    /// tangent, `1e-9` above it (a circle exactly, the inner curve's point
+    /// exact; and within rounding of one, bracketed too): one least each,
+    /// the bracket's points `1e-9` apart and its bound far below the
+    /// resolution; `0.1` apart, none within twice the resolution.
+    #[test]
+    fn two_conics_least_distance_is_bracketed() {
+        let res = Tolerance::default().linear();
+        let a = Crv::Conic {
+            c: [zero(), zero(), zero()],
+            a: [q(1.0 + 2f64.powi(-50)), zero(), q(2f64.powi(-52))],
+            b: [zero(), q(1.0), zero()],
+        };
+        let other = |d: f64, tilt: f64| Crv::Conic {
+            c: [q(0.6), q(0.8), q(0.5) + q(d)],
+            a: [zero(), zero(), q(-0.5 - tilt)],
+            b: [q(0.3), q(0.4), zero()],
+        };
+        let fa = Conic64::of(&a).unwrap();
+        for tilt in [0.0, 2f64.powi(-50)] {
+            let b = other(1e-9, tilt);
+            let fb = Conic64::of(&b).unwrap();
+            let found = conic_leasts(&fa, &fb, res);
+            assert_eq!(found.len(), 1, "{tilt}");
+            let (t, s) = found[0];
+            let (x, y, Bracket::Within(d)) = conics_bracketed((&a, &fa, t), (&b, &fb, s)).unwrap()
+            else {
+                panic!("unbracketed")
+            };
+            assert!(rational_f64(&d) < 1e-15, "{}", rational_f64(&d));
+            let w = qsub(&y, &x);
+            let u = qqdot(&w, &w).to_f64().sqrt();
+            assert!((u - 1e-9).abs() < 1e-14, "{u}");
+            let fb = Conic64::of(&other(0.1, tilt)).unwrap();
+            assert!(conic_leasts(&fa, &fb, res).is_empty());
+        }
     }
 
     /// `closest_on_edges` passes over two lines only farther apart than
