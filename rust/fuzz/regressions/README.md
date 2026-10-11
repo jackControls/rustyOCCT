@@ -1698,3 +1698,35 @@ of that tangency. Of the corpus's inputs and regressions 17 reach such a
 face: 16 (this one and `877c7bc5` among them) evaluate the operations the
 rule refused again as at `47e086c5` (one of `877c7bc5`'s volumes an ulp
 apart), and one's outcomes are unchanged.
+
+## Boolean: a cone's apex within the resolution of a face
+
+`boolean/replay-8997e71a01c371ee68f72cde83d85b21674e0e9d.bin` is a corpus
+input (17 bytes) that decodes a cone in the target's turned frame (normal
+`(0, 0.6, 0.8)`), its apex at `1.5` along the frame's normal, against a
+prism of that frame whose cap holds the apex but for the frame's rounding:
+the apex lies inside the prism, `1e-16` under its cap's plane, and the
+cone's rulings fall from it into the prism. The fuse (and its chained
+step) evaluated to one solid, the prism, its cut a cavity touching the
+prism's boundary at a point. A cone's apex has no edges, so the vertex
+rule never took it; it is now taken with its rulings for its tangent cone,
+and a vertex, an apex or an edge within the resolution of the other
+input's vertices and edges is refused by the same rule
+(REVIEW_NOTES.md's "Edges and vertices within the resolution of each
+other"; `curved/near.rs`'s `vertex_faces` and `edges_and_vertices`,
+`polyhedra.rs`'s `edge_vertex_near_misses`;
+`tests/edge_vertex_near_miss_booleans.rs`): this input is refused as "a
+cone's apex within the resolution of a face (S9d.3)". Of the corpus's
+1,442 inputs and the 36 regressions, 88 hold a cone's apex and 9 an apex
+within the resolution of a face (gaps of rounding, `5.6e-18` to
+`2.2e-16`): 7 refused now (4 refused before as a tangency between the
+inputs, 1 as a plane through a cone's apex, and 2 evaluated: this input
+and `4ada4c3f`, whose chained fuse gave two solids), 2 with a ruling along
+the face. 113 hold a pair of vertices or edges within the resolution
+(60 in the curved engine, 61 in the polyhedral one, every gap rounding:
+`1.6e-27` to `5.6e-16`), each with directions along the gap's plane, so
+none is refused; none reaches an edge's smooth end. No kept regression
+changes outcome (`01782c8e` reaches a pair and evaluates as before). It
+replays in 1.4 s with debug assertions, and its 4,335 single-byte
+mutations replay without a failure (the slowest 8.4 s, on a host at load
+20 to 26).
