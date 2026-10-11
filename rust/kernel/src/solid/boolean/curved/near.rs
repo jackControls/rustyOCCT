@@ -1967,6 +1967,11 @@ fn conics_closest(
     let mut out = Vec::new();
     for (t, s) in conic_leasts(&fa, &fb, res) {
         let ((ua, fla), (ub, flb)) = (fa.param(t), fb.param(s));
+        // Of rounding's size beyond doubt in binary64 (coincident rims: a
+        // least at every node along them): no contact, no exact point.
+        if rounding_gap(&fa, (ua, fla), &fb, (ub, flb)) {
+            continue;
+        }
         let (Some((x, _)), Some((y, _))) = (curve_at(ca, &q(ua), fla), curve_at(cb, &q(ub), flb))
         else {
             continue;
@@ -2005,6 +2010,45 @@ fn conics_closest(
         )));
     }
     out
+}
+
+/// Whether binary64 shows the gap between two conics' exact points at the
+/// rational half-angle tangents `(u, flip)` of each (`curve_at`'s) to be of
+/// rounding's size, `|n| <= rho` (`gap_rounding`; `conics_closest` then
+/// passes over the pair, every direction along the gap's plane). Each point
+/// is evaluated in binary64 from its curve's data rounded once and the same
+/// rational parameter: `c + a cs + b sn`, `cs = (1 - u^2) / (1 + u^2)`
+/// within `4 eps` and `sn = 2 u / (1 + u^2)` within `3 eps` (`|u| <= 1`,
+/// `eps = 2^-53`), so each coordinate within `(2 |c| + 8 |a| + 7 |b|) eps`
+/// of the exact point's to first order (the data's rounding, two products,
+/// two sums), bounded here by `10 (|c| + |a| + |b|) eps`; the gap's bound is
+/// the binary64 points' distance (enlarged for its own rounding) plus both
+/// points' bounds, against `rho` of a size no larger than the exact points'
+/// (the largest coordinate less twice the bound). A circle's points
+/// (`Crv::Circle`, scaled by a square root) are not taken.
+fn rounding_gap(fa: &Conic64, pa: (f64, bool), fb: &Conic64, pb: (f64, bool)) -> bool {
+    const EPS: f64 = 1.0 / (1u64 << 53) as f64;
+    let point = |f: &Conic64, (u, flip): (f64, bool)| {
+        let w = u * u;
+        let (cs, sn) = ((1.0 - w) / (1.0 + w), 2.0 * u / (1.0 + w));
+        let (cs, sn) = if flip { (-cs, -sn) } else { (cs, sn) };
+        let x = [0, 1, 2].map(|k| f.c[k] + (f.a[k] * cs + f.b[k] * sn));
+        let e = [0, 1, 2].map(|k| 10.0 * EPS * (f.c[k].abs() + f.a[k].abs() + f.b[k].abs()));
+        (x, dot64(&e, &e).sqrt() * (1.0 + 1e-6))
+    };
+    if fa.basis.is_some() || fb.basis.is_some() || pa.0.abs() > 1.0 || pb.0.abs() > 1.0 {
+        return false;
+    }
+    let ((x, ex), (y, ey)) = (point(fa, pa), point(fb, pb));
+    let w = sub64(&y, &x);
+    let gap = dot64(&w, &w).sqrt() * (1.0 + 16.0 * EPS) + ex + ey;
+    let size = x.iter().chain(y.iter()).fold(0.0f64, |m, v| m.max(v.abs()));
+    let low = ((size - 2.0 * ex.max(ey)) * (1.0 - 16.0 * EPS)).max(1.0);
+    if !(gap.is_finite() && low.is_finite()) {
+        return false;
+    }
+    let rho = 2f64.powi(low.log2().ceil() as i32 - 48);
+    gap <= rho
 }
 
 /// The inner curve of `conics_bracketed`: a circle exactly (its centre,
@@ -2454,6 +2498,81 @@ mod tests {
             let fb = Conic64::of(&other(0.1, tilt)).unwrap();
             assert!(conic_leasts(&fa, &fb, res).is_empty());
         }
+    }
+
+    /// `rounding_gap` never passes over a gap its exact points exceed `rho`
+    /// with: conics of turned frames' kinds (centres up to 3 from the
+    /// origin, axes of lengths 0.5 to 2 in turned planes), one shifted by
+    /// `k rho` along a direction (`k` from 0 to 2) and its data rounded
+    /// again, at the same rational parameters; each binary64 verdict of
+    /// rounding's size is one the exact points' gap confirms, and most of the
+    /// zero gaps (the same conic) are passed over in binary64 (the others
+    /// exactly).
+    #[test]
+    fn rounding_gaps_in_binary64_hold_exactly() {
+        let mut seed = 0x2545_f491_4f6c_dd1du64;
+        let mut next = || {
+            seed ^= seed << 13;
+            seed ^= seed >> 7;
+            seed ^= seed << 17;
+            (seed >> 11) as f64 / (1u64 << 53) as f64
+        };
+        let (mut passed, mut tiny) = (0, 0);
+        for i in 0..400 {
+            let c = [0, 1, 2].map(|_| 6.0 * next() - 3.0);
+            let (th, ph, ps) = (TAU * next(), PI * next(), TAU * next());
+            let n = [ph.sin() * th.cos(), ph.sin() * th.sin(), ph.cos()];
+            let e1 = {
+                let h = if n[0].abs() < 0.9 {
+                    [1.0, 0.0, 0.0]
+                } else {
+                    [0.0, 1.0, 0.0]
+                };
+                let d = dot64(&h, &n);
+                let v = [0, 1, 2].map(|k| h[k] - d * n[k]);
+                let l = dot64(&v, &v).sqrt();
+                v.map(|x| x / l)
+            };
+            let e2 = [
+                n[1] * e1[2] - n[2] * e1[1],
+                n[2] * e1[0] - n[0] * e1[2],
+                n[0] * e1[1] - n[1] * e1[0],
+            ];
+            let (ra, rb) = (0.5 + 1.5 * next(), 0.5 + 1.5 * next());
+            let a = [0, 1, 2].map(|k| ra * (ps.cos() * e1[k] + ps.sin() * e2[k]));
+            let b = [0, 1, 2].map(|k| rb * (ps.cos() * e2[k] - ps.sin() * e1[k]));
+            let k = if i % 4 == 0 { 0.0 } else { 2.0 * next() };
+            let dir = [0, 1, 2].map(|_| next() - 0.5);
+            let shift = 2f64.powi(-48) * 4.0 * k / dot64(&dir, &dir).sqrt();
+            let c2 = [0, 1, 2].map(|j| c[j] + shift * dir[j]);
+            let v = |x: [f64; 3]| x.map(q);
+            let ca = Crv::Conic {
+                c: v(c),
+                a: v(a),
+                b: v(b),
+            };
+            let cb = Crv::Conic {
+                c: v(c2),
+                a: v(a),
+                b: v(b),
+            };
+            let (fa, fb) = (Conic64::of(&ca).unwrap(), Conic64::of(&cb).unwrap());
+            let t = TAU * next();
+            let pa = fa.param(t);
+            if rounding_gap(&fa, pa, &fb, pa) {
+                passed += 1;
+                let x = curve_at(&ca, &q(pa.0), pa.1).unwrap().0;
+                let y = curve_at(&cb, &q(pa.0), pa.1).unwrap().0;
+                let w = qsub(&y, &x);
+                let nn = qqdot(&w, &w);
+                assert!(
+                    nn.add_r(&-gap_rounding(&x, &y)).sign() != Ordering::Greater,
+                    "{i}"
+                );
+                tiny += usize::from(k == 0.0);
+            }
+        }
+        assert!(tiny >= 50 && passed > tiny, "{tiny} {passed}");
     }
 
     /// `closest_on_edges` passes over two lines only farther apart than
