@@ -15682,6 +15682,73 @@ Decisions for S9, recorded before its code (2026-09-28):
   libFuzzer's out-of-memory error alone (2,069 MB after 82 s under
   AddressSanitizer), its fix open.
 
+* **The boolean target's covered stack, a timeout at `f0bebb1c`, done
+  (2026-10-11).** The 600 s local campaign at `f0bebb1c` saved
+  `fuzz/regressions/boolean/timeout-d737f94ddbc216241e261b074a85b87351eddb7e.bin`
+  (its regressions README entry): in the tilted frame its bytes 16 to 19
+  switch on `LEAVES`, `RIMS`, `FLUSH` and `STACKS`, the covered stack
+  among them. Alone under AddressSanitizer with the campaign's options it
+  ran in 52 s at 317 MB, within the 60 s wall-clock limit only on a quiet
+  host; its out-of-memory stop at 2,048 MB came with the sanitizer's
+  default quarantine and 30-frame stacks (27 MB live): no leak and no
+  unbounded search. Cause, by instructions in release (18 MB throughout):
+  22.6 G at `5b6a9220`, `16841446` and `663bb9b8`, 30.4 G at `32559655`
+  (the edge and vertex near-miss rules), 79.5 G at `f0bebb1c` (the
+  `STACKS` stage: its covered stack's import tried 51 chains and built 7
+  models, 2 of them repeats, the stadium's prism read through either face
+  on the touching caps' plane, the stack's chain matching last; 82 corpus
+  inputs and 2 regressions import a body by that chain). About half of
+  each arrangement's time was the near-miss rules: `bracketed` rounded a
+  conic's or a circle's exact data to binary64 again at each of a few
+  hundred sample points, `edge_faces` placed every plane's and cylinder's exact extremum
+  along its edge before telling its gap, and `closest_on_edges` found
+  every pair of lines' exact closest points and placed them along both
+  edges before `pair` told their gap. Fix, no outcome changing:
+  `imported_primitives` builds each chain's model once (`same_chain`; a
+  later choice's refusal counts for no more than an earlier one's, the
+  rules ignoring as much or more as the choices rise); `curve64` rounds a
+  curve's data once (the same points bit for bit) and `bracketed` finds a
+  curve's speed at its first near miss; `Quad::clearly_off` passes over an
+  extremum whose function over its gradient's length exceeds `4 res` on a
+  plane (its distance) or a cylinder of radius above `4 res` (within
+  `7 / 6` of a distance within the resolution), never on a cone (near its
+  apex the ratio is unbounded); `lines_apart` passes over two lines whose
+  binary64 distance exceeds twice the resolution beyond a bound of its
+  error, the lines not parallel to rounding; `gap_within`, `pair`'s own
+  test, comes before the points' places. No limit is added: the chains a
+  body is tried as are bounded by the leaves' face sets (`LEAF_SETS`), the
+  leads (`FLUSH_LEADS`) and their pairs, and no corpus import builds more
+  than 5 distinct models. Tests: `imported.rs`'s
+  `a_stacks_chains_are_each_built_once` (the input's body: each chain's
+  model built once, 5 of the 7 read, the stack's matching; 7 with the
+  repeats built), `near.rs`'s `points_clearly_off_lie_beyond_the_resolution`
+  (a rod's wall and top at and within the resolution on either side
+  never, five resolutions off always, a cone's wall never) and
+  `lines_apart_beyond_twice_the_resolution`. Fuzz corpus (the 1,443
+  inputs, the 37 regressions and this one, release): each of the
+  target's 9,936 Booleans evaluates or refuses as at `f0bebb1c`, the same
+  solids and volumes to 15 digits and the same refusals; the 539 imports
+  of several primitives (265 inputs) each match the same chain, 76 inputs
+  read a chain twice, 1,090 models built before and 938 now; instrumented
+  builds checking each extremum passed over with `edge_face` and each pair
+  of lines passed over with `gap_within` found none refused (1,016, 693 and
+  642 inputs pass some extrema, pairs and lines); the corpus's
+  instructions fell from 15,248 G to 12,803 G, its slowest input's from
+  87.6 G to 58.8 G, none more than 2 % up; the input's 46.6 G (41 %
+  fewer; 22 corpus inputs take more), under the sanitizer 798 G against
+  1,350 G: side by side with `f0bebb1c`'s build on a host at load 13 to
+  15, 75 s against 125 s at 306 MB against 317 MB, about 31 s in
+  proportion where it took 52 s (alone on that host 66 to 102 s at load
+  13 to 29, its CPU 64 to 68 s: the 60 s limit wants a quieter host, as
+  every input near the corpus's slowest does). Checks: fmt, clippy
+  (release, all targets), the 1.85 check, the fuzz crate's fmt and check,
+  the release suite (728 tests, 5 ignored); every comparison of HANDOFF's
+  table as documented with 0 failures (45 runs on the pinned SDK); the
+  boolean corpus (1,443 inputs) and its 38 regressions and the split
+  corpus (3,551) and its 20 regressions replay with debug assertions
+  without a failure (the slowest 14.9 s and 3.3 s, on a host at load 30
+  to 40).
+
 * **CI budget (U6).** Per-push fuzz runs replay a bounded sample plus every
   regression and new seed; the daily schedule replays everything; the heavy
   exact targets run on schedule only; Windows runs a smoke subset per push
