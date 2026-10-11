@@ -1352,6 +1352,189 @@ fn vertex_near_misses(models: &[Model; 2], res: f64) -> Result<()> {
 /// A vertex within the resolution of a face of the other input (as the
 /// curved engine's).
 const NEAR_VERTEX_FACE: &str = "a vertex within the resolution of a face (S9d.2)";
+/// A vertex within the resolution of a vertex of the other input (as the
+/// curved engine's).
+const NEAR_VERTICES: &str = "a vertex within the resolution of a vertex of the other input (S9d.2)";
+/// A vertex within the resolution of an edge of the other input (as the
+/// curved engine's).
+const NEAR_VERTEX_EDGE: &str =
+    "a vertex within the resolution of an edge of the other input (S9d.2)";
+/// Two edges within the resolution of each other (as the curved engine's).
+const NEAR_EDGES: &str = "two edges within the resolution of each other (S9d.2)";
+
+/// The inputs' vertices and edges within the resolution of each other's
+/// (REVIEW_NOTES.md's "Edges and vertices within the resolution of each
+/// other"; the curved engine's `near::edges_and_vertices` on exact points):
+/// a vertex and a vertex, a vertex and its foot strictly inside an edge, two
+/// edges' closest points strictly inside both (skew; parallel edges have
+/// none), their gap within the resolution and not zero, decided by each
+/// input's boundary at its point against the gap (`near_pair`). A cube's
+/// corner `1e-12` off a box's top edge or corner, or a box's edge `1e-12`
+/// across another's, was fused with it into two solids.
+fn edge_vertex_near_misses(models: &[Model; 2], res: f64) -> Result<()> {
+    let res2 = q(res) * q(res);
+    let views: [Vec<[f64; 3]>; 2] =
+        [0, 1].map(|k| models[k].vertices.iter().map(|(p, _)| approx3(p)).collect());
+    let near = |x: &[f64; 3], y: &[f64; 3]| (0..3).all(|k| (x[k] - y[k]).abs() <= 2.0 * res);
+    let wide = |b: ([f64; 3], [f64; 3])| (b.0.map(|x| x - 2.0 * res), b.1.map(|x| x + 2.0 * res));
+    let edge_boxes: [Vec<([f64; 3], [f64; 3])>; 2] = [0, 1].map(|k| {
+        models[k]
+            .edges
+            .iter()
+            .map(|(a, b, _)| wide(float_box(&[a.clone(), b.clone()])))
+            .collect()
+    });
+    for (i, (p, _)) in models[0].vertices.iter().enumerate() {
+        for (j, (r, _)) in models[1].vertices.iter().enumerate() {
+            if near(&views[0][i], &views[1][j]) {
+                near_pair(
+                    &models[0],
+                    p,
+                    None,
+                    &models[1],
+                    r,
+                    None,
+                    &res2,
+                    NEAR_VERTICES,
+                )?;
+            }
+        }
+    }
+    for k in 0..2 {
+        let (vm, em) = (&models[k], &models[1 - k]);
+        for ((a, b, _), bx) in em.edges.iter().zip(&edge_boxes[1 - k]) {
+            let d = sub(b, a);
+            let dd = dot(&d, &d);
+            for (i, (p, _)) in vm.vertices.iter().enumerate() {
+                let x = &views[k][i];
+                if !(0..3).all(|c| bx.0[c] <= x[c] && x[c] <= bx.1[c]) {
+                    continue;
+                }
+                let t = dot(&sub(p, a), &d) / &dd;
+                if t <= zero() || t >= R::from_integer(1.into()) {
+                    continue;
+                }
+                let foot = add(a, &scale(&d, &t));
+                if k == 0 {
+                    near_pair(vm, p, None, em, &foot, Some(&d), &res2, NEAR_VERTEX_EDGE)?;
+                } else {
+                    near_pair(em, &foot, Some(&d), vm, p, None, &res2, NEAR_VERTEX_EDGE)?;
+                }
+            }
+        }
+    }
+    for ((a1, b1, _), x1) in models[0].edges.iter().zip(&edge_boxes[0]) {
+        let d1 = sub(b1, a1);
+        for ((a2, b2, _), x2) in models[1].edges.iter().zip(&edge_boxes[1]) {
+            if !boxes_meet(x1, x2) {
+                continue;
+            }
+            let d2 = sub(b2, a2);
+            let (a, b, c) = (dot(&d1, &d1), dot(&d1, &d2), dot(&d2, &d2));
+            let den = &a * &c - &b * &b;
+            if den == zero() {
+                continue;
+            }
+            let w = sub(a1, a2);
+            let (d, e) = (dot(&w, &d1), dot(&w, &d2));
+            let s = (&b * &e - &c * &d) / &den;
+            let t = (&a * &e - &b * &d) / &den;
+            let one = R::from_integer(1.into());
+            if s <= zero() || s >= one || t <= zero() || t >= one {
+                continue;
+            }
+            let (x, y) = (add(a1, &scale(&d1, &s)), add(a2, &scale(&d2, &t)));
+            near_pair(
+                &models[0],
+                &x,
+                Some(&d1),
+                &models[1],
+                &y,
+                Some(&d2),
+                &res2,
+                NEAR_EDGES,
+            )?;
+        }
+    }
+    Ok(())
+}
+
+/// The pair rule at the first input's point `a` and the second's `b` (a
+/// vertex, or a point inside an edge along `la` or `lb`), their gap
+/// `n = b - a` within the resolution and not zero (an incidence or an exact
+/// crossing, the existing rules'): each input's boundary directions there
+/// (to the corners of its face pieces holding the point, off an edge's
+/// line) against `n`, none within the band `(n . w)^2 <= (10^-24 |n|^2 +
+/// rho^2) |w|^2` (the faces' angle and the gap's own rounding, `rho =
+/// 2^(e - 48)`, `2^e` the least power of two at least one and every
+/// coordinate of the two points); the first's all against `n` and the
+/// second's all with it (missing), `Degenerate` unless the gap lies inside
+/// both inputs; the reverse (crossing), `Degenerate`; otherwise no contact.
+#[allow(clippy::too_many_arguments)]
+fn near_pair(
+    ma: &Model,
+    a: &V,
+    la: Option<&V>,
+    mb: &Model,
+    b: &V,
+    lb: Option<&V>,
+    res2: &R,
+    why: &'static str,
+) -> Result<()> {
+    let n = sub(b, a);
+    let nn = dot(&n, &n);
+    if nn == zero() || &nn > res2 {
+        return Ok(());
+    }
+    let size = approx3(a)
+        .iter()
+        .chain(approx3(b).iter())
+        .fold(1.0f64, |m, x| m.max(x.abs()));
+    let e = if size.is_finite() {
+        size.log2().ceil() as i32
+    } else {
+        0
+    };
+    let rho2 = R::from_integer(BigInt::from(2)).pow(2 * (e - 48));
+    let band = R::new(1.into(), BigInt::from(10).pow(24)) * &nn + &rho2;
+    let sides = [(ma, a, la), (mb, b, lb)].map(|(m, x, line)| {
+        let mut sign = None;
+        for f in &m.faces {
+            if f.plane.eval(x) != zero() {
+                continue;
+            }
+            for piece in f.pieces.iter().filter(|piece| holds_point(piece, x)) {
+                for c in piece.iter().filter(|c| *c != x) {
+                    let w = sub(c, x);
+                    if line.is_some_and(|t| is_zero(&cross(&w, t))) {
+                        continue;
+                    }
+                    let d = dot(&n, &w);
+                    if &d * &d <= &band * dot(&w, &w) {
+                        return None;
+                    }
+                    let ds = d.cmp(&zero());
+                    if sign.is_some_and(|s| s != ds) {
+                        return None;
+                    }
+                    sign = Some(ds);
+                }
+            }
+        }
+        sign
+    });
+    use std::cmp::Ordering::{Greater, Less};
+    match sides {
+        [Some(Less), Some(Greater)] => {
+            if inside(ma, a, &n) && inside(mb, b, &neg(&n)) {
+                return Ok(());
+            }
+            Err(Error::Degenerate(why))
+        }
+        [Some(Greater), Some(Less)] => Err(Error::Degenerate(why)),
+        _ => Ok(()),
+    }
+}
 
 /// Whether a point on a convex planar cycle's plane lies in its closure.
 fn holds_point(poly: &[V], x: &V) -> bool {
@@ -1568,6 +1751,7 @@ pub(super) fn build(poly: &Polyhedron) -> Result<Vec<Component>> {
     let tolerance = poly.tolerance();
     let models = [model(&poly.a, Operand::A)?, model(&poly.b, Operand::B)?];
     vertex_near_misses(&models, tolerance.linear())?;
+    edge_vertex_near_misses(&models, tolerance.linear())?;
     // Each input entity's operand and role.
     let info: BTreeMap<EntityId, (Operand, Role)> = models
         .iter()

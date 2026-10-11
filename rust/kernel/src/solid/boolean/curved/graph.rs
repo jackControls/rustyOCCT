@@ -251,9 +251,12 @@ fn edge_near_misses(models: &[Prism; 2], res: f64) -> Result<()> {
                     sphere_near(sm, fs, c, r, om, &a, res, NEAR_EDGE)?;
                 }
             }
+            // A cone's apex (no edges) is a vertex too.
+            let apex = om.funnel.as_ref().and_then(|f| f.apex);
             for (v, mv) in om.verts.iter().enumerate() {
                 let faces: Vec<usize> = at_vertex[v].iter().copied().collect();
-                let several = faces.iter().any(|&f| !one_surface(om, faces[0], f));
+                let several =
+                    apex == Some(v) || faces.iter().any(|&f| !one_surface(om, faces[0], f));
                 let x = views[v];
                 if mv.id.is_none()
                     || !several
@@ -313,15 +316,24 @@ fn edge_nearest(m: &Prism, ei: usize, c: &V, r: &R, res: f64) -> Vec<QV> {
         _ => super::near::nearest_on_run(m, ei, c, r, res),
     };
     let (s, t, with) = edge_places(m, ei);
+    // Strictly inside the edge, or at a seam's vertex (without an input's
+    // id: the vertex rule takes the others) where the edge runs on through
+    // it smoothly (a circle's halves at their seam).
     found
         .into_iter()
-        .filter(|x| strictly_within(&place(&e.curve, x), &s, &t, with) == Some(true))
+        .filter(
+            |x| match strictly_within(&place(&e.curve, x), &s, &t, with) {
+                Some(true) => true,
+                Some(false) => false,
+                None => super::near::smooth_end(m, ei, x).is_some_and(|v| m.verts[v].id.is_none()),
+            },
+        )
         .collect()
 }
 
 /// The point of the circle about `o` in the plane of the orthogonal `x`
 /// and `y`, of radius squared `r2`, nearest `c` (none on its axis).
-fn circle_nearest(o: &V, x: &V, y: &V, r2: &R, c: &V) -> Option<QV> {
+pub(super) fn circle_nearest(o: &V, x: &V, y: &V, r2: &R, c: &V) -> Option<QV> {
     if dot(x, y) != zero() {
         return None;
     }
@@ -1170,6 +1182,7 @@ pub(super) fn arrange_shared(models: [Prism; 2]) -> Result<Arr> {
     edge_near_misses(&models, res)?;
     super::near::edge_faces(&models, res)?;
     super::near::vertex_faces(&models, res)?;
+    super::near::edges_and_vertices(&models, res)?;
     // Pierces: every edge against every face of the other.
     for o in 0..2 {
         let (me, other) = (&models[o], &models[1 - o]);

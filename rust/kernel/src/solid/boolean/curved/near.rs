@@ -5,9 +5,11 @@
 //! here a sphere against a cylinder or a cone face (`sphere_quadrics`), an
 //! edge's line, conic, circle or other curve against a plane, cylinder or
 //! cone face (`edge_faces`), a vertex against such a face (`vertex_faces`,
-//! "A vertex within the resolution of a face"), and the points of other
-//! curves nearest a sphere for `edge_near_misses` (`nearest_on_run`), by
-//! the same rule:
+//! "A vertex within the resolution of a face"; a cone's apex too), the
+//! inputs' vertices and edges against each other's (`edges_and_vertices`,
+//! "Edges and vertices within the resolution of each other"), and the
+//! points of other curves nearest a sphere for `edge_near_misses`
+//! (`nearest_on_run`), by the same rule:
 //! within the resolution of tangency, crossing is `Degenerate`, and missing
 //! where the gap lies outside either input; a gap inside both inputs
 //! evaluates.
@@ -19,10 +21,12 @@ use super::model::*;
 use super::num::*;
 use crate::solid::split::{q, rational_f64, zero};
 use crate::{Error, Result};
+use num_bigint::BigInt;
 use num_rational::BigRational as R;
 use std::cmp::Ordering;
 use std::collections::BTreeMap;
 use std::f64::consts::{PI, TAU};
+use std::sync::Arc;
 
 /// A sphere within the resolution of tangency to a cylinder or cone face.
 pub(super) const NEAR_QUADRIC: &str =
@@ -31,6 +35,20 @@ pub(super) const NEAR_QUADRIC: &str =
 pub(super) const NEAR_FACE: &str = "an edge within the resolution of tangency to a face (S9d.2)";
 /// A vertex within the resolution of a face of the other input.
 pub(super) const NEAR_VERTEX_FACE: &str = "a vertex within the resolution of a face (S9d.2)";
+/// A cone's apex within the resolution of a face of the other input.
+pub(super) const NEAR_APEX: &str = "a cone's apex within the resolution of a face (S9d.3)";
+/// A vertex within the resolution of a vertex of the other input.
+pub(super) const NEAR_VERTICES: &str =
+    "a vertex within the resolution of a vertex of the other input (S9d.2)";
+/// A vertex within the resolution of an edge of the other input.
+pub(super) const NEAR_VERTEX_EDGE: &str =
+    "a vertex within the resolution of an edge of the other input (S9d.2)";
+/// Two edges of the inputs within the resolution of each other.
+pub(super) const NEAR_EDGES: &str = "two edges within the resolution of each other (S9d.2)";
+/// A near miss whose least distance, bracketed, cannot be told from the
+/// resolution itself.
+pub(super) const NEAR_LIMIT: &str =
+    "a near miss's least distance within rounding of the resolution";
 
 /// A face's surface: a plane, or a cylinder or a cone on its model's frame
 /// (its local coordinates `(u, v, w)`).
@@ -421,8 +439,13 @@ pub(super) fn edge_faces(models: &[Prism; 2], res: f64) -> Result<()> {
                     None => extrema(&e.curve, &quad),
                 };
                 for (a, extremum) in found {
-                    if strictly_within(&place(&e.curve, &a), &from, &to, with) != Some(true) {
-                        continue;
+                    // Strictly inside the edge, or at an end it runs on
+                    // through smoothly (a closed edge's vertex, a circle's
+                    // seam).
+                    match strictly_within(&place(&e.curve, &a), &from, &to, with) {
+                        Some(true) => {}
+                        None if smooth_end(em, ei, &a).is_some() => {}
+                        _ => continue,
                     }
                     let near = Near {
                         extremum,
@@ -515,22 +538,128 @@ fn edge_face(
 /// surface's tangent plane there, exactly or within rounding (`along`),
 /// runs along the surface: no contact of the edge's own.
 fn leaves_away(em: &Prism, ei: usize, quad: &Quad, a: &QV, extremum: Ordering) -> bool {
-    let e = &em.edges[ei];
-    let t = running(em, ei, a);
     let g = quad.gradient(a);
-    let away = [0, 1].map(|k| {
-        let n = em.normal_at(e.faces[k], a);
-        let inward = if k == 0 {
-            qcross(&n, &t)
-        } else {
-            qcross(&t, &n)
-        };
+    let away = edge_dirs(em, ei, a).map(|inward| {
         if along(&g, &inward) {
             return Ordering::Equal;
         }
         qqdot(&g, &inward).sign()
     });
     away.iter().all(|s| *s != extremum && *s != Ordering::Equal)
+}
+
+/// The directions into the faces of edge `ei` of `em` from its point `a`:
+/// each face's outward normal across the edge's running tangent (the face
+/// on the left `n x t`, on the right `t x n`).
+fn edge_dirs(em: &Prism, ei: usize, a: &QV) -> [QV; 2] {
+    let e = &em.edges[ei];
+    let t = running(em, ei, a);
+    [0, 1].map(|k| {
+        let n = em.normal_at(e.faces[k], a);
+        if k == 0 {
+            qcross(&n, &t)
+        } else {
+            qcross(&t, &n)
+        }
+    })
+}
+
+/// Whether a point at an end of edge `ei` of `m` lies inside its input
+/// edge, the edge's curve running on through its vertex smoothly: the
+/// vertex holds exactly two edge ends, of one closed edge or of two model
+/// edges of one input edge (a circle's halves at their seam), but for
+/// seams' edges (without an input's id, between faces on one surface: a
+/// circle's wall's seam). The vertex, where it does.
+pub(super) fn smooth_end(m: &Prism, ei: usize, x: &QV) -> Option<usize> {
+    let e = &m.edges[ei];
+    let id = e.id?;
+    let v = [e.start, e.end]
+        .into_iter()
+        .find(|&v| qv_eq(&m.verts[v].p, x))?;
+    let mut ends = 0;
+    for f in &m.edges {
+        let here = usize::from(f.start == v) + usize::from(f.end == v);
+        if here == 0 || (f.id.is_none() && one_surface(m, f.faces[0], f.faces[1])) {
+            continue;
+        }
+        if f.id != Some(id) {
+            return None;
+        }
+        ends += here;
+    }
+    (ends == 2).then_some(v)
+}
+
+/// Whether a direction `w` lies along the plane normal to `g` within the
+/// faces' band and a further allowance `rho2` (the square of a length):
+/// `(g . w)^2 <= (10^-24 |g|^2 + rho2) |w|^2`, exactly. With `rho2` zero it
+/// is `along`.
+fn along_by(g: &QV, w: &QV, rho2: &R) -> bool {
+    let d = qqdot(g, w);
+    let band = qqdot(g, g).scale(&(int(1) / int(10).pow(24))).add_r(rho2);
+    d.mul(&d).sub(&band.mul(&qqdot(w, w))).sign() != Ordering::Greater
+}
+
+/// The sign every direction takes against `g`, strictly and outside the
+/// band (`along`, or `along_by` with an allowance); `None` where one lies
+/// within it, they take both signs, or there are none.
+fn signs(dirs: &[QV], g: &QV, rho2: Option<&R>) -> Option<Ordering> {
+    let mut sign = None;
+    for w in dirs {
+        let flat = match rho2 {
+            None => along(g, w),
+            Some(r) => along_by(g, w, r),
+        };
+        if flat {
+            return None;
+        }
+        let s = qqdot(g, w).sign();
+        if sign.is_some_and(|x| x != s) {
+            return None;
+        }
+        sign = Some(s);
+    }
+    sign
+}
+
+/// The sign every ruling of a cone's wall from its apex (`|k| (cos u X + sin
+/// u Y) + s N` on the frame's axes, `s` the side the cone opens to, the
+/// sign of `k`) takes against `g`, strictly and outside the band: with
+/// `(A, B, C)` the components of `g` along `X`, `Y` and `N`, every ruling's
+/// is `|k| (A cos u + B sin u) + s C`, all of the sign of `s C` where `C^2 >
+/// k^2 (A^2 + B^2)`; the ruling nearest the plane normal to `g` is within
+/// the band where `|C| - |k| sqrt(A^2 + B^2) <= E`, `E^2 = (10^-24 |g|^2 +
+/// rho2) (1 + k^2)` (the rulings' lengths in the frame's coordinates),
+/// decided by squaring. `None` for a model without an apex.
+fn apex_side(m: &Prism, g: &QV, rho2: &R) -> Option<Ordering> {
+    let fun = m.funnel.as_ref()?;
+    fun.apex?;
+    let f = &m.f;
+    let (ca, cb, cn) = (qdot(g, &f.x), qdot(g, &f.y), qdot(g, &f.n));
+    let k = &fun.k;
+    let c = if sign(k) == Ordering::Greater {
+        cn
+    } else {
+        cn.neg()
+    };
+    let kk = k * k;
+    let p2 = ca.mul(&ca).add(&cb.mul(&cb)).scale(&kk);
+    let c2 = c.mul(&c);
+    if c.sign() == Ordering::Equal || c2.sub(&p2).sign() != Ordering::Greater {
+        return None;
+    }
+    let e2 = qqdot(g, g)
+        .scale(&(int(1) / int(10).pow(24)))
+        .add_r(rho2)
+        .scale(&(int(1) + &kk));
+    // `|C| <= E + P` (`P^2 = p2`): `C^2 - E^2 - P^2 <= 2 E P`.
+    let lhs = c2.sub(&e2).sub(&p2);
+    if lhs.sign() != Ordering::Greater
+        || lhs.mul(&lhs).sub(&e2.mul(&p2).scale(&int(4))).sign() != Ordering::Greater
+    {
+        return None;
+    }
+    Some(c.sign())
 }
 
 /// An edge's tangent at its point `a` along its run from its start to its
@@ -739,28 +868,20 @@ fn search(at: &dyn Fn(f64) -> ([f64; 3], [f64; 3]), quad: &Quad) -> Vec<(f64, Or
 /// surface exactly is the incidences'; one whose boundary runs along the
 /// surface (within the faces' parallel band) or crosses its level there is
 /// no contact of its own. Seams' and poles' vertices (without an input's
-/// id) and those among faces of one surface are none, as at a sphere.
+/// id) and those among faces of one surface are none, as at a sphere. A
+/// cone's apex, which has no edges, is taken with its rulings for its
+/// tangent cone (`apex_side`; REVIEW_NOTES.md's "Edges and vertices within
+/// the resolution of each other"): a cone standing `1e-12` under a slab was
+/// fused with it into two solids.
 pub(super) fn vertex_faces(models: &[Prism; 2], res: f64) -> Result<()> {
     let wide = |b: &([f64; 3], [f64; 3])| (b.0.map(|x| x - res), b.1.map(|x| x + res));
     for o in 0..2 {
         let (vm, qm) = (&models[o], &models[1 - o]);
-        // Each vertex's edge ends: the edge and whether it starts there.
-        let mut ends: Vec<Vec<(usize, bool)>> = vec![Vec::new(); vm.verts.len()];
-        for (ei, e) in vm.edges.iter().enumerate() {
-            ends[e.start].push((ei, true));
-            ends[e.end].push((ei, false));
-        }
+        let ends = edge_ends(vm);
         for (v, mv) in vm.verts.iter().enumerate() {
-            let faces: Vec<usize> = ends[v]
-                .iter()
-                .flat_map(|&(ei, _)| vm.edges[ei].faces)
-                .collect();
-            if mv.id.is_none()
-                || faces.is_empty()
-                || faces.iter().all(|&f| one_surface(vm, faces[0], f))
-            {
+            let Some(spot) = spot_of(vm, &ends, v) else {
                 continue;
-            }
+            };
             let x = qv_f64(&mv.p);
             for fq in 0..qm.faces.len() {
                 let b = wide(&qm.boxes[fq]);
@@ -770,23 +891,76 @@ pub(super) fn vertex_faces(models: &[Prism; 2], res: f64) -> Result<()> {
                 let Some(quad) = Quad::of(qm, fq) else {
                     continue;
                 };
-                vertex_face(vm, &ends[v], &mv.p, qm, fq, &quad, res)?;
+                vertex_face(vm, &spot, &mv.p, qm, fq, &quad, res)?;
             }
         }
     }
     Ok(())
 }
 
-/// `vertex_faces`' rule at a vertex `a` of `vm`, its edge ends `ends`.
+/// Each vertex's edge ends: the edge and whether it starts there.
+fn edge_ends(m: &Prism) -> Vec<Vec<(usize, bool)>> {
+    let mut ends: Vec<Vec<(usize, bool)>> = vec![Vec::new(); m.verts.len()];
+    for (ei, e) in m.edges.iter().enumerate() {
+        ends[e.start].push((ei, true));
+        ends[e.end].push((ei, false));
+    }
+    ends
+}
+
+/// A point of an input's boundary whose directions there are decided
+/// against a gradient or a gap: a vertex (its edge ends), a cone's apex
+/// (its rulings), or a point of an edge.
+enum Spot<'a> {
+    Vertex(&'a [(usize, bool)]),
+    Apex,
+    Edge(usize),
+}
+
+/// Vertex `v` of `m` as a spot the near-miss rules take: an input vertex
+/// (with an input's id) whose edges' faces lie on more than one surface,
+/// or a cone's apex.
+fn spot_of<'a>(m: &Prism, ends: &'a [Vec<(usize, bool)>], v: usize) -> Option<Spot<'a>> {
+    m.verts[v].id?;
+    if m.funnel.as_ref().and_then(|f| f.apex) == Some(v) {
+        return Some(Spot::Apex);
+    }
+    let faces: Vec<usize> = ends[v]
+        .iter()
+        .flat_map(|&(ei, _)| m.edges[ei].faces)
+        .collect();
+    if faces.is_empty() || faces.iter().all(|&f| one_surface(m, faces[0], f)) {
+        return None;
+    }
+    Some(Spot::Vertex(&ends[v]))
+}
+
+/// The sign every direction of `m`'s boundary at the spot `a` takes against
+/// `g`, strictly and outside the band (`signs`, `apex_side`): `None` where
+/// one lies within it, they take both signs, or the spot is undecided (a
+/// reflex or half-turn sector, a face with other than two edge ends).
+fn side(m: &Prism, spot: &Spot, a: &QV, g: &QV, rho2: Option<&R>) -> Option<Ordering> {
+    match spot {
+        Spot::Apex => apex_side(m, g, rho2.unwrap_or(&zero())),
+        Spot::Vertex(ends) => signs(&corner_dirs(m, ends, a)?, g, rho2),
+        Spot::Edge(ei) => signs(&edge_dirs(m, *ei, a), g, rho2),
+    }
+}
+
+/// `vertex_faces`' rule at a vertex `a` of `vm` (a spot of it).
 fn vertex_face(
     vm: &Prism,
-    ends: &[(usize, bool)],
+    spot: &Spot,
     a: &QV,
     qm: &Prism,
     fq: usize,
     quad: &Quad,
     res: f64,
 ) -> Result<()> {
+    let why = match spot {
+        Spot::Apex => NEAR_APEX,
+        _ => NEAR_VERTEX_FACE,
+    };
     let side = quad.value(a).sign();
     if side == Ordering::Equal {
         // On the surface: the incidences' own rules.
@@ -803,13 +977,18 @@ fn vertex_face(
     if qm.in_face(fq, &s) == Loc::Out {
         return Ok(());
     }
-    let Some(extremum) = corner(vm, ends, quad, a) else {
+    // Rising along every direction: least there.
+    let rises = match spot {
+        Spot::Vertex(ends) => corner(vm, ends, quad, a),
+        _ => self::side(vm, spot, a, &quad.gradient(a), None),
+    };
+    let Some(extremum) = rises.map(Ordering::reverse) else {
         return Ok(());
     };
     // A least value below the surface, or a greatest above it: the corner
     // crosses it.
     if side == extremum {
-        return Err(Error::Degenerate(NEAR_VERTEX_FACE));
+        return Err(Error::Degenerate(why));
     }
     let inside = [
         vm.member(a, std::slice::from_ref(&gap)) == Loc::In,
@@ -818,19 +997,15 @@ fn vertex_face(
     if inside == [true, true] {
         return Ok(());
     }
-    Err(Error::Degenerate(NEAR_VERTEX_FACE))
+    Err(Error::Degenerate(why))
 }
 
-/// Whether the surface's function at a vertex `a` of `m` is least
-/// (`Less`) or greatest (`Greater`) on its input's boundary there, to first
-/// order and strictly: every edge's direction away from the vertex and
-/// every face's sector between its two edge ends there on one side of the
-/// surface's tangent plane, decided exactly against its gradient at the
-/// vertex. A face's sector is convex where its second edge's direction lies
-/// on the face's side of its first (the face's direction into it from the
-/// first edge, its outward normal across the edge's running tangent), and
-/// is then spanned by the two (the faces' directions into them from their
-/// edges lie outside an acute sector: they are not taken). `None` (no
+/// The sign every direction of a vertex `a` of `m` takes against a
+/// surface's gradient there, to first order and strictly (`Greater` where
+/// the surface's function rises along every one, least there): every
+/// edge's direction away from the vertex and every face's sector between its
+/// two edge ends there on one side of the surface's tangent plane, decided
+/// exactly against its gradient at the vertex (`corner_dirs`). `None` (no
 /// contact of the vertex's own) where a sector is reflex or a half turn or
 /// a face has other than two edge ends there (an edge closed at the
 /// vertex, a face touching itself), where a direction lies within the
@@ -839,6 +1014,19 @@ fn vertex_face(
 /// directions take both signs (an edge or a face heading toward the
 /// surface: its own sections).
 fn corner(m: &Prism, ends: &[(usize, bool)], quad: &Quad, a: &QV) -> Option<Ordering> {
+    let dirs = corner_dirs(m, ends, a)?;
+    signs(&dirs, &quad.gradient(a), None)
+}
+
+/// A vertex's tangent cone: every edge's direction away from the vertex,
+/// where every face's sector between its two edge ends there is convex
+/// (its second edge's direction on the face's side of its first: the
+/// face's direction into it from the first edge, its outward normal across
+/// the edge's running tangent), and so spanned by the two (the faces'
+/// directions into them from their edges lie outside an acute sector: they
+/// are not taken); `None` where a sector is reflex or a half turn or a
+/// face has other than two edge ends there.
+fn corner_dirs(m: &Prism, ends: &[(usize, bool)], a: &QV) -> Option<Vec<QV>> {
     // Each face's edge ends: the direction away from the vertex, the
     // edge's running tangent and the face's side of it.
     let mut at_face: BTreeMap<usize, Vec<(QV, QV, usize)>> = BTreeMap::new();
@@ -872,26 +1060,585 @@ fn corner(m: &Prism, ends: &[(usize, bool)], quad: &Quad, a: &QV) -> Option<Orde
             return None;
         }
     }
-    let g = quad.gradient(a);
-    let mut sign = None;
-    for w in &dirs {
-        if along(&g, w) {
-            return None;
+    Some(dirs)
+}
+
+// ------------------------------------------------ edges and vertices
+
+/// The inputs' vertices and edges within the resolution of each other's
+/// (REVIEW_NOTES.md's "Edges and vertices within the resolution of each
+/// other"): a vertex (or a cone's apex) and a vertex, a vertex and an
+/// edge's point nearest it strictly inside the edge, and two edges' closest
+/// points strictly inside both (lines, a line and a conic or a circle),
+/// each point at an end where its edge runs on through it smoothly too
+/// (`smooth_end`). Each pair whose gap is within the resolution and not
+/// zero (an incidence or an exact crossing, the existing rules') is decided
+/// by each input's boundary at its point against the gap (`pair`): both
+/// leaving it away from the other, `Degenerate` unless the gap lies inside
+/// both inputs; both heading toward the other, `Degenerate`; otherwise no
+/// contact of the pair's own. A cube's corner `1e-12` off a box's top edge
+/// or corner, a box's edge `1e-12` across another's, a corner by a rod's
+/// rim were fused with it into two solids. Each pair whose boxes meet once
+/// one is widened by the resolution is tried, after `vertex_faces`.
+pub(super) fn edges_and_vertices(models: &[Prism; 2], res: f64) -> Result<()> {
+    let ends = [edge_ends(&models[0]), edge_ends(&models[1])];
+    let spots: [Vec<Option<Spot>>; 2] = [0, 1].map(|o| {
+        (0..models[o].verts.len())
+            .map(|v| spot_of(&models[o], &ends[o], v))
+            .collect()
+    });
+    let views: [Vec<[f64; 3]>; 2] =
+        [0, 1].map(|o| models[o].verts.iter().map(|v| qv_f64(&v.p)).collect());
+    let near = |x: &[f64; 3], y: &[f64; 3]| (0..3).all(|k| (x[k] - y[k]).abs() <= 2.0 * res);
+    // Vertex and vertex.
+    for (va, sa) in spots[0].iter().enumerate() {
+        let Some(sa) = sa else { continue };
+        for (vb, sb) in spots[1].iter().enumerate() {
+            let Some(sb) = sb else { continue };
+            if !near(&views[0][va], &views[1][vb]) {
+                continue;
+            }
+            let a = End {
+                m: &models[0],
+                spot: sa,
+                p: models[0].verts[va].p.clone(),
+            };
+            let b = End {
+                m: &models[1],
+                spot: sb,
+                p: models[1].verts[vb].p.clone(),
+            };
+            pair(&a, &b, &Bracket::Exact, res, NEAR_VERTICES)?;
         }
-        let s = qqdot(&g, w).sign();
-        if sign.is_some_and(|x| x != s) {
-            return None;
-        }
-        sign = Some(s);
     }
-    // Rising along every direction: least there.
-    sign.map(|s| {
-        if s == Ordering::Greater {
-            Ordering::Less
-        } else {
-            Ordering::Greater
+    let wide = |b: &([f64; 3], [f64; 3])| (b.0.map(|x| x - 2.0 * res), b.1.map(|x| x + 2.0 * res));
+    let edge_box = |m: &Prism, e: &MEdge| intersect(&m.boxes[e.faces[0]], &m.boxes[e.faces[1]]);
+    // Vertex and edge, each input's vertices against the other's edges.
+    for o in 0..2 {
+        let (vm, em) = (&models[o], &models[1 - o]);
+        for (ei, e) in em.edges.iter().enumerate() {
+            if !takes_edge(em, ei) {
+                continue;
+            }
+            let b = wide(&edge_box(em, e));
+            for (v, spot) in spots[o].iter().enumerate() {
+                let Some(spot) = spot else { continue };
+                let x = &views[o][v];
+                if !(0..3).all(|k| b.0[k] <= x[k] && x[k] <= b.1[k]) {
+                    continue;
+                }
+                let p = &vm.verts[v].p;
+                for (foot, bracket) in nearest_to_point(em, ei, p, res) {
+                    let (vertex, point) = (
+                        End {
+                            m: vm,
+                            spot,
+                            p: p.clone(),
+                        },
+                        End {
+                            m: em,
+                            spot: &Spot::Edge(ei),
+                            p: foot,
+                        },
+                    );
+                    // The gap from the first input's point to the second's.
+                    let (a, b) = if o == 0 {
+                        (&vertex, &point)
+                    } else {
+                        (&point, &vertex)
+                    };
+                    pair(a, b, &bracket, res, NEAR_VERTEX_EDGE)?;
+                }
+            }
         }
-    })
+    }
+    // Edge and edge.
+    for (ea, e) in models[0].edges.iter().enumerate() {
+        if !takes_edge(&models[0], ea) {
+            continue;
+        }
+        let ba = wide(&edge_box(&models[0], e));
+        for (eb, f) in models[1].edges.iter().enumerate() {
+            if !takes_edge(&models[1], eb) || !boxes_meet(&ba, &edge_box(&models[1], f)) {
+                continue;
+            }
+            for (x, y, bracket) in closest_on_edges(&models[0], ea, &models[1], eb, res) {
+                let a = End {
+                    m: &models[0],
+                    spot: &Spot::Edge(ea),
+                    p: x,
+                };
+                let b = End {
+                    m: &models[1],
+                    spot: &Spot::Edge(eb),
+                    p: y,
+                };
+                pair(&a, &b, &bracket, res, NEAR_EDGES)?;
+            }
+        }
+    }
+    Ok(())
+}
+
+/// An input edge the rules take: with an input's id, not between faces on
+/// one surface, its curve a line, a conic or a circle.
+fn takes_edge(m: &Prism, ei: usize) -> bool {
+    let e = &m.edges[ei];
+    e.id.is_some()
+        && !one_surface(m, e.faces[0], e.faces[1])
+        && matches!(
+            e.curve,
+            Crv::Line { .. } | Crv::Conic { .. } | Crv::Circle(_)
+        )
+}
+
+/// A point of an input's boundary for `pair`.
+struct End<'a> {
+    m: &'a Prism,
+    spot: &'a Spot<'a>,
+    p: QV,
+}
+
+/// How a pair's points were found: exactly, at a bracketed least of the
+/// distance whose curve moves at most the bound over the bracket, or at a
+/// binary64 least the exact signs did not bracket.
+enum Bracket {
+    Exact,
+    Within(R),
+    Unbracketed,
+}
+
+/// Whether the numbers of some points lie in one field (rational, or one
+/// surd `sqrt(d)` over one base field), so that they combine.
+fn one_field(points: &[&QV]) -> bool {
+    let mut surd: Option<&R> = None;
+    let mut base = None;
+    for x in points.iter().flat_map(|p| p.iter()) {
+        if let Some(d) = x.field() {
+            if surd.is_some_and(|e| e != d) {
+                return false;
+            }
+            surd = Some(d);
+        }
+        if let Some(g) = x.gen() {
+            if base.is_some_and(|h| !Arc::ptr_eq(h, g)) {
+                return false;
+            }
+            base = Some(g);
+        }
+    }
+    true
+}
+
+/// The gap's own rounding: `rho^2`, `rho = 2^(e - 48)`, `2^e` the least
+/// power of two at least one and every coordinate of the two points.
+fn gap_rounding(a: &QV, b: &QV) -> R {
+    let size = qv_f64(a)
+        .iter()
+        .chain(qv_f64(b).iter())
+        .fold(1.0f64, |m, x| m.max(x.abs()));
+    let e = if size.is_finite() {
+        size.log2().ceil() as i32
+    } else {
+        0
+    };
+    R::from_integer(BigInt::from(2)).pow(2 * (e - 48))
+}
+
+/// The pair rule at the first input's point `a` and the second's `b`: their
+/// gap `n = b - a` within the resolution and not zero; each input's
+/// boundary at its point against `n` (`side`, the band `along_by` with the
+/// gap's own rounding): the first's all against `n` and the second's all
+/// with it (each leaving the other away: missing), `Degenerate` unless the
+/// gap lies inside both inputs (each one's membership at its point pushed
+/// across it); the reverse (each heading toward the other: crossing),
+/// `Degenerate`; otherwise no contact. A bracketed distance above the
+/// resolution but within its bound of it, or an unbracketed one within
+/// twice it, is a `ComputationLimit` where the pair would be a contact.
+fn pair(a: &End, b: &End, bracket: &Bracket, res: f64, why: &'static str) -> Result<()> {
+    if !one_field(&[&a.p, &b.p]) {
+        return Ok(());
+    }
+    let n = qsub(&b.p, &a.p);
+    let nn = qqdot(&n, &n);
+    if nn.sign() == Ordering::Equal {
+        // An incidence or an exact crossing: the existing rules'.
+        return Ok(());
+    }
+    let tol = q(res);
+    let above = |reach: &R| nn.add_r(&-(reach * reach)).sign() == Ordering::Greater;
+    let within = !above(&tol);
+    let unsure = !within
+        && match bracket {
+            Bracket::Exact => false,
+            Bracket::Within(d) => !above(&(&tol + d)),
+            Bracket::Unbracketed => !above(&(int(2) * &tol)),
+        };
+    if !within && !unsure {
+        return Ok(());
+    }
+    let rho2 = gap_rounding(&a.p, &b.p);
+    let sa = side(a.m, a.spot, &a.p, &n, Some(&rho2));
+    let sb = side(b.m, b.spot, &b.p, &n, Some(&rho2));
+    let missing = match (sa, sb) {
+        (Some(Ordering::Less), Some(Ordering::Greater)) => true,
+        (Some(Ordering::Greater), Some(Ordering::Less)) => false,
+        _ => return Ok(()),
+    };
+    if missing {
+        let inside = [
+            a.m.member(&a.p, std::slice::from_ref(&n)) == Loc::In,
+            b.m.member(&b.p, &[n.clone().map(|x| x.neg())]) == Loc::In,
+        ];
+        if inside == [true, true] {
+            return Ok(());
+        }
+    }
+    if unsure {
+        return Err(Error::ComputationLimit(NEAR_LIMIT));
+    }
+    Err(Error::Degenerate(why))
+}
+
+/// Whether a point lies strictly inside edge `ei` of `m`, or at an end it
+/// runs on through smoothly.
+fn inside_edge(m: &Prism, ei: usize, x: &QV) -> bool {
+    let e = &m.edges[ei];
+    let (from, to, with) = edge_places(m, ei);
+    match strictly_within(&place(&e.curve, x), &from, &to, with) {
+        Some(true) => true,
+        Some(false) => false,
+        None => smooth_end(m, ei, x).is_some(),
+    }
+}
+
+/// The points of edge `ei` of `m` nearest a point `p` inside the edge
+/// (`inside_edge`): a line's foot, a circle's point toward `p` (exact, in
+/// the quadratic field of the projection's length; `p` rational), and on a
+/// conic that is no circle exactly each least of the distance bracketed
+/// (`bracketed`). None for points of two fields.
+fn nearest_to_point(m: &Prism, ei: usize, p: &QV, res: f64) -> Vec<(QV, Bracket)> {
+    let e = &m.edges[ei];
+    let found: Vec<(QV, Bracket)> = match &e.curve {
+        Crv::Line { p: o, d } => {
+            if !one_field(&[p, o]) {
+                return Vec::new();
+            }
+            let t = qdot(&qsub(p, o), d).scale(&(int(1) / dot(d, d)));
+            vec![(qadd(o, &qscale(d, &t)), Bracket::Exact)]
+        }
+        Crv::Circle(circ) => match rational_point(p) {
+            Some(c) => super::graph::circle_nearest(&circ.c, &circ.x, &circ.y, &circ.r2, &c)
+                .map(|x| (x, Bracket::Exact))
+                .into_iter()
+                .collect(),
+            None => Vec::new(),
+        },
+        Crv::Conic { c, a, b } => {
+            let circle = dot(a, b) == zero() && dot(a, a) == dot(b, b);
+            match (circle, rational_point(p)) {
+                (true, Some(x)) => super::graph::circle_nearest(c, a, b, &dot(a, a), &x)
+                    .map(|x| (x, Bracket::Exact))
+                    .into_iter()
+                    .collect(),
+                _ => {
+                    let target = qv_f64(p);
+                    let far = |x: [f64; 3]| (0..3).map(|k| (x[k] - target[k]).powi(2)).sum();
+                    let slope = |x: &QV, t: &QV| qqdot(&qsub(x, p), t).sign();
+                    bracketed(&e.curve, &far, &slope, res)
+                }
+            }
+        }
+        _ => Vec::new(),
+    };
+    found
+        .into_iter()
+        .filter(|(x, _)| inside_edge(m, ei, x))
+        .collect()
+}
+
+/// A point's rational coordinates, where they are.
+fn rational_point(p: &QV) -> Option<V> {
+    let [x, y, z] = p;
+    Some([
+        x.rational()?.clone(),
+        y.rational()?.clone(),
+        z.rational()?.clone(),
+    ])
+}
+
+/// The closest points of two edges inside both (`inside_edge`): of two
+/// lines (skew; parallel lines have none), exactly; of a line and a conic
+/// or a circle, each least of the distance from the curve to the line
+/// bracketed on the curve (`bracketed`), with its exact foot on the line.
+fn closest_on_edges(
+    ma: &Prism,
+    ea: usize,
+    mb: &Prism,
+    eb: usize,
+    res: f64,
+) -> Vec<(QV, QV, Bracket)> {
+    let (ca, cb) = (&ma.edges[ea].curve, &mb.edges[eb].curve);
+    let found: Vec<(QV, QV, Bracket)> = match (ca, cb) {
+        (Crv::Line { p: p1, d: d1 }, Crv::Line { p: p2, d: d2 }) => {
+            if !one_field(&[p1, p2]) {
+                return Vec::new();
+            }
+            let (a, b, c) = (dot(d1, d1), dot(d1, d2), dot(d2, d2));
+            let den = &a * &c - &b * &b;
+            if den == zero() {
+                return Vec::new();
+            }
+            let w = qsub(p1, p2);
+            let (d, e) = (qdot(&w, d1), qdot(&w, d2));
+            let inv = int(1) / &den;
+            let s = e.scale(&b).sub(&d.scale(&c)).scale(&inv);
+            let t = e.scale(&a).sub(&d.scale(&b)).scale(&inv);
+            vec![(
+                qadd(p1, &qscale(d1, &s)),
+                qadd(p2, &qscale(d2, &t)),
+                Bracket::Exact,
+            )]
+        }
+        (Crv::Line { .. }, Crv::Conic { .. } | Crv::Circle(_)) => line_and_curve(cb, ca, res)
+            .into_iter()
+            .map(|(on_curve, foot, k)| (foot, on_curve, k))
+            .collect(),
+        (Crv::Conic { .. } | Crv::Circle(_), Crv::Line { .. }) => line_and_curve(ca, cb, res),
+        _ => Vec::new(),
+    };
+    found
+        .into_iter()
+        .filter(|(x, y, _)| inside_edge(ma, ea, x) && inside_edge(mb, eb, y))
+        .collect()
+}
+
+/// The points of a conic or a circle `crv` at the leasts of its distance
+/// from a line, each with its exact foot on the line.
+fn line_and_curve(crv: &Crv, line: &Crv, res: f64) -> Vec<(QV, QV, Bracket)> {
+    let Crv::Line { p, d } = line else {
+        return Vec::new();
+    };
+    // A circle's points lie in fields of their own: its line's point
+    // rational.
+    if matches!(crv, Crv::Circle(_)) && rational_point(p).is_none() {
+        return Vec::new();
+    }
+    let dd = dot(d, d);
+    let foot = |x: &QV| {
+        let t = qdot(&qsub(x, p), d).scale(&(int(1) / &dd));
+        qadd(p, &qscale(d, &t))
+    };
+    let (fp, fd) = (qv_f64(p), d.clone().map(|x| rational_f64(&x)));
+    let fdd = fd.iter().map(|x| x * x).sum::<f64>();
+    // `|w x d|^2 / |d|^2`, without the cancellation of `|w|^2 - (w . d)^2 /
+    // |d|^2` near the line.
+    let far = |x: [f64; 3]| {
+        let w = [0, 1, 2].map(|k| x[k] - fp[k]);
+        let c = [
+            w[1] * fd[2] - w[2] * fd[1],
+            w[2] * fd[0] - w[0] * fd[2],
+            w[0] * fd[1] - w[1] * fd[0],
+        ];
+        c.iter().map(|x| x * x).sum::<f64>() / fdd
+    };
+    let slope = |x: &QV, t: &QV| qqdot(&qsub(x, &foot(x)), t).sign();
+    bracketed(crv, &far, &slope, res)
+        .into_iter()
+        .map(|(x, k)| {
+            let y = foot(&x);
+            (x, y, k)
+        })
+        .collect()
+}
+
+/// A conic's or a circle's point at the rational `(cos, sin)` of the half
+/// angle's tangent `s` (about the opposite direction where `flip`), with
+/// its tangent along the increasing angle.
+fn curve_at(crv: &Crv, s: &R, flip: bool) -> Option<(QV, QV)> {
+    let den = int(1) + s * s;
+    let (cs, sn) = ((int(1) - s * s) / &den, int(2) * s / &den);
+    let (cs, sn) = if flip { (-cs, -sn) } else { (cs, sn) };
+    match crv {
+        Crv::Conic { c, a, b } => {
+            let u = [Qd::rat(cs), Qd::rat(sn)];
+            Some((
+                super::meet::conic_point(c, a, b, &u),
+                super::meet::conic_tangent(a, b, &u),
+            ))
+        }
+        Crv::Circle(circ) => {
+            let x = circ.at(&[cs, sn]);
+            let t = circ.tangent(&x);
+            Some((x, t))
+        }
+        _ => None,
+    }
+}
+
+/// A conic's or a circle's point in binary64 at the angle `t`.
+fn curve_at64(crv: &Crv, t: f64) -> Option<[f64; 3]> {
+    let g = |v: &V| v.clone().map(|x| rational_f64(&x));
+    match crv {
+        Crv::Conic { c, a, b } => {
+            let (fc, fa, fb) = (g(c), g(a), g(b));
+            Some([0, 1, 2].map(|k| fc[k] + fa[k] * t.cos() + fb[k] * t.sin()))
+        }
+        Crv::Circle(circ) => {
+            let (fc, fx, fy) = (g(&circ.c), g(&circ.x), g(&circ.y));
+            let dir = [0, 1, 2].map(|k| fx[k] * t.cos() + fy[k] * t.sin());
+            let len = dir.iter().map(|x| x * x).sum::<f64>().sqrt();
+            let r = rational_f64(&circ.r2).sqrt();
+            Some([0, 1, 2].map(|k| fc[k] + r * dir[k] / len))
+        }
+        _ => None,
+    }
+}
+
+/// A rational upper bound of `sqrt(x)`, `x >= 0`.
+fn sqrt_up(x: &R) -> R {
+    let mut r = q(rational_f64(x).sqrt() * (1.0 + 1e-9) + 1e-300);
+    while &r * &r < *x {
+        r = &r * int(2);
+    }
+    r
+}
+
+/// A rational lower bound of `sqrt(x)`, `x >= 0`.
+fn sqrt_down(x: &R) -> R {
+    let mut r = q(rational_f64(x).sqrt() * (1.0 - 1e-9));
+    while sign(&r) == Ordering::Greater && &r * &r > *x {
+        r = &r / int(2);
+    }
+    if sign(&r) == Ordering::Less {
+        zero()
+    } else {
+        r
+    }
+}
+
+/// A bound of a conic's or a circle's speed in its half angle's tangent:
+/// `2 (|a| + |b|)` for `c + a cos + b sin` (the angle's rate in the tangent
+/// at most two), and for a circle of radius `r` on its basis `(x, y)`
+/// (orthogonal) `2 r max(|x|, |y|) / min(|x|, |y|)`.
+fn speed(crv: &Crv) -> Option<R> {
+    match crv {
+        Crv::Conic { a, b, .. } => Some(int(2) * (sqrt_up(&dot(a, a)) + sqrt_up(&dot(b, b)))),
+        Crv::Circle(circ) => {
+            if dot(&circ.x, &circ.y) != zero() {
+                return None;
+            }
+            let (xx, yy) = (dot(&circ.x, &circ.x), dot(&circ.y, &circ.y));
+            let (hi, lo) = if xx > yy { (xx, yy) } else { (yy, xx) };
+            let low = sqrt_down(&lo);
+            if sign(&low) != Ordering::Greater {
+                return None;
+            }
+            Some(int(2) * sqrt_up(&circ.r2) * sqrt_up(&hi) / low)
+        }
+        _ => None,
+    }
+}
+
+/// The leasts of a function `far` (a squared distance) along a conic or a
+/// circle: each sampled least among 64 angles narrowed in binary64 by a
+/// golden-section search, then bracketed between two rational points of the
+/// curve (dyadic tangents of the half angle, about the opposite direction
+/// past a quarter turn) where the function's derivative along the curve,
+/// `slope` at a point with its tangent, takes opposite exact signs, the
+/// bracket narrowed by bisection on that sign. Each is the bracket's middle
+/// point with the curve's movement over the bracket (`speed` times its
+/// width: the least over the bracket lies within it of that point's); or,
+/// where no bracket is found, the binary64 least's rational point; each
+/// only where binary64 puts the least within twice the resolution.
+fn bracketed(
+    crv: &Crv,
+    far: &dyn Fn([f64; 3]) -> f64,
+    slope: &dyn Fn(&QV, &QV) -> Ordering,
+    res: f64,
+) -> Vec<(QV, Bracket)> {
+    const N: usize = 64;
+    let f = |t: f64| curve_at64(crv, t).map_or(f64::NAN, far);
+    let step = TAU / N as f64;
+    let vals: Vec<f64> = (0..N).map(|i| f(i as f64 * step)).collect();
+    if vals.iter().any(|v| !v.is_finite()) {
+        return Vec::new();
+    }
+    let Some(speed) = speed(crv) else {
+        return Vec::new();
+    };
+    let mut out = Vec::new();
+    for i in 0..N {
+        let (prev, next) = (vals[(i + N - 1) % N], vals[(i + 1) % N]);
+        if !(vals[i] <= prev && vals[i] < next) {
+            continue;
+        }
+        let (mut lo, mut hi) = ((i as f64 - 1.0) * step, (i as f64 + 1.0) * step);
+        let g = (5f64.sqrt() - 1.0) / 2.0;
+        for _ in 0..80 {
+            let (x1, x2) = (hi - g * (hi - lo), lo + g * (hi - lo));
+            if f(x1) < f(x2) {
+                hi = x2;
+            } else {
+                lo = x1;
+            }
+        }
+        let t = 0.5 * lo + 0.5 * hi;
+        // Only near misses: binary64 within twice the resolution.
+        let gap = f(t).max(0.0).sqrt();
+        if gap.is_nan() || gap > 2.0 * res {
+            continue;
+        }
+        let flip = t.cos() < 0.0;
+        let s = (if flip { t - PI } else { t } / 2.0).tan();
+        if let Some(found) = bisect(crv, s, flip, slope, &speed) {
+            out.push(found);
+        } else if let Some((x, _)) = curve_at(crv, &q(s), flip) {
+            out.push((x, Bracket::Unbracketed));
+        }
+    }
+    out
+}
+
+/// The bracket about the half angle's tangent `s` (`bracketed`): opposite
+/// exact signs of `slope` at `s - h` and `s + h` (falling, then rising),
+/// `h` from `2^-20` widened up to `2^-4`, narrowed by 64 bisections; the
+/// point at a middle where the slope vanishes, or at the last middle, with
+/// the curve's movement over the bracket (any point of it bounds the least
+/// inside it so).
+fn bisect(
+    crv: &Crv,
+    s: f64,
+    flip: bool,
+    slope: &dyn Fn(&QV, &QV) -> Ordering,
+    speed: &R,
+) -> Option<(QV, Bracket)> {
+    let at = |x: &R| curve_at(crv, x, flip).map(|(p, t)| (slope(&p, &t), p));
+    let centre = q(s);
+    let mut h = R::new(BigInt::from(1), BigInt::from(1u64 << 20));
+    let (mut lo, mut hi) = loop {
+        let (lo, hi) = (&centre - &h, &centre + &h);
+        let (a, _) = at(&lo)?;
+        let (b, _) = at(&hi)?;
+        if (a, b) == (Ordering::Less, Ordering::Greater) {
+            break (lo, hi);
+        }
+        h = &h * int(16);
+        if h > R::new(BigInt::from(1), BigInt::from(16)) {
+            return None;
+        }
+    };
+    for _ in 0..64 {
+        let mid = (&lo + &hi) / int(2);
+        match at(&mid)? {
+            (Ordering::Equal, p) => return Some((p, Bracket::Within(speed * (&hi - &lo)))),
+            (Ordering::Less, _) => lo = mid,
+            (Ordering::Greater, _) => hi = mid,
+        }
+    }
+    let mid = (&lo + &hi) / int(2);
+    let (_, p) = at(&mid)?;
+    Some((p, Bracket::Within(speed * (&hi - &lo))))
 }
 
 // ------------------------------------------------------- other curves
@@ -1114,3 +1861,105 @@ pub(super) fn nearest_on_run(m: &Prism, ei: usize, c: &V, r: &R, res: f64) -> Ve
 /// an incidence (far below its rounding's effect on the distance, the
 /// square of binary64's precision): `2^-80`.
 const ROUNDED: f64 = 1.0 / (1u128 << 80) as f64;
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::identity::OperationId;
+    use crate::profile::boolean::Operand;
+    use crate::{Frame3, Point3, Solid, Tolerance, Vec3};
+
+    fn level() -> Frame3 {
+        Frame3::new(
+            Point3::new(0.0, 0.0, 0.0),
+            Vec3::new(0.0, 0.0, 1.0),
+            Vec3::new(1.0, 0.0, 0.0),
+            Tolerance::default(),
+        )
+        .unwrap()
+    }
+
+    fn rational(p: &QV) -> V {
+        rational_point(p).unwrap()
+    }
+
+    /// A rod's rim runs on through its seam (two arcs of one input edge,
+    /// the wall's seam edge between them) and a cone's rim through its
+    /// vertex (a closed edge); a box's edge does not run on through its
+    /// corner, and a point inside an edge is no end.
+    #[test]
+    fn edges_run_on_through_seams_and_closed_vertices() {
+        let tol = Tolerance::default();
+        let seam = R::new(BigInt::from(2), BigInt::from(7));
+        let rod = Solid::cylinder_with(OperationId(1), level(), 1.0, -3.0, 0.0, tol)
+            .unwrap()
+            .0;
+        let cone = Solid::cone_with(OperationId(1), level(), 1.0, 0.0, 1.0, tol)
+            .unwrap()
+            .0;
+        let models = [
+            Prism::new(&rod, Operand::A, &seam).unwrap(),
+            super::super::cone::model(&cone, Operand::A, &seam).unwrap(),
+        ];
+        for m in &models {
+            let rims: Vec<usize> = (0..m.edges.len())
+                .filter(|&ei| {
+                    m.edges[ei].id.is_some() && matches!(m.edges[ei].curve, Crv::Conic { .. })
+                })
+                .collect();
+            assert!(!rims.is_empty());
+            for ei in rims {
+                let e = &m.edges[ei];
+                for v in [e.start, e.end] {
+                    assert_eq!(smooth_end(m, ei, &m.verts[v].p), Some(v));
+                }
+            }
+        }
+        // The cone's apex has no edges.
+        let apex = models[1].funnel.as_ref().and_then(|f| f.apex).unwrap();
+        assert!(models[1]
+            .edges
+            .iter()
+            .all(|e| e.start != apex && e.end != apex));
+        let boxed =
+            Solid::box_at(Point3::new(0.0, 0.0, 0.0), Vec3::new(1.0, 1.0, 1.0), tol).unwrap();
+        let m = Prism::new(&boxed, Operand::B, &seam).unwrap();
+        for (ei, e) in m.edges.iter().enumerate() {
+            assert_eq!(smooth_end(&m, ei, &m.verts[e.start].p), None);
+            let (s, t) = (rational(&m.verts[e.start].p), rational(&m.verts[e.end].p));
+            let mid = qv(&scale(&add(&s, &t), &(int(1) / int(2))));
+            assert_eq!(smooth_end(&m, ei, &mid), None);
+        }
+    }
+
+    /// A least distance from a point to a conic of a turned frame's kind (no
+    /// circle exactly) is bracketed: the exact distance at the bracket's
+    /// point is the least to far below the resolution, the bracket's bound
+    /// too.
+    #[test]
+    fn a_conics_least_distance_is_bracketed() {
+        let crv = Crv::Conic {
+            c: [zero(), zero(), zero()],
+            a: [q(1.0 + 2f64.powi(-50)), zero(), q(2f64.powi(-52))],
+            b: [zero(), q(1.0), zero()],
+        };
+        let p = [q(0.6), q(0.8), q(1e-12)];
+        let target = p.clone().map(|x| rational_f64(&x));
+        let far = |x: [f64; 3]| (0..3).map(|k| (x[k] - target[k]).powi(2)).sum::<f64>();
+        let pq = qv(&p);
+        let slope = |x: &QV, t: &QV| qqdot(&qsub(x, &pq), t).sign();
+        let found = bracketed(&crv, &far, &slope, 1e-7);
+        assert_eq!(found.len(), 1);
+        let (x, Bracket::Within(d)) = &found[0] else {
+            panic!("unbracketed")
+        };
+        assert!(rational_f64(d) < 1e-15, "{}", rational_f64(d));
+        let w = qsub(x, &pq);
+        let u = qqdot(&w, &w).to_f64().sqrt();
+        // `(0.6, 0.8)` lies on the circle but for the conic's ulps: its
+        // distance is about the point's height.
+        assert!((u - 1e-12).abs() < 1e-15, "{u}");
+        assert!(sqrt_up(&q(2.0)) * sqrt_up(&q(2.0)) >= q(2.0));
+        assert!(sqrt_down(&q(2.0)) * sqrt_down(&q(2.0)) <= q(2.0));
+    }
+}
