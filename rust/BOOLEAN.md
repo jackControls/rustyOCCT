@@ -73,7 +73,12 @@ box: `solid/imported.rs`'s `leaf_pairs`), and S9e.4b.4b.2b.2b.1's leaves
 whose cap a pocket or another part cuts at its rim (a stadium plate less a
 square with a round hole across its rim, its post a tooth to the plate's
 top; a stadium plate fused with a square with a square hole over its arc
-end, the hole a well on the plate: `solid/imported.rs`'s `rim_leaves`).
+end, the hole a well on the plate: `solid/imported.rs`'s `rim_leaves`), and
+S9e.4b.4b.2b.2b.2's parts flush with a leaf's walls (a stadium plate fused
+with a diamond within its heights standing out of its walls in two parts,
+less a disc with a round hole within its heights across its end, less a
+square with a square hole from inside it past its top, its post flush with
+the plate's arc: `solid/imported.rs`'s `flush_parts`).
 
 ## Contract
 
@@ -1444,7 +1449,23 @@ outer loop reaching the top, a hole's walls all ending on another part a
 well), each leaf alone and with the other plane faces, each pair alone and
 with them, a tooth standing in a pocket to a leaf's cap running past it (no
 prism's face a primitive's cap); any refusal of such a chain is one the
-body is not (its refusal as before where none matches). A body's
+body is not (its refusal as before where none matches). S9e.4b.4b.2b.2b.2:
+then each leaf (but one alike an earlier in its faces and axis, at most 8)
+leads a chain of the parts flush with its walls (`flush_parts`: two plane
+faces of no lead face strictly between its caps, parallel to them, the
+first's loops' edges across the lead's walls, its runs, or across walls
+rising from it to the second; a prism standing out of the lead fused, a
+pocket open sideways cut, closed by its ceiling or open through the lead's
+cap as a prism of one cap), alone and with the other plane faces, each
+part's prism read off its cap on the lead's axes bit for bit with its runs
+completed beyond the lead's walls (`complete_loop`: bridged by the part's
+own line or circle where both ends lie on one, a circle bridged round to
+OCCT's seam split there and at its antipode; else its walls extended to a
+depth of the loop's extent over 64 and the run's joints and arcs offset by
+it; a loop or a ring wholly along the lead offset; every new point on the
+far side of the lead's profile), so it crosses the lead's walls
+transversally at the stored vertices; any refusal of such a chain is one
+the body is not. A body's
 own faces tangent along an edge other than a prism's walls' joints (two
 walls along one axis tangent along a line along it; two faces of one stored
 surface, a face OCCT split at its seam, none) are `Degenerate("an imported
@@ -1452,10 +1473,10 @@ body of several primitives whose faces are tangent along an edge")`; plane
 faces other than
 the primitives' ends, one or two prisms', a flat's or a pocket's
 `OutOfDomain("an imported body of several primitives with plane faces other
-than their ends, one or two prisms', a flat or a pocket (S9e.4b.4b.2b.2b.2)")`
-(two leaves touching along a face, flush walls or caps on one plane; a
-pocket open sideways; a hull across several parts, a polyhedral boss, a
-prism cut at both caps' rims, a component of both kinds, three leaves);
+than their ends, one or two prisms', a flat or a pocket (S9e.4b.4b.2b.2b.3)")`
+(two leaves touching along a face, caps on one plane: a stack, on parallel
+or crossing axes; a hull across several parts, a polyhedral boss, a prism
+cut at both caps' rims, a component of both kinds, three leaves);
 faces of one
 surface on different sides, a widest primitive whose material lies outside
 it, a primitive meeting the earlier ones along both kinds of edge and a
@@ -1472,10 +1493,10 @@ eight Booleans: `OutOfDomain`, S9e.4b.4; a tree's planes along a turned
 primitive's axis within rounding of it, S9's `Degenerate`); a piece whose planes pass through its cone's
 apex (`Degenerate`, S9's rule: `shading_132`); a body of several
 primitives with plane faces other than their ends, one or two prisms', a
-flat's or a pocket's (`OutOfDomain`, S9e.4b.4b.2b.2b.2: leaves touching
-along a face, flush walls or a stack, a pocket open sideways, a hull across
-several parts, a polyhedral boss, a prism cut at both caps' rims, a mixed
-component, three leaves) or no Boolean chain of them
+flat's or a pocket's (`OutOfDomain`, S9e.4b.4b.2b.2b.3: leaves touching
+along a face, a stack, a hull across several parts, a polyhedral boss, a
+prism cut at both caps' rims, a mixed component, three leaves) or no
+Boolean chain of them
 (`OutOfDomain`, S9e.4b.4c); a pocket's walls along a turned leaf's axis
 within rounding of it (S9's `Degenerate`); a
 torus's v-segment or wedge and every other body of curved faces, a torus
@@ -4047,6 +4068,44 @@ multiple root; and the engine's rules.
   their statuses and refusal texts as before; `bcut_complex/H2`, whose
   `CTO904_cts20944b` is the one body the step newly imports, still refused
   before its Boolean as an argument other than a solid the adapter made).
+* **S9e.4b.4b.2b.2b.2 evidence (parts flush with a leaf's walls), before its
+  kernel code.** Three bodies OCCT wrote, each one Boolean of two prisms on
+  a frame turned about the world's `z`, the leaf a stadium plate (fused with
+  a diamond within its heights standing out of its line walls and arc end in
+  two parts; less a disc with a round hole within its heights across its arc
+  end, a pocket open sideways round a post; less a square with a square hole
+  from inside it past its top across its arc end, its post flush with the
+  plate's arc), under `rust/fixtures/imported/flush_*.brep`.
+  `generate_flush_leaves_boolean_fixtures.py --check` writes
+  `boolean-flush-leaves-cases.txt`, `-expected.tsv`, `-frames.tsv` and
+  `-bodies.txt`: 21 cases (7 groups; 18 solid, 3 degenerate: a ball resting
+  on the slot's top cap) against upright rods, the slot the tool, the arms
+  and the slot both imported and the arms' chain, from S9e.3a's chained
+  reference on the constructions OCCT was given (two families 9.9e-32, each
+  body's closed form 4.6e-33, Monte Carlo 2.8 standard errors), every stored
+  vertex on its construction. `compare_flush_leaves_boolean.py` reproduces
+  `occt-boolean-flush-leaves-preimplementation` (keyed on `imported.rs`'s
+  refusal of plane faces other than the primitives' ends, one or two
+  prisms', a flat or a pocket as S9e.4b.4b.2b.2b.1's, the probe refusing all
+  21 on import before the step): every result valid, 20 match, 1 reviewed
+  (the touching ball's fuse two solids).
+* **Kernel (S9e.4b.4b.2b.2b.2).** `tests/flush_leaf_booleans.rs`: all 21
+  fixtures as the reference (18 within the kernel's enclosures, each at most
+  `1e-9` wide; the touching ball `Degenerate`), every history complete over
+  the imported bodies' stored ids, results deterministic and moved rigidly,
+  moved inputs keeping the reference's volumes, every body its plate with
+  its parts, S9e.4b.4b.2a's notch refused as S9e.4b.4b.2b.2b.3's, and the
+  fuzz target's `FLUSH` bodies written, read back and imported on the
+  world's axes and its tilted frame (their Booleans with a box turned off
+  every axis the kernel's own results'). `compare_flush_leaves_boolean.py`:
+  13 matches and 8 reviewed (the touching ball's fuse; entity counts: the
+  slot's wall OCCT wrote split at its circle's seam, kept by the kernel and
+  merged by OCCT's unification, and a rod's seam edge). A trial of the DRAW
+  restore cases the import reaches: no body of the 1,316 cases restoring a
+  data file and giving a Boolean moves (741 solids of 732 files imported
+  before and after), the one body of several primitives among them refused
+  as before and its case (`bugs/modalg_6/bug28626_1`) unsupported on both
+  backends as before.
 * **Fuzzing.** The `boolean` target (`FUZZING.md`): the split target's line
   and arc profiles, the tool offset exactly in the axis-aligned frame or
   sharing the tilted one's origin, heights equal, spanning, overlapping,
@@ -4087,7 +4146,13 @@ multiple root; and the engine's rules.
   its top (a leaf cut at its rim with a post) or a stadium plate fused with a
   square with a square hole over its arc end on that frame turned about its
   axis (a well), written, read back and imported, each cut by the chained
-  stage's partner, one volume (`RIMS`, by the input's 18th byte).
+  stage's partner, one volume (`RIMS`, by the input's 18th byte);
+  S9e.4b.4b.2b.2b.2: the kernel's own stadium plate on the object's frame
+  fused with a diamond within its heights standing out of its walls (two
+  parts flush with them) or less a disc with a round hole within its heights
+  across its end (a pocket open sideways round a post), written, read back
+  and imported, each cut by the chained stage's partner, one volume
+  (`FLUSH`, by the input's 19th byte).
 
 ## DRAW commands
 

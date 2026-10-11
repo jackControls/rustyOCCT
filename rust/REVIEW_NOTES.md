@@ -11777,6 +11777,80 @@ Decisions for S9, recorded before its code (2026-09-28):
     which OCCT keeps as two solids touching at a point where the reference's
     rays count one, their totals the reference's within 6.4e-16.
     S9e.4b.4b.2b.2b.2's kernel next.
+  * **S9e.4b.4b.2b.2b.2 implemented** (`solid/imported.rs`'s `flush_parts`,
+    `flush_leads`, `part_faces`, `completed_on`, `complete_loop` and
+    `ring_offset`, `chain_piece`'s flush chains), as the refined decisions and
+    the evidence's corrections describe: after every earlier chain, each leaf
+    (but one alike an earlier in its faces and axis, at most 8) leads a chain
+    of the parts flush with its walls, alone and with the other plane faces:
+    a prism within its heights standing out of its walls fused, a pocket open
+    sideways (closed by its ceiling, or open through the leaf's cap as a prism
+    of one cap) cut, each part's prism read off its cap on the lead's axes bit
+    for bit with its loops' runs along the lead's walls bridged by the part's
+    own line or circle, or its walls extended and the run offset beyond it, a
+    loop or a ring wholly along the lead offset; any refusal of such a chain
+    one the body is not; the refusal's text now `OutOfDomain("an imported
+    body of several primitives with plane faces other than their ends, one or
+    two prisms', a flat or a pocket (S9e.4b.4b.2b.2b.3)")` (S9e.4b.4b.2a's
+    notch so, in its tests and the prism leaves' generator; no fixture
+    carries it). All 21 fixtures as declared (18 within the kernel's
+    enclosures, each at most `1e-9` wide; the touching ball `Degenerate("a
+    tangency between the inputs (S9c)")`), every history complete over the
+    imported bodies' stored ids, results deterministic and moved rigidly, both
+    inputs translated and turned keeping the reference's volumes, every body
+    its plate with its parts (its closed-form volume, points in and off it
+    classified, its stored vertices on its boundary), the notch refused with
+    the new text, and the `boolean` fuzz target's `FLUSH` bodies (the plate
+    with the diamond's two parts and the plate less the pocket round its
+    post, on the world's axes and on a tilted frame) written by its writer,
+    read back and imported, their Booleans with a box turned off every axis
+    the kernel's own results' (`tests/flush_leaf_booleans.rs`, 12.3 s in
+    release, 19.5 s at `opt-level` 2 with debug assertions, both on a host at
+    load 4 to 12, 144 s in release with debug assertions and overflow checks
+    under the emulated correctly rounded `hypot`, where the rim leaves' (94
+    s), two leaves' (121 s), plane parts' (30 s) and prism leaves' (16 s) test
+    files pass too). `compare_flush_leaves_boolean.py` 13 matches and 8
+    reviewed (the captured touching ball's fuse and, with the kernel, entity
+    counts: the slot's wall OCCT wrote split at its circle's seam, kept by the
+    kernel and merged by OCCT's unification, and a rod's seam edge OCCT's
+    results keep), the kernel within the reference on all 18 solid cases, the
+    3 degenerate refused; every other comparison of `HANDOFF.md`'s table
+    unchanged with 0 failures; the release suite (710 tests) and the tools'
+    unit tests (396, 3 skipped) passing, the ledger unchanged. Amendments, from the
+    implementation: none beyond the evidence's; the completion normalizes by
+    `sqrt` as decided. The `boolean` fuzz target's `FLUSH` stage (by the
+    input's 19th byte, at or above 128; bit 6 the pocket): replayed (release,
+    an instrumented build, not committed), 143 of the corpus's 1,478 inputs
+    and regressions reach it, every body built and imported, 38 evaluating
+    both ways with one volume (14 plates with parts on the world's axes, 7
+    tilted, 17 pockets on the world's axes), 50 where the kernel's own cut by
+    the turned box is refused by S9's rounding rules (30 a plane within
+    rounding of a cylinder's direction, 16 two cylinders' axes within
+    rounding of parallel, 4 an irrational line against a cylinder) and the
+    import's evaluates, 55 refused both ways (42 an irrational line against
+    a sphere, the rest by S9's rules alike or nearly), none where the import
+    alone is refused, no volume differing. The measurement's probes again
+    (every result of both targets written, read back and imported): 14 of the
+    35 bodies of several primitives refused at `69c526ca` import (11 flush
+    walls, the waist and 2 pockets across the rim), every one of the 1,845
+    bodies imported before still imported (the 190 of several primitives
+    with their chains), 3 refused with the new text, every other refusal as
+    before, none panicking, the slowest import 1.3 s. Replays with debug
+    assertions, one process an input, natively and under the emulated
+    correctly rounded `hypot` (with overflow checks): the boolean corpus and
+    its regressions (1,478 inputs) and the split corpus and its regressions
+    (3,571), no failure, the slowest 12.2 s and 3.5 s natively on a host at load 17 to 20 (87.9 s and 43.6 s emulated, the emulation's `hypot` exact by big rationals). A trial of the DRAW restore cases the import
+    reaches (the 1,316 cases restoring a data file and giving a Boolean, 732
+    files, 741 solids, each file imported in a process of its own: no body's
+    import moving at `69c526ca`, with the draft or with this kernel; the one
+    body of several primitives among them, `bug28626_case1_shapes`'s second,
+    refused as no chain as before, its case `bugs/modalg_6/bug28626_1` on
+    both backends: unsupported on both, as before; not the survey: nothing
+    registered). Open: S9e.4b.4b.2b.2b.3 (the stacks, caps on one plane, the
+    stack on crossing axes, the rest of S9e.4b.4b.2b's list); the 11 bodies of
+    this step's forms refused by S9's rules (walls through the other's
+    line-arc joint, walls on an arc's tangent plane). Pending: its capture's
+    Linux record, its DRAW survey and its campaigns.
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces
