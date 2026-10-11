@@ -461,8 +461,16 @@ arrangement's angle orders are sign tests, unchanged), a rational direction
 scaled onto the circle giving a point of one quadratic field. A plane's
 section of the sphere is such a circle (centre the centre's projection,
 radius squared `r^2 - d^2`); a line meets the sphere in a quadratic, a
-circle meets a plane on its line of the circle's plane. Membership is exact
-at first order (a push along the sphere's tangent plane keeps to it), a
+circle meets a plane on its line of the circle's plane. A section's line
+through points of one quadratic field may meet a sphere, a cylinder or a
+cone in a rational quadratic whose roots are surds of another: such a point
+is written in the line's surd where the two surds' ratio is a rational
+square, is no meeting where it lies certainly outside the edge's and the
+face's boxes, and is `ComputationLimit` ("an irrational line against a
+sphere", a cylinder, a cone) elsewhere, its coordinates of two fields
+(`meet::line_point`; it panicked before, "surds of one field"). Membership
+is exact at first order (a push along the sphere's tangent plane keeps to
+it), a
 hemisphere's region the split plane's side and the ends' heights, a disc's
 its rim's inside. Each hemisphere is traced in its stereographic projection
 from the opposite pole onto the split plane (conformal: the rim is not

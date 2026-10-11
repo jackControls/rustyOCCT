@@ -11450,6 +11450,69 @@ Decisions for S9, recorded before its code (2026-09-28):
     stadium groove in a plate, no leaf; 2 tangencies and a vertex on a face,
     S9's rules in their chains' Booleans); the pre-existing panic above.
     Pending: its capture's Linux record, its DRAW survey and its campaigns.
+  * **Points of two quadratic fields on a line against a quadric, fixed
+    (2026-10-10; the panic S9e.4b.4b.2b.2b.1's evidence found).** Cause:
+    `line_sphere` (S9d.1), the line against a cylinder in `meet::edge_surface`
+    (S9c.1) and `line_cone` (S9d.3a) refused an irrational line
+    (`ComputationLimit`) only where the quadratic's `b` or `c` is irrational.
+    A section's line through points of `Q(sqrt D)` whose irrational part is
+    orthogonal to its direction and to its offset from the quadric's centre or
+    axis gives a rational quadratic whose roots are surds `sqrt E` of their
+    own: the `RIMS` draft's ring wall `y = 1/4` meets the plate's arc wall of
+    radius 3/8 about `(1/2, 0)` along `x = 1/2 + sqrt(5)/8`, and a ball or a
+    cone about an axis through `x = 1/2`, or a rod along `x`, meets that line
+    so. Its point `p + t d` was built with its `x` in `Q(sqrt D)` and its `z`
+    in `Q(sqrt E)`, which a `QV` ("a point or vector of surds of one field")
+    does not hold, and the first sum of its coordinates panicked with "surds
+    of one field" (`Qd::add`: a hemisphere's membership, `Ball::in_half`'s dot
+    product with the split's normal; the point's own construction where one
+    coordinate takes both). Decision, exact where the point is one field's:
+    where `E / D` is a rational square `t` is written in `p`'s surd (`b sqrt E
+    = (b s) sqrt D`); a point of `Q(sqrt D, sqrt E)` otherwise is no meeting
+    where its binary64 enclosure lies clear of the edge's and the face's boxes
+    (S9e.3b's clip, `triple::clear_of`) and is refused elsewhere with the
+    existing text for that quadric (`ComputationLimit("an irrational line
+    against a sphere")`, a cylinder, a cone: `meet::line_point`). Lifting such
+    a point exactly was not taken: in a tower `Q(sqrt D)(sqrt E)` or a field
+    of degree four of its primitive element it would meet the arrangement's
+    other points of `Q(sqrt D)` (its line's ends, places along the edge),
+    whose `sqrt D` is a surd over the rationals, and their sums would either
+    mix fields again or put a surd into a base field that holds it, where
+    `Qd::recip`'s norm `a^2 - b^2 d` vanishes for a nonzero number; that is a
+    number type of two surds through the arrangement, not this fix. Other
+    sites: every other `p + t d` of the curved engine takes `t` in `p`'s field
+    (a line against a plane, an edge's point nearest a centre, a midpoint,
+    `near.rs`'s turning point) or a rational `p` (a cone's section line, a
+    line against a torus, a spline wall or a torus segment's rings);
+    `Qd::sub`'s and `Qd::mul`'s expectations are reached only through such
+    points; `Qd::cmp`, `tower_sign` and `mixed_dot_sign` take two fields
+    already. Test (`tests/sphere_field_booleans.rs`, every test panicking at
+    `8e632f49`): the ball of radius 5/4 about `(1/2, 1/4, 7/12)`, a rod of
+    radius 1/2 along `x` about `y = 0`, `z = 21/16`, and a cone about the axis
+    through `(1/2, 1/8)`, each meeting the line within its edge, refused as
+    the line against a sphere, a cylinder and a cone; a ball of radius 7/16
+    about `(1/2, 7/16, 5/4)` (`(z - 5/4)^2 = 5/64`, the line's own field) and
+    three balls about `(1/2, 1/4, z)` meeting the line's carrier beyond the
+    edge's ends, their cut, common and fuse each evaluating,
+    deterministically, with one volume (cut and common the body's within
+    `1e-9`, the fuse the two volumes less the common); the new tests take 3.4
+    s in release at load about 8 (9.2 s within the release suite at load 30 to
+    40) and 6.4 s in release with debug assertions and overflow checks under
+    the emulated correctly rounded `hypot`. Reach (an instrumented release
+    build, not committed, marking each branch, the new tests reaching all
+    three): none of the boolean corpus's and its regressions' 1,478 inputs or
+    the split's 3,571 reaches the fold, the clip or the refusal, every one
+    exiting cleanly, so no regression is kept and the `RIMS` stage's outcomes
+    are as recorded. Its well stays on the turned frame: on the world's axes
+    the draft's ring put edges exactly on the plate's surfaces too (S9's
+    rules), which this fix leaves. Checks: fmt, clippy with `-D warnings` and
+    `cargo +1.85 check` clean; the release suite (704 tests) passing; every
+    comparison of `HANDOFF.md`'s table (43) with its counts and 0 failures;
+    replays with debug assertions, one process an input, of the boolean corpus
+    and its regressions (1,478 inputs) and the split corpus and its
+    regressions (3,571), no failure natively (the slowest 24.4 s and 6.1 s at
+    load 30 to 40) or under the emulated `hypot` with overflow checks (the
+    slowest 76 s and 120 s at the same load).
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces

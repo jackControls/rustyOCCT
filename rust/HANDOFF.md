@@ -58,7 +58,9 @@ then for S9e.4b.4c.2a (branch `s9e4b4c2`, over `s9c2-kernel` at `37732abc`),
 then for the DRAW survey of the deeper trees (branch `s9-draw-15`, over
 `rust-kernel` at `69c2c27f`),
 then for S9e.4b.4b.2b.2a (branch `s9e4b4b2b2`, over `s9c2-kernel` at `ae733749`),
-then for S9e.4b.4b.2b.2b.1 (branch `s9e4b4b2b2b`, over `s9c2-kernel` at `92e22e11`).
+then for S9e.4b.4b.2b.2b.1 (branch `s9e4b4b2b2b`, over `s9c2-kernel` at `92e22e11`),
+then for the fix of points of two quadratic fields (branch `fix-surds-panic`,
+over `s9c2-kernel` at `8e632f49`).
 
 ## Where things stand
 
@@ -567,6 +569,16 @@ then for S9e.4b.4b.2b.2b.1 (branch `s9e4b4b2b2b`, over `s9c2-kernel` at `92e22e1
   stack of two prisms cut by a ball, no import involved), left for a fix of
   its own. Open: S9e.4b.4b.2b.2b.2. Pending its capture's Linux record, its
   DRAW survey and its campaigns.
+- **Points of two quadratic fields fixed** (branch `fix-surds-panic`): a
+  section's line through points of one quadratic field meeting a sphere, a
+  cylinder or a cone at surds of another panicked ("surds of one field", found
+  beside S9e.4b.4b.2b.2b.1: the kernel's own stack cut by a ball); such a
+  point is now written in the line's surd where the surds' ratio is a rational
+  square, no meeting where certainly outside the edge's and the face's boxes,
+  and `ComputationLimit` with the existing texts elsewhere
+  (`meet::line_point`; REVIEW_NOTES "Points of two quadratic fields on a line
+  against a quadric, fixed", `tests/sphere_field_booleans.rs`). No corpus
+  input or regression reaches it; every comparison of the table unchanged.
 - **CI.** Both workflows ("Rust kernel", "Rust geometry fuzzing") were green
   at `6c221525`. They had been red from S7 until 2026-09-29, unnoticed;
   check them after every push (see "Working rules").
