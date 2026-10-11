@@ -139,6 +139,9 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     strategy:
+      # One target's failure must not cancel another's job (a cancelled
+      # check after its manifest was saved fails acceptance on its own).
+      fail-fast: false
       matrix:
         target: [analytic_intersections, boolean, degree_elevation, split]
     steps:
@@ -227,6 +230,9 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     strategy:
+      # One target's failure must not cancel another's job (a cancelled
+      # check after its manifest was saved fails acceptance on its own).
+      fail-fast: false
       matrix:
         target: [analytic_intersections, boolean, degree_elevation, split]
     steps:
