@@ -384,7 +384,8 @@ fn imported_bodies_are_their_leaves() {
         Err(Error::OutOfDomain(m)) => assert_eq!(
             m,
             "an imported body of several primitives with plane faces other than their ends, one or \
-             two prisms', a flat or a pocket (S9e.4b.4b.2b.2b.3b)"
+             two prisms', a flat or a pocket, its pockets nested at most three deep \
+             (S9e.4b.4b.2b.2b.3b)"
         ),
         other => panic!("leaf_notch: {:?}", other.map(|_| ())),
     }

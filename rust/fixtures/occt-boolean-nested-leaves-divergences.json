@@ -1,6 +1,18 @@
 {
-  "note": "Reviewed differences of the S9e.4b.4c.2b.1 capture (occt-boolean-nested-leaves-preimplementation): each fingerprinted by its native row; the touching ball's fuse OCCT keeps as two solids.",
+  "note": "Reviewed differences of the S9e.4b.4c.2b.1 capture (occt-boolean-nested-leaves-preimplementation): each fingerprinted by its native row; the touching ball's fuse OCCT keeps as two solids, and with the kernel the cylinder's seam OCCT's fuse keeps.",
   "reviews": [
+    {
+      "case": "island_cyl_fuse",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "8886b470e493ee5e9ac0f1c46fdab908336cd4e577340c13aac98ee446b47207",
+      "differences": [
+        "rust_entity_counts"
+      ],
+      "reason": "BRepAlgoAPI's result is valid with the reference's solid count and its measures within 2e-8 of the reference. With the kernel, entity counts (the island fused with S9e.4a's imported cylinder through both its caps): the faces agree; OCCT's result keeps the cylinder's seam edge on its wall above and below the plate, its two vertices splitting the cylinder's top and bottom circles, which the kernel's faces do not hold (the wall one face, its circles closed) ((20, 54, 36) raw and unified, the kernel's (20, 51, 34)); the kernel's enclosures are within the reference.",
+      "independent_evidence": "chained_curved_boolean_reference.py's rows on the constructions OCCT was given (generate_nested_leaves_boolean_fixtures.py --check, identical under Python 3.9 and 3.12) agree two ways (each face swept by two independent families of curves) within 1.2e-35, every solid's measures from its faces within 1.8e-35 of its closed form, each body's within 5.4e-37 of its own (the post 90 + 27 pi and the island 72 + 27 pi, each section times its stored axes' determinant), the pair identities within 1.2e-38, and Monte Carlo within 2.5 standard errors; its solid counts are the declared ones by rays at two resolutions; every stored vertex of the imported files lies on its construction's surfaces.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
     {
       "case": "post_touch_fuse",
       "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
