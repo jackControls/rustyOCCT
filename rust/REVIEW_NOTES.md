@@ -12421,6 +12421,388 @@ Decisions for S9, recorded before its code (2026-09-28):
     data); the slowest Boolean case 4.4 s (`bopfuse_simple/ZK8`), the
     restore cases 0.13 to 4.7 s (`bcommon_complex/B9`), E5 2.4 s, G9 1.2 s
     and `bug417` 1.2 s, the rollex 0.6. No kernel change.
+  * **S9e.4b.4c.2b refined, before its code (2026-10-11).** Why each class
+    is refused today. (a) *A pocket with pockets of its own in a body of
+    several primitives*: `chain_piece` takes each component of the other
+    plane faces (through their edges with each other) as a flat (convex
+    within itself) or a pocket (concave within itself: the hull of its
+    planes turned over, less its teeth); a component of both kinds (a pocket
+    holding a post or an island of planes, a flat with a groove) is refused
+    there with S9e.4b.4b.2b.2b.3b's text, `OutOfDomain("an imported body of
+    several primitives with plane faces other than their ends, one or two
+    prisms', a flat or a pocket (S9e.4b.4b.2b.2b.3b)")`, and the body takes
+    that refusal or, where a chain's leaf has tangent joints, its own
+    tangency: the kernel's own stadium plate (half discs of radius 3 about
+    `(0, 0)` and `(6, 0)` over `[0, 3]`, on a frame turned about the world's
+    `z`) less the square `[1, 5] x [-2, 2]` with the hole `[2, 4] x [-1, 1]`
+    over `[3/2, 4]` (a post standing in a square pocket, two deep), written,
+    read back and imported, is `Degenerate("an imported body of several
+    primitives whose faces are tangent along an edge")`, and the same plate
+    less a square with a U-shaped hole (a U island in the pocket, its notch a
+    pocket of its own, three deep) alike. (b) *A chain no model matches*:
+    the chain of the primitives alone (choice 0) whose model is not the
+    stored topology is refused at once, `OutOfDomain("an imported body of
+    several primitives other than a Boolean chain of them (S9e.4b.4c)")`
+    (`imported_primitives`), as is a chain whose first part, the widest, is
+    a primitive whose material lies outside its quadric (`chain_piece`), and
+    a later chain's mismatch where no chain gives another refusal. *Reach,
+    measured before choosing* (at `f0bebb1c`, an instrumented build, not
+    committed, as S9e.4b.4b.2b.2b.3a's measurement: every solid result of
+    the `boolean` fuzz target's three operations and its chained cut and
+    common, and the `split` target's pieces given to Booleans and those
+    Booleans' results, each written by the kernel's writer, read back and
+    imported, a trace of every chain tried; release builds, one process an
+    input; the boolean corpus and its regressions, 1,478 files, and the
+    split corpus and its regressions, 3,571, every one exiting cleanly):
+    2,600 distinct bodies written and converted, 1,861 importing; 228 of
+    several primitives, 207 importing (each by its chain), 4 cavities (one
+    region of two shells, S9e.4b's general text) and the 17 one-shell bodies
+    S9e.4b.4b.2b.2b.3a's measurement left (5 as the body's own tangency, 3
+    with S9e.4b.4b.2b.2b.3b's text, 9 by S9's rules in a chain's Booleans: 4
+    an edge of one input on a face of the other, 1 an edge meeting an edge, 1
+    two faces within the resolution of one plane, 1 a vertex on a face, 2 a
+    piece thinner than the resolution). None is refused as a chain no model
+    matches. 10 of the 17 hold a component of both kinds in some chain tried
+    (pockets across the rim or open sideways whose post is flush with the
+    leaf's walls, flush walls: S9e.4b.4b.2b.2b.2's forms), and a draft
+    (not committed) reading such a component as a pocket with pockets of its
+    own (S9e.4b.4c.2a's `pocket` on the chain's axes, decision (2) below)
+    imports none of them: its 5 nested readings are refused in their chains'
+    Booleans, 4 by S9's rules on the fuzz target's dyadic incidences (2 a
+    vertex on a face, a tangency, a piece thinner than the resolution) and 1
+    an inner Boolean of two solids, one body's refusal moving from S9e.4b.4b.2b.2b.3b's text to "a vertex of one input
+    on the other's face"; every one of the 207 imports as before. The DRAW
+    restore cases (every case `tests/<group>/<grid>/<case>` whose script
+    restores a data file by `locate_data_file` and calls a Boolean command,
+    S9e.4b.4b.2b.2b.3a's method: 2,316 cases, 1,495 files, 833 of them in
+    the public dataset, 651 solids, 504 of them converted, each file imported
+    in a process of its own, 120 seconds a file, one file timing out): 101
+    solids of several primitives, 79
+    importing; refused: 7 with S9e.4b.4b.2b.2b.3b's text, 7 as no chain
+    matching, 4 spline faces (S9f), 2 as the body's own tangency, 1 a ruling
+    within rounding of the other's direction, 1 two cylinders' section near
+    a node, 1 S9e.4b's general text. The 7 no chain matches, read off their
+    files: (i) two cylinders on parallel axes fused, the narrower shorter,
+    their caps on one plane (`CTO900_pro6066a`, `CTO900_pro6066-part`: the
+    chain of the primitives alone rebuilt differently, S9e.2's match); (ii)
+    a rod whose end is a spherical dimple of a ball wider than the rod
+    (`OCC14536-sh1`: the widest primitive, first, is the ball cut from it);
+    (iii) a turned body of coaxial cones and cylinders meeting at corners of
+    equal radii (`bug28626_case1_shapes`' two solids: no chain of fused and
+    common primitives builds such a profile, each primitive's extension past
+    a corner standing outside its neighbour); (iv) a turned flange with a slot
+    across its hub (`CTO904_cts21347a`) and a block with two concave
+    cylinder faces and steps (`CTO904_pro12859a`), every chain tried rebuilt
+    differently or tangent. No DRAW case reaches the import of any of them (a
+    survey of their 7 cases on both backends at `f0bebb1c`: `bcut_complex/E4`,
+    `E9` and `bfuse_complex/L4` an argument other than a solid the Rust
+    adapter made, their files compounds; `bcut_complex/O1` its partner's
+    spline faces; `bcut_complex/P7` and `bugs/modalg_1/bug14536` their
+    partners unsupported at their restores (Bézier curves and surfaces, an
+    ellipse and a surface of revolution); `bugs/modalg_6/bug28626_1` at its
+    `explode`; native DRAW viewer-skipped but `bug28626_1`, unsupported).
+    The nested draft moves no DRAW body but two refusals' texts
+    (`CTO901_cts20204_base`, `CTO901_cts20205-base`: to "a vertex of one
+    input on the other's face"); a draft putting the primitives whose
+    material lies inside first in every chain imports `OCC14536-sh1` (its
+    stored volume) but loses `bug28773_2` (S9e.4b.4b.1's, then no chain
+    matching). **The measured reach is nil**: no fuzz result and no DRAW case
+    reaches either class, and the 7 dataset bodies refused as no chain
+    matching are reached by no case. Decisions, for a minimal well-defined
+    part, **not built until the user decides** (the step's evidence and
+    kernel wait for that answer). (1) *Sub-steps*: **S9e.4b.4c.2b.1**: (a),
+    a pocket with pockets of its own in any chain of several primitives (a
+    post or an island of planes standing in a lone leaf's or two leaves'
+    pocket, nested at most three deep), the draft importing the kernel's own
+    plate with a post and with a U island above (their volumes the kernel's
+    own bodies'); **S9e.4b.4c.2b.2**: (b) and the rest: chains no model
+    matches ((ii) by the inside-first order as a later choice, every earlier
+    chain tried first, so `bug28773_2` keeps its chain; (i) and (iv) after a
+    diagnosis of their mismatches; (iii) turned profiles, with S9e.4b.4d's
+    turned bodies), a flat with pockets of its own (a groove in a flat), a
+    nested pocket holding a primitive. (2) *Representation* (S9e.4b.4c.2b.1):
+    S9e.4b.4c.2a's `Tree` unchanged; a component of the other plane faces of
+    both kinds read as a pocket is S9e.4b.4c.2a's `pocket` region on the
+    chain's axes: its hull the planes of its faces (`plane_along`, each
+    taken onto a chain axis it is parallel to within `1e-9`, bit for bit, as
+    a pocket's planes now) that leave every boundary point of its faces
+    (`boundary_points`) on its void's side within the resolution, less each
+    component of its other faces as a pocket of its own, turned over again
+    (a post's or an island's region in its material, its own notch a pocket
+    of the next depth); then its teeth (the primitives it meets along concave
+    edges alone) cut from it as now, and the pocket cut from the chain. Each
+    Boolean S9e.4b.3c.3b's tree's (an inner one's assembly its given model,
+    the stored vertices splitting rims in every one), the root's given model
+    matched to the stored topology by S9e.2's match, its ids the stored ones,
+    read off the moved stored topology again by a rigid motion. Numbers: the
+    engine's own, no new field or degree (a nested pocket's Booleans are of
+    planes alone until the chain's). (3) *Finding them, and the chains*: only
+    a component of both kinds whose edges with the chain's parts are convex
+    alone (its rims) or concave alone with primitives (its teeth) is read so;
+    a component concave within itself keeps its hull of all its faces, so
+    every body that imports keeps its chain bit for bit. The reading is the
+    component's one decomposition, so no choice is added: every chain kind
+    (the primitives', a leaf's, a pair's, the rim, flush and stack chains)
+    reads its components so, in the order tried now, and the first chain
+    whose model matches the body is taken: deterministic. (4) *Limits*,
+    deterministic: pockets nested at most three deep (the chain's pocket at
+    depth 1, S9e.4b.4c.2a's `DEPTH`), the nested pockets' Booleans of one
+    chain at most eight together (`BOOLEANS`); a pocket none of whose faces
+    is on its hull, a deeper one or more Booleans refused. (5) *Its other
+    queries* are S9e.4b.4b.2b.1's: classification by the tree's ranks
+    (`Tree::rank`, recursive already), bounds every part's widened by the
+    stored edges', mass by the stored topology, a result given to another
+    Boolean S9e.3a's. (6) *Degenerate and refused.* S9's rules unchanged in
+    every Boolean of the chain, the nested pockets' among them; a tangency
+    in one of them the body's own `Degenerate("an imported body of several
+    primitives whose faces are tangent along an edge")`; any refusal of a
+    chain that reads a component nested (its Booleans', its tangency, its
+    mismatch) is one the body is not, the body's refusal as before where no
+    chain matches (as the rim, flush and stack chains): so the three bodies
+    whose refusals the draft moved keep theirs. Refused as S9e.4b.4c.2b.2's
+    and S9e.4b.4b.2b.2b.3b's: the rest, `OutOfDomain("an imported body of
+    several primitives with plane faces other than their ends, one or two
+    prisms', a flat or a pocket, its pockets nested at most three deep
+    (S9e.4b.4b.2b.2b.3b)")`, replacing the present text (the step's key; 3
+    fuzz bodies and 7 DRAW bodies refused with the new text alone). (7)
+    *Fuzzing.* None of the target's stages builds such bodies, so a stage of
+    its own (`NESTED_LEAVES`): by the input's byte after those it decodes
+    (its 21st, at or above 128, so earlier inputs decode as before), the
+    kernel's own stadium plate on the object's frame turned about its axis
+    (its `x` along `8 x + 15 y`) less a square with a square hole from inside
+    it past its top (a post in a pocket) or, by the byte's bit 6, with a
+    U-shaped hole (a U island, three deep), written, read back and imported,
+    each cut by the chained stage's partner: where both evaluate, one volume.
+    (8) *Evidence first.* Bodies OCCT writes in one Boolean of two prisms on
+    a frame turned about the world's `z` (its normal the world's `z`
+    exactly, so the walls along the plate's axis are exact): `post` (a
+    stadium plate less a square with a square hole from inside it past its
+    top, the square inside the plate's outline: a post in a pocket, two
+    deep) and `island` (the plate less a square with a U-shaped hole: a U
+    island, its notch a pocket of its own, three deep); cases against upright
+    rods (across the post, the island's arm and notch, the pocket's wall),
+    the post the tool, both imported (their frames turned apart), a chain,
+    and a declared `degenerate` ball resting on the post's top; the reference
+    S9e.3a's chained reference on the constructions OCCT was given (a square
+    with a square hole its box less the hole's box, a U hole its box less the
+    U's box less the notch's box), each body's closed form, S9e.4b.3c.3a's
+    checks (`generate_nested_leaves_boolean_fixtures.py --check`, a CI group
+    `nested-leaves`, `test_nested_leaves_boolean_reference.py`); a native
+    capture keyed on the refusal the step removes
+    (`compare_nested_leaves_boolean.py`, `imported.rs`'s present text ending
+    "a flat or a pocket (S9e.4b.4b.2b.2b.3b)"); then the kernel and its tests
+    (`tests/nested_leaf_booleans.rs`: every fixture within `1e-9`
+    enclosures, the degenerate refused, histories over the stored ids,
+    deterministic, moved rigidly; the fuzz stage's bodies and the kernel's
+    own two leaves (a box with a stadium through it) less a square with a
+    square hole, a pocket within a pocket of a two-leaf body, which one
+    Boolean of OCCT's `write` blocks cannot hold, written, read back and
+    imported), and a DRAW trial of the restore cases the import reaches.
+  * **S9e.4b.4c.2b.1 evidence (2026-10-11).** The user's decision: build
+    S9e.4b.4c.2b.1 as decided above, S9e.4b.4c.2b.2 (chains no model
+    matches, the inside-first order as a later choice among them) staying
+    open. Two bodies OCCT wrote (`boolean-nested-leaves-bodies.txt`, `write`
+    blocks of the plate's rows, a `boolean cut` row and the holed prism's,
+    written by `compare_nested_leaves_boolean.py --write-bodies` to
+    `rust/fixtures/imported/nested_*.brep`), each a stadium plate of half
+    discs of radius 3 about `(0, 0)` and `(6, 0)` over `[0, 3]` less a prism
+    of a square with a hole from inside it past its top, on a frame turned
+    about the world's `z` (its normal the world's `z` exactly), every section
+    a circle or a line: `post` (on `R815` at `(1, 1/2, 1/4)`, less the square
+    `[1, 5] x [-2, 2]` with the hole `[2, 4] x [-1, 1]` over `[3/2, 4]`: a
+    square pocket inside the plate's outline, the hole's post standing in it
+    up to the plate's top, two deep) and `island` (on `R125` at `(33/10,
+    777/200, 5/8)`, less the square `[1/2, 11/2] x [-5/2, 5/2]` with a U-shaped
+    hole, the square `[3/2, 9/2] x [-3/2, 3/2]` less its notch `[5/2, 9/2] x
+    [-1/2, 1/2]` open toward `+x`, over `[1, 4]`: a U island standing in the
+    pocket, its notch a pocket of its own, three deep).
+    `generate_nested_leaves_boolean_fixtures.py --check`: 21 cases of 7
+    groups (18 solid, 3 `degenerate`; 15 of class `pieces`, 3 `both`, 3
+    `chain`): `post_rod` (an upright rod across the post's corner `(4, 1)`
+    into the pocket's floor), `island_rod` (an upright rod across the
+    island's arm and its notch's wall `y = 1/2`), `island_wall` (an upright
+    rod across the pocket's wall `x = 11/2`), `rod_post` (an upright rod less
+    the post across its four walls: the body the tool, its cut two solids),
+    `island_cyl` (the island and S9e.4a's imported cylinder `cyl`, radius 3
+    about the world's `(5, 5)` over `[-1, 5]`, its axis at the island's chart
+    point `(2, 3/8)` within rounding: across the plate's wall and left arc,
+    the pocket's walls, the U and its notch, every vertex of either at least
+    1/8 off the other's walls), `chain_post` (the post less an upright rod
+    through the plate beside the pocket, then with a box on its frame across
+    the pocket's wall `x = 5`, the plate's top and the rod's hole), and
+    declared `degenerate` `post_touch` (a ball of radius 1 resting on the
+    post's top at its centre, exactly: `Degenerate("a tangency between the
+    inputs (S9c)")`). The reference is S9e.3a's chained reference on the
+    constructions OCCT was given (the plate less its holed prism, a square
+    with a square hole its box less the hole's box past both caps, with a U
+    hole its box less the U's box less the notch's box past the U's open side
+    and both caps: S9e.4b.4c.2a's `Holed`), with S9e.4b.3c.3a's checks
+    relative to the case's size: the two families within 1.2e-35, each
+    solid's closed form 1.8e-35, each body's closed form 5.4e-37 (the post
+    `90 + 27 pi`, the island `72 + 27 pi`, each section times its stored
+    axes' determinant), the pair identities 1.2e-38 and the area identity
+    7.2e-41 (where no two inputs share a surface), Monte Carlo 2.4 standard
+    errors (100,000 points a group), quadrature estimates 1.9e-32, every
+    meeting's sine at least 1.0 and events at least 4.0e-5 of their range
+    apart outside the declared group (the cylinder's case; 1.3e-3 and more
+    elsewhere), solid counts by rays at two resolutions; the declared group's
+    checks kept apart within 4.2e-36. Every file read independently
+    (`stored_records`): its curved faces cylinders, every stored vertex on
+    the constructions' surfaces (within 0 of the size at the reference's
+    precision). `test_nested_leaves_boolean_reference.py` checks each body's
+    closed form against quadratures of its sections, the chained reference on
+    the post against its closed form, the reference's sets against OCCT's
+    profiles (the square less its hole, one area; the hole's and the notch's
+    boxes past the caps and the U's open side), every part's place (the
+    square inside the plate's outline by 2/5, the post or the U inside the
+    square by 1, the pocket from inside the plate past its top, how deep the
+    pockets nest), the partners' places (the cylinder's chart point and its
+    margins among them), the declared ball (its centre's height exact) and
+    the case list and its protocol rows and the files apart from every
+    earlier set's. The generator's check is a CI group of its own
+    (`nested-leaves`, 17.6 minutes on four workers locally under Python
+    3.9 on a shared host, 12.1 under 3.12); Python 3.9 and 3.12 write the
+    same files. Corrections from the evidence and the step's code run on the
+    cases, amending the refined decisions' plan (8): (a) the `both` group was
+    the post and the island both imported, their frames turned apart: the
+    reference ran over 40 worker-minutes for it (and its two bodies' seven
+    parts), so the island stands where S9e.4a's imported cylinder crosses it;
+    (b) `island_wall`'s rod first stood across the pocket's wall at the
+    chart's `(21/4, -5/4)`, where the kernel's own island (no import
+    involved) fused with it and less it is `ComputationLimit("a cavity's
+    containment the validator's rays leave undecided")` (the import alike),
+    and its reference ran over 40 worker-minutes: it stands at `(43/8,
+    -5/4)`; (c) the bodies on a frame turned off the world's `z` are no
+    evidence (their pocket walls along the plate's rounded axis within
+    rounding of its cylinders' direction, S9's rule in the nested chain's
+    Booleans, as S9e.4b.4c.2a's evidence (a) found for one curved face): the
+    kernel's tests take the fuzz stage's bodies on the target's tilted frame
+    as refused as before. The capture
+    `occt-boolean-nested-leaves-preimplementation`
+    (`compare_nested_leaves_boolean.py`, keyed on the refusal the step
+    changes: `imported.rs`'s `OutOfDomain("an imported body of several
+    primitives with plane faces other than their ends, one or two prisms', a
+    flat or a pocket (S9e.4b.4b.2b.2b.3b)")`; the kernel's probe
+    `unsupported` on all 21 before the code, both bodies refused on import
+    as their own tangency, `Degenerate("an imported body of several
+    primitives whose faces are tangent along an edge")`, the plate's tangent
+    joints taken by no chain once the component of both kinds is refused):
+    every result valid, 20 matching (within 2e-8 of the reference: no
+    meeting OCCT approximates), 1 reviewed, in
+    `occt-boolean-nested-leaves-divergences.json`: the touching ball's fuse,
+    which OCCT keeps as two solids touching at a point where the reference's
+    rays count one, their totals the reference's within 2.9e-16.
+    S9e.4b.4c.2b.1's kernel next.
+  * **S9e.4b.4c.2b.1 implemented** (`solid/imported.rs`'s `nested_pocket`,
+    `chain_piece` over `chain_piece_with`, `primitives_piece_with`,
+    `NESTED_CHAINS`, `Piece`'s `nested` and `imported_primitives`' refusal of
+    a nested chain), as the refined decisions describe: in every chain of a
+    body of several primitives a component of the other plane faces of both
+    kinds whose edges with the chain's parts are convex alone (its rims) or
+    concave alone with primitives (its teeth) is a pocket with pockets of its
+    own (S9e.4b.4c.2a's `pocket` on the chain's axes: its hull the planes of
+    its faces that leave their boundary points on its void's side, each
+    component of its other faces a pocket of its own turned over again, at
+    most three deep and eight such Booleans a chain; a tooth meeting a nested
+    pocket's faces refused), every component concave within itself read as
+    before; any refusal of a chain reading one so (its Booleans', its
+    tangency, its mismatch, its limits) is the one that chain gave before, the
+    component's; the refusal's text now `OutOfDomain("an imported body of
+    several primitives with plane faces other than their ends, one or two
+    prisms', a flat or a pocket, its pockets nested at most three deep
+    (S9e.4b.4b.2b.2b.3b)")` (S9e.4b.4b.2a's notch so, in its tests and the
+    prism leaves' generator; no fixture carries it). All 21 fixtures as
+    declared (18 within the kernel's enclosures, each at most `1e-9` wide; the
+    touching ball `Degenerate("a tangency between the inputs (S9c)")`), every
+    history complete over the imported bodies' stored ids, results
+    deterministic and moved rigidly, both inputs translated and turned keeping
+    the reference's volumes, every body its plate with its nested pockets (its
+    closed-form volume, points in the post and the island's arms inside and in
+    each depth's pockets outside, its stored vertices on its boundary), the
+    notch refused with the new text, the `boolean` fuzz target's
+    `NESTED_LEAVES` bodies (the plate with a post and with a U island, on the
+    world's axes and on a frame turned about its `z`) and the kernel's own two
+    leaves (a box with a stadium through it) less a square with a square hole
+    (a pocket within a pocket of a body of two leaves) written by its writer,
+    read back and imported, their Booleans with a box turned off every axis
+    the kernel's own results' (all 15 evaluating), on the target's tilted
+    frame the import refused as before the step (its pocket walls within
+    rounding of the plate's cylinders' direction in the nested chain's
+    Booleans, the body's own tangency), and a U island whose notch holds a
+    tongue (four deep) refused as before (`tests/nested_leaf_booleans.rs`,
+    25.5 s in release, 26.7 s at `opt-level` 2 with debug assertions, both on
+    a host at load 30 to 35, 1,881 s in release with debug assertions and
+    overflow checks under the emulated correctly rounded `hypot` at load 31 to
+    50, where the stack leaves' (437 s), flush leaves' (396 s), two leaves'
+    (258 s), rim leaves' (228 s), plane parts' (84 s), prism leaves' (57 s),
+    primitive chains' (23 s) and deep trees' (19 s) test files pass too).
+    `compare_nested_leaves_boolean.py` 19 matches and 2 reviewed (the captured
+    touching ball's fuse and, with the kernel, entity counts: S9e.4a's
+    cylinder's seam edge OCCT's fuse keeps with its two vertices, the kernel's
+    wall one face with its circles closed), the kernel within the reference on
+    all 18 solid cases, the 3 degenerate refused; every other comparison of
+    `HANDOFF.md`'s table unchanged with 0 failures; the release suite (731
+    tests, 5 ignored) and the tools' unit tests (412, 3 skipped) passing, the
+    ledger unchanged. Amendments, from the implementation: (a) a limit,
+    deterministic (decision (4)): once `NESTED_CHAINS` (4) chains of one body
+    reading a pocket with pockets of its own have had their models refused,
+    the later chains refuse such a component as before (a body on the fuzz
+    target's tilted frame, its pocket walls within rounding of the plate's
+    cylinders' direction, tried about ten chains so, each arranging its
+    Booleans before S9's rule refused it: its import's refusal took 77 to 161
+    G instructions more with debug assertions than before the step, 19 to 37 s
+    at load 30; the kernel's own two leaves less a square ring imports at its
+    third or fourth such chain); (b) the `NESTED_LEAVES` stage builds its
+    bodies in the axis-aligned frames alone (on the tilted frame the import
+    refuses them as before the step, decision (7) amended). The measurement
+    again (at the step's kernel, the instrumented build of the refined
+    decisions' reach, every result of both targets written, read back and
+    imported; the boolean corpus one input larger, a campaign's): every one of
+    the 2,600 distinct bodies with its outcome as before (the 1,861 importing
+    with their volumes to twelve digits, every refusal's text the same but the
+    3 with the new key's), no body of several primitives newly importing or
+    newly refused, the slowest import 3.7 s on a host at load 30 to 50 (1.8 s
+    in the base's run). The `boolean` fuzz target's `NESTED_LEAVES` stage (by
+    the input's 21st byte, at or above 128; bit 6 the U island; the
+    axis-aligned frames alone): replayed (release, the same instrumented
+    build), 42 of the corpus's inputs and regressions reach it (16 posts, 26 U
+    islands), every body built and imported, all 42 evaluating both ways with
+    one volume, none refused either way; a first draft building it on the
+    tilted frame too had its 64 imports there refused as the body's own
+    tangency (S9's rounding rule in the nested chains), amendment (b). Replays
+    with debug assertions, one process an input, natively and under the
+    emulated correctly rounded `hypot` (with overflow checks): the boolean
+    corpus and its regressions (1,480 inputs) and the split corpus and its
+    regressions (3,571), no failure, the slowest 19.7 s and 5.5 s natively on
+    a host at load 20 to 30 (286 s and 101 s emulated at load 20 to 50, the
+    emulation's `hypot` exact by big rationals). A trial of the DRAW restore
+    cases the import reaches (the refined decisions' case list, 2,316 cases
+    restoring a data file and calling a Boolean command, 833 public files,
+    each imported in a process of its own with this kernel against the base's
+    scan; not the survey: nothing registered): no body moves, the 7 refused
+    with S9e.4b.4b.2b.2b.3b's text taking the new key's alone; their 7 cases
+    and the 7 of the bodies no chain matches run on both backends with this
+    kernel, every status and reason as before (`bcut_complex/H2`, `E4`, `E9`,
+    `bfuse_complex/G4`, `G5`, `G6` and `L4` an argument other than a solid the
+    Rust adapter made, viewer-skipped natively; `bfuse_complex/D2` and
+    `bugs/modalg_6/bug28626_1` unsupported on both; `bcut_complex/O1` a spline
+    partner, `P7`, `bugs/modalg_1/bug14536` and `bugs/modalg_7/bug27472`
+    unsupported at their restores; `K9` private data). Found beside it,
+    pre-existing and no import's: the kernel's own island (the plate less the
+    square with the U hole, on its frame) fused with an upright rod of radius
+    1/2 about the chart's `(21/4, -5/4)` (or `(21/4, -1)`) across the pocket's
+    wall, and less it, is `ComputationLimit("a cavity's containment the
+    validator's rays leave undecided")` where the result has no cavity (the
+    evidence's correction (b); at `(43/8, -5/4)` and `(11/2, -5/4)` all three
+    evaluate). Open: S9e.4b.4c.2b.2 (chains no model matches: the inside-first
+    order as a later choice, the dataset's dimpled rod `OCC14536-sh1`
+    importing with it in a draft, every earlier chain tried first so
+    `bug28773_2` keeps its; the parallel cylinders sharing a cap and the
+    slotted flange and block after a diagnosis; turned profiles with
+    S9e.4b.4d; a flat with pockets of its own; a nested pocket holding a
+    primitive); pockets along a turned leaf's axis within rounding of it (the
+    tilted frame's). Pending: its capture's Linux record, its DRAW survey and
+    its campaigns.
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces
