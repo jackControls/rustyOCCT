@@ -11460,8 +11460,11 @@ Decisions for S9, recorded before its code (2026-09-28):
     in the torus and curved faces' shared arrangement and its traced curves
     (`torus_curved`, `graph::Arr::trace`, `triple`), about a seventh in the
     import's chains, none in the near-miss rules; the local full replay at
-    `efa8d39f` took 52 s at most a shard on a loaded host. The campaigns are
-    taken again at the next pushed head.
+    `efa8d39f` took 52 s at most a shard on a loaded host. Taken again at
+    `09f63c01` (with the fix of points of two quadratic fields; one agent
+    building beside them): `boolean` clean, 264 runs, the slowest input
+    32 s (the startup's replay 1,043 s); `split` clean, 971 runs, the
+    slowest 12 s.
   * **DRAW survey of the leaves (2026-10-10, `UPSTREAM_TESTS.md`).** At
     `8e632f49` (`rust-kernel`: S9e.4b.4b.2b.2a, S9e.4b.4b.2b.2b.1 and the
     vertex near miss of `fix-vertex-near-miss` merged; the public dataset,
