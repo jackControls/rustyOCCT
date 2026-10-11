@@ -12114,6 +12114,83 @@ Decisions for S9, recorded before its code (2026-09-28):
     flat or a pocket (S9e.4b.4b.2b.2b.3)"); then the kernel and its tests
     (`tests/stack_leaf_booleans.rs`), and a DRAW trial of the restore cases
     the import reaches.
+  * **S9e.4b.4b.2b.2b.3a evidence (2026-10-11).** Two bodies OCCT wrote
+    (`boolean-stack-leaves-bodies.txt`, `write` blocks of one prism's rows, a
+    `boolean` row and the other's, written by `compare_stack_leaves_boolean.py
+    --write-bodies` to `rust/fixtures/imported/stack_*.brep`), each one fuse
+    of two prisms on one frame turned about the world's `z` (its normal the
+    world's `z` exactly), the upper prism over heights starting at the lower
+    one's top, every section a circle or a line, every crossing of the two
+    outlines on the shared plane rational: `step` (the box `[-3, 3] x [-2, 2]`
+    over `[0, 3/2]` on `R724` and the stadium of half discs of radius 5/4
+    about `(1, 1)` and `(5, 1)` over `[3/2, 3]` standing on it across its
+    corner, the outlines crossing at `(3, -1/4)` and `(1/4, 2)`: both caps
+    partly exposed on the plane `3/2`, which OCCT writes as one surface) and
+    `bar` (the stadium plate of half discs of radius 25/8 about `(0, 0)` and
+    `(6, 0)` over `[0, 2]` on `R125` and the box `[5, 21/2] x [-15/8, 15/8]`
+    over `[2, 3]` standing on it across its arc end, the outlines crossing at
+    `(17/2, +-15/8)`). `generate_stack_leaves_boolean_fixtures.py --check`: 21
+    cases of 7 groups (18 solid, 3 `degenerate`; 15 of class `pieces`, 3
+    `both`, 3 `chain`): `step_rod` (an upright rod inside both outlines across
+    the shared plane, its seam's middle on it, through the box's bottom and
+    the stadium's top), `step_wall` (an upright rod across the box's wall `x =
+    3` under the stadium), `bar_rod` (an upright rod inside both outlines
+    across the bar's shared plane, its seam's middle on it), `rod_bar` (an
+    upright rod less the bar across the box's corner `(21/2, 15/8)`: the body
+    the tool), `step_bar` (both imported, their frames turned apart about `z`,
+    the bar across the step's box and stadium), `chain_step` (the step less an
+    upright rod through its box beside the stadium, then with a box on its
+    frame across the box's wall `x = 3`, the shared plane, the stadium's line
+    and its right arc), and declared `degenerate` `bar_touch` (a ball of
+    radius 1 resting on the bar's box at a point, exactly: `Degenerate("a
+    tangency between the inputs (S9c)")`). The reference is S9e.3a's chained
+    reference on the constructions OCCT was given (each body its fuse of two
+    prisms), with S9e.4b.3c.3a's checks relative to the case's size: the two
+    families within 1.5e-31, each solid's closed form 2.9e-36, each body's
+    closed form 3.3e-35 (the step `51 + 75 pi / 32`, the bar `75 + 165/8 + 625
+    pi / 32`, each section times its stored axes' determinant), the pair
+    identities 3.1e-42 and the area identity 5.8e-41, Monte Carlo 2.1 standard
+    errors (100,000 points a group), quadrature estimates 1.4e-32, every
+    meeting's sine at least 1.0 and events at least 3.6e-3 of their range
+    apart outside the declared group, solid counts by rays at two resolutions;
+    the declared group's checks kept apart within 2.9e-36. Every file read
+    independently (`stored_records`): its curved faces cylinders, every stored
+    vertex on the constructions' surfaces (within 0 of the size at the
+    reference's precision). `test_stack_leaves_boolean_reference.py` checks
+    each body's closed form against quadratures of its sections, the chained
+    reference on the bar against its closed form, every stack's place (the
+    upper prism's bottom the lower one's top bit for bit on one frame, the
+    crossings rational, every circle's distance from the other prism's lines
+    at least 1/4 from its radius, both caps partly exposed), the partners'
+    places, the declared ball (its centre's height exact, every cylinder and
+    wall clear of it by 1/4) and the case list and its protocol rows and the
+    files apart from every earlier set's. The generator's check is a CI group
+    of its own (`stack-leaves`, 4.1 minutes on four workers locally under
+    Python 3.9 on a shared host, 2.7 under 3.12); Python 3.9 and 3.12 write
+    the same files. Corrections from the evidence and the draft of the step's
+    code (not committed) run on the bodies, amending the refined decisions'
+    plan (9): (a) the `cover` (a square with a round hole under a stadium with
+    a round hole hiding its top) is no evidence: on a frame turned about `z`
+    OCCT writes its hole's cylinder capped on the stadium's cap plane exactly
+    and the import takes it already (a lone leaf with a prism of one cap and
+    the hole's cylinder cut), so the lower prism hidden by the upper one, with
+    its holes, is the kernel's own bodies' on the tilted frame, whose caps its
+    writer rounds apart (the tests and the `STACKS` stage), and the touching
+    ball rests on the bar; (b) a `ring` (the bar's box with a square hole
+    straddling the plate's arc) first took 12 worker-minutes a group and more
+    than 45 for its two-body group, so the upper prism on the plate is a box,
+    and the chain is the step's; (c) the bar first stood with its shared plane
+    on the step's (both at height `9/4`) and cut the step in two with a sliver
+    the rays counted apart, so it stands with its caps off the step's and
+    across one corner of it; (d) the kernel's own stacks on the world's axes
+    put a wall of each leaf across the other's on the shared plane where their
+    faces' boxes only touch, which S9's plane rule takes for two faces within
+    the resolution of one plane (as the refined decision (8) records), so the
+    fuzz stage's and the tests' own stacks stand on the frame turned about the
+    object's axis. The draft imports both bodies by stack chains (the box and
+    the stadium, the plate and the box: a pair of stack leaves, the second on
+    the first's frame) and finds every solid case within the reference's
+    volume and the declared one refused so.
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces
