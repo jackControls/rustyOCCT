@@ -113,15 +113,38 @@ impl Interval {
     pub(crate) fn neg(&self) -> Self {
         Self::new(-&self.hi, -&self.lo)
     }
+    /// The product: the least and the greatest of the ends' four products,
+    /// taken by the ends' signs (the two products that are them where
+    /// either interval keeps one sign, two comparisons where both straddle
+    /// zero), exactly the values the four products' comparisons give.
     pub(crate) fn mul(&self, o: &Self) -> Self {
-        let p = [
-            q::mul(&self.lo, &o.lo),
-            q::mul(&self.lo, &o.hi),
-            q::mul(&self.hi, &o.lo),
-            q::mul(&self.hi, &o.hi),
-        ];
-        let lo = p.iter().min().unwrap().clone();
-        let hi = p.iter().max().unwrap().clone();
+        let (a, b, c, d) = (&self.lo, &self.hi, &o.lo, &o.hi);
+        let up = |x: &R| sgn(x) != Sign::Minus;
+        let down = |x: &R| sgn(x) != Sign::Plus;
+        let m = q::mul;
+        let (lo, hi) = if up(a) {
+            if up(c) {
+                (m(a, c), m(b, d))
+            } else if down(d) {
+                (m(b, c), m(a, d))
+            } else {
+                (m(b, c), m(b, d))
+            }
+        } else if down(b) {
+            if up(c) {
+                (m(a, d), m(b, c))
+            } else if down(d) {
+                (m(b, d), m(a, c))
+            } else {
+                (m(a, d), m(a, c))
+            }
+        } else if up(c) {
+            (m(a, d), m(b, d))
+        } else if down(d) {
+            (m(b, c), m(a, c))
+        } else {
+            (m(a, d).min(m(b, c)), m(a, c).max(m(b, d)))
+        };
         Self::rounded(lo, hi)
     }
     pub(crate) fn scale(&self, k: &R) -> Self {
@@ -403,6 +426,47 @@ fn taylor_cos_sin(r: &Interval) -> (Interval, Interval) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// The rational product from the ends' signs is the four corners'
+    /// least and greatest, rounded alike, for every pair of signs (zero
+    /// ends, exact points and straddling intervals among them).
+    #[test]
+    fn rational_products_from_the_ends_signs() {
+        let r = |n: i64, d: i64| R::new(n.into(), d.into());
+        let ends = [
+            r(-7, 3),
+            r(-1, 1),
+            r(-1, 5),
+            r(0, 1),
+            r(1, 7),
+            r(2, 1),
+            r(9, 4),
+        ];
+        // A wide denominator so the grid's rounding runs too.
+        let fine = R::new(1.into(), BigInt::from(3) << 300);
+        let mut intervals = Vec::new();
+        for (i, a) in ends.iter().enumerate() {
+            for b in &ends[i..] {
+                intervals.push(Interval::new(a.clone(), b.clone()));
+                intervals.push(Interval::new(a - &fine, b + &fine));
+            }
+        }
+        for x in &intervals {
+            for y in &intervals {
+                let p = [
+                    q::mul(&x.lo, &y.lo),
+                    q::mul(&x.lo, &y.hi),
+                    q::mul(&x.hi, &y.lo),
+                    q::mul(&x.hi, &y.hi),
+                ];
+                let corners = Interval::rounded(
+                    p.iter().min().unwrap().clone(),
+                    p.iter().max().unwrap().clone(),
+                );
+                assert_eq!(x.mul(y), corners, "{x:?} {y:?}");
+            }
+        }
+    }
 
     /// The products from two corners (factors of one strict sign each) are
     /// the four corners' bit for bit, tiny, huge and overflowing ones too.

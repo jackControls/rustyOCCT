@@ -531,9 +531,54 @@ struct Tree<'a> {
     cube: ([f64; 3], f64),
     stored: &'a [[f64; 3]],
     tolerance: crate::Tolerance,
+    /// Each primitive's and its seam's `Debug` text, and the context's
+    /// other data's (`INNER`'s keys).
+    texts: Vec<String>,
+    context: String,
+}
+
+/// Inner Booleans' given models kept (`INNER`).
+const INNER_KEPT: usize = 16;
+
+thread_local! {
+    /// The last trees' inner Booleans' given models with the count after
+    /// each, by their content: the subtree with each primitive's and its
+    /// seam's `Debug` text, the piece's primitive's, the hulls' cube, the
+    /// stored vertices, the resolution, the operand and the count before it
+    /// (its ids'). An import tries chain after chain (`imported.rs`'s
+    /// `imported_primitives`), and the chains of one body share their first
+    /// Booleans, each its own arrangement and assembly again; a hit is the
+    /// model those build, bit for bit, its ids alike.
+    static INNER: std::cell::RefCell<Vec<(String, Result<Prism>, u64)>> =
+        const { std::cell::RefCell::new(Vec::new()) };
+}
+
+#[cfg(test)]
+thread_local! {
+    /// Tests: `INNER` passed over (each inner Boolean built), and its hits.
+    static INNER_OFF: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
+    static INNER_HITS: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+}
+
+/// Whether `INNER` is consulted (always, but where a test turns it off).
+fn inner_kept() -> bool {
+    #[cfg(test)]
+    if INNER_OFF.with(std::cell::Cell::get) {
+        return false;
+    }
+    true
 }
 
 impl Tree<'_> {
+    /// A subtree's text for `INNER`'s keys.
+    fn text(&self, tree: &PieceTree) -> String {
+        match tree {
+            PieceTree::Primitive(i) => format!("P({})", self.texts[*i]),
+            PieceTree::Hull(planes) => format!("H({planes:?})"),
+            PieceTree::Op(op, a, b) => format!("O({op:?}, {}, {})", self.text(a), self.text(b)),
+        }
+    }
+
     /// A tree's model as an input `operand`: the primitive's model, a hull
     /// leaf model (its entities under an operation of its own, `count` the
     /// hulls and Booleans so far), or an inner Boolean's given model.
@@ -549,21 +594,48 @@ impl Tree<'_> {
                 hull_model(planes, centre, half, operand, own, self.tolerance)
             }
             PieceTree::Op(op, a, b) => {
-                let (arr, out) = self.boolean(*op, a, b, count)?;
-                // One solid, its own assembly naming its given model (under
-                // ids of its own operation).
-                if out.len() != 1 {
-                    return Err(crate::solid::imported::not_its_primitive());
+                let key = format!(
+                    "{}\n{operand:?}\n{count}\n{}",
+                    self.context,
+                    self.text(tree)
+                );
+                let kept = inner_kept();
+                if let Some((hit, after)) = INNER.with(|k| {
+                    k.borrow()
+                        .iter()
+                        .find(|(known, _, _)| kept && *known == key)
+                        .map(|(_, m, after)| (m.clone(), *after))
+                }) {
+                    #[cfg(test)]
+                    INNER_HITS.with(|h| h.set(h.get() + 1));
+                    *count = after;
+                    return hit;
                 }
-                let parts = out[0].0.parts.clone();
-                let topology = inner_topology(parts, own)?;
-                let stored = super::given::Stored {
-                    topology: &topology,
-                    resolution: self.tolerance,
-                    frame: self.p.frame,
-                    poles: false,
-                };
-                super::given::built_on(&stored, operand, arr, out, *op, Some(0))
+                let built = (|| {
+                    let (arr, out) = self.boolean(*op, a, b, count)?;
+                    // One solid, its own assembly naming its given model
+                    // (under ids of its own operation).
+                    if out.len() != 1 {
+                        return Err(crate::solid::imported::not_its_primitive());
+                    }
+                    let parts = out[0].0.parts.clone();
+                    let topology = inner_topology(parts, own)?;
+                    let stored = super::given::Stored {
+                        topology: &topology,
+                        resolution: self.tolerance,
+                        frame: self.p.frame,
+                        poles: false,
+                    };
+                    super::given::built_on(&stored, operand, arr, out, *op, Some(0))
+                })();
+                INNER.with(|k| {
+                    let mut k = k.borrow_mut();
+                    if k.len() >= INNER_KEPT {
+                        k.drain(..1);
+                    }
+                    k.push((key, built.clone(), *count));
+                });
+                built
             }
         }
     }
@@ -651,9 +723,15 @@ fn of_tree(
     for k in 0..tried.len() {
         // Each primitive's seam apart from the others' (one surface's seams
         // on one line otherwise; S9e.4b.4b.1).
-        let seams = (0..prims.len())
+        let seams: Vec<&R> = (0..prims.len())
             .map(|i| &tried[(k + i) % tried.len()])
             .collect();
+        let texts = prims
+            .iter()
+            .zip(&seams)
+            .map(|(x, seam)| format!("{x:?}\n{seam:?}"))
+            .collect::<Vec<_>>();
+        let context = format!("{}\n{cube:?}\n{stored:?}\n{tolerance:?}", texts[0]);
         let ctx = Tree {
             p,
             prims,
@@ -661,6 +739,8 @@ fn of_tree(
             cube,
             stored,
             tolerance,
+            texts,
+            context,
         };
         match ctx.boolean(*op, a, b, &mut 0) {
             Err(Error::Degenerate(_)) if first.is_some() && k == 0 => continue,
@@ -785,4 +865,92 @@ pub(crate) fn is_piece(s: &Solid) -> bool {
 /// checked once on import.
 pub(crate) fn check(s: &Solid) -> Result<()> {
     model(s, Operand::A, None).map(|_| ())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{INNER, INNER_HITS, INNER_OFF};
+    use crate::identity::OperationId;
+    use crate::{Boundary, Frame3, Point2, Point3, Profile, Segment, Solid, Tolerance, Vec3};
+
+    /// The fuzz target's covered stack on the tilted frame turned about its
+    /// axis (a holed square under a holed stadium hiding its top), written,
+    /// read back and imported: its chains share inner Booleans (`INNER`
+    /// hits), and the import is the one built with every inner Boolean
+    /// built again, its `Debug` text alike.
+    #[test]
+    fn kept_inner_booleans_import_alike() {
+        let tol = Tolerance::default();
+        let tilted = Frame3::new(
+            Point3::new(1.0, -2.0, 0.5),
+            Vec3::new(0.0, 3.0, 4.0),
+            Vec3::new(1.0, 0.0, 0.0),
+            tol,
+        )
+        .unwrap();
+        let on = Frame3::new(
+            tilted.origin(),
+            tilted.normal(),
+            tilted.x() * 8.0 + tilted.y() * 15.0,
+            tol,
+        )
+        .unwrap();
+        let (k, h) = (2.75 / 8.0, 1.0);
+        let prism = |outer: Boundary, hole: Boundary, h0: f64, h1: f64, op: u64| {
+            let profile = Profile::new(outer, vec![hole], tol).unwrap();
+            Solid::extrude_with(OperationId(op), profile, on, h0, h1)
+                .unwrap()
+                .0
+        };
+        let square = [(-2.0, -2.0), (2.0, -2.0), (2.0, 2.0), (-2.0, 2.0)]
+            .map(|(x, y)| Point2::new(x * k, y * k))
+            .to_vec();
+        let lower = prism(
+            Boundary::polygon(square, tol).unwrap(),
+            Boundary::circle(Point2::new(0.0, 0.0), k, tol).unwrap(),
+            0.0,
+            h,
+            41,
+        );
+        let r = 3.0 * k;
+        let arc = |x: f64| Segment::Arc {
+            center: Point2::new(x, 0.0),
+            radius: r,
+            ccw: true,
+        };
+        let stadium = [(0.0, -r), (3.0 * k, -r), (3.0 * k, r), (0.0, r)]
+            .map(|(x, y)| Point2::new(x, y))
+            .to_vec();
+        let segments = vec![Segment::Line, arc(3.0 * k), Segment::Line, arc(0.0)];
+        let upper = prism(
+            Boundary::path(stadium, segments, tol).unwrap(),
+            Boundary::circle(Point2::new(0.25 * k, 0.25 * k), 0.5 * k, tol).unwrap(),
+            h,
+            2.0 * h,
+            42,
+        );
+        let (out, _) = lower.fuse(OperationId(43), &upper).unwrap();
+        let [body] = <[Solid; 1]>::try_from(out).unwrap();
+        let text = crate::occt_brep::write(body.topology(), body.resolution().linear()).unwrap();
+        let doc = crate::occt_brep::read(&text).unwrap();
+        let [solid] = <[_; 1]>::try_from(crate::occt_brep::import(&doc).solids).unwrap();
+        let (stored, resolution) = (solid.result.unwrap(), solid.tolerance);
+        let import = |off: bool| {
+            INNER.with(|k| k.borrow_mut().clear());
+            INNER_OFF.with(|o| o.set(off));
+            INNER_HITS.with(|n| n.set(0));
+            let (s, history) =
+                Solid::imported_with(OperationId(11), stored.clone(), resolution).unwrap();
+            INNER_OFF.with(|o| o.set(false));
+            (
+                format!("{s:?}\n{history:?}"),
+                INNER_HITS.with(std::cell::Cell::get),
+            )
+        };
+        let (kept, hits) = import(false);
+        let (built, none) = import(true);
+        assert!(hits > 0, "the chains share inner Booleans");
+        assert_eq!(none, 0);
+        assert!(kept == built, "the import alike");
+    }
 }
