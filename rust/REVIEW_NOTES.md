@@ -14975,6 +14975,12 @@ Decisions for S9, recorded before its code (2026-09-28):
   suite (711 tests), the tools' tests (398, 3 skipped); `compare_brep_io.py`
   6,835/7 (with or without `--v3-dataset`), `compare_brep.py --family
   spline` 10/3 and `compare_step.py` 23/6, 0 failures each.
+  Merged and verified at `16841446` (`rust-kernel`; with the `brep_io` and
+  `step` corpora and regressions replayed with debug assertions, 1,471 and
+  747 files, no failure). Campaigns there (600 s each, sampled replays,
+  every switch on, one agent building beside them): `brep_io` clean, 6,798
+  runs, the slowest under a second; `boolean` clean, 274 runs, the slowest
+  input 28 s; `split` clean, 1,501 runs.
 
 * **CI budget (U6).** Per-push fuzz runs replay a bounded sample plus every
   regression and new seed; the daily schedule replays everything; the heavy
