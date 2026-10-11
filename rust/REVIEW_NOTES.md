@@ -16420,6 +16420,52 @@ Decisions for S9, recorded before its code (2026-09-28):
     rod's tangent plane, and the residue's controls
     (`edge_vertex_near_miss_booleans`), evaluating as before.
 
+* **Two conic edges within the resolution of each other, done
+  (2026-10-11; the refined note above, HANDOFF's item 5).** Evidence
+  (`tests/conic_near_miss_booleans.rs`, before the code): at `a3bddf54`
+  every miss within the resolution evaluated wrongly, 27 configurations
+  (`1e-12`, `1e-11` and `1e-9` in the level, turned and about-z frames): a
+  rod's top rim by another rod's bottom rim crossing it at right angles, a
+  frustum's base rim by such a rod and a rod's rim by a block's rounded
+  edge's arc, each fused into two solids with an empty common and cut to
+  each input whole; the crossings that deep were refused already, as a
+  piece (24) or a result (3) thinner than the resolution. Kernel:
+  `curved/near.rs`'s `conics_closest` in `closest_on_edges` (`Conic64`,
+  `conic_leasts`, `refine`, `conics_bracketed`, `Inner`), `pair`'s contact
+  test shared as `contact`: every miss and crossing of the evidence refused
+  with "two edges within the resolution of each other (S9d.2)", at `1e-6`
+  and at `1.5e-7` (beyond the resolution, within twice it: bracketed and
+  apart) every operation evaluating, and the controls as before (rims
+  `0.1` apart and through, crossing but for rounding, rods stacked on one
+  plane of radii 1 on 1, 0.5 and 2, U1's box, the residue's tests). Unit
+  test: `two_conics_least_distance_is_bracketed` (a turned frame's unit
+  circle and a circle `1e-9` over it across its tangent, exactly a circle
+  and within rounding of one: one least each, bracketed to below `1e-15`,
+  `0.1` apart none). The new tests take 12.7 s in release with debug
+  assertions and overflow checks under the emulated glibc `hypot`, where
+  they pass with `edge_vertex_near_miss_booleans`,
+  `vertex_near_miss_booleans`, `near_miss_booleans` and `near.rs`'s unit
+  tests. Fuzz corpus (an instrumented release build, not committed, over
+  the boolean corpus's 1,444 inputs and the 38 regressions, each run with
+  the rule and with `NM_OFF`, its refusals logged and let go on, the
+  base's behaviour, every Boolean's result or refusal printed): 340 inputs
+  reach a pair of conic or circle edges (8,264 pairs, none of two sphere
+  circles), 6,212 pairs passed over whole by the grid's bound, 2,052
+  searched; 18 inputs (one regression, `6d1fd061`) hold 122 leasts within
+  twice the resolution, every exact gap of rounding's size (`1.1e-17` to
+  `1.0e-15`, no contact), none above it, so no pair reaches `pair`, none
+  is refused and every input's Booleans are alike with and without the
+  rule; no kept regression changes outcome. Cost (release, CPU by `wait4`,
+  one process an input, this kernel's replay and `a3bddf54`'s side by side,
+  four at once at load 4 to 7): the 1,482 files 598.9 s against 601.8 s
+  and, in a second run (`948026c1`'s build; the first's differed by two
+  equivalent rewrites of a binary64 test), 570.1 s against 574.6 s (0.5 %
+  and 0.8 % more): the 340 inputs reaching the rule 0.2 % and 0.4 %, the
+  1,142 not reaching it 0.6 % and 0.9 % (the binaries' layout, not the
+  rule); of the 40 inputs each run put most above their base (to 23 %),
+  each run five times again, none more than 5.1 % at the median
+  (`25b337df`, 0.144 to 0.151 s, which reaches no conic pair).
+
 * **CI budget (U6).** Per-push fuzz runs replay a bounded sample plus every
   regression and new seed; the daily schedule replays everything; the heavy
   exact targets run on schedule only; Windows runs a smoke subset per push
