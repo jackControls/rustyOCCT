@@ -16131,6 +16131,79 @@ Decisions for S9, recorded before its code (2026-09-28):
   without a failure (the slowest 14.9 s and 3.3 s, on a host at load 30
   to 40).
 
+* **One own body an input: CI's scheduled time limits at `bbfdee16`, done
+  (2026-10-11).** The daily "Rust geometry fuzzing" run at `bbfdee16`
+  failed on time limits alone, no crash: `boolean`'s campaign and its full
+  replay's shard 0 timed out on the kept regression `1608293d` (73 and 86 s
+  under AddressSanitizer against the 60 s limit), shard 2's resource check
+  failed on `a01cf0d1` (63 s), `d8c872b2` and `17e131e3` took 44 and 41 s,
+  and `analytic_intersections`' campaign found `d80692718ae1...` (a cone
+  and a torus about one origin, 22 s against its 20 s limit); the run at
+  `47e086c5` had these replays green. Cause, by stage (release, CPU): both
+  boolean inputs are corpus inputs past 20 bytes whose 17th to 20th bytes
+  are all at or above 128, so each stage added since keyed on a late byte
+  ran on them, one after another: `LEAVES` (`7308b9a7`), `RIMS`
+  (`13737320`), `FLUSH` (`4cd467de`) and `STACKS` (`4f06107b`), 0.1, 1.8,
+  0.9 and 5.2 s for `1608293d` (0.4 s in all at `47e086c5`) and 0.9, 2.0,
+  1.6 and 1.4 s for `a01cf0d1` (0.5 s), each a body of several Booleans
+  written, read back, imported (its chains tried in turn: `1608293d`'s
+  covered stack on the tilted frame built 7 chain models, the stack's last)
+  and cut twice, about half of each arrangement in the near-miss rules
+  (`3c644449`, `0a4271aa`, `90c55e3e`); the two torus inputs' chained byte
+  holds `NESTED`'s key (`0c43d083`: 4.60 to 5.36 s between `f9e54f0d` and
+  `a9df6c00` for `d8c872b2`), after `JOINTS`'s lens against the torus band,
+  their heaviest stage (3.3 s), and the near-miss rules a few percent more;
+  `d80692718ae1...` did not slow (1.9 s at both revisions), three
+  quarters of it the rational interval tier's products' comparisons in its
+  traced curve's Newton steps (`TracedCurve::point_at`). The out-of-memory
+  input's fix (`267493ac`, "The boolean target's covered stack") took a
+  chain built twice and the near-miss rules' binary64 work; what remained
+  was the stages' sum. Fix: (c) the boolean target runs one stage of the
+  kernel's own bodies an input (`own` in `check_boolean`): of `NESTED`,
+  `LEAVES`, `RIMS`, `FLUSH`, `STACKS` and `NESTED_LEAVES` the first whose
+  key is set, and none where the chained byte gives the lens to `JOINTS`
+  (every stage reachable, its key acting with the earlier ones clear;
+  FUZZING.md's boolean row has what it does to the corpus's inputs: 405 of
+  1,595 hold a key now passed over, their other Booleans and imports as
+  before); (a) `Interval::mul` takes the least and the greatest of the
+  ends' products by their signs (two products where either interval keeps
+  one sign, two comparisons where both straddle zero: the four products'
+  values exactly), and an import's chains keep their inner Booleans by
+  their content (`pieces.rs`'s `INNER`, the last 16: the chains of one body
+  share their first Booleans, the covered stack's import 2.66 to 2.18 s).
+  No limit loosened, no regression dropped. CPU, one run each (release at
+  load 5; AddressSanitizer with the target's options and no leak rerun at
+  load 2 to 3), at `47e086c5`, `bbfdee16`, `b7c88a76` (this branch's base,
+  with the out-of-memory fix and S9e.4b.4c.2b.1) and now: `1608293d` 0.30,
+  6.57, 3.87 and 0.39 s in release, 0.95, 24.8, 16.1 and 1.35 s under the
+  sanitizer; `a01cf0d1` 0.36, 4.94, 3.46 and 0.80, 2.0, 19.7, 15.7 and 4.2;
+  `d8c872b2` 3.57, 4.24, 4.09 and 3.47, 12.1, 14.8, 14.6 and 12.0;
+  `17e131e3` 4.11, 4.81, 4.66 and 4.06, 14.1, 16.8, 16.6 and 14.0; and
+  `d80692718ae1...` 1.89, 1.89, 1.93 and 0.50, 7.0, 7.0 and 1.2 under the
+  sanitizer (its 20 s limit). The two torus inputs are back at their cost
+  at `47e086c5`, `JOINTS`'s lens against the band most of it. Outcomes:
+  instrumented release builds printing every Boolean's solids (volumes' bits,
+  entity counts, a hash of their and their history's `Debug` texts) or
+  refusal and every import's, over the 1,443 local corpus inputs, CI's
+  snapshot's 114 others and the 38 regressions: each of the 1,595 alike bit
+  for bit with this kernel and `b7c88a76`'s under `b7c88a76`'s target
+  (1,454 to 1,351 s of CPU with the printing), and with the target's rule
+  1,196 alike and 399 running a stage fewer, their other lines alike (951
+  s); `analytic_intersections`' 2,454 inputs (the local corpus, the
+  snapshot's 955 others, the regressions and the new input) printing every
+  intersection both ways and every point of a traced or procedural curve:
+  all alike, 606 to 283 s. Tests: `certified.rs`'s
+  `rational_products_from_the_ends_signs` (every sign of either interval's
+  ends, exact and on the grid, against the four corners) and `pieces.rs`'s
+  `kept_inner_booleans_import_alike` (the covered stack's import with the
+  inner Booleans kept and built again, alike, the chains sharing some).
+  Checks: fmt, clippy (release, all targets), the 1.85 check, the fuzz
+  crate's fmt and check, the release suite (736 tests, 5 ignored); every comparison of HANDOFF's
+  table as documented with 0 failures (46 runs on the pinned SDK); the
+  boolean corpus and its regressions and the split corpus and its
+  regressions replayed with debug assertions without a failure; the five
+  inputs under the sanitizer as above.
+
 * **CI budget (U6).** Per-push fuzz runs replay a bounded sample plus every
   regression and new seed; the daily schedule replays everything; the heavy
   exact targets run on schedule only; Windows runs a smoke subset per push

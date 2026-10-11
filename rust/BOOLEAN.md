@@ -4309,7 +4309,12 @@ multiple root; and the engine's rules.
   turned about its axis, written, read back and imported, each cut by the
   chained stage's partner, one volume (`NESTED_LEAVES`, by the input's 21st
   byte, in the axis-aligned frames alone: on the tilted frame the import
-  refuses such a body as before the step).
+  refuses such a body as before the step). Of `NESTED`, `LEAVES`, `RIMS`,
+  `FLUSH`, `STACKS` and `NESTED_LEAVES` one runs an input at most, the
+  first whose key is set, and none where `JOINTS` takes the lens
+  (REVIEW_NOTES.md, "One own body an input": an input holding several keys
+  ran every such stage, past the target's time limit under
+  AddressSanitizer).
 
 ## DRAW commands
 
