@@ -66,7 +66,9 @@ then for the DRAW survey of the leaves (branch `s9-draw-16`, over
 then for S9e.4b.4b.2b.2b.2 (branch `s9e4b4b2b2b2`, over `s9c2-kernel` at `69c526ca`),
 then for the version-3 `.brep` header (branch `brep-v3-header`, over
 `s9c2-kernel` at `5b6a9220`),
-then for S9e.4b.4b.2b.2b.3a (branch `s9e4b4b2b2b3`, over `s9c2-kernel` at `5b6a9220`).
+then for S9e.4b.4b.2b.2b.3a (branch `s9e4b4b2b2b3`, over `s9c2-kernel` at `5b6a9220`),
+then for the DRAW survey of the flush leaves, the stacks and the near-miss
+residue (branch `s9-draw-17`, over `rust-kernel` at `f0bebb1c`).
 
 ## Where things stand
 
@@ -83,12 +85,12 @@ then for S9e.4b.4b.2b.2b.3a (branch `s9e4b4b2b2b3`, over `s9c2-kernel` at `5b6a9
   arcs, and one solid of a result of several (S9e.2, `curved/matched.rs`),
   results of spheres, cones and tori, deeper chains and given results
   against spheres, cones and tori (S9e.3a, `curved/chain.rs`), each with its
-  DRAW survey (the last full survey, that of the leaves at `8e632f49`,
-  branch `s9-draw-16`: the Boolean group's 987 cases and 59 restore cases
-  registered, none failing, no registered case moving against
-  `69c2c27f`'s survey, the vertex rule's four unregistered restore cases
-  taking its reason, both backends' audited values `69c2c27f`'s bit for
-  bit) and a clean campaign (S9e.3a's and S9f.1's at `b2765f20`, 989
+  DRAW survey (the last full survey, that of the flush leaves, the stacks
+  and the near-miss residue at `f0bebb1c`, branch `s9-draw-17`: the Boolean
+  group's 987 cases and 59 restore cases registered, none failing, no case
+  moving against `8e632f49`'s survey but the version-3 cases as their trial
+  recorded and four slow restores no longer timing out, both backends'
+  audited values `8e632f49`'s bit for bit) and a clean campaign (S9e.3a's and S9f.1's at `b2765f20`, 989
   runs).
 - **S9f.1 done.** Spline prisms against polyhedral prisms in any position
   (`curved/spline_walls.rs`), with its survey and campaign as above.
@@ -593,6 +595,9 @@ then for S9e.4b.4b.2b.2b.3a (branch `s9e4b4b2b2b3`, over `s9c2-kernel` at `5b6a9
   (`meet::line_point`; REVIEW_NOTES "Points of two quadratic fields on a line
   against a quadric, fixed", `tests/sphere_field_booleans.rs`). No corpus
   input or regression reaches it; every comparison of the table unchanged.
+  The DRAW survey at `f0bebb1c` (branch `s9-draw-17`): 363 cases take
+  `line_point`, every point in the line's own field, none reaching its new
+  branches; no case moving.
 - **S9e.4b.4b.2b.2b.2 implemented** (branch `s9e4b4b2b2b2`): parts flush
   with a leaf's walls, each leaf the lead of a chain of the prisms within its
   heights standing out of its walls (fused) and the pockets open sideways
@@ -623,8 +628,11 @@ then for S9e.4b.4b.2b.2b.3a (branch `s9e4b4b2b2b3`, over `s9c2-kernel` at `5b6a9
   alone, no volume differing. A trial of the DRAW restore cases: no body of
   the 1,316 cases restoring a data file and giving a Boolean moves, the one
   case reaching a body of several primitives unsupported on both backends as
-  before. Open: S9e.4b.4b.2b.2b.3. Campaigns clean at `5b6a9220`. Pending
-  its capture's Linux record and its DRAW survey (with S9e.4b.4b.2b.2b.3's).
+  before. Open: S9e.4b.4b.2b.2b.3. Campaigns clean at `5b6a9220`. Its DRAW
+  survey (with S9e.4b.4b.2b.2b.3a's, branch `s9-draw-17` at `f0bebb1c`): no
+  case moving, no case trying a flush chain (the 5 restore cases importing a
+  body of several primitives import before it, their leads with no flush
+  part), nothing registered. Pending its capture's Linux record.
 - **CI.** Both workflows ("Rust kernel", "Rust geometry fuzzing") were green
   at `6c221525`. They had been red from S7 until 2026-09-29, unnoticed;
   check them after every push (see "Working rules").
@@ -695,7 +703,14 @@ then for S9e.4b.4b.2b.2b.3a (branch `s9e4b4b2b2b3`, over `s9c2-kernel` at `5b6a9
    that of the leaves at `8e632f49` (branch `s9-draw-16`: S9e.4b.4b.2b.2a,
    S9e.4b.4b.2b.2b.1 and the vertex near miss; no registered case moving,
    none reaching a leaf pair or a rim leaf, the vertex rule's four restore
-   cases as its trial found, nothing registered).
+   cases as its trial found, nothing registered), that of the flush leaves,
+   the stacks and the near-miss residue at `f0bebb1c` (branch `s9-draw-17`:
+   S9e.4b.4b.2b.2b.2, S9e.4b.4b.2b.2b.3a, the fix of points of two quadratic
+   fields, the version-3 header and the near-miss residue; no case moving
+   but the 16 version-3 cases as their trial recorded, none trying a flush
+   or stack chain or reaching `line_point`'s new branches, the residue's
+   402 pairs as its trial found, no audited value moving, nothing
+   registered).
 3. **S9e.4b**, split in "S9e.4b refined": S9e.4b.1 (arcs rounded off
    their circles) and S9e.4b.2 (polyhedra other than prisms, on their
    stored vertices) are implemented with their DRAW surveys and
@@ -779,8 +794,9 @@ then for S9e.4b.4b.2b.2b.3a (branch `s9e4b4b2b2b3`, over `s9c2-kernel` at `5b6a9
    bodies of several primitives refused): parts flush with a leaf's walls
    completed through or around it (flush walls, pockets open sideways and
    across the rim: 14 of the 35 importing, 11 more of those forms refused by
-   S9's rules) is implemented with clean campaigns at `5b6a9220` (pending
-   its capture's Linux record and its DRAW survey); **S9e.4b.4b.2b.2b.3**, split in
+   S9's rules) is implemented with clean campaigns at `5b6a9220` and its
+   DRAW survey (`s9-draw-17` at `f0bebb1c`: no case moving, nothing
+   registered; pending its capture's Linux record); **S9e.4b.4b.2b.2b.3**, split in
    "S9e.4b.4b.2b.2b.3 refined" by the reach measured again at `5b6a9220` (21
    bodies of several primitives refused): **S9e.4b.4b.2b.2b.3a** (stacks of
    two prisms on one frame, their caps on one plane: a pair of leaves found
@@ -788,7 +804,9 @@ then for S9e.4b.4b.2b.2b.3a (branch `s9e4b4b2b2b3`, over `s9c2-kernel` at `5b6a9
    frame with its caps taken onto the first's heights; a lower prism the
    upper one hides read as a prism of one cap with its holes; 4 of the 5
    measured stacks importing, the fifth refused by S9's rules) is implemented
-   (pending its capture's Linux record, its DRAW survey and its campaigns),
+   with its DRAW survey (`s9-draw-17` at `f0bebb1c`: no case moving, no case
+   trying a stack chain, nothing registered; pending its capture's Linux
+   record and its campaigns),
    with a fix of a wall's meeting stored over a cylinder turned against the
    model's axis (`vertex_off_curve` at `5b6a9220`, the kernel's own stack on
    the world's axes imported and cut by a ball); next **S9e.4b.4b.2b.2b.3b**
@@ -816,8 +834,8 @@ then for S9e.4b.4b.2b.2b.3a (branch `s9e4b4b2b2b3`, over `s9c2-kernel` at `5b6a9
    version-3 texts read and convert (one solid and 11 free shapes import,
    `compare_brep_io.py --v3-dataset` matching 11 natively), and of the 16
    DRAW cases loading them (none registered) the 12 that failed at the
-   header now restore, none newly evaluating; BinTools' binary lines stay
-   refused.
+   header now restore, none newly evaluating, as the survey at `f0bebb1c`
+   (branch `s9-draw-17`) confirms; BinTools' binary lines stay refused.
 4. **S9's acceptance** (U6): kernel and fuzz CI green at the accepted
    revision, the schedule run's full replays green (boolean and
    `degree_elevation` are sharded across four jobs, `split` across
@@ -860,7 +878,9 @@ then for S9e.4b.4b.2b.2b.3a (branch `s9e4b4b2b2b3`, over `s9c2-kernel` at `5b6a9
    point at its own vertex where it runs on smoothly (a closed edge's
    vertex, a circle's seam), each decided by both inputs' boundaries
    against the gap (the faces' band widened by the gap's own rounding); its
-   DRAW trial moves no case. Open from it (its second part): a conic or
+   DRAW trial moves no case, as the survey at `f0bebb1c` (branch
+   `s9-draw-17`) confirms (402 cases holding a pair within the resolution at
+   rounding's gaps, none decided; 3 a cone's apex, none within it). Open from it (its second part): a conic or
    circle edge against another (two rims passing within the resolution at
    a point), edges of other curves (meetings, cone, torus and spline
    curves) against edges and vertices, points of two different surds, an

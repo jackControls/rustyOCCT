@@ -2204,6 +2204,101 @@ the slowest Boolean case 7.6 seconds (`bopcut_simple/ZK8`), the restore
 cases at most 7.3 (`bcommon_complex/B9`), E5, G9 and `bug417` 4.4, 2.1
 and 2.0.
 
+**The flush leaves, the stacks and the near-miss residue: the Boolean
+group and the restore cases.** Both sets were run again after the fix of
+points of two quadratic fields (`meet::line_point`), parts flush with a
+leaf's walls (S9e.4b.4b.2b.2b.2, `flush_parts`), the version-3 `.brep`
+header, edges and vertices within the resolution of each other
+(`fix-near-miss-residue`) and stacks of two prisms on one frame
+(S9e.4b.4b.2b.2b.3a, with the fix of a wall's meeting stored over a
+cylinder turned against the model's axis) were merged (2026-10-11, at
+`f0bebb1c`, the public dataset, 120 seconds a case, four at once, on a
+host at load 4 to 20). The 1,802 self-contained cases on both backends:
+every status, reason and error is the last survey's (`8e632f49`,
+`s9-draw-16`) field for field, 987 evaluating, every one registered, 592
+refused, 223 unsupported on both; none fails or times out. The 1,814
+restore cases on the Rust adapter (914 unsupported, 561 needing private
+data, 276 `failed` by the reader's validator, 59 evaluating, 4 timing
+out): `bugs/modalg_1/buc60532`, `_1`, `_2` and `bugs/modalg_6/bug23585`,
+which timed out at the last survey's load, end unsupported within the
+limit as they did run alone then (116 to 120 seconds; a
+`SurfaceOfLinearExtrusion` in the reader, `tolerance p` in the script,
+before any Boolean); `buc60531_1`, `_2`, `bugs/modalg_5/bug23849_1` and
+`_3` time out at their first restores as before. Every other status and
+reason is the last survey's; none of the 1,814 loads a version-3 text. Of
+the 171 the import reaches, both backends are as before field for field:
+59 evaluate on both, 76 are refused by S9's rules, 31 are bodies none of
+the kernel's constructions, 3 have spline faces (S9f) and 2 give the next
+Boolean several solids; native DRAW does not evaluate 24 of them. The 16
+cases loading the dataset's version-3 texts (above; none registered, none
+among the 1,814), on both backends and on the Rust adapter with
+`8e632f49`'s worker, move as the version-3 trial recorded: the 12 that
+failed at the header (`expected Matra-Datavision`) restore, 10 now
+unsupported at the converter (`bug32942` to `bug32945`, surfaces of
+revolution; `bug32767` and `bug32960`, rectangular trimmed surfaces) or at
+a later command (`nurbsconvert`, `incmesh`, `mksweep`, `explode` without a
+type), `bug32601` failed at the validator's rejection of `cone_bad_tri`'s
+face (`enclosure_unsound`, 22 seconds) and `bug33664_1` failed at the
+viewer stub's selection count as natively; the other four stop before any
+restore as before; native DRAW is as the trial found (14 unsupported,
+`bug32601` unverified, `bug33664_1` failed). No case newly evaluates.
+
+An instrumented build of the debug worker (not committed: a line written
+the first time a case takes each path; at each import of a body of
+several primitives its leaves, rim leaves, flush leads with their parts
+(`flush_leads`, `flush_parts`), stack leaves and their pairs
+(`stack_leaves`, `leaf_pairs`), each chain tried by class with its
+outcome; the near-miss pairs of both engines by kind, curves, gap, the
+gap's rounding, each side and outcome; a cone's apex in `vertex_faces`
+and in the sphere's vertex rule; smooth ends in the edge rule, the
+sphere's edge rule and the pairs; `meet::line_point`'s branches; the
+given model's push off a shared plane; `assemble`'s stored frames against
+the model's axis) over the 1,802 and the 1,814, its statuses and reasons
+those of the runs above: 5 restore cases import a body of several
+primitives, as at the last survey (`bfuse_complex/E5`, `bcut_complex/G9`,
+`bugs/modalg_2/bug417` and `bugs/modalg_6/bug28773` by their primitives
+alone, `bfuse_complex/K1` by one leaf); E5's, K1's and `bug28773`'s
+leaves lead a flush chain with no part flush with their walls, and their
+stack leaves (2, 2 and 4) form no pair; G9's and `bug417`'s bodies have
+no leaf. Each imports before the flush and stack chains, so no case tries
+one and neither step can move a case; no self-contained case imports. The
+near-miss residue reaches the trial's cases exactly: 570 cases run the
+curved rule and 468 the polyhedral one; 402 (356 and 46) hold a pair
+within the resolution, 235 in the curved engine (a line against a conic
+or a circle in 224, a conic's point nearest a vertex in 83, a line's foot
+in 4, two lines in 4, two vertices in 4) and 167 in the polyhedral one
+(a vertex and an edge in 159, two vertices in 44, two edges in 35), every
+gap rounding (`3e-35` to `5e-13`) with each input's directions along the
+gap's plane, so no pair is refused; 3 restore cases (`bcut_complex/K9`,
+`bfuse_complex/I5` and `K5`) hold a cone's apex, each exactly on the
+other's plane face (the incidences' own rules, refused as before), none
+within the resolution; no case reaches the sphere's vertex rule with an
+apex or an edge's smooth end. `meet::line_point` is taken by 363 cases
+(302 and 61), every root's point in the line's own field, so no point of
+two fields arises (no square ratio, no box's clearance, no refusal). No
+case reaches the given model's push off a shared plane or a stored frame
+against the model's axis. Controls on the instrumented worker took the
+new paths: the evidence's `flush_arms.brep` imports by a flush chain of
+two parts, `flush_open.brep` and `flush_slot.brep` of one, and
+`stack_step.brep` and `stack_bar.brep` by a stack pair (each fused with a
+far box); a cone's apex `1e-12` under a box, two boxes' corners `1.7e-12`
+apart diagonally (one turned by 30 degrees about `z`) and a box's edge
+`1.4e-12` diagonally off a rod's rim (the box turned by 20 degrees about
+that edge) are refused with the new reasons, and evaluated with them off.
+No case fails, crashes or panics on either backend.
+
+The volume audit (both backends, the 1,046 audited before): both
+backends' values are the last audit's bit for bit on all 1,046 (no value
+moves, the largest relative move 0), the statuses the same, and the same
+35 disagreements remain. No case newly evaluates, so none is registered
+(1,132 cases); the ledger does not change. A full contract run of the
+manifest (both backends, 30 seconds a case, an absolute output
+directory, on a host at load 4 to 7) holds for every case (Rust: 18
+pass, 1,050 viewer-skipped, 53 unsupported, 11 private data), the slowest
+Boolean case 4.4 seconds (`bopfuse_simple/ZK8`), the restore cases 0.13
+to 4.7 (`bcommon_complex/B9`), E5, G9 and `bug417` 2.4, 1.2 and 1.2, the
+rollex 0.6.
+
 Three more `intss` cases run on the Rust adapter but are not registered,
 because the contract admits no failing status: `bug23178`, `bug28222_2` and
 `bug28222_3` count the pieces IntPatch splits its walking lines into (6, 4
