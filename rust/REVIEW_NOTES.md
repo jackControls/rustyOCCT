@@ -16203,6 +16203,13 @@ Decisions for S9, recorded before its code (2026-09-28):
   boolean corpus and its regressions and the split corpus and its
   regressions replayed with debug assertions without a failure; the five
   inputs under the sanitizer as above.
+  Merged and verified at `677c3bad` (`rust-kernel`, with S9e.4b.4c.2b.1 and
+  the covered stack's fix; the analytic_intersections corpus replayed with
+  debug assertions too, 1,498 files, no failure). Campaigns there (600 s
+  each, sampled replays, every switch on): `boolean` clean, 394 runs, the
+  slowest input 15 s (the startup's replay 645 s, against 1,000 to 3,200 s
+  at the heads since `247d0e61`); `split` clean, 1,426 runs. The scheduled
+  run's full replays are to be seen.
 
 * **CI budget (U6).** Per-push fuzz runs replay a bounded sample plus every
   regression and new seed; the daily schedule replays everything; the heavy
