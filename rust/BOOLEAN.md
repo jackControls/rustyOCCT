@@ -578,8 +578,18 @@ derivative takes opposite exact signs, the least within the curve's
 movement over the bracket of the bracket's point's, a distance within
 that bound of the resolution `ComputationLimit`); two lines' closest points
 (skew; exact) and a line's and a conic's or circle's (bracketed alike),
-strictly inside both; a point at an edge's end where the edge runs on
-through it smoothly (a closed edge's vertex, a circle's halves at their
+strictly inside both; two conics' or a conic's and a circle's (two sphere
+circles' points lie in fields of their own and are not combined) at each
+least of their distance found in binary64 (a grid of 64 angles of each,
+refined by Newton's method), the curves' exact points at its rational
+half-angle tangents deciding a gap within the resolution, and a gap beyond
+it but within twice it, where the pair is a contact there, bracketed on
+one curve's parameter of the exact distance to the other (the inner
+curve's nearest point exact on a circle, else bracketed itself; within the
+brackets' bound of the resolution `ComputationLimit`), a gap of the
+points' rounding's size shown so in binary64 where it can be (two rods'
+coincident rims hold a least at every node); a point at an edge's end
+where the edge runs on through it smoothly (a closed edge's vertex, a circle's halves at their
 seam) counting as inside, there and in the edge and sphere rules too. A
 gap of zero is an incidence, the existing rules'. Otherwise each input's
 boundary at its point (a vertex's tangent cone, an apex's rulings, an edge
@@ -591,8 +601,12 @@ leaving the other away (missing) is refused unless the gap lies inside
 both inputs, each heading toward the other (crossing) is refused, and
 anything else is no contact of the pair's own (a face heading toward the
 other input is its face rule's). A cube's corner `1e-12` off a box's top
-edge or corner or a rod's rim, a box's edge `1e-12` across another's, and
-a ball off a rod's rim at its seam were two solids. The
+edge or corner or a rod's rim, a box's edge `1e-12` across another's, a
+ball off a rod's rim at its seam, and two rods' rims, a rod's and a
+cone's or a rod's rim and a block's arc edge crossing `1e-12` apart were
+two solids. Edges of other curves (meetings of curved faces, cone, torus
+and spline curves) against edges and vertices have no such rule: their
+points, found at rational parameters, give no bound below a gap. The
 validator decides a ray against a whole sphere (a cavity in a sphere); a
 result's bounds hold its spheres' boxes. A sphere against a cylinder or
 another sphere is S9d.2's.

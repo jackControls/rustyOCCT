@@ -905,11 +905,26 @@ then for the DRAW survey of the nested leaves and the speed-ups (branch
    against the gap (the faces' band widened by the gap's own rounding); its
    DRAW trial moves no case, as the survey at `f0bebb1c` (branch
    `s9-draw-17`) confirms (402 cases holding a pair within the resolution at
-   rounding's gaps, none decided; 3 a cone's apex, none within it). Open from it (its second part): a conic or
-   circle edge against another (two rims passing within the resolution at
-   a point), edges of other curves (meetings, cone, torus and spline
-   curves) against edges and vertices, points of two different surds, an
-   apex against a torus or spline face. (b) An
+   rounding's gaps, none decided; 3 a cone's apex, none within it). Of its
+   second part, a conic or circle edge against another (two rods' rims, a
+   rim and a cone's or a block's arc edge passing within the resolution at
+   a point) is closed on branch `fix-near-miss-conics` (REVIEW_NOTES.md's
+   "Two conic edges within the resolution of each other"): each least of
+   their distance found in binary64 (a grid of 64 angles of each, Newton's
+   method), decided exactly within the resolution at the curves' rational
+   points, bracketed beyond it within twice it (`ComputationLimit` within
+   the brackets' bound), a gap of rounding's size no contact (shown in
+   binary64 where it can be), contact by the residue's pair; no corpus
+   input or DRAW case moves (57 cases hold leasts at rounding's gaps, most
+   along two stacked rods' coincident rims), the corpus's CPU unchanged
+   within noise, as its trial records (UPSTREAM_TESTS.md). Open from the
+   second part: edges of other curves (meetings, cone, torus and spline
+   curves) against edges and vertices (their points, found at rational
+   parameters with no bound of the curve's movement, bound a gap from above
+   only, so every such pair between the resolution and twice it would be a
+   `ComputationLimit`; a rule of its own), points of two different surds
+   (two sphere circles' among them), an apex against a torus or spline
+   face. (b) An
    edge one of whose faces heads toward the other's surface at its near
    point is no contact and evaluates as before (S9f.2b.2's
    `lens_tilt_loop`, a rim on a plane but for rounding with its wall

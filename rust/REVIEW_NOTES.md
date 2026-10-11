@@ -16465,6 +16465,56 @@ Decisions for S9, recorded before its code (2026-09-28):
   rule); of the 40 inputs each run put most above their base (to 23 %),
   each run five times again, none more than 5.1 % at the median
   (`25b337df`, 0.144 to 0.151 s, which reaches no conic pair).
+  Amended after the DRAW trial's cost (below): the `bop*_simple` grids'
+  `ZD5` to `ZD7` (a rod stacked on another of its radius, turned by a half
+  turn: their rims one curve) found a least at every grid node along the
+  rims, 416 a case, each placed exactly and passed over as of rounding's
+  size, 0.3 to 0.4 s against 0.03 s on the debug worker. `rounding_gap`
+  now shows such a gap in binary64 first: both points evaluated from their
+  conics' data rounded once at the same rational parameters (each
+  coordinate within `10 (|c| + |a| + |b|) eps` of the exact point's, first
+  order `(2 |c| + 8 |a| + 7 |b|) eps`), their distance plus both bounds
+  against `rho` of a size no larger than the points' (a sphere's circle's
+  points, scaled by a square root, not taken); the exact path would pass
+  over the same pairs, so no outcome can change. Unit test
+  `rounding_gaps_in_binary64_hold_exactly` (400 pairs of conics of turned
+  frames' kinds shifted by up to two `rho`, every binary64 verdict
+  confirmed by the exact points; run once with 200,000, not committed:
+  47,107 verdicts, every one confirmed). Now `ZD5` to `ZD7` take 0.04 to
+  0.05 s. Measured again at `80360e49` (side by side with `a3bddf54`'s
+  replay, four at once at load 10 to 14): the 1,482 files 840.5 s against
+  840.5 s, the 340 inputs reaching the rule 0.3 % less, the 1,142 others
+  0.1 % more; the 40 most slowed in that run, five times each again, none
+  more than 5.3 % at the median (`34cd7b4b`, 1.26 to 1.33 s, reaching no
+  conic pair). The corpus's reach as before: of the 122 leasts within
+  twice the resolution 41 (12 inputs) shown of rounding's size in binary64
+  and 81 (15 inputs) by their exact gaps, no pair reaching `pair`, every
+  Boolean alike with and without the rule. DRAW trial (UPSTREAM_TESTS.md,
+  "Two conic edges near each other"): of the 1,802 and the 1,814 restore
+  cases on an instrumented debug worker, every status and reason as at
+  `s9-draw-18` but `buc60532` and `_1` timing out under load (unsupported
+  as before alone); 160 cases reach a pair of conic or circle edges (420
+  pairs of two sphere circles in 22 restore cases, not combined), 57 hold
+  7,832 leasts within twice the resolution, every one of rounding's size
+  (7,716 shown so in binary64, 116 by their exact gaps, `7.5e-17` to
+  `2.1e-14`), none above it, so no case moves and none is registered; the
+  Rust adapter's CPU on the 160 135.2 s against `a3bddf54`'s 134.8 s; the
+  full contract run holds for all 1,132 cases and the ledger holds.
+  Checks: fmt, clippy (release, all targets), the 1.85 check, the fuzz
+  crate's fmt and check, the release suite (741 tests, 5 ignored; the new
+  tests 13.2 s in release and 15.4 s at opt-level 2 with debug assertions
+  on a host at load 9; with the four near-miss test files and `near.rs`'s
+  unit tests passing again under the emulated glibc `hypot` with debug
+  assertions and overflow checks); every comparison of HANDOFF's table as documented
+  with 0 failures (46 runs on the pinned SDK); the boolean corpus (1,444
+  inputs) and its 38 regressions and the split corpus (3,551) and its 20
+  regressions replay with debug assertions without a failure (the slowest
+  4.9 s and 1.4 s). Open (HANDOFF, item 5): edges of other curves
+  (meetings of two curved faces, cone, torus and spline curves) against
+  edges and vertices (their points found at rational parameters bound a
+  gap from above only: every pair between the resolution and twice it
+  would be a `ComputationLimit`), two sphere circles (points of two
+  different surds), and an apex against a sphere's, torus or spline face.
 
 * **CI budget (U6).** Per-push fuzz runs replay a bounded sample plus every
   regression and new seed; the daily schedule replays everything; the heavy
