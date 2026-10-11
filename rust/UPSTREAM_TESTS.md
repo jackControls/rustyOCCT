@@ -2166,6 +2166,44 @@ case newly evaluates, so none is audited or registered (1,132 cases); the
 four `bcommon` cases (`bug32942` to `bug32945`) are of the 1,814 restore
 cases' kind and now stop at the converter instead of the reader.
 
+**Edges and vertices near each other: a trial of the Boolean group and the
+restore cases.** A vertex within the resolution of the other input's
+vertex or edge, two edges passing within it of each other and a cone's
+apex within it of a face are refused where each input's boundary leaves
+its point strictly away from the other's or heads strictly toward it, an
+edge's point at a smooth end (a closed edge's vertex, a circle's seam)
+taken as inside it (2026-10-11, branch `fix-near-miss-residue`;
+REVIEW_NOTES.md's "Edges and vertices within the resolution of each
+other, done", which has the counts). An instrumented build of the debug
+worker on the Rust adapter (not committed: a line written the first time
+a case takes each path) over the 1,802 self-contained cases and the 1,814
+restore cases (120 seconds a case, four at once, at load 6 to 26): every
+status and reason is the survey's at `8e632f49` (`s9-draw-16`) field for
+field but `bugs/modalg_6/bug23585`, which timed out at this load and ends
+unsupported as before (`tolerance`) in 152 seconds run alone with 300,
+before any Boolean; every registered case among the run (1,081) has its
+manifest status. 570 cases run the curved rule and 468 the polyhedral
+one; 402 (356 and 46) hold a pair within the resolution (in the curved
+engine lines against conics or circles in 196 and 39, conics' points
+nearest a vertex, lines' feet and vertices against vertices; in the
+polyhedral one vertices against edges, vertices and edges against edges),
+every gap rounding (`3e-35` to `5e-13`, the largest on the restore cases'
+bodies of coordinates in the hundreds) with directions along the gap's
+plane, so no pair is refused; 3 restore cases (`bcut_complex/K9`,
+`bfuse_complex/I5` and `K5`) hold a cone's apex, none within the
+resolution of a face; none reaches an edge's smooth end. Controls on the
+instrumented worker took the rules' paths: a cone's apex `1e-12` under a
+box and a box turned by 30 degrees with its corner `1.7e-12` diagonally
+off another's are refused with the new reasons, and evaluated with them
+off. No case newly evaluates and none evaluating is refused, so no value
+can move and none is registered (1,132 cases); the ledger holds. A full
+contract run of the manifest on both backends with the dataset (an
+absolute output directory, at load 11 to 24) holds for all 1,132 cases
+(Rust: 18 pass, 1,050 viewer-skipped, 53 unsupported, 11 private data),
+the slowest Boolean case 7.6 seconds (`bopcut_simple/ZK8`), the restore
+cases at most 7.3 (`bcommon_complex/B9`), E5, G9 and `bug417` 4.4, 2.1
+and 2.0.
+
 Three more `intss` cases run on the Rust adapter but are not registered,
 because the contract admits no failing status: `bug23178`, `bug28222_2` and
 `bug28222_3` count the pieces IntPatch splits its walking lines into (6, 4
