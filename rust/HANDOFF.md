@@ -622,8 +622,8 @@ then for the version-3 `.brep` header (branch `brep-v3-header`, over
   alone, no volume differing. A trial of the DRAW restore cases: no body of
   the 1,316 cases restoring a data file and giving a Boolean moves, the one
   case reaching a body of several primitives unsupported on both backends as
-  before. Open: S9e.4b.4b.2b.2b.3. Pending its capture's Linux record, its
-  DRAW survey and its campaigns.
+  before. Open: S9e.4b.4b.2b.2b.3. Campaigns clean at `5b6a9220`. Pending
+  its capture's Linux record and its DRAW survey (with S9e.4b.4b.2b.2b.3's).
 - **CI.** Both workflows ("Rust kernel", "Rust geometry fuzzing") were green
   at `6c221525`. They had been red from S7 until 2026-09-29, unnoticed;
   check them after every push (see "Working rules").
@@ -778,8 +778,8 @@ then for the version-3 `.brep` header (branch `brep-v3-header`, over
    bodies of several primitives refused): parts flush with a leaf's walls
    completed through or around it (flush walls, pockets open sideways and
    across the rim: 14 of the 35 importing, 11 more of those forms refused by
-   S9's rules) is implemented (pending its capture's Linux record, its DRAW
-   survey and its campaigns); next **S9e.4b.4b.2b.2b.3** (leaves touching
+   S9's rules) is implemented with clean campaigns at `5b6a9220` (pending
+   its capture's Linux record and its DRAW survey); next **S9e.4b.4b.2b.2b.3** (leaves touching
    along a face: 5 stacks with caps on one plane and one on crossing axes,
    needing a given model of touching caps or exact shared carriers; the rest
    of S9e.4b.4b.2b's list; 2 overlaps and 2 thin pieces stay refused by S9's

@@ -11939,7 +11939,11 @@ Decisions for S9, recorded before its code (2026-09-28):
     stack on crossing axes, the rest of S9e.4b.4b.2b's list); the 11 bodies of
     this step's forms refused by S9's rules (walls through the other's
     line-arc joint, walls on an arc's tangent plane). Pending: its capture's
-    Linux record, its DRAW survey and its campaigns.
+    Linux record and its DRAW survey (to be taken with S9e.4b.4b.2b.2b.3's).
+    Campaigns at `5b6a9220` (600 s each, sampled replays, every switch on,
+    two agents building beside them): `boolean` clean, 246 runs, the
+    slowest input 36 s (the startup's replay 1,509 s); `split` clean, 922
+    runs, the slowest 14 s.
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces
