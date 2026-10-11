@@ -14812,6 +14812,106 @@ Decisions for S9, recorded before its code (2026-09-28):
   observations reviewed against the macOS captures as the other
   `platform-linux/` records were.
 
+* **The version-3 `.brep` header refined, before its code (2026-10-10;
+  HANDOFF's item 3).** Why: the reader (`occt_brep::read`) takes
+  `CASCADE Topology V1,`, `V2,` or `V3,` and then requires `(c)
+  Matra-Datavision`, but OCCT writes version 3 only under `CASCADE Topology
+  V3, (c) Open Cascade` (`TopTools_ShapeSet::THE_ASCII_VERSIONS` at the
+  pinned revision, OCCT 8.1.0, whose `TopTools_FormatVersion_CURRENT` it
+  is; introduced by OCCT 7.6.0, `dox/upgrade/upgrade.md`'s "Changes in
+  storage of shapes"), so every text OCCT 7.6 or later writes by default is
+  refused (`line 3: expected Matra-Datavision`). The pinned SDK does not
+  predate it. What the versions differ in, by the pinned
+  `TopTools_ShapeSet`, `BRepTools_ShapeSet` and `GeomTools` (the last has
+  no version branch): OCCT compares the whole header line, its trailing CR
+  and LF removed, with the three lines and reads nothing under any other;
+  version 2 adds four reals (the UV points) after the range of every
+  curve-on-surface representation, which neither version 1 nor 3 writes;
+  versions 2 and 3 keep the third shape flag (`checked`), where version 1
+  ignores it and runs `Check` (`BRepTools::Update` of each face's UV
+  points) after reading; version 3 adds to each triangulation record a
+  normals flag after the UV flag and, when set, three reals per node after
+  the triangles (written for faces without a surface only). Nothing else
+  is versioned: locations, curves, surfaces, polygons and the face record
+  (`0 tol 0 0` with `2 <triangulation>` for a face without a surface)
+  are the same. The reader has read version 3's grammar since T2 (the
+  normals flag and normals), but no file has reached it. BinTools' binary
+  format has lines of its own (`Open CASCADE Topology V1 (c)` to `V3 (c)`,
+  and `V4, (c) Open Cascade`, whose version 4 adds the normals) and is not
+  this reader's. The public dataset (7.9.0): 27 files carry the line, 26
+  `.brep` texts (25 in `brep/` and `others/bug30175_box.brep`) and
+  `xbf/bug33317_solids_7_7_0.xml` (an XmlOCAF document, not a `.brep`); no
+  text has a version-2 header; 13 files are BinTools binaries (3 `.bbrep`
+  of version 4, 6 `.brep` and 4 `.bin` of version 3), loaded only by
+  `binrestore` (`bugs/heal/bug28768`, `bugs/moddata_3/bug33304`). In the
+  26: triangulations in 11 (UV nodes in 7), normals in one
+  (`bug32617`'s six faces without a surface), faces without a surface in 3
+  (`bug32617`, `bug32737_free_verts`, `bug30175_box`), no face record of
+  the mesh-only kind. Read under the older line (scratch copies, which the
+  reader takes for version 3 today; nothing committed) all 26 read and
+  convert: one solid imports (one of `bug32960`'s two) and 11 free shapes
+  (faces, wires and an edge of `bug32557`, `bug32692_broken_mesh`,
+  `bug32807_path`, `_profile`, `bug32818`, `bug32934`, `bug33170`,
+  `bug33173`, `cylinder_surface`); refused by name: surfaces of revolution
+  (`bug32942` to `bug32945`, `bug33115`), rectangular trimmed surfaces
+  (`bug32557_1`, `_2`, `bug32767`, `bug32960`'s second solid), faces
+  without a surface, a degenerated edge (`bug32988`, `bug33115`) and an
+  edge without a pcurve (`bug27170_f`); rejected by the validator:
+  `bug28620`'s solid, one of `bug32934`'s two edges, `bug33226_1189`'s and
+  `cone_bad_tri`'s faces. DRAW cases: 16 load 19 of the files, none
+  registered: 14 by `restore` (17 files: `bugs/moddata_3/bug32557`,
+  `bugs/mesh/bug32692_2`, `bug32767`, `pipe/bugs/bug32807`, `bug32818`,
+  `bugs/modalg_7/bug32934`, `bugs/modalg_8/bug32942` to `bug32945` and
+  `bug33173`, `bugs/fclasses/bug32960` and `bug32601`,
+  `v3d/bugs/bug33664_1`), `cr/bugs/bug33170` by `brestore` and
+  `bugs/moddata_3/bug33318` by `readfile`; 7 files no case loads at the
+  pinned revision (`bug27170_f`, `bug32617`, `bug32737_free_verts`,
+  `bug32988`, `bug33115`, `bug33226_1189`, `bug30175_box`). Four
+  (`bug32942` to `bug32945`, a `bcommon` of an exploded compound's two
+  solids) are of the 1,814 restore cases' kind, so HANDOFF's "none among
+  the surveyed restore cases" holds for the 171 the import reaches, not for
+  the 1,814. At the base (`5b6a9220`) the Rust adapter fails 12 of the 16
+  at the header; `bug32818` (a `restore` without a name), `bug32934`
+  (`pload ALL`), `bug33170` and `bug33318` stop before any restore; native
+  DRAW evaluates none (unsupported commands, `bug32601` unverified,
+  `bug33664_1` failing in the viewer). Decisions:
+  - **Accepted**: `CASCADE Topology V3, (c) Open Cascade`, as OCCT reads
+    it; its content is version 3's grammar as read since T2, unchanged:
+    triangulations and their normals are skipped (the kernel keeps no
+    mesh), the shape flags are checked as a seven-flag word and not kept
+    (every version), and version 1's `Check` has no counterpart (the
+    reader keeps no UV points).
+  - **Kept**: every text the reader reads now reads to the same document:
+    versions 1 and 2 under `(c) Matra-Datavision`, and version 3 under it
+    too, a line OCCT refuses and no OCCT writes, which the reader has
+    always taken (recorded, not changed).
+  - **Refused, each with its reason**: version 1 or 2 under any other line
+    (`expected Matra-Datavision`, as now); version 3 under any line but
+    those two (`expected the version-3 copyright Open Cascade`, new); any
+    other version word, BinTools' lines among them (`expected format
+    version V1, V2 or V3`, as now); malformed records as now, each with its
+    line; constructs the converter does not represent by name, as now.
+    The DRAW adapter's restore (its first-line test admits both lines), the
+    writer (version 1) and the converter do not change.
+  - **Tests**: evidence first, the pinned SDK's reading of the 26 with
+    `compare_brep_io.py`'s two probes unchanged (solids; free shapes)
+    captured in `fixtures/occt-brep-v3-capture/` with the reader's refusal
+    of each file, the kernel unchanged. Kernel tests: a written document
+    under the version-3 line reads to the same document but its version,
+    under either copyright; version-3 triangulations with and without
+    normals, and a face without a surface on one (`FaceWithoutSurface` on
+    import); every refusal above with its reason and line. The `brep_io`
+    target: every text that reads under its version-1 line without a
+    triangulation reads to the same document under the version-3 line;
+    its corpus and regressions replayed in debug. `compare_brep_io.py
+    --v3-dataset DIR` (local only, U1): the native reading unchanged from
+    the capture, the independent reader's counts native's, every file read
+    by the kernel, every imported solid's and free shape's counts native's
+    and measures enclosing native's, its written text read natively valid
+    with the same counts and properties. A DRAW trial of the 16 cases on
+    both backends, any case newly evaluating volume-audited and not
+    registered.
+
 * **CI budget (U6).** Per-push fuzz runs replay a bounded sample plus every
   regression and new seed; the daily schedule replays everything; the heavy
   exact targets run on schedule only; Windows runs a smoke subset per push
