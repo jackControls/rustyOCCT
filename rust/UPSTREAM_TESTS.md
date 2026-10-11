@@ -2377,6 +2377,55 @@ Boolean case 3.2 seconds (`bcommon_complex/B9`), the self-contained ones
 at most 2.9 (`boptuc_simple/ZK8`), the restore cases 0.13 to 3.2, E5, G9
 and `bug417` 2.1, 1.3 and 1.2, the rollex 0.4.
 
+**Two conic edges near each other: a trial of the Boolean group and the
+restore cases.** Two conic or circle edges of the inputs within the
+resolution of each other (two rods' rims crossing `1e-12` apart, a rim by
+a cone's or by a block's arc edge) are refused where each input's boundary
+leaves its point strictly away from the other's or heads strictly toward
+it (2026-10-11, branch `fix-near-miss-conics`; REVIEW_NOTES.md's "Two
+conic edges within the resolution of each other, done", which has the
+counts). An instrumented build of the debug worker on the Rust adapter
+(not committed: a line written the first time a case takes each path,
+counters written after each command) over the 1,802 self-contained cases
+and the 1,814 restore cases (120 seconds a case, four at once, at load 5
+to 12): every status and reason is the survey's at `cc7af85c`
+(`s9-draw-18`) field for field but `bugs/modalg_1/buc60532` and `_1`,
+which timed out at this load and end unsupported as before
+(`SurfaceOfLinearExtrusion`) in 75 seconds run alone with 300, before any
+Boolean; every registered case among the run (1,081) has its manifest
+status. 160 cases (123 and 37) hold a pair of conic or circle edges whose
+boxes meet (2,800 pairs; 420 of two sphere circles, in 22 restore cases,
+not combined): 1,812 pairs are passed over whole by the grid's bound and
+568 searched in 70 cases; 57 cases (the `bop*_simple` grids' `ZD5` to
+`ZD7`, `ZF2`, `ZF3`, `ZK1` to `ZK4` and `ZM7` to `ZN1`, `bcut_simple/L3`
+to `L6` and `bcut_complex/G4`) hold 7,832 leasts within twice the
+resolution, every one of rounding's size (7,716 shown so in binary64, 116
+by their exact points' gaps, `7.5e-17` to `2.1e-14`), most of them at
+every grid node along two rods' coincident rims (a rod stacked on another
+of its radius); none lies above rounding, so no pair reaches the contact
+test, none is refused and no case moves; 100 of the 160 are registered.
+Controls on the instrumented worker took the new paths: two rods' rims
+crossing at right angles `1e-12` apart and `1e-12` through (`pcylinder`,
+`trotate` and `ttranslate`: the second rod's bottom rim across the first's
+top rim at `(1, 0, 1)`) are refused with the new reason in `bfuse` and
+`bcommon`, and with the rule's refusals let go on evaluate (two solids,
+the common empty) or are refused as a piece thinner than the resolution
+as before; `1.5e-7` apart they evaluate through the bracketed search
+(apart), and `0.1` apart through the grid alone. No case fails, crashes
+or panics. The Rust adapter's CPU time (user and system, by `wait4`) on
+the 160 cases reaching the rule, each case's runs with this worker and
+`a3bddf54`'s queued together: 135.2 against 134.8 seconds (0.3 % more;
+the stacked rods' `ZD5` to `ZD7` 0.04 to 0.05 against 0.03 seconds, 0.3
+to 0.4 before the leasts of rounding's size were passed over in
+binary64), every status and reason alike. No case newly evaluates and
+none evaluating is refused, so no value can move and none is registered
+(1,132 cases); the ledger holds. A full contract run of the manifest on
+both backends with the dataset (an absolute output directory, at load 4
+to 11) holds for all 1,132 cases (Rust: 18 pass, 1,050 viewer-skipped, 53
+unsupported, 11 private data), the slowest Boolean case 3.1 seconds
+(`bcommon_complex/B9`), the restore cases 0.13 to 3.1, E5, G9 and
+`bug417` 1.9, 1.2 and 1.2, the rollex 0.4.
+
 Three more `intss` cases run on the Rust adapter but are not registered,
 because the contract admits no failing status: `bug23178`, `bug28222_2` and
 `bug28222_3` count the pieces IntPatch splits its walking lines into (6, 4
