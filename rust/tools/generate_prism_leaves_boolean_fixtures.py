@@ -264,7 +264,7 @@ def make_bodies():
              cylinder(NOTCH_ROD, 1.0, 4.5, 1.5, -1.0, 4.0),
              kind='unsupported',
              reason='an imported body of several primitives with plane faces other than their ends, one or two '
-                    'prisms\', a flat or a pocket (S9e.4b.4b.2b.2b.3)'),
+                    'prisms\', a flat or a pocket (S9e.4b.4b.2b.2b.3b)'),
     ]
     return {b.name: b for b in out}
 

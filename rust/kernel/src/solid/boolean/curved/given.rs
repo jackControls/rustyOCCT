@@ -637,7 +637,34 @@ impl Given {
     pub(super) fn member(&self, p: &QV, dirs: &[QV]) -> Loc {
         let a = self.leaves[0].member(p, dirs);
         let b = self.leaves[1].member(p, dirs);
-        combine(self.op, a, b)
+        let out = combine(self.op, a, b);
+        if out != Loc::On || a != Loc::On || b != Loc::On {
+            return out;
+        }
+        // S9e.4b.4b.2b.2b.3a: a point inside a face of each input on one
+        // plane (a stack's touching caps), after every push still on it: the
+        // plane is both inputs' only boundary there, so the result holds the
+        // point where it holds both sides of the plane, and not where it
+        // holds neither; on its boundary where it holds one.
+        for &(fa, fb) in &self.coinc {
+            if self.leaves[0].in_face(fa, p) != Loc::In || self.leaves[1].in_face(fb, p) != Loc::In
+            {
+                continue;
+            }
+            let n = self.leaves[0].normal_at(fa, p);
+            let side = |d: QV| {
+                let mut pushed = dirs.to_vec();
+                pushed.push(d);
+                combine(
+                    self.op,
+                    self.leaves[0].member(p, &pushed),
+                    self.leaves[1].member(p, &pushed),
+                )
+            };
+            let (front, back) = (side(n.clone()), side(n.map(|x| x.neg())));
+            return if front == back { front } else { Loc::On };
+        }
+        out
     }
 
     /// Where a point on a model face's surface lies in its region: in its

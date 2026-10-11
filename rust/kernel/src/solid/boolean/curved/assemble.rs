@@ -1579,15 +1579,28 @@ fn curve3(arr: &Arr, e: &REdge, points: &BTreeMap<usize, Point3>) -> Result<Curv
             let cf = fl(&m.o_model());
             let offset: f64 = (0..3).map(|j| (origin[j] - cf[j]) * nf[j]).sum();
             let centre = fl(&m.c);
+            // A stored frame against the model's axis (an imported leaf read
+            // off its cap facing against its walls' stored axes): heights
+            // along it the model's negated, its angles turning the other way,
+            // so the branch too.
+            let s: f64 = if (0..3)
+                .map(|j| nf[j] * frame.normal().to_array()[j])
+                .sum::<f64>()
+                < 0.0
+            {
+                -1.0
+            } else {
+                1.0
+            };
             Ok(Curve3::Rise(Box::new(crate::topology::Rise {
                 frame: *frame,
                 radius: *radius,
                 half_angle,
                 centre: Point3::new(centre[0], centre[1], centre[2]),
                 sphere_radius: rational_f64(&m.rr),
-                sign: if m.plus { 1.0 } else { -1.0 },
-                start: w0.to_f64() - offset,
-                sweep: w1.to_f64() - w0.to_f64(),
+                sign: s * if m.plus { 1.0 } else { -1.0 },
+                start: s * (w0.to_f64() - offset),
+                sweep: s * (w1.to_f64() - w0.to_f64()),
             })))
         }
         // The section's own cone (a given edge of a cone's wall and another
@@ -1843,6 +1856,22 @@ fn curve3(arr: &Arr, e: &REdge, points: &BTreeMap<usize, Point3>) -> Result<Curv
                 .x()
                 .dot(cm.frame.y())
                 .atan2(frame.x().dot(cm.frame.x()));
+            // A stored frame against the model's axis (an imported leaf read
+            // off its cap facing against its walls' stored axes): its angle
+            // `base - t` of the model's `t`, its rulings' heights the other
+            // way, so the root too.
+            let s = if cm.frame.normal().dot(frame.normal()) < 0.0 {
+                -1.0
+            } else {
+                1.0
+            };
+            let start = if e.ends.is_none() {
+                0.0
+            } else if s < 0.0 {
+                base - t0
+            } else {
+                t0 - base
+            };
             Ok(Curve3::Meet(Box::new(crate::topology::Meet {
                 frame,
                 radius,
@@ -1851,9 +1880,9 @@ fn curve3(arr: &Arr, e: &REdge, points: &BTreeMap<usize, Point3>) -> Result<Curv
                 other_radius,
                 other_sphere,
                 other_half_angle,
-                sign: if m.plus { 1.0 } else { -1.0 },
-                start: if e.ends.is_none() { 0.0 } else { t0 - base },
-                sweep: if with { sweep } else { -sweep },
+                sign: s * if m.plus { 1.0 } else { -1.0 },
+                start,
+                sweep: s * if with { sweep } else { -sweep },
             })))
         }
         Crv::Line { .. } => {

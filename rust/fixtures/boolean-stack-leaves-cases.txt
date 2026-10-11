@@ -1,0 +1,195 @@
+case step_bar_fuse 1e-07
+op 91
+brep imported/stack_step.brep
+boolean fuse 93
+op 92
+brep imported/stack_bar.brep
+end
+case step_bar_cut 1e-07
+op 91
+brep imported/stack_step.brep
+boolean cut 93
+op 92
+brep imported/stack_bar.brep
+end
+case step_bar_common 1e-07
+op 91
+brep imported/stack_step.brep
+boolean common 93
+op 92
+brep imported/stack_bar.brep
+end
+case chain_step_fuse 1e-07
+op 91
+brep imported/stack_step.brep
+boolean cut 93
+op 92
+frame 1.0 0.5 0.75 0.0 0.0 1.0 7.0 24.0 0.0
+offsets -1.0 4.0
+boundary C -1.5 0.0 0.5
+then fuse 95
+op 94
+frame 1.0 0.5 0.75 0.0 0.0 1.0 7.0 24.0 0.0
+offsets 1.0 2.25
+boundary P 4 2.5 -1.0 6.0 -1.0 6.0 0.5 2.5 0.5
+end
+case chain_step_cut 1e-07
+op 91
+brep imported/stack_step.brep
+boolean cut 93
+op 92
+frame 1.0 0.5 0.75 0.0 0.0 1.0 7.0 24.0 0.0
+offsets -1.0 4.0
+boundary C -1.5 0.0 0.5
+then cut 95
+op 94
+frame 1.0 0.5 0.75 0.0 0.0 1.0 7.0 24.0 0.0
+offsets 1.0 2.25
+boundary P 4 2.5 -1.0 6.0 -1.0 6.0 0.5 2.5 0.5
+end
+case chain_step_common 1e-07
+op 91
+brep imported/stack_step.brep
+boolean cut 93
+op 92
+frame 1.0 0.5 0.75 0.0 0.0 1.0 7.0 24.0 0.0
+offsets -1.0 4.0
+boundary C -1.5 0.0 0.5
+then common 95
+op 94
+frame 1.0 0.5 0.75 0.0 0.0 1.0 7.0 24.0 0.0
+offsets 1.0 2.25
+boundary P 4 2.5 -1.0 6.0 -1.0 6.0 0.5 2.5 0.5
+end
+case step_rod_fuse 1e-07
+op 91
+brep imported/stack_step.brep
+boolean fuse 93
+op 92
+frame 1.0 0.5 0.75 0.0 0.0 1.0 7.0 24.0 0.0
+offsets -1.0 4.0
+boundary C 2.0 1.0 0.5
+end
+case step_rod_cut 1e-07
+op 91
+brep imported/stack_step.brep
+boolean cut 93
+op 92
+frame 1.0 0.5 0.75 0.0 0.0 1.0 7.0 24.0 0.0
+offsets -1.0 4.0
+boundary C 2.0 1.0 0.5
+end
+case step_rod_common 1e-07
+op 91
+brep imported/stack_step.brep
+boolean common 93
+op 92
+frame 1.0 0.5 0.75 0.0 0.0 1.0 7.0 24.0 0.0
+offsets -1.0 4.0
+boundary C 2.0 1.0 0.5
+end
+case step_wall_fuse 1e-07
+op 91
+brep imported/stack_step.brep
+boolean fuse 93
+op 92
+frame 1.0 0.5 0.75 0.0 0.0 1.0 7.0 24.0 0.0
+offsets -1.0 4.0
+boundary C 3.0 0.75 0.5
+end
+case step_wall_cut 1e-07
+op 91
+brep imported/stack_step.brep
+boolean cut 93
+op 92
+frame 1.0 0.5 0.75 0.0 0.0 1.0 7.0 24.0 0.0
+offsets -1.0 4.0
+boundary C 3.0 0.75 0.5
+end
+case step_wall_common 1e-07
+op 91
+brep imported/stack_step.brep
+boolean common 93
+op 92
+frame 1.0 0.5 0.75 0.0 0.0 1.0 7.0 24.0 0.0
+offsets -1.0 4.0
+boundary C 3.0 0.75 0.5
+end
+case bar_rod_fuse 1e-07
+op 91
+brep imported/stack_bar.brep
+boolean fuse 93
+op 92
+frame 2.0 4.0 0.5 0.0 0.0 1.0 12.0 5.0 0.0
+offsets -1.0 5.0
+boundary C 7.5 1.0 0.5
+end
+case bar_rod_cut 1e-07
+op 91
+brep imported/stack_bar.brep
+boolean cut 93
+op 92
+frame 2.0 4.0 0.5 0.0 0.0 1.0 12.0 5.0 0.0
+offsets -1.0 5.0
+boundary C 7.5 1.0 0.5
+end
+case bar_rod_common 1e-07
+op 91
+brep imported/stack_bar.brep
+boolean common 93
+op 92
+frame 2.0 4.0 0.5 0.0 0.0 1.0 12.0 5.0 0.0
+offsets -1.0 5.0
+boundary C 7.5 1.0 0.5
+end
+case rod_bar_fuse 1e-07
+op 91
+frame 2.0 4.0 0.5 0.0 0.0 1.0 12.0 5.0 0.0
+offsets -1.0 4.0
+boundary C 10.0 1.5 0.75
+boolean fuse 93
+op 92
+brep imported/stack_bar.brep
+end
+case rod_bar_cut 1e-07
+op 91
+frame 2.0 4.0 0.5 0.0 0.0 1.0 12.0 5.0 0.0
+offsets -1.0 4.0
+boundary C 10.0 1.5 0.75
+boolean cut 93
+op 92
+brep imported/stack_bar.brep
+end
+case rod_bar_common 1e-07
+op 91
+frame 2.0 4.0 0.5 0.0 0.0 1.0 12.0 5.0 0.0
+offsets -1.0 4.0
+boundary C 10.0 1.5 0.75
+boolean common 93
+op 92
+brep imported/stack_bar.brep
+end
+case bar_touch_fuse 1e-07
+op 91
+brep imported/stack_bar.brep
+boolean fuse 93
+op 92
+frame 8.461538461538462 6.6923076923076925 4.5 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 1.0 -1.5707963267948966 1.5707963267948966
+end
+case bar_touch_cut 1e-07
+op 91
+brep imported/stack_bar.brep
+boolean cut 93
+op 92
+frame 8.461538461538462 6.6923076923076925 4.5 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 1.0 -1.5707963267948966 1.5707963267948966
+end
+case bar_touch_common 1e-07
+op 91
+brep imported/stack_bar.brep
+boolean common 93
+op 92
+frame 8.461538461538462 6.6923076923076925 4.5 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 1.0 -1.5707963267948966 1.5707963267948966
+end
