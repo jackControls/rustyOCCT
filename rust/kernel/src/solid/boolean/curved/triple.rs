@@ -480,7 +480,7 @@ impl Param {
 }
 
 /// A box `(lo, hi)` of world coordinates.
-type Clip = ([f64; 3], [f64; 3]);
+pub(super) type Clip = ([f64; 3], [f64; 3]);
 
 /// A bivariate polynomial's coefficients as binary64 intervals, all scaled
 /// by one power of two so the largest is near one (the same roots; `None`
@@ -602,7 +602,7 @@ fn enclose_point(e: &Encl, x: &Fast) -> Option<[Fast; 3]> {
 }
 
 /// Whether an enclosure lies clear of a box (padded): no point there.
-fn clear_of(enc: &[Fast; 3], clip: &Clip) -> bool {
+pub(super) fn clear_of(enc: &[Fast; 3], clip: &Clip) -> bool {
     let size = (0..3)
         .map(|i| clip.0[i].abs().max(clip.1[i].abs()))
         .fold(1.0f64, f64::max);

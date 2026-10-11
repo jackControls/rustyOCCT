@@ -10,7 +10,7 @@
 //! rational orthogonal basis of their plane with `dx^2 |x|^2 + dy^2 |y|^2 =
 //! r2`, placed by `(dx, dy)`, so a rational direction gives a point of one
 //! quadratic field.
-use super::meet::{quadratic, tangency, EdgeMeet, Pos};
+use super::meet::{line_point, quadratic, tangency, EdgeMeet, Pos};
 use super::model::*;
 use super::num::*;
 use crate::identity::Role;
@@ -209,8 +209,15 @@ pub(super) fn plane_near_miss(c: &V, r: &R, p0: &V, m: &V, res: f64) -> Option<(
     Some((qv(&foot), near))
 }
 
-/// Where a line meets a sphere.
-pub(super) fn line_sphere(p: &QV, d: &V, c: &V, r: &R) -> Result<EdgeMeet> {
+/// Where a line meets a sphere (a point of two fields certainly outside
+/// `clip` none, refused elsewhere: `meet::line_point`).
+pub(super) fn line_sphere(
+    p: &QV,
+    d: &V,
+    c: &V,
+    r: &R,
+    clip: Option<&super::triple::Clip>,
+) -> Result<EdgeMeet> {
     let a = dot(d, d);
     let w = qsub(p, &qv(c));
     let b = qdot(&w, d).scale(&int(2));
@@ -220,16 +227,13 @@ pub(super) fn line_sphere(p: &QV, d: &V, c: &V, r: &R) -> Result<EdgeMeet> {
             "an irrational line against a sphere",
         ));
     };
-    let roots = quadratic(&a, b, cc)?;
-    Ok(EdgeMeet::Points(
-        roots
-            .into_iter()
-            .map(|t| {
-                let x = qadd(p, &qscale(d, &t));
-                (Pos::T(t), x)
-            })
-            .collect(),
-    ))
+    let mut out = Vec::new();
+    for t in quadratic(&a, b, cc)? {
+        if let Some(x) = line_point(p, d, &t, clip, "an irrational line against a sphere")? {
+            out.push((Pos::T(t), x));
+        }
+    }
+    Ok(EdgeMeet::Points(out))
 }
 
 /// A sphere model's own data.

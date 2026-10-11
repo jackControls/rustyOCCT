@@ -7,6 +7,7 @@
 //! unless their surfaces are certainly apart.
 use super::model::{Affine, Crv, Prism, Surf, P2};
 use super::num::*;
+use crate::certified::{Fast, Real};
 use crate::solid::split::zero;
 use crate::topology::Surface;
 use crate::{Error, Result};
@@ -60,6 +61,50 @@ pub(super) fn quadratic(a: &R, b: &R, c: &R) -> Result<Vec<Qd>> {
             ])
         }
     }
+}
+
+/// A line's point `p + t d` at a root `t` of a quadratic over the
+/// rationals, as a point of one field. A section's line may run through
+/// irrational points of one field `Q(sqrt D)` and still meet a quadric in
+/// a rational quadratic (its irrational part orthogonal to the direction
+/// and to its offset from the quadric's centre): the roots are then surds
+/// of their own `sqrt E`. Where `E / D` is a rational square, `t` is
+/// written in `p`'s surd; otherwise the point lies in `Q(sqrt D, sqrt E)`,
+/// which no `QV` holds (its coordinates of two fields, their sums
+/// `Qd::add`'s "surds of one field"): `Ok(None)` where it lies certainly
+/// outside `clip` (the edge's and the face's boxes: no meeting there),
+/// refused as `limit` otherwise.
+pub(super) fn line_point(
+    p: &QV,
+    d: &V,
+    t: &Qd,
+    clip: Option<&super::triple::Clip>,
+    limit: &'static str,
+) -> Result<Option<QV>> {
+    let (Some(e), Some(dp)) = (t.field(), p.iter().find_map(|x| x.field())) else {
+        return Ok(Some(qadd(p, &qscale(d, t))));
+    };
+    if e == dp {
+        return Ok(Some(qadd(p, &qscale(d, t))));
+    }
+    if let Some(s) = rational_sqrt(&(e / dp)) {
+        // `b sqrt E = (b s) sqrt D`.
+        let t = Qd::parts(t.a.clone(), t.b.scale(&s), dp.clone());
+        return Ok(Some(qadd(p, &qscale(d, &t))));
+    }
+    if let Some(clip) = clip {
+        let enc = |i: usize| {
+            let x = p[i].enclose_fast(SIGN_STEPS)?;
+            let y = t.enclose_fast(SIGN_STEPS)?;
+            Some(x.add(&y.mul(&Fast::near_r(&d[i])?)))
+        };
+        if let (Some(x), Some(y), Some(z)) = (enc(0), enc(1), enc(2)) {
+            if super::triple::clear_of(&[x, y, z], clip) {
+                return Ok(None);
+            }
+        }
+    }
+    Err(Error::ComputationLimit(limit))
 }
 
 /// Solves `alpha cos + beta sin = gamma` for `(cos, sin)`: none, or two.
@@ -770,9 +815,14 @@ pub(super) fn edge_surface(
             super::torus_curved::circ_torus(circ, py, py.tolerance.linear())
         }
         // S9d.3a: a line against a cone's wall; S9d.3b's others.
-        (Crv::Line { p, d }, Surf::Cone { .. }) => {
-            super::cone::line_cone(p, d, &py.f, py.funnel.as_ref().expect("a cone"), &py.hi)
-        }
+        (Crv::Line { p, d }, Surf::Cone { .. }) => super::cone::line_cone(
+            p,
+            d,
+            &py.f,
+            py.funnel.as_ref().expect("a cone"),
+            &py.hi,
+            clip,
+        ),
         // S9d.3b: a cap's or a rim's circle against a cone, a sphere's circle
         // against a cone.
         (Crv::Conic { c, a, b }, Surf::Cone { b: rb, k }) => {
@@ -801,7 +851,7 @@ pub(super) fn edge_surface(
         }
         // S9d.1: a line against a sphere; a sphere's circle against a
         // plane; anything else against a sphere is S9d.2's.
-        (Crv::Line { p, d }, Surf::Sphere { c, r }) => super::sphere::line_sphere(p, d, c, r),
+        (Crv::Line { p, d }, Surf::Sphere { c, r }) => super::sphere::line_sphere(p, d, c, r, clip),
         (Crv::Circle(circ), Surf::Plane { p: p0, m }) => match circ.meet_plane(p0, m)? {
             None => Ok(EdgeMeet::Along),
             Some(cs) => Ok(EdgeMeet::Points(
@@ -912,16 +962,15 @@ pub(super) fn edge_surface(
             let (Some(b), Some(cc)) = (b.rational(), cc.rational()) else {
                 unreachable!("rational above")
             };
-            let roots = quadratic(&a, b, cc)?;
-            Ok(EdgeMeet::Points(
-                roots
-                    .into_iter()
-                    .map(|t| {
-                        let x = qadd(p, &qscale(d, &t));
-                        (Pos::T(t), x)
-                    })
-                    .collect(),
-            ))
+            let mut out = Vec::new();
+            for t in quadratic(&a, b, cc)? {
+                if let Some(x) =
+                    line_point(p, d, &t, clip, "an irrational line against a cylinder")?
+                {
+                    out.push((Pos::T(t), x));
+                }
+            }
+            Ok(EdgeMeet::Points(out))
         }
         (Crv::Conic { c, a, b }, Surf::Plane { p: p0, m }) => {
             let alpha = dot(m, a);

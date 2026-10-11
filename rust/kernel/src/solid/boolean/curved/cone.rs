@@ -12,7 +12,7 @@
 //! parabola's piece runs between the directions where the plane is
 //! parallel to a ruling (its ends at infinity beyond the end planes).
 use super::graph::{between_ccw, rational_between};
-use super::meet::{quadratic, tangency, trig, EdgeMeet, Pos};
+use super::meet::{line_point, quadratic, tangency, trig, EdgeMeet, Pos};
 use super::model::*;
 use super::num::*;
 use crate::identity::Role;
@@ -119,7 +119,14 @@ impl Funnel {
 /// Where a line meets a cone's wall (its quadric's points on either nappe;
 /// the face's region decides). A double root is a tangency where the wall
 /// is (a line through the apex among them), nothing beyond its ends.
-pub(super) fn line_cone(p: &QV, d: &V, f: &Affine, fun: &Funnel, h: &R) -> Result<EdgeMeet> {
+pub(super) fn line_cone(
+    p: &QV,
+    d: &V,
+    f: &Affine,
+    fun: &Funnel,
+    h: &R,
+    clip: Option<&super::triple::Clip>,
+) -> Result<EdgeMeet> {
     let l = f.local_q(p);
     let ld = f.local_dir(d);
     let rho0 = fun.rho(&l[2]);
@@ -162,9 +169,15 @@ pub(super) fn line_cone(p: &QV, d: &V, f: &Affine, fun: &Funnel, h: &R) -> Resul
             Err(tangency())
         };
     }
-    Ok(EdgeMeet::Points(
-        quadratic(&a, b, c)?.into_iter().map(point).collect(),
-    ))
+    // Two roots, each a point of one field (a point of two certainly
+    // outside `clip` none, refused elsewhere: `meet::line_point`).
+    let mut out = Vec::new();
+    for t in quadratic(&a, b, c)? {
+        if let Some(x) = line_point(p, d, &t, clip, "an irrational line against a cone")? {
+            out.push((Pos::T(t), x));
+        }
+    }
+    Ok(EdgeMeet::Points(out))
 }
 
 /// A plane's section of a cone's wall over the cone's angle: the plane
