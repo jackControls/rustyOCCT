@@ -477,6 +477,16 @@ reason:
 * **Fuzzing.** The first `brep_io` smoke run found reader references beyond
   their tables (edge representation and face locations). The reader now
   range-checks every reference; the input is a retained regression.
+* **Format versions.** The reader takes OCCT's header lines
+  (`TopTools_ShapeSet`): versions 1 and 2 under `(c) Matra-Datavision`,
+  version 3 under `(c) Open Cascade` (OCCT 7.6 and later write it by
+  default), and version 3 under the older line too, which OCCT refuses but
+  the reader has always taken. Version 2's UV points and version 3's
+  triangulation normals are read and dropped; any other line is a typed
+  error, BinTools' binary format among them. The public dataset's 26
+  version-3 texts were captured natively before the reader took the line
+  (`fixtures/occt-brep-v3-capture`) and are compared locally
+  (`compare_brep_io.py --v3-dataset`).
 
 ## Surfaces of revolution (S3)
 

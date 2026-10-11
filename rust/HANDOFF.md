@@ -63,7 +63,9 @@ then for the fix of points of two quadratic fields (branch `fix-surds-panic`,
 over `s9c2-kernel` at `8e632f49`),
 then for the DRAW survey of the leaves (branch `s9-draw-16`, over
 `rust-kernel` at `8e632f49`),
-then for S9e.4b.4b.2b.2b.2 (branch `s9e4b4b2b2b2`, over `s9c2-kernel` at `69c526ca`).
+then for S9e.4b.4b.2b.2b.2 (branch `s9e4b4b2b2b2`, over `s9c2-kernel` at `69c526ca`),
+then for the version-3 `.brep` header (branch `brep-v3-header`, over
+`s9c2-kernel` at `5b6a9220`).
 
 ## Where things stand
 
@@ -797,10 +799,14 @@ then for S9e.4b.4b.2b.2b.2 (branch `s9e4b4b2b2b2`, over `s9c2-kernel` at `69c526
    matches, after S9e.4b.4b.2b.2b) and **S9e.4b.4d**
    (turned bodies of smooth joins and nearly degenerate surfaces,
    `bug476_1` to `_8`'s `OCC485a`: refused until a decision of their
-   own). The reader's header check refuses
-   OCCT 8.1's version-3 `.brep` (`(c) Open Cascade`; 27 dataset files,
-   none among the surveyed restore cases): widening it needs a survey of
-   the restores it opens.
+   own). The reader takes OCCT's version-3 line (`CASCADE Topology V3,
+   (c) Open Cascade`, written since OCCT 7.6; REVIEW_NOTES.md's "The
+   version-3 `.brep` header", branch `brep-v3-header`): the dataset's 26
+   version-3 texts read and convert (one solid and 11 free shapes import,
+   `compare_brep_io.py --v3-dataset` matching 11 natively), and of the 16
+   DRAW cases loading them (none registered) the 12 that failed at the
+   header now restore, none newly evaluating; BinTools' binary lines stay
+   refused.
 4. **S9's acceptance** (U6): kernel and fuzz CI green at the accepted
    revision, the schedule run's full replays green (boolean and
    `degree_elevation` are sharded across four jobs, `split` across
@@ -988,7 +994,9 @@ Each comparison takes `--occt-root target/spline-linear-preflight/pinned-sdk/ins
 
 Every one must report 0 failures; since S9f.1 also `compare_split.py`
 (72 / 56) and `compare_brep.py --family spline` (10 / 3), which share its
-spline prisms, and `compare_brep_io.py` (6,835 / 7); since S9e.4
+spline prisms, and `compare_brep_io.py` (6,835 / 7; with
+`--v3-dataset target/occt-test-data/opencascade-dataset-7.9.0` also 11
+version-3 matches, locally only); since S9e.4
 `compare_step.py` (23 / 6, with STEP-b's SDK at `target/step-b-sdk`: the
 pinned SDK lacks the STEP toolkits' headers), whose bodies imported solids
 may be. Where `curved_boolean_reference.py`,

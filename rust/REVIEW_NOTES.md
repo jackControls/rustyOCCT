@@ -14925,6 +14925,53 @@ Decisions for S9, recorded before its code (2026-09-28):
     pre-implementation record and the header match (a whole line, its CR
     removed, never BinTools' line).
 
+* **The version-3 `.brep` header, done (2026-10-11; the refined note
+  above, HANDOFF's item 3).** Kernel: `occt_brep::read` takes `(c) Open
+  Cascade` after `V3,` as OCCT writes it, still takes `(c)
+  Matra-Datavision` there, refuses version 3 under any other line as
+  `expected the version-3 copyright Open Cascade` and everything else as
+  before (`expected Matra-Datavision` for versions 1 and 2, `expected format
+  version V1, V2 or V3` for BinTools' lines); its grammar is unchanged. The
+  independent reader (`brep_io_reference.py`) reads the version-3 line too.
+  Tests: `tests/occt_brep.rs`'s `version_three_reads_under_occt_line` (a
+  written document under either version-3 line, with LF or CRLF, is the
+  same document but its version; two triangulations, one with normals, and
+  a face without a surface on it read alike under versions 1 and 3 and
+  import as `FaceWithoutSurface`; version 3's records without their flag
+  and its normals cut short are typed errors; each refusal with its reason
+  and line); `test_brep_io_oracle.py` (the capture, the header match, the
+  independent reader's version-3 triangulation). Fuzzing: the `brep_io`
+  target's version-3 twin (a text read under its version-1 line without a
+  triangulation reads to the same document under OCCT's version-3 line):
+  the corpus's 1,469 inputs and its 2 regressions replay with debug
+  assertions without a failure, 976 reaching the twin (an instrumented
+  build, not committed), the slowest 3.1 s. Comparison:
+  `compare_brep_io.py --v3-dataset` (local only): the native reading of
+  the 26 as captured, the independent reader's solid and free-shape counts
+  native's on all 26, every file read by the kernel (`read V3`), one solid
+  (`bug32960`'s record 341) and 11 free shapes imported with native's
+  counts, every certified measure enclosing native's, and 11 written texts
+  read natively valid with native's counts and properties; listed, not the
+  header's: `bug32557`'s face the writer cannot express (`a spline pcurve
+  off its edge's parameter`) and one of `bug33173`'s wires the kernel does
+  not measure. Refused as surveyed: surfaces of revolution, rectangular
+  trimmed surfaces, faces without a surface, a degenerated edge and an
+  edge without a pcurve by name; `bug28620`'s solid, one of `bug32934`'s
+  edges, `bug33226_1189`'s and `cone_bad_tri`'s faces by the validator.
+  DRAW trial (UPSTREAM_TESTS.md, "The version-3 `.brep` header"): the 16
+  cases on both backends, native DRAW as before; the 12 Rust cases failing
+  at the header all restore, 10 now `unsupported` (at a construct or a
+  later command) and 2 still `failed` (`bug32601` at the validator's
+  rejection of `cone_bad_tri`'s face, `bug33664_1` at the viewer stub as
+  natively); no case newly evaluates, so none is audited or registered.
+  Stays refused: BinTools' binary format (13 dataset files, loaded only by
+  `binrestore`), the XmlOCAF file, any header line OCCT does not write but
+  version 3 under the older copyright. Checks: fmt, clippy (release, all
+  targets), the 1.85 check, the fuzz crate's fmt and check, the release
+  suite (711 tests), the tools' tests (398, 3 skipped); `compare_brep_io.py`
+  6,835/7 (with or without `--v3-dataset`), `compare_brep.py --family
+  spline` 10/3 and `compare_step.py` 23/6, 0 failures each.
+
 * **CI budget (U6).** Per-push fuzz runs replay a bounded sample plus every
   regression and new seed; the daily schedule replays everything; the heavy
   exact targets run on schedule only; Windows runs a smoke subset per push
