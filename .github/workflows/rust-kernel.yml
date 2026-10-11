@@ -115,7 +115,7 @@ jobs:
                 given-curved, given-met, spline-parallel, spline-crossing, imported, imported-arcs, spline-sphere,
                 imported-polyhedra, spline-cone, imported-pieces, split-pieces, one-sphere, one-sphere-incidence,
                 piece-forms, piece-trees, imported-joints, primitive-chains, prism-leaves, plane-parts,
-                polyhedra-curved, deep-trees, two-leaves, rim-leaves]
+                polyhedra-curved, deep-trees, two-leaves, rim-leaves, flush-leaves]
     steps:
       - uses: actions/checkout@v4.2.2
       - run: rustup toolchain install stable --profile minimal
@@ -272,6 +272,9 @@ jobs:
       - name: Verify the imported bodies' leaves cut at their rim independent reference (S9e.4b.4b.2b.2b.1)
         if: matrix.group == 'rim-leaves'
         run: target/math-oracle-venv/bin/python rust/tools/generate_rim_leaves_boolean_fixtures.py --check --workers 4
+      - name: Verify the imported bodies' parts flush with a leaf's walls independent reference (S9e.4b.4b.2b.2b.2)
+        if: matrix.group == 'flush-leaves'
+        run: target/math-oracle-venv/bin/python rust/tools/generate_flush_leaves_boolean_fixtures.py --check --workers 4
 
   pinned-degree-oracle:
     name: Degree elevation / source-pinned OCCT

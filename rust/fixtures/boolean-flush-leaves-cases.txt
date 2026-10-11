@@ -1,0 +1,195 @@
+case arms_slot_fuse 1e-07
+op 91
+brep imported/flush_arms.brep
+boolean fuse 93
+op 92
+brep imported/flush_slot.brep
+end
+case arms_slot_cut 1e-07
+op 91
+brep imported/flush_arms.brep
+boolean cut 93
+op 92
+brep imported/flush_slot.brep
+end
+case arms_slot_common 1e-07
+op 91
+brep imported/flush_arms.brep
+boolean common 93
+op 92
+brep imported/flush_slot.brep
+end
+case chain_arms_fuse 1e-07
+op 91
+brep imported/flush_arms.brep
+boolean cut 93
+op 92
+frame 1.0 0.5 0.75 0.0 0.0 1.0 7.0 24.0 0.0
+offsets -1.0 4.0
+boundary C 3.0 0.5 0.75
+then fuse 95
+op 94
+frame 1.0 0.5 0.75 0.0 0.0 1.0 7.0 24.0 0.0
+offsets 1.5 3.5
+boundary P 4 5.5 1.25 6.75 1.25 6.75 4.0 5.5 4.0
+end
+case chain_arms_cut 1e-07
+op 91
+brep imported/flush_arms.brep
+boolean cut 93
+op 92
+frame 1.0 0.5 0.75 0.0 0.0 1.0 7.0 24.0 0.0
+offsets -1.0 4.0
+boundary C 3.0 0.5 0.75
+then cut 95
+op 94
+frame 1.0 0.5 0.75 0.0 0.0 1.0 7.0 24.0 0.0
+offsets 1.5 3.5
+boundary P 4 5.5 1.25 6.75 1.25 6.75 4.0 5.5 4.0
+end
+case chain_arms_common 1e-07
+op 91
+brep imported/flush_arms.brep
+boolean cut 93
+op 92
+frame 1.0 0.5 0.75 0.0 0.0 1.0 7.0 24.0 0.0
+offsets -1.0 4.0
+boundary C 3.0 0.5 0.75
+then common 95
+op 94
+frame 1.0 0.5 0.75 0.0 0.0 1.0 7.0 24.0 0.0
+offsets 1.5 3.5
+boundary P 4 5.5 1.25 6.75 1.25 6.75 4.0 5.5 4.0
+end
+case arms_rod_fuse 1e-07
+op 91
+brep imported/flush_arms.brep
+boolean fuse 93
+op 92
+frame 1.0 0.5 0.75 0.0 0.0 1.0 7.0 24.0 0.0
+offsets -1.0 4.0
+boundary C 5.75 2.25 0.5
+end
+case arms_rod_cut 1e-07
+op 91
+brep imported/flush_arms.brep
+boolean cut 93
+op 92
+frame 1.0 0.5 0.75 0.0 0.0 1.0 7.0 24.0 0.0
+offsets -1.0 4.0
+boundary C 5.75 2.25 0.5
+end
+case arms_rod_common 1e-07
+op 91
+brep imported/flush_arms.brep
+boolean common 93
+op 92
+frame 1.0 0.5 0.75 0.0 0.0 1.0 7.0 24.0 0.0
+offsets -1.0 4.0
+boundary C 5.75 2.25 0.5
+end
+case slot_rod_fuse 1e-07
+op 91
+brep imported/flush_slot.brep
+boolean fuse 93
+op 92
+frame 2.0 1.0 0.5 0.0 0.0 1.0 8.0 15.0 0.0
+offsets -1.0 4.0
+boundary C 1.0 -1.0 0.75
+end
+case slot_rod_cut 1e-07
+op 91
+brep imported/flush_slot.brep
+boolean cut 93
+op 92
+frame 2.0 1.0 0.5 0.0 0.0 1.0 8.0 15.0 0.0
+offsets -1.0 4.0
+boundary C 1.0 -1.0 0.75
+end
+case slot_rod_common 1e-07
+op 91
+brep imported/flush_slot.brep
+boolean common 93
+op 92
+frame 2.0 1.0 0.5 0.0 0.0 1.0 8.0 15.0 0.0
+offsets -1.0 4.0
+boundary C 1.0 -1.0 0.75
+end
+case rod_slot_fuse 1e-07
+op 91
+frame 2.0 1.0 0.5 0.0 0.0 1.0 8.0 15.0 0.0
+offsets -1.0 4.0
+boundary C -0.75 1.0 0.875
+boolean fuse 93
+op 92
+brep imported/flush_slot.brep
+end
+case rod_slot_cut 1e-07
+op 91
+frame 2.0 1.0 0.5 0.0 0.0 1.0 8.0 15.0 0.0
+offsets -1.0 4.0
+boundary C -0.75 1.0 0.875
+boolean cut 93
+op 92
+brep imported/flush_slot.brep
+end
+case rod_slot_common 1e-07
+op 91
+frame 2.0 1.0 0.5 0.0 0.0 1.0 8.0 15.0 0.0
+offsets -1.0 4.0
+boundary C -0.75 1.0 0.875
+boolean common 93
+op 92
+brep imported/flush_slot.brep
+end
+case open_rod_fuse 1e-07
+op 91
+brep imported/flush_open.brep
+boolean fuse 93
+op 92
+frame -1.0 2.0 0.25 0.0 0.0 1.0 12.0 5.0 0.0
+offsets -1.0 4.0
+boundary C 2.0 1.0 0.5
+end
+case open_rod_cut 1e-07
+op 91
+brep imported/flush_open.brep
+boolean cut 93
+op 92
+frame -1.0 2.0 0.25 0.0 0.0 1.0 12.0 5.0 0.0
+offsets -1.0 4.0
+boundary C 2.0 1.0 0.5
+end
+case open_rod_common 1e-07
+op 91
+brep imported/flush_open.brep
+boolean common 93
+op 92
+frame -1.0 2.0 0.25 0.0 0.0 1.0 12.0 5.0 0.0
+offsets -1.0 4.0
+boundary C 2.0 1.0 0.5
+end
+case slot_touch_fuse 1e-07
+op 91
+brep imported/flush_slot.brep
+boolean fuse 93
+op 92
+frame 3.8823529411764706 4.529411764705882 4.5 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 1.0 -1.5707963267948966 1.5707963267948966
+end
+case slot_touch_cut 1e-07
+op 91
+brep imported/flush_slot.brep
+boolean cut 93
+op 92
+frame 3.8823529411764706 4.529411764705882 4.5 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 1.0 -1.5707963267948966 1.5707963267948966
+end
+case slot_touch_common 1e-07
+op 91
+brep imported/flush_slot.brep
+boolean common 93
+op 92
+frame 3.8823529411764706 4.529411764705882 4.5 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 1.0 -1.5707963267948966 1.5707963267948966
+end

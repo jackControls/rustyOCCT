@@ -11675,6 +11675,93 @@ Decisions for S9, recorded before its code (2026-09-28):
     flat or a pocket (S9e.4b.4b.2b.2b.2)"); then the kernel and its tests
     (`tests/flush_leaf_booleans.rs`), and a DRAW trial of the restore cases
     the import reaches.
+  * **S9e.4b.4b.2b.2b.2 evidence (2026-10-10).** Three bodies OCCT wrote
+    (`boolean-flush-leaves-bodies.txt`, `write` blocks of one prism's rows, a
+    `boolean` row and the other's, written by `compare_flush_leaves_boolean.py
+    --write-bodies` to `rust/fixtures/imported/flush_*.brep`), each one
+    Boolean of two prisms on one frame turned about the world's `z` (its
+    normal the world's `z` exactly), every section a circle or a line, the
+    leaf a stadium plate of half discs of radius 2 about `(0, 0)` and `(6,
+    0)`: `arms` (the plate over `[0, 3]` on `R724` fused with the diamond of
+    corners `(9/2, 0)`, `(13/2, -7/2)`, `(15/2, 0)` and `(13/2, 7/2)` over `[1,
+    2]`: two parts standing out of the plate, each part's loop along the
+    plate's line wall from `x = 9/2 + 8/7`, through its joint `(6, +-2)` and
+    along its arc to the diamond's edge at `x = 6 + (147 - 2 sqrt 407) /
+    106`), `slot` (the plate over `[0, 3]` on `R815` less the disc of radius 3
+    about `(-3/2, 0)` with a hole of radius 1 about `(-1/2, 1/4)` over `[1,
+    2]`: a pocket open sideways across the plate's arc end and line walls up
+    to `x = sqrt 5 - 3/2`, closed above and below, its wall the disc's arc,
+    OCCT's two faces split at its circle's seam `(3/2, 0)`, the hole's post
+    standing from its floor to its ceiling) and `open` (the plate over `[0,
+    5/2]` on `R125` less the square `[-4, 2] x [-3, 3]` with the hole `[-5/2,
+    1] x [-1, 1]` over `[1, 4]`: a pocket open sideways and through the plate's
+    top, its post the hole's square within the plate, flush with the plate's
+    arc from `x = -sqrt 3`). `generate_flush_leaves_boolean_fixtures.py
+    --check`: 21 cases of 7 groups (18 solid, 3 `degenerate`; 15 of class
+    `pieces`, 3 `both`, 3 `chain`): `arms_rod` (an upright rod across the
+    upper part's wall, the plate's line wall and arc), `slot_rod` (an upright
+    rod across the pocket's wall), `rod_slot` (an upright rod less the slot
+    across the post and the plate's arc: the body the tool), `open_rod` (an
+    upright rod across the pocket's wall `x = 2`), `arms_slot` (both imported,
+    their frames turned apart about `z`), `chain_arms` (the arms less an
+    upright rod through the plate, then with a box on its frame across the
+    upper part and the plate's top), and declared `degenerate` `slot_touch` (a
+    ball of radius 1 resting on the plate's top cap at a point, exactly:
+    `Degenerate("a tangency between the inputs (S9c)")`). The reference is
+    S9e.3a's chained reference on the constructions OCCT was given (each body
+    its Boolean of two prisms, the disc with a round hole its cylinder less
+    its hole's, the square with a square hole its box less its hole's box),
+    with S9e.4b.3c.3a's checks relative to the case's size: the two families
+    within 9.9e-32, each solid's closed form 9.0e-36, each body's closed form
+    4.6e-33 (the arms `3 (24 + 4 pi) + 21/2 - 26/7 - u sqrt(4 - u^2) - 4
+    asin(u/2) - 7/2 (3/2 - u)^2`, `u = (147 - 2 sqrt 407) / 106`, the slot
+    `78 + 13 pi / 2 - 2 sqrt 5 + 9 asin(sqrt 5 / 3)`, the open pocket `51 + 8
+    pi + 3 sqrt 3 / 2`, each section times its stored axes' determinant), the
+    pair identities 4.8e-42 and the area identity 1.8e-40, Monte Carlo 2.8
+    standard errors (100,000 points a group), quadrature estimates 9.6e-33,
+    every meeting's sine at least 1.0 and events at least 3.3e-5 of their
+    range apart outside the declared group (the tool's rod across the post
+    and the plate's arc; 5.1e-4 and more elsewhere), solid counts by rays at
+    two resolutions; the declared group's checks kept apart within 4.5e-32.
+    Every file read independently (`stored_records`): its curved faces
+    cylinders, every stored vertex on the constructions' surfaces (within 0 of
+    the size at the reference's precision).
+    `test_flush_leaves_boolean_reference.py` checks each body's closed form
+    against quadratures of its sections (the crossings found by root
+    finding), the chained reference on the open pocket against its closed
+    form, every part's place (the diamond's corners inside and outside the
+    plate, its edges crossing the line wall and the arc at least 1/4 from the
+    joint; the disc about the plate's left half disc, its circle across the
+    line walls in their straight part, the post inside both; the ring's
+    square across the plate's arc end, its hole's walls across the arc), the
+    partners' places, the declared ball (its centre's height exact) and the
+    case list and its protocol rows and the files apart from every earlier
+    set's. The generator's check is a CI group of its own (`flush-leaves`,
+    16.0 minutes on four workers locally under Python 3.9 on a loaded host,
+    8.2 under 3.12); Python 3.9 and 3.12 write the same
+    files. Corrections from the evidence and the draft of the step's code (not
+    committed) run on the bodies, amending the refined decisions' plan (9):
+    (a) the arms' part was first a box `[5, 15/2] x [-3, 3]`, which the import
+    takes already (S9e.4b.4b.2b.2a's two leaves on crossing axes: the box
+    read off its walls `x = 5` and `x = 15/2` as a prism along the plate's
+    `x`, through it), so the part is a diamond, no wall of it normal to
+    another; (b) the slot's tool was first a square `[-3, 1] x [-3, 3]` with
+    the hole, which the import takes already (S9e.4b.4b.2b.1's pocket: its
+    floor, ceiling and wall `x = 1` a convex hull less the post), so the
+    pocket's wall is the disc's arc (a cylinder whose material lies outside
+    it); (c) OCCT splits the slot's wall at its circle's seam inside the
+    plate: the bridge round that circle (decision (3)(i)) keeps the stored
+    vertex between the two halves and splits the circle again at its
+    antipode, outside the plate (a ring there met the stored seam with no
+    edge and was refused as no chain). The draft imports all three bodies by
+    flush chains (the arms its plate and two parts, the slot and the open
+    pocket the plate less a void) and finds every solid case within the
+    reference's volume and the declared one refused so; over the DRAW restore
+    cases' data files (the 1,316 cases restoring a data file and giving a
+    Boolean, 732 files, 741 solids, each file imported in a process of its own
+    within 120 s) it moves no body (one solid of several primitives among
+    them, refused as before; five files beyond 120 s before, three of them
+    after, a loaded host's time).
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces
