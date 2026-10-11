@@ -105,7 +105,9 @@
 //! across its corner (two leaves touching along their caps) or a square with
 //! a round hole under a stadium with a round hole hiding its top, and its
 //! import, each cut by the chained stage's partner, the same volume
-//! (`STACKS`).
+//! (`STACKS`). Of `NESTED`, `LEAVES`, `RIMS`, `FLUSH` and `STACKS` one runs
+//! an input at most, the first whose key is set, and none where `JOINTS`
+//! takes the lens (`own` in `check_boolean`).
 use crate::analytic_intersections::Bytes;
 use crate::split::{profile, spline_profile};
 use rusty_occt::identity::OperationId;
@@ -750,6 +752,29 @@ pub fn check_boolean(data: &[u8]) {
     let round = GIVEN_ROUND && (chained / 3) % 2 == 1;
     let ball = GIVEN_BALL && (chained / 6) % 2 == 1;
     let met = GIVEN_MET && (chained / 12) % 2 == 1;
+    // One stage of the kernel's own bodies an input (REVIEW_NOTES.md, "One own
+    // body an input"): of `NESTED` (the chained byte's bit 96), `LEAVES`,
+    // `RIMS`, `FLUSH` and `STACKS` (the input's 17th to 20th bytes at or
+    // above 128) the first whose key is set, and none where the chained byte
+    // gives the lens to `JOINTS`. Each is a body of several Booleans written,
+    // read back, imported (its chains tried in turn) and cut twice, and an
+    // input past 20 bytes ran all whose keys it held, after the lens's
+    // Booleans with the tool: CI's scheduled replay at `bbfdee16` timed out
+    // on a corpus input running four (`1608293d`, 86 s under
+    // AddressSanitizer against the 60 s limit).
+    let joints = IMPORTED && JOINTS && (chained / 24) % 2 == 1;
+    let keys = [
+        (NESTED, ((chained / 96) % 2 == 1).then_some(chained)),
+        (LEAVES, data.get(16).copied().filter(|k| *k >= 128)),
+        (RIMS, data.get(17).copied().filter(|k| *k >= 128)),
+        (FLUSH, data.get(18).copied().filter(|k| *k >= 128)),
+        (STACKS, data.get(19).copied().filter(|k| *k >= 128)),
+    ];
+    let own = keys
+        .iter()
+        .position(|(on, key)| *on && key.is_some())
+        .filter(|_| IMPORTED && !joints);
+    let own_key = |i: usize| keys[i].1.filter(|_| own == Some(i));
     let chosen = [&fused, &cut, &common][usize::from(chained % 3)];
     let small = |s: &&Solid| {
         s.topology().faces().len() <= 12
@@ -909,7 +934,7 @@ pub fn check_boolean(data: &[u8]) {
         // island, its notch a pocket of its own) from inside it past its
         // top, written, read back and imported, each cut by the chained
         // stage's partner: where both evaluate, the same volume (`NESTED`).
-        if IMPORTED && NESTED && (chained / 96) % 2 == 1 {
+        if own_key(0).is_some() {
             let u = (chained / 48) % 2 == 1;
             if let Some(body) = nested_body(fa, s1, h, u, tolerance) {
                 if let Some(again) = reimported(&body) {
@@ -933,7 +958,7 @@ pub fn check_boolean(data: &[u8]) {
         // pocket (a stadium plate less a turned square from its top),
         // written, read back and imported, each cut by the chained stage's
         // partner: where both evaluate, the same volume (`LEAVES`).
-        let leaves = data.get(16).copied().filter(|k| *k >= 128);
+        let leaves = own_key(1);
         if let (true, true, Some(k)) = (IMPORTED, LEAVES, leaves) {
             if let Some(body) = leaves_body(fa, s1, h, k >= 192, tolerance) {
                 if let Some(again) = reimported(&body) {
@@ -957,7 +982,7 @@ pub fn check_boolean(data: &[u8]) {
         // it (`rims_body`), written, read back and imported, each cut by the
         // chained stage's partner: where both evaluate, the same volume
         // (`RIMS`).
-        let rims = data.get(17).copied().filter(|k| *k >= 128);
+        let rims = own_key(2);
         if let (true, true, Some(k)) = (IMPORTED, RIMS, rims) {
             if let Some(body) = rims_body(fa, s1, h, k >= 192, tolerance) {
                 if let Some(again) = reimported(&body) {
@@ -981,7 +1006,7 @@ pub fn check_boolean(data: &[u8]) {
         // by its bit 6, a pocket open sideways round a post (`flush_body`),
         // written, read back and imported, each cut by the chained stage's
         // partner: where both evaluate, the same volume (`FLUSH`).
-        let flush = data.get(18).copied().filter(|k| *k >= 128);
+        let flush = own_key(3);
         if let (true, true, Some(k)) = (IMPORTED, FLUSH, flush) {
             if let Some(body) = flush_body(fa, s1, h, k >= 192, tolerance) {
                 if let Some(again) = reimported(&body) {
@@ -1006,7 +1031,7 @@ pub fn check_boolean(data: &[u8]) {
         // its top (`stacks_body`), written, read back and imported, each cut
         // by the chained stage's partner: where both evaluate, the same volume
         // (`STACKS`).
-        let stacks = data.get(19).copied().filter(|k| *k >= 128);
+        let stacks = own_key(4);
         if let (true, true, Some(k)) = (IMPORTED, STACKS, stacks) {
             if let Some(body) = stacks_body(fa, s1, h, k >= 192, tolerance) {
                 if let Some(again) = reimported(&body) {
@@ -1049,7 +1074,7 @@ pub fn check_boolean(data: &[u8]) {
     // S9e.4b.4a: a lens in the object's frame given the chosen operation
     // with the tool, and once written, read back and imported (`JOINTS`):
     // where both evaluate, the same volume within 1e-9.
-    if IMPORTED && JOINTS && (chained / 24) % 2 == 1 {
+    if joints {
         if let Some(lens) = lens_prism(fa, s1, h, tolerance) {
             if let Some(again) = reimported(&lens) {
                 let op = |s: &Solid| match chained % 3 {
