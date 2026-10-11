@@ -12497,6 +12497,86 @@ Decisions for S9, recorded before its code (2026-09-28):
     square hole, a pocket within a pocket of a two-leaf body, which one
     Boolean of OCCT's `write` blocks cannot hold, written, read back and
     imported), and a DRAW trial of the restore cases the import reaches.
+  * **S9e.4b.4c.2b.1 evidence (2026-10-11).** The user's decision: build
+    S9e.4b.4c.2b.1 as decided above, S9e.4b.4c.2b.2 (chains no model
+    matches, the inside-first order as a later choice among them) staying
+    open. Two bodies OCCT wrote (`boolean-nested-leaves-bodies.txt`, `write`
+    blocks of the plate's rows, a `boolean cut` row and the holed prism's,
+    written by `compare_nested_leaves_boolean.py --write-bodies` to
+    `rust/fixtures/imported/nested_*.brep`), each a stadium plate of half
+    discs of radius 3 about `(0, 0)` and `(6, 0)` over `[0, 3]` less a prism
+    of a square with a hole from inside it past its top, on a frame turned
+    about the world's `z` (its normal the world's `z` exactly), every section
+    a circle or a line: `post` (on `R815` at `(1, 1/2, 1/4)`, less the square
+    `[1, 5] x [-2, 2]` with the hole `[2, 4] x [-1, 1]` over `[3/2, 4]`: a
+    square pocket inside the plate's outline, the hole's post standing in it
+    up to the plate's top, two deep) and `island` (on `R125` at `(33/10,
+    777/200, 5/8)`, less the square `[1/2, 11/2] x [-5/2, 5/2]` with a U-shaped
+    hole, the square `[3/2, 9/2] x [-3/2, 3/2]` less its notch `[5/2, 9/2] x
+    [-1/2, 1/2]` open toward `+x`, over `[1, 4]`: a U island standing in the
+    pocket, its notch a pocket of its own, three deep).
+    `generate_nested_leaves_boolean_fixtures.py --check`: 21 cases of 7
+    groups (18 solid, 3 `degenerate`; 15 of class `pieces`, 3 `both`, 3
+    `chain`): `post_rod` (an upright rod across the post's corner `(4, 1)`
+    into the pocket's floor), `island_rod` (an upright rod across the
+    island's arm and its notch's wall `y = 1/2`), `island_wall` (an upright
+    rod across the pocket's wall `x = 11/2`), `rod_post` (an upright rod less
+    the post across its four walls: the body the tool, its cut two solids),
+    `island_cyl` (the island and S9e.4a's imported cylinder `cyl`, radius 3
+    about the world's `(5, 5)` over `[-1, 5]`, its axis at the island's chart
+    point `(2, 3/8)` within rounding: across the plate's wall and left arc,
+    the pocket's walls, the U and its notch, every vertex of either at least
+    1/8 off the other's walls), `chain_post` (the post less an upright rod
+    through the plate beside the pocket, then with a box on its frame across
+    the pocket's wall `x = 5`, the plate's top and the rod's hole), and
+    declared `degenerate` `post_touch` (a ball of radius 1 resting on the
+    post's top at its centre, exactly: `Degenerate("a tangency between the
+    inputs (S9c)")`). The reference is S9e.3a's chained reference on the
+    constructions OCCT was given (the plate less its holed prism, a square
+    with a square hole its box less the hole's box past both caps, with a U
+    hole its box less the U's box less the notch's box past the U's open side
+    and both caps: S9e.4b.4c.2a's `Holed`), with S9e.4b.3c.3a's checks
+    relative to the case's size: the two families within 1.2e-35, each
+    solid's closed form 1.8e-35, each body's closed form 5.4e-37 (the post
+    `90 + 27 pi`, the island `72 + 27 pi`, each section times its stored
+    axes' determinant), the pair identities 1.2e-38 and the area identity
+    7.2e-41 (where no two inputs share a surface), Monte Carlo 2.4 standard
+    errors (100,000 points a group), quadrature estimates 1.9e-32, every
+    meeting's sine at least 1.0 and events at least 4.0e-5 of their range
+    apart outside the declared group (the cylinder's case; 1.3e-3 and more
+    elsewhere), solid counts by rays at two resolutions; the declared group's
+    checks kept apart within 4.2e-36. Every file read independently
+    (`stored_records`): its curved faces cylinders, every stored vertex on
+    the constructions' surfaces (within 0 of the size at the reference's
+    precision). `test_nested_leaves_boolean_reference.py` checks each body's
+    closed form against quadratures of its sections, the chained reference on
+    the post against its closed form, the reference's sets against OCCT's
+    profiles (the square less its hole, one area; the hole's and the notch's
+    boxes past the caps and the U's open side), every part's place (the
+    square inside the plate's outline by 2/5, the post or the U inside the
+    square by 1, the pocket from inside the plate past its top, how deep the
+    pockets nest), the partners' places (the cylinder's chart point and its
+    margins among them), the declared ball (its centre's height exact) and
+    the case list and its protocol rows and the files apart from every
+    earlier set's. The generator's check is a CI group of its own
+    (`nested-leaves`, 17.6 minutes on four workers locally under Python
+    3.9 on a shared host, 12.1 under 3.12); Python 3.9 and 3.12 write the
+    same files. Corrections from the evidence and the step's code run on the
+    cases, amending the refined decisions' plan (8): (a) the `both` group was
+    the post and the island both imported, their frames turned apart: the
+    reference ran over 40 worker-minutes for it (and its two bodies' seven
+    parts), so the island stands where S9e.4a's imported cylinder crosses it;
+    (b) `island_wall`'s rod first stood across the pocket's wall at the
+    chart's `(21/4, -5/4)`, where the kernel's own island (no import
+    involved) fused with it and less it is `ComputationLimit("a cavity's
+    containment the validator's rays leave undecided")` (the import alike),
+    and its reference ran over 40 worker-minutes: it stands at `(43/8,
+    -5/4)`; (c) the bodies on a frame turned off the world's `z` are no
+    evidence (their pocket walls along the plate's rounded axis within
+    rounding of its cylinders' direction, S9's rule in the nested chain's
+    Booleans, as S9e.4b.4c.2a's evidence (a) found for one curved face): the
+    kernel's tests take the fuzz stage's bodies on the target's tilted frame
+    as refused as before. The native capture before the kernel next.
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces
