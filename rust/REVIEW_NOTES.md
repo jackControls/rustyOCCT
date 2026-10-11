@@ -15119,6 +15119,85 @@ Decisions for S9, recorded before its code (2026-09-28):
     tangent to the rim), and the vertex rule's controls, evaluating as
     before.
 
+* **Edges and vertices within the resolution of each other, done
+  (2026-10-11; the refined note above, HANDOFF's item 5).** Evidence
+  (`tests/edge_vertex_near_miss_booleans.rs`, before the code): at
+  `663bb9b8` every miss within the resolution (`1e-12`, `1e-11` and
+  `1e-9`, in a level frame, one turned off the world's z and one turned
+  about it) evaluated wrongly, the fuse two solids and the common empty:
+  a cube's corner diagonally off a slab's top edge (its foot on the top's
+  plane past the edge) and off its corner, and off a rod's rim; a block
+  standing on its edge across a slab's top edge and across a rod's rim
+  (skew edges, a line and a circle or a turned frame's conic); a cone
+  standing under a slab; and, at a level rod's rim's seam (`(45, 28) / 53`
+  for a Boolean's first input), a ball diagonally off it (refused only in
+  the cut of the ball, where the rod is the second input and its seam
+  elsewhere) and a cube's corner. The crossings within the resolution were
+  refused already (a face, piece or result thinner than the resolution,
+  the vertex rule, `degenerate_curve` from the validator for the apex
+  `1e-9` through the slab, an open Boolean of arcs) or evaluated (the
+  ball `1e-9` into the rim at its seam, fuse and cut one solid). A cone
+  lying with its apex by a rod's wall is refused before and after by S9c's
+  node rule, which comes first. Kernel: `curved/near.rs`'s
+  `edges_and_vertices` (after `vertex_faces`; `pair`, `nearest_to_point`,
+  `closest_on_edges`, `bracketed`, `bisect`), the apex in `vertex_faces`
+  (`spot_of`, `apex_side`) and in `graph::edge_near_misses`' vertex loop,
+  `smooth_end` in `edge_faces`, `graph::edge_nearest` (at seams' vertices)
+  and the pairs; `polyhedra.rs`'s `edge_vertex_near_misses` and
+  `near_pair`; `corner` and `leaves_away` now share `corner_dirs`,
+  `edge_dirs` and `signs`, deciding as before. Every miss and crossing of
+  the evidence refused with the new reasons (the corner crossing a slab's
+  top edge by the vertex rule, as before; a corner crossing a rim by the
+  vertex rule or the edges' rule), at `1e-6` every operation evaluating;
+  the controls as before: edges and corners `0.1` apart and `0.1`
+  through, a block's edge across a slab's edge exactly and a corner on it
+  exactly (incidences, refused by their own rules as before), U1's and
+  Y5's boxes and a box on the rod's ruling. Unit tests: `smooth_end` on a
+  rod's seam, a cone's closed rim and a box, and a bracketed least
+  distance to a turned frame's conic. The new tests take 3.6 s in
+  release, 3.9 s at opt-level 2 with debug assertions, and pass under the
+  emulated glibc `hypot` with debug assertions and overflow checks (with
+  `vertex_near_miss_booleans`, `near_miss_booleans` and
+  `sphere_booleans`). Fuzz corpus (an instrumented release build, not
+  committed, over the boolean corpus's 1,442 inputs and the 36
+  regressions, with `NM_OFF` the new refusals logged and let go on, the
+  base's behaviour): 88 inputs hold a cone's apex, 9 within the resolution
+  of a face (gaps `5.6e-18` to `2.2e-16`), 7 refused now (4 refused before
+  as a tangency between the inputs, 1 as a plane through a cone's apex, 2
+  evaluated: a cone inside a turned frame's prism with its apex on the
+  cap but for rounding, the fuse the prism alone, kept as
+  `fuzz/regressions/boolean/replay-8997e71a01c371ee68f72cde83d85b21674e0e9d.bin`,
+  and `4ada4c3f`, its chained fuse two solids), 2 with a ruling along the
+  face; 113 hold a pair of vertices or edges within the resolution (60 in
+  the curved engine, 61 in the polyhedral one), every gap rounding
+  (`1.6e-27` to `5.6e-16`) and every pair with directions along the gap's
+  plane, so none is refused; none reaches a smooth end; no kept
+  regression changes outcome. DRAW trial (UPSTREAM_TESTS.md, "Edges and
+  vertices near each other"): of the 1,802 and the 1,814 restore cases on
+  an instrumented debug worker, every status and reason as at
+  `s9-draw-16` but `bug23585` timing out under load (unsupported as
+  before alone); 402 cases hold a pair within the resolution, every gap
+  rounding (`3e-35` to `5e-13`) and along the gap's plane, 3 a cone's apex
+  none within the resolution, none a smooth end, so no case moves and
+  none is registered; the full contract run holds for all 1,132 cases.
+  Checks: fmt, clippy (release, all targets), the 1.85 check, the fuzz
+  crate's fmt and check, the release suite (718 tests), the tools' tests
+  (398, 3 skipped); every comparison of HANDOFF's table unchanged with 0
+  failures (44 runs on the pinned SDK, and `compare_split.py` 72/56,
+  `compare_brep.py --family spline` 10/3, `compare_brep_io.py` 6,835/7 and
+  `compare_step.py` 23/6); the boolean corpus (1,442
+  inputs) and its 37 regressions and the split corpus (3,551) and its 20
+  regressions replay with debug assertions without a failure (the slowest
+  8.8 s and 1.9 s, on a host at load 8 to 14), and so do the kept input's
+  4,335 single-byte mutations. Open (HANDOFF, item 5), the second
+  part: a conic or circle edge against another, edges of other curves
+  (meetings, cone, torus and spline curves) against edges and vertices,
+  points of two different surds, an apex against a torus or spline face.
+  A configuration whose faces run along the gap's plane (coplanar faces
+  whose boundaries come within the resolution of each other without
+  meeting) is left to the faces' own rules, as in the vertex and edge
+  rules.
+
 * **CI budget (U6).** Per-push fuzz runs replay a bounded sample plus every
   regression and new seed; the daily schedule replays everything; the heavy
   exact targets run on schedule only; Windows runs a smoke subset per push

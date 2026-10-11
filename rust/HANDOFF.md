@@ -838,11 +838,22 @@ then for the version-3 `.brep` header (branch `brep-v3-header`, over
    boxes, one's corner `1e-12` off the other's face); its DRAW trial moves
    no registered case (4 restore cases refused before as a piece thinner
    than the resolution take its reason), as the survey at `8e632f49`
-   (branch `s9-draw-16`) confirms. Open beside it: a vertex or an
-   edge within the resolution of the other's edge or vertex (a foot just
-   outside the face; skew edges), a cone's apex (no tangent cone of
-   edges), and an edge's extremum at its own vertex (a closed edge's
-   vertex where its curve is nearest). (b) An
+   (branch `s9-draw-16`) confirms. Closed beside it on branch
+   `fix-near-miss-residue` (REVIEW_NOTES.md's "Edges and vertices within
+   the resolution of each other"): a vertex within the resolution of the
+   other input's vertex or edge (a foot just outside the face), two edges
+   passing within it of each other (skew lines; a line and a conic or
+   circle, bracketed on exact derivative signs, `ComputationLimit` within
+   the bracket's bound of the resolution), a cone's apex (its rulings for
+   its tangent cone) against a face, an edge or a vertex, and an edge's
+   point at its own vertex where it runs on smoothly (a closed edge's
+   vertex, a circle's seam), each decided by both inputs' boundaries
+   against the gap (the faces' band widened by the gap's own rounding); its
+   DRAW trial moves no case. Open from it (its second part): a conic or
+   circle edge against another (two rims passing within the resolution at
+   a point), edges of other curves (meetings, cone, torus and spline
+   curves) against edges and vertices, points of two different surds, an
+   apex against a torus or spline face. (b) An
    edge one of whose faces heads toward the other's surface at its near
    point is no contact and evaluates as before (S9f.2b.2's
    `lens_tilt_loop`, a rim on a plane but for rounding with its wall

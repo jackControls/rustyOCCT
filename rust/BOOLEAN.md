@@ -554,7 +554,37 @@ it where the gap lies outside either input (`near::vertex_faces`, after
 the edge rule; the polyhedral engine likewise on its exact planes, every
 convex face piece at the vertex giving the directions to its corners,
 `polyhedra::vertex_near_misses`: two boxes, one's corner `1e-12` off the
-other's face, were two solids). The
+other's face, were two solids). A cone's apex, which has no edges, is such a vertex too, its rulings
+for its tangent cone ("a cone's apex within the resolution of a face":
+a cone standing `1e-12` under a slab was two solids). And the inputs'
+vertices and edges within the resolution of each other's are refused by
+the same rule ("a vertex within the resolution of a vertex of the other
+input", "a vertex within the resolution of an edge of the other input",
+"two edges within the resolution of each other"; `near::edges_and_vertices`
+after the vertex rule, `polyhedra::edge_vertex_near_misses` after its
+own): a vertex (or an apex) and a vertex; a vertex and the edge's point
+nearest it strictly inside the edge (a line's foot, a circle's point exact
+in its quadratic field, on a conic that is no circle exactly each least
+of the distance bracketed between two rational points where its
+derivative takes opposite exact signs, the least within the curve's
+movement over the bracket of the bracket's point's, a distance within
+that bound of the resolution `ComputationLimit`); two lines' closest points
+(skew; exact) and a line's and a conic's or circle's (bracketed alike),
+strictly inside both; a point at an edge's end where the edge runs on
+through it smoothly (a closed edge's vertex, a circle's halves at their
+seam) counting as inside, there and in the edge and sphere rules too. A
+gap of zero is an incidence, the existing rules'. Otherwise each input's
+boundary at its point (a vertex's tangent cone, an apex's rulings, an edge
+point's two faces' directions into them) is taken against the gap
+exactly, none within the faces' `10^-12` band widened by the gap's own
+rounding (`2^-48` of the points' size: a gap of rounding's size has no
+direction, U1's box tangent to the rod's rim but for rounding): each
+leaving the other away (missing) is refused unless the gap lies inside
+both inputs, each heading toward the other (crossing) is refused, and
+anything else is no contact of the pair's own (a face heading toward the
+other input is its face rule's). A cube's corner `1e-12` off a box's top
+edge or corner or a rod's rim, a box's edge `1e-12` across another's, and
+a ball off a rod's rim at its seam were two solids. The
 validator decides a ray against a whole sphere (a cavity in a sphere); a
 result's bounds hold its spheres' boxes. A sphere against a cylinder or
 another sphere is S9d.2's.
