@@ -2088,6 +2088,53 @@ newly evaluates and none evaluating is refused, so no value moves and
 none is registered (1,132 cases); a full contract run on both backends
 holds for every case.
 
+**The leaves: the Boolean group and the restore cases.** Both sets were
+run again after two prism leaves of a body of several primitives
+(S9e.4b.4b.2b.2a), leaves whose top cap another part or a pocket cuts at
+its rim (S9e.4b.4b.2b.2b.1) and the vertex near miss were merged
+(2026-10-10, at `8e632f49`, the public dataset, 120 seconds a case, four
+at once, on a host at load 4 to 32). The 1,802 self-contained cases on
+both backends: every status, reason and error is the last survey's
+(`69c2c27f`) field for field, 987 evaluating, every one registered, 592
+refused, 223 unsupported on both; none fails or times out. The 1,814
+restore cases on the Rust adapter (910 unsupported, 561 needing private
+data, 276 `failed` by the reader's validator, 59 evaluating, 8 timing
+out): `bcommon_complex/B8`, `bcut_complex/D8`, `D9` and `bfuse_complex/C2`
+(unregistered, refused before as a piece thinner than the resolution) take
+the vertex rule's reason, as its trial found; `bugs/modalg_1/buc60532_2`
+and `bugs/modalg_6/bug23585` time out at this load with `buc60532` and
+`_1`, and run alone with 300 seconds the four end unsupported as before in
+71 to 94 seconds, in the reader or the script before any Boolean;
+`buc60531_1`, `_2`, `bugs/modalg_5/bug23849_1` and `_3` time out at their
+first restores as before. Every other status and reason is the last
+survey's. Of the 171 the import reaches, native DRAW is as before; 59
+evaluate on both backends, 76 are refused by S9's rules (the four above
+among them), 31 are bodies none of the kernel's constructions, 3 have
+spline faces (S9f) and 2 give the next Boolean several solids; native DRAW
+does not evaluate 24 of them. An instrumented build (not committed) over
+the 1,802 and the 1,814, its statuses and reasons the survey's (but
+`bug23585`, ending unsupported in 103 seconds there): 5 restore cases
+import a body of several primitives (`bfuse_complex/E5`,
+`bcut_complex/G9`, `bugs/modalg_2/bug417` and `bugs/modalg_6/bug28773` by
+their primitives alone, `bfuse_complex/K1` by one leaf), none of them with
+two leaves of disjoint faces or a leaf cut at its rim, so no case tries a
+pair's chain or one over the rim leaves and neither step can move a case;
+258 cases (232 and 26) hold a vertex within the resolution of a face with
+its foot in the face, the trial's cases exactly, and the 4 above are
+refused by it. The body S9e.4b.4b.2b.2b.1's scan found newly importing,
+`CTO904_cts20944b`, is restored only by `bfuse_complex/M8` and `S5`, which
+need its partner `CTO904_cts20944a` (not in the public dataset), and is a
+compound, an argument the adapter does not give a Boolean.
+
+The volume audit (both backends, the 1,046 audited before): both
+backends' values are the last audit's bit for bit on all 1,046, the
+statuses the same, and the same 35 disagreements remain. No case newly
+evaluates, so none is registered (1,132 cases); the ledger does not
+change. A full contract run of the manifest (both backends, 30 seconds a
+case, an absolute output directory, on a host at load 4 to 13) holds for
+every case, the slowest Boolean case 4.0 seconds (`bopfuse_simple/ZK8`),
+the restore cases 0.15 to 3.7 (`bcommon_complex/B9`), the rollex 0.5.
+
 Three more `intss` cases run on the Rust adapter but are not registered,
 because the contract admits no failing status: `bug23178`, `bug28222_2` and
 `bug28222_3` count the pieces IntPatch splits its walking lines into (6, 4

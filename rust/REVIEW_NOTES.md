@@ -11450,6 +11450,80 @@ Decisions for S9, recorded before its code (2026-09-28):
     stadium groove in a plate, no leaf; 2 tangencies and a vertex on a face,
     S9's rules in their chains' Booleans); the pre-existing panic above.
     Pending: its capture's Linux record, its DRAW survey and its campaigns.
+  * **DRAW survey of the leaves (2026-10-10, `UPSTREAM_TESTS.md`).** At
+    `8e632f49` (`rust-kernel`: S9e.4b.4b.2b.2a, S9e.4b.4b.2b.2b.1 and the
+    vertex near miss of `fix-vertex-near-miss` merged; the public dataset,
+    120 seconds a case, four at once, on a host at load 4 to 32). **No
+    registered case moves, and neither leaves step moves any case; the
+    vertex rule moves the four restore cases its trial found.** The 1,802
+    self-contained cases of the Boolean group on both backends: every
+    status, reason and error the last survey's (`69c2c27f`, `s9-draw-15`)
+    field for field; 987 evaluate, every one registered, 592 are refused,
+    223 unsupported on both, none failing or timing out. The 1,814 restore
+    cases on the Rust adapter (910 unsupported, 561 needing private data,
+    276 `failed` by the reader's validator, 59 evaluating, 8 timing out):
+    `bcommon_complex/B8`, `bcut_complex/D8`, `D9` and `bfuse_complex/C2`
+    (unregistered; a vertex `1.3e-9` above a plane face, its boundary
+    falling through it) move from a piece thinner than the resolution to "a
+    vertex within the resolution of a face (S9d.2)", their status
+    `unsupported` as before; `bugs/modalg_1/buc60532_2` and
+    `bugs/modalg_6/bug23585` time out at this load (unsupported within the
+    limit at the last survey), and run alone with 300 seconds these two,
+    `buc60532` and `_1` end unsupported as before in 71 to 94 s (a
+    `SurfaceOfLinearExtrusion` in the reader, `tolerance p` in the script,
+    before any Boolean); `buc60531_1`, `_2`, `bugs/modalg_5/bug23849_1` and
+    `_3` time out at their first restores as before; every other status and
+    reason as there. The 171 the import reaches on native DRAW too: native
+    every status and reason as before (147 evaluating, 24 unsupported); on
+    the Rust adapter only the four above move; 59 evaluate on both
+    backends, 76 are refused by S9's rules, 31 are bodies none of the
+    kernel's constructions, 3 spline bodies and 2 arguments of several
+    solids. Where the steps are reached: an instrumented build of
+    `8e632f49` (not committed: a line written the first time a case takes
+    each path; at each import of a body of several primitives its leaves,
+    pairs (`leaf_pairs`), rim leaves (`rim_leaves`) and their pairs, each
+    chain tried by class (the primitives, a leaf, a pair, a chain over the
+    rim leaves: a leaf of those or one cut at its rim, a pair, alone or with
+    the other plane faces) with its outcome, the chain taken or the
+    refusal; the vertex trial's probes of `vertex_faces` and
+    `vertex_near_misses`) over the 1,802 and the 1,814, its statuses and
+    reasons the survey's and the restore run's (but `bug23585`,
+    unsupported in 103 s there as at the last survey): 5 restore cases
+    import a body of several primitives, `bfuse_complex/E5` (two leaves),
+    `bcut_complex/G9`, `bugs/modalg_2/bug417` (none) and
+    `bugs/modalg_6/bug28773` (four) by their primitives alone, and
+    `bfuse_complex/K1` (two) by one leaf, each with no pair of leaves of
+    disjoint faces and no leaf cut at its rim, so no case tries a pair's
+    chain or one over the rim leaves, and none can move with either step;
+    no self-contained case imports. The vertex rule: 570 cases (473 and
+    97) run the curved rule and 468 (447 and 21) the polyhedral one; 258
+    (232 and 26) hold a vertex within the resolution of a face with its
+    foot in the face (95 in the curved engine, 163 in the polyhedral one,
+    gaps `6e-33` to `1.4e-7`), the trial's 258 exactly, 254 evaluating or
+    refused further on as at the last survey and the 4 above refused by it.
+    Controls on the instrumented worker took the new paths: the evidence's
+    `rim_post.brep` imports by a rim leaf with the other plane faces,
+    `rim_well.brep` by a pair with a rim leaf, `two_through.brep` and
+    `two_cross.brep` by a pair, `two_pocketed.brep` by a leaf with the other
+    plane faces (each fused with a far box). The body S9e.4b.4b.2b.2b.1's
+    scan found newly importing, `CTO904_cts20944b`, is restored only by
+    `bfuse_complex/M8` and `S5` (private data: their partner
+    `CTO904_cts20944a` is not in the public dataset; `bcut_complex/H2`, which
+    its implemented bullet names, restores `CTO900_cts20212`'s part and
+    tool), and is a compound, an argument the adapter does not give a
+    Boolean, so no DRAW case can reach its import. No case fails, crashes
+    or panics on either backend. The volume audit (both backends, the 1,046
+    audited before): both backends' values the last audit's bit for bit on
+    all 1,046 (no moved value, the largest relative move 0), the statuses
+    the same, the same 35 disagreements. No case newly evaluates, so none
+    is registered (1,132 cases), and the ledger does not change (`--ledger`
+    holds). A full contract run of the manifest with the dataset (both
+    backends, 30 seconds a case, an absolute output directory, at load 4
+    to 13) holds for every case (Rust: 18 pass, 1,050 viewer-skipped, 53
+    unsupported, 11 private data); the slowest Boolean case 4.0 s
+    (`bopfuse_simple/ZK8`), the restore cases 0.15 to 3.7 s
+    (`bcommon_complex/B9`), E5 1.3 s, G9 1.4 s and `bug417` 1.4 s, the
+    rollex 0.5. No kernel change.
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces
