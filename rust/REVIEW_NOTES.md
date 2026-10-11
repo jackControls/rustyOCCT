@@ -11940,6 +11940,180 @@ Decisions for S9, recorded before its code (2026-09-28):
     this step's forms refused by S9's rules (walls through the other's
     line-arc joint, walls on an arc's tangent plane). Pending: its capture's
     Linux record, its DRAW survey and its campaigns.
+  * **S9e.4b.4b.2b.2b.3 refined, before its code (2026-10-11).** Why it is
+    refused today: after S9e.4b.4b.2b.2b.2 a body of several primitives is a
+    Boolean chain of its primitives, one or two prism leaves (two only with no
+    face in common), leaves cut at their rim, parts flush with a leaf's walls,
+    prisms of one cap, flats and pockets. A stack, two prisms on one frame
+    whose upper one stands on the lower one's cap, is none of them: (a) where
+    both caps are partly exposed the two leaves are found, but each is built
+    on its own cap's frame with its height rounded once there, so the two caps
+    on the shared plane lie within rounding of each other in the pair's chain
+    and its fuse is refused `Degenerate("two faces within the resolution of
+    one plane")` (the kernel's writer storing them rounded apart on a frame
+    whose normal rounds); where OCCT writes both caps on one stored surface,
+    `one_surface` takes the other leaf's cap among the leaf's faces (equal
+    stored surfaces facing apart), the two leaves' faces meet and no pair is
+    tried; (b) where the upper prism hides the lower one's cap wholly, the
+    lower prism has no top cap and is no leaf, and its prism of one cap
+    (`bosses`) is read off its outer loop alone, its hole's wall then a
+    cylinder primitive cut from the chain, capped by the upper prism's cap on
+    the shared plane, again within rounding of the upper leaf's. Refused with
+    S9e.4b.4b.2b.2b.2's text (`OutOfDomain("an imported body of several
+    primitives with plane faces other than their ends, one or two prisms', a
+    flat or a pocket (S9e.4b.4b.2b.2b.3)")`), as the body's own tangency, as
+    no chain matching or by S9's rules in a chain's Booleans. *Reach, measured
+    again before choosing* (at `5b6a9220`, an instrumented build, not
+    committed, as S9e.4b.4b.2b.2b.2's measurement: every solid result of the
+    `boolean` fuzz target's three operations and its chained cut and common,
+    and the `split` target's pieces given to Booleans and those Booleans'
+    results, each written by the kernel's writer, read back and imported;
+    release builds, one process an input; the boolean corpus and its
+    regressions, 1,478 files, and the split corpus and its regressions, 3,571,
+    every one exiting cleanly): 2,602 distinct bodies written and converted,
+    1,859 importing; 225 of several primitives (one shell), 204 importing (the
+    190 and S9e.4b.4b.2b.2b.2's 14, each by its chain) and 21 refused (22
+    results of 19 inputs: 20 of the boolean target's operations, 13 fuses and
+    7 cuts, and 2 of `PIECE_BOOLEANS`' Booleans; 6 as the body's own tangency,
+    3 with S9e.4b.4b.2b.2b.2's text, 12 by S9's rules in a chain's Booleans: 4
+    an edge of one input on a face of the other, 4 two faces within the
+    resolution of one plane, 2 a piece thinner than the resolution, 1 an edge
+    meeting an edge, 1 a vertex on a face): the 21 of S9e.4b.4b.2b.2b.2's
+    measurement that its step left. *Classification*, read off their files and
+    the inputs they came from (each input's leading bytes decoded: the
+    profiles, sizes, frame and heights): (a) to (c) of S9e.4b.4b.2b.2b.2's
+    forms refused by S9's rules, 11, as its implemented bullet found; (d)
+    stacks, 5, each on the target's tilted frame (the object over `[0, h]`,
+    the tool over `[h, h + 1]`): (d1) both caps partly exposed, 3 (a stadium
+    under a rectangle, a square with a square hole under a stadium, a stadium
+    under a square with a square hole), and (d2) the lower cap hidden wholly,
+    2 (a square with a round hole under a larger stadium, under a larger
+    square with a smaller round hole: the upper cap exposed outside the square
+    and as a ring or a disc at the bottom of its hole, two faces on one
+    plane); (e) the "stack on crossing axes", 1, is no stack: the tool on its
+    side over `[h, h + 1]` along the world's `x` is a stadium slab through the
+    object's stadium plate, cutting each of the plate's caps in two and taking
+    its walls' joints inside it, no faces touching (a leaf read off a cap of
+    several faces, completed through the other leaf on crossing axes); (f)
+    overlapping heights, 2; (g) the two thin pieces of `PIECE_BOOLEANS`.
+    Decisions. (1) *Sub-steps*, by what each unlocks: **S9e.4b.4b.2b.2b.3a**
+    (this step): (d), a stack's two prisms on one frame with their caps on one
+    plane exactly; a draft (not committed) imports 4 of the 5 (2 of (d1) and
+    both of (d2)), every one its model matched to its stored topology, and
+    moves no other import (every other of the 2,602 bodies as before: the
+    1,859 importing with their chains, every refusal's text the same; the
+    slowest import 1.4 s); the fifth, the stadium under the rectangle, stays
+    refused by S9's rules in its stack chain's fuse (`Degenerate("an edge of
+    one input meeting an edge of the other")`: the rectangle's wall `x = 0`
+    through the stadium's line-arc joint `(0, 3/4)` on the shared plane, the
+    fuzz target's dyadic incidence, which the kernel's own stack evaluates in
+    the stack engine's exact profiles), the body's refusal as before.
+    **S9e.4b.4b.2b.2b.3b**: (e), a leaf through another on crossing axes
+    cutting both its caps in two (the leaf read off a cap of several faces on
+    one plane, its parts' runs along the other leaf's faces completed through
+    it), and the rest of S9e.4b.4b.2b's list (hulls across several parts,
+    mixed pockets and components, three leaves or more), no measured body but
+    (e) reaching them; (f) stays refused by S9's rules (a tangency, a vertex
+    on a face) and (g) by S9's rule (a piece thinner than the resolution in
+    the split's pieces' Booleans). (2) *Finding them*, from the stored faces
+    and edges. (a) *Stack leaves* (`stack_leaves`): S9e.4b.4b.2a's and the
+    rim's searches (`leaves_with`) with two plane faces facing apart never on
+    one surface (`one_side`), even on one stored surface: OCCT writes a
+    stack's touching caps on one plane, each the face of its own prism; the
+    leaves found so, then those cut at their rim, in the order found. (b)
+    *Pairs* of them as S9e.4b.4b.2b.2a's (`leaf_pairs`: two leaves with no
+    face in common). (c) *A lower prism under a leaf*: each stack leaf with
+    the other plane faces, its prisms of one cap (`bosses`) read with every
+    hole whose walls all rise from the cap too (`holed`: the lower prism whose
+    cap the upper one hides, its holes closed by it or opening into the upper
+    one's own), each past its walls' far end by a quarter of their range into
+    the leaf (S9e.4b.4b.2b.1's). (3) *Representation: a given model of
+    touching caps*, the two leaves' fuse with their caps on one plane exactly:
+    the second leaf of a stack pair stands on the first leaf's frame itself
+    (its axes bit for bit, turned over where it faces the other way, its
+    origin the first's), its caps' heights there rounded once and each taken
+    onto the first's heights (its bottom `0` and its top, negated on the
+    turned frame) within the resolution, at least one of them (else no stack:
+    not their chain); its profile read off its cap in that frame as S9e.4a's
+    (each stored vertex and arc centre rounded once). The shared plane is then
+    one exact plane of both inputs of the chain's fuse: faces of both inputs
+    on one plane in the curved arrangement (`coinc`, S9e.2's rule for a
+    stack's same-frame prisms), the outlines' crossings on it the
+    arrangement's exact points, the given model's membership there S9e.1's set
+    function of both leaves', but at a point inside a face of each leaf on the
+    plane after every push (a partner's piece whose first edge's middle lies
+    on it: a rod's seam across it, which S9e.4b.4b.2b.2b.1's amendment (b)
+    found refused `Degenerate("a piece on the other's boundary")`, as the
+    kernel's own stack's are) the plane is both leaves' only boundary, so the
+    point is pushed off it both ways too (`Given::member`: in where both sides
+    are, out where neither is, on the boundary where they differ). The body's
+    own classification (`Piece::classify`'s tree of ranks within the
+    resolution) likewise: a point on both leaves' boundaries in a stack's fuse
+    is inside where none of 14 probes 16 resolutions off it (along the axes
+    and the cube's diagonals, within 35.3 degrees of every direction) lies
+    outside both, so a wedge outside them of 90 degrees (a stack's walls on
+    its caps) holds one. S9e.2's match arbitrates: the chain's root Boolean's
+    given model matched to the stored topology, its ids the stored ones, read
+    off the moved stored topology again by a rigid motion. A prism of one cap
+    under a leaf ends inside the leaf, so it takes no level. Numbers: the
+    engine's own and S9e.4a's prism's, no new field or degree. Not S9a.2's
+    stack model generalized: its exact model is two profiles on one frame,
+    which the snapped pair is, and given to a further Boolean S9e.2 decides a
+    stack on the curved arrangement of its two prisms' models anyway, the
+    model the chain's fuse is; nor exact shared carriers of walls (walls of
+    both leaves on one plane or cylinder: their edges at the caps' corners
+    overlap, `Degenerate("edges of both inputs overlapping")`, as
+    S9e.4b.4b.2b.2b.2 found). A general rule for coplanar faces of one input
+    is not needed: the caps on one plane belong to the two inputs of the
+    chain's fuse, whose faces on one plane the arrangement takes already. (4)
+    *The chain*: after every earlier chain (each flush chain last before),
+    each pair of stack leaves alone and with the other plane faces (prisms of
+    one cap read with their holes, flats, pockets), then each stack leaf with
+    them; every body S9e.4b.4b.2b.2b.2 imports keeps its chain. (5) *Limits*,
+    deterministic: S9e.4b.4b.2a's (the first six distinct face sets, 30 pairs
+    at most, each in both orders) over the stack leaves, each stack leaf once;
+    the levels the first leaf's two heights, taken within the resolution. (6)
+    *Its other queries* are S9e.4b.4b.2b.1's. (7) *Degenerate and refused.*
+    S9's rules unchanged in every Boolean; any refusal of a stack chain (its
+    Booleans', its tangency, its mismatch) is one the body is not, the body's
+    refusal as before where none matches (as the rim and flush chains);
+    refused as S9e.4b.4b.2b.2b.3b's: the rest, `OutOfDomain("an imported body
+    of several primitives with plane faces other than their ends, one or two
+    prisms', a flat or a pocket (S9e.4b.4b.2b.2b.3b)")`, replacing
+    S9e.4b.4b.2b.2b.2's text (the step's key). (8) *Fuzzing.* None of the
+    target's stages builds these bodies but the results the measurement read,
+    so a stage of its own (`STACKS`): by the input's byte after those it
+    decodes (its 20th, at or above 128, so earlier inputs decode as before),
+    the kernel's own box on the object's frame fused with a stadium standing
+    on its top across its corner (both caps partly exposed) or, by the byte's
+    bit 6, a square with a round hole under a stadium with a round hole hiding
+    its top, every crossing of the outlines rational and no wall on another's
+    circle's tangent, written, read back and imported, each cut by the chained
+    stage's partner: where both evaluate, one volume (on the tilted frame the
+    writer rounds the caps apart); each on the frame turned about the object's
+    axis (its `x` along `8 x + 15 y`): on the world's axes a wall of each leaf
+    crosses the other's on the shared plane where their faces' boxes only
+    touch, which S9's plane rule takes for two faces within the resolution of
+    one plane (refused both ways). (9) *Evidence first.* Bodies OCCT writes in
+    one fuse of two prisms on one frame turned about the world's `z` (its
+    normal the world's `z` exactly, so the import's leaves and the partners
+    standing along them are parallel exactly), every crossing of the outlines
+    on the shared plane rational: `step` (a box under a stadium across its
+    corner, both caps partly exposed), `cover` (a square with a round hole
+    under a stadium with a round hole hiding its top) and `bar` (a stadium
+    plate under a box across its arc end); cases of each against upright rods,
+    among them rods inside both outlines across the shared plane (their seams'
+    middles on it), the bar the tool, two imported (the step and the bar,
+    their frames turned apart), a chain, and a declared `degenerate` ball
+    resting on the cover's top; the reference S9e.3a's chained reference on
+    the constructions OCCT was given, each body's closed form, S9e.4b.3c.3a's
+    checks (`generate_stack_leaves_boolean_fixtures.py --check`, a CI group
+    `stack-leaves`, `test_stack_leaves_boolean_reference.py`); a native
+    capture keyed on the refusal the step removes
+    (`compare_stack_leaves_boolean.py`, `imported.rs`'s present text ending "a
+    flat or a pocket (S9e.4b.4b.2b.2b.3)"); then the kernel and its tests
+    (`tests/stack_leaf_booleans.rs`), and a DRAW trial of the restore cases
+    the import reaches.
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces
