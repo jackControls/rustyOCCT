@@ -12576,7 +12576,22 @@ Decisions for S9, recorded before its code (2026-09-28):
     rounding of its cylinders' direction, S9's rule in the nested chain's
     Booleans, as S9e.4b.4c.2a's evidence (a) found for one curved face): the
     kernel's tests take the fuzz stage's bodies on the target's tilted frame
-    as refused as before. The native capture before the kernel next.
+    as refused as before. The capture
+    `occt-boolean-nested-leaves-preimplementation`
+    (`compare_nested_leaves_boolean.py`, keyed on the refusal the step
+    changes: `imported.rs`'s `OutOfDomain("an imported body of several
+    primitives with plane faces other than their ends, one or two prisms', a
+    flat or a pocket (S9e.4b.4b.2b.2b.3b)")`; the kernel's probe
+    `unsupported` on all 21 before the code, both bodies refused on import
+    as their own tangency, `Degenerate("an imported body of several
+    primitives whose faces are tangent along an edge")`, the plate's tangent
+    joints taken by no chain once the component of both kinds is refused):
+    every result valid, 20 matching (within 2e-8 of the reference: no
+    meeting OCCT approximates), 1 reviewed, in
+    `occt-boolean-nested-leaves-divergences.json`: the touching ball's fuse,
+    which OCCT keeps as two solids touching at a point where the reference's
+    rays count one, their totals the reference's within 2.9e-16.
+    S9e.4b.4c.2b.1's kernel next.
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces

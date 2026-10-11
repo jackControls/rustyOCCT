@@ -1,0 +1,29 @@
+{
+  "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+  "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+  "platform": "darwin",
+  "rust_revision": "ca8e6810da5f4772b1294a050d3976fdc8de5e4e",
+  "rust_nested_leaves_boolean_exists": false,
+  "rust_worktree_uncommitted": [
+    " M rust/REVIEW_NOTES.md",
+    " M rust/fuzz/src/boolean.rs",
+    " M rust/fuzz/src/lib.rs",
+    " M rust/fuzz/src/split.rs",
+    " M rust/kernel/tests/flush_leaf_booleans.rs",
+    " M rust/kernel/tests/plane_part_booleans.rs",
+    " M rust/kernel/tests/prism_leaf_booleans.rs",
+    " M rust/kernel/tests/rim_leaf_booleans.rs",
+    " M rust/kernel/tests/stack_leaf_booleans.rs",
+    " M rust/kernel/tests/two_leaf_booleans.rs",
+    " M rust/tools/generate_prism_leaves_boolean_fixtures.py",
+    "?? rust/fixtures/occt-boolean-nested-leaves-divergences.json",
+    "?? rust/fixtures/occt-boolean-nested-leaves-preimplementation/",
+    "?? rust/fuzz/examples/probe_import.rs",
+    "?? rust/fuzz/src/probe.rs",
+    "?? rust/kernel/tests/nested_leaf_booleans.rs"
+  ],
+  "sdk_manifest_sha256": "cf67084f02f40dc622ee350e0536985f7e138ed3e87d67982f696c9e2b56585e",
+  "input_sha256": "119e4ebce291ff5b9e1fb9886708b06e0a81edde15c802a5eb014da9aa5dd519",
+  "probe_source_sha256": "f09941a94282bee7906ccb9c1e9685a0a835e3e12f1b324ecce504d4bdfc86e8",
+  "observations_sha256": "8a0fed0a3977b202178554baa5d193614458b322ff9715e6209d96c387f0b3b3"
+}
