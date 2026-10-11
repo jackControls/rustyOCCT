@@ -16303,6 +16303,123 @@ Decisions for S9, recorded before its code (2026-09-28):
   at the heads since `247d0e61`); `split` clean, 1,426 runs. The scheduled
   run's full replays are to be seen.
 
+* **Two conic edges within the resolution of each other refined, before
+  its code (2026-10-11; HANDOFF's item 5, the first of the second part of
+  "Edges and vertices within the resolution of each other").** Why they
+  are evaluated today: `edges_and_vertices` takes two edges' closest
+  points only for two lines and for a line against a conic or a circle
+  (`closest_on_edges`); two conic or circle edges have none. So two rods'
+  rims passing `1e-12` to `1e-9` of each other at a point, their tangents
+  crossing and each rim's faces leaving it away from the other, are fused
+  into two solids and their common is empty, and so is a rod's rim by a
+  cone's base rim or by a block's arc edge (a rounded vertical edge's arc
+  on its cap); crossing that deep they are refused by later rules (a piece
+  or a result thinner than the resolution). The user's decision holds
+  ("contact only"): within the resolution of contact, without a decided
+  contact, the pair is refused as a near miss with a named reason.
+  - **Pairs.** Two input edges, one of each input (`takes_edge`: with an
+    input's id, not between faces on one surface), whose curves are conics
+    (`Crv::Conic`: a level frame's circle exactly, a turned frame's arc
+    within rounding of one, a cone's rim, an oblique cut's ellipse) or
+    circles (`Crv::Circle`, a sphere's), their boxes meeting once one is
+    widened by twice the resolution, as the residue's edge pairs; their
+    closest points each strictly inside its edge or at an end where it runs
+    on smoothly (`inside_edge`). Two `Crv::Circle` edges are not combined:
+    each one's points lie in a quadratic field of their own (`Circ::at`'s
+    scale), points of two different surds, open as before. The polyhedral
+    engine has no conic.
+  - **Closest points in binary64.** The squared distance `|A(t) -
+    B(s)|^2` over a grid of 64 angles of each curve (a circle's on its
+    basis orthonormalized, its angle mapped to `curve_at`'s); each least of
+    the grid (at most its eight neighbours, the angles wrapping) whose
+    distance less the curves' movement over a cell (`|a| + |b|` times the
+    step, each curve) is within twice the resolution, refined by Newton's
+    method on the gradient (coordinate steps where the Hessian is not
+    definite: tangent or coincident curves) and kept where its binary64
+    gap is within twice the resolution, as `bracketed` keeps its leasts;
+    candidates refining to one pair once.
+  - **Within, decided exactly.** The curves' exact points at the rational
+    half-angle tangents of the refined angles (`curve_at`: rational on a
+    conic, a circle's in the quadratic field of its scale, so the pair's
+    numbers lie in one field), their gap `U` exact: the least is at most
+    `U`, within the resolution where `U <= res`, and the pair is then
+    decided by the residue's `pair` at those points. They lie off the
+    least's points by binary64's rounding, far below the gap's own
+    rounding `rho`, so a face direction along the true gap's plane stays
+    within the band at them.
+  - **Beyond it, bracketed.** Where `U > res` and the pair would be a
+    contact at those points (the side test below), a bracketed search on
+    one curve's parameter of the exact distance to the other: the outer
+    curve a conic (rational points `x`), the inner the other; the inner
+    curve's point `y` nearest `x` exactly where it is a circle exactly
+    (`circle_nearest`, in a quadratic field) and else bracketed on it by
+    the residue's `bisect` (exact signs of `(y - x) . t_B`, the curve's
+    movement over the bracket `r_B`); the outer derivative's sign that of
+    `(x - y) . t_A`, decided where `((x - y) . t_A)^2 > |t_A|^2 r_B^2` and
+    else taken as zero; the outer bracket narrowed by `bisect` on that sign
+    (the movement `D_A`). The distance is 1-Lipschitz in each point, so the
+    least over the bracket is at least `|x - y| - D_A - r_B`: `pair` with
+    that bound (`Bracket::Within`), apart where it exceeds the resolution,
+    and between, or no bracket found, `ComputationLimit` ("a near miss's
+    least distance within rounding of the resolution") where the pair is a
+    contact, as for a line and a conic. Not by the resultant of the
+    critical-point system: its equations have bidegrees `(4, 2)` and `(2,
+    4)` in the two half-angle tangents (a polynomial of degree up to 20
+    after one is eliminated, its coefficients products of the conics'
+    data), far dearer than brackets needing only the signs of dot products
+    of the conics' points, and it gives no point for the contact test.
+  - **Contact**, the residue's `pair` unchanged: the gap `n = b - a` from
+    the first input's point to the second's, each edge's two faces'
+    directions into them from its point (`edge_dirs`) against `n` exactly,
+    the faces' band plus the gap's own rounding (`rho = 2^(e - 48)`). Both
+    rims leaving the gap away from the other: missing, refused unless the
+    gap lies inside both inputs (each one's membership at its point pushed
+    across it); both heading toward the other: crossing, refused; any
+    direction along the gap's plane, of both signs or undecided: no contact.
+    Reason: "two edges within the resolution of each other (S9d.2)" (the
+    same pair rule and the same kind of contact as two lines' or a line's
+    and a conic's), and the limit's as the residue's.
+  - **No contact, evaluating as before**: an exact crossing or an
+    incidence (a gap of zero); a gap of rounding's size (`|n| <= rho`, every
+    direction then along the gap's plane): rims crossing but for rounding,
+    coincident rims (two rods stacked on one frame and radius); coplanar
+    rims (coaxial rods on one plane, concentric rims), whose walls run
+    along the gap's plane, the faces' own rules; a closest point at an
+    edge's end that does not run on smoothly (the vertex pairs'); a gap
+    inside both inputs; directions of both signs. Beyond the resolution
+    and the bracket nothing changes.
+  - **Cost** (CI's scheduled replays failed on time limits after rules
+    were added): the binary64 search only for pairs whose boxes meet,
+    widened; a grid least passed over in binary64 where its distance less
+    the cell's movement bound exceeds twice the resolution; exact points
+    only for candidates within twice the resolution in binary64; the
+    bracketed search only for a contact beyond the resolution. Measured as
+    the corpus's CPU time in release (one process an input, before and
+    after): no more than about 2 % in all and no input more than 10 %.
+  - **Other curves (meetings of two curved faces, cone, torus and spline
+    curves) against edges and vertices: not taken here.** Their exact
+    points come from `Run::exact_at` at a rational parameter, each in its
+    own field, without a rational parametrization or a bound of their
+    movement in the parameter (`speed`'s counterpart): a settled point
+    (`Run::settle`, as `nearest_on_run`'s) can show a gap within the
+    resolution but never one beyond it, so every such pair between the
+    resolution and twice it would be a `ComputationLimit`, and against a
+    conic the nested bracket has no inner bound. They stay open (HANDOFF),
+    with points of two different surds and an apex against a sphere's,
+    torus or spline face.
+  - **Evidence**: `tests/conic_near_miss_booleans.rs`, in a level frame,
+    one turned off the world's z and one turned about it: a rod's top rim
+    (radius 1, at the angle 0.7) by another rod's bottom rim (radius 0.5)
+    crossing it at right angles `1e-12`, `1e-11` and `1e-9` off along the
+    diagonal between its cap and wall, each rim's faces leaving it away; a
+    frustum's base rim by such a rod; a rod's rim by a block's arc edge (a
+    rounded vertical edge of radius 0.5, its bottom cap's arc); each
+    crossing that deep refused, and `1e-6` evaluating. Positive controls:
+    rims `0.1` apart and `0.1` through, crossing but for rounding, coaxial
+    rods stacked on one plane (radii 1 on 1, 0.5 and 2), U1's box on a
+    rod's tangent plane, and the residue's controls
+    (`edge_vertex_near_miss_booleans`), evaluating as before.
+
 * **CI budget (U6).** Per-push fuzz runs replay a bounded sample plus every
   regression and new seed; the daily schedule replays everything; the heavy
   exact targets run on schedule only; Windows runs a smoke subset per push
