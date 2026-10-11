@@ -11449,7 +11449,19 @@ Decisions for S9, recorded before its code (2026-09-28):
     (2 pockets whose square's wall lies on the stadium's line wall, flush; a
     stadium groove in a plate, no leaf; 2 tangencies and a vertex on a face,
     S9's rules in their chains' Booleans); the pre-existing panic above.
-    Pending: its capture's Linux record, its DRAW survey and its campaigns.
+    Pending: its capture's Linux record (its DRAW survey: below). Campaigns
+    at `8e632f49` (600 s each, sampled replays, every switch on, beside the
+    DRAW survey's runs, two agents' builds and their emulated replays):
+    `split` clean, 1,260 runs, the slowest under a second; `boolean` found
+    no crash, leak or timeout in 268 runs but failed its resource check: one
+    sampled corpus input (`d8c872b2...`, a torus against curved faces, in its
+    startup's replay) took 80 s against the 60 s input limit. Run alone under
+    AddressSanitizer at load 3.5 it takes 22.5 s, its time (a 15 s profile)
+    in the torus and curved faces' shared arrangement and its traced curves
+    (`torus_curved`, `graph::Arr::trace`, `triple`), about a seventh in the
+    import's chains, none in the near-miss rules; the local full replay at
+    `efa8d39f` took 52 s at most a shard on a loaded host. The campaigns are
+    taken again at the next pushed head.
   * **DRAW survey of the leaves (2026-10-10, `UPSTREAM_TESTS.md`).** At
     `8e632f49` (`rust-kernel`: S9e.4b.4b.2b.2a, S9e.4b.4b.2b.2b.1 and the
     vertex near miss of `fix-vertex-near-miss` merged; the public dataset,

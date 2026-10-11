@@ -575,7 +575,10 @@ then for the DRAW survey of the leaves (branch `s9-draw-16`, over
   stack of two prisms cut by a ball, no import involved), left for a fix of
   its own. Open: S9e.4b.4b.2b.2b.2. Its DRAW survey (branch `s9-draw-16` at
   `8e632f49`): no case moving, no case holding a leaf cut at its rim,
-  nothing registered. Pending its capture's Linux record and its campaigns.
+  nothing registered. Pending its capture's Linux record and its campaigns
+  (taken again: `boolean`'s at `8e632f49` failed its resource check on one
+  corpus input, 80 s on a loaded host against the 60 s limit, 22.5 s alone;
+  `split`'s clean).
 - **Points of two quadratic fields fixed** (branch `fix-surds-panic`): a
   section's line through points of one quadratic field meeting a sphere, a
   cylinder or a cone at surds of another panicked ("surds of one field", found
@@ -734,7 +737,8 @@ then for the DRAW survey of the leaves (branch `s9-draw-16`, over
    (leaves cut at their rim, a pocket's tooth to a leaf's cap: 9 of the 44
    importing) is implemented with its DRAW survey (`s9-draw-16` at
    `8e632f49`: no case moving, nothing registered; pending its capture's
-   Linux record and its campaigns); next **S9e.4b.4b.2b.2b.2** (leaves touching
+   Linux record and campaigns taken again, `boolean`'s at `8e632f49`
+   failing on one input's 80 s on a loaded host); next **S9e.4b.4b.2b.2b.2** (leaves touching
    along a face: flush walls, 16 bodies, and caps on one plane, 5 stacks,
    both needing exact shared carriers or a given model of touching caps;
    pockets open sideways; the rest of S9e.4b.4b.2b's list; of this step's
@@ -749,8 +753,8 @@ then for the DRAW survey of the leaves (branch `s9-draw-16`, over
    S9e.4b.3c.3b's tooth, a post or a U island in a pocket, three deep at
    most; no DRAW case moving in its trial) is implemented with its DRAW
    survey (`s9-draw-15` at `69c2c27f`: no case moving, none reaching a
-   pocket within a pocket, nothing registered; pending its capture's Linux
-   record and its campaigns); next
+   pocket within a pocket, nothing registered; campaigns clean at
+   `69c2c27f`; pending its capture's Linux record); next
    **S9e.4b.4c.2b** (nested chains of several primitives and chains no model
    matches, after S9e.4b.4b.2b.2b) and **S9e.4b.4d**
    (turned bodies of smooth joins and nearly degenerate surfaces,
