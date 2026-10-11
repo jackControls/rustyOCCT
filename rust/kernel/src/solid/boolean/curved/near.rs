@@ -194,6 +194,23 @@ impl<'a> Quad<'a> {
         }
     }
 
+    /// Whether a point `x` (binary64) lies off a plane or a cylinder by more
+    /// than the resolution beyond doubt: its function over its gradient's
+    /// length above `4 res`. That ratio is a plane's distance, and within
+    /// `7 / 6` of a cylinder's distance `d <= res` where its radius exceeds
+    /// `4 res` (`|rho^2 - r^2| / 2 rho = d (rho + r) / 2 rho`, `rho >= 3r /
+    /// 4`), far beyond binary64's error. A cone's ratio near its apex is not
+    /// so bounded: none.
+    fn clearly_off(&self, x: [f64; 3], res: f64) -> bool {
+        let (v, g) = self.value64(x);
+        let gg = (g[0] * g[0] + g[1] * g[1] + g[2] * g[2]).sqrt();
+        match self.kind {
+            Kind::Plane { .. } => v.abs() > 4.0 * res * gg,
+            Kind::Cyl { .. } => self.data[2] > 4.0 * res && v.abs() > 4.0 * res * gg,
+            Kind::Cone { .. } => false,
+        }
+    }
+
     /// A point of the surface near the foot of `x` on it: a plane's foot
     /// exactly; on a cylinder or a cone a rational point of it toward the
     /// foot's binary64 place (`None` off a cone's nappe).
@@ -439,6 +456,12 @@ pub(super) fn edge_faces(models: &[Prism; 2], res: f64) -> Result<()> {
                     None => extrema(&e.curve, &quad),
                 };
                 for (a, extremum) in found {
+                    // A plane's or a cylinder's exact extremum binary64
+                    // puts well beyond the resolution is none (`edge_face`
+                    // takes only gaps within it; `Run`'s are settled so).
+                    if run.is_none() && quad.clearly_off(qv_f64(&a), res) {
+                        continue;
+                    }
                     // Strictly inside the edge, or at an end it runs on
                     // through smoothly (a closed edge's vertex, a circle's
                     // seam).
@@ -1256,27 +1279,10 @@ fn gap_rounding(a: &QV, b: &QV) -> R {
 /// resolution but within its bound of it, or an unbracketed one within
 /// twice it, is a `ComputationLimit` where the pair would be a contact.
 fn pair(a: &End, b: &End, bracket: &Bracket, res: f64, why: &'static str) -> Result<()> {
-    if !one_field(&[&a.p, &b.p]) {
+    let Some((n, within)) = gap_within(&a.p, &b.p, bracket, res) else {
         return Ok(());
-    }
-    let n = qsub(&b.p, &a.p);
-    let nn = qqdot(&n, &n);
-    if nn.sign() == Ordering::Equal {
-        // An incidence or an exact crossing: the existing rules'.
-        return Ok(());
-    }
-    let tol = q(res);
-    let above = |reach: &R| nn.add_r(&-(reach * reach)).sign() == Ordering::Greater;
-    let within = !above(&tol);
-    let unsure = !within
-        && match bracket {
-            Bracket::Exact => false,
-            Bracket::Within(d) => !above(&(&tol + d)),
-            Bracket::Unbracketed => !above(&(int(2) * &tol)),
-        };
-    if !within && !unsure {
-        return Ok(());
-    }
+    };
+    let unsure = !within;
     let rho2 = gap_rounding(&a.p, &b.p);
     let sa = side(a.m, a.spot, &a.p, &n, Some(&rho2));
     let sb = side(b.m, b.spot, &b.p, &n, Some(&rho2));
@@ -1298,6 +1304,32 @@ fn pair(a: &End, b: &End, bracket: &Bracket, res: f64, why: &'static str) -> Res
         return Err(Error::ComputationLimit(NEAR_LIMIT));
     }
     Err(Error::Degenerate(why))
+}
+
+/// `pair`'s gap from `a` to `b`, where it may be a near miss: `None` for
+/// points of two fields, an incidence or an exact crossing (the existing
+/// rules'), and a gap beyond the resolution (beyond it and the bracket's
+/// reach); else the gap and whether it lies within the resolution (else
+/// only within the bracket's reach of it, unsure).
+fn gap_within(a: &QV, b: &QV, bracket: &Bracket, res: f64) -> Option<(QV, bool)> {
+    if !one_field(&[a, b]) {
+        return None;
+    }
+    let n = qsub(b, a);
+    let nn = qqdot(&n, &n);
+    if nn.sign() == Ordering::Equal {
+        return None;
+    }
+    let tol = q(res);
+    let above = |reach: &R| nn.add_r(&-(reach * reach)).sign() == Ordering::Greater;
+    let within = !above(&tol);
+    let unsure = !within
+        && match bracket {
+            Bracket::Exact => false,
+            Bracket::Within(d) => !above(&(&tol + d)),
+            Bracket::Unbracketed => !above(&(int(2) * &tol)),
+        };
+    (within || unsure).then_some((n, within))
 }
 
 /// Whether a point lies strictly inside edge `ei` of `m`, or at an end it
@@ -1381,7 +1413,7 @@ fn closest_on_edges(
     let (ca, cb) = (&ma.edges[ea].curve, &mb.edges[eb].curve);
     let found: Vec<(QV, QV, Bracket)> = match (ca, cb) {
         (Crv::Line { p: p1, d: d1 }, Crv::Line { p: p2, d: d2 }) => {
-            if !one_field(&[p1, p2]) {
+            if !one_field(&[p1, p2]) || lines_apart(p1, d1, p2, d2, res) {
                 return Vec::new();
             }
             let (a, b, c) = (dot(d1, d1), dot(d1, d2), dot(d2, d2));
@@ -1407,10 +1439,38 @@ fn closest_on_edges(
         (Crv::Conic { .. } | Crv::Circle(_), Crv::Line { .. }) => line_and_curve(ca, cb, res),
         _ => Vec::new(),
     };
+    // Only gaps `pair` takes (`gap_within`), told before the points' places
+    // along the edges (which cost more).
     found
         .into_iter()
-        .filter(|(x, y, _)| inside_edge(ma, ea, x) && inside_edge(mb, eb, y))
+        .filter(|(x, y, k)| {
+            gap_within(x, y, k, res).is_some() && inside_edge(ma, ea, x) && inside_edge(mb, eb, y)
+        })
         .collect()
+}
+
+/// Whether two lines (points `p`, directions `d`) lie farther apart than
+/// twice the resolution beyond doubt in binary64: `|w . (d1 x d2)|` above
+/// `2 res |d1 x d2|` and a bound of binary64's error in it, the directions
+/// not parallel to rounding (their closest points' gap, `pair`'s, then
+/// exceeds the resolution).
+fn lines_apart(p1: &QV, d1: &V, p2: &QV, d2: &V, res: f64) -> bool {
+    let (a, b) = (qv_f64(p1), qv_f64(p2));
+    let (u, v) = (
+        d1.clone().map(|x| rational_f64(&x)),
+        d2.clone().map(|x| rational_f64(&x)),
+    );
+    let c = [
+        u[1] * v[2] - u[2] * v[1],
+        u[2] * v[0] - u[0] * v[2],
+        u[0] * v[1] - u[1] * v[0],
+    ];
+    let w = [0, 1, 2].map(|k| a[k] - b[k]);
+    let norm = |x: &[f64; 3]| (x[0] * x[0] + x[1] * x[1] + x[2] * x[2]).sqrt();
+    let (cc, uv) = (norm(&c), norm(&u) * norm(&v));
+    let reach = norm(&a) + norm(&b) + norm(&w);
+    let num = (w[0] * c[0] + w[1] * c[1] + w[2] * c[2]).abs();
+    cc > 1e-12 * uv && num > 2.0 * res * cc + 1e-12 * reach * uv
 }
 
 /// The points of a conic or a circle `crv` at the leasts of its distance
@@ -1476,23 +1536,30 @@ fn curve_at(crv: &Crv, s: &R, flip: bool) -> Option<(QV, QV)> {
     }
 }
 
-/// A conic's or a circle's point in binary64 at the angle `t`.
-fn curve_at64(crv: &Crv, t: f64) -> Option<[f64; 3]> {
+/// A conic's or a circle's points in binary64 by the angle `t`, its exact
+/// data rounded once (`bracketed` takes a few hundred points of each curve;
+/// rounding the data at each point was most of the near-miss rule's time).
+fn curve64(crv: &Crv) -> Option<impl Fn(f64) -> [f64; 3]> {
     let g = |v: &V| v.clone().map(|x| rational_f64(&x));
-    match crv {
-        Crv::Conic { c, a, b } => {
-            let (fc, fa, fb) = (g(c), g(a), g(b));
-            Some([0, 1, 2].map(|k| fc[k] + fa[k] * t.cos() + fb[k] * t.sin()))
-        }
-        Crv::Circle(circ) => {
-            let (fc, fx, fy) = (g(&circ.c), g(&circ.x), g(&circ.y));
-            let dir = [0, 1, 2].map(|k| fx[k] * t.cos() + fy[k] * t.sin());
+    // A conic's centre and axes, or a circle's centre, basis and radius.
+    let (fc, fa, fb, r) = match crv {
+        Crv::Conic { c, a, b } => (g(c), g(a), g(b), None),
+        Crv::Circle(circ) => (
+            g(&circ.c),
+            g(&circ.x),
+            g(&circ.y),
+            Some(rational_f64(&circ.r2).sqrt()),
+        ),
+        _ => return None,
+    };
+    Some(move |t: f64| match r {
+        None => [0, 1, 2].map(|k| fc[k] + fa[k] * t.cos() + fb[k] * t.sin()),
+        Some(r) => {
+            let dir = [0, 1, 2].map(|k| fa[k] * t.cos() + fb[k] * t.sin());
             let len = dir.iter().map(|x| x * x).sum::<f64>().sqrt();
-            let r = rational_f64(&circ.r2).sqrt();
-            Some([0, 1, 2].map(|k| fc[k] + r * dir[k] / len))
+            [0, 1, 2].map(|k| fc[k] + r * dir[k] / len)
         }
-        _ => None,
-    }
+    })
 }
 
 /// A rational upper bound of `sqrt(x)`, `x >= 0`.
@@ -1558,15 +1625,17 @@ fn bracketed(
     res: f64,
 ) -> Vec<(QV, Bracket)> {
     const N: usize = 64;
-    let f = |t: f64| curve_at64(crv, t).map_or(f64::NAN, far);
+    let Some(at) = curve64(crv) else {
+        return Vec::new();
+    };
+    let f = |t: f64| far(at(t));
     let step = TAU / N as f64;
     let vals: Vec<f64> = (0..N).map(|i| f(i as f64 * step)).collect();
     if vals.iter().any(|v| !v.is_finite()) {
         return Vec::new();
     }
-    let Some(speed) = speed(crv) else {
-        return Vec::new();
-    };
+    // The curve's speed, found at the first near miss (none without it).
+    let mut speed_of: Option<R> = None;
     let mut out = Vec::new();
     for i in 0..N {
         let (prev, next) = (vals[(i + N - 1) % N], vals[(i + 1) % N]);
@@ -1589,9 +1658,18 @@ fn bracketed(
         if gap.is_nan() || gap > 2.0 * res {
             continue;
         }
+        if speed_of.is_none() {
+            let Some(v) = speed(crv) else {
+                return Vec::new();
+            };
+            speed_of = Some(v);
+        }
+        let Some(speed) = &speed_of else {
+            return Vec::new();
+        };
         let flip = t.cos() < 0.0;
         let s = (if flip { t - PI } else { t } / 2.0).tan();
-        if let Some(found) = bisect(crv, s, flip, slope, &speed) {
+        if let Some(found) = bisect(crv, s, flip, slope, speed) {
             out.push(found);
         } else if let Some((x, _)) = curve_at(crv, &q(s), flip) {
             out.push((x, Bracket::Unbracketed));
@@ -1961,5 +2039,95 @@ mod tests {
         assert!((u - 1e-12).abs() < 1e-15, "{u}");
         assert!(sqrt_up(&q(2.0)) * sqrt_up(&q(2.0)) >= q(2.0));
         assert!(sqrt_down(&q(2.0)) * sqrt_down(&q(2.0)) <= q(2.0));
+    }
+
+    /// `closest_on_edges` passes over two lines only farther apart than
+    /// twice the resolution (`lines_apart`): skew lines five resolutions
+    /// apart at right angles or at `1e-3` rad, a thousand from the origin
+    /// too at right angles; at the resolution, within it, or parallel to
+    /// rounding, never; nor where binary64's error bound reaches the gap
+    /// (`1e-6` rad a thousand from the origin).
+    #[test]
+    fn lines_apart_beyond_twice_the_resolution() {
+        let res = Tolerance::default().linear();
+        let v = |x: [f64; 3]| x.map(q);
+        for (far, turn, beyond) in [
+            (0.0, 1.0, true),
+            (0.0, 1e-3, true),
+            (1000.0, 1.0, true),
+            (1000.0, 1e-6, false),
+        ] {
+            for (gap, apart) in [(5.0, beyond), (1.0, false), (0.5, false), (0.0, false)] {
+                let p1 = qv(&v([far, 0.25, 0.0]));
+                let p2 = qv(&v([far + 0.5, -0.75, gap * res]));
+                let (d1, d2) = (v([1.0, 0.0, 0.0]), v([1.0, turn, 0.0]));
+                assert_eq!(
+                    lines_apart(&p1, &d1, &p2, &d2, res),
+                    apart,
+                    "{far} {turn} {gap}"
+                );
+            }
+        }
+        let p1 = qv(&v([0.0, 0.0, 0.0]));
+        let p2 = qv(&v([0.0, 1.0, 1.0]));
+        let d = v([1.0, 2.0, 3.0]);
+        let tilted = v([1.0, 2.0, 3.0 + 1e-15]);
+        assert!(!lines_apart(&p1, &d, &p2, &d, res));
+        assert!(!lines_apart(&p1, &d, &p2, &tilted, res));
+    }
+
+    /// `edge_faces` passes over an exact extremum binary64 puts clearly off
+    /// a plane or a cylinder (`Quad::clearly_off`) only beyond the
+    /// resolution: a point within it or at it of a rod's wall or top, on
+    /// either side, never; one five resolutions off, always; off a cone's
+    /// wall, never.
+    #[test]
+    fn points_clearly_off_lie_beyond_the_resolution() {
+        let tol = Tolerance::default();
+        let res = tol.linear();
+        let seam = R::new(BigInt::from(2), BigInt::from(7));
+        let rod = Solid::cylinder_with(OperationId(1), level(), 1.0, -3.0, 0.0, tol)
+            .unwrap()
+            .0;
+        let cone = Solid::cone_with(OperationId(1), level(), 1.0, 0.0, 1.0, tol)
+            .unwrap()
+            .0;
+        let m = Prism::new(&rod, Operand::A, &seam).unwrap();
+        let (mut walls, mut tops) = (0, 0);
+        for fi in 0..m.faces.len() {
+            let Some(quad) = Quad::of(&m, fi) else {
+                continue;
+            };
+            for (d, off) in [
+                (0.5, false),
+                (1.0, false),
+                (-0.5, false),
+                (-1.0, false),
+                (5.0, true),
+                (-5.0, true),
+            ] {
+                let x = match quad.kind {
+                    Kind::Cyl { .. } => [-(1.0 + d * res) * 0.6, (1.0 + d * res) * 0.8, -1.5],
+                    Kind::Plane { .. } if quad.rows[0][2] > 0.0 => [0.25, -0.5, d * res],
+                    _ => continue,
+                };
+                assert_eq!(quad.clearly_off(x, res), off, "{fi} {d}");
+            }
+            match quad.kind {
+                Kind::Cyl { .. } => walls += 1,
+                Kind::Plane { .. } if quad.rows[0][2] > 0.0 => tops += 1,
+                _ => {}
+            }
+        }
+        assert!(walls > 0 && tops > 0);
+        let m = super::super::cone::model(&cone, Operand::A, &seam).unwrap();
+        for fi in 0..m.faces.len() {
+            let Some(quad) = Quad::of(&m, fi) else {
+                continue;
+            };
+            if matches!(quad.kind, Kind::Cone { .. }) {
+                assert!(!quad.clearly_off([0.0, 0.0, 5.0], res));
+            }
+        }
     }
 }

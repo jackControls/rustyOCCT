@@ -85,6 +85,7 @@ use crate::{
     Vec3,
 };
 use num_rational::BigRational as R;
+use std::cell::RefCell;
 use std::collections::BTreeMap;
 
 /// An imported solid's construction and names (S9e.4a).
@@ -450,25 +451,44 @@ impl Solid {
         resolution: Tolerance,
     ) -> Result<(Self, History)> {
         let op = construction_operation(context.operation);
-        let attempt = |choice: u32| {
-            primitives_piece(&topology, resolution, op, choice).and_then(|p| {
-                Self::imported_as(
-                    context,
-                    topology.clone(),
-                    resolution,
-                    Recognized::Piece(Box::new(p)),
-                    BTreeMap::new(),
-                )
-            })
+        // The chains whose models were built: a later choice reading the
+        // same chain off the body (a leaf read through either of two faces
+        // on its cap's plane, a stack's caps) is not built again. Its model
+        // would be the same and refused the same, and a later choice's
+        // refusal never counts for more than an earlier one's (the rules
+        // below ignore as much or more as the choices rise), so the outcome
+        // is the same without it.
+        let tried: RefCell<Vec<Piece>> = RefCell::new(Vec::new());
+        let attempt = |choice: u32| -> Option<Result<(Self, History)>> {
+            let p = match primitives_piece(&topology, resolution, op, choice) {
+                Ok(p) => p,
+                Err(e) => return Some(Err(e)),
+            };
+            if tried.borrow().iter().any(|q| same_chain(q, &p)) {
+                return None;
+            }
+            tried.borrow_mut().push(p.clone());
+            #[cfg(test)]
+            CHAIN_MODELS.with(|c| c.set(c.get() + 1));
+            Some(Self::imported_as(
+                context,
+                topology.clone(),
+                resolution,
+                Recognized::Piece(Box::new(p)),
+                BTreeMap::new(),
+            ))
         };
-        let alone = match attempt(0) {
+        let alone = match attempt(0).unwrap_or_else(|| Err(not_their_faces())) {
             Err(e) if e == not_their_faces() || e == tangent_body() => e,
             r => return r,
         };
         let (mut refusal, mut tangent) = (None, alone == tangent_body());
         let (choices, plain, rim) = primitives_choices(&topology, resolution);
         for choice in choices.into_iter().skip(1) {
-            match attempt(choice) {
+            let Some(attempted) = attempt(choice) else {
+                continue;
+            };
+            match attempted {
                 Ok(done) => return Ok(done),
                 // S9e.4b.4b.2b.1: a decomposition with the other plane faces
                 // whose prisms part a joint tangent along its walls is one the
@@ -3544,6 +3564,34 @@ fn primitives_choices(t: &Topology, tolerance: Tolerance) -> (Vec<u32>, u32, u32
     (order, count, first)
 }
 
+#[cfg(test)]
+thread_local! {
+    /// The chains' models `imported_primitives` built on this thread.
+    static CHAIN_MODELS: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+}
+
+/// Whether two chains read off one body are the same but for their choice
+/// (`imported_primitives` builds each model once).
+fn same_chain(a: &Piece, b: &Piece) -> bool {
+    let Piece {
+        primitive,
+        others,
+        planes,
+        form,
+        tree,
+        choice: _,
+        chain,
+        stack,
+    } = a;
+    *primitive == b.primitive
+        && *others == b.others
+        && *planes == b.planes
+        && *form == b.form
+        && *tree == b.tree
+        && *chain == b.chain
+        && *stack == b.stack
+}
+
 /// S9e.4b.4b.2b.1: the prisms of one cap a body holds besides its leaves
 /// `lead`, in face order: a plane face no leaf's cap (of `all`) and no face
 /// of `lead`'s or of an earlier such prism's, whose outer loop's every edge's
@@ -4207,5 +4255,112 @@ mod tests {
             assert_eq!(axes.len(), 4, "{n:?}");
             assert!(axes.iter().all(|m| *m == axes[0]), "{n:?}: {axes:?}");
         }
+    }
+
+    /// The boolean target's `timeout-d737f94d`'s `STACKS` body (`k = 11 /
+    /// 32`, `h = 1`: a square `[-2k, 2k]^2` with a hole of radius `k` under
+    /// a stadium of half discs of radius `3k` about `(0, 0)` and `(3k, 0)`
+    /// with a hole of radius `k / 2` about `(k / 4, k / 4)`, on the tilted
+    /// frame turned about its axis), written, read back and imported: of the
+    /// chains tried before its stack's, two pairs read the same chain off it
+    /// (the stadium's prism through either face on the touching caps'
+    /// plane), and each chain's model is built once (5 of 7 here), the
+    /// stack's matching. Built again, they took two of the import's seven
+    /// models.
+    #[test]
+    fn a_stacks_chains_are_each_built_once() {
+        use super::{
+            primitives_choices, primitives_piece, renamed, same_chain, Recognized, CHAIN_MODELS,
+        };
+        use crate::solid::Construction;
+        let tol = Tolerance::default();
+        let tilted = Frame3::new(
+            Point3::new(1.0, -2.0, 0.5),
+            Vec3::new(0.0, 3.0, 4.0),
+            Vec3::new(1.0, 0.0, 0.0),
+            tol,
+        )
+        .unwrap();
+        let on = Frame3::new(
+            tilted.origin(),
+            tilted.normal(),
+            tilted.x() * 8.0 + tilted.y() * 15.0,
+            tol,
+        )
+        .unwrap();
+        let (k, h) = (2.75 / 8.0, 1.0);
+        let prism = |outer: Boundary, hole: Boundary, h0: f64, h1: f64, op: u64| {
+            let profile = Profile::new(outer, vec![hole], tol).unwrap();
+            Solid::extrude_with(OperationId(op), profile, on, h0, h1)
+                .unwrap()
+                .0
+        };
+        let square = [(-2.0, -2.0), (2.0, -2.0), (2.0, 2.0), (-2.0, 2.0)]
+            .map(|(x, y)| Point2::new(x * k, y * k))
+            .to_vec();
+        let lower = prism(
+            Boundary::polygon(square, tol).unwrap(),
+            Boundary::circle(Point2::new(0.0, 0.0), k, tol).unwrap(),
+            0.0,
+            h,
+            41,
+        );
+        let r = 3.0 * k;
+        let arc = |x: f64| Segment::Arc {
+            center: Point2::new(x, 0.0),
+            radius: r,
+            ccw: true,
+        };
+        let stadium = [(0.0, -r), (3.0 * k, -r), (3.0 * k, r), (0.0, r)]
+            .map(|(x, y)| Point2::new(x, y))
+            .to_vec();
+        let segments = vec![Segment::Line, arc(3.0 * k), Segment::Line, arc(0.0)];
+        let upper = prism(
+            Boundary::path(stadium, segments, tol).unwrap(),
+            Boundary::circle(Point2::new(0.25 * k, 0.25 * k), 0.5 * k, tol).unwrap(),
+            h,
+            2.0 * h,
+            42,
+        );
+        let (out, _) = lower.fuse(OperationId(43), &upper).unwrap();
+        let [body] = <[Solid; 1]>::try_from(out).unwrap();
+        let text = crate::occt_brep::write(body.topology(), body.resolution().linear()).unwrap();
+        let doc = crate::occt_brep::read(&text).unwrap();
+        let [solid] = <[_; 1]>::try_from(crate::occt_brep::import(&doc).solids).unwrap();
+        let (stored, resolution) = (solid.result.unwrap(), solid.tolerance);
+        CHAIN_MODELS.with(|c| c.set(0));
+        let (imported, _) =
+            Solid::imported_with(OperationId(11), stored.clone(), resolution).unwrap();
+        let built = CHAIN_MODELS.with(std::cell::Cell::get);
+        let Construction::Imported(i) = &imported.construction else {
+            panic!("an import")
+        };
+        let Recognized::Piece(p) = &i.recognized else {
+            panic!("a chain")
+        };
+        assert!(p.stack, "the stack's chain");
+        let v = body.mass_properties().volume;
+        assert!((imported.mass_properties().volume - v).abs() <= 1e-9 * v);
+        // The chains read off the body up to the stack's, as the import
+        // reads them.
+        let topology = renamed(stored, OperationId(11)).unwrap();
+        let op = super::construction_operation(OperationId(11));
+        let (choices, _, _) = primitives_choices(&topology, resolution);
+        let mut read: Vec<super::Piece> = Vec::new();
+        for c in choices {
+            if let Ok(q) = primitives_piece(&topology, resolution, op, c) {
+                read.push(q);
+            }
+            if c == p.choice {
+                break;
+            }
+        }
+        let distinct = read
+            .iter()
+            .enumerate()
+            .filter(|(j, q)| !read[..*j].iter().any(|x| same_chain(x, q)))
+            .count();
+        assert!(distinct < read.len(), "{distinct} of {}", read.len());
+        assert_eq!(built, distinct);
     }
 }
