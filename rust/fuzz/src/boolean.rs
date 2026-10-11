@@ -105,7 +105,11 @@
 //! across its corner (two leaves touching along their caps) or a square with
 //! a round hole under a stadium with a round hole hiding its top, and its
 //! import, each cut by the chained stage's partner, the same volume
-//! (`STACKS`).
+//! (`STACKS`). S9e.4b.4c.2b.1: by the input's 21st byte, the kernel's own
+//! stadium plate less a square with a square hole (a post standing in a
+//! pocket) or with a U-shaped hole (a U island, its notch a pocket of its own)
+//! from inside it past its top, and its import, each cut by the chained
+//! stage's partner, the same volume (`NESTED_LEAVES`).
 use crate::analytic_intersections::Bytes;
 use crate::split::{profile, spline_profile};
 use rusty_occt::identity::OperationId;
@@ -249,6 +253,16 @@ const FLUSH: bool = true;
 /// body are each cut by the chained stage's partner, by the input's 20th
 /// byte (at or above 128: earlier inputs decode as before). On.
 const STACKS: bool = true;
+
+/// Whether the kernel's own stadium plate on the object's frame less a
+/// square with a square hole from inside it past its top (a post standing in
+/// a pocket) or, by the byte's bit 6, with a U-shaped hole (a U island, its
+/// notch a pocket of its own), written, read back and imported
+/// (S9e.4b.4c.2b.1), and the kernel's body are each cut by the chained
+/// stage's partner, by the input's 21st byte (at or above 128: earlier inputs
+/// decode as before), in the axis-aligned frames alone (on the tilted one the
+/// import refuses such a body as before the step). On.
+const NESTED_LEAVES: bool = true;
 
 /// Whether a spline prism meets a line prism in frames with different
 /// axes (S9f.1's spline walls in the curved engine: creases, generatrices
@@ -1024,6 +1038,35 @@ pub fn check_boolean(data: &[u8]) {
                 }
             }
         }
+        // S9e.4b.4c.2b.1: by the input's 21st byte (read there, so earlier
+        // inputs decode as before), the kernel's own stadium plate less a
+        // square with a square hole (a post in a pocket) or, by its bit 6, a
+        // U-shaped hole (a U island, its notch a pocket of its own) from inside
+        // it past its top (`nested_leaves_body`), written, read back and
+        // imported, each cut by the chained stage's partner: where both
+        // evaluate, the same volume (`NESTED_LEAVES`).
+        // On the tilted frame the import refuses such a body (its pocket walls
+        // within rounding of the plate's cylinders' direction, S9's rule in
+        // the nested chains' Booleans), so it is built on the world's axes
+        // alone.
+        let nested = data.get(20).copied().filter(|k| *k >= 128 && !tilted);
+        if let (true, true, Some(k)) = (IMPORTED, NESTED_LEAVES, nested) {
+            if let Some(body) = nested_leaves_body(fa, s1, h, k >= 192, tolerance) {
+                if let Some(again) = reimported(&body) {
+                    if let (Some(x), Some(y)) = (
+                        run(body.cut(OperationId(47), &box_)),
+                        run(again.cut(OperationId(48), &box_)),
+                    ) {
+                        assert!(
+                            near(volume(&x), volume(&y)),
+                            "imported nested pockets of a leaf {} for {}",
+                            volume(&y),
+                            volume(&x)
+                        );
+                    }
+                }
+            }
+        }
     }
     // S9e.4a: the object written by the kernel's writer, read back and
     // imported (`IMPORTED`), given the chosen operation with the same tool:
@@ -1448,6 +1491,99 @@ fn stacks_body(frame: Frame3, s: f64, h: f64, cover: bool, tolerance: Tolerance)
         (lower, upper)
     };
     let (out, _) = lower.fuse(OperationId(43), &upper).ok()?;
+    let [body] = <[Solid; 1]>::try_from(out).ok()?;
+    Some(body)
+}
+
+/// The kernel's own stadium plate with a pocket holding pockets of its own on
+/// `frame` turned about its axis (its `x` along `8 x + 15 y`; `k = s / 8`,
+/// dyadic): the plate of half discs of radius `3k` about `(0, 0)` and `(6k,
+/// 0)` over `[0, h]` less, over `[h / 2, h + 1]`, the square `[k, 5k] x [-2k,
+/// 2k]` with the hole `[2k, 4k] x [-k, k]` (a post standing in the pocket) or,
+/// where `u`, the square `[k / 2, 11k / 2] x [-5k / 2, 5k / 2]` with a U-shaped
+/// hole (the square `[3k / 2, 9k / 2] x [-3k / 2, 3k / 2]` less its notch
+/// `[5k / 2, 9k / 2] x [-k / 2, k / 2]`: a U island, its notch a pocket of its
+/// own; S9e.4b.4c.2b.1).
+fn nested_leaves_body(
+    frame: Frame3,
+    s: f64,
+    h: f64,
+    u: bool,
+    tolerance: Tolerance,
+) -> Option<Solid> {
+    let k = s / 8.0;
+    let polygon = |points: &[(f64, f64)]| {
+        Boundary::polygon(
+            points
+                .iter()
+                .map(|&(x, y)| Point2::new(x * k, y * k))
+                .collect(),
+            tolerance,
+        )
+    };
+    let square =
+        |x0: f64, y0: f64, x1: f64, y1: f64| polygon(&[(x0, y0), (x1, y0), (x1, y1), (x0, y1)]);
+    let arc = |x: f64| Segment::Arc {
+        center: Point2::new(x, 0.0),
+        radius: 3.0 * k,
+        ccw: true,
+    };
+    let plate = Boundary::path(
+        vec![
+            Point2::new(0.0, -3.0 * k),
+            Point2::new(6.0 * k, -3.0 * k),
+            Point2::new(6.0 * k, 3.0 * k),
+            Point2::new(0.0, 3.0 * k),
+        ],
+        vec![Segment::Line, arc(6.0 * k), Segment::Line, arc(0.0)],
+        tolerance,
+    )
+    .ok()?;
+    let on = Frame3::new(
+        frame.origin(),
+        frame.normal(),
+        frame.x() * 8.0 + frame.y() * 15.0,
+        tolerance,
+    )
+    .ok()?;
+    let (outer, hole) = if u {
+        (
+            square(0.5, -2.5, 5.5, 2.5).ok()?,
+            polygon(&[
+                (1.5, -1.5),
+                (4.5, -1.5),
+                (4.5, -0.5),
+                (2.5, -0.5),
+                (2.5, 0.5),
+                (4.5, 0.5),
+                (4.5, 1.5),
+                (1.5, 1.5),
+            ])
+            .ok()?,
+        )
+    } else {
+        (
+            square(1.0, -2.0, 5.0, 2.0).ok()?,
+            square(2.0, -1.0, 4.0, 1.0).ok()?,
+        )
+    };
+    let (plate, _) = Solid::extrude_with(
+        OperationId(52),
+        Profile::new(plate, vec![], tolerance).ok()?,
+        on,
+        0.0,
+        h,
+    )
+    .ok()?;
+    let (ring, _) = Solid::extrude_with(
+        OperationId(53),
+        Profile::new(outer, vec![hole], tolerance).ok()?,
+        on,
+        h / 2.0,
+        h + 1.0,
+    )
+    .ok()?;
+    let (out, _) = plate.cut(OperationId(54), &ring).ok()?;
     let [body] = <[Solid; 1]>::try_from(out).ok()?;
     Some(body)
 }
