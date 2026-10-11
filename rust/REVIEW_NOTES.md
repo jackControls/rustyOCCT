@@ -12206,6 +12206,116 @@ Decisions for S9, recorded before its code (2026-09-28):
     which OCCT keeps as two solids touching at a point where the reference's
     rays count one, their totals the reference's within 7.0e-15.
     S9e.4b.4b.2b.2b.3a's kernel next.
+  * **S9e.4b.4b.2b.2b.3a implemented** (`solid/imported.rs`'s `stack_leaves`,
+    `one_side`, `Levels`, `completed_on`'s levels, `bosses`' `holed`,
+    `chain_piece`'s `stack` and `Piece::stack`; `curved/given.rs`'s
+    `Given::member`; `curved/assemble.rs`'s `Meet` and `Rise` over a stored
+    frame against the model's axis), as the refined decisions and the
+    evidence's corrections describe: after every earlier chain, the stack
+    chains: the leaves found again with two plane faces facing apart never on
+    one surface (`stack_leaves`), each pair of them alone and with the other
+    plane faces, the second leaf on the first's frame itself with its caps'
+    heights taken onto the first's within the resolution, then each such leaf
+    with the other plane faces, its prisms of one cap read with their holes;
+    any refusal of such a chain one the body is not; the given model's
+    membership at a point inside a face of each input on one surface pushed
+    off it both ways, and the body's classification on both leaves' boundaries
+    in a stack's fuse probed off them; the refusal's text now `OutOfDomain("an
+    imported body of several primitives with plane faces other than their
+    ends, one or two prisms', a flat or a pocket (S9e.4b.4b.2b.2b.3b)")`
+    (S9e.4b.4b.2a's notch so, in its tests and the prism leaves' generator; no
+    fixture carries it). All 21 fixtures as declared (18 within the kernel's
+    enclosures, each at most `1e-9` wide; the touching ball `Degenerate("a
+    tangency between the inputs (S9c)")`), every history complete over the
+    imported bodies' stored ids, results deterministic and moved rigidly, both
+    inputs translated and turned keeping the reference's volumes, every body
+    its two prisms (its closed-form volume, points in and off it classified,
+    points on the shared plane inside both outlines inside, its stored
+    vertices on its boundary), the notch refused with the new text, the
+    `boolean` fuzz target's `STACKS` bodies (the step and the cover, on the
+    world's axes and on a tilted frame, each turned about its axis) written by
+    its writer, read back and imported, their Booleans with a box turned off
+    every axis the kernel's own results', and the world's step cut by its
+    chained ball the kernel's own results' (`tests/stack_leaf_booleans.rs`,
+    11.9 s in release, 13.1 s at `opt-level` 2 with debug assertions, both on
+    a host at load 16 to 21, 316 s in release with debug assertions and
+    overflow checks under the emulated correctly rounded `hypot` at a like
+    load, where the flush leaves' (230 s), two leaves' (173 s), rim leaves'
+    (149 s), plane parts' (65 s) and prism leaves' (32 s) test files pass
+    too). `compare_stack_leaves_boolean.py` 20 matches and 1 reviewed (the
+    captured touching ball's fuse), the kernel within the reference on all 18
+    solid cases, the 3 degenerate refused, no entity count differing; every
+    other comparison of `HANDOFF.md`'s table unchanged with 0 failures; the
+    release suite (717 tests) and the tools' unit tests (402, 3 skipped)
+    passing, the ledger unchanged. Amendments, from the implementation: (a)
+    every leaf of a stack chain stands along its cylinder walls' stored axes
+    (turned over where its cap faces against them, its heights then taken in
+    either order), as S9e.4b.4b.2b.1's prism of one cap does; (b) a meeting of
+    a sphere or a cylinder with a wall, stored over the wall's stored cylinder
+    (`Curve3::Rise`, `Curve3::Meet`), took the model's heights, angle and
+    branch as the stored frame's, which is wrong where that frame's normal
+    runs against the model's axis: its heights are the model's negated about
+    the stored origin, its angle the stored `x` axis's less the model's, and
+    the branch the other one. Found by the `STACKS` stage on a draft (16 of
+    its inputs refused `InvalidTopology`, 15 `vertex_off_curve` and 1
+    `inner_loop_outside`, in the import's cut by the chained stage's partner:
+    14 a stack chain's leaf turned against its walls' axes, which (a) avoids,
+    2 an earlier pair's), and pre-existing: at `5b6a9220` the kernel's own box
+    `[-3k, 3k] x [-2k, 2k]` over `[0, h]` fused with the stadium of half discs
+    of radius `5k / 4` about `(k, k)` and `(5k, k)` over `[h, 2h]` (`k = 1/2`,
+    `h = 3/2`, on the world's frame turned about `z`, its `x` along `8 x + 15
+    y`), written, read back and imported (S9e.4b.4b.2a's pair, the stadium
+    read off its top cap) and cut by a ball of radius 5/4 about `(1/2, 1/4,
+    1/2)` gives `InvalidTopology("vertex_off_curve")` where the kernel's own
+    body's cut evaluates (S9e.4b.4b.2b.2b.1's amendment (b) met it as the
+    `RIMS` stack's): both conversions now map them over
+    (`a_ball_across_walls_read_against_their_axes`). The `boolean` fuzz
+    target's `STACKS` stage (by the input's 20th byte, at or above 128; bit 6
+    the cover): replayed (release, an instrumented build, not committed), 114
+    of the corpus's 1,478 inputs and regressions reach it, every body built
+    and imported, 61 evaluating both ways with one volume (25 steps and 36
+    covers, 22 on the tilted frame), 49 where the import's cut by the turned
+    box is refused by S9's rounding rules (34 a plane within rounding of a
+    cylinder's direction, 15 two cylinders' axes within rounding of parallel:
+    the import's walls on its stored, rounded frames where the kernel's own
+    are exact) and the kernel's own evaluates, 4 refused both ways (2 a
+    tangency, 2 a plane crossing a sphere within the resolution of tangency),
+    none where the kernel's own alone is refused, no volume differing. The
+    measurement's probes again (every result of both targets written, read
+    back and imported): 4 of the 5 stacks of the 21 bodies of several
+    primitives refused at `5b6a9220` import (the two of both caps exposed by a
+    pair of stack leaves, the two hidden lower prisms by a stack leaf with its
+    prism of one cap and its hole), every one of the 1,859 bodies imported
+    before still imported (the 204 of several primitives with their chains), 3
+    refused with the new text, every other refusal as before, none panicking,
+    the slowest import 1.2 s. Replays with debug assertions, one process an
+    input, natively and under the emulated correctly rounded `hypot` (with
+    overflow checks): the boolean corpus and its regressions (1,478 inputs)
+    and the split corpus and its regressions (3,571), no failure, the slowest
+    13.1 s and 2.7 s natively on a host at load 16 to 17 (107 s and 99 s
+    emulated, the emulation's `hypot` exact by big rationals). A trial of the
+    DRAW restore cases the import reaches (every case
+    `tests/<group>/<grid>/<case>` whose script restores a data file by
+    `locate_data_file` and calls `bfuse`, `bcut`, `bcommon`, `bop`, `bopfuse`,
+    `bopcut`, `bopcommon`, `boptuc`, `bbop`, `bapibop`, `bapifuse`, `bapicut`
+    or `bapicommon`: 2,299 cases, 1,470 files, 825 of them in the public
+    dataset, 635 solids, each file imported in a process of its own with the
+    kernel at `5b6a9220` and with this one; not the survey: nothing
+    registered): 8 files move, `CTO904_hkg60156a` (`bcut_complex/N1`'s object,
+    a stack of two prisms, refused as the body's own tangency before)
+    importing with OCCT's volume (2540.4), the other 7 refused with the new
+    text alone (`CTO900_cts20212-part`, `CTO900_ger60039b`,
+    `CTO901_cts20171_base`, `CTO901_cts20204_base`, `CTO901_cts20205-base`,
+    `bug27472_t`, `pro13555b`); their 8 cases on both backends as before
+    (`bcut_complex/N1`, `H2`, `bfuse_complex/G4`, `G5`, `G6` unsupported by
+    the Rust adapter, an argument other than a solid it made, the bodies
+    compounds, and viewer-skipped natively; `bugs/modalg_7/bug27472`
+    unsupported at its restore, a `SurfaceOfRevolution`; `bfuse_complex/D2`
+    unsupported on both; `K9` private data). Open: S9e.4b.4b.2b.2b.3b (the
+    slab across the plate on crossing axes, the rest of S9e.4b.4b.2b's list);
+    the stack whose rectangle's wall runs through the stadium's joint on the
+    shared plane (S9's rules). Pending: its capture's Linux record, its DRAW
+    survey and its campaigns.
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces

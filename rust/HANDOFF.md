@@ -63,7 +63,8 @@ then for the fix of points of two quadratic fields (branch `fix-surds-panic`,
 over `s9c2-kernel` at `8e632f49`),
 then for the DRAW survey of the leaves (branch `s9-draw-16`, over
 `rust-kernel` at `8e632f49`),
-then for S9e.4b.4b.2b.2b.2 (branch `s9e4b4b2b2b2`, over `s9c2-kernel` at `69c526ca`).
+then for S9e.4b.4b.2b.2b.2 (branch `s9e4b4b2b2b2`, over `s9c2-kernel` at `69c526ca`),
+then for S9e.4b.4b.2b.2b.3a (branch `s9e4b4b2b2b3`, over `s9c2-kernel` at `5b6a9220`).
 
 ## Where things stand
 
@@ -646,13 +647,13 @@ then for S9e.4b.4b.2b.2b.2 (branch `s9e4b4b2b2b2`, over `s9c2-kernel` at `69c526
    spline-sphere, spline-cone, imported-polyhedra, imported-arcs,
    imported-pieces, split-pieces, one-sphere, one-sphere-incidence,
    piece-forms, piece-trees, primitive-chains, prism-leaves, plane-parts,
-   polyhedra-curved, deep-trees, two-leaves, rim-leaves and flush-leaves captures (with imported-joints'), and in fact of every Boolean capture
+   polyhedra-curved, deep-trees, two-leaves, rim-leaves, flush-leaves and stack-leaves captures (with imported-joints'), and in fact of every Boolean capture
    but S9a.1's two prisms (`occt-boolean-preimplementation`): CI runs
    only `compare_boolean.py`'s default set, so its
    `source-pinned-brep-results` artifact holds no other set's
    `native-observed.txt` (checked at `d1869f2f`, runs 37438561216 and
    37454728856, and at `64673ebd`, run 37415799498), and none of the
-   other 43 captures (S9e.4b.4c.1's, S9e.4b.4c.2a's, S9e.4b.4b.2b.2a's, S9e.4b.4b.2b.2b.1's and S9e.4b.4b.2b.2b.2's among them) has ever had a
+   other 44 captures (S9e.4b.4c.1's, S9e.4b.4c.2a's, S9e.4b.4b.2b.2a's, S9e.4b.4b.2b.2b.1's, S9e.4b.4b.2b.2b.2's and S9e.4b.4b.2b.2b.3a's among them) has ever had a
    `platform-linux/` record. They stay
    pending until the B-rep job also runs those comparisons (each set's
    compare script on the job's pinned SDK, its output directory added to
@@ -777,11 +778,21 @@ then for S9e.4b.4b.2b.2b.2 (branch `s9e4b4b2b2b2`, over `s9c2-kernel` at `69c526
    completed through or around it (flush walls, pockets open sideways and
    across the rim: 14 of the 35 importing, 11 more of those forms refused by
    S9's rules) is implemented (pending its capture's Linux record, its DRAW
-   survey and its campaigns); next **S9e.4b.4b.2b.2b.3** (leaves touching
-   along a face: 5 stacks with caps on one plane and one on crossing axes,
-   needing a given model of touching caps or exact shared carriers; the rest
-   of S9e.4b.4b.2b's list; 2 overlaps and 2 thin pieces stay refused by S9's
-   rules), then
+   survey and its campaigns); **S9e.4b.4b.2b.2b.3**, split in
+   "S9e.4b.4b.2b.2b.3 refined" by the reach measured again at `5b6a9220` (21
+   bodies of several primitives refused): **S9e.4b.4b.2b.2b.3a** (stacks of
+   two prisms on one frame, their caps on one plane: a pair of leaves found
+   with caps facing apart never on one surface, the second on the first's
+   frame with its caps taken onto the first's heights; a lower prism the
+   upper one hides read as a prism of one cap with its holes; 4 of the 5
+   measured stacks importing, the fifth refused by S9's rules) is implemented
+   (pending its capture's Linux record, its DRAW survey and its campaigns),
+   with a fix of a wall's meeting stored over a cylinder turned against the
+   model's axis (`vertex_off_curve` at `5b6a9220`, the kernel's own stack on
+   the world's axes imported and cut by a ball); next **S9e.4b.4b.2b.2b.3b**
+   (a leaf through another on crossing axes cutting both its caps in two,
+   the one measured body; the rest of S9e.4b.4b.2b's list, no measured body;
+   2 overlaps and 2 thin pieces stay refused by S9's rules), then
    **S9e.4b.4c**, split in "S9e.4b.4c refined": **S9e.4b.4c.1** (an imported
    polyhedron against curved faces or with a cavity) is implemented with its
    DRAW survey (`s9-draw-12` at `44204e18`: no case moving, nothing
@@ -985,6 +996,7 @@ Each comparison takes `--occt-root target/spline-linear-preflight/pinned-sdk/ins
 | `compare_two_leaves_boolean.py` | 18 / 3 (the kernel within the reference on all 18 solid cases, the 3 degenerate refused) |
 | `compare_rim_leaves_boolean.py` | 17 / 1 (the kernel within the reference on all 15 solid cases, the 3 degenerate refused) |
 | `compare_flush_leaves_boolean.py` | 13 / 8 (the kernel within the reference on all 18 solid cases, the 3 degenerate refused) |
+| `compare_stack_leaves_boolean.py` | 20 / 1 (the kernel within the reference on all 18 solid cases, the 3 degenerate refused) |
 
 Every one must report 0 failures; since S9f.1 also `compare_split.py`
 (72 / 56) and `compare_brep.py --family spline` (10 / 3), which share its
