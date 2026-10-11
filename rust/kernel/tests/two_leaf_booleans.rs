@@ -365,7 +365,7 @@ fn prism(b: Boundary, f: Frame3, h0: f64, h1: f64, op: u64) -> Solid {
 /// (its model matched on import), its volume its closed form, its stored
 /// vertices on its boundary, points in its material inside and points
 /// outside it outside; S9e.4b.4b.2a's notch (both caps cut at its rim) is
-/// refused as S9e.4b.4b.2b.2b.2's.
+/// refused as S9e.4b.4b.2b.2b.3's.
 #[test]
 fn imported_bodies_are_their_leaves() {
     use std::f64::consts::PI;
@@ -423,7 +423,7 @@ fn imported_bodies_are_their_leaves() {
         Err(Error::OutOfDomain(m)) => assert_eq!(
             m,
             "an imported body of several primitives with plane faces other than their ends, one or \
-             two prisms', a flat or a pocket (S9e.4b.4b.2b.2b.2)"
+             two prisms', a flat or a pocket (S9e.4b.4b.2b.2b.3)"
         ),
         other => panic!("leaf_notch: {:?}", other.map(|_| ())),
     }

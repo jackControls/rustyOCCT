@@ -329,7 +329,7 @@ fn frame(o: [f64; 3], n: [f64; 3], x: [f64; 3]) -> Frame3 {
 /// its plate and its ring with a well (its model matched on import), its
 /// volume its closed form, its stored vertices on its boundary, points in its
 /// material inside and points outside it outside; S9e.4b.4b.2a's notch (both
-/// caps cut at its rim) is refused as S9e.4b.4b.2b.2b.2's.
+/// caps cut at its rim) is refused as S9e.4b.4b.2b.2b.3's.
 #[test]
 fn imported_bodies_are_their_leaves() {
     use std::f64::consts::PI;
@@ -384,7 +384,7 @@ fn imported_bodies_are_their_leaves() {
         Err(Error::OutOfDomain(m)) => assert_eq!(
             m,
             "an imported body of several primitives with plane faces other than their ends, one or \
-             two prisms', a flat or a pocket (S9e.4b.4b.2b.2b.2)"
+             two prisms', a flat or a pocket (S9e.4b.4b.2b.2b.3)"
         ),
         other => panic!("leaf_notch: {:?}", other.map(|_| ())),
     }

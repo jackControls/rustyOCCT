@@ -47,7 +47,7 @@ plate's top), its walls `y = -2` and `y = 2` cross the plate's arc end at
 `x = 15/2`. (A box fused with a stadium overlapping its top across its
 wall, the box's top cut at its rim, the import takes already as
 S9e.4b.4b.2b.1's prism of one cap trimmed by a flat; two leaves whose caps
-lie on one plane, a stack, are S9e.4b.4b.2b.2b.2's.)
+lie on one plane, a stack, are S9e.4b.4b.2b.2b.3's.)
 
 Cases (each the three operations): `post_rod`, the post and an upright rod
 across the pocket's wall `x = 2`; `rod_post`, an upright rod less the post
