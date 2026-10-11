@@ -11761,7 +11761,22 @@ Decisions for S9, recorded before its code (2026-09-28):
     Boolean, 732 files, 741 solids, each file imported in a process of its own
     within 120 s) it moves no body (one solid of several primitives among
     them, refused as before; five files beyond 120 s before, three of them
-    after, a loaded host's time).
+    after, a loaded host's time). The capture
+    `occt-boolean-flush-leaves-preimplementation`
+    (`compare_flush_leaves_boolean.py`, keyed on the refusal the step removes:
+    `imported.rs`'s `OutOfDomain("an imported body of several primitives with
+    plane faces other than their ends, one or two prisms', a flat or a pocket
+    (S9e.4b.4b.2b.2b.2)")`, whose text the step changes; the kernel's probe
+    `unsupported` on all 21 before the code, every body refused on import: the
+    arms as the body's own tangency (`Degenerate("an imported body of several
+    primitives whose faces are tangent along an edge")`, the diamond's walls
+    read with the plate's), the slot as no chain matching, the open pocket with
+    that text): every result valid, 20 matching (within 2e-8 of the reference:
+    no meeting OCCT approximates), 1 reviewed, in
+    `occt-boolean-flush-leaves-divergences.json`: the touching ball's fuse,
+    which OCCT keeps as two solids touching at a point where the reference's
+    rays count one, their totals the reference's within 6.4e-16.
+    S9e.4b.4b.2b.2b.2's kernel next.
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces

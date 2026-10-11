@@ -1,0 +1,17 @@
+{
+  "note": "Reviewed differences of the S9e.4b.4b.2b.2b.2 capture (occt-boolean-flush-leaves-preimplementation): each fingerprinted by its native row; the touching ball's fuse OCCT keeps as two solids.",
+  "reviews": [
+    {
+      "case": "slot_touch_fuse",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "fcabf81c760ba7060730b143518ab7f10a8c01da22164bc1ab5b8ef18195396a",
+      "differences": [
+        "solids"
+      ],
+      "reason": "BRepAlgoAPI's result is valid; the slot (a stadium plate less a disc with a round hole within its heights across its arc end) fused with a ball of radius 1 resting on the plate's top cap at a point (the declared degenerate group, the kernel refusing it as a tangency between the inputs): OCCT keeps the ball (volume 4 pi / 3) and the slot as two solids touching at that point, where the reference's rays count their union one; the two solids' volumes and areas sum to the reference's totals within 6.4e-16 relative (the slot alone its closed form, 78 + 13 pi / 2 - 2 sqrt 5 + 9 asin(sqrt 5 / 3)).",
+      "independent_evidence": "chained_curved_boolean_reference.py's rows on the constructions OCCT was given (generate_flush_leaves_boolean_fixtures.py --check, identical under Python 3.9 and 3.12) agree two ways (each face swept by two independent families of curves) within 9.9e-32, every solid's measures from its faces within 9.0e-36 of its closed form, each body's within 4.6e-33 of its own (the arms, the slot 78 + 13 pi / 2 - 2 sqrt 5 + 9 asin(sqrt 5 / 3) and the open pocket 51 + 8 pi + 3 sqrt 3 / 2, each section times its stored axes' determinant), the pair identities within 4.8e-42, and Monte Carlo within 2.8 standard errors; its solid counts are the declared ones by rays at two resolutions; every stored vertex of the imported files lies on its construction's surfaces.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    }
+  ]
+}
