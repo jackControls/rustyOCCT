@@ -2299,6 +2299,84 @@ Boolean case 4.4 seconds (`bopfuse_simple/ZK8`), the restore cases 0.13
 to 4.7 (`bcommon_complex/B9`), E5, G9 and `bug417` 2.4, 1.2 and 1.2, the
 rollex 0.6.
 
+**The nested leaves and the speed-ups: the Boolean group and the restore
+cases.** Both sets were run again after the fix of the boolean fuzz
+target's covered stack (`fix-oom-d737f94d`: each chain an imported body is
+read as built once, `same_chain`; the near-miss rules' binary64 work,
+`curve64`, a lazy `bracketed`, `Quad::clearly_off`, `lines_apart` and
+`gap_within` before the points' places), a pocket with pockets of its own
+in a body of several primitives (S9e.4b.4c.2b.1, `nested_pocket`, its
+refusal text gaining "its pockets nested at most three deep") and the fix
+of CI's slow inputs (`fix-ci-slow-inputs`: `Interval::mul` by the ends'
+signs, `pieces.rs`'s `INNER`) were merged (2026-10-11, at `cc7af85c`, the
+public dataset, 120 seconds a case, four at once, on a host at load 3 to
+17). No case moves. The 1,802 self-contained cases on both backends: every
+status, reason and error is the last survey's (`f0bebb1c`, `s9-draw-17`)
+field for field, 987 evaluating, every one registered, 592 refused, 223
+unsupported on both; none fails or times out. The 1,814 restore cases on
+the Rust adapter (914 unsupported, 561 needing private data, 276 `failed`
+by the reader's validator, 59 evaluating, 4 timing out at their first
+restores as before): every status, reason and error is the last survey's.
+No reason of either set carries the refusal text S9e.4b.4c.2b.1 extends,
+before or now, so its new key moves none. Of the 171 the import reaches,
+both backends are as before field for field (59 evaluating on both; native
+DRAW does not evaluate 24). The 16 cases loading the dataset's version-3
+texts, on both backends and on the Rust adapter with `f0bebb1c`'s worker:
+every field as at the last survey.
+
+An instrumented build of the debug worker (not committed: a line written
+the first time a case takes each path, counters written after each
+command; each chain an import of a body of several primitives reads,
+skips as read before or builds, with its outcome; components of plane
+faces of both kinds, read as a pocket with pockets of its own or refused,
+`nested_pocket`'s depths and refusals and the `NESTED_CHAINS` limit; the
+extrema `Quad::clearly_off` passes over, each run through `edge_face`'s own
+gap test, and the pairs of lines `lines_apart` passes over, each through
+`gap_within` at its exact closest points; the gap prefilter; `bracketed`'s
+calls and speeds; `INNER`'s hits; `Interval::mul`'s sign branches) over the
+1,802 and the 1,814, its statuses and reasons those of the runs above: the
+5 restore cases importing a body of several primitives import as before
+(`bfuse_complex/E5`, `bcut_complex/G9`, `bugs/modalg_2/bug417` and
+`bugs/modalg_6/bug28773` by their primitives' chain, `bfuse_complex/K1` by
+one leaf), each body building one model, none read twice, none holding a
+component of both kinds, so no case reaches a nested pocket, a
+`same_chain` skip or the limit; `INNER` is consulted by `bug28773` alone
+(one hit, four builds). `Quad::clearly_off` passes over 13,960 of 17,006
+extrema in 359 cases (8,268 on planes, 5,692 on cylinders) and
+`lines_apart` 216 of 565 pairs of lines in 25 restore cases, none of which
+the exact tests would have taken; the prefilter drops 524 pairs and keeps
+4,634; 6,998 of `bracketed`'s 10,178 calls find no near miss and no speed.
+`Interval::mul`'s 381,111 products have both intervals straddling zero in
+6, all in `bugs/modalg_1/bug12918`'s restore (`failed` by the validator as
+before). Controls on the instrumented worker took the new paths: the
+evidence's `nested_island.brep` and `nested_post.brep` import by a chain
+reading a pocket with pockets of its own (three and two deep), refused as
+the body's tangency by `f0bebb1c`'s worker; the fuzz regression's covered
+stack imports by its stack's chain with two chains skipped as read before
+and two inner Booleans kept, its volume `f0bebb1c`'s (6.9 against 16.0
+seconds); the flush, stack and near-miss controls of the last survey as
+on `f0bebb1c`'s worker. No case fails, crashes or panics on either
+backend. The Rust adapter's CPU time (user and system, by `wait4`), each
+case's runs with this worker and `f0bebb1c`'s queued together at load 5 to
+12: the 1,802 685.0 against 709.3 seconds, the 1,810 restore cases ending
+within the limit 753.0 against 778.6, in all 1,438.0 against 1,487.9 (3.4
+% less); of the 123 cases over 2 seconds on `f0bebb1c` 11 take 10 % less
+and none 10 % more (`bug12918` 16.5 to 6.7, E5 3.9 to 3.2,
+`bopcut_simple/ZK8` 6.0 to 5.2). The last survey recorded wall times
+alone, at another load, so it gives no comparison.
+
+The volume audit (both backends, the 1,046 audited before): both
+backends' values are the last audit's bit for bit on all 1,046 (no value
+moves, the largest relative move 0), the statuses the same, and the same
+35 disagreements remain. No case newly evaluates, so none is registered
+(1,132 cases); the ledger does not change. A full contract run of the
+manifest (both backends, 30 seconds a case, an absolute output
+directory, on a host at load 4 to 5) holds for every case (Rust: 18
+pass, 1,050 viewer-skipped, 53 unsupported, 11 private data), the slowest
+Boolean case 3.2 seconds (`bcommon_complex/B9`), the self-contained ones
+at most 2.9 (`boptuc_simple/ZK8`), the restore cases 0.13 to 3.2, E5, G9
+and `bug417` 2.1, 1.3 and 1.2, the rollex 0.4.
+
 Three more `intss` cases run on the Rust adapter but are not registered,
 because the contract admits no failing status: `bug23178`, `bug28222_2` and
 `bug28222_3` count the pieces IntPatch splits its walking lines into (6, 4

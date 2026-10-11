@@ -70,7 +70,9 @@ then for S9e.4b.4b.2b.2b.3a (branch `s9e4b4b2b2b3`, over `s9c2-kernel` at `5b6a9
 then for the DRAW survey of the flush leaves, the stacks and the near-miss
 residue (branch `s9-draw-17`, over `rust-kernel` at `f0bebb1c`),
 then for S9e.4b.4c.2b's refined decisions and S9e.4b.4c.2b.1 (branch `s9e4b4c2b`, over
-`s9c2-kernel` at `f0bebb1c`).
+`s9c2-kernel` at `f0bebb1c`),
+then for the DRAW survey of the nested leaves and the speed-ups (branch
+`s9-draw-18`, over `rust-kernel` at `cc7af85c`).
 
 ## Where things stand
 
@@ -87,12 +89,11 @@ then for S9e.4b.4c.2b's refined decisions and S9e.4b.4c.2b.1 (branch `s9e4b4c2b`
   arcs, and one solid of a result of several (S9e.2, `curved/matched.rs`),
   results of spheres, cones and tori, deeper chains and given results
   against spheres, cones and tori (S9e.3a, `curved/chain.rs`), each with its
-  DRAW survey (the last full survey, that of the flush leaves, the stacks
-  and the near-miss residue at `f0bebb1c`, branch `s9-draw-17`: the Boolean
-  group's 987 cases and 59 restore cases registered, none failing, no case
-  moving against `8e632f49`'s survey but the version-3 cases as their trial
-  recorded and four slow restores no longer timing out, both backends'
-  audited values `8e632f49`'s bit for bit) and a clean campaign (S9e.3a's and S9f.1's at `b2765f20`, 989
+  DRAW survey (the last full survey, that of the nested leaves and the
+  speed-ups at `cc7af85c`, branch `s9-draw-18`: the Boolean group's 987
+  cases and 59 restore cases registered, none failing, no case moving
+  against `f0bebb1c`'s survey, both backends' audited values `f0bebb1c`'s
+  bit for bit, the Rust adapter's CPU time 3.4 % less) and a clean campaign (S9e.3a's and S9f.1's at `b2765f20`, 989
   runs).
 - **S9f.1 done.** Spline prisms against polyhedral prisms in any position
   (`curved/spline_walls.rs`), with its survey and campaign as above.
@@ -712,7 +713,13 @@ then for S9e.4b.4c.2b's refined decisions and S9e.4b.4c.2b.1 (branch `s9e4b4c2b`
    but the 16 version-3 cases as their trial recorded, none trying a flush
    or stack chain or reaching `line_point`'s new branches, the residue's
    402 pairs as its trial found, no audited value moving, nothing
-   registered).
+   registered), that of the nested leaves and the speed-ups at `cc7af85c`
+   (branch `s9-draw-18`: S9e.4b.4c.2b.1, `fix-oom-d737f94d` and
+   `fix-ci-slow-inputs`; no case moving, no reason carrying the refusal
+   text S9e.4b.4c.2b.1 extends, none reaching a nested pocket or a
+   `same_chain` skip, `INNER` hit once, the binary64 skips passing over no
+   near miss, no audited value moving, the Rust adapter's CPU time 1,438 s
+   against `f0bebb1c`'s 1,488 s, nothing registered).
 3. **S9e.4b**, split in "S9e.4b refined": S9e.4b.1 (arcs rounded off
    their circles) and S9e.4b.2 (polyhedra other than prisms, on their
    stored vertices) are implemented with their DRAW surveys and
@@ -835,8 +842,9 @@ then for S9e.4b.4c.2b's refined decisions and S9e.4b.4c.2b.1 (branch `s9e4b4c2b`
    chain's axes, three deep; any refusal of such a chain the one it gave
    before, so every import and every refusal text but the new key's
    unchanged: the measurement again moving no body, the DRAW trial no case)
-   is implemented (pending its capture's Linux record, its DRAW survey and
-   its campaigns); next **S9e.4b.4c.2b.2** (chains no model matches: the
+   is implemented with its DRAW survey (`s9-draw-18` at `cc7af85c`: no
+   case moving, none reaching a nested pocket, nothing registered; pending
+   its capture's Linux record and its campaigns); next **S9e.4b.4c.2b.2** (chains no model matches: the
    inside-first order as a later choice, `OCC14536-sh1`'s dimpled rod; two
    cylinders on parallel axes sharing a cap, a slotted flange and a block
    after a diagnosis; turned profiles of cones and cylinders with S9e.4b.4d;
