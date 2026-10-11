@@ -82,7 +82,11 @@ the plate's arc: `solid/imported.rs`'s `flush_parts`), and
 S9e.4b.4b.2b.2b.3a's stacks of two prisms whose caps touch on one plane (a
 box under a stadium across its corner, a stadium plate under a box across
 its arc end, a holed square under a holed stadium hiding its top:
-`solid/imported.rs`'s `stack_leaves`).
+`solid/imported.rs`'s `stack_leaves`), and in any of those chains
+S9e.4b.4c.2b.1's pockets holding pockets of their own (a stadium plate less a
+square with a square hole, a post standing in the pocket, or with a U-shaped
+hole, a U island whose notch is a pocket of its own: `solid/imported.rs`'s
+`nested_pocket`).
 
 ## Contract
 
@@ -1520,7 +1524,19 @@ A meeting of a sphere or a cylinder with a wall stored over a cylinder
 whose stored axis runs against the model's (`Curve3::Meet`, `Curve3::Rise`:
 an imported leaf read off its cap facing against its walls' axes) takes the
 model's angles, heights and branch over (refused `vertex_off_curve` before).
-A body's
+S9e.4b.4c.2b.1: in every chain, a component of the other plane faces of both
+kinds whose edges with the chain's parts are convex alone (its rims) or
+concave alone with primitives (its teeth) is a pocket with pockets of its
+own (`nested_pocket`, S9e.4b.4c.2a's `pocket` on the chain's axes: its hull
+the planes of its faces leaving their boundary points on its void's side,
+each component of its other faces a pocket of its own turned over again, at
+most three deep and eight such Booleans a chain); a component concave within
+itself is read as before, and any refusal of a chain reading one so is the
+one that chain gave before (the component's), so every body that imported
+keeps its chain and every refusal its text; once four chains of one body
+reading one so have had their models refused (`NESTED_CHAINS`: a body on a
+frame turned off the world's `z`, its pocket walls within rounding of its
+cylinders' direction), the later chains refuse such a component as before. A body's
 own faces tangent along an edge other than a prism's walls' joints (two
 walls along one axis tangent along a line along it; two faces of one stored
 surface, a face OCCT split at its seam, none) are `Degenerate("an imported
@@ -1528,10 +1544,12 @@ body of several primitives whose faces are tangent along an edge")`; plane
 faces other than
 the primitives' ends, one or two prisms', a flat's or a pocket's
 `OutOfDomain("an imported body of several primitives with plane faces other
-than their ends, one or two prisms', a flat or a pocket (S9e.4b.4b.2b.2b.3b)")`
-(a leaf through another on crossing axes cutting its caps in two; a hull
-across several parts, a polyhedral boss, a prism cut at both caps' rims, a
-component of both kinds, three leaves);
+than their ends, one or two prisms', a flat or a pocket, its pockets nested
+at most three deep (S9e.4b.4b.2b.2b.3b)")` (a leaf through another on
+crossing axes cutting its caps in two; a hull across several parts, a
+polyhedral boss, a prism cut at both caps' rims, a component of both kinds
+other than a pocket with pockets of its own, three leaves; S9e.4b.4c.2b.2: a
+flat with pockets of its own, a nested pocket holding a primitive);
 faces of one
 surface on different sides, a widest primitive whose material lies outside
 it, a primitive meeting the earlier ones along both kinds of edge and a
@@ -1548,12 +1566,16 @@ eight Booleans: `OutOfDomain`, S9e.4b.4; a tree's planes along a turned
 primitive's axis within rounding of it, S9's `Degenerate`); a piece whose planes pass through its cone's
 apex (`Degenerate`, S9's rule: `shading_132`); a body of several
 primitives with plane faces other than their ends, one or two prisms', a
-flat's or a pocket's (`OutOfDomain`, S9e.4b.4b.2b.2b.3b: a leaf through
-another on crossing axes cutting its caps in two, a hull across several
-parts, a polyhedral boss, a prism cut at both caps' rims, a mixed
-component, three leaves) or no
+flat's or a pocket's, its pockets nested at most three deep (`OutOfDomain`,
+S9e.4b.4b.2b.2b.3b: a leaf through another on crossing axes cutting its caps
+in two, a hull across several parts, a polyhedral boss, a prism cut at both
+caps' rims, a mixed component other than a nested pocket, three leaves;
+S9e.4b.4c.2b.2: a flat with pockets of its own, a nested pocket holding a
+primitive) or no
 Boolean chain of them
-(`OutOfDomain`, S9e.4b.4c); a pocket's walls along a turned leaf's axis
+(`OutOfDomain`, S9e.4b.4c; S9e.4b.4c.2b.2: a widest primitive cut from the
+chain, the inside-first order a later choice, two cylinders on parallel axes
+sharing a cap, turned profiles of cones and cylinders at corners); a pocket's walls along a turned leaf's axis
 within rounding of it (S9's `Degenerate`); a
 torus's v-segment or wedge and every other body of curved faces, a torus
 among several among them (`OutOfDomain`, S9e.4b: a general body on its
@@ -4195,6 +4217,40 @@ multiple root; and the engine's rules.
   stored over a cylinder turned against the model's axis) the kernel's own
   results'. `compare_stack_leaves_boolean.py`: 20 matches and 1 reviewed
   (the touching ball's fuse).
+* **S9e.4b.4c.2b.1 evidence (pockets holding pockets of their own in a body
+  of several primitives), before its kernel code.** Two bodies OCCT wrote,
+  each a stadium plate less a square with a hole from inside it past its top
+  on a frame turned about the world's `z` (a post standing in a square
+  pocket, two deep; a U island whose notch is a pocket of its own, three
+  deep), under `rust/fixtures/imported/nested_*.brep`.
+  `generate_nested_leaves_boolean_fixtures.py --check` writes
+  `boolean-nested-leaves-cases.txt`, `-expected.tsv`, `-frames.tsv` and
+  `-bodies.txt`: 21 cases (7 groups; 18 solid, 3 degenerate: a ball resting
+  on the post's top) against upright rods (across the post's corner, the
+  island's arm and notch, the pocket's wall), the post the tool, the island
+  and S9e.4a's imported cylinder and the post's chain, from S9e.3a's chained
+  reference on the constructions OCCT was given (two families 1.2e-35, each
+  body's closed form 5.4e-37, Monte Carlo 2.4 standard errors), every stored
+  vertex on its construction. `compare_nested_leaves_boolean.py` reproduces
+  `occt-boolean-nested-leaves-preimplementation` (keyed on `imported.rs`'s
+  refusal of plane faces other than the primitives' ends, one or two
+  prisms', a flat or a pocket as S9e.4b.4b.2b.2b.3a's, the probe refusing
+  all 21 on import before the step, both bodies as their own tangency):
+  every result valid, 20 match, 1 reviewed (the touching ball's fuse two
+  solids).
+* **Kernel (S9e.4b.4c.2b.1).** `tests/nested_leaf_booleans.rs`: all 21
+  fixtures as the reference (18 within the kernel's enclosures, each at most
+  `1e-9` wide; the touching ball `Degenerate`), every history complete over
+  the imported bodies' stored ids, results deterministic and moved rigidly,
+  moved inputs keeping the reference's volumes, every body its plate with
+  its nested pockets, S9e.4b.4b.2a's notch refused with the new text, the
+  fuzz target's `NESTED_LEAVES` bodies on the world's axes and on a frame
+  turned about its `z` and the kernel's own two leaves less a square with a
+  square hole written, read back and imported (their Booleans with a box
+  turned off every axis the kernel's own results'), the tilted frame's and a
+  pocket four deep refused as before. `compare_nested_leaves_boolean.py`:
+  19 matches and 2 reviewed (the touching ball's fuse; the imported
+  cylinder's seam OCCT's fuse keeps).
 * **Fuzzing.** The `boolean` target (`FUZZING.md`): the split target's line
   and arc profiles, the tool offset exactly in the axis-aligned frame or
   sharing the tilted one's origin, heights equal, spanning, overlapping,
@@ -4246,7 +4302,14 @@ multiple root; and the engine's rules.
   touching along their caps) or a square with a round hole under a stadium
   with a round hole hiding its top, on the object's frame turned about its
   axis, written, read back and imported, each cut by the chained stage's
-  partner, one volume (`STACKS`, by the input's 20th byte).
+  partner, one volume (`STACKS`, by the input's 20th byte); S9e.4b.4c.2b.1:
+  the kernel's own stadium plate less a square with a square hole (a post
+  standing in a pocket) or with a U-shaped hole (a U island, its notch a
+  pocket of its own) from inside it past its top, on the object's frame
+  turned about its axis, written, read back and imported, each cut by the
+  chained stage's partner, one volume (`NESTED_LEAVES`, by the input's 21st
+  byte, in the axis-aligned frames alone: on the tilted frame the import
+  refuses such a body as before the step).
 
 ## DRAW commands
 

@@ -1,0 +1,147 @@
+case island_cyl_fuse
+brep imported/nested_island.brep
+boolean fuse
+brep imported/cyl.brep
+end
+case island_cyl_cut
+brep imported/nested_island.brep
+boolean cut
+brep imported/cyl.brep
+end
+case island_cyl_common
+brep imported/nested_island.brep
+boolean common
+brep imported/cyl.brep
+end
+case chain_post_fuse
+brep imported/nested_post.brep
+boolean cut
+plane 1.0 0.5 -0.75 0.0 0.0 1.0 0.47058823529411764 0.8823529411764706 -0.0
+wire C 3.852941176470588 6.911764705882352 -0.75 0.75
+prism 0.0 0.0 5.0
+then fuse
+plane 1.0 0.5 2.25 0.0 0.0 1.0 0.47058823529411764 0.8823529411764706 -0.0
+wire P 4 4.220588235294118 3.8823529411764706 2.25 5.161764705882353 5.647058823529412 2.25 2.514705882352941 7.0588235294117645 2.25 1.573529411764706 5.294117647058823 2.25
+prism 0.0 0.0 1.5
+end
+case chain_post_cut
+brep imported/nested_post.brep
+boolean cut
+plane 1.0 0.5 -0.75 0.0 0.0 1.0 0.47058823529411764 0.8823529411764706 -0.0
+wire C 3.852941176470588 6.911764705882352 -0.75 0.75
+prism 0.0 0.0 5.0
+then cut
+plane 1.0 0.5 2.25 0.0 0.0 1.0 0.47058823529411764 0.8823529411764706 -0.0
+wire P 4 4.220588235294118 3.8823529411764706 2.25 5.161764705882353 5.647058823529412 2.25 2.514705882352941 7.0588235294117645 2.25 1.573529411764706 5.294117647058823 2.25
+prism 0.0 0.0 1.5
+end
+case chain_post_common
+brep imported/nested_post.brep
+boolean cut
+plane 1.0 0.5 -0.75 0.0 0.0 1.0 0.47058823529411764 0.8823529411764706 -0.0
+wire C 3.852941176470588 6.911764705882352 -0.75 0.75
+prism 0.0 0.0 5.0
+then common
+plane 1.0 0.5 2.25 0.0 0.0 1.0 0.47058823529411764 0.8823529411764706 -0.0
+wire P 4 4.220588235294118 3.8823529411764706 2.25 5.161764705882353 5.647058823529412 2.25 2.514705882352941 7.0588235294117645 2.25 1.573529411764706 5.294117647058823 2.25
+prism 0.0 0.0 1.5
+end
+case island_rod_fuse
+brep imported/nested_island.brep
+boolean fuse
+plane 3.3 3.885 -0.375 0.0 0.0 1.0 0.9230769230769231 0.38461538461538464 -0.0
+wire C 6.242307692307692 5.923461538461539 -0.375 0.5
+prism 0.0 0.0 5.0
+end
+case island_rod_cut
+brep imported/nested_island.brep
+boolean cut
+plane 3.3 3.885 -0.375 0.0 0.0 1.0 0.9230769230769231 0.38461538461538464 -0.0
+wire C 6.242307692307692 5.923461538461539 -0.375 0.5
+prism 0.0 0.0 5.0
+end
+case island_rod_common
+brep imported/nested_island.brep
+boolean common
+plane 3.3 3.885 -0.375 0.0 0.0 1.0 0.9230769230769231 0.38461538461538464 -0.0
+wire C 6.242307692307692 5.923461538461539 -0.375 0.5
+prism 0.0 0.0 5.0
+end
+case island_wall_fuse
+brep imported/nested_island.brep
+boolean fuse
+plane 3.3 3.885 -0.375 0.0 0.0 1.0 0.9230769230769231 0.38461538461538464 -0.0
+wire C 8.74230769230769 4.798461538461538 -0.375 0.5
+prism 0.0 0.0 5.0
+end
+case island_wall_cut
+brep imported/nested_island.brep
+boolean cut
+plane 3.3 3.885 -0.375 0.0 0.0 1.0 0.9230769230769231 0.38461538461538464 -0.0
+wire C 8.74230769230769 4.798461538461538 -0.375 0.5
+prism 0.0 0.0 5.0
+end
+case island_wall_common
+brep imported/nested_island.brep
+boolean common
+plane 3.3 3.885 -0.375 0.0 0.0 1.0 0.9230769230769231 0.38461538461538464 -0.0
+wire C 8.74230769230769 4.798461538461538 -0.375 0.5
+prism 0.0 0.0 5.0
+end
+case post_rod_fuse
+brep imported/nested_post.brep
+boolean fuse
+plane 1.0 0.5 -0.75 0.0 0.0 1.0 0.47058823529411764 0.8823529411764706 -0.0
+wire C 2.338235294117647 4.602941176470588 -0.75 0.5
+prism 0.0 0.0 5.0
+end
+case post_rod_cut
+brep imported/nested_post.brep
+boolean cut
+plane 1.0 0.5 -0.75 0.0 0.0 1.0 0.47058823529411764 0.8823529411764706 -0.0
+wire C 2.338235294117647 4.602941176470588 -0.75 0.5
+prism 0.0 0.0 5.0
+end
+case post_rod_common
+brep imported/nested_post.brep
+boolean common
+plane 1.0 0.5 -0.75 0.0 0.0 1.0 0.47058823529411764 0.8823529411764706 -0.0
+wire C 2.338235294117647 4.602941176470588 -0.75 0.5
+prism 0.0 0.0 5.0
+end
+case rod_post_fuse
+plane 1.0 0.5 -0.75 0.0 0.0 1.0 0.47058823529411764 0.8823529411764706 -0.0
+wire C 2.191176470588235 3.264705882352941 -0.75 1.5
+prism 0.0 0.0 5.0
+boolean fuse
+brep imported/nested_post.brep
+end
+case rod_post_cut
+plane 1.0 0.5 -0.75 0.0 0.0 1.0 0.47058823529411764 0.8823529411764706 -0.0
+wire C 2.191176470588235 3.264705882352941 -0.75 1.5
+prism 0.0 0.0 5.0
+boolean cut
+brep imported/nested_post.brep
+end
+case rod_post_common
+plane 1.0 0.5 -0.75 0.0 0.0 1.0 0.47058823529411764 0.8823529411764706 -0.0
+wire C 2.191176470588235 3.264705882352941 -0.75 1.5
+prism 0.0 0.0 5.0
+boolean common
+brep imported/nested_post.brep
+end
+case post_touch_fuse
+brep imported/nested_post.brep
+boolean fuse
+sphere 2.411764705882353 3.1470588235294117 4.25 0.0 0.0 1.0 1.0 0.0 0.0 1.0 -1.5707963267948966 1.5707963267948966
+end
+case post_touch_cut
+brep imported/nested_post.brep
+boolean cut
+sphere 2.411764705882353 3.1470588235294117 4.25 0.0 0.0 1.0 1.0 0.0 0.0 1.0 -1.5707963267948966 1.5707963267948966
+end
+case post_touch_common
+brep imported/nested_post.brep
+boolean common
+sphere 2.411764705882353 3.1470588235294117 4.25 0.0 0.0 1.0 1.0 0.0 0.0 1.0 -1.5707963267948966 1.5707963267948966
+end

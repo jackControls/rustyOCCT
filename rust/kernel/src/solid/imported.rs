@@ -66,8 +66,12 @@
 //! plane faces facing apart never on one surface): each pair of leaves, the
 //! second on the first's frame with its caps taken onto the first's heights
 //! (`Levels`: the caps on one plane exactly), and each leaf with the prisms of
-//! one cap read with their holes (a lower prism the upper one hides). Every
-//! other body is S9e.4b's.
+//! one cap read with their holes (a lower prism the upper one hides).
+//! S9e.4b.4c.2b.1: in any of those chains, a component of the other plane
+//! faces of both kinds is a pocket with pockets of its own (`nested_pocket`:
+//! a post or an island standing in it, S9e.4b.4c.2a's `pocket` on the
+//! chain's axes, nested at most three deep), any refusal of such a chain the
+//! one its chain gave before. Every other body is S9e.4b's.
 use super::{replayable, Construction, Context, Solid};
 use crate::history::{History, Relation};
 use crate::identity::{
@@ -140,6 +144,10 @@ pub(crate) struct Piece {
     /// whose fused leaves' boundaries a point may lie on with the body's
     /// material all round it (`Tree::rank`'s probes).
     pub(crate) stack: bool,
+    /// S9e.4b.4c.2b.1: a chain reading a component of the other plane faces
+    /// of both kinds as a pocket with pockets of its own (any refusal of
+    /// such a chain is one the body is not).
+    pub(crate) nested: bool,
 }
 
 /// S9e.4b.3c.3b: a Boolean tree of a plane piece's primitive and convex
@@ -441,8 +449,11 @@ impl Solid {
     /// S9e.4b.4b.2b.2a: then each pair of leaves', alone and with them;
     /// S9e.4b.4b.2b.2b.1: then each leaf's and each pair's again over the
     /// leaves cut at their rim too; S9e.4b.4b.2b.2b.2: then each leaf's with
-    /// the parts flush with its walls; S9e.4b.4b.2b.2b.3a: then each stack's;
-    /// the first whose model matches the stored topology, else the first
+    /// the parts flush with its walls; S9e.4b.4b.2b.2b.3a: then each stack's
+    /// (S9e.4b.4c.2b.1: in each, a component of the other plane faces of both
+    /// kinds a pocket with pockets of its own, any refusal of such a chain the
+    /// one it gave before); the first whose model matches the stored topology,
+    /// else the first
     /// refusal an earlier chain's Booleans give, else the body's own tangency,
     /// else S9e.4b.4b.2b.2b.3b's.
     fn imported_primitives(
@@ -459,8 +470,13 @@ impl Solid {
         // below ignore as much or more as the choices rise), so the outcome
         // is the same without it.
         let tried: RefCell<Vec<Piece>> = RefCell::new(Vec::new());
+        // S9e.4b.4c.2b.1: the chains reading a pocket with pockets of its own
+        // whose models were refused so far (at `NESTED_CHAINS`, the later
+        // chains refuse such a component as before).
+        let refused = std::cell::Cell::new(0);
         let attempt = |choice: u32| -> Option<Result<(Self, History)>> {
-            let p = match primitives_piece(&topology, resolution, op, choice) {
+            let nesting = refused.get() < NESTED_CHAINS;
+            let p = match primitives_piece_with(&topology, resolution, op, choice, nesting) {
                 Ok(p) => p,
                 Err(e) => return Some(Err(e)),
             };
@@ -470,13 +486,28 @@ impl Solid {
             tried.borrow_mut().push(p.clone());
             #[cfg(test)]
             CHAIN_MODELS.with(|c| c.set(c.get() + 1));
-            Some(Self::imported_as(
-                context,
-                topology.clone(),
-                resolution,
-                Recognized::Piece(Box::new(p)),
-                BTreeMap::new(),
-            ))
+            // S9e.4b.4c.2b.1: any refusal of a chain reading a pocket with
+            // pockets of its own is one the body is not: the refusal its
+            // chain gave before (that component's), as S9e.4b.4b.2b.2b.1's
+            // rim chains keep the body's.
+            let nested = p.nested;
+            Some(
+                Self::imported_as(
+                    context,
+                    topology.clone(),
+                    resolution,
+                    Recognized::Piece(Box::new(p)),
+                    BTreeMap::new(),
+                )
+                .map_err(|e| {
+                    if nested {
+                        refused.set(refused.get() + 1);
+                        not_their_faces()
+                    } else {
+                        e
+                    }
+                }),
+            )
         };
         let alone = match attempt(0).unwrap_or_else(|| Err(not_their_faces())) {
             Err(e) if e == not_their_faces() || e == tangent_body() => e,
@@ -1964,6 +1995,7 @@ fn piece(
         choice: 0,
         chain: false,
         stack: false,
+        nested: false,
     })
 }
 
@@ -2615,6 +2647,7 @@ fn tree_piece(
         choice,
         chain: false,
         stack: false,
+        nested: false,
     };
     Ok((piece, choices))
 }
@@ -2818,11 +2851,14 @@ fn primitive_over(
 /// cap, a flat's or a pocket's; S9e.4b.4b.2b.2a: nor two leaves';
 /// S9e.4b.4b.2b.2b.1: nor leaves' cut at their rim; S9e.4b.4b.2b.2b.2: nor
 /// parts flush with a leaf's walls; S9e.4b.4b.2b.2b.3a: nor a stack's
-/// (S9e.4b.4b.2b.2b.3b).
+/// (S9e.4b.4b.2b.2b.3b); S9e.4b.4c.2b.1: nor a pocket's with its pockets
+/// nested at most three deep (S9e.4b.4c.2b.2: a flat with pockets of its own,
+/// a nested pocket holding a primitive).
 fn not_their_faces() -> Error {
     Error::OutOfDomain(
         "an imported body of several primitives with plane faces other than their ends, one or \
-         two prisms', a flat or a pocket (S9e.4b.4b.2b.2b.3b)",
+         two prisms', a flat or a pocket, its pockets nested at most three deep \
+         (S9e.4b.4b.2b.2b.3b)",
     )
 }
 
@@ -3396,6 +3432,25 @@ fn primitives_piece(
     op: OperationId,
     choice: u32,
 ) -> Result<Piece> {
+    primitives_piece_with(t, tolerance, op, choice, true)
+}
+
+/// S9e.4b.4c.2b.1: the most chains of one body reading a pocket with pockets
+/// of its own whose models are refused before the later chains refuse such a
+/// component as before (each such refusal arranges the chain's Booleans: a
+/// body on a frame turned off the world's `z`, its pocket walls within
+/// rounding of its cylinders' direction, tried every chain so).
+const NESTED_CHAINS: usize = 4;
+
+/// [`primitives_piece`], a component of the other plane faces of both kinds
+/// read as a pocket with pockets of its own only where `nesting`.
+fn primitives_piece_with(
+    t: &Topology,
+    tolerance: Tolerance,
+    op: OperationId,
+    choice: u32,
+    nesting: bool,
+) -> Result<Piece> {
     let all = leaves(t, tolerance);
     let count = all.len() + 1;
     let c = choice as usize;
@@ -3440,6 +3495,7 @@ fn primitives_piece(
                     true,
                     false,
                     true,
+                    nesting,
                 )?;
                 piece.choice = choice;
                 return Ok(piece);
@@ -3467,6 +3523,7 @@ fn primitives_piece(
                 true,
                 true,
                 false,
+                nesting,
             )?;
             piece.choice = choice;
             return Ok(piece);
@@ -3493,6 +3550,7 @@ fn primitives_piece(
             true,
             false,
             false,
+            nesting,
         )?;
         piece.choice = choice;
         return Ok(piece);
@@ -3521,6 +3579,7 @@ fn primitives_piece(
         false,
         false,
         false,
+        nesting,
     )?;
     piece.choice = choice;
     Ok(piece)
@@ -3582,6 +3641,7 @@ fn same_chain(a: &Piece, b: &Piece) -> bool {
         choice: _,
         chain,
         stack,
+        nested,
     } = a;
     *primitive == b.primitive
         && *others == b.others
@@ -3590,6 +3650,7 @@ fn same_chain(a: &Piece, b: &Piece) -> bool {
         && *tree == b.tree
         && *chain == b.chain
         && *stack == b.stack
+        && *nested == b.nested
 }
 
 /// S9e.4b.4b.2b.1: the prisms of one cap a body holds besides its leaves
@@ -3737,7 +3798,12 @@ fn plane_along(t: &Topology, i: usize, over: bool, axes: &[Frame3]) -> Result<(F
 /// its caps taken onto the first's heights (`Levels`), the prisms of one cap
 /// read with their holes (`bosses`' `holed`), and the body classified with
 /// probes off both leaves' boundaries (`Piece::stack`).
-#[allow(clippy::too_many_lines, clippy::too_many_arguments)]
+/// S9e.4b.4c.2b.1: a component of the other plane faces of both kinds whose
+/// edges with the parts are convex alone (its rims) or concave alone with
+/// primitives (its teeth) a pocket with pockets of its own (`nested_pocket`);
+/// any refusal of a chain reading one so is the one its chain gave before,
+/// that component's (`not_their_faces`).
+#[allow(clippy::too_many_arguments)]
 fn chain_piece(
     t: &Topology,
     tolerance: Tolerance,
@@ -3747,6 +3813,38 @@ fn chain_piece(
     rim: bool,
     flush: bool,
     stack: bool,
+    nesting: bool,
+) -> Result<Piece> {
+    let mut nested = false;
+    chain_piece_with(
+        t,
+        tolerance,
+        op,
+        leaf,
+        extra,
+        rim,
+        flush,
+        stack,
+        nesting,
+        &mut nested,
+    )
+    .map_err(|e| if nested { not_their_faces() } else { e })
+}
+
+/// [`chain_piece`], `nested` set where it reads a pocket with pockets of its
+/// own (only where `nesting`).
+#[allow(clippy::too_many_lines, clippy::too_many_arguments)]
+fn chain_piece_with(
+    t: &Topology,
+    tolerance: Tolerance,
+    op: OperationId,
+    leaf: &[Leaf],
+    extra: Option<&[Leaf]>,
+    rim: bool,
+    flush: bool,
+    stack: bool,
+    nesting: bool,
+    nested: &mut bool,
 ) -> Result<Piece> {
     let tol = tolerance.linear();
     let n = t.faces().len();
@@ -3825,7 +3923,9 @@ fn chain_piece(
         }
     }
     let mut flats: Vec<Vec<usize>> = vec![Vec::new(); p + groups.len()];
-    let mut pockets: Vec<(Vec<usize>, Vec<usize>)> = Vec::new();
+    // Each pocket's faces, its teeth and (S9e.4b.4c.2b.1) whether it holds
+    // pockets of its own.
+    let mut pockets: Vec<(Vec<usize>, Vec<usize>, bool)> = Vec::new();
     let mut teeth = vec![false; groups.len()];
     let mut seen = Vec::new();
     for &i in &others {
@@ -3878,7 +3978,24 @@ fn chain_piece(
                     _ => return Err(not_their_faces()),
                 }
             }
-            pockets.push((members, mine));
+            pockets.push((members, mine, false));
+        } else if nesting
+            && met
+                .iter()
+                .all(|(&q, &(cx, cc))| (cx && !cc) || (!cx && cc && q >= p))
+        {
+            // S9e.4b.4c.2b.1: of both kinds, its rims and teeth as a pocket's:
+            // a pocket with pockets of its own (a post or an island of planes
+            // standing in it).
+            let mut mine = Vec::new();
+            for (&q, &(cx, _)) in &met {
+                if !cx {
+                    teeth[q - p] = true;
+                    mine.push(q - p);
+                }
+            }
+            *nested = true;
+            pockets.push((members, mine, true));
         } else {
             return Err(not_their_faces());
         }
@@ -4101,8 +4218,26 @@ fn chain_piece(
     for (k, &q) in parts.iter().enumerate().skip(1) {
         tree = Tree::Op(ops[k], Box::new(tree), Box::new(leaf_of(q)?));
     }
-    for (members, mine) in &pockets {
-        let mut pocket = Tree::Hull(hull(members, true)?);
+    // S9e.4b.4c.2b.1: the nested pockets' Booleans of the chain, together.
+    let mut inner = 0;
+    for (members, mine, holding) in &pockets {
+        let mut pocket = if *holding {
+            let (tree, outer) =
+                nested_pocket(t, &bends, members, true, &hull_axes, tol, 1, &mut inner)?;
+            // A tooth meets the pocket's own hull alone (a primitive standing
+            // in a nested pocket is S9e.4b.4c.2b.2's).
+            let deeper = |k: usize| members.contains(&k) && !outer.contains(&k);
+            for &g in mine {
+                if bends.iter().any(|&(a, b, _)| {
+                    (deeper(a) && groups[g].contains(&b)) || (deeper(b) && groups[g].contains(&a))
+                }) {
+                    return Err(not_their_faces());
+                }
+            }
+            tree
+        } else {
+            Tree::Hull(hull(members, true)?)
+        };
         for &g in mine {
             pocket = Tree::Op(Op2::Cut, Box::new(pocket), Box::new(leaf_of(p + g)?));
         }
@@ -4119,7 +4254,76 @@ fn chain_piece(
         choice: 0,
         chain: true,
         stack,
+        nested: *nested,
     })
+}
+
+/// S9e.4b.4c.2b.1: a chain's pocket holding pockets of its own, its region
+/// at a depth of pockets (S9e.4b.4c.2a's `pocket` on the chain's axes): its
+/// hull the planes of its faces (`plane_along`, turned over where `over`)
+/// that leave every boundary point of its faces on its material's side
+/// within the resolution, less each component of its other faces (joined by
+/// their edges, in the order of their first faces) as a pocket of its own,
+/// turned over again; at most `DEPTH` deep, its Booleans counted in `inner`
+/// (at most `BOOLEANS` a chain). Returns the tree and its hull's faces.
+#[allow(clippy::too_many_arguments)]
+fn nested_pocket(
+    t: &Topology,
+    bends: &[(usize, usize, Bend)],
+    faces: &[usize],
+    over: bool,
+    axes: &[Frame3],
+    tol: f64,
+    depth: usize,
+    inner: &mut usize,
+) -> Result<(Tree, Vec<usize>)> {
+    let n = t.faces().len();
+    let corners: Vec<Point3> = faces.iter().flat_map(|&i| boundary_points(t, i)).collect();
+    let (mut hull, mut own, mut rest) = (Vec::new(), Vec::new(), Vec::new());
+    for &i in faces {
+        let (frame, into) = plane_along(t, i, over, axes)?;
+        let apart = corners.iter().any(|&p| {
+            let d = frame.coordinates(p)[2];
+            if into {
+                d < -tol
+            } else {
+                d > tol
+            }
+        });
+        if apart {
+            rest.push(i);
+        } else {
+            hull.push((frame, into));
+            own.push(i);
+        }
+    }
+    // A pocket none of whose faces bounds it, or holding pockets past the
+    // depth.
+    if hull.is_empty() || (!rest.is_empty() && depth >= DEPTH) {
+        return Err(not_their_faces());
+    }
+    let mut root: Vec<usize> = (0..n).collect();
+    for &(a, b, _) in bends {
+        if rest.contains(&a) && rest.contains(&b) {
+            let (x, y) = (find(&mut root, a), find(&mut root, b));
+            root[x.max(y)] = x.min(y);
+        }
+    }
+    let mut components: BTreeMap<usize, Vec<usize>> = BTreeMap::new();
+    for &i in &rest {
+        let r = find(&mut root, i);
+        components.entry(r).or_default().push(i);
+    }
+    let mut tree = Tree::Hull(one_plane(hull, tol));
+    for faces in components.into_values() {
+        *inner += 1;
+        if *inner > BOOLEANS {
+            return Err(not_their_faces());
+        }
+        let (x, _) = nested_pocket(t, bends, &faces, !over, axes, tol, depth + 1, inner)?;
+        tree = Tree::Op(Op2::Cut, Box::new(tree), Box::new(x));
+    }
+    Ok((tree, own))
 }
 
 /// A chain's `i`-th part's operation: the body's construction's for the
