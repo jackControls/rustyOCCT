@@ -12801,8 +12801,9 @@ Decisions for S9, recorded before its code (2026-09-28):
     slotted flange and block after a diagnosis; turned profiles with
     S9e.4b.4d; a flat with pockets of its own; a nested pocket holding a
     primitive); pockets along a turned leaf's axis within rounding of it (the
-    tilted frame's). Pending: its capture's Linux record and its campaigns
-    (its DRAW survey: below).
+    tilted frame's). Pending: its capture's Linux record (its DRAW survey:
+    below; its campaigns clean at `677c3bad`, recorded under "One own body an
+    input").
   * **DRAW survey of the nested leaves and the speed-ups (2026-10-11,
     `UPSTREAM_TESTS.md`).** At `cc7af85c` (`rust-kernel`: the fix of the
     boolean target's covered stack, `fix-oom-d737f94d` (`same_chain`,

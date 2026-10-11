@@ -843,8 +843,9 @@ then for the DRAW survey of the nested leaves and the speed-ups (branch
    before, so every import and every refusal text but the new key's
    unchanged: the measurement again moving no body, the DRAW trial no case)
    is implemented with its DRAW survey (`s9-draw-18` at `cc7af85c`: no
-   case moving, none reaching a nested pocket, nothing registered; pending
-   its capture's Linux record and its campaigns); next **S9e.4b.4c.2b.2** (chains no model matches: the
+   case moving, none reaching a nested pocket, nothing registered;
+   campaigns clean at `677c3bad`; pending its capture's Linux record); next
+   **S9e.4b.4c.2b.2** (chains no model matches: the
    inside-first order as a later choice, `OCC14536-sh1`'s dimpled rod; two
    cylinders on parallel axes sharing a cap, a slotted flange and a block
    after a diagnosis; turned profiles of cones and cylinders with S9e.4b.4d;
