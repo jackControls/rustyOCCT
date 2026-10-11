@@ -60,7 +60,9 @@ then for the DRAW survey of the deeper trees (branch `s9-draw-15`, over
 then for S9e.4b.4b.2b.2a (branch `s9e4b4b2b2`, over `s9c2-kernel` at `ae733749`),
 then for S9e.4b.4b.2b.2b.1 (branch `s9e4b4b2b2b`, over `s9c2-kernel` at `92e22e11`),
 then for the fix of points of two quadratic fields (branch `fix-surds-panic`,
-over `s9c2-kernel` at `8e632f49`).
+over `s9c2-kernel` at `8e632f49`),
+then for the DRAW survey of the leaves (branch `s9-draw-16`, over
+`rust-kernel` at `8e632f49`).
 
 ## Where things stand
 
@@ -77,11 +79,11 @@ over `s9c2-kernel` at `8e632f49`).
   arcs, and one solid of a result of several (S9e.2, `curved/matched.rs`),
   results of spheres, cones and tori, deeper chains and given results
   against spheres, cones and tori (S9e.3a, `curved/chain.rs`), each with its
-  DRAW survey (the last full survey, that of the deeper trees at
-  `69c2c27f`, branch `s9-draw-15`: the Boolean group's 987 cases and 59
-  restore cases registered, none failing, no case moving against
-  `ef5d66fd`'s survey, the ten the edge rule refused at `f9e54f0d`
-  evaluating again, both backends' audited values `ef5d66fd`'s bit for
+  DRAW survey (the last full survey, that of the leaves at `8e632f49`,
+  branch `s9-draw-16`: the Boolean group's 987 cases and 59 restore cases
+  registered, none failing, no registered case moving against
+  `69c2c27f`'s survey, the vertex rule's four unregistered restore cases
+  taking its reason, both backends' audited values `69c2c27f`'s bit for
   bit) and a clean campaign (S9e.3a's and S9f.1's at `b2765f20`, 989
   runs).
 - **S9f.1 done.** Spline prisms against polyhedral prisms in any position
@@ -537,8 +539,10 @@ over `s9c2-kernel` at `8e632f49`).
   188 inputs reach it, 96 evaluating alike. A trial of the restore cases the import reaches: no case
   moves. Open: S9e.4b.4b.2b.2b;
   a pocket's walls along a turned leaf's axis within rounding of it.
-  Campaigns clean at `9c56ad77`. Pending its capture's Linux record and its
-  DRAW survey (with S9e.4b.4b.2b.2b's).
+  Campaigns clean at `9c56ad77`. Its DRAW survey (with S9e.4b.4b.2b.2b.1's,
+  branch `s9-draw-16` at `8e632f49`): no case moving, no case importing a
+  body with two leaves of disjoint faces, nothing registered. Pending its
+  capture's Linux record.
 - **S9e.4b.4b.2b.2b.1 implemented** (branch `s9e4b4b2b2b`): leaves whose cap
   a pocket or another part cuts at its rim (a wall across the bottom cap's
   loops ending at or below the top cap's plane, a wall of the outer loop
@@ -562,13 +566,16 @@ over `s9c2-kernel` at `8e632f49`).
   every body imported, 55 evaluating both ways with one volume, the rest
   refused by S9's rounding rules on one side or both, no volume differing. A
   trial of the DRAW restore cases the import reaches: no case moves (51
-  cases on both backends; `bcut_complex/H2`'s body, the one the step newly
-  imports, still refused before its Boolean as an argument the adapter did
-  not make). Found beside it: a pre-existing panic of the curved engine
+  cases on both backends). The body the step newly imports,
+  `CTO904_cts20944b`, is restored only by `bfuse_complex/M8` and `S5`
+  (private data: their partner `CTO904_cts20944a` is not public; the trial
+  named `bcut_complex/H2`, which restores `CTO900_cts20212`), and is a
+  compound, which the adapter does not give a Boolean. Found beside it: a pre-existing panic of the curved engine
   (`surds of one field` in a sphere's half's membership, the kernel's own
   stack of two prisms cut by a ball, no import involved), left for a fix of
-  its own. Open: S9e.4b.4b.2b.2b.2. Pending its capture's Linux record, its
-  DRAW survey and its campaigns.
+  its own. Open: S9e.4b.4b.2b.2b.2. Its DRAW survey (branch `s9-draw-16` at
+  `8e632f49`): no case moving, no case holding a leaf cut at its rim,
+  nothing registered. Pending its capture's Linux record and its campaigns.
 - **Points of two quadratic fields fixed** (branch `fix-surds-panic`): a
   section's line through points of one quadratic field meeting a sphere, a
   cylinder or a cone at surds of another panicked ("surds of one field", found
@@ -645,7 +652,11 @@ over `s9c2-kernel` at `8e632f49`).
    `f9e54f0d` (branch `s9-draw-14`: ten registered cases refused by the
    edge rule, item 5; nothing registered), that of the deeper trees at
    `69c2c27f` (branch `s9-draw-15`: the ten evaluating again, no other case
-   moving, none reaching a pocket within a pocket, nothing registered).
+   moving, none reaching a pocket within a pocket, nothing registered),
+   that of the leaves at `8e632f49` (branch `s9-draw-16`: S9e.4b.4b.2b.2a,
+   S9e.4b.4b.2b.2b.1 and the vertex near miss; no registered case moving,
+   none reaching a leaf pair or a rim leaf, the vertex rule's four restore
+   cases as its trial found, nothing registered).
 3. **S9e.4b**, split in "S9e.4b refined": S9e.4b.1 (arcs rounded off
    their circles) and S9e.4b.2 (polyhedra other than prisms, on their
    stored vertices) are implemented with their DRAW surveys and
@@ -714,14 +725,16 @@ over `s9c2-kernel` at `8e632f49`).
    targets' reach (no DRAW restore case reaches it): **S9e.4b.4b.2b.2a**
    (two prism leaves, a leaf's walls parted by another part, a lone leaf with
    a pocket: 19 of the 53 bodies the fuzz targets' results import as) is
-   implemented with clean campaigns at `9c56ad77` (pending its capture's
-   Linux record and its DRAW survey, with S9e.4b.4b.2b.2b's);
+   implemented with clean campaigns at `9c56ad77` and its DRAW survey
+   (`s9-draw-16` at `8e632f49`: no case moving, nothing registered; pending
+   its capture's Linux record);
    **S9e.4b.4b.2b.2b**, split in "S9e.4b.4b.2b.2b refined" by
    the reach measured again (44 bodies of several primitives refused, all
    but three Booleans of two prisms on parallel axes): **S9e.4b.4b.2b.2b.1**
    (leaves cut at their rim, a pocket's tooth to a leaf's cap: 9 of the 44
-   importing) is implemented (pending its capture's Linux record, its DRAW
-   survey and its campaigns); next **S9e.4b.4b.2b.2b.2** (leaves touching
+   importing) is implemented with its DRAW survey (`s9-draw-16` at
+   `8e632f49`: no case moving, nothing registered; pending its capture's
+   Linux record and its campaigns); next **S9e.4b.4b.2b.2b.2** (leaves touching
    along a face: flush walls, 16 bodies, and caps on one plane, 5 stacks,
    both needing exact shared carriers or a given model of touching caps;
    pockets open sideways; the rest of S9e.4b.4b.2b's list; of this step's
@@ -776,7 +789,8 @@ over `s9c2-kernel` at `8e632f49`).
    outside either input, in the curved engine and the polyhedral one (two
    boxes, one's corner `1e-12` off the other's face); its DRAW trial moves
    no registered case (4 restore cases refused before as a piece thinner
-   than the resolution take its reason). Open beside it: a vertex or an
+   than the resolution take its reason), as the survey at `8e632f49`
+   (branch `s9-draw-16`) confirms. Open beside it: a vertex or an
    edge within the resolution of the other's edge or vertex (a foot just
    outside the face; skew edges), a cone's apex (no tangent cone of
    edges), and an edge's extremum at its own vertex (a closed edge's
