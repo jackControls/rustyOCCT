@@ -1,0 +1,147 @@
+case step_bar_fuse
+brep imported/stack_step.brep
+boolean fuse
+brep imported/stack_bar.brep
+end
+case step_bar_cut
+brep imported/stack_step.brep
+boolean cut
+brep imported/stack_bar.brep
+end
+case step_bar_common
+brep imported/stack_step.brep
+boolean common
+brep imported/stack_bar.brep
+end
+case chain_step_fuse
+brep imported/stack_step.brep
+boolean cut
+plane 1.0 0.5 -0.25 0.0 0.0 1.0 0.28 0.96 -0.0
+wire C 0.58 -0.94 -0.25 0.5
+prism 0.0 0.0 5.0
+then fuse
+plane 1.0 0.5 1.75 0.0 0.0 1.0 0.28 0.96 -0.0
+wire P 4 2.66 2.62 1.75 3.64 5.9799999999999995 1.75 2.2 6.3999999999999995 1.75 1.2200000000000002 3.04 1.75
+prism 0.0 0.0 1.25
+end
+case chain_step_cut
+brep imported/stack_step.brep
+boolean cut
+plane 1.0 0.5 -0.25 0.0 0.0 1.0 0.28 0.96 -0.0
+wire C 0.58 -0.94 -0.25 0.5
+prism 0.0 0.0 5.0
+then cut
+plane 1.0 0.5 1.75 0.0 0.0 1.0 0.28 0.96 -0.0
+wire P 4 2.66 2.62 1.75 3.64 5.9799999999999995 1.75 2.2 6.3999999999999995 1.75 1.2200000000000002 3.04 1.75
+prism 0.0 0.0 1.25
+end
+case chain_step_common
+brep imported/stack_step.brep
+boolean cut
+plane 1.0 0.5 -0.25 0.0 0.0 1.0 0.28 0.96 -0.0
+wire C 0.58 -0.94 -0.25 0.5
+prism 0.0 0.0 5.0
+then common
+plane 1.0 0.5 1.75 0.0 0.0 1.0 0.28 0.96 -0.0
+wire P 4 2.66 2.62 1.75 3.64 5.9799999999999995 1.75 2.2 6.3999999999999995 1.75 1.2200000000000002 3.04 1.75
+prism 0.0 0.0 1.25
+end
+case step_rod_fuse
+brep imported/stack_step.brep
+boolean fuse
+plane 1.0 0.5 -0.25 0.0 0.0 1.0 0.28 0.96 -0.0
+wire C 0.6000000000000001 2.7 -0.25 0.5
+prism 0.0 0.0 5.0
+end
+case step_rod_cut
+brep imported/stack_step.brep
+boolean cut
+plane 1.0 0.5 -0.25 0.0 0.0 1.0 0.28 0.96 -0.0
+wire C 0.6000000000000001 2.7 -0.25 0.5
+prism 0.0 0.0 5.0
+end
+case step_rod_common
+brep imported/stack_step.brep
+boolean common
+plane 1.0 0.5 -0.25 0.0 0.0 1.0 0.28 0.96 -0.0
+wire C 0.6000000000000001 2.7 -0.25 0.5
+prism 0.0 0.0 5.0
+end
+case step_wall_fuse
+brep imported/stack_step.brep
+boolean fuse
+plane 1.0 0.5 -0.25 0.0 0.0 1.0 0.28 0.96 -0.0
+wire C 1.12 3.59 -0.25 0.5
+prism 0.0 0.0 5.0
+end
+case step_wall_cut
+brep imported/stack_step.brep
+boolean cut
+plane 1.0 0.5 -0.25 0.0 0.0 1.0 0.28 0.96 -0.0
+wire C 1.12 3.59 -0.25 0.5
+prism 0.0 0.0 5.0
+end
+case step_wall_common
+brep imported/stack_step.brep
+boolean common
+plane 1.0 0.5 -0.25 0.0 0.0 1.0 0.28 0.96 -0.0
+wire C 1.12 3.59 -0.25 0.5
+prism 0.0 0.0 5.0
+end
+case bar_rod_fuse
+brep imported/stack_bar.brep
+boolean fuse
+plane 2.0 4.0 -0.5 0.0 0.0 1.0 0.9230769230769231 0.38461538461538464 -0.0
+wire C 8.538461538461538 7.807692307692308 -0.5 0.5
+prism 0.0 0.0 6.0
+end
+case bar_rod_cut
+brep imported/stack_bar.brep
+boolean cut
+plane 2.0 4.0 -0.5 0.0 0.0 1.0 0.9230769230769231 0.38461538461538464 -0.0
+wire C 8.538461538461538 7.807692307692308 -0.5 0.5
+prism 0.0 0.0 6.0
+end
+case bar_rod_common
+brep imported/stack_bar.brep
+boolean common
+plane 2.0 4.0 -0.5 0.0 0.0 1.0 0.9230769230769231 0.38461538461538464 -0.0
+wire C 8.538461538461538 7.807692307692308 -0.5 0.5
+prism 0.0 0.0 6.0
+end
+case rod_bar_fuse
+plane 2.0 4.0 -0.5 0.0 0.0 1.0 0.9230769230769231 0.38461538461538464 -0.0
+wire C 10.653846153846155 9.230769230769232 -0.5 0.75
+prism 0.0 0.0 5.0
+boolean fuse
+brep imported/stack_bar.brep
+end
+case rod_bar_cut
+plane 2.0 4.0 -0.5 0.0 0.0 1.0 0.9230769230769231 0.38461538461538464 -0.0
+wire C 10.653846153846155 9.230769230769232 -0.5 0.75
+prism 0.0 0.0 5.0
+boolean cut
+brep imported/stack_bar.brep
+end
+case rod_bar_common
+plane 2.0 4.0 -0.5 0.0 0.0 1.0 0.9230769230769231 0.38461538461538464 -0.0
+wire C 10.653846153846155 9.230769230769232 -0.5 0.75
+prism 0.0 0.0 5.0
+boolean common
+brep imported/stack_bar.brep
+end
+case bar_touch_fuse
+brep imported/stack_bar.brep
+boolean fuse
+sphere 8.461538461538462 6.6923076923076925 4.5 0.0 0.0 1.0 1.0 0.0 0.0 1.0 -1.5707963267948966 1.5707963267948966
+end
+case bar_touch_cut
+brep imported/stack_bar.brep
+boolean cut
+sphere 8.461538461538462 6.6923076923076925 4.5 0.0 0.0 1.0 1.0 0.0 0.0 1.0 -1.5707963267948966 1.5707963267948966
+end
+case bar_touch_common
+brep imported/stack_bar.brep
+boolean common
+sphere 8.461538461538462 6.6923076923076925 4.5 0.0 0.0 1.0 1.0 0.0 0.0 1.0 -1.5707963267948966 1.5707963267948966
+end

@@ -12190,7 +12190,22 @@ Decisions for S9, recorded before its code (2026-09-28):
     object's axis. The draft imports both bodies by stack chains (the box and
     the stadium, the plate and the box: a pair of stack leaves, the second on
     the first's frame) and finds every solid case within the reference's
-    volume and the declared one refused so.
+    volume and the declared one refused so. The capture
+    `occt-boolean-stack-leaves-preimplementation`
+    (`compare_stack_leaves_boolean.py`, keyed on the refusal the step removes:
+    `imported.rs`'s `OutOfDomain("an imported body of several primitives with
+    plane faces other than their ends, one or two prisms', a flat or a pocket
+    (S9e.4b.4b.2b.2b.3)")`, whose text the step changes; the kernel's probe
+    `unsupported` on all 21 before the code, both bodies refused on import as
+    no chain matching, `OutOfDomain("an imported body of several primitives
+    other than a Boolean chain of them (S9e.4b.4c)")`: the two leaves' faces
+    sharing OCCT's one surface of the touching caps, no pair is tried, and the
+    chains tried mismatch): every result valid, 20 matching (within 2e-8 of
+    the reference: no meeting OCCT approximates), 1 reviewed, in
+    `occt-boolean-stack-leaves-divergences.json`: the touching ball's fuse,
+    which OCCT keeps as two solids touching at a point where the reference's
+    rays count one, their totals the reference's within 7.0e-15.
+    S9e.4b.4b.2b.2b.3a's kernel next.
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces
