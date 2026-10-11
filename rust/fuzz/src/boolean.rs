@@ -95,7 +95,12 @@
 //! round hole across its rim from inside it past its top (a leaf cut at its
 //! rim with a post) or a stadium plate fused with a square with a square hole
 //! over its arc end (a well), and its import, each cut by the chained stage's
-//! partner, the same volume (`RIMS`).
+//! partner, the same volume (`RIMS`). S9e.4b.4b.2b.2b.2: by the input's 19th
+//! byte, the kernel's own stadium plate fused with a diamond within its
+//! heights standing out of its walls (two parts flush with them) or less a
+//! disc with a round hole within its heights across its end (a pocket open
+//! sideways round a post), and its import, each cut by the chained stage's
+//! partner, the same volume (`FLUSH`).
 use crate::analytic_intersections::Bytes;
 use crate::split::{profile, spline_profile};
 use rusty_occt::identity::OperationId;
@@ -221,6 +226,15 @@ const LEAVES: bool = true;
 /// and the kernel's body are each cut by the chained stage's partner, by the
 /// input's 18th byte (at or above 128: earlier inputs decode as before). On.
 const RIMS: bool = true;
+
+/// Whether the kernel's own stadium plate on the object's frame fused with a
+/// diamond within its heights standing out of its walls (two parts flush with
+/// them) or, by the byte's bit 6, less a disc with a round hole within its
+/// heights across its end (a pocket open sideways round a post), written,
+/// read back and imported (S9e.4b.4b.2b.2b.2), and the kernel's body are each
+/// cut by the chained stage's partner, by the input's 19th byte (at or above
+/// 128: earlier inputs decode as before). On.
+const FLUSH: bool = true;
 
 /// Whether a spline prism meets a line prism in frames with different
 /// axes (S9f.1's spline walls in the curved engine: creases, generatrices
@@ -947,6 +961,30 @@ pub fn check_boolean(data: &[u8]) {
                 }
             }
         }
+        // S9e.4b.4b.2b.2b.2: by the input's 19th byte (read there, so earlier
+        // inputs decode as before), the kernel's own plate with parts flush
+        // with its walls: a diamond within its heights standing out of them or,
+        // by its bit 6, a pocket open sideways round a post (`flush_body`),
+        // written, read back and imported, each cut by the chained stage's
+        // partner: where both evaluate, the same volume (`FLUSH`).
+        let flush = data.get(18).copied().filter(|k| *k >= 128);
+        if let (true, true, Some(k)) = (IMPORTED, FLUSH, flush) {
+            if let Some(body) = flush_body(fa, s1, h, k >= 192, tolerance) {
+                if let Some(again) = reimported(&body) {
+                    if let (Some(x), Some(y)) = (
+                        run(body.cut(OperationId(39), &box_)),
+                        run(again.cut(OperationId(40), &box_)),
+                    ) {
+                        assert!(
+                            near(volume(&x), volume(&y)),
+                            "imported flush parts {} for {}",
+                            volume(&y),
+                            volume(&x)
+                        );
+                    }
+                }
+            }
+        }
     }
     // S9e.4a: the object written by the kernel's writer, read back and
     // imported (`IMPORTED`), given the chosen operation with the same tool:
@@ -1219,6 +1257,61 @@ fn rims_body(frame: Frame3, s: f64, h: f64, well: bool, tolerance: Tolerance) ->
         let outer = square(-6.0 * k, -6.0 * k, 2.0 * k, 6.0 * k).ok()?;
         let tool = prism(outer, vec![hole], h / 2.0, 2.0 * h, 32)?;
         plate.cut(OperationId(33), &tool).ok()?
+    };
+    let [body] = <[Solid; 1]>::try_from(out).ok()?;
+    Some(body)
+}
+
+/// The kernel's own bodies of S9e.4b.4b.2b.2b.2 on `frame` (`k = s / 8`,
+/// dyadic): a stadium plate (half discs of radius `2k` about `(0, 0)` and
+/// `(6k, 0)`) over `[0, h]` fused with the diamond of corners `(9k / 2, 0)`,
+/// `(13k / 2, -7k / 2)`, `(15k / 2, 0)` and `(13k / 2, 7k / 2)` over `[h / 4,
+/// 3h / 4]` (two parts standing out of the plate's line walls and arc end);
+/// or, where `void`, less the disc of radius `3k` about `(-3k / 2, 0)` with a
+/// hole of radius `k` about `(-k / 2, k / 4)` over `[h / 4, 3h / 4]` (a pocket
+/// open sideways across the plate's arc end round a post).
+fn flush_body(frame: Frame3, s: f64, h: f64, void: bool, tolerance: Tolerance) -> Option<Solid> {
+    let k = s / 8.0;
+    let arc = |x: f64| Segment::Arc {
+        center: Point2::new(x, 0.0),
+        radius: 2.0 * k,
+        ccw: true,
+    };
+    let stadium = Boundary::path(
+        vec![
+            Point2::new(0.0, -2.0 * k),
+            Point2::new(6.0 * k, -2.0 * k),
+            Point2::new(6.0 * k, 2.0 * k),
+            Point2::new(0.0, 2.0 * k),
+        ],
+        vec![Segment::Line, arc(6.0 * k), Segment::Line, arc(0.0)],
+        tolerance,
+    )
+    .ok()?;
+    let prism = |outer: Boundary, holes: Vec<Boundary>, h0: f64, h1: f64, op: u64| {
+        let profile = Profile::new(outer, holes, tolerance).ok()?;
+        Solid::extrude_with(OperationId(op), profile, frame, h0, h1)
+            .ok()
+            .map(|(s, _)| s)
+    };
+    let plate = prism(stadium, vec![], 0.0, h, 36)?;
+    let (out, _) = if void {
+        let disc = Boundary::circle(Point2::new(-1.5 * k, 0.0), 3.0 * k, tolerance).ok()?;
+        let hole = Boundary::circle(Point2::new(-0.5 * k, 0.25 * k), k, tolerance).ok()?;
+        let tool = prism(disc, vec![hole], h / 4.0, 0.75 * h, 37)?;
+        plate.cut(OperationId(38), &tool).ok()?
+    } else {
+        let points = [(4.5, 0.0), (6.5, -3.5), (7.5, 0.0), (6.5, 3.5)]
+            .map(|(x, y)| Point2::new(x * k, y * k))
+            .to_vec();
+        let part = prism(
+            Boundary::polygon(points, tolerance).ok()?,
+            vec![],
+            h / 4.0,
+            0.75 * h,
+            37,
+        )?;
+        plate.fuse(OperationId(38), &part).ok()?
     };
     let [body] = <[Solid; 1]>::try_from(out).ok()?;
     Some(body)

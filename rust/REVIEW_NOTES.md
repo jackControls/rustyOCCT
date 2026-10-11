@@ -11602,6 +11602,344 @@ Decisions for S9, recorded before its code (2026-09-28):
     regressions (3,571), no failure natively (the slowest 24.4 s and 6.1 s at
     load 30 to 40) or under the emulated `hypot` with overflow checks (the
     slowest 76 s and 120 s at the same load).
+  * **S9e.4b.4b.2b.2b.2 refined, before its code (2026-10-10).** Why it is
+    refused today: after S9e.4b.4b.2b.2b.1 a body of several primitives is a
+    Boolean chain of its primitives, one or two prism leaves (two only with no
+    face in common), leaves cut at their rim, prisms of one cap, flats and
+    pockets (convex hulls of planes less their teeth). A prism standing out of
+    a leaf's walls within its heights is read off its cap with the leaf's walls
+    across its loops (and every face on their surfaces), so the two leaves
+    share faces and no pair is tried; a pocket open sideways is no hull of
+    planes where it is not convex or a wall of it is curved: refused with
+    S9e.4b.4b.2b.2b.1's text (`OutOfDomain("an imported body of several
+    primitives with plane faces other than their ends, one or two prisms', a
+    flat or a pocket (S9e.4b.4b.2b.2b.2)")`), as the body's own tangency where
+    no chain takes a leaf's tangent joints, as no chain matching, or by S9's
+    rules in a chain's Booleans. *Reach, measured again before choosing* (at
+    `69c526ca`, an instrumented build, not committed, as S9e.4b.4b.2b.2b's
+    measurement: every solid result of the `boolean` fuzz target's three
+    operations and its chained cut and common, and the `split` target's pieces
+    given to Booleans and those Booleans' results, each written by the
+    kernel's writer, read back and imported; release builds, one process an
+    input; the boolean corpus and its regressions, 1,478 files, and the split
+    corpus and its regressions, 3,571, every one exiting cleanly): 2,602
+    distinct bodies written and converted, 1,845 importing; 225 of several
+    primitives (one shell), 190 importing (the 181 and S9e.4b.4b.2b.2b.1's 9,
+    each by its chain) and 35 refused (36 results of 33 inputs: 34 of the
+    boolean target's operations, 24 fuses and 10 cuts, and 2 of
+    `PIECE_BOOLEANS`' Booleans; 14 as the body's own tangency, 5 with
+    S9e.4b.4b.2b.2b.1's text, 4 no chain matching, 12 by S9's rules in a
+    chain's Booleans: 4 two faces within the resolution of one plane, 4 an
+    edge of one input on a face of the other, 1 an edge meeting an edge, 1 a
+    vertex on a face, 2 a piece thinner than the resolution); 4 more of
+    several faces refused with S9e.4b's general text are cavities (one region
+    of two shells), none of this step's. *Classification*, read off their
+    files and the inputs they came from, all but the two thin pieces Booleans
+    of two of the target's prisms on parallel axes: (a) flush walls, 16: a
+    prism within the other's heights fused, standing out of its walls (the
+    inner one's visible part a leaf whose loops run partly along the outer
+    one's walls: a stadium, a U, a polygon or a square with a hole through a
+    stadium, a box or a polygon; one part or two, a part in the outer one's
+    hole); (b) pockets open sideways, 5: a cut within the object's heights
+    across its walls (its floor's and ceiling's loops partly along the
+    object's walls; a waist where the tool's ring takes the whole outline but
+    its hole's post); (c) pockets across the rim, 4: a square with a round or
+    square hole from inside the object past its top across its arc end, the
+    hole's post flush with the object's arc or line wall; (d) stacks, 5; (e) a
+    stack on crossing axes, 1; (f) overlapping heights, 2 (S9e.4b.4b.2b.2b.1's
+    form); (g) the two thin pieces. Decisions. (1) *Sub-steps*, by what each
+    unlocks: **S9e.4b.4b.2b.2b.2** (this step): (a), (b) and (c), a part
+    flush with a leaf's walls completed through or around it (below); a draft
+    (not committed) imports 14 of the 35 (11 flush walls, 1 pocket open
+    sideways, the waist, and 2 pockets across the rim), every one its model
+    matched to its stored topology, and moves no other import (every other of
+    the 2,602 bodies as before: the 1,845 importing with their chains, every
+    refusal's text the same; the slowest import 1.5 s, 1.9 s in the base's
+    run on a loaded host); the
+    other 11 of (a) to (c) stay refused by S9's rules in the flush chain's
+    Booleans, their exact data's own incidences, the fuzz target's dyadic
+    sizes putting one prism's wall through the other's line-arc joint (7: `x =
+    0` or `x = s` against a stadium's arcs about `(0, 0)` and `(s, 0)`, an edge
+    meeting an edge or on a face) or on an arc's tangent plane (4: a wall `x =
+    c` against an arc of radius `c` about the origin or of radius `t` about
+    `(c + t, 0)`, a tangency between the inputs), which the kernel's own
+    Booleans of the prisms on one frame evaluate in the stack engine's exact
+    profiles. **S9e.4b.4b.2b.2b.3**: (d) and (e), leaves touching along a face
+    (caps on one plane: a given model of touching caps or exact shared
+    carriers, S9e.4b.4b.2b.2b.1's amendment (b)), and the rest of
+    S9e.4b.4b.2b's list (hulls across several parts, mixed pockets and
+    components, three leaves); (f) stays refused by S9's rules (a tangency, a
+    vertex on a face) and (g) by S9's rule (a piece thinner than the
+    resolution in the split's pieces' Booleans). (2) *Finding them*
+    (`flush_parts`), from the stored faces and edges, for a lead leaf (any
+    leaf of S9e.4b.4b.2a's and the rim's searches): a *part* is two plane
+    faces of no lead face, parallel to the lead's axis within `1e-9`, both
+    strictly between its caps (their range on its bottom's stored frame turned
+    up past the resolution), the second lying from the first along the first's
+    inward normal (a prism fused) or its outward normal (a void cut: a pocket's
+    floor and ceiling), every edge of the first's loops across a lead wall
+    (its *run*) or across a wall rising from it (S9e.4b.4b.2b.2a's `rises`)
+    that reaches the second through any face on its surface, at least one
+    edge across a lead wall and (a fused part) one not; or a void open
+    through the lead's cap: a floor alone whose walls not the lead's end at
+    that cap's plane (within the resolution), a prism of one cap past them as
+    S9e.4b.4b.2b.1's. Parts alike in their own walls (one read off either
+    cap) are one. (3) *Representation: the part completed beyond its runs*
+    (`complete_loop`). The part's prism is read off its first cap's loops as
+    S9e.4a's (each stored vertex and arc centre rounded once into the frame),
+    on the lead's axes bit for bit at its cap's stored origin (`Frame3::at`),
+    each run replaced on its far side from the part's cap (into the lead for a
+    fused part, out of it for a void), so the part crosses the lead's walls
+    transversally at the stored vertices and the chain's Booleans meet them as
+    any two prisms': (i) a run between two walls of the part on one stored
+    surface (a line or circle the lead parts) bridged by that line or circle,
+    the part's own wall whole, where its piece between them lies on the far
+    side (a circle bridged round to a stored vertex between two of its faces,
+    OCCT's seam, split there and at its antipode); (ii) else the walls at the
+    run's ends extended along their lines or circles to a depth `delta` past
+    it, then lines through the run's joints and arcs offset by `delta`
+    (`delta` the loop's extent over 64, an arc's polyline within `delta / 4`
+    of its offset), a wall meeting the run at a sine below `1/8` or a joint
+    folding back (`1 + n1 . n2 < 1/4`) refused; (iii) a loop wholly along the
+    lead (a path or a ring) its offset polygon. Every new point and each new
+    segment's middle must lie on the far side of the lead's profile
+    (`Profile::classify`, within its tolerance), else the leaf is no part of
+    this lead. The completion's points are binary64 profile points, as S9e.4a's
+    prisms' rounded vertices (normalized by `sqrt`, not `hypot`; only points
+    inside the lead or outside the body take `atan2`, `sin` and `cos`, and the
+    results drop them), the exact model taking an arc's end onto its circle as
+    S9e.4b.1's; numbers the engine's own and S9e.4a's prism's, no new field or
+    degree. Not the exact shared carriers planned (pinned points on the lead's
+    walls): the part's walls there would be faces of both inputs on one plane
+    or cylinder, its edges at the lead's corners edges of both overlapping
+    (`Degenerate("edges of both inputs overlapping")`), and S9e.4b.3c.2's
+    exact incidences extended from one sphere to every plane and cylinder of
+    the arrangement; a completion needs no incidence rule, number or model of
+    its own. (4) *The chain*: the lead leaf first, then each fused part fused
+    and each void cut, in the order found; after every earlier chain, for each
+    lead (each leaf but one alike an earlier in its faces and axis, at most
+    `FLUSH_LEADS` 8, in the order found) its chain alone and then with the
+    other plane faces; a joint tangent along walls of any one prism of the
+    chain is the chain's own (parts of one prism read off several caps share
+    its walls). Each Boolean S9e.4b.3c.3b's tree's, its last one's given model
+    matched to the stored topology by S9e.2's match, its ids the stored ones,
+    read off the moved stored topology again by a rigid motion; every body
+    S9e.4b.4b.2b.2b.1 imports keeps its chain. (5) *Limits*, deterministic:
+    at most 8 leads, at most `FLUSH_PARTS` 4 parts a chain, at most
+    `COMPLETION_ARC` 64 points an arc's completion, `delta` and the sines
+    above. (6) *Its other queries* are S9e.4b.4b.2b.1's. (7) *Degenerate and
+    refused.* S9's rules unchanged in every Boolean; any refusal of a flush
+    chain (its Booleans', its tangency, its mismatch) is one the body is not,
+    the body's refusal as before where none matches (as S9e.4b.4b.2b.2b.1's
+    rim chains); refused as S9e.4b.4b.2b.2b.3's: the rest, `OutOfDomain("an
+    imported body of several primitives with plane faces other than their
+    ends, one or two prisms', a flat or a pocket (S9e.4b.4b.2b.2b.3)")`,
+    replacing S9e.4b.4b.2b.2b.1's text (the step's key). (8) *Fuzzing.* None
+    of the target's stages builds these bodies but the results the measurement
+    read, so a stage of its own (`FLUSH`): by the input's byte after those it
+    decodes (its 19th, at or above 128, so earlier inputs decode as before),
+    the kernel's own stadium plate on the object's frame fused with a diamond
+    within its heights standing out of its walls (two parts) or, by the byte's
+    bit 6, less a disc with a round hole within its heights across its end (a
+    pocket open sideways round a post), written, read back and imported, each
+    cut by the chained stage's partner: where both evaluate, one volume. (9)
+    *Evidence first.* Bodies OCCT writes in one Boolean of two prisms on one
+    frame turned about the world's `z` (its normal the world's `z` exactly, so
+    the import's leaves and the partners standing along them are parallel
+    exactly), the leaf a stadium plate: `arms` (the plate fused with a diamond
+    within its heights standing out of its line walls and arc end in two
+    parts, each part's run a line, the joint and an arc), `slot` (the plate
+    less a disc with a round hole within its heights across its arc end, a
+    pocket open sideways round a post, closed above and below) and `open` (the
+    plate less a square with a square hole from inside it past its top across
+    its arc end, the post flush with the plate's arc); cases of each against
+    upright rods, the slot the tool, two imported (the arms and the slot,
+    their frames turned apart), a chain, and a declared `degenerate` ball
+    resting on the slot's top; the reference S9e.3a's chained reference on the
+    constructions OCCT was given, each body's closed form, S9e.4b.3c.3a's
+    checks (`generate_flush_leaves_boolean_fixtures.py --check`, a CI group
+    `flush-leaves`, `test_flush_leaves_boolean_reference.py`); a native
+    capture keyed on the refusal the step removes
+    (`compare_flush_leaves_boolean.py`, `imported.rs`'s present text ending "a
+    flat or a pocket (S9e.4b.4b.2b.2b.2)"); then the kernel and its tests
+    (`tests/flush_leaf_booleans.rs`), and a DRAW trial of the restore cases
+    the import reaches.
+  * **S9e.4b.4b.2b.2b.2 evidence (2026-10-10).** Three bodies OCCT wrote
+    (`boolean-flush-leaves-bodies.txt`, `write` blocks of one prism's rows, a
+    `boolean` row and the other's, written by `compare_flush_leaves_boolean.py
+    --write-bodies` to `rust/fixtures/imported/flush_*.brep`), each one
+    Boolean of two prisms on one frame turned about the world's `z` (its
+    normal the world's `z` exactly), every section a circle or a line, the
+    leaf a stadium plate of half discs of radius 2 about `(0, 0)` and `(6,
+    0)`: `arms` (the plate over `[0, 3]` on `R724` fused with the diamond of
+    corners `(9/2, 0)`, `(13/2, -7/2)`, `(15/2, 0)` and `(13/2, 7/2)` over `[1,
+    2]`: two parts standing out of the plate, each part's loop along the
+    plate's line wall from `x = 9/2 + 8/7`, through its joint `(6, +-2)` and
+    along its arc to the diamond's edge at `x = 6 + (147 - 2 sqrt 407) /
+    106`), `slot` (the plate over `[0, 3]` on `R815` less the disc of radius 3
+    about `(-3/2, 0)` with a hole of radius 1 about `(-1/2, 1/4)` over `[1,
+    2]`: a pocket open sideways across the plate's arc end and line walls up
+    to `x = sqrt 5 - 3/2`, closed above and below, its wall the disc's arc,
+    OCCT's two faces split at its circle's seam `(3/2, 0)`, the hole's post
+    standing from its floor to its ceiling) and `open` (the plate over `[0,
+    5/2]` on `R125` less the square `[-4, 2] x [-3, 3]` with the hole `[-5/2,
+    1] x [-1, 1]` over `[1, 4]`: a pocket open sideways and through the plate's
+    top, its post the hole's square within the plate, flush with the plate's
+    arc from `x = -sqrt 3`). `generate_flush_leaves_boolean_fixtures.py
+    --check`: 21 cases of 7 groups (18 solid, 3 `degenerate`; 15 of class
+    `pieces`, 3 `both`, 3 `chain`): `arms_rod` (an upright rod across the
+    upper part's wall, the plate's line wall and arc), `slot_rod` (an upright
+    rod across the pocket's wall), `rod_slot` (an upright rod less the slot
+    across the post and the plate's arc: the body the tool), `open_rod` (an
+    upright rod across the pocket's wall `x = 2`), `arms_slot` (both imported,
+    their frames turned apart about `z`), `chain_arms` (the arms less an
+    upright rod through the plate, then with a box on its frame across the
+    upper part and the plate's top), and declared `degenerate` `slot_touch` (a
+    ball of radius 1 resting on the plate's top cap at a point, exactly:
+    `Degenerate("a tangency between the inputs (S9c)")`). The reference is
+    S9e.3a's chained reference on the constructions OCCT was given (each body
+    its Boolean of two prisms, the disc with a round hole its cylinder less
+    its hole's, the square with a square hole its box less its hole's box),
+    with S9e.4b.3c.3a's checks relative to the case's size: the two families
+    within 9.9e-32, each solid's closed form 9.0e-36, each body's closed form
+    4.6e-33 (the arms `3 (24 + 4 pi) + 21/2 - 26/7 - u sqrt(4 - u^2) - 4
+    asin(u/2) - 7/2 (3/2 - u)^2`, `u = (147 - 2 sqrt 407) / 106`, the slot
+    `78 + 13 pi / 2 - 2 sqrt 5 + 9 asin(sqrt 5 / 3)`, the open pocket `51 + 8
+    pi + 3 sqrt 3 / 2`, each section times its stored axes' determinant), the
+    pair identities 4.8e-42 and the area identity 1.8e-40, Monte Carlo 2.8
+    standard errors (100,000 points a group), quadrature estimates 9.6e-33,
+    every meeting's sine at least 1.0 and events at least 3.3e-5 of their
+    range apart outside the declared group (the tool's rod across the post
+    and the plate's arc; 5.1e-4 and more elsewhere), solid counts by rays at
+    two resolutions; the declared group's checks kept apart within 4.5e-32.
+    Every file read independently (`stored_records`): its curved faces
+    cylinders, every stored vertex on the constructions' surfaces (within 0 of
+    the size at the reference's precision).
+    `test_flush_leaves_boolean_reference.py` checks each body's closed form
+    against quadratures of its sections (the crossings found by root
+    finding), the chained reference on the open pocket against its closed
+    form, every part's place (the diamond's corners inside and outside the
+    plate, its edges crossing the line wall and the arc at least 1/4 from the
+    joint; the disc about the plate's left half disc, its circle across the
+    line walls in their straight part, the post inside both; the ring's
+    square across the plate's arc end, its hole's walls across the arc), the
+    partners' places, the declared ball (its centre's height exact) and the
+    case list and its protocol rows and the files apart from every earlier
+    set's. The generator's check is a CI group of its own (`flush-leaves`,
+    16.0 minutes on four workers locally under Python 3.9 on a loaded host,
+    8.2 under 3.12); Python 3.9 and 3.12 write the same
+    files. Corrections from the evidence and the draft of the step's code (not
+    committed) run on the bodies, amending the refined decisions' plan (9):
+    (a) the arms' part was first a box `[5, 15/2] x [-3, 3]`, which the import
+    takes already (S9e.4b.4b.2b.2a's two leaves on crossing axes: the box
+    read off its walls `x = 5` and `x = 15/2` as a prism along the plate's
+    `x`, through it), so the part is a diamond, no wall of it normal to
+    another; (b) the slot's tool was first a square `[-3, 1] x [-3, 3]` with
+    the hole, which the import takes already (S9e.4b.4b.2b.1's pocket: its
+    floor, ceiling and wall `x = 1` a convex hull less the post), so the
+    pocket's wall is the disc's arc (a cylinder whose material lies outside
+    it); (c) OCCT splits the slot's wall at its circle's seam inside the
+    plate: the bridge round that circle (decision (3)(i)) keeps the stored
+    vertex between the two halves and splits the circle again at its
+    antipode, outside the plate (a ring there met the stored seam with no
+    edge and was refused as no chain). The draft imports all three bodies by
+    flush chains (the arms its plate and two parts, the slot and the open
+    pocket the plate less a void) and finds every solid case within the
+    reference's volume and the declared one refused so; over the DRAW restore
+    cases' data files (the 1,316 cases restoring a data file and giving a
+    Boolean, 732 files, 741 solids, each file imported in a process of its own
+    within 120 s) it moves no body (one solid of several primitives among
+    them, refused as before; five files beyond 120 s before, three of them
+    after, a loaded host's time). The capture
+    `occt-boolean-flush-leaves-preimplementation`
+    (`compare_flush_leaves_boolean.py`, keyed on the refusal the step removes:
+    `imported.rs`'s `OutOfDomain("an imported body of several primitives with
+    plane faces other than their ends, one or two prisms', a flat or a pocket
+    (S9e.4b.4b.2b.2b.2)")`, whose text the step changes; the kernel's probe
+    `unsupported` on all 21 before the code, every body refused on import: the
+    arms as the body's own tangency (`Degenerate("an imported body of several
+    primitives whose faces are tangent along an edge")`, the diamond's walls
+    read with the plate's), the slot as no chain matching, the open pocket with
+    that text): every result valid, 20 matching (within 2e-8 of the reference:
+    no meeting OCCT approximates), 1 reviewed, in
+    `occt-boolean-flush-leaves-divergences.json`: the touching ball's fuse,
+    which OCCT keeps as two solids touching at a point where the reference's
+    rays count one, their totals the reference's within 6.4e-16.
+    S9e.4b.4b.2b.2b.2's kernel next.
+  * **S9e.4b.4b.2b.2b.2 implemented** (`solid/imported.rs`'s `flush_parts`,
+    `flush_leads`, `part_faces`, `completed_on`, `complete_loop` and
+    `ring_offset`, `chain_piece`'s flush chains), as the refined decisions and
+    the evidence's corrections describe: after every earlier chain, each leaf
+    (but one alike an earlier in its faces and axis, at most 8) leads a chain
+    of the parts flush with its walls, alone and with the other plane faces:
+    a prism within its heights standing out of its walls fused, a pocket open
+    sideways (closed by its ceiling, or open through the leaf's cap as a prism
+    of one cap) cut, each part's prism read off its cap on the lead's axes bit
+    for bit with its loops' runs along the lead's walls bridged by the part's
+    own line or circle, or its walls extended and the run offset beyond it, a
+    loop or a ring wholly along the lead offset; any refusal of such a chain
+    one the body is not; the refusal's text now `OutOfDomain("an imported
+    body of several primitives with plane faces other than their ends, one or
+    two prisms', a flat or a pocket (S9e.4b.4b.2b.2b.3)")` (S9e.4b.4b.2a's
+    notch so, in its tests and the prism leaves' generator; no fixture
+    carries it). All 21 fixtures as declared (18 within the kernel's
+    enclosures, each at most `1e-9` wide; the touching ball `Degenerate("a
+    tangency between the inputs (S9c)")`), every history complete over the
+    imported bodies' stored ids, results deterministic and moved rigidly, both
+    inputs translated and turned keeping the reference's volumes, every body
+    its plate with its parts (its closed-form volume, points in and off it
+    classified, its stored vertices on its boundary), the notch refused with
+    the new text, and the `boolean` fuzz target's `FLUSH` bodies (the plate
+    with the diamond's two parts and the plate less the pocket round its
+    post, on the world's axes and on a tilted frame) written by its writer,
+    read back and imported, their Booleans with a box turned off every axis
+    the kernel's own results' (`tests/flush_leaf_booleans.rs`, 12.3 s in
+    release, 19.5 s at `opt-level` 2 with debug assertions, both on a host at
+    load 4 to 12, 144 s in release with debug assertions and overflow checks
+    under the emulated correctly rounded `hypot`, where the rim leaves' (94
+    s), two leaves' (121 s), plane parts' (30 s) and prism leaves' (16 s) test
+    files pass too). `compare_flush_leaves_boolean.py` 13 matches and 8
+    reviewed (the captured touching ball's fuse and, with the kernel, entity
+    counts: the slot's wall OCCT wrote split at its circle's seam, kept by the
+    kernel and merged by OCCT's unification, and a rod's seam edge OCCT's
+    results keep), the kernel within the reference on all 18 solid cases, the
+    3 degenerate refused; every other comparison of `HANDOFF.md`'s table
+    unchanged with 0 failures; the release suite (710 tests) and the tools'
+    unit tests (396, 3 skipped) passing, the ledger unchanged. Amendments, from the
+    implementation: none beyond the evidence's; the completion normalizes by
+    `sqrt` as decided. The `boolean` fuzz target's `FLUSH` stage (by the
+    input's 19th byte, at or above 128; bit 6 the pocket): replayed (release,
+    an instrumented build, not committed), 143 of the corpus's 1,478 inputs
+    and regressions reach it, every body built and imported, 38 evaluating
+    both ways with one volume (14 plates with parts on the world's axes, 7
+    tilted, 17 pockets on the world's axes), 50 where the kernel's own cut by
+    the turned box is refused by S9's rounding rules (30 a plane within
+    rounding of a cylinder's direction, 16 two cylinders' axes within
+    rounding of parallel, 4 an irrational line against a cylinder) and the
+    import's evaluates, 55 refused both ways (42 an irrational line against
+    a sphere, the rest by S9's rules alike or nearly), none where the import
+    alone is refused, no volume differing. The measurement's probes again
+    (every result of both targets written, read back and imported): 14 of the
+    35 bodies of several primitives refused at `69c526ca` import (11 flush
+    walls, the waist and 2 pockets across the rim), every one of the 1,845
+    bodies imported before still imported (the 190 of several primitives
+    with their chains), 3 refused with the new text, every other refusal as
+    before, none panicking, the slowest import 1.3 s. Replays with debug
+    assertions, one process an input, natively and under the emulated
+    correctly rounded `hypot` (with overflow checks): the boolean corpus and
+    its regressions (1,478 inputs) and the split corpus and its regressions
+    (3,571), no failure, the slowest 12.2 s and 3.5 s natively on a host at load 17 to 20 (87.9 s and 43.6 s emulated, the emulation's `hypot` exact by big rationals). A trial of the DRAW restore cases the import
+    reaches (the 1,316 cases restoring a data file and giving a Boolean, 732
+    files, 741 solids, each file imported in a process of its own: no body's
+    import moving at `69c526ca`, with the draft or with this kernel; the one
+    body of several primitives among them, `bug28626_case1_shapes`'s second,
+    refused as no chain as before, its case `bugs/modalg_6/bug28626_1` on
+    both backends: unsupported on both, as before; not the survey: nothing
+    registered). Open: S9e.4b.4b.2b.2b.3 (the stacks, caps on one plane, the
+    stack on crossing axes, the rest of S9e.4b.4b.2b's list); the 11 bodies of
+    this step's forms refused by S9's rules (walls through the other's
+    line-arc joint, walls on an arc's tangent plane). Pending: its capture's
+    Linux record, its DRAW survey and its campaigns.
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces

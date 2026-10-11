@@ -57,7 +57,11 @@
 //! S9e.4b.4b.2b.2b.1: then the same chains over the leaves whose cap another
 //! part or a pocket cuts at its rim too (`rim_leaves`: walls ending below it,
 //! a hole a well on another part), a tooth standing in a pocket to a leaf's
-//! cap running past it. Every other body is S9e.4b's.
+//! cap running past it. S9e.4b.4b.2b.2b.2: then each leaf as the lead of a
+//! chain with the parts flush with its walls (`flush_parts`: a prism within
+//! its heights standing out of its walls, fused; a pocket open sideways,
+//! cut), each part's loops completed beyond their runs along the lead's walls
+//! (`complete_loop`). Every other body is S9e.4b's.
 use super::{replayable, Construction, Context, Solid};
 use crate::history::{History, Relation};
 use crate::identity::{
@@ -371,9 +375,10 @@ impl Solid {
     /// with the other plane faces (prisms of one cap, flats, pockets);
     /// S9e.4b.4b.2b.2a: then each pair of leaves', alone and with them;
     /// S9e.4b.4b.2b.2b.1: then each leaf's and each pair's again over the
-    /// leaves cut at their rim too; the first whose model matches the stored
-    /// topology, else the first refusal an earlier chain's Booleans give,
-    /// else the body's own tangency, else S9e.4b.4b.2b.2b.2's.
+    /// leaves cut at their rim too; S9e.4b.4b.2b.2b.2: then each leaf's with
+    /// the parts flush with its walls; the first whose model matches the
+    /// stored topology, else the first refusal an earlier chain's Booleans
+    /// give, else the body's own tangency, else S9e.4b.4b.2b.2b.3's.
     fn imported_primitives(
         context: &Context,
         topology: Topology,
@@ -406,7 +411,8 @@ impl Solid {
                 Err(e) if e == tangent_body() && choice >= plain => {}
                 // S9e.4b.4b.2b.2b.1: nor any refusal of a chain over the
                 // leaves cut at their rim (its Booleans', its tangency, its
-                // mismatch): the body's refusal as before where none matches.
+                // mismatch), S9e.4b.4b.2b.2b.2: nor of a flush chain: the
+                // body's refusal as before where none matches.
                 Err(_) if choice >= rim => {}
                 Err(e) if e == tangent_body() => tangent = true,
                 Err(e) if e == not_their_faces() || e == general() => {}
@@ -925,7 +931,40 @@ fn prism_on(
     tolerance: Tolerance,
     op: OperationId,
 ) -> Result<Solid> {
+    completed_on(
+        t,
+        (bottom, top, up),
+        loops,
+        (open, along),
+        None,
+        tolerance,
+        op,
+    )
+}
+
+/// S9e.4b.4b.2b.2b.2: what a leaf's runs along the lead part are completed
+/// by: the faces across them (`run`), the lead prism, and whether the
+/// completion lies in its material (a fuse) or outside it (a cut).
+struct Completion<'a> {
+    run: &'a [bool],
+    lead: &'a Solid,
+    into: bool,
+}
+
+/// [`prism_on`], its loops' runs of edges across the lead part's walls
+/// completed where given (`complete_loop`).
+#[allow(clippy::too_many_arguments)]
+fn completed_on(
+    t: &Topology,
+    (bottom, top, up): (usize, usize, Vec3),
+    loops: &[usize],
+    (open, along): (Option<&[usize]>, Option<&Frame3>),
+    complete: Option<&Completion>,
+    tolerance: Tolerance,
+    op: OperationId,
+) -> Result<Solid> {
     let faces = t.faces();
+    let fins_of = fin_faces(t);
     let Surface::Plane(stored) = &faces[bottom].surface else {
         return Err(general());
     };
@@ -950,6 +989,20 @@ fn prism_on(
         _ => turned(stored),
     };
     let local = Local::new(&frame)?;
+    // S9e.4b.4b.2b.2b.2: whether a point of the profile lies on the
+    // completion's side of the lead prism's profile (in its material for a
+    // fuse, outside it for a cut), within its tolerance.
+    let beyond = |p: Point2| -> bool {
+        let Some(c) = complete else { return false };
+        let Construction::Prism(profile) = &c.lead.construction else {
+            return false;
+        };
+        let w = c.lead.frame.coordinates(frame.point(p, 0.0));
+        matches!(
+            (profile.classify(Point2::new(w[0], w[1])), c.into),
+            (Ok(crate::Location::Inside), true) | (Ok(crate::Location::Outside), false)
+        )
+    };
     let mut boundaries = Vec::new();
     for &li in loops {
         let l = &faces[bottom].loops[li];
@@ -958,11 +1011,22 @@ fn prism_on(
         };
         let mut points = Vec::new();
         let mut segments = Vec::new();
+        let mut runs = Vec::new();
+        let mut walls_of: Vec<Option<usize>> = Vec::new();
         let mut ring = None;
         for f in fins {
             let fin = &t.fins()[f.index()];
             let edge = &t.edges()[fin.edge.index()];
             let forward = fin.sense == Orientation::Forward;
+            let across = edge
+                .fins
+                .iter()
+                .find(|x| *x != f)
+                .map(|x| fins_of[x.index()]);
+            runs.push(
+                complete.is_some_and(|c| across.is_some_and(|k| k < c.run.len() && c.run[k])),
+            );
+            walls_of.push(across);
             if edge.is_ring() {
                 if fins.len() != 1 {
                     return Err(general());
@@ -997,6 +1061,27 @@ fn prism_on(
                 }
                 _ => return Err(general()),
             });
+        }
+        // S9e.4b.4b.2b.2b.2: a ring along the lead part completed by its
+        // circle offset to the completion's side (`ring_offset`), a path's
+        // runs along it by `complete_loop`.
+        if let (Some(_), Some((center, radius)), Some(true)) = (complete, ring, runs.first()) {
+            points = ring_offset(center, radius, li > 0, &beyond)?;
+            segments = vec![Segment::Line; points.len()];
+            ring = None;
+        } else if complete.is_some() && runs.iter().any(|&r| r) {
+            let tol = tolerance.linear();
+            let same = |i: usize, j: usize| match (walls_of[i], walls_of[j]) {
+                (Some(a), Some(b)) => a == b || one_surface(t, a, b, tol),
+                _ => false,
+            };
+            (points, segments) = complete_loop(points, segments, &runs, li > 0, &beyond, &same)?;
+            // A loop bridged into one arc about its whole circle: a ring.
+            if let ([_], [Segment::Arc { center, radius, .. }]) =
+                (points.as_slice(), segments.as_slice())
+            {
+                ring = Some((*center, *radius));
+            }
         }
         boundaries.push(match ring {
             Some((center, radius)) => Boundary::circle(center, radius, tolerance)?,
@@ -1037,6 +1122,379 @@ fn prism_on(
         return Err(general());
     }
     Solid::build(op, profile, frame, start, end)
+}
+
+/// S9e.4b.4b.2b.2b.2: a ring of a leaf's loop along the lead part, completed
+/// as `complete_loop` completes a loop whose every edge runs along it: its
+/// circle offset by `delta` (the ring's diameter times `sqrt 2` over 64) away
+/// from the leaf's cap (outward for an outer loop, inward for a hole), a
+/// polygon within `delta / 4` of it, every vertex and side's middle on its
+/// side of the lead part.
+fn ring_offset(
+    center: Point2,
+    radius: f64,
+    hole: bool,
+    inside: &dyn Fn(Point2) -> bool,
+) -> Result<Vec<Point2>> {
+    let delta = 2.0 * radius * std::f64::consts::SQRT_2 / 64.0;
+    let r = if hole { radius - delta } else { radius + delta };
+    let step = 2.0 * (1.0 - delta / (4.0 * r)).acos();
+    let count = (std::f64::consts::TAU / step).ceil().max(8.0) as usize;
+    if count > COMPLETION_ARC {
+        return Err(not_their_chain());
+    }
+    let at = |k: f64| {
+        let th = std::f64::consts::TAU * k / count as f64;
+        Point2::new(center.x + r * th.cos(), center.y + r * th.sin())
+    };
+    let points: Vec<Point2> = (0..count).map(|k| at(k as f64)).collect();
+    let middles = (0..count).map(|k| {
+        let (a, b) = (at(k as f64), at(k as f64 + 1.0));
+        Point2::new((a.x + b.x) / 2.0, (a.y + b.y) / 2.0)
+    });
+    if !points.iter().copied().chain(middles).all(inside) {
+        return Err(not_their_chain());
+    }
+    Ok(points)
+}
+
+/// S9e.4b.4b.2b.2b.2: the most points a completion takes along one arc.
+const COMPLETION_ARC: usize = 64;
+
+/// S9e.4b.4b.2b.2b.2: a leaf's loop (its points and segments, each segment's
+/// edge across the lead part's wall or not, `runs`) with each maximal run of
+/// edges across the lead part completed beyond it, on the side away from the
+/// leaf's cap (into the lead part's material for a fuse, out of it for a
+/// cut, as `inside` tells). A run between two walls of the leaf on one
+/// surface (`same`: a line or circle the lead part parts), turning alike,
+/// whose carrier between them lies on that side is bridged by it, the two one
+/// segment (an arc bridged round to its own start, a stored vertex between
+/// two faces of one circle, OCCT's seam, split there and at its antipode);
+/// else the leaf's walls at the run's ends are extended along their lines or
+/// circles to a depth `delta` past the run (`delta` the loop's extent over
+/// 64; refused where a wall meets the run at a sine below 1/8), then lines
+/// run through the run's joints and arcs offset by `delta` to that side (an
+/// arc's polyline within `delta / 4` of its offset, at most `COMPLETION_ARC`
+/// points; a joint folding back refused). A loop whose every edge runs along
+/// the lead part is that offset alone. Every new point and segment's middle
+/// must lie on its side of the lead part (`inside`), else the leaf is no
+/// completion of it.
+fn complete_loop(
+    points: Vec<Point2>,
+    segments: Vec<Segment>,
+    runs: &[bool],
+    hole: bool,
+    inside: &dyn Fn(Point2) -> bool,
+    same: &dyn Fn(usize, usize) -> bool,
+) -> Result<(Vec<Point2>, Vec<Segment>)> {
+    let n = points.len();
+    if n == 0 || runs.len() != n {
+        return Err(general());
+    }
+    type V2 = (f64, f64);
+    let unit = |v: V2| -> V2 {
+        // `sqrt`, correctly rounded on every host (`hypot` is not).
+        let l = (v.0 * v.0 + v.1 * v.1).sqrt();
+        (v.0 / l, v.1 / l)
+    };
+    let at = |j: usize| -> V2 {
+        let p = points[j % n];
+        (p.x, p.y)
+    };
+    let tau = std::f64::consts::TAU;
+    // An arc's sweep from `a` to `b` about `c` (signed by its turn).
+    let sweep = |c: V2, a: V2, b: V2, ccw: bool| -> f64 {
+        let (ta, tb) = ((a.1 - c.1).atan2(a.0 - c.0), (b.1 - c.1).atan2(b.0 - c.0));
+        let mut s = if ccw {
+            (tb - ta).rem_euclid(tau)
+        } else {
+            -(ta - tb).rem_euclid(tau)
+        };
+        if s == 0.0 {
+            s = if ccw { tau } else { -tau };
+        }
+        s
+    };
+    let arc_of = |j: usize| -> Option<(V2, f64, bool)> {
+        match &segments[j % n] {
+            Segment::Arc {
+                center,
+                radius,
+                ccw,
+            } => Some(((center.x, center.y), *radius, *ccw)),
+            _ => None,
+        }
+    };
+    if segments
+        .iter()
+        .any(|s| !matches!(s, Segment::Line | Segment::Arc { .. }))
+    {
+        return Err(general());
+    }
+    // The tangent of segment `j` at its start or end.
+    let tangent = |j: usize, end: bool| -> V2 {
+        let (a, b) = (at(j), at(j + 1));
+        match arc_of(j) {
+            None => unit((b.0 - a.0, b.1 - a.1)),
+            Some((c, _, ccw)) => {
+                let x = if end { b } else { a };
+                let u = unit((x.0 - c.0, x.1 - c.1));
+                if ccw {
+                    (-u.1, u.0)
+                } else {
+                    (u.1, -u.0)
+                }
+            }
+        }
+    };
+    // The loop's samples: its orientation and extent.
+    let mut samples: Vec<V2> = Vec::new();
+    for j in 0..n {
+        let (a, b) = (at(j), at(j + 1));
+        samples.push(a);
+        if let Some((c, r, ccw)) = arc_of(j) {
+            let (s, ta) = (sweep(c, a, b, ccw), (a.1 - c.1).atan2(a.0 - c.0));
+            for k in 1..8 {
+                let th = ta + s * f64::from(k) / 8.0;
+                samples.push((c.0 + r * th.cos(), c.1 + r * th.sin()));
+            }
+        }
+    }
+    let m = samples.len();
+    let area: f64 = (0..m)
+        .map(|i| {
+            let (a, b) = (samples[i], samples[(i + 1) % m]);
+            a.0 * b.1 - a.1 * b.0
+        })
+        .sum();
+    let (lo, hi) = samples.iter().fold(
+        (
+            (f64::INFINITY, f64::INFINITY),
+            (f64::NEG_INFINITY, f64::NEG_INFINITY),
+        ),
+        |(lo, hi), p| {
+            (
+                (lo.0.min(p.0), lo.1.min(p.1)),
+                (hi.0.max(p.0), hi.1.max(p.1)),
+            )
+        },
+    );
+    let delta = ((hi.0 - lo.0).powi(2) + (hi.1 - lo.1).powi(2)).sqrt() / 64.0;
+    // The completion's side: right of the run where the leaf's cap lies on
+    // its left.
+    let sigma = if (area > 0.0) != hole { 1.0 } else { -1.0 };
+    let side = |t: V2| -> V2 { (sigma * t.1, -sigma * t.0) };
+    let refuse = not_their_chain;
+    // A run joint's offset point.
+    let joint = |k: usize| -> Result<V2> {
+        let (n1, n2) = (side(tangent(k + n - 1, true)), side(tangent(k, false)));
+        let den = 1.0 + n1.0 * n2.0 + n1.1 * n2.1;
+        if den < 0.25 {
+            return Err(refuse());
+        }
+        let x = at(k);
+        Ok((
+            x.0 + delta * (n1.0 + n2.0) / den,
+            x.1 + delta * (n1.1 + n2.1) / den,
+        ))
+    };
+    // An arc run segment's offset points strictly between its ends.
+    let arc_points = |k: usize| -> Result<Vec<V2>> {
+        let Some((c, r, ccw)) = arc_of(k) else {
+            return Ok(Vec::new());
+        };
+        let (a, b) = (at(k), at(k + 1));
+        let u = unit((a.0 - c.0, a.1 - c.1));
+        let nn = side(tangent(k, false));
+        let r2 = r + delta * (nn.0 * u.0 + nn.1 * u.1).signum();
+        if r2 <= delta {
+            return Err(refuse());
+        }
+        let s = sweep(c, a, b, ccw);
+        let step = 2.0 * (1.0 - delta / (4.0 * r2)).acos();
+        let count = (s.abs() / step).ceil().max(1.0);
+        if count > COMPLETION_ARC as f64 {
+            return Err(refuse());
+        }
+        let ta = (a.1 - c.1).atan2(a.0 - c.0);
+        let count = count as usize;
+        Ok((1..count)
+            .map(|i| {
+                let th = ta + s * i as f64 / count as f64;
+                (c.0 + r2 * th.cos(), c.1 + r2 * th.sin())
+            })
+            .collect())
+    };
+    // A wall extended from a run's end `x` (the start of segment `j`, `back`,
+    // or its end) by `delta` past the run along it.
+    let extend = |j: usize, back: bool, normal: V2| -> Result<V2> {
+        let x = if back { at(j) } else { at(j + 1) };
+        let t = tangent(j, !back);
+        let d = if back { (-t.0, -t.1) } else { t };
+        let sine = d.0 * normal.0 + d.1 * normal.1;
+        if sine < 0.125 {
+            return Err(refuse());
+        }
+        let e = delta / sine;
+        Ok(match arc_of(j) {
+            None => (x.0 + e * d.0, x.1 + e * d.1),
+            Some((c, r, ccw)) => {
+                let phi = e / r;
+                if phi > 1.0 {
+                    return Err(refuse());
+                }
+                let turn = if ccw != back { phi } else { -phi };
+                let th = (x.1 - c.1).atan2(x.0 - c.0) + turn;
+                (c.0 + r * th.cos(), c.1 + r * th.sin())
+            }
+        })
+    };
+    let p2 = |v: V2| Point2::new(v.0, v.1);
+    let mut checked: Vec<V2> = Vec::new();
+    let (mut out_points, mut out_segments) = (Vec::new(), Vec::new());
+    if runs.iter().all(|&r| r) {
+        // The whole loop along the lead part: its offset alone.
+        for k in 0..n {
+            out_points.push(joint(k)?);
+            out_points.extend(arc_points(k)?);
+        }
+        checked.extend(out_points.iter().copied());
+        let c = out_points.len();
+        for i in 0..c {
+            let (a, b) = (out_points[i], out_points[(i + 1) % c]);
+            checked.push(((a.0 + b.0) / 2.0, (a.1 + b.1) / 2.0));
+        }
+        if !checked.iter().all(|&v| inside(p2(v))) {
+            return Err(refuse());
+        }
+        let segments = vec![Segment::Line; c];
+        return Ok((out_points.into_iter().map(p2).collect(), segments));
+    }
+    // Each run's completion (from its in-segment's extended end to its
+    // out-segment's extended start), by its first segment; or a run whose
+    // in-segment and out-segment lie on one wall's line or circle, turning
+    // alike, with that carrier between them on the completion's side,
+    // bridged by it (the in-segment then ends at the out-segment's end, the
+    // two one segment).
+    let mut path_after: BTreeMap<usize, Vec<V2>> = BTreeMap::new();
+    let mut start_of: BTreeMap<usize, V2> = BTreeMap::new();
+    let mut bridged: Vec<usize> = Vec::new();
+    for a in 0..n {
+        if !runs[a] || runs[(a + n - 1) % n] {
+            continue;
+        }
+        let mut b = a;
+        while runs[(b + 1) % n] {
+            b = (b + 1) % n;
+        }
+        let first = (a + n - 1) % n;
+        let last = (b + 1) % n;
+        let alike = first != last
+            && same(first, last)
+            && match (arc_of(first), arc_of(last)) {
+                (None, None) => true,
+                (Some((_, _, x)), Some((_, _, y))) => x == y,
+                _ => false,
+            };
+        if alike {
+            let (x_in, x_out) = (at(a), at(last));
+            let between: Vec<V2> = match arc_of(first) {
+                None => (1..8)
+                    .map(|k| {
+                        let f = f64::from(k) / 8.0;
+                        (
+                            x_in.0 + f * (x_out.0 - x_in.0),
+                            x_in.1 + f * (x_out.1 - x_in.1),
+                        )
+                    })
+                    .collect(),
+                Some((c, r, ccw)) => {
+                    let s = sweep(c, x_in, x_out, ccw);
+                    let ta = (x_in.1 - c.1).atan2(x_in.0 - c.0);
+                    (1..16)
+                        .map(|k| {
+                            let th = ta + s * f64::from(k) / 16.0;
+                            (c.0 + r * th.cos(), c.1 + r * th.sin())
+                        })
+                        .collect()
+                }
+            };
+            if between.iter().all(|&v| inside(p2(v))) {
+                bridged.push(first);
+                bridged.push(last);
+                continue;
+            }
+        }
+        let y_in = extend(first, false, side(tangent(a, false)))?;
+        let y_out = extend(last, true, side(tangent(b, true)))?;
+        let mut path = vec![y_in];
+        let mut k = a;
+        loop {
+            path.extend(arc_points(k)?);
+            if k == b {
+                break;
+            }
+            k = (k + 1) % n;
+            path.push(joint(k)?);
+        }
+        // The walls' extensions and the new lines (to the out-segment's new
+        // start).
+        let (x_in, x_out) = (at(a), at(last));
+        checked.push(((x_in.0 + y_in.0) / 2.0, (x_in.1 + y_in.1) / 2.0));
+        checked.push(((x_out.0 + y_out.0) / 2.0, (x_out.1 + y_out.1) / 2.0));
+        let mut all = path.clone();
+        all.push(y_out);
+        checked.extend(all.iter().copied());
+        for w in all.windows(2) {
+            checked.push(((w[0].0 + w[1].0) / 2.0, (w[0].1 + w[1].1) / 2.0));
+        }
+        path_after.insert(first, path);
+        start_of.insert(last, y_out);
+    }
+    if !checked.iter().all(|&v| inside(p2(v))) {
+        return Err(refuse());
+    }
+    // A bridged in-segment runs on to its out-segment's end (through the
+    // out-segments it continues in turn); a loop bridged all round is one
+    // ring. The output starts at a segment no bridge continues.
+    let next_of: BTreeMap<usize, usize> = bridged.chunks(2).map(|w| (w[0], w[1])).collect();
+    let Some(j0) = (0..n).find(|&j| !runs[j] && !next_of.values().any(|&l| l == j)) else {
+        let j = (0..n).find(|&j| !runs[j]).ok_or_else(general)?;
+        return Ok((vec![p2(at(j))], vec![segments[j].clone()]));
+    };
+    let mut covered = vec![false; n];
+    for i in 0..n {
+        let j = (j0 + i) % n;
+        if runs[j] || covered[j] {
+            continue;
+        }
+        out_points.push(start_of.get(&j).copied().unwrap_or(at(j)));
+        out_segments.push(segments[j].clone());
+        let mut k = j;
+        while let Some(&l) = next_of.get(&k) {
+            covered[l] = true;
+            k = l;
+        }
+        if let Some(path) = path_after.get(&k) {
+            for &v in path {
+                out_points.push(v);
+                out_segments.push(Segment::Line);
+            }
+        }
+    }
+    // One arc bridged round to its own start (an arc OCCT split at its
+    // circle's seam, the run between the halves' far ends): the circle split
+    // at that start, which the stored topology keeps, and its antipode on the
+    // completion's side.
+    if let ([p], [Segment::Arc { center, .. }]) = (out_points.as_slice(), out_segments.as_slice()) {
+        let opposite = (2.0 * center.x - p.0, 2.0 * center.y - p.1);
+        if !inside(p2(opposite)) {
+            return Err(refuse());
+        }
+        out_points.push(opposite);
+        out_segments.push(out_segments[0].clone());
+    }
+    Ok((out_points.into_iter().map(p2).collect(), out_segments))
 }
 
 /// An end of a sphere or cone: its local height, its radius (zero at a
@@ -2186,11 +2644,12 @@ fn primitive_over(
 /// S9e.4b.4b.2a: a body of several primitives whose plane faces are not all
 /// their ends or a prism leaf's faces; S9e.4b.4b.2b.1: nor a prism's of one
 /// cap, a flat's or a pocket's; S9e.4b.4b.2b.2a: nor two leaves';
-/// S9e.4b.4b.2b.2b.1: nor leaves' cut at their rim (S9e.4b.4b.2b.2b.2).
+/// S9e.4b.4b.2b.2b.1: nor leaves' cut at their rim; S9e.4b.4b.2b.2b.2: nor
+/// parts flush with a leaf's walls (S9e.4b.4b.2b.2b.3).
 fn not_their_faces() -> Error {
     Error::OutOfDomain(
         "an imported body of several primitives with plane faces other than their ends, one or \
-         two prisms', a flat or a pocket (S9e.4b.4b.2b.2b.2)",
+         two prisms', a flat or a pocket (S9e.4b.4b.2b.2b.3)",
     )
 }
 
@@ -2214,6 +2673,11 @@ struct Leaf {
     /// S9e.4b.4b.2b.1: a prism of one cap, its walls (its height a quarter
     /// past their far end).
     open: Option<Vec<usize>>,
+    /// S9e.4b.4b.2b.2b.2: the faces across its loops' runs along the lead
+    /// part (completed beyond them; empty where none), and whether it is a
+    /// void cut from the chain (a pocket open sideways) rather than fused.
+    run: Vec<bool>,
+    void: bool,
 }
 
 /// Whether a face is a wall along `up`: a plane whose outward normal is
@@ -2431,12 +2895,222 @@ fn leaves_with(t: &Topology, tolerance: Tolerance, rim: bool) -> Vec<Leaf> {
                     loops,
                     faces,
                     open: None,
+                    run: Vec::new(),
+                    void: false,
                 });
             }
         }
     }
     out
 }
+
+/// S9e.4b.4b.2b.2b.2: the parts whose walls run along a lead leaf's walls
+/// (REVIEW_NOTES.md, "S9e.4b.4b.2b.2b.2 refined"), in the order found: two
+/// plane faces of no lead face, parallel to the lead's caps and strictly
+/// between them (on its bottom's stored frame turned up), the second lying
+/// from the first along the first's inward normal (a part fused, standing
+/// out of the lead's walls) or its outward normal (a void cut, a pocket open
+/// sideways), the first's every loop edge across a lead wall (its run) or a
+/// wall rising from it to the second (through any face on its surface), at
+/// least one across a lead wall and one not; or a void open through the
+/// lead's cap: a floor alone whose walls not the lead's rise from it to that
+/// cap's plane (within the resolution), a prism of one cap past them
+/// (`open`). Parts alike in their own walls (a part read off either cap) are
+/// one.
+fn flush_parts(t: &Topology, tolerance: Tolerance, lead: &Leaf) -> Vec<Leaf> {
+    let tol = tolerance.linear();
+    let n = t.faces().len();
+    let fins = fin_faces(t);
+    let (qb, qt, up) = lead.caps;
+    let Surface::Plane(stored) = &t.faces()[qb].surface else {
+        return Vec::new();
+    };
+    let base = if stored.normal().dot(up) > 0.0 {
+        *stored
+    } else {
+        stored.flipped()
+    };
+    let height = face_range(t, qt, &base).1;
+    let within = |k: usize| {
+        let (a, b) = face_range(t, k, &base);
+        a > tol && b < height - tol
+    };
+    // The faces across a face's loop's edges (none where a fin has no
+    // other).
+    let across = |face: usize, li: usize| -> Option<Vec<usize>> {
+        let l = t.faces()[face].loops.get(li)?;
+        let Loop::Edges { fins: lf, .. } = &t.loops()[l.index()] else {
+            return None;
+        };
+        lf.iter()
+            .map(|f| {
+                let e = &t.edges()[t.fins()[f.index()].edge.index()];
+                e.fins.iter().find(|x| *x != f).map(|x| fins[x.index()])
+            })
+            .collect()
+    };
+    let mut pairs = std::collections::BTreeSet::new();
+    for e in t.edges() {
+        if let [a, b] = e.fins.as_slice() {
+            let (a, b) = (fins[a.index()], fins[b.index()]);
+            pairs.insert((a.min(b), a.max(b)));
+        }
+    }
+    let meet = |a: usize, b: usize| pairs.contains(&(a.min(b), a.max(b)));
+    let mut out: Vec<Leaf> = Vec::new();
+    let mut seen: Vec<Vec<usize>> = Vec::new();
+    for void in [false, true] {
+        for f in 0..n {
+            if lead.faces[f] || !matches!(t.faces()[f].surface, Surface::Plane(_)) || !within(f) {
+                continue;
+            }
+            let Some(m) = outward(t, f) else { continue };
+            if !parallel(m, up) {
+                continue;
+            }
+            // The part's direction from its first cap: into the material, or
+            // (a void) out of it.
+            let dir = if void { m } else { -m };
+            let Surface::Plane(fs) = &t.faces()[f].surface else {
+                continue;
+            };
+            let floor = if fs.normal().dot(dir) > 0.0 {
+                *fs
+            } else {
+                fs.flipped()
+            };
+            // A void open across the lead's cap (a pocket open sideways and
+            // through its top): every wall across the floor's loops a lead
+            // wall or one rising from it to the lead's cap plane.
+            if void {
+                let far = if dir.dot(up) > 0.0 { qt } else { qb };
+                let cap = face_range(t, far, &floor).0;
+                let mut walls = Vec::new();
+                let mut fit = true;
+                for li in 0..t.faces()[f].loops.len() {
+                    let Some(ws) = across(f, li) else {
+                        fit = false;
+                        break;
+                    };
+                    for &k in &ws {
+                        fit &= wall(t, k, dir)
+                            && (lead.faces[k]
+                                || (rises(t, f, k, dir, tol)
+                                    && face_range(t, k, &floor).1 >= cap - tol));
+                    }
+                    walls.extend(ws);
+                }
+                let run: Vec<bool> = (0..n)
+                    .map(|k| lead.faces[k] && walls.contains(&k))
+                    .collect();
+                walls.sort_unstable();
+                walls.dedup();
+                let own: Vec<usize> = walls.iter().copied().filter(|&k| !run[k]).collect();
+                if fit && run.iter().any(|&r| r) && !own.is_empty() && !seen.contains(&own) {
+                    seen.push(own.clone());
+                    out.push(Leaf {
+                        caps: (f, f, dir),
+                        loops: (0..t.faces()[f].loops.len()).collect(),
+                        faces: part_faces(t, &[f], &own, lead, tol),
+                        open: Some(own),
+                        run,
+                        void,
+                    });
+                    continue;
+                }
+            }
+            for c in 0..n {
+                if c == f || lead.faces[c] || !within(c) {
+                    continue;
+                }
+                let Some(mc) = outward(t, c) else { continue };
+                if mc.dot(m) >= 0.0 || !parallel(mc, m) || face_range(t, c, &floor).0 <= tol {
+                    continue;
+                }
+                let ceiling: Vec<usize> = (0..n)
+                    .filter(|&k| k == c || one_surface(t, c, k, tol))
+                    .collect();
+                let mut walls = Vec::new();
+                let mut fit = true;
+                for li in 0..t.faces()[f].loops.len() {
+                    let Some(ws) = across(f, li) else {
+                        fit = false;
+                        break;
+                    };
+                    for &k in &ws {
+                        fit &= wall(t, k, dir)
+                            && (lead.faces[k]
+                                || (rises(t, f, k, dir, tol)
+                                    && (0..n)
+                                        .filter(|&x| x == k || one_surface(t, k, x, tol))
+                                        .any(|x| ceiling.iter().any(|&y| meet(x, y)))));
+                    }
+                    walls.extend(ws);
+                }
+                let run: Vec<bool> = (0..n)
+                    .map(|k| lead.faces[k] && walls.contains(&k))
+                    .collect();
+                if !fit || !run.iter().any(|&r| r) || walls.iter().all(|&k| run[k]) && !void {
+                    continue;
+                }
+                walls.sort_unstable();
+                walls.dedup();
+                // Read off either cap, a part's own walls are one set.
+                let own: Vec<usize> = walls.iter().copied().filter(|&k| !run[k]).collect();
+                if seen.contains(&own) {
+                    continue;
+                }
+                seen.push(own);
+                let own: Vec<usize> = walls.iter().copied().filter(|&k| !run[k]).collect();
+                out.push(Leaf {
+                    caps: (f, c, dir),
+                    loops: (0..t.faces()[f].loops.len()).collect(),
+                    faces: part_faces(t, &[f, c], &own, lead, tol),
+                    open: None,
+                    run,
+                    void,
+                });
+            }
+        }
+    }
+    out
+}
+
+/// S9e.4b.4b.2b.2b.2: a part's faces: its caps, its own walls and every face
+/// of no lead face on one of their surfaces.
+fn part_faces(t: &Topology, caps: &[usize], own: &[usize], lead: &Leaf, tol: f64) -> Vec<bool> {
+    let n = t.faces().len();
+    let members: Vec<usize> = caps.iter().chain(own).copied().collect();
+    (0..n)
+        .map(|k| {
+            members.contains(&k)
+                || (!lead.faces[k] && members.iter().any(|&x| one_surface(t, x, k, tol)))
+        })
+        .collect()
+}
+
+/// S9e.4b.4b.2b.2b.2: the lead leaves a body's flush chains are tried
+/// with, in order: each leaf but one alike an earlier in its faces and axis,
+/// at most `FLUSH_LEADS`.
+fn flush_leads(every: &[Leaf]) -> Vec<usize> {
+    let mut out: Vec<usize> = Vec::new();
+    for (i, l) in every.iter().enumerate() {
+        if out.len() < FLUSH_LEADS
+            && !out
+                .iter()
+                .any(|&j| every[j].faces == l.faces && parallel(every[j].caps.2, l.caps.2))
+        {
+            out.push(i);
+        }
+    }
+    out
+}
+
+/// S9e.4b.4b.2b.2b.2: the most lead leaves a body's flush chains try.
+const FLUSH_LEADS: usize = 8;
+
+/// S9e.4b.4b.2b.2b.2: the most parts a flush chain completes.
+const FLUSH_PARTS: usize = 4;
 
 /// S9e.4b.4b.2b.2a: how many distinct leaves' face sets two leaves are
 /// chosen from (the first, in the order found).
@@ -2498,6 +3172,9 @@ fn leaf_pairs(all: &[Leaf]) -> Vec<[usize; 2]> {
 /// tooth to a leaf's cap running past it (`chain_piece`'s `rim`): `N + k` the
 /// `k`-th leaf's alone, `N + L' + k` with the other plane faces, `N + 2 L' +
 /// k` the `k`-th pair's alone, `N + 2 L' + P' + k` with them.
+/// S9e.4b.4b.2b.2b.2: from `M = N + 2 L' + 2 P'` on (`F` the leads,
+/// `flush_leads`), `M + k` the `k`-th lead's flush chain (`flush_parts`)
+/// alone, `M + F + k` with the other plane faces.
 fn primitives_piece(
     t: &Topology,
     tolerance: Tolerance,
@@ -2513,6 +3190,37 @@ fn primitives_piece(
         every.extend(rim_leaves(t, tolerance, &all));
         let (lone, pairs) = (every.len(), leaf_pairs(&every));
         let k = c - first;
+        // S9e.4b.4b.2b.2b.2: then each lead's flush chain, alone and with
+        // the other plane faces.
+        if k >= 2 * lone + 2 * pairs.len() {
+            let leads = flush_leads(&every);
+            let j = k - 2 * lone - 2 * pairs.len();
+            let lead = every
+                .get(
+                    *leads
+                        .get(j % leads.len().max(1))
+                        .ok_or_else(not_their_chain)?,
+                )
+                .cloned()
+                .ok_or_else(not_their_chain)?;
+            let mut chosen = vec![lead.clone()];
+            chosen.extend(flush_parts(t, tolerance, &lead));
+            if chosen.len() < 2 || chosen.len() > FLUSH_PARTS + 1 {
+                return Err(not_their_chain());
+            }
+            let extra = j >= leads.len();
+            let mut piece = chain_piece(
+                t,
+                tolerance,
+                op,
+                &chosen,
+                extra.then_some(&every[..]),
+                true,
+                true,
+            )?;
+            piece.choice = choice;
+            return Ok(piece);
+        }
         let (chosen, extra) = if k < 2 * lone {
             let leaf = every
                 .get(k % lone.max(1))
@@ -2526,7 +3234,15 @@ fn primitives_piece(
                 .ok_or_else(not_their_chain)?;
             (vec![every[i].clone(), every[j].clone()], k >= pairs.len())
         };
-        let mut piece = chain_piece(t, tolerance, op, &chosen, extra.then_some(&every[..]), true)?;
+        let mut piece = chain_piece(
+            t,
+            tolerance,
+            op,
+            &chosen,
+            extra.then_some(&every[..]),
+            true,
+            false,
+        )?;
         piece.choice = choice;
         return Ok(piece);
     }
@@ -2545,7 +3261,15 @@ fn primitives_piece(
             .ok_or_else(not_their_chain)?;
         (vec![all[i].clone(), all[j].clone()], k >= pairs.len())
     };
-    let mut piece = chain_piece(t, tolerance, op, &chosen, extra.then_some(&all[..]), false)?;
+    let mut piece = chain_piece(
+        t,
+        tolerance,
+        op,
+        &chosen,
+        extra.then_some(&all[..]),
+        false,
+        false,
+    )?;
     piece.choice = choice;
     Ok(piece)
 }
@@ -2560,7 +3284,8 @@ fn primitives_piece(
 /// (every body S9e.4b.4b.2b.2a imports keeps its chain). Returns them, the
 /// first of those with the other plane faces or of two leaves (a tangency in
 /// such a chain's is one the body is not) and the first over the leaves cut
-/// at their rim (any refusal of such a chain's is one too).
+/// at their rim (any refusal of such a chain's is one too, and of a flush
+/// chain's, S9e.4b.4b.2b.2b.2, tried last).
 fn primitives_choices(t: &Topology, tolerance: Tolerance) -> (Vec<u32>, u32, u32) {
     let all = leaves(t, tolerance);
     let count = u32::try_from(all.len() + 1).unwrap_or(u32::MAX / 4);
@@ -2569,11 +3294,14 @@ fn primitives_choices(t: &Topology, tolerance: Tolerance) -> (Vec<u32>, u32, u32
     every.extend(rim_leaves(t, tolerance, &all));
     let lone = u32::try_from(every.len()).unwrap_or(0);
     let rim_pairs = u32::try_from(leaf_pairs(&every).len()).unwrap_or(0);
+    let leads = u32::try_from(flush_leads(&every).len()).unwrap_or(0);
     let first = 2 * count + 2 * pairs;
+    let flush = first + 2 * lone + 2 * rim_pairs;
     let order = (0..count)
         .chain((count + 1..2 * count).chain([count]))
         .chain(2 * count..first)
-        .chain(first..first + 2 * lone + 2 * rim_pairs)
+        .chain(first..flush)
+        .chain(flush..flush + 2 * leads)
         .collect();
     (order, count, first)
 }
@@ -2646,6 +3374,8 @@ fn bosses(t: &Topology, tolerance: Tolerance, lead: &[Leaf], all: &[Leaf]) -> Ve
             loops: vec![0],
             faces,
             open: Some(walls),
+            run: Vec::new(),
+            void: false,
         });
     }
     out
@@ -2687,6 +3417,7 @@ fn chain_piece(
     leaf: &[Leaf],
     extra: Option<&[Leaf]>,
     rim: bool,
+    flush: bool,
 ) -> Result<Piece> {
     let tol = tolerance.linear();
     let n = t.faces().len();
@@ -2729,7 +3460,11 @@ fn chain_piece(
     // leaf's are S9e.4b.4b.2b.2b's but the flats and pockets taken (below).
     let bends = bends(t)?;
     for (i, &(a, b, bend)) in bends.iter().enumerate() {
-        let one = prisms.is_empty() || (prism_of(a).is_some() && prism_of(a) == prism_of(b));
+        // S9e.4b.4b.2b.2b.2: in a flush chain, a joint of any one prism
+        // (parts of one prism read off several caps share its walls).
+        let one = prisms.is_empty()
+            || (prism_of(a).is_some() && prism_of(a) == prism_of(b))
+            || (flush && prisms.iter().any(|l| l.faces[a] && l.faces[b]));
         // S9e.4b.4b.2b.1: two faces of one surface (a face OCCT split at its
         // surface's seam) are none.
         let split = t.faces()[a].surface == t.faces()[b].surface;
@@ -2838,8 +3573,28 @@ fn chain_piece(
     for (i, l) in prisms.iter().enumerate() {
         let along = built.first().map(|s| s.frame);
         let open = (l.open.as_deref(), along.as_ref());
+        // S9e.4b.4b.2b.2b.2: a part flush with the lead completed through
+        // it (or around it, a void).
+        let lead = built.first().cloned();
+        let complete = lead
+            .as_ref()
+            .filter(|_| !l.run.is_empty())
+            .map(|lead| Completion {
+                run: &l.run,
+                lead,
+                into: !l.void,
+            });
         built.push(
-            prism_on(t, l.caps, &l.loops, open, tolerance, mine(op, i)).map_err(|e| match e {
+            completed_on(
+                t,
+                l.caps,
+                &l.loops,
+                open,
+                complete.as_ref(),
+                tolerance,
+                mine(op, i),
+            )
+            .map_err(|e| match e {
                 Error::OutOfDomain(_) => e,
                 _ => not_their_chain(),
             })?,
@@ -2878,11 +3633,16 @@ fn chain_piece(
         }
         (convex, concave)
     };
-    for q in 0..lead {
+    for (q, l) in prisms.iter().enumerate().take(lead) {
         let mine = faces_of(q);
         let (convex, concave) = meets(&mine, &earlier);
+        // S9e.4b.4b.2b.2b.2: a flush part fused, a void cut.
         ops.push(if q == 0 {
             Op2::Common
+        } else if l.void {
+            Op2::Cut
+        } else if !l.run.is_empty() {
+            Op2::Fuse
         } else if convex && concave {
             return Err(not_their_chain());
         } else if convex {
