@@ -71,7 +71,14 @@
 //! faces of both kinds is a pocket with pockets of its own (`nested_pocket`:
 //! a post or an island standing in it, S9e.4b.4c.2a's `pocket` on the
 //! chain's axes, nested at most three deep), any refusal of such a chain the
-//! one its chain gave before. Every other body is S9e.4b's.
+//! one its chain gave before. S9e.4b.4d.1: a cone face within the resolution
+//! of a plane or a cylinder (a step or an end that turns `1e-6` from flat in
+//! a translated part) is `Degenerate` on import before any construction is
+//! tried (`near_flat_cone`), and a body whose torus faces join their
+//! neighbours smoothly (a turned part's fillets and rounds, the tangency read
+//! off the stored surfaces) is refused by name (`smooth_torus`); a turned
+//! body is no construction of the kernel's (S9e.4b.4d.2, not scheduled).
+//! Every other body is S9e.4b's.
 use super::{replayable, Construction, Context, Solid};
 use crate::history::{History, Relation};
 use crate::identity::{
@@ -404,6 +411,13 @@ impl Solid {
         let (level, operation) = (context.level, context.operation);
         replayable(level)?;
         let topology = renamed(topology, operation)?;
+        // S9e.4b.4d.1: a cone within the resolution of a plane or a cylinder
+        // is no exact model's, whatever the body.
+        if near_flat_cone(&topology, resolution.linear()) {
+            return Err(Error::Degenerate(
+                "an imported cone within the resolution of a plane or a cylinder (S9e.4b.4d)",
+            ));
+        }
         // S9e.4a's construction where its recognition and match succeed,
         // else (S9e.4b.2) a polyhedron of one shell on its stored vertices.
         let construction = recognize(&topology, resolution, construction_operation(operation))
@@ -990,6 +1004,10 @@ fn recognize(t: &Topology, tolerance: Tolerance, op: OperationId) -> Result<Soli
         (0, 1, 0) if planes == n - 1 => cone(t, tolerance, op),
         (0, 0, 1) if n == 1 => torus(t, tolerance, op),
         (0, 0, 0) => prism(t, tolerance, op),
+        // S9e.4b.4d.1: a turned part's fillets and rounds, by name.
+        (_, _, 1..) if smooth_torus(t, tolerance.linear()) => Err(Error::OutOfDomain(
+            "an imported body whose torus faces join their neighbours smoothly (S9e.4b.4d)",
+        )),
         _ => Err(general()),
     };
     // A construction its stored data cannot build (a profile rounded onto
@@ -2194,6 +2212,139 @@ fn bends(t: &Topology) -> Result<Vec<(usize, usize, Bend)>> {
         out.push((a, b, bend(ab)));
     }
     Ok(out)
+}
+
+/// S9e.4b.4d.1: cones within `NEAR_FLAT` rad of a plane or a cylinder are
+/// tested against the resolution; others are cones however small their faces.
+const NEAR_FLAT: f64 = 1e-3;
+
+/// A face's boundary points: its edges' curves at sixteenths and its
+/// vertex loops' vertices (a cone's apex).
+fn face_points(t: &Topology, fi: usize) -> Vec<Point3> {
+    let mut out = Vec::new();
+    for l in &t.faces()[fi].loops {
+        match &t.loops()[l.index()] {
+            Loop::Edges { fins, .. } => {
+                for x in fins {
+                    let curve = &t.edges()[t.fins()[x.index()].edge.index()].curve;
+                    out.extend((0..=16).map(|k| curve.point(f64::from(k) / 16.0)));
+                }
+            }
+            Loop::Vertex(v) => out.push(t.vertices()[v.index()].position),
+        }
+    }
+    out
+}
+
+/// S9e.4b.4d.1: whether a cone face lies within the resolution of a plane
+/// normal to its axis or of a cylinder about it: its half-angle within
+/// `NEAR_FLAT` of a right angle or of zero, and its boundary's spread across
+/// the cone's radii times the cotangent (its height over the face) or along
+/// its axis times the tangent (its radii's spread) at most `tol`.
+fn near_flat_cone(t: &Topology, tol: f64) -> bool {
+    t.faces().iter().enumerate().any(|(fi, f)| {
+        let Surface::Cone {
+            frame, half_angle, ..
+        } = &f.surface
+        else {
+            return false;
+        };
+        let a = half_angle.abs();
+        let flat = std::f64::consts::FRAC_PI_2 - a;
+        if flat.min(a) > NEAR_FLAT {
+            return false;
+        }
+        let (mut r0, mut r1, mut z0, mut z1) = (f64::MAX, f64::MIN, f64::MAX, f64::MIN);
+        for p in face_points(t, fi) {
+            let c = frame.coordinates(p);
+            let r = c[0].hypot(c[1]);
+            (r0, r1, z0, z1) = (r0.min(r), r1.max(r), z0.min(c[2]), z1.max(c[2]));
+        }
+        if r0 > r1 {
+            return false;
+        }
+        let height = (r1 - r0) * (a.cos() / a.sin());
+        let spread = (z1 - z0) * a.tan();
+        if flat < a {
+            height <= tol
+        } else {
+            spread <= tol
+        }
+    })
+}
+
+/// A point's distance from an analytic surface (`None` for a spline).
+fn distance(surface: &Surface, p: Point3) -> Option<f64> {
+    Some(match surface {
+        Surface::Plane(frame) => frame.coordinates(p)[2].abs(),
+        Surface::Cylinder { frame, radius } => {
+            let c = frame.coordinates(p);
+            (c[0].hypot(c[1]) - radius).abs()
+        }
+        Surface::Sphere { frame, radius } => ((p - frame.origin()).length() - radius).abs(),
+        Surface::Cone {
+            frame,
+            radius,
+            half_angle,
+        } => {
+            // Its generatrix in the half-plane through the axis and the
+            // point: `(radius + v sin a, v cos a)`.
+            let c = frame.coordinates(p);
+            let (sin, cos) = half_angle.sin_cos();
+            ((c[0].hypot(c[1]) - radius) * cos - c[2] * sin).abs()
+        }
+        Surface::Torus {
+            frame,
+            major,
+            minor,
+        } => {
+            let c = frame.coordinates(p);
+            ((c[0].hypot(c[1]) - major).hypot(c[2]) - minor).abs()
+        }
+        Surface::BSpline(_) => return None,
+    })
+}
+
+/// S9e.4b.4d.1: whether a torus face joins a face on another surface
+/// smoothly along an edge, read off the stored surfaces: at the edge's
+/// middle, the torus's tube circle in that meridian (its centre on the core
+/// circle there) and the other surface tangent within `tol`, the centre's
+/// distance from the other surface the tube's radius (a fillet's or a
+/// round's join, `OCC485a`'s whose stored edges lie up to 6.6e-6 off their
+/// tangency circles, their normals 2.2e-6 rad apart).
+fn smooth_torus(t: &Topology, tol: f64) -> bool {
+    let faces = fin_faces(t);
+    t.edges().iter().any(|e| {
+        let [fa, fb] = e.fins.as_slice() else {
+            return false;
+        };
+        let (a, b) = (faces[fa.index()], faces[fb.index()]);
+        if a == usize::MAX || b == usize::MAX || a == b {
+            return false;
+        }
+        let (sa, sb) = (&t.faces()[a].surface, &t.faces()[b].surface);
+        if sa == sb {
+            return false;
+        }
+        let m = e.curve.point(0.5);
+        [(sa, sb), (sb, sa)].iter().any(|&(torus, other)| {
+            let Surface::Torus {
+                frame,
+                major,
+                minor,
+            } = torus
+            else {
+                return false;
+            };
+            let c = frame.coordinates(m);
+            let r = c[0].hypot(c[1]);
+            if r == 0.0 {
+                return false;
+            }
+            let centre = frame.origin() + (frame.x() * c[0] + frame.y() * c[1]) * (major / r);
+            distance(other, centre).is_some_and(|d| (d - minor).abs() <= tol)
+        })
+    })
 }
 
 /// A plane face's stored frame and whether its normal `x * y` points into
@@ -3893,8 +4044,13 @@ fn chain_piece_with(
             || (prism_of(a).is_some() && prism_of(a) == prism_of(b))
             || (flush && prisms.iter().any(|l| l.faces[a] && l.faces[b]));
         // S9e.4b.4b.2b.1: two faces of one surface (a face OCCT split at its
-        // surface's seam) are none.
-        let split = t.faces()[a].surface == t.faces()[b].surface;
+        // surface's seam) are none; S9e.4b.4d.1: nor two on one surface
+        // within the resolution across a whole ring (a turned face OCCT split
+        // at its profile's vertex, stored on frames apart along its axis).
+        // Across an arc they stay the body's tangency (two parts on one
+        // surface along part of a rim, S9e.4b.4b.2a's `post`).
+        let split = t.faces()[a].surface == t.faces()[b].surface
+            || (t.edges()[i].is_ring() && one_surface(t, a, b, tol));
         if bend == Bend::Flat && !split && !(joint(t, i, a, b) && one) {
             return Err(tangent_body());
         }
