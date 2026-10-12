@@ -16515,6 +16515,9 @@ Decisions for S9, recorded before its code (2026-09-28):
   gap from above only: every pair between the resolution and twice it
   would be a `ComputationLimit`), two sphere circles (points of two
   different surds), and an apex against a sphere's, torus or spline face.
+  Merged and verified at `6ae2590e` (`rust-kernel`). Campaigns there (600
+  s each, sampled replays, every switch on): `boolean` clean, 401 runs, the
+  slowest input 15 s; `split` clean, 1,727 runs.
 
 * **CI budget (U6).** Per-push fuzz runs replay a bounded sample plus every
   regression and new seed; the daily schedule replays everything; the heavy
