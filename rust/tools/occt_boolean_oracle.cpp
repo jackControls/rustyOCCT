@@ -64,6 +64,15 @@
 // block's row `divide` (after its solids' rows) divides every closed edge of
 // the written solid in two (ShapeUpgrade_ShapeDivideClosedEdges, one split
 // point: a rim ring two arcs, as the survey's so1 and so4 store theirs).
+// S9e.4b.4d: a solid's `plane` and `wire` rows may end with `revolve ox oy oz
+// dx dy dz ANGLE` instead of `prism`: the profile face (its plane through the
+// axis) turned by BRepPrimAPI_MakeRevol about the axis through the origin
+// along the direction by the angle (radians; a whole turn for a turned
+// body, its profile's edge on the axis making no face), and a `write`
+// block's row `tolerance T` (after its solids' rows) sets every vertex's,
+// edge's and face's tolerance of the written solid to T
+// (ShapeFix_ShapeTolerance::SetTolerance), as a translated part stores its
+// own (the dataset's e3i parts 0.003 throughout).
 //
 // Output: `NAME done N valid warnings` (N solids in the result, the result
 // checked by BRepCheck_Analyzer, 1 if the operation reported warnings), then
@@ -93,6 +102,7 @@
 #include <BRepPrimAPI_MakeCylinder.hxx>
 #include <BRepPrimAPI_MakeHalfSpace.hxx>
 #include <BRepPrimAPI_MakePrism.hxx>
+#include <BRepPrimAPI_MakeRevol.hxx>
 #include <BRepPrimAPI_MakeSphere.hxx>
 #include <BRepPrimAPI_MakeTorus.hxx>
 #include <BRepPrimAPI_MakeWedge.hxx>
@@ -101,6 +111,7 @@
 #include <Geom_BSplineCurve.hxx>
 #include <NCollection_Array1.hxx>
 #include <NCollection_IndexedMap.hxx>
+#include <ShapeFix_ShapeTolerance.hxx>
 #include <ShapeUpgrade_ShapeDivideClosedEdges.hxx>
 #include <ShapeUpgrade_UnifySameDomain.hxx>
 #include <Standard_Failure.hxx>
@@ -180,6 +191,10 @@ struct Prism {
   std::vector<TopoDS_Wire> wires;
   gp_Vec vector;
   bool has_vector = false;
+  // S9e.4b.4d: a turned profile's axis and angle.
+  gp_Ax1 revolve_axis;
+  double revolve_angle = 0;
+  bool has_revolve = false;
   TopoDS_Shape primitive;
   // S9e.4b.3b: the piece on one side of a plane.
   bool split = false, above = false;
@@ -337,6 +352,11 @@ struct Prism {
       auto v = numbers(in, 3);
       vector = gp_Vec(v[0], v[1], v[2]);
       has_vector = true;
+    } else if (kind == "revolve") {
+      auto v = numbers(in, 7);
+      revolve_axis = gp_Ax1(gp_Pnt(v[0], v[1], v[2]), gp_Dir(v[3], v[4], v[5]));
+      revolve_angle = v[6];
+      has_revolve = true;
     } else {
       throw Standard_Failure("unknown row");
     }
@@ -364,12 +384,25 @@ struct Prism {
 
   TopoDS_Shape solid() const {
     if (!primitive.IsNull()) {
-      if (!wires.empty() || has_vector) throw Standard_Failure("a primitive and a prism");
+      if (!wires.empty() || has_vector || has_revolve) throw Standard_Failure("a primitive and a prism");
       return primitive;
     }
-    if (wires.empty() || !has_vector) throw Standard_Failure("incomplete prism");
+    if (wires.empty() || has_vector == has_revolve) throw Standard_Failure("incomplete prism");
     BRepBuilderAPI_MakeFace mf(gp_Pln(frame), wires.at(0), true);
     for (size_t i = 1; i < wires.size(); ++i) mf.Add(wires[i]);
+    if (has_revolve) {
+      // S9e.4b.4d: a turned body, its one solid.
+      BRepPrimAPI_MakeRevol revol(mf.Face(), revolve_axis, revolve_angle);
+      if (!revol.IsDone()) throw Standard_Failure("revolve");
+      TopoDS_Shape made;
+      int solids = 0;
+      for (TopExp_Explorer e(revol.Shape(), TopAbs_SOLID); e.More(); e.Next()) {
+        made = e.Current();
+        ++solids;
+      }
+      if (solids != 1) throw Standard_Failure("a turned body of one solid");
+      return made;
+    }
     return BRepPrimAPI_MakePrism(mf.Face(), vector).Shape();
   }
 };
@@ -400,6 +433,7 @@ int main() {
       Prism body, other;
       std::string operation;
       bool divide = false;
+      double tolerance = 0;
       try {
         while (std::getline(std::cin, line) && line != "end") {
           std::istringstream in(line);
@@ -407,6 +441,8 @@ int main() {
           in >> kind;
           if (kind == "divide") {
             divide = true;
+          } else if (kind == "tolerance") {
+            if (!(in >> tolerance) || !(tolerance > 0)) throw Standard_Failure("tolerance row");
           } else if (kind == "boolean") {
             if (!operation.empty() || !(in >> operation)) throw Standard_Failure("boolean row");
           } else if (operation.empty()) {
@@ -446,6 +482,7 @@ int main() {
           }
           if (solids != 1) throw Standard_Failure("a divided solid");
         }
+        if (tolerance > 0) ShapeFix_ShapeTolerance().SetTolerance(written, tolerance);
         if (path.empty() || !BRepTools::Write(written, fixture(path).c_str(), false, false,
                                               TopTools_FormatVersion_VERSION_1))
           throw Standard_Failure("write");
