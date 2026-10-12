@@ -1187,15 +1187,29 @@ fn step<T: Real>(
     }
     let h = phi1 - phi0;
     let dt = slope * h + 0.5 * bend * h * h;
+    let ps = span::<T>(phi0, phi1);
+    // The ends' test below bounds G_phi over the whole step, and its
+    // enclosure is wider than G_phi's variation (by orders of magnitude
+    // where the terms of G cancel, as near a cone's points at infinity):
+    // the window clears the root at the step's middle by twice what that
+    // width adds, which a margin from the branch's curvature alone does not
+    // (a nearly flat branch then stepped by 1e-5 rad).
+    let spread = {
+        let (lo, hi) = f.jet(&ps, &T::exact_f64(tm)).gp.bounds_f64();
+        (hi - lo) * h / gt.abs()
+    };
+    if !spread.is_finite() {
+        return None;
+    }
     let margin = 0.5 * (slope * h).abs()
         + bend.abs() * h * h
+        + 0.5 * spread
         + 4.0 * (w0[1] - w0[0])
         + 1e-12 * (1.0 + tm.abs());
     let w = [
         w0[0].min(w0[0] + dt) - margin,
         w0[1].max(w0[1] + dt) + margin,
     ];
-    let ps = span::<T>(phi0, phi1);
     let jb = f.jet(&ps, &span(w[0], w[1]));
     if !certain(&jb.gt) {
         return None;
@@ -1713,4 +1727,66 @@ fn assemble(
         });
     }
     out
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::intersection::{surface_surface, SurfaceIntersection};
+    use crate::{Frame3, Point3, Tolerance, Vec3};
+
+    fn cone(o: [f64; 3], n: [f64; 3]) -> Surface {
+        let frame = Frame3::new(
+            Point3::new(o[0], o[1], o[2]),
+            Vec3::new(n[0], n[1], n[2]),
+            Vec3::new(0.0, 1.0, 0.0),
+            Tolerance::default(),
+        )
+        .unwrap();
+        Surface::Cone {
+            frame,
+            radius: 0.0,
+            half_angle: 0.05,
+        }
+    }
+
+    /// The fuzz input `timeout-dd1bcc28` (`fuzz/regressions/README.md`):
+    /// two cones of half-angle 0.05 with apexes at `(-8, -8, -8)` and
+    /// `(-8, -8, 1)` on the axes `(-3, -3, -3)` and `(-3, -3, 0)`, which
+    /// cross at `(1, 1, 1)`. The first passes through the second and meets
+    /// it in two rings round its rulings near their points at infinity
+    /// (`t` about `-3.01` and `-2.98`). The steps' windows, from the
+    /// branch's curvature alone, missed the width of `G_phi`'s enclosure
+    /// over a step, and each ring took about 60,000 steps; they now take
+    /// about 70.
+    #[test]
+    fn rings_near_the_points_at_infinity_take_few_steps() {
+        let a = cone([-8.0, -8.0, -8.0], [-3.0, -3.0, -3.0]);
+        let b = cone([-8.0, -8.0, 1.0], [-3.0, -3.0, 0.0]);
+        for (x, y) in [(&a, &b), (&b, &a)] {
+            let Ok(SurfaceIntersection::Traced(c)) = surface_surface(x, y) else {
+                panic!("a traced curve");
+            };
+            assert!(c.folds().is_empty() && c.nodes().is_empty());
+            assert_eq!(c.tracks().len(), 2);
+            for (k, comp) in c.components().iter().enumerate() {
+                assert_eq!(
+                    *comp,
+                    TracedComponent::Smooth {
+                        tracks: vec![k],
+                        folds: 0,
+                        winding: [1, 0],
+                        infinite: 0,
+                    }
+                );
+            }
+            for (k, track) in c.tracks().iter().enumerate() {
+                assert_eq!(track.phi, [0.0, TAU]);
+                assert!(track.steps.len() < 1_000, "{}", track.steps.len());
+                for j in 1..=3 {
+                    c.point_at(k, TAU * f64::from(j) / 4.0).unwrap();
+                }
+            }
+        }
+    }
 }

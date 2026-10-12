@@ -787,6 +787,33 @@ regressions and 600 random pairs of cones (two thirds of them on parallel
 axes with equal half-angles) agree bit for bit. The input replays in
 0.8 s (10.9 s before, measured together).
 
+## Analytic intersections: thin cones' rings near their points at infinity
+
+`analytic_intersections/timeout-dd1bcc28ea2fc0007fec10c50ce566908aa56a50.bin`
+timed out in CI's scheduled run 38271718656 at `dbf15607` (over the
+target's 20 s under AddressSanitizer; 22.4 s of CPU locally with one, 7.4 s
+without): two cones of half-angle 0.05 through their apexes, at
+`(-8, -8, -8)` about `(-3, -3, -3)` and at `(-8, -8, 1)` about
+`(-3, -3, 0)`, whose axes cross at `(1, 1, 1)` 35 degrees apart. The first
+passes through the second, two rings round its rulings 12 and 15.5 from
+its apex: on S7b.4's chart `t` is within 0.17 of `pi` (the points at
+infinity) and nearly constant along `u`. A track's step certifies its
+window by `G`'s signs on the window's ends over the whole step, bounding
+`G` there by its value at the step's middle plus `G_phi` over the step
+times the half step. `G`'s terms there are near 80 and `G_t` about 0.45,
+and that enclosure of `G_phi` was 0.15 to 0.3 times the step wide where
+`G_phi` itself varies by about `5e-6` times it; the window, sized from the
+branch's slope and curvature, did not clear it, and the steps shrank until the window's
+fixed `1e-12` floor did: about 60,000 steps per ring, two rings, two
+argument orders. Each step's window now also clears the root by twice what
+that width adds (`G_phi`'s enclosure over the step at the root's middle,
+times the step, over `|G_t|`): about 70 steps per ring. The input replays
+in 0.37 s of CPU under AddressSanitizer (0.10 s without); every other
+input of the corpus and these regressions keeps its result (folds, nodes,
+components, tracks' ranges, and point enclosures overlapping the old ones).
+`intersection::torus_curves::tests::rings_near_the_points_at_infinity_take_few_steps`
+pins the pair's two rings and their step counts.
+
 ## Curve/surface: a circle nearly tangent to a cone
 
 `curve_surface/timeout-fdb4ae721b33aab65287ff8213216b9633bd2975.bin` and
