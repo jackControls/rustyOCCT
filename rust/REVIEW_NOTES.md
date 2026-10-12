@@ -12895,6 +12895,183 @@ Decisions for S9, recorded before its code (2026-09-28):
     case 3.2 s (`bcommon_complex/B9`), the self-contained ones at most 2.9 s
     (`boptuc_simple/ZK8`), the restore cases 0.13 to 3.2 s, E5 2.1 s, G9
     1.3 s and `bug417` 1.2 s, the rollex 0.4. No kernel change.
+  * **S9e.4b.4d refined, before its code (2026-10-11).** Turned bodies of
+    smooth joins and nearly degenerate surfaces (S9e.4b.4 refined's (b),
+    S9e.4b.4c.2b.2's turned profiles). *Reach, measured before choosing* (at
+    `eefb2294`, an instrumented build, not committed: each solid's surface
+    kinds, whether its curved faces share one axis and its planes stand normal
+    to it, each cone within 1e-3 rad of a plane or a cylinder with its
+    deviation from it over the face, and each edge of two faces on different
+    stored surfaces whose normals at the edge's middle agree within 1e-3 rad).
+    The DRAW restore cases by the earlier steps' method (a script restoring a
+    data file by `locate_data_file` and calling a Boolean command): 2,309
+    cases, 1,486 files, 831 of them in the public dataset, each imported in a
+    process of its own (120 s a file): 504 solids converted, 446 importing.
+    The method misses the 30 cases that call the command inside `catch {...}`
+    (11 more files), among them `bugs/modalg_2/bug485` (`OCC485a` fused with
+    itself) and `bug497_2` (`OCC497c` less `OCC497d`); neither is in the DRAW
+    survey's restore set. The fuzz targets: every solid result of the
+    `boolean` target's three operations, its chained cut and common and its
+    torus pairs, and the `split` target's pieces given to Booleans and those
+    Booleans' results, written, read back and imported (release builds, one
+    process an input; 1,482 boolean inputs and 3,571 split inputs with their
+    regressions, every one exiting cleanly): boolean 2,117 distinct bodies
+    written, 2,061 converted, 1,480 importing; split 555, 539, 381. The writer
+    refuses 1,462 boolean and 5,176 split results, not distinct (D13's
+    procedural edges: projection pcurves, two cylinders' meetings, 141 torus
+    sections, sinusoid pcurves), so no result with a torus face is ever
+    written: **no fuzz result reaches the class** (none refused has a torus
+    face, a cone within 1e-3 rad of a plane or cylinder, or one axis for its
+    curved faces). Every refused result with a smooth join is a prism's wall
+    joint, exact to 1.8e-16 rad (boolean 75, split 50): 5 boolean ones refused
+    as the body's own tangency (a stadium leaf whose chain does not read it as
+    a leaf, S9e.4b.4b.2b's) and 6 boolean and 48 split ones as a plane piece's
+    tangency (S9e.4b.3's `Degenerate("an imported plane piece whose curved
+    face is tangent to its plane faces")`), the rest for other reasons. *The
+    bodies*, read off their files (the dataset is not committed). (i)
+    `OCC485a` (`bugs/modalg_2/bug476_1` to `_8`, `bug485`): a turned part on
+    an axis leaning 1.08e-8 rad from the world's `z`, all eight stored
+    surfaces on one axis line within 1e-22, every vertex, edge and face
+    tolerance 0.003 (an e3i translation; the body's resolution 3e-3). Its
+    profile from the bottom (heights from the bottom's centre): a "disc" that
+    is a cone 1.26e-6 rad from flat (rising 3.1e-5 to its rim at radius 24.4,
+    1.0 % of the resolution, its apex a degenerated edge), a cylinder of
+    radius 24.4 to 32.23, a chamfer cone 3.7e-6 rad off 45 degrees to radius
+    21.33 at 35.30, a step "annulus" that is a cone 6.6e-7 rad from flat
+    (rising 7.5e-6 inward to radius 9.90, 0.25 % of the resolution), a concave
+    fillet (torus, tube 0.5), the shaft (cylinder, radius 9.40) to 41.10, a
+    convex round (torus, tube 3) and the top disc (plane, radius 6.40) at
+    44.10; native volume 67,672.8, area 9,291.88. Three corners (the bottom
+    rim and the chamfer's two edges, the lower one on the chamfer 7.3e-6 off
+    the cylinder) and four smooth joins, measured exactly in the meridian:
+    step and fillet, the surfaces crossing by 1.1e-13 (tangent within
+    rounding), the stored edge 3.3e-7 off the tangency circle; fillet and
+    shaft, gap 0, edge 5.4e-9 off; shaft and round, **not tangent**: the
+    round's tube reaches 3.76e-6 past the shaft, the two surfaces crossing in
+    two circles 4.75e-3 above and below its equator (further apart than the
+    resolution), the stored edge on the tube's equator 3.76e-6 off the shaft;
+    round and top, apart by 7.2e-14, edge 6.6e-6 off the tangency circle. The
+    faces' normals at the stored edges' middles differ by 1.1e-8, 6.7e-7,
+    1.26e-6 and 2.2e-6 rad, so `bends`' 1e-6 would read the last two as
+    creases. Its partner `OCC485b` is a rib (a prism of the triangle (20.35,
+    36.30), (8.40, 43.20), (8.40, 36.30) in the world's `xz`, `y` from -1 to
+    1), importing as a prism: a gusset between the step and the shaft, its
+    planes cutting the near-flat step, the fillet and the shaft. Refused today
+    by `recognize`'s general text, `OutOfDomain("an imported solid other than
+    a prism, a sphere, a cone, a torus or a Boolean of its primitives
+    (S9e.4b)")` (no chain takes a torus); behind it the body's own tangency
+    (`bends`) and the near-flat cones, which as chain primitives
+    (`primitive_over`'s reach past each end) would be cones millions wide.
+    (ii) `OCC496b` (`bugs/moddata_2/bug496`, its partner `OCC496a` private
+    data): a turned part along `x` (disc, cylinders of radii 15, 14 and 13,
+    three tori of tubes 2, 2 and 4.5, a cone, a plane), resolution 3e-3, tori
+    tangent to their cylinders with gaps 0, 0 and 9.5e-7, the general text.
+    (iii) `OCC497c` and `OCC497e` (`bug497_2`; `bug497_3`, whose `OCC497f` the
+    validator rejects at its restore): turned pins with 1.5 degree drafts
+    whose steps and ends are cones 8.1e-8 to 5.6e-6 rad from flat (rising
+    1.8e-7 to 1.6e-5 over their faces, at most 0.54 % of the 3e-3 resolution),
+    no torus, refused in a chain's Boolean as `Degenerate("two cylinders'
+    section within the resolution of a node")`, a symptom of the near-flat
+    cones read as primitives; `OCC497d`'s bottom plane lies within 1.9e-5 of
+    `OCC497c`'s near-flat step. A genuine near-cylinder cone stays one:
+    `bug23378_blower1`'s cone, 5.3e-5 rad off a cylinder, strays 3.2e-3 from
+    it, 3.2e4 times its resolution, and imports. (iv) Smooth joins in bodies
+    that are not one turned part, no case reaching their import:
+    `cts21199_base` (`bfuse_complex/L9`, the adapter's `prism` signature
+    unsupported; three torus fillets on cylinders along `y` whose axes stand
+    0.03 to 0.06 apart, tangent to 3.5e-15, the general text), `pro14942b`
+    (`bcut_complex/N9`, its partner private; a bent tube of cylinders and
+    torus elbows, the general text), `CTO900_pro15323c` (`bcut_complex/H5`,
+    its tool a compound; two cones of half-angle 0.489 joined by planes
+    tangent to them along rulings, refused as the body's own tangency). (v) A
+    false tangency: `bug25966_Revolution` (`bugs/modalg_7/bug25966`, stopping
+    at `trotate`) is refused as the body's own tangency at an edge between two
+    faces on one cylinder of radius 11 that OCCT stores on frames 2 apart
+    along its axis: the check takes faces of one surface by equal stored
+    surfaces, not by `one_surface`. (vi) Turned profiles with corners only, no
+    smooth join: `bug28626_case1_shapes`' two solids (S9e.4b.4c.2b's (iii),
+    `bug28626_1` stopping at `explode`), `OCC14536-sh1` (no chain),
+    `CFE900_hkg60gcr` (`bfuse_complex/S2`, S9's ruling rule). (vii) Plane
+    pieces with planes tangent to their cylinder (`CTO902_cts20455-tool`,
+    `CTO901_cts20216_base`, `CTO909_shape_1`) are S9e.4b.3's refusal, not this
+    step's; `bcut_complex/I6` alone reaches it. *Native DRAW.* `bug476_1` to
+    `_8` viewer-skipped (`s9-draw-18`), every check before the view passing
+    (fuse area 9,333.96 and 11 faces, the cuts 99.5159 and 9,340.03, the
+    common 105.587); by hand on DRAWEXE 7.9.3, `bug485`'s fuse is `OCC485a`
+    itself (9,291.88, 8 faces, valid) and `bug497_2`'s cut 2,225.65, the
+    cases' values. OCCT keeps the stored surfaces and edges as given within
+    their 0.003 tolerances: it never decides a tangency, approximates the
+    rib's sections of the tori and keeps the near-flat cones as cones.
+    *Options.* (a) *A tangent join as exact data*: the shared edge the two
+    surfaces' common tangency circle, both surfaces through it with one
+    normal, as S9e.4b.4a took arcs through their ends. Unlocks nothing alone:
+    no exact data exist where the stored surfaces are not tangent (the shaft
+    and round, 3.76e-6), and a fillet's torus fixed by its two edges is
+    over-determined (four conditions on its centre and tube; `OCC485a`'s round
+    misses them by 1e-5). Its cost is the engine's: every rule that orders an
+    edge's fins or pushes off a face by the faces' normals (the radial order,
+    `bends`, the sides at a section's vertex, the classification) needs
+    second-order data at an edge whose faces share a normal, and the import
+    needs a turned body's model (the kernel has no revolve, and no chain
+    builds a fillet: a torus tangent to a primitive is S9's tangency between
+    inputs). Risk: high, the engine's transversality at edges. (b) *Snapped to
+    exact tangency*: the profile's straight generators kept (planes,
+    cylinders, cones on rational unit directions, S9e.4b.1's half-angle
+    tangent), each torus refitted tangent to both neighbours at its stored
+    tube: its centre where the two lines offset by the tube meet, its tangency
+    points the centre's feet, rational, no new field; it moves `OCC485a`'s
+    round by 3.76e-6 and the others by 1.1e-13 at most, the edges by 6.6e-6,
+    all far within 3e-3; a torus between two tori or a sphere has no line to
+    keep and is refused. It gives (a) its data; alone it unlocks nothing.
+    Cost: moderate in the import (a meridian profile read off faces of
+    revolution about one axis); risk: low, the import's precedent (S9e.4b.1's
+    arc ends onto their circles, S9e.4b.2's vertices as their planes' common
+    point, S9e.4b.4a's arcs through their ends: one body's stored data taken
+    onto an exact model within its resolution). (c) *A nearly degenerate cone
+    taken as the plane or cylinder it is within the resolution of* (its
+    deviation over its face at most the resolution: the plane through its edge
+    with a tangent neighbour, else its outer rim; an apex's degenerated edge
+    then an immersed vertex or none): `OCC485a`'s bottom and step, `OCC497c`'s
+    and `OCC497e`'s steps and ends; the volume moves by about the sag times
+    the face's area (0.02 of `OCC485a`'s 67,673). Alone it moves no case:
+    `OCC485a` keeps its tori, `bug497_2`'s tool would rest within 1.9e-5 of
+    the step's plane, refused by S9's rule as two faces within the resolution
+    of one plane if the pin imports at all, and `bug497_3` stops at its
+    restore. Cost and risk: low. (d) *Refused with named reasons*:
+    `Degenerate("an imported cone within the resolution of a plane or a
+    cylinder (S9e.4b.4d)")` checked on import before any chain (`OCC485a`,
+    `OCC497c`, `OCC497e`, replacing the node text), and `OutOfDomain("an
+    imported body whose torus faces join their neighbours smoothly
+    (S9e.4b.4d)")` in place of the general text (`OCC485a`, `OCC496b`,
+    `cts21199_base`, `pro14942b`), tangency read off the surfaces (the tube
+    within the resolution of the neighbour's meridian), not off the normals at
+    the stored edge, which `OCC485a`'s edges miss by 2.2e-6 rad. Cost and
+    risk: low; it moves the reason of the 9 cases, none evaluating. *User
+    decisions.* "Contact only" (2026-10-09) governs two inputs within the
+    resolution of contact: it refuses `bug497_2`'s tool on the step under (c),
+    and any near contact of these bodies in a Boolean; it does not govern one
+    body's own data, which the import precedents above take onto an exact
+    model. U3 (C1 in the cell's parameterisation) concerns an edge's or a
+    face's own continuity, not a join between two faces. D13 (U7): a torus's
+    sections are procedural edges, which the writer refuses, so the fuzz
+    targets' results with torus faces never reach the import. U9 and U10 do
+    not bear. Whether the e3i turned parts are worth a turned-body
+    construction (9 cases, all of one body, no fuzz reach) is a scope choice
+    for the user, not a listed decision. *Recommendation: (d)*, split:
+    **S9e.4b.4d.1**: the two named refusals above, and the false tangency (v)
+    fixed (faces on one surface by `one_surface` are no join;
+    `bug25966_Revolution` then read by its chains as any body, its outcome not
+    measured here, its case stopping earlier), with evidence written by OCCT
+    (a revolved profile with a fillet and a round, a pin whose step is a cone
+    within the resolution of flat) and a DRAW trial; **S9e.4b.4d.2**, not
+    scheduled, only on the user's word: turned bodies, a meridian profile of
+    lines and arcs about one axis on (b)'s fit and (c)'s planes, with (a)'s
+    tangent edges in the engine; its corner-only part first (`bug28626`'s
+    profiles, no tangent edge), then the fillets (`OCC485a`, whose Booleans
+    also need the rib's planes against the fillet's torus within one input).
+    The plane pieces' and chains' ruling tangencies (a plane along a cylinder
+    or cone, (vii), `CTO900_pro15323c`, the fuzz targets' 59 bodies) are (a)'s
+    cheaper case if (a) is ever chosen.
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces
