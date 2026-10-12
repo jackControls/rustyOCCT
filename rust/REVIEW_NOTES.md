@@ -16855,6 +16855,14 @@ Decisions for S9, recorded before its code (2026-09-28):
   regressions, the split corpus (3,551) and its 20 and the boolean corpus
   (1,444) and its 38 replay without a failure (the slowest 0.9, 2.0 and
   8.6 s).
+  Merged and verified at `4798c784` (`rust-kernel`, with the 46 Boolean
+  comparisons and the three corpora replayed with debug assertions).
+  Campaigns there (600 s each, sampled replays, every switch on):
+  `analytic_intersections` clean, 9,343 runs, the slowest input under a
+  second; `boolean` clean, 427 runs, the slowest 15 s; `split` clean, 1,385
+  runs. The schedule run at `dbf15607` was green but for this input's
+  campaign: every target's full replay shards and their completeness checks
+  passed.
 
 * **CI budget (U6).** Per-push fuzz runs replay a bounded sample plus every
   regression and new seed; the daily schedule replays everything; the heavy
