@@ -850,10 +850,20 @@ then for the DRAW survey of the nested leaves and the speed-ups (branch
    cylinders on parallel axes sharing a cap, a slotted flange and a block
    after a diagnosis; turned profiles of cones and cylinders with S9e.4b.4d;
    a flat with pockets of its own; a nested pocket holding a primitive) and
-   **S9e.4b.4d**
-   (turned bodies of smooth joins and nearly degenerate surfaces,
-   `bug476_1` to `_8`'s `OCC485a`: refused until a decision of their
-   own). The reader takes OCCT's version-3 line (`CASCADE Topology V3,
+   **S9e.4b.4d**, split in "S9e.4b.4d refined" (turned bodies of smooth
+   joins and nearly degenerate surfaces: of the DRAW cases only
+   `OCC485a`'s, `bug476_1` to `_8` and `bug485`, reach one; no fuzz result):
+   **S9e.4b.4d.1** (named refusals, option (d) as chosen: a cone within the
+   resolution of a plane or a cylinder `Degenerate`, a body whose torus faces
+   join their neighbours smoothly `OutOfDomain`, read off the stored
+   surfaces; two faces on one cylinder across a whole ring no longer the
+   body's tangency) is implemented with six bodies OCCT wrote
+   (`write_turned_bodies.py`) and its trial of the DRAW cases, the 30 calling
+   a Boolean inside `catch {...}` among them; **S9e.4b.4d.2** (turned bodies:
+   a meridian profile with fillets refitted to their lines, near-flat cones
+   as planes, tangent edges in the engine) is not scheduled, a scope question
+   for the user (9 cases, all of one dataset body). The reader takes OCCT's
+   version-3 line (`CASCADE Topology V3,
    (c) Open Cascade`, written since OCCT 7.6; REVIEW_NOTES.md's "The
    version-3 `.brep` header", branch `brep-v3-header`): the dataset's 26
    version-3 texts read and convert (one solid and 11 free shapes import,
@@ -982,6 +992,10 @@ fuzz switches below.
   (STEP-b's `rational_cylinder`): (a) keep refusing, (b) test C1 of the
   rational curve exactly at such knots (recommended), (c) split at such
   knots on import. Until answered, (a) holds.
+- **S9e.4b.4d.2's scope** (not a numbered decision): whether turned bodies
+  of smooth joins (the e3i parts' fillets and rounds, `OCC485a`'s 9 DRAW
+  cases) are worth a turned-body construction. Until answered, they are
+  refused by name (S9e.4b.4d.1).
 
 ## How a step is done
 

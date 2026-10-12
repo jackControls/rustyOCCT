@@ -1553,8 +1553,12 @@ frame turned off the world's `z`, its pocket walls within rounding of its
 cylinders' direction), the later chains refuse such a component as before. A body's
 own faces tangent along an edge other than a prism's walls' joints (two
 walls along one axis tangent along a line along it; two faces of one stored
-surface, a face OCCT split at its seam, none) are `Degenerate("an imported
-body of several primitives whose faces are tangent along an edge")`; plane
+surface, a face OCCT split at its seam, none; S9e.4b.4d.1: nor two faces on
+one surface within the resolution across a whole ring, a turned face OCCT
+split at its profile's vertex and stored on frames apart along its axis,
+while two parts on one surface along an arc stay so) are
+`Degenerate("an imported body of several primitives whose faces are tangent
+along an edge")`; plane
 faces other than
 the primitives' ends, one or two prisms', a flat's or a pocket's
 `OutOfDomain("an imported body of several primitives with plane faces other
@@ -1590,7 +1594,19 @@ Boolean chain of them
 (`OutOfDomain`, S9e.4b.4c; S9e.4b.4c.2b.2: a widest primitive cut from the
 chain, the inside-first order a later choice, two cylinders on parallel axes
 sharing a cap, turned profiles of cones and cylinders at corners); a pocket's walls along a turned leaf's axis
-within rounding of it (S9's `Degenerate`); a
+within rounding of it (S9's `Degenerate`); a cone face within the
+resolution of a plane or a cylinder, whatever the body
+(`Degenerate("an imported cone within the resolution of a plane or a
+cylinder (S9e.4b.4d)")`, checked before any construction: its half-angle
+within 1e-3 rad of a right angle or of zero and its height over the face, or
+its radii's spread, at most the resolution: `OCC485a`'s bottom and step,
+`OCC497c`'s and `OCC497e`'s steps and ends); a body whose torus faces join
+their neighbours smoothly (`OutOfDomain("an imported body whose torus faces
+join their neighbours smoothly (S9e.4b.4d)")`, the tangency read off the
+stored surfaces: at an edge's middle the torus's tube circle in that meridian
+within the resolution of tangent to the other face's surface; a turned
+part's fillets and rounds, `OCC496b`, `cts21199_base`, `pro14942b`; turned
+bodies are S9e.4b.4d.2's, not scheduled); a
 torus's v-segment or wedge and every other body of curved faces, a torus
 among several among them (`OutOfDomain`, S9e.4b: a general body on its
 stored surfaces); spline faces or edges (S9f); S9's
@@ -4265,6 +4281,24 @@ multiple root; and the engine's rules.
   pocket four deep refused as before. `compare_nested_leaves_boolean.py`:
   19 matches and 2 reviewed (the touching ball's fuse; the imported
   cylinder's seam OCCT's fuse keeps).
+* **S9e.4b.4d.1 evidence (turned bodies), before its kernel code.** Six
+  bodies OCCT wrote (`write_turned_bodies.py --write-bodies`: the oracle's
+  `revolve` row, BRepPrimAPI_MakeRevol of a profile of lines and arcs a whole
+  turn about `z`, and a `write` block's `tolerance` row) under
+  `rust/fixtures/imported/turned_*.brep` (`turned-bodies.txt`, `--check`):
+  a fillet and a round tangent to their neighbours, the round's tube 2.5e-9
+  past its shaft, a torus at corners, a pin whose step is a cone rising 1e-5
+  at tolerance 1e-3, the same step rising 1e-3 at OCCT's tolerances, and a
+  cylinder stored as two faces on frames 3 apart; every file valid natively.
+  No compare script: the step moves refusals alone, no Boolean's outcome.
+* **Kernel (S9e.4b.4d.1).** `tests/turned_body_imports.rs`: the fillet and
+  the round off tangency refused as smooth tori, the torus at corners by the
+  general text, the pin as a cone within the resolution of a plane, the 1e-3
+  step imported with its profile's volume, the split cylinder no longer the
+  body's tangency (a turned profile no chain builds), and every other
+  imported fixture's outcome as before (107 importing, six refusals by their
+  texts, `leaf_post`'s post on its fillet's cylinder across an arc still the
+  body's tangency).
 * **Fuzzing.** The `boolean` target (`FUZZING.md`): the split target's line
   and arc profiles, the tool offset exactly in the axis-aligned frame or
   sharing the tilted one's origin, heights equal, spanning, overlapping,

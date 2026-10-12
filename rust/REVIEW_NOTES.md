@@ -13072,6 +13072,102 @@ Decisions for S9, recorded before its code (2026-09-28):
     The plane pieces' and chains' ruling tangencies (a plane along a cylinder
     or cone, (vii), `CTO900_pro15323c`, the fuzz targets' 59 bodies) are (a)'s
     cheaper case if (a) is ever chosen.
+  * **S9e.4b.4d.1 implemented** (`solid/imported.rs`'s `near_flat_cone` and
+    `smooth_torus`; evidence `545628fc`, kernel `6f9b11a6`). The decision
+    taken: (d), S9e.4b.4d.1 built as recommended, S9e.4b.4d.2 (turned
+    bodies) recorded as not scheduled, a scope question for the user.
+    *Kernel.* (1) On import, after the renaming and before any construction is
+    tried, a cone face whose half-angle lies within `NEAR_FLAT` (1e-3 rad) of
+    a right angle or of zero, and whose boundary (its edges' curves at
+    sixteenths, a vertex loop's apex) spreads across the cone's radii by at
+    most the resolution over the cotangent (its height over the face) or along
+    its axis by at most the resolution over the tangent (its radii's spread),
+    is `Degenerate("an imported cone within the resolution of a plane or a
+    cylinder (S9e.4b.4d)")`, whatever the body. (2) In `recognize`, a body
+    with torus faces that none of the constructions takes is `OutOfDomain("an
+    imported body whose torus faces join their neighbours smoothly
+    (S9e.4b.4d)")` where some edge between a torus face and a face on another
+    stored surface is a smooth join read off the surfaces: at the edge's
+    middle, the torus's tube circle in that meridian (its centre on the core
+    circle there) lies at the tube's radius from the other surface within the
+    resolution (a plane's, a cylinder's, a sphere's, a cone's generatrix's or
+    another torus's distance, in binary64); else the general text as before.
+    The normals at the stored edge are not consulted (`OCC485a`'s edges miss
+    their tangency circles by up to 6.6e-6, the normals 2.2e-6 rad apart). (3)
+    In every chain's check of the body's own tangency, two faces count as one
+    surface's (no join) where their stored surfaces are equal, as before, or
+    where they lie on one surface within the resolution (`one_surface`) across
+    a whole ring (a turned face OCCT split at its profile's vertex, stored on
+    frames apart along its axis: `bug25966_Revolution`). The refined
+    decisions' `one_surface` alone moved a fixture: `leaf_post`
+    (S9e.4b.4b.2a's declared degenerate `post`, the rounded square's fillet
+    face and the post on one cylinder along a quarter arc, refused as the
+    body's tangency) became a chain no model matches, which its comparison and
+    test would count unsupported; across an arc two parts on one surface stay
+    the body's tangency, as the S9e text holds faces on one surface across an
+    edge degenerate. `OCC485a` holds both kinds; the cone's check, first,
+    names it. *Evidence* (before the kernel code): `occt_boolean_oracle.cpp`'s
+    `revolve` row (BRepPrimAPI_MakeRevol of a `plane` and `wire` profile about
+    an axis) and a `write` block's `tolerance` row
+    (ShapeFix_ShapeTolerance::SetTolerance), `write_turned_bodies.py`
+    (`--check`, `--write-text`, `--write-bodies` with the pinned SDK) writing
+    `turned-bodies.txt` and six bodies under `rust/fixtures/imported/`:
+    `turned_fillet` (a concave fillet of radius 0.5 and a convex round of
+    radius 2, tori tangent to the step's plane, the shaft and the top's
+    plane), `turned_round_off` (the round's centre raised by 1e-4, its tube
+    2.5e-9 past the shaft, the normals at its stored edge 5e-5 rad apart),
+    `turned_corner` (a torus meeting cones at corners), `turned_pin` (a step
+    in from radius 6 to 4 rising 1e-5, 5e-6 rad from flat, every tolerance
+    1e-3: OCCT turns a step rising less than 1e-7 into a plane), `turned_step`
+    (the step rising 1e-3 at OCCT's own tolerances) and `turned_split` (a
+    cylinder of radius 8 with a vertex on its wall, stored as two faces on
+    frames 3 apart); all valid by native DRAW's `checkshape` (7.9.3), volumes
+    1,705.04, 1,705.05, 744.974, 917.345, 917.374 and 3,022.21. At `eefb2294`
+    the import refuses the three with tori by the general text, the pin as
+    `Degenerate("two cylinders' section within the resolution of a node")` (as
+    `OCC497c`), the split cylinder as the body's tangency (as
+    `bug25966_Revolution`), and imports the 1e-3 step. No compare script: the
+    step moves refusals alone, no Boolean's outcome.
+    `tests/turned_body_imports.rs`: the fillet and the round off tangency
+    refused as smooth tori, the corner by the general text, the pin as a cone
+    within the resolution of a plane, the step imported with its profile's
+    volume within 1e-9, the split cylinder a chain no model matches (no longer
+    the tangency), and the 113 other imported fixtures' outcomes as at
+    `eefb2294` (107 importing, six refusals by their texts, `leaf_post` among
+    them). *Reach after the change*, measured as before the step (an
+    instrumented build, not committed): the import of every solid of the 842
+    dataset files the DRAW case list names (now 2,339 cases: the earlier
+    method misses the 30 that call a Boolean inside `catch {...}`, which this
+    list takes by allowing `{` before the command) and of the 119 imported
+    fixtures, one process a file: 630 solids converted and 560 importing
+    before and after; exactly 11 move, every one to a text the step intends:
+    `OCC485a`, `OCC497c`, `OCC497e` and `turned_pin` to the cone's
+    `Degenerate`, `OCC496b`, `cts21199_base`, `pro14942b`, `turned_fillet` and
+    `turned_round_off` from the general text to the tori's,
+    `bug25966_Revolution` and `turned_split` from the body's tangency to a
+    chain no model matches; every other outcome the same text. The fuzz
+    targets' results written, read back and imported again (1,482 boolean and
+    3,571 split inputs, every one exiting cleanly): 2,117 and 555 distinct
+    bodies, none moving. *DRAW trial* (not the survey: nothing registered):
+    the 30 `catch` cases and the 13 others restoring a moved body, on both
+    backends with this worker and the parent's (both built at opt-level 2
+    without debug information; 120 s a case, four at once, at load 3 to 10):
+    native DRAW the same on both runs (12 of the 30 running to their checks:
+    `bug485` and `bug488`, `bug490`, `bug492`, `bug497_2`, `bug497_5`,
+    `bug410_4`, `bug3721_4` and `_5` viewer-skipped, `bug3721_1` to `_3` known
+    failures; 18 private data); on the Rust adapter only `bug476_1` to `_8`
+    and `bug485` move, each from the general text to the cone's, still
+    unsupported; of the 30 none evaluates (8 an argument other than a solid
+    the adapter made, `bug497_2` among them, 2 unsupported at their restores,
+    `bug488` an edge meeting an edge, `bug485`, 18 private data); `bug497_3`
+    fails at `OCC497f`'s restore as before and `bug25966` stops at `trotate`.
+    No case newly evaluates. *Verification* at `6f9b11a6`: fmt, clippy with
+    `-D warnings`, `cargo +1.85 check`, the release tests (745), all 46
+    comparisons with their documented counts and no failure, the
+    debug-assertion replays of the boolean corpus and regressions (1,482) and
+    the split's (3,571), none failing, the ledger holding, the Python unit
+    tests (412, 3 skipped), and the new tests with `prism_leaf_booleans` under
+    the emulated glibc `hypot` with debug assertions and overflow checks.
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces
@@ -17398,6 +17494,13 @@ Decisions for S9, recorded before its code (2026-09-28):
   rationals), keeping OCCT's cells and counts; (c) split edges and faces at
   such knots on import (each piece C-infinity; more cells than OCCT's).
   The implementing agent recommends (b). Until answered, (a) holds.
+* **S9e.4b.4d.2's scope (recorded 2026-10-11; not a numbered decision).**
+  Whether turned bodies of smooth joins and nearly degenerate cones (the
+  dataset's e3i parts: `OCC485a`'s 9 DRAW cases, `OCC496b`, `OCC497c`,
+  `OCC497e`; no fuzz result) are worth a turned-body construction (a
+  meridian profile with its fillets refitted to their lines, near-flat cones
+  as planes, tangent edges in the engine: "S9e.4b.4d refined"'s (a) to (c)).
+  Until answered, they are refused by name (S9e.4b.4d.1).
 
 ## Status
 
