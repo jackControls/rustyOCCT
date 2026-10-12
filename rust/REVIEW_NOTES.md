@@ -16795,6 +16795,67 @@ Decisions for S9, recorded before its code (2026-09-28):
   s each, sampled replays, every switch on): `boolean` clean, 401 runs, the
   slowest input 15 s; `split` clean, 1,727 runs.
 
+* **Thin cones' rings near their points at infinity, a timeout at
+  `dbf15607`, done (2026-10-12).** CI's scheduled run 38271718656 at
+  `dbf15607` was green but for `analytic_intersections`' campaign, whose
+  mutation found
+  `fuzz/regressions/analytic_intersections/timeout-dd1bcc28ea2fc0007fec10c50ce566908aa56a50.bin`
+  (its regressions README entry) over the 20 s limit; every full replay
+  passed. The input: two cones of half-angle 0.05 through their apexes
+  (reference radius 0), at `(-8, -8, -8)` about `(-3, -3, -3)` and at
+  `(-8, -8, 1)` about `(-3, -3, 0)`, independent (mode 0), whose axes cross
+  at `(1, 1, 1)` 35 degrees apart: the first passes through the second, two
+  rings round its rulings 12 and 15.5 from its apex, on S7b.4's chart near
+  `t = pi` (the points at infinity) and nearly constant along `u`. Alone,
+  7.4 s of CPU in release and 22.4 s under AddressSanitizer with the
+  target's options (157 MB peak). No unbounded search: a profile (`sample`)
+  put it all in the traced graph's `follow` and `step` in binary64
+  intervals, no fold, two tracks of 59,372 and 61,325 steps each way (the
+  sweep's budget of 200,000 nearly spent), a third of the steps refused by
+  the ends' test. Cause: `step` certifies a window by `G`'s signs on its
+  ends over the step, `G(phi_mid, t) + G_phi(step, t) (step - phi_mid)`,
+  and sized the window from the branch's slope and curvature only. There
+  `G`'s terms are near 80 and `G_t` about 0.45, and the enclosure of
+  `G_phi` over a step was 0.15 to 0.3 times the step wide where `G_phi`
+  varies by about `5e-6` times it, so the window had to clear the root by
+  about `0.3 h^2` where it cleared it by the curvature's `1e-5 h^2` and the
+  fixed `1e-12` floor: the step controller (twice after a success, a
+  quarter after a failure) settled near `1e-5` rad. Fix: the window's
+  margin also takes twice what that width adds, `G_phi`'s enclosure over
+  the step at the root's middle times the step over `|G_t|` (one jet more
+  a step); every window is certified as before, so this changes how far a
+  step reaches, not what it proves. 70 and 72 steps per ring now. Test:
+  `torus_curves.rs`'s
+  `rings_near_the_points_at_infinity_take_few_steps` (the pair both ways:
+  two smooth rings, winding `[1, 0]`, none crossing infinity, fewer than
+  1,000 steps a track, points along each). Measurements (CPU): the input
+  0.10 s in release and 0.37 s under AddressSanitizer (106 MB peak). The
+  corpus (1,490 inputs), its 8 regressions and the input, each intersected
+  both ways with every traced track's points at three parameters (a
+  release probe, not committed): every result alike (kind, items, folds,
+  nodes, components and tracks' ranges), the point enclosures of 115 of
+  the 140 inputs with traced curves moving within their widths, each overlapping its old one (of
+  the 12,012 coordinates, relative widths at the median `2.9e-14` before
+  and `2.8e-14` after, 158 above `1e-12` both times, the widest `4.6e-11`
+  both times);
+  25.97 to 15.79 s in all (18.6 to 15.7 s without the input; the two tori
+  `3d105565` 1.93 to 0.72 s); under AddressSanitizer with the target's
+  options, one process each, 156.7 to 125.8 s and 304 to 228 MB peak,
+  `3d105565` 6.1 to 2.5 s, no input slower beyond the run's noise
+  (`c1f4558a`, 1.45 to 1.92 s side by side, 1.04 and 1.08 s alone).
+  Checks: fmt, clippy (release, all targets), the 1.85 check, the fuzz
+  crate's fmt and check, the release suite (746 tests, 5 ignored); on the
+  pinned SDK `compare_analytic_intersections.py` (63 / 4, the kernel within
+  the reference on all 67), `compare_procedural_intersections.py` (86 / 7,
+  all 93), `compare_torus_curves.py` (28 / 10, all 38) and
+  `compare_ruled_curves.py` (9 / 3, all 12), each with 0 failures; the 46
+  Boolean comparisons not run, no Boolean, split or import reaching the
+  traced graph (only `surface_surface` does); with debug assertions, one
+  process per file, the `analytic_intersections` corpus (1,490) and its 9
+  regressions, the split corpus (3,551) and its 20 and the boolean corpus
+  (1,444) and its 38 replay without a failure (the slowest 0.9, 2.0 and
+  8.6 s).
+
 * **CI budget (U6).** Per-push fuzz runs replay a bounded sample plus every
   regression and new seed; the daily schedule replays everything; the heavy
   exact targets run on schedule only; Windows runs a smoke subset per push
