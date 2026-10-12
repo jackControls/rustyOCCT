@@ -13168,6 +13168,9 @@ Decisions for S9, recorded before its code (2026-09-28):
     the split's (3,571), none failing, the ledger holding, the Python unit
     tests (412, 3 skipped), and the new tests with `prism_leaf_booleans` under
     the emulated glibc `hypot` with debug assertions and overflow checks.
+    Merged and verified at `6ffeb554` (`rust-kernel`). Campaigns there (600
+    s each, sampled replays, every switch on): `boolean` clean, 434 runs, the
+    slowest input 15 s; `split` clean, 1,489 runs.
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces
