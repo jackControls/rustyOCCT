@@ -363,15 +363,17 @@ def coaxial(q1, q2):
     def radius2(q):
         """rho^2 as a polynomial in h (along the unit axis from o):
         coefficients (c0, c1, c2)."""
-        qo, _ = q.axes()
+        qo, qa = q.axes()
         h0 = sum((mpf(x)-y)*z for x, y, z in zip(qo, om, am))
         if q.kind == 'cylinder':
             return (mpf(q.radius)**2, mp.mpf(0), mp.mpf(0))
         if q.kind == 'sphere':
             # rho^2 = R^2 - (h - h0)^2.
             return (mpf(q.radius)**2-h0*h0, 2*h0, mp.mpf(-1))
-        # Cone: rho = r + (h - h0) tan a (both nappes: rho^2).
-        t = mp.tan(mpf(q.angle))
+        # Cone: rho = r + h' tan a along its own axis, h' = +-(h - h0) as
+        # that axis runs with the common one or against it (both nappes:
+        # rho^2).
+        t = mp.tan(mpf(q.angle))*(1 if dot(qa, a) > 0 else -1)
         c = mpf(q.radius)-h0*t
         return (c*c, 2*c*t, t*t)
     p1, p2 = radius2(q1), radius2(q2)
