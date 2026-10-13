@@ -560,7 +560,9 @@ SCHEDULE_ONLY_TARGETS = {'surface_knots', 'degree_elevation', 'surface_editing'}
 # them take 250 to 413 s of CPU each under ASan on the development Mac.
 # analytic_intersections: CI's 1,556 inputs took 2,599 s of startup at
 # c3ce4d42, and 1,602 overran the hour at 47e086c5.
-REPLAY_SHARDS = {'boolean': 4, 'degree_elevation': 4, 'split': 8, 'analytic_intersections': 4}
+# tessellation: CI's 1,574 and 1,647 inputs took 2,170 and 2,200 s of startup
+# at bbfdee16 and dbf15607, and overran the hour at 391ace72.
+REPLAY_SHARDS = {'boolean': 4, 'degree_elevation': 4, 'split': 8, 'analytic_intersections': 4, 'tessellation': 4}
 
 
 def manifest_path(target):
