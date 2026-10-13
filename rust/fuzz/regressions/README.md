@@ -814,6 +814,31 @@ components, tracks' ranges, and point enclosures overlapping the old ones).
 `intersection::torus_curves::tests::rings_near_the_points_at_infinity_take_few_steps`
 pins the pair's two rings and their step counts.
 
+## Analytic intersections: coaxial cones on axes against each other
+
+`analytic_intersections/crash-da053b6d089d6e0f46b5ac4967733fb950379115.bin`
+failed the symmetry check ("overlapping enclosures") in CI's scheduled run
+38412403142 at `391ace72`, and fails it on macOS too: two cones on the line
+`x = y = z` (independent, mode 0) whose axes run against each other, an
+apex at `(-8, -8, -8)` with half-angle 0.05 about `(-3, -3, -3)` and
+radius 2.25 at `(7.125, 7.125, 7.125)` with half-angle `0.05 + 50 / 48`
+about `(1, 1, 1)`. A coaxial pair's circles lie where the radius functions
+along the first surface's axis agree; a cone's is `r + h' tan(alpha)` with
+`h'` along its own axis, and the second cone's took `h' = h - h0` where it
+is `h0 - h`. With the first as the axis the circles were at 12.82 and 14.24
+along `(1, 1, 1)` from the origin, on the first cone but not the second;
+with the second as the axis they were right (10.54 and 11.84), the
+first's error vanishing with its zero radius. The slope (and the equal
+slopes' test for the same surface) now takes the sign of the axes'
+product. Both orders give the reference's circles (an mpmath reference at
+80 digits, radii 1.2207 and 1.2859). Every other input of the corpus and
+these regressions keeps its result bit for bit, natively and under the
+emulated glibc `hypot`.
+`intersection::analytic::antiparallel_tests` pins the pair both ways, a
+cylinder and a cone against it, and two cones mirrored at one origin (one
+circle, formerly taken for the same surface) or with opposite half-angles
+too (the same surface, formerly one circle).
+
 ## Curve/surface: a circle nearly tangent to a cone
 
 `curve_surface/timeout-fdb4ae721b33aab65287ff8213216b9633bd2975.bin` and

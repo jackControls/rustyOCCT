@@ -16864,6 +16864,60 @@ Decisions for S9, recorded before its code (2026-09-28):
   campaign: every target's full replay shards and their completeness checks
   passed.
 
+* **Coaxial cones on axes against each other, a wrong circle at
+  `391ace72`, done (2026-10-13).** CI's scheduled run 38412403142 at
+  `391ace72` found, in `analytic_intersections`' mutation,
+  `fuzz/regressions/analytic_intersections/crash-da053b6d089d6e0f46b5ac4967733fb950379115.bin`
+  (its regressions README entry): the symmetry check's "overlapping
+  enclosures". It fails on macOS too (no `hypot` ulp involved: both
+  normals have three equal coordinates, so they are exactly parallel on
+  either host). The input: two cones on the line `x = y = z`, independent
+  (mode 0), an apex at `(-8, -8, -8)` with half-angle 0.05 about `(-3, -3,
+  -3)` and radius 2.25 at `(7.125, 7.125, 7.125)` with half-angle `0.05 +
+  50 / 48` about `(1, 1, 1)`: coaxial, their axes running against each
+  other. Neither the traced graph (4798c784) nor `Interval::mul`
+  (cd4a6bc4) is involved: S7a's `coaxial_pair` decides it, unchanged
+  since `d63d015c`. The two orders gave different circles, and an
+  independent mpmath reference (80 digits, each cone's radius along its
+  own axis, the circles' points on both cones within `1e-79`) put the
+  exact ones at 10.54 and 11.84 along `(1, 1, 1)` from the origin, radii
+  1.2207 and 1.2859: the order with the second cone as the axis was right,
+  the other's circles (12.82 and 14.24, radii 1.3347 and 1.4060) lay on
+  the first cone only. A correctness bug, not the pairing. Cause: a
+  coaxial pair's circles lie where the radius functions along the axis
+  surface's axis agree, and a cone's is `r + h' tan(alpha)` with `h'` along
+  its own axis; the other cone's took `h' = h - h0` where its axis runs
+  against the axis surface's and `h' = h0 - h`. With the second cone as
+  the axis the first's error vanished with its zero radius (its two nappes
+  are `+-` the same line). The same slip made a cylinder with a cone on an
+  axis against it give mirrored circles in both orders (the kinds sort the
+  same way, so symmetry could not see it), took two mirrored cones at one
+  origin and radius for the same surface, and gave a circle for two that
+  are the same (opposite axes and half-angles). Fix: the cone's slope, and
+  the equal slopes' test for the same surface, take the sign of the two
+  axes' exact dot product (the exact constants' test is unchanged: it
+  compares the rational and `tan` parts separately, whatever the sign).
+  `tools/analytic_intersection_reference.py`'s coaxial radius had the same
+  slip and is fixed alike (its 67 fixtures, none with axes against each
+  other, unchanged under `--check`). Tests: `analytic.rs`'s
+  `antiparallel_tests`, each both ways against the fixed reference: the
+  input's two circles, a cylinder and a cone against it, mirrored cones (a
+  circle) and opposite ones (the same surface); all three fail before the
+  fix. The corpus (1,495 inputs) and its 10 regressions (the input among
+  them), each intersected both ways with every traced track's points at three
+  parameters (a release probe, not committed): every result bit for bit as
+  before but the input's, natively and under the emulated glibc `hypot`
+  (15.32 and 15.30 s natively, 16.31 and 16.17 s emulated). Checks: fmt,
+  clippy (release, all targets), the 1.85 check, the fuzz crate's fmt and
+  check, the release suite (749 tests, 5 ignored); on the pinned SDK
+  `compare_analytic_intersections.py` (63 / 4),
+  `compare_procedural_intersections.py` (86 / 7),
+  `compare_torus_curves.py` (28 / 10) and `compare_ruled_curves.py`
+  (9 / 3), each with 0 failures; with debug assertions and overflow
+  checks, one process per file, the corpus and its 10 regressions replay
+  without a failure natively and under the emulation (the slowest 0.74 and
+  0.68 s).
+
 * **CI budget (U6).** Per-push fuzz runs replay a bounded sample plus every
   regression and new seed; the daily schedule replays everything; the heavy
   exact targets run on schedule only; Windows runs a smoke subset per push

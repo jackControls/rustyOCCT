@@ -769,6 +769,9 @@ fn coaxial_pair(q1: &Q, q2: &Q) -> Found {
             &escale(&e3(a), &h.div(&la).expect("a nonzero axis")),
         )
     };
+    // Whether a surface's own axis runs against the axis surface's (they
+    // are parallel exactly): its own axial coordinate is then -(h - h0).
+    let against = |s: &Q| !dot(&s.a, a).is_positive();
     // Rho as a linear function r0 + t h (cylinders and cones), or a sphere.
     enum F {
         Lin(I, I, bool),
@@ -780,10 +783,13 @@ fn coaxial_pair(q1: &Q, q2: &Q) -> Found {
             Kind::Cylinder => F::Lin(i(&s.r), I::exact(r0()), true),
             Kind::Sphere => F::Sph(h0, i(&s.r)),
             _ => {
+                // rho = r + h' tan(alpha) along the cone's own axis, h' =
+                // +-(h - h0): the slope's sign follows the axis's direction.
                 let (c, sn) = s.cos_sin();
                 let t = sn
                     .div(&c)
                     .ok_or(Error::ComputationLimit("cone half-angle"))?;
+                let t = if against(s) { t.neg() } else { t };
                 F::Lin(i(&s.r).sub(&h0.mul(&t)), t, false)
             }
         })
@@ -800,7 +806,10 @@ fn coaxial_pair(q1: &Q, q2: &Q) -> Found {
                 if *cyl1 || *cyl2 {
                     return false;
                 }
-                let (x, y) = (q(q1.angle), q(q2.angle));
+                // The slopes as functions of h: a half-angle on an axis
+                // against the axis surface's slopes the other way.
+                let signed = |s: &Q| if against(s) { -q(s.angle) } else { q(s.angle) };
+                let (x, y) = (signed(q1), signed(q2));
                 if plus {
                     x == y
                 } else {
@@ -894,8 +903,10 @@ fn exact_constants_equal(q1: &Q, q2: &Q, plus: bool) -> bool {
     match (q1.kind, q2.kind) {
         (Kind::Cylinder, Kind::Cylinder) => q1.r == q2.r,
         _ => {
-            // r1 - h01 t = +-(r2 - h02 t) with t transcendental: exact only
-            // when the rational parts and the h parts agree separately.
+            // r1 - h01 t = +-(r2 - h02 t) with t the slope along q1's axis
+            // (a cone on an axis against it has the signed slope) and
+            // transcendental: exact only when the rational parts and the h
+            // parts agree separately.
             let h01 = dot(&sub(&q1.o, &q1.o), a);
             let h02 = dot(&sub(&q2.o, &q1.o), a);
             if plus {
@@ -948,4 +959,120 @@ fn apex_root(q1: &Q, q2: &Q, h: &I) -> bool {
         }
     }
     false
+}
+
+#[cfg(test)]
+mod antiparallel_tests {
+    use super::*;
+    use crate::{Frame3, Point3, Tolerance, Vec3};
+
+    fn frame(o: [f64; 3], n: [f64; 3], hint: [f64; 3]) -> Frame3 {
+        Frame3::new(
+            Point3::new(o[0], o[1], o[2]),
+            Vec3::new(n[0], n[1], n[2]),
+            Vec3::new(hint[0], hint[1], hint[2]),
+            Tolerance::default(),
+        )
+        .unwrap()
+    }
+    fn cone(o: [f64; 3], n: [f64; 3], hint: [f64; 3], radius: f64, half_angle: f64) -> Surface {
+        Surface::Cone {
+            frame: frame(o, n, hint),
+            radius,
+            half_angle,
+        }
+    }
+
+    /// Both orders give circles whose enclosures contain the reference's
+    /// centre and radius (`tools/analytic_intersection_reference.py`, 80
+    /// digits; the nearest binary64 of an exact value lies in any binary64
+    /// enclosure of it).
+    fn circles(a: &Surface, b: &Surface, want: &[([&str; 3], &str)]) {
+        for (x, y) in [(a, b), (b, a)] {
+            let Ok(SurfaceIntersection::Items(items)) = surface_surface(x, y) else {
+                panic!("circles");
+            };
+            assert_eq!(items.len(), want.len());
+            for (item, (centre, radius)) in items.iter().zip(want) {
+                let AnalyticItem::Circle {
+                    centre: c,
+                    radius: r,
+                    ..
+                } = item
+                else {
+                    panic!("a circle: {item:?}");
+                };
+                let inside = |[lo, hi]: Enclosure, v: &str| {
+                    let v: f64 = v.parse().unwrap();
+                    assert!(lo <= v && v <= hi, "{v} outside [{lo}, {hi}]");
+                };
+                for (e, v) in c.iter().zip(centre) {
+                    inside(*e, v);
+                }
+                inside(*r, radius);
+            }
+        }
+    }
+
+    /// The fuzz input `crash-da053b6d` (`fuzz/regressions/README.md`): two
+    /// cones on the line `x = y = z` whose axes run against each other, an
+    /// apex at `(-8, -8, -8)` with half-angle 0.05 about `(-3, -3, -3)` and
+    /// radius 2.25 at `(7.125, 7.125, 7.125)` with half-angle `0.05 + 50 /
+    /// 48` about `(1, 1, 1)`. The second's radius function along the
+    /// first's axis took the second's slope with the first's direction: with
+    /// the first as the axis the circles were wrong; with the second (whose
+    /// partner, an apex, is the same either way) right.
+    #[test]
+    fn coaxial_cones_on_axes_against_each_other() {
+        let hint = [0.0, 1.0, 0.0];
+        let a = cone([-8.0; 3], [-3.0; 3], hint, 0.0, 0.05);
+        let b = cone([7.125; 3], [1.0; 3], hint, 2.25, 0.05 + 50.0 / 48.0);
+        let c1 = "6.08400233491317366474499005229";
+        let c2 = "6.83582897153825678416448176269";
+        circles(
+            &a,
+            &b,
+            &[
+                ([c1, c1, c1], "1.22072782367171810245128854272"),
+                ([c2, c2, c2], "1.28589223305488534346587461422"),
+            ],
+        );
+    }
+
+    /// A cylinder and a cone on an axis against the cylinder's, the cone
+    /// sorted second in both orders: its circles at `z = 1 - 1 / tan 0.5`
+    /// and `1 + 3 / tan 0.5` (they were mirrored about the cone's origin).
+    #[test]
+    fn a_cylinder_and_a_coaxial_cone_against_it() {
+        let x = [1.0, 0.0, 0.0];
+        let cyl = Surface::Cylinder {
+            frame: frame([0.0; 3], [0.0, 0.0, 1.0], x),
+            radius: 2.0,
+        };
+        let k = cone([0.0, 0.0, 1.0], [0.0, 0.0, -1.0], x, 1.0, 0.5);
+        circles(
+            &cyl,
+            &k,
+            &[
+                (["0", "0", "-0.830487721712451919268019438969"], "2"),
+                (["0", "0", "6.49146316513735575780405831691"], "2"),
+            ],
+        );
+    }
+
+    /// Two cones on one origin and radius with axes against each other:
+    /// mirror images meeting in the circle at the origin (once taken for
+    /// the same surface), and the same surface when the half-angles are
+    /// opposite too (once a circle).
+    #[test]
+    fn mirrored_cones_meet_in_a_circle_and_opposite_ones_coincide() {
+        let x = [1.0, 0.0, 0.0];
+        let up = cone([0.0; 3], [0.0, 0.0, 1.0], x, 1.0, 0.5);
+        let down = cone([0.0; 3], [0.0, 0.0, -1.0], x, 1.0, 0.5);
+        circles(&up, &down, &[(["0", "0", "0"], "1")]);
+        let opposite = cone([0.0; 3], [0.0, 0.0, -1.0], x, 1.0, -0.5);
+        for (p, q) in [(&up, &opposite), (&opposite, &up)] {
+            assert_eq!(surface_surface(p, q).unwrap(), SurfaceIntersection::Same);
+        }
+    }
 }
