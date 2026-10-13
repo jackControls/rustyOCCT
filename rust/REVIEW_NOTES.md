@@ -16917,6 +16917,11 @@ Decisions for S9, recorded before its code (2026-09-28):
   checks, one process per file, the corpus and its 10 regressions replay
   without a failure natively and under the emulation (the slowest 0.74 and
   0.68 s).
+  Merged and verified at `a72e7127` (`rust-kernel`; the 46 Boolean
+  comparisons, the four analytic ones and the three corpora replayed with
+  debug assertions). Campaigns there (600 s each, sampled replays, every
+  switch on): `analytic_intersections` clean, 10,337 runs; `boolean` clean,
+  410 runs, the slowest input 15 s; `split` clean, 1,939 runs.
 
 * **CI budget (U6).** Per-push fuzz runs replay a bounded sample plus every
   regression and new seed; the daily schedule replays everything; the heavy
