@@ -1921,6 +1921,60 @@ to a spline wall"); a turning point at an interior knot or on a face's
 boundary, as S9f.3a's with the cone's reasons; a vertex's polynomial with a
 multiple root; and the engine's rules.
 
+## Acceptance
+
+S5–S9 are accepted at `54030783` (2026-10-14) under U6: one revision, its
+CI green, the schedule run's full replays green and a clean local 600 s
+campaign of every target the steps touch.
+
+* **CI.** At `54030783` the push runs of "Rust kernel" (38441259056) and
+  "Rust geometry fuzzing" (38441259090) and the schedule runs of both
+  (38542322226 and 38560772990) are green. The schedule run's 65 fuzz jobs
+  include the full replays of every target: `analytic_intersections`,
+  `boolean`, `degree_elevation` and `tessellation` in four shards each,
+  `split` in eight, each target's completeness check (29 jobs in all), and
+  the other targets' campaigns with full replays.
+* **Local campaigns** at `54030783` (600 s of mutation each, AddressSanitizer,
+  every switch on; full replays except `boolean`, `split`,
+  `analytic_intersections` and `tessellation`, sampled as CI's campaigns of
+  sharded targets are), every one clean with no new artifact:
+
+  | Target | Executions | Startup (s) | Peak RSS (MB) |
+  |---|---|---|---|
+  | `identity` | 4,142 | 564 | 736 |
+  | `modeling` | 2,924 | 246 | 620 |
+  | `history` | 10,967 | 138 | 680 |
+  | `brep_io` | 12,664 | 104 | 936 |
+  | `brep_validation` | 7,625 | 420 | 633 |
+  | `curve_surface` | 23,478 | 32 | 461 |
+  | `curve_curve` | 37,421 | 21 | 261 |
+  | `analytic_intersections` | 9,802 | 12 | 265 |
+  | `split` | 1,827 | 77 | 540 |
+  | `boolean` | 405 | 444 | 1,159 |
+  | `tessellation` | 2,098 | 23 | 1,715 |
+  | `step` | 34,217 | 18 | 1,073 |
+
+  The slowest input of any campaign took 15 s (`boolean`).
+* **Verification** of the revision's kernel (`a72e7127`, `54030783` adding
+  one record to `REVIEW_NOTES.md`): fmt, clippy, the 1.85 check, the
+  release suite, the 46 Boolean comparisons of `HANDOFF.md`'s table and the
+  four analytic ones with their documented counts and no failure,
+  `compare_split.py`, `compare_brep.py --family spline` and
+  `compare_brep_io.py`, and the boolean, split and analytic_intersections
+  corpora with their regressions replayed with debug assertions without a
+  failure.
+* **DRAW.** The last full survey (`cc7af85c`, `s9-draw-18`) and the trials
+  since (`UPSTREAM_TESTS.md`): 1,132 registered cases, every one holding its
+  manifest status in a full contract run on both backends.
+* **Open beyond acceptance** (`HANDOFF.md`, items 2, 3 and 5): the Linux
+  records of the per-set captures (CI never runs their compare scripts, a
+  CI-budget decision), S9e.4b.4b.2b.2b.3b and S9e.4b.4c.2b.2 (no measured
+  body reaches them but one dataset solid no DRAW case imports),
+  S9e.4b.4d.2 (a turned-body construction, a scope question), the
+  near-miss rules not yet written (other curves' edges, two sphere
+  circles, an apex against a sphere, torus or spline face, item 5's (b)
+  to (d)), and the refusals by design listed there. U9 and U10 stay open.
+
 ## Evidence
 
 * **Case protocol.** A Boolean case (`identity_reference.

@@ -76,8 +76,9 @@ then for the DRAW survey of the nested leaves and the speed-ups (branch
 
 ## Where things stand
 
-- **S1–S8 done.** S1–S4 accepted, S5–S8 implemented with their evidence and
-  campaigns (`REVIEW_NOTES.md`, sections S5–S8).
+- **S1–S9 done.** S1–S4 accepted (2026-09-27), S5–S9 accepted together at
+  `54030783` (2026-10-14, `BOOLEAN.md`'s Acceptance). What is listed below
+  as open is beyond that acceptance.
 - **S9a–S9d done.** Booleans of prisms in one frame (S9a), polyhedra in any
   position (S9b), arcs and cylinders in any position (S9c), spheres, cones
   and tori (S9d.1–S9d.4c). Every sub-step has its refined decisions, an
@@ -871,7 +872,10 @@ then for the DRAW survey of the nested leaves and the speed-ups (branch
    DRAW cases loading them (none registered) the 12 that failed at the
    header now restore, none newly evaluating, as the survey at `f0bebb1c`
    (branch `s9-draw-17`) confirms; BinTools' binary lines stay refused.
-4. **S9's acceptance** (U6): kernel and fuzz CI green at the accepted
+4. **S9's acceptance: done.** S5–S9 are accepted at `54030783`
+   (2026-10-14; `BOOLEAN.md`'s Acceptance: CI and the schedule run's full
+   replays green, clean local campaigns of twelve targets). The gate as
+   it was set: kernel and fuzz CI green at the accepted
    revision, the schedule run's full replays green (boolean and
    `degree_elevation` are sharded across four jobs, `split` across
    eight, `analytic_intersections` across four (since its replay overran

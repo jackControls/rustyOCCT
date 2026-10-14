@@ -7,7 +7,8 @@ contracts or acceptance records. When a step below is accepted, record the
 evidence in the guide that owns it and mark the step here as done.
 
 **Reviewed state:** head `3ba8c1f2` on 2026-09-26. S1–S4 are done
-(2026-09-27, see Status); what remains open for the user is listed there. M0–M5 and T1–T2 are
+(2026-09-27, see Status), and S5–S9 (accepted at `54030783` on 2026-10-14,
+`BOOLEAN.md`'s Acceptance); what remains open for the user is listed there. M0–M5 and T1–T2 are
 implemented, pushed and accepted; both workflows are green at `0913b5e2`; the
 full local release suite passes at the head.
 
@@ -17796,7 +17797,8 @@ Decisions for S9, recorded before its code (2026-09-28):
 * U6 (parallel track) — implemented: per-push sampled replay with a
   manifest of the last full replay, schedule-only exact tensor targets,
   Windows smoke per push and a nightly kernel schedule (`FUZZING.md`).
-* S5 — implemented at `4592ef6c`; kernel CI green there, and the clean
+* S5 — **done**, accepted at `54030783` (2026-10-14) with S6–S9 (record in
+  `BOOLEAN.md`'s Acceptance). Implemented at `4592ef6c`; kernel CI green there, and the clean
   local 600-second campaigns of `identity`, `modeling`, `history`,
   `brep_io` and `brep_validation` at that revision ran without an artifact
   (1,360 to 7,681 mutation executions each, full replays). Acceptance waits
@@ -17814,8 +17816,8 @@ Decisions for S9, recorded before its code (2026-09-28):
     prisms, the DRAW adapter runs `profile` (derived case `profile_arcs`,
     both backends) and the `identity` fuzz target builds filleted, notched
     paths. Polygon and circle ids are byte-identical (the full suite).
-* S6 — implemented; gate pending CI, the schedule replay and the clean
-  campaigns.
+* S6 — **done**, accepted at `54030783` (2026-10-14) with S5 and S7–S9
+  (record in `BOOLEAN.md`'s Acceptance).
   * Native observations of eighteen sheet, shell, wire and acorn models and
     of the corpus's 6,223 free shapes captured before any kernel code
     accepted them (`9d7e5dfd`), with the independent validator and reader
@@ -17844,7 +17846,8 @@ Decisions for S9, recorded before its code (2026-09-28):
     in `occt_brep.rs`, and twelve restore-only DRAW cases whose free faces
     the validator rejects are failures (`UPSTREAM_TESTS.md`); spline wires
     are not measured.
-* S7 — in progress.
+* S7 — **done**, accepted at `54030783` (2026-10-14) with S5, S6, S8 and
+  S9 (record in `BOOLEAN.md`'s Acceptance).
   * D13 recorded in `TOPOLOGY_MODEL.md`; the S7 decisions above.
   * S7a implemented (`ANALYTIC_INTERSECTIONS.md`): the exact reference and
     the native `IntAna_QuadQuadGeo` capture of 67 cases came before any
@@ -18143,7 +18146,8 @@ Decisions for S9, recorded before its code (2026-09-28):
   * Next: seamless periodic faces (windings from the derived pcurves), the
     swept surfaces, the open STEP-b items above, and placements; STEP-c the
     recorded corpus survey.
-* S8 — in progress: decisions recorded (2026-09-28).
+* S8 — **done**, accepted at `54030783` (2026-10-14) with S5–S7 and S9
+  (record in `BOOLEAN.md`'s Acceptance); decisions recorded (2026-09-28).
   * S8a.1 implemented: the quadrature reference and a
     `BRepAlgoAPI_Splitter` capture of 26 prisms came before
     `solid/split.rs`; planes normal to a prism's axis through M3's height
@@ -18325,7 +18329,9 @@ Decisions for S9, recorded before its code (2026-09-28):
     regressions, the slowest 18 s under AddressSanitizer. The spline and
     sheet captures' Linux records: CI run 36556520655 (`platform-linux/`;
     the sheet's two mirror pieces of `wire_wave_four` in the other order).
-* S9 — in progress:
+* S9 — **done**, accepted at `54030783` (2026-10-14) with S5–S8 (record in
+  `BOOLEAN.md`'s Acceptance; what stays open beyond it there and in
+  `HANDOFF.md`):
   * S9a: decisions recorded (2026-09-28); its evidence came before any
     kernel code (`71eb169a`, `BOOLEAN.md`): Boolean cases in the case
     protocol (the object's prism rows, `boolean fuse|cut|common ID`, the
