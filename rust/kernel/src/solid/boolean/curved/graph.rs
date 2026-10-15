@@ -479,6 +479,17 @@ fn sphere_near(
 
 /// Whether two faces of one model lie on one quadric (a circle's halves, a
 /// sphere's hemispheres).
+/// S9e.4b.4d.2c.2: the first face of a model on the same torus as its torus
+/// face `f` (one torus model's patches, `Prism::view`), the key of the
+/// meetings found once per torus: a turned body's fillet and round lie on
+/// two torus models of one input.
+fn first_on_torus(m: &Prism, f: usize) -> usize {
+    let own = m.view(f).0;
+    (0..=f)
+        .find(|&h| matches!(m.faces[h].surf, Surf::Torus) && std::ptr::eq(m.view(h).0, own))
+        .unwrap_or(f)
+}
+
 fn same_quadric(a: &Surf, b: &Surf) -> bool {
     match (a, b) {
         (Surf::Cyl { c, r, .. }, Surf::Cyl { c: c2, r: r2, .. }) => c == c2 && r == r2,
@@ -847,8 +858,10 @@ pub(super) fn arrange_touching(models: [Prism; 2], touch: bool) -> Result<Arr> {
         }
     }
     // A plane and a torus (S9d.4a): its spiric section, rings or loops,
-    // the same for every patch (found once for each plane).
-    let mut spiric: BTreeMap<(usize, usize), CylPair> = BTreeMap::new();
+    // the same for every patch of one torus (found once per plane face and
+    // torus model: S9e.4b.4d.2c.2, a turned body's fillet and round are two
+    // tori of one input, each its own sections).
+    let mut spiric: BTreeMap<(usize, usize, usize), CylPair> = BTreeMap::new();
     // S9e.4b.4d.2c.1a: the faces touching along circles (A's, B's, circle).
     let mut touches: Vec<(usize, usize, super::torus::TouchRing)> = Vec::new();
     for fa in 0..models[0].faces.len() {
@@ -860,7 +873,8 @@ pub(super) fn arrange_touching(models: [Prism; 2], touch: bool) -> Result<Arr> {
                 _ => continue,
             };
             let pair = if boxes_meet(&models[0].boxes[fa], &models[1].boxes[fb]) {
-                let key = (k, if k == 0 { fb } else { fa });
+                let (tf, pf) = if k == 0 { (fa, fb) } else { (fb, fa) };
+                let key = (k, pf, first_on_torus(&models[k], tf));
                 if let Some(pair) = spiric.get(&key) {
                     pair.clone()
                 } else {
@@ -889,10 +903,11 @@ pub(super) fn arrange_touching(models: [Prism; 2], touch: bool) -> Result<Arr> {
         }
     }
     // A torus and a quadric face (S9d.4b.2): its meeting's pieces, the same
-    // for every patch and for every face on one quadric (found once); two
-    // tori (S9d.4b.2b) over the first's angles, the same for every pair of
-    // patches.
-    let mut toric: Vec<((usize, usize), CylPair)> = Vec::new();
+    // for every patch of one torus and for every face on one quadric (found
+    // once for each torus model and quadric, S9e.4b.4d.2c.2); two tori
+    // (S9d.4b.2b) over the first's angles, the same for every pair of
+    // patches of the two.
+    let mut toric: Vec<((usize, usize, usize), CylPair)> = Vec::new();
     for fa in 0..models[0].faces.len() {
         for fb in 0..models[1].faces.len() {
             let (sa, sb) = (&models[0].faces[fa].surf, &models[1].faces[fb].surf);
@@ -913,7 +928,7 @@ pub(super) fn arrange_touching(models: [Prism; 2], touch: bool) -> Result<Arr> {
                 let tori = matches!(other.faces[g].surf, Surf::Torus);
                 // The first face on the same quadric (or torus).
                 let first = if tori {
-                    0
+                    first_on_torus(other, g)
                 } else {
                     (0..=g)
                         .find(|&h| {
@@ -922,7 +937,9 @@ pub(super) fn arrange_touching(models: [Prism; 2], touch: bool) -> Result<Arr> {
                         })
                         .unwrap_or(g)
                 };
-                if let Some((_, pair)) = toric.iter().find(|(key, _)| *key == (k, first)) {
+                let own_first = first_on_torus(&models[k], if k == 0 { fa } else { fb });
+                if let Some((_, pair)) = toric.iter().find(|(key, _)| *key == (k, own_first, first))
+                {
                     pair.clone()
                 } else {
                     let own = models[k].view(if k == 0 { fa } else { fb }).0;
@@ -936,7 +953,7 @@ pub(super) fn arrange_touching(models: [Prism; 2], touch: bool) -> Result<Arr> {
                             &super::cones::other_face(vo, io),
                         )?
                     };
-                    toric.push(((k, first), pair.clone()));
+                    toric.push(((k, own_first, first), pair.clone()));
                     pair
                 }
             } else {
