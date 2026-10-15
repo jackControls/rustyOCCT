@@ -465,20 +465,7 @@ impl Solid {
             // their planes and cylinders smoothly, its sharp profile's
             // lattice with its fillets' pieces and less its rounds'.
             Err(e) if e == smooth_torus_text() => {
-                let op = construction_operation(operation);
-                if let Ok(p) = turned::turned_piece(&topology, resolution, op) {
-                    let done = Self::imported_as(
-                        context,
-                        topology,
-                        resolution,
-                        Recognized::Piece(Box::new(p)),
-                        BTreeMap::new(),
-                    );
-                    if done.is_ok() {
-                        return done;
-                    }
-                }
-                return Err(e);
+                return Self::imported_turned(context, &topology, resolution).ok_or(e);
             }
             Err(e) => return Err(e),
         };
@@ -514,48 +501,45 @@ impl Solid {
         // S9e.4b.4d.2a: then a turned body of corners, the lattice of its
         // primitives; where it is none, or its model is refused, the body's
         // refusal as before.
+        Self::imported_turned(context, &topology, resolution).ok_or(refusal)
+    }
+
+    /// S9e.4b.4d.2a: a turned body as the lattice of its primitives (with
+    /// S9e.4b.4d.2b's flats and S9e.4b.4d.2c.1a's fillets and rounds), stored
+    /// as its model (`turned::modelled`: every face on its model's surface,
+    /// every edge its model's circle), so that its own measures and its
+    /// Booleans' results, which keep its stored surfaces and curves, are its
+    /// model's; `None` where it is no such body or its model is refused.
+    fn imported_turned(
+        context: &Context,
+        topology: &Topology,
+        resolution: Tolerance,
+    ) -> Option<(Self, History)> {
         let op = construction_operation(context.operation);
-        if let Ok(p) = turned::turned_piece(&topology, resolution, op) {
-            let done = Self::imported_as(
-                context,
-                topology,
-                resolution,
-                Recognized::Piece(Box::new(p)),
-                BTreeMap::new(),
-            );
-            if done.is_ok() {
-                return done;
-            }
-        }
-        Err(refusal)
+        let model = turned::modelled(topology, resolution)?;
+        let p = turned::turned_piece(&model, resolution, op).ok()?;
+        Self::imported_as(
+            context,
+            model,
+            resolution,
+            Recognized::Piece(Box::new(p)),
+            BTreeMap::new(),
+        )
+        .ok()
     }
 
     /// S9e.4b.4d.2b: a body with a cone within the resolution of a plane or a
     /// cylinder, a turned body with each cone within the resolution of a
-    /// plane stored as that plane, its rims as its model's circles
-    /// (`turned::flattened`), the lattice of its primitives; else S9e.4b.4d.1's
-    /// refusal.
+    /// plane stored as that plane, its rims as its model's circles (and since
+    /// the fix of S9e.4b.4d.2c.1a's consistency every face and edge as its
+    /// model's, `turned::modelled`), the lattice of its primitives; else
+    /// S9e.4b.4d.1's refusal.
     fn imported_flats(
         context: &Context,
         topology: Topology,
         resolution: Tolerance,
     ) -> Result<(Self, History)> {
-        let op = construction_operation(context.operation);
-        if let Some(flat) = turned::flattened(&topology, resolution) {
-            if let Ok(p) = turned::turned_piece(&flat, resolution, op) {
-                let done = Self::imported_as(
-                    context,
-                    flat,
-                    resolution,
-                    Recognized::Piece(Box::new(p)),
-                    BTreeMap::new(),
-                );
-                if done.is_ok() {
-                    return done;
-                }
-            }
-        }
-        Err(Error::Degenerate(
+        Self::imported_turned(context, &topology, resolution).ok_or(Error::Degenerate(
             "an imported cone within the resolution of a plane or a cylinder (S9e.4b.4d)",
         ))
     }

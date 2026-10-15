@@ -37,9 +37,21 @@
 //! the axis through its wider rim (its stored circle of the larger radius),
 //! its other rim the plane's meeting with its neighbour's line, a vertex
 //! loop on it (its apex) the disc's centre within the resolution; the body
-//! is then stored so (`flattened`: the face on that plane, its rims the
-//! model's circles, their fins' pcurves again), its import, history and
-//! Booleans those of a body of planes.
+//! is then stored so (the face on that plane, its rims the model's circles,
+//! their fins' pcurves again), its import, history and Booleans those of a
+//! body of planes.
+//!
+//! The fix of S9e.4b.4d.2c.1a's consistency: every turned body is stored as
+//! its model (`modelled`: every face on its model's surface on the axis
+//! frame, every edge its model's circle at its node, every pcurve again), not
+//! its flats alone. A Boolean's results keep the stored surfaces of the
+//! faces and the curves of the edges they keep beside the model's new edges,
+//! so a stored surface or edge off the model within the resolution (an axis
+//! tilted within it, a corner's ring off its lines' meeting, a torus off its
+//! snap) left faces bounded by edges off their surfaces, whose certified
+//! measures were no set's: `OCC485a`'s Booleans with its rib disagreed with
+//! one another beyond their enclosures, and boxes across it failed the
+//! validator.
 //!
 //! S9e.4b.4d.2c.1a: a torus face between a plane and a cylinder is a fillet
 //! (its material outside the tube) or a round, snapped tangent to both: the
@@ -57,7 +69,7 @@
 //! lattice's plane or cylinder along the piece's edge at the tangent point
 //! (`graph.rs`'s touching circles, its tree's `arrange_touching`).
 use super::*;
-use crate::topology::{Curve2, LoopId};
+use crate::topology::{Curve2, LoopId, Projection};
 
 /// The choice a turned body's piece records (`Imported::moved` reads it off
 /// the moved stored topology again by it).
@@ -134,9 +146,8 @@ struct Meridian {
     kinds: Vec<Kind>,
     path: Vec<usize>,
     nodes: Vec<[R; 2]>,
-    /// S9e.4b.4d.2b: each edge's node, and each face taken as a plane.
+    /// S9e.4b.4d.2b: each edge's node.
     rings: Vec<[R; 2]>,
-    flats: Vec<bool>,
     /// S9e.4b.4d.2c.1a: each torus face's snapped tube.
     corners: Vec<Corner>,
 }
@@ -514,141 +525,187 @@ fn meridian(t: &Topology, tol: f64) -> Option<Meridian> {
         path,
         nodes,
         rings: at_ring,
-        flats,
         corners,
     })
 }
 
-/// S9e.4b.4d.2b: a turned body's stored topology with each cone within the
-/// resolution of a plane stored as that plane (its model's: the plane
-/// normal to the axis through its wider rim, its sense keeping the side the
-/// face leaves its material on) and each of its rims as its model's circle
-/// (the node's radius and height on the axis frame, rounded once), every
-/// fin on them given its pcurve again; a vertex loop on it (the cone's apex)
-/// kept. `None` where it holds no such cone or is no turned body.
-pub(super) fn flattened(t: &Topology, tolerance: Tolerance) -> Option<Topology> {
+/// A turned body's stored topology as its model (the fix of S9e.4b.4d.2c.1a's
+/// consistency, generalizing S9e.4b.4d.2b's flats): every face on its model's
+/// surface on the axis frame, every edge its model's circle at its node, so
+/// that a Boolean's results, which keep the stored surfaces and the curves of
+/// the stored edges they keep, bound the model's sets. A plane (S9e.4b.4d.2b:
+/// a cone within the resolution of a plane among them) the plane normal to
+/// the axis at its height, its sense keeping the side the face leaves its
+/// material on, its loops' windings zero and its outer loop first; a
+/// cylinder its line's radius, a cone its line through its stored frame's
+/// height rounded once, a torus (S9e.4b.4d.2c.1a) its snapped tube; each on
+/// the axis frame (turned over where the stored frame's normal points down
+/// the axis), its stored frame's `x` turned about the axis to the frame's.
+/// Each edge the circle of its node's radius at its node's height on the
+/// axis frame (rounded once), turned over as its stored circle; a vertex on
+/// it at its curve's start; every fin's pcurve given again (a plane's arc of
+/// the circle, a curved face's line at the circle's parameters, its stored
+/// span and sheet kept); a vertex loop (a cone's apex, a disc's centre) at
+/// its model's point on the axis. `None` where it is no turned body or a fin
+/// is no such pcurve's.
+#[allow(clippy::too_many_lines)]
+pub(super) fn modelled(t: &Topology, tolerance: Tolerance) -> Option<Topology> {
     let m = meridian(t, tolerance.linear())?;
-    if !m.flats.iter().any(|&f| f) {
-        return None;
-    }
     let local = Local::new(&m.axis).ok()?;
+    let n = m.axis.normal();
     let owner = fin_faces(t);
     let mut parts = t.to_parts();
-    // Each rim of a flat as its model's circle, its axes the stored ones'.
-    for (e, edge) in t.edges().iter().enumerate() {
-        if !edge.fins.iter().any(|f| m.flats[owner[f.index()]]) {
-            continue;
+    // A frame on the axis at a local height, turned over where `down`.
+    let on_axis = |w: &R, down: bool| {
+        let f = m.axis.at(local.axis_point(w));
+        if down {
+            f.flipped()
+        } else {
+            f
         }
+    };
+    let down = |f: &Frame3| f.normal().dot(n) < 0.0;
+    // Each face's model surface.
+    for (i, f) in t.faces().iter().enumerate() {
+        parts.faces[i].surface = match (&m.kinds[i], &f.surface) {
+            (Kind::Plane(h), _) => {
+                let fin = f.loops.iter().find_map(|l| match &t.loops()[l.index()] {
+                    Loop::Edges { fins, .. } => fins.first().copied(),
+                    Loop::Vertex(_) => None,
+                })?;
+                let at = t.edges()[t.fins()[fin.index()].edge.index()]
+                    .curve
+                    .point(0.5);
+                let out = oriented_normal(t, i, at)?;
+                let frame = on_axis(h, false);
+                parts.faces[i].sense = if frame.normal().dot(out) > 0.0 {
+                    Orientation::Forward
+                } else {
+                    Orientation::Reversed
+                };
+                // Its loops wind about no period on the plane, its outer loop
+                // (its wider rim) first.
+                let radius = |l: &LoopId| match &t.loops()[l.index()] {
+                    Loop::Edges { fins, .. } => fins.first().map_or(0.0, |x| {
+                        rational_f64(&m.rings[t.fins()[x.index()].edge.index()][0])
+                    }),
+                    Loop::Vertex(_) => 0.0,
+                };
+                parts.faces[i]
+                    .loops
+                    .sort_by(|a, b| radius(b).total_cmp(&radius(a)));
+                for l in &f.loops {
+                    if let Loop::Edges { winding, .. } = &mut parts.loops[l.index()] {
+                        *winding = [0, 0];
+                    }
+                }
+                Surface::Plane(frame)
+            }
+            (Kind::Curved(line), Surface::Cylinder { frame, .. }) if line.k == zero() => {
+                Surface::Cylinder {
+                    frame: on_axis(&zero(), down(frame)),
+                    radius: rational_f64(&line.r0),
+                }
+            }
+            (Kind::Curved(line), Surface::Cone { frame, .. }) if line.k != zero() => {
+                let w = q(rational_f64(&local.of(frame.origin())[2]));
+                let radius = rational_f64(&line.at(&w));
+                if radius < 0.0 {
+                    return None;
+                }
+                let sense = if down(frame) { -1.0 } else { 1.0 };
+                Surface::Cone {
+                    frame: on_axis(&w, down(frame)),
+                    radius,
+                    half_angle: (sense * rational_f64(&line.k)).atan(),
+                }
+            }
+            (Kind::Arc(_), Surface::Torus { frame, .. }) => {
+                let c = m.corners.iter().find(|c| m.path[c.at] == i)?;
+                Surface::Torus {
+                    frame: on_axis(&c.centre[1], down(frame)),
+                    major: rational_f64(&c.centre[0]),
+                    minor: rational_f64(&c.radius),
+                }
+            }
+            _ => return None,
+        };
+    }
+    // Each edge its model's circle, a vertex on it at its start.
+    for (e, edge) in t.edges().iter().enumerate() {
         let [r, w] = &m.rings[e];
-        let origin = local.axis_point(w);
         let radius = rational_f64(r);
         parts.edges[e].curve = match &edge.curve {
             Curve3::Circle { frame, .. } => Curve3::Circle {
-                frame: frame.at(origin),
+                frame: on_axis(w, down(frame)),
                 radius,
             },
             Curve3::CircularArc {
-                frame,
-                start_angle,
-                sweep_angle,
-                ..
-            } => Curve3::CircularArc {
-                frame: frame.at(origin),
-                radius,
-                start_angle: *start_angle,
-                sweep_angle: *sweep_angle,
-            },
+                frame, sweep_angle, ..
+            } => {
+                let at = on_axis(w, down(frame));
+                let c = at.coordinates(edge.curve.point(0.0));
+                Curve3::CircularArc {
+                    frame: at,
+                    radius,
+                    start_angle: c[1].atan2(c[0]),
+                    sweep_angle: *sweep_angle,
+                }
+            }
             _ => return None,
         };
+        let start = parts.edges[e].curve.point(0.0);
+        for v in [edge.start, edge.end].into_iter().flatten() {
+            parts.vertices[v.index()].position = start;
+        }
     }
-    // Each flat as its plane.
+    // Each vertex loop at its model's point on the axis: a cone's apex, a
+    // disc's centre.
     for (i, f) in t.faces().iter().enumerate() {
-        let (true, Kind::Plane(h)) = (m.flats[i], &m.kinds[i]) else {
-            continue;
-        };
-        let fin = f.loops.iter().find_map(|l| match &t.loops()[l.index()] {
-            Loop::Edges { fins, .. } => fins.first().copied(),
-            Loop::Vertex(_) => None,
-        })?;
-        let at = t.edges()[t.fins()[fin.index()].edge.index()]
-            .curve
-            .point(0.5);
-        let out = oriented_normal(t, i, at)?;
-        let frame = m.axis.at(local.axis_point(h));
-        parts.faces[i].surface = Surface::Plane(frame);
-        parts.faces[i].sense = if frame.normal().dot(out) > 0.0 {
-            Orientation::Forward
-        } else {
-            Orientation::Reversed
-        };
-        // Its loops wind about no period on the plane, its outer loop (its
-        // wider rim) first.
-        let radius = |l: &LoopId| match &t.loops()[l.index()] {
-            Loop::Edges { fins, .. } => fins.first().map_or(0.0, |x| {
-                rational_f64(&m.rings[t.fins()[x.index()].edge.index()][0])
-            }),
-            Loop::Vertex(_) => 0.0,
-        };
-        parts.faces[i]
-            .loops
-            .sort_by(|a, b| radius(b).total_cmp(&radius(a)));
         for l in &f.loops {
-            if let Loop::Edges { winding, .. } = &mut parts.loops[l.index()] {
-                *winding = [0, 0];
+            if let Loop::Vertex(v) = &t.loops()[l.index()] {
+                let w = match &m.kinds[i] {
+                    Kind::Curved(line) => line.apex()?,
+                    Kind::Plane(h) => h.clone(),
+                    Kind::Arc(_) => return None,
+                };
+                parts.vertices[v.index()].position = local.axis_point(&w);
             }
         }
     }
-    // Every fin on a flat or a rim given its pcurve on its face again.
+    // Every fin's pcurve again: a plane's arc of its circle, a curved face's
+    // line at the circle's parameters (its stored span and sheet kept).
     for (x, fin) in t.fins().iter().enumerate() {
         let (fi, e) = (owner[x], fin.edge.index());
-        let rim = t.edges()[e].fins.iter().any(|f| m.flats[owner[f.index()]]);
-        if fi == usize::MAX || !(m.flats[fi] || rim) {
-            continue;
+        if fi == usize::MAX {
+            return None;
         }
         let curve = &parts.edges[e].curve;
-        parts.fins[x].pcurve = match (&parts.faces[fi].surface, &fin.pcurve) {
+        let surface = &parts.faces[fi].surface;
+        parts.fins[x].pcurve = match (surface, &fin.pcurve) {
             (Surface::Plane(p), _) => plane_arc(p, curve, fin.sense)?,
-            (Surface::Cylinder { frame, .. }, Curve2::LineSegment { start, end })
-                if start.y == end.y =>
-            {
-                let v = frame.coordinates(curve.point(0.0))[2];
-                Curve2::LineSegment {
-                    start: Point2::new(start.x, v),
-                    end: Point2::new(end.x, v),
-                }
-            }
             (
-                Surface::Cone {
-                    frame, half_angle, ..
-                },
+                Surface::Cylinder { .. } | Surface::Cone { .. } | Surface::Torus { .. },
                 Curve2::LineSegment { start, end },
             ) if start.y == end.y => {
-                let v = frame.coordinates(curve.point(0.0))[2] / half_angle.cos();
+                let near = Projection::inverse(surface, curve.point(0.0))?;
+                let tau = std::f64::consts::TAU;
+                // On the stored pcurve's sheets.
+                let u = near.x + ((start.x - near.x) / tau).round() * tau;
+                let v = match surface {
+                    Surface::Torus { .. } => near.y + ((start.y - near.y) / tau).round() * tau,
+                    _ => near.y,
+                };
                 Curve2::LineSegment {
-                    start: Point2::new(start.x, v),
-                    end: Point2::new(end.x, v),
-                }
-            }
-            // S9e.4b.4d.2c.1a: a fillet's rim on a flat, at its tube's angle
-            // there.
-            (Surface::Torus { frame, major, .. }, Curve2::LineSegment { start, end })
-                if start.y == end.y =>
-            {
-                let c = frame.coordinates(curve.point(0.0));
-                let near = c[2].atan2(c[0].hypot(c[1]) - major);
-                // On the stored pcurve's sheet.
-                let turns = ((start.y - near) / std::f64::consts::TAU).round();
-                let v = near + turns * std::f64::consts::TAU;
-                Curve2::LineSegment {
-                    start: Point2::new(start.x, v),
-                    end: Point2::new(end.x, v),
+                    start: Point2::new(u, v),
+                    end: Point2::new(u + (end.x - start.x), v),
                 }
             }
             _ => return None,
         };
     }
-    let flat = Topology::from_parts(parts.with_measured_enclosures(), tolerance).ok()?;
-    Some(flat.with_identity_of(t))
+    let model = Topology::from_parts(parts.with_measured_enclosures(), tolerance).ok()?;
+    Some(model.with_identity_of(t))
 }
 
 /// A circle's pcurve on a plane: the arc of its image in the plane's
