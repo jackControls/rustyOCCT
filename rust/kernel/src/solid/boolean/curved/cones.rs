@@ -93,12 +93,18 @@ fn a_bound(a: &Form) -> R {
 }
 
 /// How a cone's face and a curved face of the other input meet (`fa` of
-/// operand 0, `fb` of operand 1).
-pub(super) fn cone_pair(ms: [&Prism; 2], faces: [usize; 2], res: f64) -> Result<CylPair> {
+/// operand 0, `fb` of operand 1); `touch` a turned body's own tree with tori
+/// (`coaxial_plane`).
+pub(super) fn cone_pair(
+    ms: [&Prism; 2],
+    faces: [usize; 2],
+    res: f64,
+    touch: bool,
+) -> Result<CylPair> {
     if (0..2).any(|k| matches!(ms[k].faces[faces[k]].surf, Surf::Torus)) {
         return Err(Error::OutOfDomain("a torus against a curved face (S9d.4b)"));
     }
-    if let Some(pair) = coaxial_plane(ms, faces)? {
+    if let Some(pair) = coaxial_plane(ms, faces, touch)? {
         return Ok(pair);
     }
     let axis: P2 = [zero(), zero()];
@@ -327,8 +333,10 @@ fn parts(o: &Other) -> ([[R; 3]; 3], V, R) {
 /// face): where the rulings' graph over a turned frame's data is a quartic
 /// whose meetings with a third surface pass their eliminant's budget. `None`
 /// for any other pair, and on a frame along the world's axes (whose graph is
-/// exact and cheap), as before.
-fn coaxial_plane(ms: [&Prism; 2], faces: [usize; 2]) -> Result<Option<CylPair>> {
+/// exact and cheap), as before; S9e.4b.4d.2c.1b: on every frame in a turned
+/// body's own tree with tori (`touch`), where the graph met by a piece's
+/// torus is three curved surfaces of degree sixteen.
+fn coaxial_plane(ms: [&Prism; 2], faces: [usize; 2], touch: bool) -> Result<Option<CylPair>> {
     let (fa, fb) = (&ms[0].f, &ms[1].f);
     if fa.x != fb.x || fa.y != fb.y || fa.n != fb.n {
         return Ok(None);
@@ -336,7 +344,7 @@ fn coaxial_plane(ms: [&Prism; 2], faces: [usize; 2]) -> Result<Option<CylPair>> 
     let turned = [&fa.x, &fa.y, &fa.n]
         .iter()
         .any(|v| v.iter().filter(|c| **c != zero()).count() > 1);
-    if !turned {
+    if !turned && !touch {
         return Ok(None);
     }
     // Frame b's origin at height `lambda` on frame a's axis.

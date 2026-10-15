@@ -902,20 +902,41 @@ impl ToricCrv {
     /// a quarter turn's (the tube's outer or inner equator, its top or its
     /// bottom: a turned body's fillet's or round's circles against its
     /// piece's box), the one root in its window, checked exactly on the
-    /// meeting's form; `None` otherwise.
+    /// meeting's form; S9e.4b.4d.2c.1b: else at the direction whose
+    /// half-angle tangent is the nearest multiple of `2^-40` (a turned body's
+    /// snapped direction to a cone); `None` otherwise.
     pub(super) fn rational_v(&self) -> Option<[R; 2]> {
         if !self.coaxial || self.over_v {
             return None;
         }
         let v = self.root_f64(0.0);
         let form = self.m.g.at(false, &[int(1), zero()]);
-        [(1, 0), (0, 1), (-1, 0), (0, -1)]
+        let quarter = [(1, 0), (0, 1), (-1, 0), (0, -1)]
             .into_iter()
             .map(|(c, s)| [int(c), int(s)])
             .find(|cs| {
                 let a = rational_f64(&cs[1]).atan2(rational_f64(&cs[0]));
                 (near(v, a) - a).abs() <= 1e-6 && form.value(cs) == zero()
-            })
+            });
+        if quarter.is_some() {
+            return quarter;
+        }
+        // S9e.4b.4d.2c.1b: a ring at a direction whose half-angle tangent
+        // lies on the multiples of `2^-40` (a turned body's direction to its
+        // tube's point on a cone, its piece's cone through the tube's centre
+        // along it): the nearest such, checked exactly.
+        let grid = 2f64.powi(-40);
+        let s = (0.5 * v).tan();
+        if !s.is_finite() || s.abs() > 4096.0 {
+            return None;
+        }
+        let k = (s / grid).round();
+        [0.0, -1.0, 1.0].into_iter().find_map(|d| {
+            let s = q((k + d) * grid);
+            let den = int(1) + &s * &s;
+            let cs = [(int(1) - &s * &s) / &den, (&s * int(2)) / &den];
+            (form.value(&cs) == zero()).then_some(cs)
+        })
     }
 
     /// The piece's point at a rational `(cos, sin)` of its parameter

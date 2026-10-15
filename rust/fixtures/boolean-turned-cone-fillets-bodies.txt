@@ -1,0 +1,21 @@
+write round imported/cone_fillet_round.brep
+plane 0 0 0 0 -1 0 1 0 0
+wire S 6 0 0 0 L 6 0 0 L 6 0 4 A 4 0 4 2 1 5.764705882352941 0 4.9411764705882355 L 4.133333333333334 0 8 L 0 0 8 L
+revolve 0 0 0 0 0 1 6.283185307179586
+end
+write fillet imported/cone_fillet_fillet.brep
+plane 0 0 0 0 -1 0 1 0 0
+wire S 7 0 0 0 L 8 0 0 L 8 0 2 L 5 0 2 A 5 0 3 1 0 4.117647058823529 0 2.5294117647058822 L 1.7333333333333334 0 7 L 0 0 7 L
+revolve 0 0 0 0 0 1 6.283185307179586
+end
+write top imported/cone_fillet_top.brep
+plane 0 0 0 0 -1 0 1 0 0
+wire S 5 0 0 0 L 3 0 0 L 8.6 0 4.2 A 8 0 5 1 1 8 0 6 L 0 0 6 L
+revolve 0 0 0 0 0 1 6.283185307179586
+end
+write refit imported/cone_fillet_refit.brep
+plane 0 0 0 0 -1 0 1 0 0
+wire S 6 0 0 0 L 6 0 0 L 6 0 4 A 4 0 4.000000953674316 2.0000000000002274 1 5.792055174471667 0 4.887997716984991 L 4.25 0 8 L 0 0 8 L
+revolve 0 0 0 0 0 1 6.283185307179586
+tolerance 0.001
+end

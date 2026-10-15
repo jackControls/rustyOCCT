@@ -73,6 +73,11 @@ enum Construction {
         /// the body's other primitives; S9e.4b.4d.2c.1a: its top at the
         /// second height exactly (a fillet's plane its cap).
         axis: Option<(Frame3, f64, f64)>,
+        /// S9e.4b.4d.2c.1b: on an axis frame, its exact radii at its two
+        /// heights where they are no binary64 numbers (a cone tangent to a
+        /// turned body's fillet or round, or its piece's cones): its exact
+        /// model's line, its stored radii those rounded once.
+        exact: Option<Box<[num_rational::BigRational; 2]>>,
     },
     /// The latitudes of its ends; `start` and `end` are their heights.
     Sphere {
@@ -296,6 +301,7 @@ impl Solid {
                 top,
                 tolerance,
                 axis: None,
+                exact: None,
             },
             frame,
             start: 0.0,
@@ -323,6 +329,24 @@ impl Solid {
         let mut s = Self::build_cone(operation, base, bottom, top, hi - lo, tolerance)?;
         if let Construction::Cone { axis: on, .. } = &mut s.construction {
             *on = Some((axis, lo, hi));
+        }
+        Ok(s)
+    }
+
+    /// S9e.4b.4d.2c.1b: [`Solid::build_cone_on`] whose exact model's radii
+    /// at `lo` and `hi` are `radii` (its stored radii those rounded once):
+    /// a cone of a rational line on the axis frame.
+    pub(crate) fn build_cone_exact_on(
+        operation: OperationId,
+        axis: Frame3,
+        heights: [f64; 2],
+        radii: [num_rational::BigRational; 2],
+        tolerance: Tolerance,
+    ) -> Result<Self> {
+        let [bottom, top] = [&radii[0], &radii[1]].map(split::rational_f64);
+        let mut s = Self::build_cone_on(operation, axis, heights, bottom, top, tolerance)?;
+        if let Construction::Cone { exact, .. } = &mut s.construction {
+            *exact = Some(Box::new(radii));
         }
         Ok(s)
     }
