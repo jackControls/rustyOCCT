@@ -2448,6 +2448,128 @@ against native `viewer_skipped` and 2 against `unverified`
 that load (its files refused at the restore as before). No case newly
 evaluates, none is registered, and the ledger holds.
 
+**The turned bodies: the Boolean group, the restore cases and the `catch`
+forms.** All were run again after the near-miss conic pairs, S9e.4b.4d.1
+(named refusals), the analytic timeout's and the coaxial cones' fixes,
+U10 (b) (the validator's rational C1 test), S9e.4b.4d.2a, 2b, the moved
+turned bodies and S9e.4b.4d.2c.1a (turned bodies of corners, near-flat
+cones taken as planes, fillets and rounds between a plane and a cylinder)
+were merged (2026-10-15, at `712115c6`, the public dataset, the debug
+worker, 120 seconds a case, four at once, on a host at load 5 to 18). The
+1,802 self-contained cases on both backends: every status, reason and
+error the last survey's (`cc7af85c`, `s9-draw-18`) field for field, 987
+evaluating, every one registered, 592 refused, 223 unsupported on both;
+none fails or times out. The 1,814 restore cases on the Rust adapter (903
+unsupported, 561 needing private data, 284 `failed`, 59 evaluating, 7
+timing out): only `bugs/modalg_2/bug476_1` to `_8` move, from the general
+refusal ("an imported solid other than a prism, a sphere, a cone, a torus
+or a Boolean of its primitives") to `failed` at `checknbshapes` alone
+(`OCC485a` imported as S9e.4b.4d.2c.1a's turned body, its Booleans with the
+rib `OCC485b` evaluating); `bugs/modalg_1/buc60532_1`, `_2` and
+`bugs/modalg_6/bug23585` time out at this load (13 to 15) and end
+unsupported as before in 130 to 135 seconds with 300, before any Boolean;
+the other four time out at their first restores as before. The 276
+validator rejections keep their texts: U10 (b) moves no restore case. Of
+the 171 the import reaches, native DRAW is as before field for field; on
+the Rust adapter only the eight `bug476` cases move (59 evaluate on both,
+8 `failed` against native `viewer_skipped`, 80 refused or unsupported
+against it, 24 unsupported on both). The 31 cases calling a Boolean inside
+`catch {...}` (not among the 1,814), with `bug476_1` to `_8`,
+`bugs/modalg_2/bug497_3` and `bugs/modalg_6/bug28626_1` (41 cases, the
+S9e.4b.4d trials' list), on both backends and on the Rust adapter with
+`cc7af85c`'s worker: native DRAW as at S9e.4b.4d.2c.1a's trial; against
+`cc7af85c` only the eight `bug476` cases and `bug485` move (`OCC485a`
+fused with itself, from the general refusal to "a cone's apex on the other
+input's surface", as that trial found); of the 31, 19 need private data, 9
+are unsupported against native `viewer_skipped` and 3 against
+`known_failure`, none evaluating. The 16 cases loading the dataset's
+version-3 texts: every field the last survey's on both backends.
+
+*`bug476_1` to `_8` are not registered.* Each evaluates on the Rust
+adapter with every check but `checknbshapes` (`checkshape` of the inputs
+and the result, `checkprops -s`), and the contract admits no failing
+status (`run_upstream_tests.py` fails on `failed` whatever the manifest
+says; `known_failure` is accepted only of a native release). The counts do
+not differ by seams the count synthesizer could add: OCCT splits each of
+the body's faces the rib covers (its step, fillet and shaft) along the
+body's seam half-plane `y = 0, x > 0`, which runs through the middle of the
+rib, so its cut and common have 9 and 12 faces where the kernel's have 6
+and 9 (`checknbshapes`' FACE fails there); the body's bottom and step are
+near-flat cones that OCCT keeps (an apex with its degenerated edge, a seam,
+the step's band one wire) and the kernel's model takes as planes
+(S9e.4b.4d.2b; the step's annulus two wires); and the rib's two side faces
+are one face under two locations, which native `nbshapes` counts once
+(the restored rib: native 3 vertices, 6 edges, 4 faces, the kernel's 6,
+9 and 5). The fuse's faces agree (11) and its vertices, edges and wires
+do not (13, 21, 12 against 16, 26, 11); `bug476_4` and `_5` fail on edges
+and wires alone (30 and 15 against 33 and 14). Registering them needs
+either a count mapping for those rules (a non-wound face crossed by its
+stored surface's seam split there, a near-flat cone's stored seam,
+degenerated edge and wire, faces shared under locations counted once),
+confirmed natively as T1's mappings were, or a contract that admits a
+Rust `failed` with its recorded count difference, which the contract has
+declined so far (the three `intss` cases below).
+
+The volume audit (`vprops` and `sprops` before each `checkprops`, both
+backends, the 1,046 audited before and the eight `bug476` cases): both
+backends' values are the last audit's bit for bit on all 1,046 (no value
+moves, the largest relative move 0), the statuses the same, the same 35
+disagreements. Of the `bug476` cases, every volume and centre agrees with
+native DRAW's printed digits, and every area but the rib less the body's
+(`bug476_3`, `_6`: 99.516020 against 99.5159, 99.515913 natively with
+`-full`, 1.1e-6 relative). Natively with `-full` the volumes differ by 3.8e-7
+to 2.7e-6 relative (the fuse 67,721.903 against 67,721.929, the common
+33.295953 against 33.296045), within the model's distance from the stored
+body (the kernel's model 67,672.818, native's stored body 67,672.829).
+**The kernel's eight results are not consistent with one another**,
+though each certified enclosure is at most 1e-8 wide: the cut and the
+common of the rib add to its volume less 4.7e-5, the body less the rib and
+the common to the model's less 0.0184, the fuse with the rib first
+(67,721.903099) and with the body first (67,721.902944) differ by 1.5e-4,
+and the rib less the body's centre lies at `y = -9.67e-7` (its enclosure
+excluding 0) though both inputs are symmetric in `y` exactly (native
+1.1e-8). Boxes crossing `OCC485a`'s cylinders fail on the Rust adapter
+with invalid topology (no DRAW case: `box h 20 -1 10 10 2 5; bcommon r h
+s2` across its base cylinder alone, `pcurve_off_edge`, native 43.9316;
+boxes across the fillet or the round, `vertex_off_curve` or "an open
+Boolean of arcs in any position"), where the fixture `turned_fillet`
+turned by `OCC485a`'s tilt (1.08e-8 rad) or by 1e-3 evaluates as natively.
+No `bug476` case is registered (1,132 cases); the ledger does not change.
+A full contract run of the manifest (both backends, 30 seconds a case, an
+absolute output directory, at load 6 to 11) holds for every case (Rust:
+18 pass, 1,050 viewer-skipped, 53 unsupported, 11 private data), the
+slowest Boolean case 4.9 seconds (`bcut_complex/D1`), the self-contained
+ones at most 4.4 (`boptuc_simple/ZK8`), E5, G9 and `bug417` 3.3, 1.9 and
+1.7, the rollex 0.4; `--ledger` holds.
+
+An instrumented build of the debug worker (not committed: a line written
+the first time a case takes each path, counters after each command) over
+the 1,802, the 1,814, the 41 and the 16 (3,664 cases), its statuses and
+reasons those of the runs above but the three load timeouts (unsupported
+in 104 to 117 seconds there): the turned bodies' import paths are reached
+by `OCC485a`'s nine cases alone (`bug476_1` to `_8`, `bug485`), each by
+the near-flat cones' path (`near_flat_cone`, `turned::flattened`, then
+`turned_piece` on the flattened body: one fillet, one round, three parts,
+imported); no case reaches the smooth tori's branch, the turned lattice
+after the chains (S9e.4b.4d.2a: `bug28626_1` stops at its `explode`) or a
+moved turned body. In the engine the same nine arrange a turned tree (6 to
+13 times a case) with 24 to 60 touching circles, all inside the tree (none
+refused outside it), 8 edges along them, none uncovered, `edge_touching`
+meeting 48 to 120 edges and refusing none, `ring_meet` meeting 24 a case
+in the eight `bug476` cases and refusing none; `TURNED_SEAMS` is consulted
+by 15 restore cases' trees and used only in those nine turned trees.
+`coaxial_plane` is called in 138 cases (126 self-contained, 296 calls),
+never on a turned frame, so it gives no plane section. The rational C1
+test is reached in 252 restore cases (the `_2d` grids' free edges and
+`bugs/modalg_6/bug24417`: 367 knots whose homogeneous removal leaves a
+residual), every knot decided not C1, so each is rejected as before; no
+surface reaches the rational line test. Controls on the instrumented
+worker took the paths: `turned_fillet` fused with a far box by the smooth
+tori's branch, `turned_pin` by the near-flat cones' path, and the
+dataset's `bug23400_thinring` deciding two knots C1 by the rational test
+(refused still, `pcurve_off_edge`). No case crashes or panics on either
+backend.
+
 Three more `intss` cases run on the Rust adapter but are not registered,
 because the contract admits no failing status: `bug23178`, `bug28222_2` and
 `bug28222_3` count the pieces IntPatch splits its walking lines into (6, 4
