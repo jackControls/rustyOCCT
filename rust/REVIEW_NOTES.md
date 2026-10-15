@@ -14465,7 +14465,9 @@ Decisions for S9, recorded before its code (2026-09-28):
     Merged and verified at `a6f394cb` (`s9c2-kernel`): every comparison of
     HANDOFF's table (51) with its documented counts and no failure, the
     debug-assertion replays as above, `generate_turned_consistency_fixtures.py
-    --check`.
+    --check`. Campaigns at `251d5227` (`rust-kernel` with it; 600 s each,
+    sampled replays, every switch on): `boolean` clean, 366 runs, the
+    slowest input 21 s; `split` clean, 1,691 runs.
     *Interfaces*: `turned::flattened` is gone (`modelled` takes its place
     for every turned body), `Meridian` loses `flats`, and the three turned
     import paths share `Solid::imported_turned`; a new kind of turned face
