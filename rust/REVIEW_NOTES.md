@@ -13618,6 +13618,79 @@ Decisions for S9, recorded before its code (2026-09-28):
     unit tests (439, 3 skipped); the ledger holding. Open: S9e.4b.4d.2c; the
     moved turned bodies' coaxial meetings (below); the campaigns and the
     capture's Linux record.
+  * **Moved turned bodies refined, before its code (2026-10-15).** The fix
+    S9e.4b.4d.2a left open ("a coaxial ruled pair on a turned frame met as a
+    plane section rather than a quartic"), taken with S9e.4b.4d.2b as
+    contained. *Why such Booleans are refused today*: a turned body's
+    primitives stand on its axis frame, a cylinder's and a cone's exact models
+    on the same affine data (S9e.4b.4d.2a's `build_cone_on`), so the frame's
+    dual rows make each quadric a function of the local radius and height and
+    a coaxial cylinder's and cone's meeting a circle at one height; but
+    `cones.rs`'s `cone_pair` meets them as any ruled pair, a graph over the
+    carrier's rulings (`Quartic`'s `Meet` pieces, `w(theta) = (-B +- sqrt(D))
+    / A`). On the world's axes that graph is a constant height with a rational
+    root and every later stage is cheap; on a turned frame (the stored axes
+    rounded: a body moved by a rotation, or OCCT's revolve about an axis off
+    the world's) its coefficients carry the frame's 53-bit rationals, and a
+    third surface with rounded data of its own meeting that edge in a later
+    Boolean (S9e.3b's triple: the given meeting's restriction to the partner's
+    plane, a resultant of degree four) passes the eliminant's budget of 4,096
+    coefficient bits, `ComputationLimit("a given meeting's eliminant past its
+    budget of coefficient bits (S9e.3b)")`. *Reach, measured before the code*
+    (an instrumented draft of the decisions below on `022dc883`, not
+    committed). The 2a and 2b cases with both inputs moved by the turn of
+    their tests (about `(1, 2, 2)` by 0.5 rad): at `022dc883` 9 of 2a's 15
+    solid cases of two inputs (its chain's aside) are `ComputationLimit` so
+    (`point_tilt`, `waist_rod`, `box_crown`), 3 `Degenerate` (`point_box`: the
+    turned box's wall parallel to the point's axis in the construction, within
+    rounding of it once both are turned, `Degenerate("a plane within rounding
+    of a cylinder's direction")`, S9's rule) and 3 evaluate (`steps_ball`); of
+    2b's 9, the collar's rod 3 `ComputationLimit`, the pin's box 3
+    `Degenerate` so and the pin's ball 3 evaluate. With the draft
+    `point_tilt`'s 3 evaluate (the reference's volumes), `waist_rod`'s,
+    `box_crown`'s and the collar's rod's 9 move from `ComputationLimit` to
+    that `Degenerate` (their rod's or box's faces parallel to the body's axis
+    or normal to it in the construction, now met), every other outcome the
+    same. Bodies OCCT revolves about `(1, 2, 2) / 3`, a waist of corners and a
+    pin of S9e.4b.4d.2b's flats: against an exact `SKEW` box and a ball every
+    case evaluates at `022dc883` already; against a box OCCT wrote on the
+    `SKEW` frame (its planes rounded too) the waist's three are
+    `ComputationLimit` and evaluate with the draft (the pin's evaluate either
+    way, its step a plane). The imports (each file in a process of its own,
+    120 s a file, against `022dc883`): the DRAW case list's 840 dataset texts,
+    454 importing before and after, no outcome moving (the two `bug23849`
+    segments, past 120 s at load before, refused as spline bodies with the
+    draft: a load's timing); the 127 imported fixtures and the fuzz targets'
+    2,904 and 371 written results: none moving. *Decisions.* (1) In
+    `cone_pair`, before the rulings are taken: two faces whose models stand on
+    one affine frame (the same `x`, `y` and `n`, their origins on one line
+    along `n`, a cylinder's circle about it, a cone's axis it) meet where
+    their radii agree, `r` for a cylinder and `b + k (w - lambda)` for a cone
+    at its origin's height `lambda` on the first frame: a height `w` exactly
+    (rational), where the radius is positive (each cone's face on its own
+    nappe: the other nappe's circle holds no face) the plane through the
+    frame's point there normal to `x * y` (`CylPair::Plane`, the section of a
+    cone of the pair: S9d.3a's `plane_cone`, a circle about its axis,
+    `Crv::Cone`), at zero radius a cone's apex on the other's surface
+    (`Degenerate`, as before), a negative radius apart; two cones of one slope
+    as before (S9d.3b's affine-function planes). (2) Only on a turned frame
+    (some axis of the frame with two nonzero components): on a frame along the
+    world's axes the rulings' graph stays as it is, so every outcome and every
+    entity count there is as before (every comparison's). (3) A partner's face
+    parallel to the turned body's axis, or normal to it, in the construction
+    lies within rounding of that once the frames are rounded: S9's rule
+    refuses it, unchanged. (4) Degenerate and refused: no new text. *Evidence*
+    (before the code): bodies OCCT writes by the oracle's `revolve` and
+    `tolerance` rows about `(1, 2, 2) / 3` through `(1/2, -1/4, 0)`
+    (`generate_turned_tilted_boolean_fixtures.py`, `tilted_*.brep`): the waist
+    and the pin, and a box OCCT writes by its `prism` row on the `SKEW` frame
+    (an imported partner whose planes are rounded); cases of each body against
+    that box and of the waist against a ball; the chained reference over each
+    body's model profile on the tilted frame and its closed form by Pappus; a
+    unit test, a CI group, a capture keyed on the code's absence (`cones.rs`
+    without `coaxial_plane`), whose comparison before the code counts the
+    waist's box cases `ComputationLimit` and requires every other case within
+    the reference.
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces
