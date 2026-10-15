@@ -1016,12 +1016,15 @@ OCCT's counts and validity agree with the reference; its default
 by `3.5e-6`, the two-span patch by `5.7e-7`, the rational cylinder by
 `2.0e-3`), which its adaptive integration reproduces.
 
-`tests/step.rs` requires 29 of the 30 bodies to import as the reference
-says (a sheet of one face with a free face's synthesized counts, S6: no
-shell) and the rational cylinder to be refused by exactly `edge_not_c1`,
-`pcurve_not_c1` and `face_not_c1`: R4 certifies C1 of the homogeneous
-curve, which the quarter-arc form is not at its double knots, though its
-rational curve is. The plate's and the prism's splines rewritten as complex
+`tests/step.rs` requires all 30 bodies to import as the reference says (a
+sheet of one face with a free face's synthesized counts, S6: no shell). The
+rational cylinder was refused by `edge_not_c1`, `pcurve_not_c1` and
+`face_not_c1` until U10 (b): R4 certified C1 of the homogeneous curve,
+which the quarter-arc form is not at its double knots; it now tests the
+rational curve, which is C1 there, so the cylinder imports valid with
+OCCT's counts and the reference's measures and its `.brep` text reads
+back, while the same file with its knots at 0, 1 and 3 (G1 joints) is
+refused by exactly those three kinds. The plate's and the prism's splines rewritten as complex
 rational instances import as the plain ones; the plate bounded by a
 rational third of a circle (weights 1, 1/2, 1) contains the circular
 segment's closed form; `BEZIER_CURVE`, `EdgeRangeInverted`,
@@ -1029,11 +1032,13 @@ segment's closed form; `BEZIER_CURVE`, `EdgeRangeInverted`,
 are named, and a pcurve bent off its edge is an import failure with
 `pcurve_off_edge`. `compare_step.py` gives 23 matches, 6 reviewed
 differences (`occt-step-divergences.json`: four one-face sheets counted as
-free faces, three `BRepGProp` measures, the rational cylinder's refusal)
+free faces, three `BRepGProp` measures, the rational cylinder's among them:
+the kernel refused that body until U10 (b) and now imports it, its
+enclosures containing the reference and so missing OCCT's default measures)
 and 0 failures; a kernel body its validator refuses needs a review
 fingerprinted by its issue kinds (`rust_invalid:`), while an unsupported one
 or one outside the reference fails. The `step` fuzz target mutates all 29
-fixtures with STEP-b's entity names among its tokens; its `.brep` round
+fixtures (and requires every unmutated one to import valid since U10 (b)) with STEP-b's entity names among its tokens; its `.brep` round
 trip skips a body written with an ellipse, which the `.brep` reader does
 not read yet. Its first 60-second smoke run found the `.brep` writer
 writing a line pcurve on a spline surface at unit speed where the pcurve is
@@ -1072,6 +1077,22 @@ degenerate curve; the 22 refused files are unchanged. The survey's first
 run named 11 bodies `EdgeRangeInverted`: an edge ending at a closed
 spline's joint was located at the start; the end vertex now takes the far
 end (`step::spline`'s unit test).
+
+With U10 (b) (R4 tests C1 of the rational curve) the same survey (U1:
+counts only; the base at `b48e9acf` reproduces the numbers above but one
+file, `bm2_ec_t4-A`, past 600 seconds on a loaded host both times) finds
+551 bodies importing and 60 failing validation: of the 21 R4 refused, one
+(a sheet of `trj4_k1_top-tu-214`, its rational cubic edge and pcurve C1 as
+rational curves at a knot of multiplicity 3) now imports. The 21 were not
+quarter-arc circles, as the paragraph above had them: 18 are nonrational
+splines whose knots of multiplicity equal to the degree are corners or
+speed jumps, which no C1 test passes: eleven bodies of degree-8 surfaces
+(their one-sided tangents `5.95e-5` rad apart), five of cubic and
+degree-9 curves (at worst `7.4e-10` to `1.1e-6` rad), one of cubic curves up to
+`4.6e-4` rad and one quintic-by-cubic surface whose speeds jump by a
+factor 1.88 along one tangent; the other two of `trj4_k1_top-tu-214` are rational cubics whose
+one-sided derivatives at the knot are parallel with speeds a few ulps
+apart, G1 only and refused (U3). Every other row is as before.
 
 ## Cross-platform allowances
 

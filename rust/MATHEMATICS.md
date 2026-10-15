@@ -2204,20 +2204,46 @@ construction wherever `m < p`, and at `m = p` it is C1 exactly when one
 removal succeeds. The kernel runs that removal
 (`ExactBSplineCurve3::removable`, the exact homogeneous inverse insertion
 with the resulting weights' signs not examined) on the homogeneous poles
-`(w x, w y, w z, w)`: it decides C1 of the homogeneous curve, which implies
-C1 of the rational curve `N / w`; a rational joint that is C1 only because
-its weights compensate is reported. A periodic seam is an interior knot. A
-removal the basis cannot hold (a periodic basis left with no more poles than
-its degree) first inserts a simple knot in the middle of the longest span,
-which changes neither the curve nor its continuity at the tested knot. A
-surface is C1 across a knot line when every control row across it is,
-since the surface is a combination of those rows with linearly independent
-basis functions in the other parameter.
+`H = (w x, w y, w z, w)`: it decides C1 of the homogeneous curve, which
+implies C1 of the rational curve `P = A / w`. A periodic seam is an
+interior knot. A removal the basis cannot hold (a periodic basis left with
+no more poles than its degree) first inserts a simple knot in the middle of
+the longest span, which changes neither the curve nor its continuity at the
+tested knot.
+
+**The rational curve (U10 (b)).** C1 of `P` is weaker: `P' = (A' w - A
+w') / w^2`, and `H` is continuous at a knot of multiplicity `p`, so `P` is
+C1 there exactly when `ΔA' w = A Δw'`, the jump of `H'` a multiple of `H`.
+The usual NURBS circle's quarter arcs meet so at their double knots (the
+weights alone make `H'` jump) and its homogeneous removal leaves a
+residual. Where the removal fails, the kernel compares the exact one-sided
+first derivatives of `P` (`ExactBSplineCurve3::exact_evaluate` with
+`KnotSide::Left` and `Right`, de Boor on each span in rationals, a seam's
+left side the end of the preceding period); equal weights give `w' = 0` on
+both sides, so the two tests coincide and a nonrational verdict never
+moves. Weights are positive, so `w > 0` everywhere. A joint whose
+derivatives are parallel but of different lengths (G1) is not C1 (U3).
+
+A surface is C1 across a knot line `u = k` when every control row across it
+is homogeneously C1 (the surface is a combination of those rows with
+linearly independent basis functions in `v`), or else when its rational
+partial `S_u` agrees from both sides along the whole line. On each `v` span
+`N(v) = ΔA_u(v) w(k, v) - A(k, v) Δw_u(v)` is a polynomial of degree at most
+`2 q`, `q` the degree in `v`, so equality of the exact one-sided partials at
+`2 q + 1` distinct rational points inside each span decides it. Each row
+being C1 as a rational curve is not enough: the jump is `Σ N_j(v) λ_j H_j`
+against `Σ N_j(v) H_j`, proportional for every `v` only when the rows'
+multiples `λ_j` agree where their points differ.
 
 The independent reference (`spline_cell_reference.py`) never removes a
-knot: it compares the homogeneous curve's position and first derivative
-from both sides of each knot, by de Boor's recurrence on the two spans in
-`Fraction`s. The seam's left side is the domain's end.
+knot: on a curve it compares the rational curve's position and first
+derivative `(A' w - A w') / w^2` from both sides of each knot, by de Boor's
+recurrence on the two spans in `Fraction`s (the seam's left side the
+domain's end); on a surface it forms, on each span of the other parameter,
+the power-basis polynomials of `H(k, v)` and of the partial's jump by exact
+interpolation and requires every coefficient of `N` to vanish.
+`test_rational_c1_reference.py` checks its verdicts with mpmath one-sided
+difference quotients against the exact jumps.
 
 **Built C1 under rounding (S9f.1).** For a nonrational curve of degree `p`
 and a knot `u_r` of multiplicity `p`, Tiller's removal of one copy touches

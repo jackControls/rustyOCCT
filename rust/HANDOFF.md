@@ -637,6 +637,11 @@ then for the DRAW survey of the nested leaves and the speed-ups (branch
   case moving, no case trying a flush chain (the 5 restore cases importing a
   body of several primitives import before it, their leads with no flush
   part), nothing registered. Pending its capture's Linux record.
+- **U10 (b) implemented** (branch `u10-rational-c1`): R4 tests C1 of the
+  rational curve where the homogeneous removal leaves a residual
+  (`continuity.rs`), so the NURBS circle's quarter arcs pass and G1 joints
+  stay refused; STEP-b's `rational_cylinder` imports, one dataset body
+  more (REVIEW_NOTES.md's "U10 (b), done").
 - **CI.** Both workflows ("Rust kernel", "Rust geometry fuzzing") were green
   at `6c221525`. They had been red from S7 until 2026-09-29, unnoticed;
   check them after every push (see "Working rules").

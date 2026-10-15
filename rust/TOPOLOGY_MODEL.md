@@ -87,7 +87,9 @@ violates it without re-deriving the reasoning.
   C1 in its parameters; a tangent discontinuity is a vertex or an edge. The
   exact spline modules already detect interior-knot discontinuities; R4 of
   `REVIEW_NOTES.md` implements the check (`edge_not_c1`, `pcurve_not_c1`,
-  `face_not_c1`). *Forbids:* a single edge across a corner.
+  `face_not_c1`), of the rational curve or surface (U10 (b): the NURBS
+  circle's quarter arcs are C1). *Forbids:* a single edge across a corner,
+  and a G1 joint whose speed jumps.
 * **D12. Blend surfaces are an open decision with a constraint.** Procedural
   blend surfaces evaluated through their supports are preferred, as in
   Parasolid and CGM, but undecided. The `Surface` representation must remain
@@ -768,7 +770,11 @@ interop.
   each such knot removed exactly (the profile's poles less the knot's,
   multiplicity `p - 1`, C1 by construction), and a general body's rigid
   motion removes it where the motion's rounding breaks C1.
-* **Validation.** C1 by exact knot removal (R4); deviations by exact
+  A rational spline C1 only as a rational curve (U10 (b)) has no such
+  removal: its images under a rounding map keep C1 only while the rounding
+  keeps it, and are refused as before where it does not.
+* **Validation.** C1 by exact knot removal (R4), or else by the exact
+  one-sided rational derivatives (U10 (b)); deviations by exact
   rational composition or second-order Taylor enclosures; vertex gaps from
   exact ends; UV gaps on a spline surface in 3D; signed and periodic areas,
   containment parity and orientation fluxes with spline geometry

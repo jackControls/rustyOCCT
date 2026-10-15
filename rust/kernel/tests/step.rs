@@ -1,8 +1,9 @@
 //! STEP import (STEP-a and STEP-b of the STEP import track in
 //! `REVIEW_NOTES.md`): every authored fixture of `fixtures/step` imports as
 //! the independent reference (`step-expected.tsv`, from `step_reference.py`)
-//! describes it, except the quarter-arc rational cylinder, which R4's C1 rule
-//! refuses, and every construct outside the sub-steps is reported by name.
+//! describes it, the quarter-arc rational cylinder included since R4 tests C1
+//! of the rational curve (U10 (b)), and every construct outside the sub-steps
+//! is reported by name.
 use rusty_occt::identity::OperationKind;
 use rusty_occt::occt_brep::Rejected;
 use rusty_occt::step::{self, Item, StepError, StepImport};
@@ -38,10 +39,6 @@ fn inside([lo, hi]: [f64; 2], value: f64, size: f64) {
     );
 }
 
-/// The fixture the kernel's validator refuses: its circles are rational
-/// quarter arcs whose double knots are not C1 in homogeneous form (R4).
-const NOT_C1: &str = "rational_cylinder";
-
 #[test]
 fn fixtures_import_as_the_reference() {
     let table = std::fs::read_to_string(fixtures().join("step-expected.tsv")).unwrap();
@@ -49,9 +46,6 @@ fn fixtures_import_as_the_reference() {
     for line in table.lines().skip(1) {
         let w: Vec<&str> = line.split('\t').collect();
         let (name, entity, class) = (w[0], w[1].parse::<u64>().unwrap(), w[2]);
-        if name == NOT_C1 {
-            continue;
-        }
         let counts: Vec<usize> = w[3].split(' ').map(|c| c.parse().unwrap()).collect();
         let centre: Vec<f64> = w[6].split(' ').map(|c| c.parse().unwrap()).collect();
         let area: f64 = w[5].parse().unwrap();
@@ -111,7 +105,7 @@ fn fixtures_import_as_the_reference() {
         }
         cases += 1;
     }
-    assert_eq!(cases, 29);
+    assert_eq!(cases, 30);
 }
 
 #[test]
@@ -280,12 +274,37 @@ fn inaccurate_data_is_an_import_failure_with_its_issues() {
 
 /// The quarter-arc form of a rational circle (knots of multiplicity 2 at
 /// the quarter points, weights `sqrt(2) / 2`) is C1 as a rational curve
-/// but not in homogeneous form, which R4 certifies: the rational cylinder
-/// imports as cells the validator refuses, on its four arcs, the cap
-/// pcurves derived from them and its two walls, and nothing else.
+/// but not in homogeneous form; R4 tests the rational curve (U10 (b)), so
+/// the rational cylinder imports valid (its counts and measures in
+/// `fixtures_import_as_the_reference`) and its `.brep` text reads back with
+/// them. With every circle's and wall's knots at 0, 1 and 3 (the quarter
+/// arcs of unequal spans, the file's line pcurves moved with them) the
+/// joints are G1 only, and the validator refuses exactly the four arcs, the
+/// cap pcurves derived from them and the two walls.
 #[test]
-fn quarter_arc_rational_circles_are_not_c1() {
-    let imported = import(&fixture(NOT_C1)).unwrap();
+fn quarter_arc_rational_circles_are_c1_and_g1_joints_are_not() {
+    let imported = import(&fixture("rational_cylinder")).unwrap();
+    assert!(imported.unsupported.is_empty());
+    let body = &imported.bodies[0];
+    let t = body.result.as_ref().unwrap();
+    let written = rusty_occt::occt_brep::write(t, body.tolerance.linear()).unwrap();
+    let back = rusty_occt::occt_brep::import(&rusty_occt::occt_brep::read(&written).unwrap());
+    assert_eq!(
+        back.solids[0].result.as_ref().unwrap().occt_counts(),
+        t.occt_counts()
+    );
+    let mut g1 = fixture("rational_cylinder");
+    for (from, to) in [
+        ("(0.,1.,2.)", "(0.,1.,3.)"),
+        (
+            "CARTESIAN_POINT('',(2.,0.));",
+            "CARTESIAN_POINT('',(3.,0.));",
+        ),
+    ] {
+        assert!(g1.contains(from));
+        g1 = g1.replace(from, to);
+    }
+    let imported = import(&g1).unwrap();
     assert!(imported.unsupported.is_empty());
     let Err(Rejected::Invalid { issues, .. }) = &imported.bodies[0].result else {
         panic!("{:?}", imported.bodies[0].result);

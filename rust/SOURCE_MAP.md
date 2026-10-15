@@ -625,7 +625,7 @@ record 5, and DRAW's `ptorus`, at
 
 | Rust | OCCT | Notes |
 | --- | --- | --- |
-| `topology::validate::continuity` | [BSplCLib.cxx](../src/FoundationClasses/TKMath/BSplCLib/BSplCLib.cxx) `RemoveKnot`, [Geom_BSplineCurve.cxx](../src/ModelingData/TKG3d/Geom/Geom_BSplineCurve.cxx) `Continuity` | OCCT measures continuity by knot multiplicity and removes knots within a tolerance; the kernel decides C1 by one exact homogeneous removal with zero residual at each knot of multiplicity equal to the degree. |
+| `topology::validate::continuity` | [BSplCLib.cxx](../src/FoundationClasses/TKMath/BSplCLib/BSplCLib.cxx) `RemoveKnot`, [Geom_BSplineCurve.cxx](../src/ModelingData/TKG3d/Geom/Geom_BSplineCurve.cxx) `Continuity` | OCCT measures continuity by knot multiplicity and removes knots within a tolerance; the kernel decides C1 by one exact homogeneous removal with zero residual at each knot of multiplicity equal to the degree, and where that leaves a residual by the exact one-sided rational derivatives (on a surface the rational partial at `2 q + 1` points of each span of the line; U10 (b)). OCCT's `Continuity` calls the NURBS circle C0 and BRepCheck does not test continuity. |
 
 ## Tessellation (T-a)
 

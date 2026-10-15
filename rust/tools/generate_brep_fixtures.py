@@ -1047,6 +1047,113 @@ def spline_models():
     return models
 
 
+# U10 (b): the rational C1 test. sqrt(2)/2 correctly rounded, the quarter
+# arc's middle weight as every writer stores it.
+with mp.workdps(50):
+    QUARTER_WEIGHT = float(mp.sqrt(2)/2)
+
+
+def nurbs_half_circle(r, knots=(0.0, 1.0, 2.0)):
+    """The upper half circle of radius r about the origin from (r, 0) to
+    (-r, 0) as two rational quarter arcs joined at a double knot (C1 as a
+    rational curve, not homogeneously, when the spans are equal; G1 only
+    otherwise): (2d poles, weights, basis)."""
+    w = QUARTER_WEIGHT
+    poles = [(r, 0.0), (r, r), (0.0, r), (-r, r), (-r, 0.0)]
+    return poles, [1.0, w, 1.0, w, 1.0], Basis(2, list(knots), [3, 2, 3])
+
+
+def nurbs_circle(r, z, knots=(0.0, 1.0, 2.0, 3.0, 4.0)):
+    """The whole circle of radius r about the z axis at height z as a
+    periodic rational quadratic of four quarter arcs, every knot double
+    (the seam included): poles on the circle at the knots, the square's
+    corners between them with weight sqrt(2)/2 rounded."""
+    w = QUARTER_WEIGHT
+    on = [(r, 0.0), (0.0, r), (-r, 0.0), (0.0, -r)]
+    corners = [(r, r), (-r, r), (-r, -r), (r, -r)]
+    poles = [x for i in range(4) for x in (on[i], corners[i])]
+    return BSpline3(Basis(2, list(knots), [2]*len(knots), periodic=True),
+                    [(x, y, z) for x, y in poles], [1.0, w]*4)
+
+
+# Weights on a line spline's five poles at fractions 0, 1/4, 1/2, 3/4, 1
+# over QUADRATIC's double knot: the knot's pole doubled alone keeps the
+# rational speed (C1 only rationally); with the next pole's tripled the
+# speed jumps by three (G1 only).
+WEIGHTS_C1 = [1.0, 1.0, 2.0, 1.0, 1.0]
+WEIGHTS_G1 = [1.0, 1.0, 2.0, 3.0, 1.0]
+
+
+def rational_cap(row_weights):
+    """spline_face_c1's cap (the plane z = 1 over [0, 3] x [0, 2] with a
+    double knot at u = 1.5) with weights: row_weights[j] are the weights
+    along u of the j-th of the three pole rows in v."""
+    rows, weights = [], []
+    for i, fu in enumerate(QUADRATIC_LINE):
+        for j, fv in enumerate((F(0), F(1, 2), F(1))):
+            rows.append(exact((3*fu, 2*fv, F(1))))
+            weights.append(row_weights[j][i])
+    return BSplineSurface(Basis(2, [0.0, 1.5, 3.0], [3, 2, 3]), Basis(2, [0.0, 2.0], [3, 3]), rows, weights)
+
+
+def rational_c1_models():
+    """U10 (b): seamed prisms with rational spline walls, with OCCT rows: a
+    half disc bounded by the NURBS half circle (a rational cylinder wall),
+    and the same with spans 1 and 2 (G1 only at the knot)."""
+    out = []
+    for name, knots in (('rational_half_disc', (0.0, 1.0, 2.0)), ('rational_half_disc_g1', (0.0, 1.0, 3.0))):
+        poles, weights, basis = nurbs_half_circle(2.0, knots)
+        out.append(prism(name, [[('spline', poles[0], poles[1:-1], basis, weights), ('line', poles[-1])]]))
+    return out
+
+
+def rational_c1_cells(bases):
+    """U10 (b): cells whose rational splines are C1 only rationally (valid
+    in continuity) or G1 only (refused), beside the seamed models."""
+    out = [to_cell(m) for m in rational_c1_models()]
+
+    def cell(base, name, change):
+        c = to_cell(copy.deepcopy(bases[base]))
+        c.name = name
+        change(c)
+        out.append(c)
+
+    def ring(knots):
+        def change(c):
+            k = next(i for i, e in enumerate(c.edges) if e.start is None)
+            c.edges[k].curve = nurbs_circle(1.5, c.edges[k].curve.frame.origin[2], knots)
+        return change
+    cell('cylinder', 'rational_ring_nurbs_circle', ring((0.0, 1.0, 2.0, 3.0, 4.0)))
+    cell('cylinder', 'rational_ring_nurbs_circle_g1', ring((0.0, 1.0, 2.0, 3.0, 5.0)))
+
+    def line_edge(weights):
+        def change(c):
+            e = c.edges[0]
+            poles = along(c.vertices[e.start], c.vertices[e.end], QUADRATIC_LINE)
+            e.curve = BSpline3(QUADRATIC, poles, weights)
+        return change
+    cell('box', 'rational_edge_weights_c1', line_edge(WEIGHTS_C1))
+    cell('box', 'rational_edge_weights_g1', line_edge(WEIGHTS_G1))
+
+    def line_pcurve(weights):
+        def change(c):
+            k = c.loops[c.faces[1].loops[0]].fins[0]
+            p = c.fins[k].pcurve
+            c.fins[k].pcurve = BSpline2(QUADRATIC, along(p.start, p.end, QUADRATIC_LINE), weights)
+        return change
+    cell('box', 'rational_pcurve_weights_c1', line_pcurve(WEIGHTS_C1))
+    cell('box', 'rational_pcurve_weights_g1', line_pcurve(WEIGHTS_G1))
+
+    def cap(row_weights):
+        return lambda c: setattr(c.faces[1], 'surface', rational_cap(row_weights))
+    cell('box', 'rational_face_c1', cap([WEIGHTS_C1]*3))
+    cell('box', 'rational_face_g1', cap([WEIGHTS_G1]*3))
+    # Each row C1 rationally (the middle one homogeneously), the surface not:
+    # the rows' jumps are different multiples of their points.
+    cell('box', 'rational_face_rows_not_c1', cap([WEIGHTS_C1, [1.0]*5, WEIGHTS_C1]))
+    return out
+
+
 def quadrature_models():
     """F8: spline models for routes of the certified quadrature the S4
     models do not exercise, captured natively before the kernel code
@@ -1252,7 +1359,24 @@ def generate():
                 if value > low:
                     value = math.nextafter(value, -math.inf)
                 lows.append(f'{c.name}\t{kind} {i}\t{number(value)}')
+    # U10 (b) in files of their own: the fuzz targets pick brep-cases.txt's
+    # blocks by index, so its corpora keep their meaning.
+    rational = [declare(c) for c in rational_c1_cells(bases)]
+    assert not {c.name for c in rational} & set(names), 'duplicate case names'
+    rational_rows, rational_masses = [], []
+    for c in rational:
+        issues = validate_cell(c)
+        rational_rows.append(c.name+'\t'+';'.join(f'{k}:{e}' for k, e in issues))
+        values = None if issues else spline_mass(c)
+        if values is not None:
+            rational_masses.append(c.name+'\t'+' '.join('0' if abs(x) < 1e-25 else mp.nstr(x, 20)
+                                                          for x in values))
     return models, {'brep-cases.txt': text,
+                    'brep-rational-c1-cases.txt': '\n'.join(encode_cell(c) for c in rational)+'\n',
+                    'brep-rational-c1-expected.tsv': '# U10 (b): name\tsorted issues kind:entity separated by ;\n'
+                    + '\n'.join(rational_rows)+'\n',
+                    'brep-rational-c1-mass.tsv': '# U10 (b): valid case\tvolume, area, centroid, inertia about it'
+                    ' (row-major), by nested Gauss-Legendre quadrature\n'+'\n'.join(rational_masses)+'\n',
                     'brep-expected.tsv': '# name\tsorted issues kind:entity separated by ;\n'+'\n'.join(rows)+'\n',
                     'brep-enclosure-lows.tsv': '# valid case\tv|u|f index (vertex, fin arena index, face)'
                     '\tcertain lower value of its gap\n'+'\n'.join(lows)+'\n',

@@ -2426,6 +2426,28 @@ unsupported, 11 private data), the slowest Boolean case 3.1 seconds
 (`bcommon_complex/B9`), the restore cases 0.13 to 3.1, E5, G9 and
 `bug417` 1.9, 1.2 and 1.2, the rollex 0.4.
 
+**The rational C1 test (U10 (b)): a trial of the cases restoring the files
+it reaches.** R4 tests C1 of the rational curve at a knot of multiplicity
+equal to the degree where the homogeneous removal leaves a residual
+(2026-10-14, branch `u10-rational-c1`; REVIEW_NOTES.md's "U10 (b), done",
+which has the counts). The dataset's 1,494 `.brep` files read alone by the
+`.brep` probe (`read -`) at `b48e9acf` and with the test give the same row
+for every file (two of them, `bug30391_face2` and `shading_087`, past 600
+seconds on a host at load 20 in one run, the same row alone in 348 to 963
+seconds). An instrumented build (not committed: a line each time the
+rational test decides a knot) finds 82 files reaching it, one deciding a
+knot C1 (`bug23400_thinring`, refused still by its other knots); the
+STEP bodies it moves are not restored by any case (the STEP readers' cases
+do not run on the Rust adapter). The 386 cases that restore one of those 82
+files (72 of them; 120 seconds a case, four at once) on both backends: 286
+`failed` on the Rust adapter (the validator's rejection at the restore) and
+`unsupported` natively, 76 unsupported on both, 16 private data, 4 `failed`
+against native `viewer_skipped` and 2 against `unverified`
+(`v3d/bugs/bug23400` among them: `pcurve_off_edge` at the restore),
+`bugs/modalg_7/bug24490` and one more timing out on the Rust adapter at
+that load (its files refused at the restore as before). No case newly
+evaluates, none is registered, and the ledger holds.
+
 Three more `intss` cases run on the Rust adapter but are not registered,
 because the contract admits no failing status: `bug23178`, `bug28222_2` and
 `bug28222_3` count the pieces IntPatch splits its walking lines into (6, 4
