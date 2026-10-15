@@ -51,8 +51,21 @@ kink of the integrand a breakpoint: the profile's nodes and each height
 where the model's radius meets a corner's or an edge line's distance from
 the axis). Every partner is symmetric in `y` but the last box.
 
+`boolean-turned-consistency-crossings.tsv` (S9e.4b.4d.2c.2): the same
+`body` row, then partners across both the fillet and the round, each
+failing "an open Boolean of arcs in any position" before S9e.4b.4d.2c.2
+(the arrangement's meetings found once per plane and per quadric, handing
+the round the fillet's sections): `rib_high`, the known failure (the rib
+over `(8, 34.5)`, `(20, 34.5)`, `(8, 42)`, its side planes across the
+round's tangent circle); `box_both`, a box across the fillet's circles and
+the round's lower one; and `post CX CY R Z0 Z1`, a rod parallel to the axis
+about `(77/8, 0)` of radius 5/8 from 33 to 47, its common each height's
+lens of two discs (the kinks where the model's radius is the rod's nearest
+or farthest distance from the axis).
+
 The integrator is checked against the closed form first (a box holding the
-model is the model, within 1e-25). `--check` regenerates both texts and
+model is the model, within 1e-25; so is a rod about the axis holding it,
+and a lens is its chords' widths integrated). `--check` regenerates the texts and
 fails where they differ, or where the body's file exists and its surfaces'
 kinds are not the profile's (a near-flat cone, a cylinder, the chamfer's
 cone, a near-flat cone, the fillet's torus, a cylinder, the round's torus, a
@@ -72,6 +85,7 @@ FIXTURES = ROOT/'rust/fixtures'
 PREFIX = 'boolean-turned-consistency'
 BODIES_FILE = f'{PREFIX}-bodies.txt'
 EXPECTED_FILE = f'{PREFIX}-expected.tsv'
+CROSSINGS_FILE = f'{PREFIX}-crossings.tsv'
 
 EPS = F(1, 2**27)
 BOTTOM = F(1, 2**15)
@@ -275,6 +289,39 @@ def rib_common(x0, w0, x1, w1, y0, y1):
     return common(lambda z: (x0, far(z), y0, y1), w0, w1, distances)
 
 
+def lens(d, rho, r):
+    """The area of the disc of radius `rho` about a point `d` from the axis
+    inside the disc of radius `r` about the axis."""
+    if r <= 0:
+        return m(0)
+    if d >= r+rho:
+        return m(0)
+    if d <= abs(r-rho):
+        return mp.pi*min(r, rho)**2
+    a = r*r*mp.acos((d*d+r*r-rho*rho)/(2*d*r))
+    b = rho*rho*mp.acos((d*d+rho*rho-r*r)/(2*d*rho))
+    return a+b-mp.sqrt((-d+r+rho)*(d+r-rho)*(d-r+rho)*(d+r+rho))/2
+
+
+def post_common(cx, cy, rho, z0, z1):
+    """A rod parallel to the axis about `(cx, cy)` of radius `rho` from `z0`
+    to `z1` inside the model: each height's lens, its kinks where the
+    model's radius is the rod's nearest or farthest distance from the axis."""
+    d = mp.sqrt(m(cx)**2+m(cy)**2)
+    rho = m(rho)
+    lo, hi = m(z0), m(z1)
+    breaks = {lo, hi}
+    for w0, w1, _, _ in MODEL:
+        for w in (w0, w1):
+            if lo < m(w) < hi:
+                breaks.add(m(w))
+    nodes = sorted(breaks)
+    for a, b in zip(nodes, nodes[1:]):
+        for g in (d-rho, d+rho):
+            breaks.update(roots(lambda z: radius(z)-g, a, b))
+    return mp.quad(lambda z: lens(d, rho, radius(z)), sorted(breaks))
+
+
 RIB = (8, F(69, 2), 20, F(83, 2), -1, 1)
 BOXES = [
     ('base_x', (20, -1, 10, 10, 2, 5)),
@@ -287,11 +334,43 @@ BOXES = [
 ]
 
 
+# S9e.4b.4d.2c.2's crossings (`boolean-turned-consistency-crossings.tsv`):
+# partners across both the fillet and the round, the known failure of
+# "S9e.4b.4d.2c.1a's consistency fixed" first (the rib whose side planes
+# cross the round's tangent circle, its top at 42 over the shaft's end at
+# 41), each failing "an open Boolean of arcs in any position" before
+# S9e.4b.4d.2c.2: the box across the fillet's circles and the round's lower
+# one (its top across the round), and a rod parallel to the axis about
+# `(77/8, 0)` of radius 5/8 across the step's plane, the fillet, the shaft
+# and the round (`post CX CY R Z0 Z1`).
+CROSSING_RIB = ('rib_high', (8, F(69, 2), 20, 42, -1, 1))
+CROSSING_BOX = ('box_both', (8, -1, 34, 3, 2, 9))
+CROSSING_POST = ('post', (F(77, 8), 0, F(5, 8), 33, 47))
+
+
 def self_check():
     """The integrator against the closed form: a box holding the model is
     the model, by Pappus."""
     whole = box_common(-25, -25, -1, 50, 50, 46)
     assert abs(whole - pappus()) < mp.mpf(10)**-25, (whole, pappus())
+    # A rod about the axis holding the model is the model; a lens against
+    # its chords' widths integrated across the rod.
+    whole = post_common(0, 0, 30, -1, 46)
+    assert abs(whole - pappus()) < mp.mpf(10)**-25, (whole, pappus())
+    d, rho = m(F(77, 8)), m(F(5, 8))
+    for r in (m(9), m(F(19, 2)), m(10)):
+        def width(x):
+            s = rho*rho-(x-d)**2
+            if s <= 0:
+                return m(0)
+            h = mp.sqrt(s)
+            inside = r*r-x*x
+            if inside <= 0:
+                return m(0)
+            return min(h, mp.sqrt(inside))*2
+        cuts = sorted({d-rho, d+rho, r, *(c for c in [(r*r-rho*rho+d*d)/(2*d)] if d-rho < c < d+rho)})
+        direct = mp.quad(width, cuts)
+        assert abs(direct - lens(d, rho, r)) < mp.mpf(10)**-25, (r, direct, lens(d, rho, r))
 
 
 # The stored surfaces' kinds in the file's order (OCCT's codes: 1 a plane,
@@ -335,6 +414,30 @@ def expected_text():
     return '\n'.join(lines) + '\n'
 
 
+def crossings_text():
+    """S9e.4b.4d.2c.2's partners of the body, in `expected_text`'s rows."""
+    self_check()
+    lines = [
+        '# generated by rust/tools/generate_turned_consistency_fixtures.py (S9e.4b.4d.2c.2)',
+        f'body\tribbed imported/consistency_ribbed.brep volume {mp.nstr(pappus(), 20)}',
+    ]
+    name, r = CROSSING_RIB
+    x0, w0, x1, w1, y0, y1 = r
+    rib = F(1, 2)*(x1 - x0)*(w1 - w0)*(y1 - y0)
+    lines.append(f'case\t{name} rib {" ".join(num(v) for v in r)} volume {mp.nstr(m(rib), 20)} '
+                 f'common {mp.nstr(rib_common(*r), 20)}')
+    name, b = CROSSING_BOX
+    volume = F(b[3])*F(b[4])*F(b[5])
+    lines.append(f'case\t{name} box {" ".join(num(v) for v in b)} volume {mp.nstr(m(volume), 20)} '
+                 f'common {mp.nstr(box_common(*b), 20)}')
+    name, p = CROSSING_POST
+    cx, cy, rho, z0, z1 = p
+    volume = mp.pi*m(rho)**2*m(z1-z0)
+    lines.append(f'case\t{name} post {" ".join(num(v) for v in p)} volume {mp.nstr(volume, 20)} '
+                 f'common {mp.nstr(post_common(*p), 20)}')
+    return '\n'.join(lines) + '\n'
+
+
 def write_bodies(args):
     sys.path.insert(0, str(ROOT/'rust/tools'))
     import compare_boolean as base
@@ -367,7 +470,7 @@ def main():
             parser.error('--write-bodies needs --occt-root and --sdk-manifest')
         write_bodies(args)
         return
-    texts = {BODIES_FILE: bodies_text(), EXPECTED_FILE: expected_text()}
+    texts = {BODIES_FILE: bodies_text(), EXPECTED_FILE: expected_text(), CROSSINGS_FILE: crossings_text()}
     stale = []
     body = FIXTURES/'imported/consistency_ribbed.brep'
     if body.exists() and stored_kinds(body) != KINDS:
