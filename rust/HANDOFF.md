@@ -920,10 +920,15 @@ over `s9c2-kernel` at `7b43d0b4`).
    41 cases: no case moving, `bug497_2` stopping at its argument on the Rust
    adapter), its reach re-scanned (the dataset: only those two solids; the
    fixtures: `turned_pin`; the fuzz targets' results: none) and pending its
-   campaigns and its capture's Linux record; next the moved turned bodies'
-   coaxial meetings and **S9e.4b.4d.2c** (fillets snapped tangent with
-   tangent coaxial meetings in the engine, options (b) and (a): `OCC485a`,
-   `OCC496b`). The reader takes OCCT's
+   campaigns and its capture's Linux record; the moved turned bodies'
+   coaxial meetings ("Moved turned bodies refined": on a turned frame a
+   coaxial cylinder's and cone's meeting the plane section where their radii
+   agree, not the rulings' quartic whose meeting with a partner's rounded
+   plane passed S9e.3b's budget) are implemented with the same trial (no
+   case moving) and reach (none moving), pending their campaigns and their
+   capture's Linux record; next **S9e.4b.4d.2c** (fillets snapped tangent
+   with tangent coaxial meetings in the engine, options (b) and (a):
+   `OCC485a`, `OCC496b`). The reader takes OCCT's
    version-3 line (`CASCADE Topology V3,
    (c) Open Cascade`, written since OCCT 7.6; REVIEW_NOTES.md's "The
    version-3 `.brep` header", branch `brep-v3-header`): the dataset's 26
@@ -1055,7 +1060,8 @@ fuzz switches below.
 - **U10**: (b), C1 of the rational curve tested exactly at a knot of
   multiplicity equal to the degree (branch `u10-rational-c1`).
 - **S9e.4b.4d.2**: build the turned-body construction (branch `s9e4b4d2`):
-  S9e.4b.4d.2a and 2b done, 2c next (item 3).
+  S9e.4b.4d.2a, 2b and the moved bodies' coaxial meetings done, 2c next
+  (item 3).
 - **The per-set Boolean captures' Linux records**: taken on CI (branch
   `ci-linux-captures`); the records of all 46 from run 38670188123 (branch
   `linux-records-38670188123`, item 2), so the milestones' "pending its
@@ -1157,9 +1163,10 @@ Each comparison takes `--occt-root target/spline-linear-preflight/pinned-sdk/ins
 | `compare_nested_leaves_boolean.py` | 19 / 2 (the kernel within the reference on all 18 solid cases, the 3 degenerate refused) |
 | `compare_turned_profiles_boolean.py` | 8 / 13 (the kernel within the reference on all 18 solid cases, the 3 degenerate refused) |
 | `compare_turned_flats_boolean.py` | 1 / 11 (the kernel within the reference on all 9 solid cases, the 3 degenerate refused) |
+| `compare_turned_tilted_boolean.py` | 2 / 7 (the kernel within the reference on all 9 solid cases) |
 
 `rust/tools/run_boolean_comparisons.py --shard 0 --shards 1` with the same
-two arguments runs all 48 in turn (CI's three shards: item 2).
+two arguments runs all 49 in turn (CI's three shards: item 2).
 
 Every one must report 0 failures; since S9f.1 also `compare_split.py`
 (72 / 56) and `compare_brep.py --family spline` (10 / 3), which share its

@@ -13691,6 +13691,75 @@ Decisions for S9, recorded before its code (2026-09-28):
     without `coaxial_plane`), whose comparison before the code counts the
     waist's box cases `ComputationLimit` and requires every other case within
     the reference.
+  * **Moved turned bodies implemented** (`curved/cones.rs`'s `coaxial_plane`;
+    evidence `6c601119`, capture `9274a4cb`, kernel `a2e4e876`). *Kernel* as
+    decided: in `cone_pair`, before the rulings, two faces whose models stand
+    on one turned affine frame with their origins on one axis line meet on the
+    plane normal to the axis where their radii agree (`CylPair::Plane`, the
+    section of a cone of the pair), at zero radius a cone's apex on the
+    other's surface as before, a negative one apart; two cones of one slope,
+    and every pair on a frame along the world's axes, as before. *Evidence*
+    (before the code): `generate_turned_tilted_boolean_fixtures.py`
+    (`--check`, identical under Python 3.9 and 3.12: 7.1 and 3.6 minutes on
+    four workers locally at load 3 to 10) and three bodies OCCT wrote
+    (`tilted_*.brep`, resolution 1e-3): a waist of corners and a pin of
+    S9e.4b.4d.2b's near-flat cones revolved about `(1, 2, 2) / 3` through
+    `(1/2, -1/4, 0)`, their profiles' points off the dyadic grid rounded once
+    in the rows' text, and a box on the `SKEW` frame by the oracle's `prism`
+    row; 9 cases, each turned body against the box and the waist against a
+    ball; the chained reference over each model profile's lattice on the
+    tilted frame (its primitives at dyadic points on the axis, the height's
+    unit 3) and its closed form by Pappus: two families within 1.7e-36, every
+    solid's closed form within 5.8e-41, each body's within 4.6e-16 (the
+    reference takes the kernel's stored axes of a frame, so the primitives'
+    axes stand a rounding of their heights apart from one line; its limit
+    1e-15 for this generator), the pair identities within 1.1e-41, Monte Carlo
+    within 2.5 standard errors. Bodies OCCT revolves about a turned axis with
+    exact partners (a `SKEW` box given by its rows, balls) evaluate at
+    `022dc883` already: the eliminant passes its budget only where the
+    partner's plane is rounded too, so the box is OCCT's; a ball across the
+    waist's cone at first had a common whose volume's enclosure the kernel
+    left 5e-8 wide, so the ball crosses its upper cylinder. The capture at
+    `6c601119` (`9274a4cb`): 3 matches and 6 reviewed (OCCT's results on the
+    pin it was given, which keeps its near-flat cones, within the sags' volume
+    of OCCT's own results on the model's pin; the ball's cases measured by
+    BRepGProp's default integration off the reference by up to 5.7e-7, within
+    7.6e-9 adaptively in a diagnostic build; the kernel's entity counts), the
+    waist's box cases refused on the kernel past the eliminant's budget.
+    *Tests* (`tests/turned_tilted_booleans.rs`, five): every case within the
+    reference's enclosures; histories complete over the stored ids; results
+    deterministic and moved rigidly; the inputs moved by a dyadic shift and by
+    a turn keeping the reference's volumes, every turned case evaluating; each
+    body's volume and its common with a box holding it its model profile's by
+    Pappus within 1e-9, points classified, its stored vertices on its
+    boundary, alike moved by a turn. `turned_profile_booleans.rs` and
+    `turned_flat_booleans.rs` moved by their turn: `point_tilt` (two imported
+    bodies) and the balls evaluate, the boxes and rods whose faces are
+    parallel or normal to the body's axis in the construction are refused as
+    within rounding of it (S9's rule), none past the eliminant's budget. 3.4 s
+    in release, 5.4 s at opt-level 2 with debug assertions, 4.2 s under the
+    emulated glibc `hypot` with debug assertions and overflow checks (the
+    flats' 1.1 s and the profiles' 7.5 s there, every test passing).
+    `compare_turned_tilted_boolean.py`: 2 matches and 7 reviewed (the waist's
+    common's entity counts added: its whole circles rings without seam
+    vertices), the kernel within the reference on all 9 cases. *Reach after
+    the change* (each file imported in a process of its own, 120 s a file,
+    against `022dc883`): the DRAW case list's 840 dataset texts, the 127
+    imported fixtures and the fuzz targets' 2,904 and 371 written results: no
+    outcome moving (two `bug23849` segments past 120 s at load on one run).
+    *DRAW trial*: the 41 cases on both backends against S9e.4b.4d.2b's run:
+    every status and reason the same (no case moving; `bug497_2` stopping at
+    its argument on the Rust adapter as before). *Verification* at `a2e4e876`:
+    fmt, clippy with `-D warnings`, `cargo +1.85 check`, the release tests
+    (771, 584 s at load 5 to 8), all 49 comparisons with their documented
+    counts and no failure, the debug-assertion replays of the boolean corpus
+    and regressions (1,482, the slowest 3.9 s) and the split's (3,571, 1.2 s),
+    natively and under the emulated `hypot` with overflow checks (32 s and 36
+    s the slowest there), none failing; the boolean corpus's instructions with
+    debug assertions 9.179 T against `7b43d0b4`'s 9.165 T (0.15 % more over
+    both parts; S9e.4b.4d.2b alone 0.16 %); the Python unit tests (446, 3
+    skipped); the ledger holding. Open: S9e.4b.4d.2c; the campaigns and the
+    captures' Linux records.
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces

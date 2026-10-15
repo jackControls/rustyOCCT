@@ -1605,7 +1605,14 @@ their fins' pcurves again, the apex's vertex loop kept and left unmatched as a
 sphere's pole) and imported as the lattice, its mass properties the flat
 profile's; else the cone's `Degenerate` as before (a cone within the
 resolution of a cylinder, which OCCT's revolve never writes, a body of one
-curved face beside its flats, `OCC485a` with its tori).
+curved face beside its flats, `OCC485a` with its tori). On a turned frame (a
+moved body, or one OCCT revolved about an axis off the world's) a coaxial
+cylinder's and cone's meeting is the plane normal to the axis where their
+radii agree (`curved/cones.rs`'s `coaxial_plane`, the section of the cone),
+not the rulings' quartic graph whose meeting with a partner's rounded plane
+passed S9e.3b's eliminant's budget; a partner's face parallel or normal to
+the axis in the construction lies within rounding of it once turned, S9's
+`Degenerate`.
 
 Refused: a joint of two arcs whose circles each hold other arcs of the
 path, off either (`OutOfDomain`, S9e.4b.4: neither circle can move); a
@@ -2010,7 +2017,8 @@ campaign of every target the steps touch.
   and S9e.4b.4c.2b.2 (no measured body reaches them but one dataset solid
   no DRAW case imports),
   S9e.4b.4d.2c (turned bodies' fillets snapped tangent, the user's answer of
-  2026-10-14; 2a's corners and 2b's near-flat cones done), the
+  2026-10-14; 2a's corners, 2b's near-flat cones and the moved bodies'
+  coaxial meetings done), the
   near-miss rules not yet written (other curves' edges, two sphere
   circles, an apex against a sphere, torus or spline face, item 5's (b)
   to (d)), and the refusals by design listed there. U9 and U10 stayed open
@@ -4467,6 +4475,21 @@ campaign of every target the steps touch.
   keeping their near-flat cones, within the sags' volumes of OCCT's own
   results on the model's bodies; the resting box's fuse and cut invalid; the
   kernel's rings against OCCT's seams).
+* **The moved turned bodies' evidence, before their kernel code.** Three
+  bodies OCCT wrote (`generate_turned_tilted_boolean_fixtures.py`,
+  `tilted_*.brep`): a waist of corners and a pin of near-flat cones revolved
+  about `(1, 2, 2) / 3`, and a box on the `SKEW` frame by the oracle's
+  `prism` row (its planes rounded too). 9 cases: each body and the box across
+  its first corner, the waist and a ball. The chained reference over each
+  model profile on the tilted frame and its closed form by Pappus; the
+  generator's check a CI group of its own (`turned-tilted`).
+* **Kernel (the moved turned bodies).** `tests/turned_tilted_booleans.rs`:
+  every case within the reference's enclosures (the waist's box cases refused
+  past the eliminant's budget before), histories complete, results
+  deterministic and moved rigidly, every case moved by a turn evaluating,
+  each body's volume its model profile's. `compare_turned_tilted_boolean.py`:
+  2 matches and 7 reviewed (the pin's sags, BRepGProp's default measure of
+  the ball's cases, the kernel's rings against OCCT's seams).
 * **Fuzzing.** The `boolean` target (`FUZZING.md`): the split target's line
   and arc profiles, the tool offset exactly in the axis-aligned frame or
   sharing the tilted one's origin, heights equal, spanning, overlapping,
