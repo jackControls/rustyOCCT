@@ -14066,6 +14066,118 @@ Decisions for S9, recorded before its code (2026-09-28):
     against `61162084`'s 9.174 T (0.01 % fewer); the Python unit tests (455, 3
     skipped); the ledger holding. Open: S9e.4b.4d.2c.1b (beside a cone:
     `OCC496b`), S9e.4b.4d.2c.2; the campaigns and the capture's Linux record.
+  * **S9e.4b.4d.2c.1b refined, before its code (2026-10-15).** "S9e.4b.4d.2c.1
+    refined"'s second part, a fillet or a round beside a cone, from a draft
+    of it (not committed, on `712115c6`; each body imported in a process of
+    its own). *Why such bodies are refused today*: `turned.rs`'s meridian
+    snaps a torus only between a plane and a cylinder; beside a cone it reads
+    no turned body, and `smooth_torus`'s refusal by name stands (`OutOfDomain("an
+    imported body whose torus faces join their neighbours smoothly
+    (S9e.4b.4d)")`). *`OCC496b` measured on its file*: its third torus (tube
+    4.5) is tangent to the cylinder of radius 13 and to the cone (this
+    step's kind), but its first two (tubes 2) are tangent to the cylinders of
+    radii 15 and 14 at one end only and meet the next cylinder (radii 14 and
+    13) at a corner at the other, their tubes' ends a sixth of a turn round
+    from the tangent point, the faces' normals 60 degrees apart there (OCCT's
+    file marks only the four tangent edges `G1`). "S9e.4b.4d.2c refined"
+    keeps a torus at corners refused (`turned_corner`), so `OCC496b` stays
+    refused by name after this step: its import needs a torus tangent to one
+    line and meeting the other at a corner, a form of its own, split off as
+    **S9e.4b.4d.2c.1c** (no other measured body; not this step). So
+    **S9e.4b.4d.2c.1b** is a fillet or a round tangent to a cone and to a
+    plane or a cylinder; a torus between two cones, or a cone tangent to two
+    tori, stays no turned body (no measured body; the line one torus fixes
+    holds the other's centre off the grid). *The snap beside a cone* (amending
+    "S9e.4b.4d.2c refined"'s slope rounded once): the other line's height or
+    radius and the tube's radius on the multiples of `2^-40` of the body's
+    size as S9e.4b.4d.2c.1a's, the centre the tube from that line, its other
+    coordinate its stored one's on that grid; the direction from the stored
+    centre toward the stored cone (binary64, from the cone's stored
+    half-angle) turned to the rational one whose half-angle tangent `s` is the
+    nearest multiple of `2^-40`, `((1 - s^2), 2 s) / (1 + s^2)` (a
+    Pythagorean direction; a turn of at most `2^-41`, far within any
+    resolution, and a dyadic direction kept exactly); the cone the line
+    through the tube's point in that direction normal to it. That line is no
+    binary64 data (its radii at binary64 heights rationals with the
+    direction's denominators), so the cone's primitive carries its exact
+    radii at its two heights (`Construction::Cone`'s exact radii,
+    `Solid::build_cone_exact_on`; its stored radii those rounded once, its
+    exact model the line); every other turned cone keeps its radii rounded
+    once (S9e.4b.4d.2a's, no body moving). The centre within the resolution
+    of its stored one, the tube's point on the cone and the cone's other
+    node within the resolution of their stored circles (as every node): the
+    draft's four bodies below move by at most `2^-20` (the refit's, by
+    design). *The lattice*: the sharp profile's, as before, the cone's line
+    its corner's; a body of one curved face (a cone between two discs, a
+    round at one end) is its one primitive with its pieces (the lattice's
+    rule of two or more primitives otherwise). *The pieces* (amending
+    S9e.4b.4d.2c.1 refined's (1)): each box's sides through the tube's
+    centre run along the two directions to its tangent points (2c.1a's box is
+    that beside a plane and a cylinder), so beside a cone one side is the
+    coaxial cone through the centre normal to the cone (its line along the
+    direction to the cone) and the far side the cone parallel to it past the
+    corner: the box is the parallelogram in the meridian `C + x e_c + y e_f`
+    (`e_c` the direction to the cone, `e_f` to the other line), `0 <= x <= X`,
+    `0 <= y <= Y`, past the corner by half the tube (halved up to four times
+    while another segment of the sharp profile or another box would meet it,
+    a line at the corner leaving it), its far plane or cylinder and its far
+    cone's point on the near plane or cylinder on the multiples of `2^-24` of
+    the tube's power of two, outward (binary64 numbers). Beside a cylinder
+    (the other side the plane through the centre) it is the outer cone's
+    frustum between that plane and the far plane less the inner's (past both
+    by an eighth of the tube); beside a plane (the other side the cylinder
+    through the centre) the annulus between that cylinder and the far one
+    over the box's heights on that grid (past them by an eighth) common the
+    outer frustum (by two eighths) less the inner (by three); every frustum
+    exact on the axis frame, its radii positive, its heights none of the
+    lattice's nor the nodes' (else no turned body). The piece is its box
+    less the whole torus as before: the normal cone crosses the tube normally
+    in the circle at the snapped direction (the piece's edge that the
+    lattice's cone touches the tube along), the plane or cylinder through the
+    centre at the tube's equator, top or bottom as before. *The engine*: (E1)
+    unchanged: `torus_curved.rs`'s `coaxial` already takes a coaxial cone's
+    double root at a rational half-angle tangent as the circle the surfaces
+    touch along (`CylPair::Touching`; not a quarter turn here but the snapped
+    direction), and the arrangement's touching circles (S9e.4b.4d.2c.1a's
+    `edge_touching`, a cone's too) need nothing new. (5') A piece's ring at
+    the snapped direction met by a later face (the lattice's cone, a
+    partner) is the torus's circle at that rational angle (`ring_meet`):
+    `rational_v` finds the angle whose half-angle tangent is the nearest
+    multiple of `2^-40` to its binary64 root besides the quarter turns,
+    checked exactly on the meeting's form (else three surfaces as before).
+    (6') In a turned body's own tree with tori, two coaxial ruled faces (its
+    cones and cylinders) meet on the plane where their radii agree on every
+    frame (`cones.rs`'s `coaxial_plane`, so far on a turned frame only): on
+    the world's axes their rulings' graph (a quartic) met by a piece's torus
+    is three curved surfaces of degree sixteen, refused (`triple.rs`'s
+    `COSTLY`), where the draft's lattice corners between a cone and a
+    cylinder or a cone and a plane meet the tori's faces' boxes. (7') A cone's
+    plane section about its axis (that circle) against a torus is the circle
+    it is (`as_conic`, S9d.4b.2's `conic_torus`), not three surfaces. Every
+    other tangency, ring and three surfaces as before. *Degenerate and
+    refused*: no new text; a partner tangent to a fillet or a round stays
+    the tangency (S9's), a body of the forms above no turned body (refused by
+    name). *What the draft measured* (against the evidence below): the four
+    bodies import, their Booleans with a holder their model profiles'
+    volumes (the refit's measured on OCCT's stored faces, `5e-11` off by its
+    cone's turn); the 12 solid cases evaluate within the reference (the
+    refit's measured on OCCT's stored faces, within `5e-14` of the model's),
+    the touching ball refused as the tangency; moved by a turn, the ball's and the skew box's cases
+    evaluate, the rod and the `TILT` box (their faces parallel or normal to
+    the axis) refused as within rounding of it (S9's rule, as S9e.4b.4d.2c.1a's);
+    without (5'), (6') or (7') the rounds' bodies are refused by the tree.
+    *Evidence* for 2c.1b, before its code: four bodies OCCT writes by the
+    oracle's `revolve` row with arcs and a cone (`round`, `OCC496b`'s third
+    torus's kind; `fillet`, a concave fillet under a conical boss on a base;
+    `top`, a widening cone rounded into a top disc, one curved face; `refit`,
+    `round`'s round raised by `2^-20` at a resolution of `1e-3` and its cone
+    of no Pythagorean direction, `OCC496b`'s kind), cases against a rod
+    across a round alone, a ball in a fillet alone, a skew box and a `TILT`
+    box across sharp corners, and a ball touching a round declared
+    degenerate; S9e.4b.4d.2c.1a's chained reference with each body one
+    turned input (its cones' bands added), its closed form by Pappus; a unit
+    test, a CI group and a capture keyed on today's meridian (its torus only
+    between a plane and a cylinder).
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces
