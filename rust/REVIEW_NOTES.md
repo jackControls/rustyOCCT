@@ -17625,14 +17625,19 @@ Decisions for S9, recorded before its code (2026-09-28):
   exactly at such knots (`(P' w - P w') / w^2` equal from both sides, in
   rationals), keeping OCCT's cells and counts; (c) split edges and faces at
   such knots on import (each piece C-infinity; more cells than OCCT's).
-  The implementing agent recommends (b). Until answered, (a) holds.
+  The implementing agent recommends (b). **Answered 2026-10-14: (b).**
 * **S9e.4b.4d.2's scope (recorded 2026-10-11; not a numbered decision).**
   Whether turned bodies of smooth joins and nearly degenerate cones (the
   dataset's e3i parts: `OCC485a`'s 9 DRAW cases, `OCC496b`, `OCC497c`,
   `OCC497e`; no fuzz result) are worth a turned-body construction (a
   meridian profile with its fillets refitted to their lines, near-flat cones
   as planes, tangent edges in the engine: "S9e.4b.4d refined"'s (a) to (c)).
-  Until answered, they are refused by name (S9e.4b.4d.1).
+  **Answered 2026-10-14: build it** (S9e.4b.4d.2).
+* **The per-set Boolean captures' Linux records (recorded 2026-10-11; a
+  CI-budget question, not a numbered decision).** CI runs only
+  `compare_boolean.py`'s default set, so no other capture has a Linux record.
+  **Answered 2026-10-14: use CI** (run the per-set compare scripts there and
+  record each capture's `platform-linux` from its observations).
 
 ## Status
 
