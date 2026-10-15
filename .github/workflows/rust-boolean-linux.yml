@@ -1,0 +1,116 @@
+name: Rust Boolean captures on Linux
+
+# Every Boolean set's comparison with the source-pinned SDK on Linux, whose
+# observations give each per-set capture its platform-linux/ record
+# (REVIEW_NOTES "The Boolean captures' Linux records on CI, refined"). Not
+# per push: the per-push B-rep job keeps compare_boolean.py's default set
+# only. A capture without a Linux record reports its observation pending
+# (--allow-unrecorded-platform); one with a record is compared strictly, so
+# a red job is a real failure. After a run, take the records with
+# rust/tools/take_platform_records.py (rust/HANDOFF.md, item 2).
+on:
+  schedule:
+    - cron: '41 5 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  sdk:
+    name: Source-pinned Boolean SDK
+    runs-on: ubuntu-24.04
+    # The B-rep job's SDK of four toolkits takes 16 minutes at two jobs.
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4.2.2
+      - name: Fetch the exact reference source
+        run: git fetch --no-tags --depth=1 https://github.com/Open-Cascade-SAS/OCCT.git 3d097a0328e71b826377d4814ab05ec3c3d23871
+      - name: Build the headless Boolean SDK with exception checks
+        run: python3 rust/tools/build_pinned_occt.py --output target/boolean-sdk --toolkit TKBO --toolkit TKPrim --jobs 4
+      - name: Pack the SDK for the comparison shards
+        # tar keeps the libraries' symbolic links; the shards check every
+        # library, the version header and the source archive against the
+        # manifest (compare_degree_elevation.verify_sdk).
+        run: tar -czf target/boolean-sdk.tar.gz target/boolean-sdk/install target/boolean-sdk/build-manifest.json target/boolean-sdk/source.tar
+      - name: Hand the SDK to the shards
+        uses: actions/upload-artifact@v4.6.2
+        with:
+          name: boolean-sdk
+          path: target/boolean-sdk.tar.gz
+          compression-level: 0
+          retention-days: 1
+          if-no-files-found: error
+      - name: Preserve the SDK's provenance
+        if: always()
+        uses: actions/upload-artifact@v4.6.2
+        with:
+          name: boolean-linux-sdk-provenance
+          path: |
+            target/boolean-sdk/build-manifest.json
+            target/boolean-sdk/*.log
+            target/boolean-sdk/build/CMakeCache.txt
+            target/boolean-sdk/build/compile_commands.json
+          if-no-files-found: warn
+
+  compare:
+    name: Boolean comparisons / shard ${{ matrix.shard }}
+    needs: sdk
+    runs-on: ubuntu-24.04
+    # A shard is about 14 minutes (run_boolean_comparisons.py --list):
+    # 2.6 times its comparisons' local time plus the probe's release build.
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2]
+    steps:
+      - uses: actions/checkout@v4.2.2
+      - run: rustup toolchain install stable --profile minimal
+      - name: Install the independent references' arithmetic
+        run: |
+          python3 -m venv target/math-oracle-venv
+          target/math-oracle-venv/bin/python -m pip install --disable-pip-version-check --no-cache-dir --require-hashes -r rust/tools/math-oracle-requirements.txt
+      - name: Fetch the source-pinned SDK
+        uses: actions/download-artifact@v4.3.0
+        with:
+          name: boolean-sdk
+          path: target
+      - name: Unpack the source-pinned SDK
+        run: tar -xzf target/boolean-sdk.tar.gz && rm target/boolean-sdk.tar.gz
+      - name: Compare this shard's Boolean sets with BRepAlgoAPI and their references
+        run: >-
+          target/math-oracle-venv/bin/python rust/tools/run_boolean_comparisons.py
+          --shard ${{ matrix.shard }} --shards 3
+          --occt-root target/boolean-sdk/install --sdk-manifest target/boolean-sdk/build-manifest.json
+          --summary target/boolean-linux-shard/shard-${{ matrix.shard }}.json
+      - name: Preserve the native observations and comparison reports
+        if: always()
+        uses: actions/upload-artifact@v4.6.2
+        with:
+          name: boolean-linux-observations-${{ matrix.shard }}
+          path: |
+            target/boolean*-oracle/
+            !target/boolean*-oracle/boolean-oracle
+            target/boolean-linux-shard/
+          if-no-files-found: warn
+
+  summary:
+    name: Boolean records pending on Linux
+    needs: compare
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4.2.2
+      - name: Install the independent references' arithmetic
+        run: |
+          python3 -m venv target/math-oracle-venv
+          target/math-oracle-venv/bin/python -m pip install --disable-pip-version-check --no-cache-dir --require-hashes -r rust/tools/math-oracle-requirements.txt
+      - name: Fetch every shard's observations
+        uses: actions/download-artifact@v4.3.0
+        with:
+          pattern: boolean-linux-observations-*
+          path: target/boolean-linux-observations
+      - name: Summarize what each capture's record needs (nothing is written)
+        run: target/math-oracle-venv/bin/python rust/tools/take_platform_records.py target/boolean-linux-observations --summary "$GITHUB_STEP_SUMMARY"

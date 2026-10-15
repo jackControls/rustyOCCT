@@ -656,23 +656,44 @@ then for the DRAW survey of the nested leaves and the speed-ups (branch
    the torus meetings' root sampling (the certified integrals along a cone
    carrier's meetings are narrowed since the off switches' track:
    `487e8cac` 39 to 20 G instructions, 16.5 to 9.7 s under the sanitizer).
-2. **The Linux records and reviews** of the recaptured
-   `occt-boolean-spline-crossing-preimplementation` and of the
-   spline-sphere, spline-cone, imported-polyhedra, imported-arcs,
-   imported-pieces, split-pieces, one-sphere, one-sphere-incidence,
-   piece-forms, piece-trees, primitive-chains, prism-leaves, plane-parts,
-   polyhedra-curved, deep-trees, two-leaves, rim-leaves, flush-leaves, stack-leaves and nested-leaves captures (with imported-joints'), and in fact of every Boolean capture
-   but S9a.1's two prisms (`occt-boolean-preimplementation`): CI runs
-   only `compare_boolean.py`'s default set, so its
-   `source-pinned-brep-results` artifact holds no other set's
-   `native-observed.txt` (checked at `d1869f2f`, runs 37438561216 and
-   37454728856, and at `64673ebd`, run 37415799498), and none of the
-   other 45 captures (S9e.4b.4c.1's, S9e.4b.4c.2a's, S9e.4b.4b.2b.2a's, S9e.4b.4b.2b.2b.1's, S9e.4b.4b.2b.2b.2's, S9e.4b.4b.2b.2b.3a's and S9e.4b.4c.2b.1's among them) has ever had a
-   `platform-linux/` record. They stay
-   pending until the B-rep job also runs those comparisons (each set's
-   compare script on the job's pinned SDK, its output directory added to
-   the artifact) and a green run uploads their observations; see
-   REVIEW_NOTES.md's "The Boolean captures' Linux records".
+2. **The Linux records and reviews** of every Boolean capture but S9a.1's
+   two prisms (`occt-boolean-preimplementation`, recorded): the 45 others
+   (S9a.2's splines, S9b to S9f, the recaptured spline-crossing one among
+   them) have never had a `platform-linux/` record, as the per-push B-rep
+   job runs only `compare_boolean.py`'s default set. Since the user's
+   answer of 2026-10-14 ("use CI"), the workflow "Rust Boolean captures on
+   Linux" (`.github/workflows/rust-boolean-linux.yml`, daily schedule and
+   `workflow_dispatch`, never per push) runs all 46 comparisons of the
+   table below on the pinned SDK in three shards; a capture without a Linux
+   record reports its observation pending, one with a record is compared
+   strictly (REVIEW_NOTES.md's "The Boolean captures' Linux records on CI,
+   refined"). Its first run: `gh workflow run rust-boolean-linux.yml -R
+   jackControls/rustyOCCT --ref rust-kernel`. After a green run `RUN` at
+   commit `SHA`:
+   1. `gh run download RUN -R jackControls/rustyOCCT -p
+      'boolean-linux-observations-*' -D target/boolean-linux-RUN`;
+   2. `target/math-oracle-venv/bin/python rust/tools/take_platform_records.py
+      target/boolean-linux-RUN` (the run's summary shows the same): per
+      capture, the cases differing from the macOS capture beyond rounding,
+      the largest deviation, the macOS reviews it can copy under the Linux
+      rows' fingerprints and the differences needing a review by hand;
+   3. for a capture beyond rounding (statuses, counts, or values beyond
+      1e-11 of max(1, |value|)), read its listed cases' rows against the
+      capture's and write the record's review (`--review CAPTURE=TEXT`);
+      for a difference needing a review by hand (new on Linux, or on a case
+      beyond rounding), add a Linux review with its independent evidence
+      and the listed `native_sha256` to the set's divergences JSON;
+   4. rerun step 2 with `--write --run RUN --commit SHA`: it writes
+      `platform-linux/{native.txt,record.json}` and the copied reviews of
+      the complete captures only; review the diff, commit, push, and check
+      that the next scheduled run is green with those captures strict
+      (`gh run list -R jackControls/rustyOCCT -w "Rust Boolean captures on
+      Linux"`). Repeat for the rest.
+
+   A new Boolean set: `run_boolean_comparisons.py` finds its
+   `compare_*_boolean.py`; add its local time to `SECONDS` there (the test
+   requires it) and take its record from the next scheduled run.
+
    `SPLINE_SPHERE` and `SPLINE_CONE` are on since the loops' certified integrals were sped up
    (branch `loop-integrals`; REVIEW_NOTES.md's "Certified integrals beside
    spline walls' loops"), and the campaign with both on is clean at
@@ -1093,6 +1114,9 @@ Each comparison takes `--occt-root target/spline-linear-preflight/pinned-sdk/ins
 | `compare_stack_leaves_boolean.py` | 20 / 1 (the kernel within the reference on all 18 solid cases, the 3 degenerate refused) |
 | `compare_nested_leaves_boolean.py` | 19 / 2 (the kernel within the reference on all 18 solid cases, the 3 degenerate refused) |
 
+`rust/tools/run_boolean_comparisons.py --shard 0 --shards 1` with the same
+two arguments runs all 46 in turn (CI's three shards: item 2).
+
 Every one must report 0 failures; since S9f.1 also `compare_split.py`
 (72 / 56) and `compare_brep.py --family spline` (10 / 3), which share its
 spline prisms, and `compare_brep_io.py` (6,835 / 7; with
@@ -1120,7 +1144,8 @@ changes, every generator importing it runs with `--check --workers 4`. Then:
 - **Watch CI after every push.** `gh run list -R jackControls/rustyOCCT -L 6`,
   and `--log-failed` on any failure. Recurring causes so far:
   - a new native capture without its Linux record (`platform-linux/`, taken
-    from the run's artifact and reviewed against the macOS capture);
+    from the run's artifact and reviewed against the macOS capture; a
+    Boolean set's from "Rust Boolean captures on Linux", item 2);
   - reviews fingerprinted with macOS native rows only (the Linux rows differ
     in their last bits and need their own reviews);
   - job time limits as generators and fixtures grow;
