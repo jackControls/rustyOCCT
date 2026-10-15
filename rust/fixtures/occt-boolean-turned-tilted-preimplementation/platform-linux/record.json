@@ -1,0 +1,7 @@
+{
+  "platform": "linux",
+  "source": "GitHub Actions run 38718185233 (commit 61162084), ubuntu-24.04, source-pinned OCCT 8.1.0",
+  "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+  "observations_sha256": "e49e316b7aed48a43e026964123e0a3a5aa304319e012977cdb51f10db9063fd",
+  "review": "The same cases, statuses, validity, warnings, solid counts and face, edge and vertex counts as the macOS arm64 capture for every Boolean; volumes, areas and centres within rounding of the capture's but for the three waist_ball cases, by up to 3.3e-08: results whose default BRepGProp measures lie 9e-08 to 6e-07 (relative) from the reference on both platforms (faces bounded by the Boolean's approximated section of the ball and the tilted cylinder), OCCT's approximation landing differently on Linux. Each has a Linux review by hand (occt-boolean-turned-tilted-divergences.json) with the same differences as on macOS; the platforms' volume errors from the reference agree within 6 per cent (common) and 0.3 per cent (fuse, cut). Every Linux result valid without warnings."
+}

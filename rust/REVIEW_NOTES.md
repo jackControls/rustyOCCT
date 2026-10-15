@@ -13764,8 +13764,17 @@ Decisions for S9, recorded before its code (2026-09-28):
     s the slowest there), none failing; the boolean corpus's instructions with
     debug assertions 9.179 T against `7b43d0b4`'s 9.165 T (0.15 % more over
     both parts; S9e.4b.4d.2b alone 0.16 %); the Python unit tests (446, 3
-    skipped); the ledger holding. Open: S9e.4b.4d.2c; the campaigns and the
-    captures' Linux records.
+    skipped); the ledger holding. Open: S9e.4b.4d.2c. Merged and verified
+    with S9e.4b.4d.2b at `61162084` (`rust-kernel`); campaigns there (600 s
+    each, sampled replays, every switch on): `boolean` clean, 380 runs, the
+    slowest input 20 s; `split` clean, 1,705 runs. Both captures' Linux
+    records from run 38718185233 (the workflow "Rust Boolean captures on
+    Linux" at `61162084`): the turned flats' every case within rounding
+    (4.2e-12 at most); the turned tilted ones' but for the three
+    `waist_ball` cases, values only, by up to 3.3e-08, each with a Linux
+    review by hand: the same status, validity and counts, OCCT's default
+    measures 9e-08 to 6e-07 (relative) from the reference on both
+    platforms, the volume errors agreeing within 6 per cent.
   * **S9e.4b.4d.2c refined, before its code (2026-10-15).** A turned body's
     fillets and rounds, options (b) and (a) of "S9e.4b.4d refined" as
     "S9e.4b.4d.2 refined" splits them: each torus snapped tangent to its
