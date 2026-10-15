@@ -67,6 +67,11 @@ enum Construction {
         bottom: f64,
         top: f64,
         tolerance: Tolerance,
+        /// S9e.4b.4d.2a: a turned body's cone on its axis frame, its bottom
+        /// at that height on it exactly (its frame the axis frame at that
+        /// point rounded once): its exact model on the axis, coaxial with
+        /// the body's other primitives.
+        axis: Option<(Frame3, f64)>,
     },
     /// The latitudes of its ends; `start` and `end` are their heights.
     Sphere {
@@ -284,6 +289,7 @@ impl Solid {
                 bottom,
                 top,
                 tolerance,
+                axis: None,
             },
             frame,
             start: 0.0,
@@ -293,6 +299,26 @@ impl Solid {
             bounds,
             operation,
         })
+    }
+
+    /// S9e.4b.4d.2a: a cone or frustum on an axis frame from height `lo`
+    /// on it: [`Solid::build_cone`] on the axis frame at that point rounded
+    /// once, its exact model at that height on the axis frame exactly.
+    pub(crate) fn build_cone_on(
+        operation: OperationId,
+        axis: Frame3,
+        lo: f64,
+        bottom: f64,
+        top: f64,
+        height: f64,
+        tolerance: Tolerance,
+    ) -> Result<Self> {
+        let base = axis.at(axis.point(Point2::default(), lo));
+        let mut s = Self::build_cone(operation, base, bottom, top, height, tolerance)?;
+        if let Construction::Cone { axis: on, .. } = &mut s.construction {
+            *on = Some((axis, lo));
+        }
+        Ok(s)
     }
 
     /// The same construction in another frame.
@@ -305,6 +331,7 @@ impl Solid {
                 bottom,
                 top,
                 tolerance,
+                ..
             } => Self::build_cone(operation, frame, *bottom, *top, self.end, *tolerance),
             Construction::Sphere {
                 radius,

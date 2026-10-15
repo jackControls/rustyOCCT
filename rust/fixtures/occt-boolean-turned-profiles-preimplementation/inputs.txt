@@ -1,0 +1,141 @@
+case point_tilt_fuse
+brep imported/profile_point_x.brep
+boolean fuse
+brep imported/box_tilt.brep
+end
+case point_tilt_cut
+brep imported/profile_point_x.brep
+boolean cut
+brep imported/box_tilt.brep
+end
+case point_tilt_common
+brep imported/profile_point_x.brep
+boolean common
+brep imported/box_tilt.brep
+end
+case chain_waist_fuse
+brep imported/profile_waist.brep
+boolean cut
+plane 0.0 0.0 7.5 0.0 0.0 1.0 1.0 0.0 0.0
+wire P 4 5.75 -2.5 7.5 10.0 -2.5 7.5 10.0 2.5 7.5 5.75 2.5 7.5
+prism 0.0 0.0 5.0
+then fuse
+plane 0.0 0.0 9.5 0.0 0.6 0.8 1.0 -0.0 0.0
+wire P 4 -9.0 -7.2 14.899999999999999 9.0 -7.2 14.899999999999999 9.0 7.2 4.1000000000000005 -9.0 7.2 4.1000000000000005
+prism 0.0 0.75 1.0
+end
+case chain_waist_cut
+brep imported/profile_waist.brep
+boolean cut
+plane 0.0 0.0 7.5 0.0 0.0 1.0 1.0 0.0 0.0
+wire P 4 5.75 -2.5 7.5 10.0 -2.5 7.5 10.0 2.5 7.5 5.75 2.5 7.5
+prism 0.0 0.0 5.0
+then cut
+plane 0.0 0.0 9.5 0.0 0.6 0.8 1.0 -0.0 0.0
+wire P 4 -9.0 -7.2 14.899999999999999 9.0 -7.2 14.899999999999999 9.0 7.2 4.1000000000000005 -9.0 7.2 4.1000000000000005
+prism 0.0 0.75 1.0
+end
+case chain_waist_common
+brep imported/profile_waist.brep
+boolean cut
+plane 0.0 0.0 7.5 0.0 0.0 1.0 1.0 0.0 0.0
+wire P 4 5.75 -2.5 7.5 10.0 -2.5 7.5 10.0 2.5 7.5 5.75 2.5 7.5
+prism 0.0 0.0 5.0
+then common
+plane 0.0 0.0 9.5 0.0 0.6 0.8 1.0 -0.0 0.0
+wire P 4 -9.0 -7.2 14.899999999999999 9.0 -7.2 14.899999999999999 9.0 7.2 4.1000000000000005 -9.0 7.2 4.1000000000000005
+prism 0.0 0.75 1.0
+end
+case point_box_fuse
+brep imported/profile_point.brep
+boolean fuse
+plane 2.0 -1.75 1.0 0.0 0.6 0.8 1.0 -0.0 0.0
+wire P 4 2.0 -1.75 1.0 5.0 -1.75 1.0 5.0 0.6500000000000004 -0.7999999999999998 2.0 0.6500000000000004 -0.7999999999999998
+prism 0.0 1.7999999999999998 2.4000000000000004
+end
+case point_box_cut
+brep imported/profile_point.brep
+boolean cut
+plane 2.0 -1.75 1.0 0.0 0.6 0.8 1.0 -0.0 0.0
+wire P 4 2.0 -1.75 1.0 5.0 -1.75 1.0 5.0 0.6500000000000004 -0.7999999999999998 2.0 0.6500000000000004 -0.7999999999999998
+prism 0.0 1.7999999999999998 2.4000000000000004
+end
+case point_box_common
+brep imported/profile_point.brep
+boolean common
+plane 2.0 -1.75 1.0 0.0 0.6 0.8 1.0 -0.0 0.0
+wire P 4 2.0 -1.75 1.0 5.0 -1.75 1.0 5.0 0.6500000000000004 -0.7999999999999998 2.0 0.6500000000000004 -0.7999999999999998
+prism 0.0 1.7999999999999998 2.4000000000000004
+end
+case waist_rod_fuse
+brep imported/profile_waist.brep
+boolean fuse
+plane -12.0 0.75 0.0 1.0 0.0 0.0 0.0 1.0 0.0
+wire C -12.0 0.75 12.0 1.5
+prism 24.0 0.0 0.0
+end
+case waist_rod_cut
+brep imported/profile_waist.brep
+boolean cut
+plane -12.0 0.75 0.0 1.0 0.0 0.0 0.0 1.0 0.0
+wire C -12.0 0.75 12.0 1.5
+prism 24.0 0.0 0.0
+end
+case waist_rod_common
+brep imported/profile_waist.brep
+boolean common
+plane -12.0 0.75 0.0 1.0 0.0 0.0 0.0 1.0 0.0
+wire C -12.0 0.75 12.0 1.5
+prism 24.0 0.0 0.0
+end
+case steps_ball_fuse
+brep imported/profile_steps.brep
+boolean fuse
+sphere 3.5 1.0 5.25 0.0 0.0 1.0 1.0 0.0 0.0 1.75 -1.5707963267948966 1.5707963267948966
+end
+case steps_ball_cut
+brep imported/profile_steps.brep
+boolean cut
+sphere 3.5 1.0 5.25 0.0 0.0 1.0 1.0 0.0 0.0 1.75 -1.5707963267948966 1.5707963267948966
+end
+case steps_ball_common
+brep imported/profile_steps.brep
+boolean common
+sphere 3.5 1.0 5.25 0.0 0.0 1.0 1.0 0.0 0.0 1.75 -1.5707963267948966 1.5707963267948966
+end
+case box_crown_fuse
+plane 3.5 1.25 2.5 0.0 0.6 0.8 1.0 -0.0 0.0
+wire P 4 3.5 1.25 2.5 7.5 1.25 2.5 7.5 3.6500000000000004 0.7000000000000002 3.5 3.6500000000000004 0.7000000000000002
+prism 0.0 1.5 2.0
+boolean fuse
+brep imported/profile_crown.brep
+end
+case box_crown_cut
+plane 3.5 1.25 2.5 0.0 0.6 0.8 1.0 -0.0 0.0
+wire P 4 3.5 1.25 2.5 7.5 1.25 2.5 7.5 3.6500000000000004 0.7000000000000002 3.5 3.6500000000000004 0.7000000000000002
+prism 0.0 1.5 2.0
+boolean cut
+brep imported/profile_crown.brep
+end
+case box_crown_common
+plane 3.5 1.25 2.5 0.0 0.6 0.8 1.0 -0.0 0.0
+wire P 4 3.5 1.25 2.5 7.5 1.25 2.5 7.5 3.6500000000000004 0.7000000000000002 3.5 3.6500000000000004 0.7000000000000002
+prism 0.0 1.5 2.0
+boolean common
+brep imported/profile_crown.brep
+end
+case waist_touch_fuse
+brep imported/profile_waist.brep
+boolean fuse
+sphere 1.5 -1.0 22.0 0.0 0.0 1.0 1.0 0.0 0.0 2.0 -1.5707963267948966 1.5707963267948966
+end
+case waist_touch_cut
+brep imported/profile_waist.brep
+boolean cut
+sphere 1.5 -1.0 22.0 0.0 0.0 1.0 1.0 0.0 0.0 2.0 -1.5707963267948966 1.5707963267948966
+end
+case waist_touch_common
+brep imported/profile_waist.brep
+boolean common
+sphere 1.5 -1.0 22.0 0.0 0.0 1.0 1.0 0.0 0.0 2.0 -1.5707963267948966 1.5707963267948966
+end

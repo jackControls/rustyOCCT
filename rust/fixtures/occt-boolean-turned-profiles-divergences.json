@@ -1,0 +1,170 @@
+{
+  "note": "Reviewed differences of the S9e.4b.4d.2a capture (occt-boolean-turned-profiles-preimplementation): each fingerprinted by its native row; the measures BRepGProp's default integration leaves off the reference (within 3e-10 adaptively) where the Boolean's approximated intersection curves bound the faces, and the touching ball's fuse OCCT keeps as two solids.",
+  "reviews": [
+    {
+      "case": "waist_touch_fuse",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "86f293aa643b8f8f395395c35471ad80226087972b0e665e25eae644de137116",
+      "differences": [
+        "solids"
+      ],
+      "reason": "BRepAlgoAPI's result is valid; the waist (a turned body: a cylinder of radius 8, a cone narrowing to radius 5, a cylinder of radius 5 and their discs) fused with a ball of radius 2 resting on its top disc at a point (the declared degenerate group, the kernel refusing it as a tangency between the inputs): OCCT keeps the ball (volume 32 pi / 3) and the waist as two solids touching at that point, where the reference's rays count their union one; the two solids' volumes and areas sum to the reference's totals within 3.0e-16 relative (the waist alone its closed form, 962 pi).",
+      "independent_evidence": "chained_curved_boolean_reference.py's rows on the constructions OCCT was given (generate_turned_profiles_boolean_fixtures.py --check, identical under Python 3.9 and 3.12; each body its own max-min form of its profile's lines) agree two ways (each face swept by two independent families of curves) within 1.8e-35, every solid's measures from its faces within 1.4e-36 of its closed form, each body's within 1.2e-40 of its own (Pappus: its frusta's volumes and its lateral, disc and annulus areas), the pair identities within 1.2e-41, and Monte Carlo within 3.1 standard errors; its solid counts are the declared ones by rays at two resolutions; every stored vertex of the imported files lies on its profile's surfaces.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "point_tilt_fuse",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "a7a2708acf924ff59d2133922941e2715ee8e8f018ac6652a3328c36f127e0d0",
+      "differences": [
+        "rust_entity_counts"
+      ],
+      "reason": "BRepAlgoAPI's result is valid with the reference's solid count and measures. With the kernel, entity counts: faces, edges and vertices (14, 37, 24) where OCCT's unified are (14, 36, 23): the kernel's meetings of the turned body's cylinders and cones with the partner's faces split at their turning points into graphs (S9d's `Meet` pieces) and its whole circles rings without a seam vertex, where OCCT's are approximated edges split at its seams; the kernel's enclosures are within the reference.",
+      "independent_evidence": "chained_curved_boolean_reference.py's rows on the constructions OCCT was given (generate_turned_profiles_boolean_fixtures.py --check, identical under Python 3.9 and 3.12; each body its own max-min form of its profile's lines) agree two ways (each face swept by two independent families of curves) within 1.8e-35, every solid's measures from its faces within 1.4e-36 of its closed form, each body's within 1.2e-40 of its own (Pappus: its frusta's volumes and its lateral, disc and annulus areas), the pair identities within 1.2e-41, and Monte Carlo within 3.1 standard errors; its solid counts are the declared ones by rays at two resolutions; every stored vertex of the imported files lies on its profile's surfaces.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "point_tilt_cut",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "598992b8f7720bce49f28eb7ba66b637c674f08ef3f9614ff10ed6eccce9d707",
+      "differences": [
+        "rust_entity_counts"
+      ],
+      "reason": "BRepAlgoAPI's result is valid with the reference's solid count and measures. With the kernel, entity counts: faces, edges and vertices (11, 40, 26) where OCCT's unified are (11, 39, 25): the kernel's meetings of the turned body's cylinders and cones with the partner's faces split at their turning points into graphs (S9d's `Meet` pieces) and its whole circles rings without a seam vertex, where OCCT's are approximated edges split at its seams; the kernel's enclosures are within the reference.",
+      "independent_evidence": "chained_curved_boolean_reference.py's rows on the constructions OCCT was given (generate_turned_profiles_boolean_fixtures.py --check, identical under Python 3.9 and 3.12; each body its own max-min form of its profile's lines) agree two ways (each face swept by two independent families of curves) within 1.8e-35, every solid's measures from its faces within 1.4e-36 of its closed form, each body's within 1.2e-40 of its own (Pappus: its frusta's volumes and its lateral, disc and annulus areas), the pair identities within 1.2e-41, and Monte Carlo within 3.1 standard errors; its solid counts are the declared ones by rays at two resolutions; every stored vertex of the imported files lies on its profile's surfaces.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "point_box_common",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "ec99e44f11fb445ee95042b68f8e34f6775e584ec657a7152ebc3b88c3e3d7e5",
+      "differences": [
+        "rust_entity_counts"
+      ],
+      "reason": "BRepAlgoAPI's result is valid with the reference's solid count and measures. With the kernel, entity counts: faces, edges and vertices (5, 9, 6) where OCCT's unified are (5, 11, 8): the kernel's meetings of the turned body's cylinders and cones with the partner's faces split at their turning points into graphs (S9d's `Meet` pieces) and its whole circles rings without a seam vertex, where OCCT's are approximated edges split at its seams; the kernel's enclosures are within the reference.",
+      "independent_evidence": "chained_curved_boolean_reference.py's rows on the constructions OCCT was given (generate_turned_profiles_boolean_fixtures.py --check, identical under Python 3.9 and 3.12; each body its own max-min form of its profile's lines) agree two ways (each face swept by two independent families of curves) within 1.8e-35, every solid's measures from its faces within 1.4e-36 of its closed form, each body's within 1.2e-40 of its own (Pappus: its frusta's volumes and its lateral, disc and annulus areas), the pair identities within 1.2e-41, and Monte Carlo within 3.1 standard errors; its solid counts are the declared ones by rays at two resolutions; every stored vertex of the imported files lies on its profile's surfaces.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "waist_rod_fuse",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "03b31bd4729dfc1da56e6a5aff33890cc0f7b8138249fcd1e1c7945b1303ad82",
+      "differences": [
+        "centre",
+        "measure",
+        "rust_entity_counts"
+      ],
+      "reason": "BRepAlgoAPI's result is valid with the reference's solid count; the waist and a rod along x through its cone, crossing its cone and its cylinders off their axis in quartics: its volume 4.5e-07 and area 5.9e-07 relative and its centre 8.3e-08 of the case's size from the reference with BRepGProp's default integration, 8.9e-12, 2.3e-11 and 2.3e-12 with an adaptive accuracy of 1e-10 and of 1e-12 alike (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe): its faces are bounded by the Boolean's approximated intersection curves, its edges' tolerance up to 1.0e-07 (8 of its edges B-splines). With the kernel, entity counts: faces, edges and vertices (9, 13, 8) where OCCT's unified are (9, 16, 10): the kernel's meetings of the turned body's cylinders and cones with the partner's faces split at their turning points into graphs (S9d's `Meet` pieces) and its whole circles rings without a seam vertex, where OCCT's are approximated edges split at its seams; the kernel's enclosures are within the reference.",
+      "independent_evidence": "chained_curved_boolean_reference.py's rows on the constructions OCCT was given (generate_turned_profiles_boolean_fixtures.py --check, identical under Python 3.9 and 3.12; each body its own max-min form of its profile's lines) agree two ways (each face swept by two independent families of curves) within 1.8e-35, every solid's measures from its faces within 1.4e-36 of its closed form, each body's within 1.2e-40 of its own (Pappus: its frusta's volumes and its lateral, disc and annulus areas), the pair identities within 1.2e-41, and Monte Carlo within 3.1 standard errors; its solid counts are the declared ones by rays at two resolutions; every stored vertex of the imported files lies on its profile's surfaces.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "waist_rod_cut",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "dde77c11eec0a0c0465f3d915ec17dce13a113645677cbab769130c3e004a022",
+      "differences": [
+        "centre",
+        "measure",
+        "rust_entity_counts"
+      ],
+      "reason": "BRepAlgoAPI's result is valid with the reference's solid count; the waist and a rod along x through its cone, crossing its cone and its cylinders off their axis in quartics: its volume 5.0e-07 and area 7.8e-07 relative and its centre 9.6e-08 of the case's size from the reference with BRepGProp's default integration, 9.1e-12, 2.8e-12 and 2.5e-12 with an adaptive accuracy of 1e-10 and of 1e-12 alike (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe): its faces are bounded by the Boolean's approximated intersection curves, its edges' tolerance up to 1.0e-07 (8 of its edges B-splines). With the kernel, entity counts: faces, edges and vertices (6, 10, 6) where OCCT's unified are (6, 13, 8): the kernel's meetings of the turned body's cylinders and cones with the partner's faces split at their turning points into graphs (S9d's `Meet` pieces) and its whole circles rings without a seam vertex, where OCCT's are approximated edges split at its seams; the kernel's enclosures are within the reference.",
+      "independent_evidence": "chained_curved_boolean_reference.py's rows on the constructions OCCT was given (generate_turned_profiles_boolean_fixtures.py --check, identical under Python 3.9 and 3.12; each body its own max-min form of its profile's lines) agree two ways (each face swept by two independent families of curves) within 1.8e-35, every solid's measures from its faces within 1.4e-36 of its closed form, each body's within 1.2e-40 of its own (Pappus: its frusta's volumes and its lateral, disc and annulus areas), the pair identities within 1.2e-41, and Monte Carlo within 3.1 standard errors; its solid counts are the declared ones by rays at two resolutions; every stored vertex of the imported files lies on its profile's surfaces.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "waist_rod_common",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "1cb8d8d06b9dc6be97d28b27e34785bc14470cfdd0d1c8f7e3a72ef39d685bfa",
+      "differences": [
+        "centre",
+        "measure",
+        "rust_entity_counts"
+      ],
+      "reason": "BRepAlgoAPI's result is valid with the reference's solid count; the waist and a rod along x through its cone, crossing its cone and its cylinders off their axis in quartics: its volume 1.9e-06 and area 2.5e-07 relative and its centre 4.1e-07 of the case's size from the reference with BRepGProp's default integration, 3.0e-10, 2.1e-10 and 2.2e-11 with an adaptive accuracy of 1e-10 and of 1e-12 alike (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe): its faces are bounded by the Boolean's approximated intersection curves, its edges' tolerance up to 1.0e-07 (8 of its edges B-splines). With the kernel, entity counts: faces, edges and vertices (3, 3, 2) where OCCT's unified are (3, 5, 4): the kernel's meetings of the turned body's cylinders and cones with the partner's faces split at their turning points into graphs (S9d's `Meet` pieces) and its whole circles rings without a seam vertex, where OCCT's are approximated edges split at its seams; the kernel's enclosures are within the reference.",
+      "independent_evidence": "chained_curved_boolean_reference.py's rows on the constructions OCCT was given (generate_turned_profiles_boolean_fixtures.py --check, identical under Python 3.9 and 3.12; each body its own max-min form of its profile's lines) agree two ways (each face swept by two independent families of curves) within 1.8e-35, every solid's measures from its faces within 1.4e-36 of its closed form, each body's within 1.2e-40 of its own (Pappus: its frusta's volumes and its lateral, disc and annulus areas), the pair identities within 1.2e-41, and Monte Carlo within 3.1 standard errors; its solid counts are the declared ones by rays at two resolutions; every stored vertex of the imported files lies on its profile's surfaces.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "steps_ball_fuse",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "6fd5509ad64f46968cb32165d62467a9d4ce261553be15233d1026820921beda",
+      "differences": [
+        "rust_entity_counts"
+      ],
+      "reason": "BRepAlgoAPI's result is valid with the reference's solid count and measures. With the kernel, entity counts: faces, edges and vertices (9, 25, 17) where OCCT's unified are (9, 21, 13): the kernel's meetings of the turned body's cylinders and cones with the partner's faces split at their turning points into graphs (S9d's `Meet` pieces) and its whole circles rings without a seam vertex, where OCCT's are approximated edges split at its seams; the kernel's enclosures are within the reference.",
+      "independent_evidence": "chained_curved_boolean_reference.py's rows on the constructions OCCT was given (generate_turned_profiles_boolean_fixtures.py --check, identical under Python 3.9 and 3.12; each body its own max-min form of its profile's lines) agree two ways (each face swept by two independent families of curves) within 1.8e-35, every solid's measures from its faces within 1.4e-36 of its closed form, each body's within 1.2e-40 of its own (Pappus: its frusta's volumes and its lateral, disc and annulus areas), the pair identities within 1.2e-41, and Monte Carlo within 3.1 standard errors; its solid counts are the declared ones by rays at two resolutions; every stored vertex of the imported files lies on its profile's surfaces.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "steps_ball_cut",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "d29499061b7541326fc97d6b85b1bbcea83927ea600e9eddf0c28ece46614349",
+      "differences": [
+        "measure",
+        "rust_entity_counts"
+      ],
+      "reason": "BRepAlgoAPI's result is valid with the reference's solid count; the steps (a turned body: a chamfer, a step in, a widening cone) and a ball across the step's annulus, its sphere crossing the chamfer's and the widening cone's cones and the cylinders: its volume 2.9e-09 and area 8.8e-08 relative and its centre 5.9e-09 of the case's size from the reference with BRepGProp's default integration, 5.5e-12, 1.6e-11 and 2.3e-12 with an adaptive accuracy of 1e-10 and of 1e-12 alike (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe): its faces are bounded by the Boolean's approximated intersection curves, its edges' tolerance up to 2.1e-07 (8 of its edges B-splines). With the kernel, entity counts: faces, edges and vertices (9, 25, 17) where OCCT's unified are (9, 21, 13): the kernel's meetings of the turned body's cylinders and cones with the partner's faces split at their turning points into graphs (S9d's `Meet` pieces) and its whole circles rings without a seam vertex, where OCCT's are approximated edges split at its seams; the kernel's enclosures are within the reference.",
+      "independent_evidence": "chained_curved_boolean_reference.py's rows on the constructions OCCT was given (generate_turned_profiles_boolean_fixtures.py --check, identical under Python 3.9 and 3.12; each body its own max-min form of its profile's lines) agree two ways (each face swept by two independent families of curves) within 1.8e-35, every solid's measures from its faces within 1.4e-36 of its closed form, each body's within 1.2e-40 of its own (Pappus: its frusta's volumes and its lateral, disc and annulus areas), the pair identities within 1.2e-41, and Monte Carlo within 3.1 standard errors; its solid counts are the declared ones by rays at two resolutions; every stored vertex of the imported files lies on its profile's surfaces.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "steps_ball_common",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "038c359a44ab5ec313343456e8e0218b07100fd270bef346f3c794ef9dcb476f",
+      "differences": [
+        "centre",
+        "measure",
+        "rust_entity_counts"
+      ],
+      "reason": "BRepAlgoAPI's result is valid with the reference's solid count; the steps (a turned body: a chamfer, a step in, a widening cone) and a ball across the step's annulus, its sphere crossing the chamfer's and the widening cone's cones and the cylinders: its volume 1.7e-06 and area 5.4e-07 relative and its centre 1.6e-07 of the case's size from the reference with BRepGProp's default integration, 1.5e-10, 3.4e-10 and 1.2e-10 with an adaptive accuracy of 1e-10 and of 1e-12 alike (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe): its faces are bounded by the Boolean's approximated intersection curves, its edges' tolerance up to 2.1e-07 (8 of its edges B-splines). With the kernel, entity counts: faces, edges and vertices (4, 13, 10) where OCCT's unified are (4, 10, 7): the kernel's meetings of the turned body's cylinders and cones with the partner's faces split at their turning points into graphs (S9d's `Meet` pieces) and its whole circles rings without a seam vertex, where OCCT's are approximated edges split at its seams; the kernel's enclosures are within the reference.",
+      "independent_evidence": "chained_curved_boolean_reference.py's rows on the constructions OCCT was given (generate_turned_profiles_boolean_fixtures.py --check, identical under Python 3.9 and 3.12; each body its own max-min form of its profile's lines) agree two ways (each face swept by two independent families of curves) within 1.8e-35, every solid's measures from its faces within 1.4e-36 of its closed form, each body's within 1.2e-40 of its own (Pappus: its frusta's volumes and its lateral, disc and annulus areas), the pair identities within 1.2e-41, and Monte Carlo within 3.1 standard errors; its solid counts are the declared ones by rays at two resolutions; every stored vertex of the imported files lies on its profile's surfaces.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "box_crown_fuse",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "a43f2fbe235dd5dbea791e2f651a4be8d36f230df1cbb4e86ef7f32987a8cd0e",
+      "differences": [
+        "rust_entity_counts"
+      ],
+      "reason": "BRepAlgoAPI's result is valid with the reference's solid count and measures. With the kernel, entity counts: faces, edges and vertices (13, 31, 20) where OCCT's unified are (14, 34, 22): the kernel's meetings of the turned body's cylinders and cones with the partner's faces split at their turning points into graphs (S9d's `Meet` pieces) and its whole circles rings without a seam vertex, where OCCT's are approximated edges split at its seams; the kernel's enclosures are within the reference.",
+      "independent_evidence": "chained_curved_boolean_reference.py's rows on the constructions OCCT was given (generate_turned_profiles_boolean_fixtures.py --check, identical under Python 3.9 and 3.12; each body its own max-min form of its profile's lines) agree two ways (each face swept by two independent families of curves) within 1.8e-35, every solid's measures from its faces within 1.4e-36 of its closed form, each body's within 1.2e-40 of its own (Pappus: its frusta's volumes and its lateral, disc and annulus areas), the pair identities within 1.2e-41, and Monte Carlo within 3.1 standard errors; its solid counts are the declared ones by rays at two resolutions; every stored vertex of the imported files lies on its profile's surfaces.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "box_crown_cut",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "d971e0a36020209b54e9d06c98d63bf31db0c36b944d6a634d4fe0f63fc2cbaa",
+      "differences": [
+        "rust_entity_counts"
+      ],
+      "reason": "BRepAlgoAPI's result is valid with the reference's solid count and measures. With the kernel, entity counts: faces, edges and vertices (9, 21, 14) where OCCT's unified are (9, 23, 16): the kernel's meetings of the turned body's cylinders and cones with the partner's faces split at their turning points into graphs (S9d's `Meet` pieces) and its whole circles rings without a seam vertex, where OCCT's are approximated edges split at its seams; the kernel's enclosures are within the reference.",
+      "independent_evidence": "chained_curved_boolean_reference.py's rows on the constructions OCCT was given (generate_turned_profiles_boolean_fixtures.py --check, identical under Python 3.9 and 3.12; each body its own max-min form of its profile's lines) agree two ways (each face swept by two independent families of curves) within 1.8e-35, every solid's measures from its faces within 1.4e-36 of its closed form, each body's within 1.2e-40 of its own (Pappus: its frusta's volumes and its lateral, disc and annulus areas), the pair identities within 1.2e-41, and Monte Carlo within 3.1 standard errors; its solid counts are the declared ones by rays at two resolutions; every stored vertex of the imported files lies on its profile's surfaces.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "box_crown_common",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "8d7bb89c433152b3ecc053070f2733a1ec7e5b71e19ebdf7be96b308b7a1f716",
+      "differences": [
+        "rust_entity_counts"
+      ],
+      "reason": "BRepAlgoAPI's result is valid with the reference's solid count and measures. With the kernel, entity counts: faces, edges and vertices (8, 18, 12) where OCCT's unified are (8, 20, 14): the kernel's meetings of the turned body's cylinders and cones with the partner's faces split at their turning points into graphs (S9d's `Meet` pieces) and its whole circles rings without a seam vertex, where OCCT's are approximated edges split at its seams; the kernel's enclosures are within the reference.",
+      "independent_evidence": "chained_curved_boolean_reference.py's rows on the constructions OCCT was given (generate_turned_profiles_boolean_fixtures.py --check, identical under Python 3.9 and 3.12; each body its own max-min form of its profile's lines) agree two ways (each face swept by two independent families of curves) within 1.8e-35, every solid's measures from its faces within 1.4e-36 of its closed form, each body's within 1.2e-40 of its own (Pappus: its frusta's volumes and its lateral, disc and annulus areas), the pair identities within 1.2e-41, and Monte Carlo within 3.1 standard errors; its solid counts are the declared ones by rays at two resolutions; every stored vertex of the imported files lies on its profile's surfaces.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    }
+  ]
+}

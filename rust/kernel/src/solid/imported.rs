@@ -76,9 +76,12 @@
 //! a translated part) is `Degenerate` on import before any construction is
 //! tried (`near_flat_cone`), and a body whose torus faces join their
 //! neighbours smoothly (a turned part's fillets and rounds, the tangency read
-//! off the stored surfaces) is refused by name (`smooth_torus`); a turned
-//! body is no construction of the kernel's (S9e.4b.4d.2, not scheduled).
-//! Every other body is S9e.4b's.
+//! off the stored surfaces) is refused by name (`smooth_torus`).
+//! S9e.4b.4d.2a: a body of several primitives no chain matches that is a
+//! turned body of cylinders, cones and planes meeting at corners is the
+//! lattice of its primitives (`turned`: the max-min form of its profile's
+//! lines, a chain's tree), its cones' exact models on its axis. Every other
+//! body is S9e.4b's.
 use super::{replayable, Construction, Context, Solid};
 use crate::history::{History, Relation};
 use crate::identity::{
@@ -98,6 +101,8 @@ use crate::{
 use num_rational::BigRational as R;
 use std::cell::RefCell;
 use std::collections::BTreeMap;
+
+mod turned;
 
 /// An imported solid's construction and names (S9e.4a).
 #[derive(Debug, Clone, PartialEq)]
@@ -469,8 +474,40 @@ impl Solid {
     /// one it gave before); the first whose model matches the stored topology,
     /// else the first
     /// refusal an earlier chain's Booleans give, else the body's own tangency,
-    /// else S9e.4b.4b.2b.2b.3b's.
+    /// else S9e.4b.4b.2b.2b.3b's. S9e.4b.4d.2a: where every chain is refused, a
+    /// turned body of corners as the lattice of its primitives (`turned`),
+    /// else the chains' refusal.
     fn imported_primitives(
+        context: &Context,
+        topology: Topology,
+        resolution: Tolerance,
+    ) -> Result<(Self, History)> {
+        let refusal = match Self::imported_chains(context, topology.clone(), resolution) {
+            Err(e) => e,
+            done => return done,
+        };
+        // S9e.4b.4d.2a: then a turned body of corners, the lattice of its
+        // primitives; where it is none, or its model is refused, the body's
+        // refusal as before.
+        let op = construction_operation(context.operation);
+        if let Ok(p) = turned::turned_piece(&topology, resolution, op) {
+            let done = Self::imported_as(
+                context,
+                topology,
+                resolution,
+                Recognized::Piece(Box::new(p)),
+                BTreeMap::new(),
+            );
+            if done.is_ok() {
+                return done;
+            }
+        }
+        Err(refusal)
+    }
+
+    /// [`Solid::imported_primitives`]'s chains of primitives (before
+    /// S9e.4b.4d.2a's turned bodies).
+    fn imported_chains(
         context: &Context,
         topology: Topology,
         resolution: Tolerance,
@@ -706,6 +743,14 @@ impl Imported {
             }
             Recognized::Polyhedron => Recognized::Polyhedron,
             // S9e.4b.3a: read off the moved stored topology again.
+            // S9e.4b.4d.2a: a turned body's lattice.
+            Recognized::Piece(p) if p.chain && p.choice == turned::TURNED => {
+                Recognized::Piece(Box::new(turned::turned_piece(
+                    &moved,
+                    tolerance,
+                    p.primitive.operation,
+                )?))
+            }
             Recognized::Piece(p) if p.chain => Recognized::Piece(Box::new(primitives_piece(
                 &moved,
                 tolerance,

@@ -531,10 +531,22 @@ pub(super) fn plane_cone(
 /// The exact model of a cone or frustum; `seam` picks the rational point
 /// of the rims their vertices lie at.
 pub(super) fn model(solid: &Solid, op: Operand, seam: &R) -> Result<Prism> {
-    let Construction::Cone { bottom, top, .. } = &solid.construction else {
+    let Construction::Cone {
+        bottom, top, axis, ..
+    } = &solid.construction
+    else {
         unreachable!("a cone");
     };
-    let f = Affine::new(&solid.frame)?;
+    // S9e.4b.4d.2a: a turned body's cone at its height on the axis frame,
+    // exactly.
+    let f = match axis {
+        Some((frame, lo)) => {
+            let mut f = Affine::new(frame)?;
+            f.o = f.point(&zero(), &zero(), &q(*lo));
+            f
+        }
+        None => Affine::new(&solid.frame)?,
+    };
     let t = &solid.topology;
     let id = |slot: Slot| {
         t.id_of(slot)
