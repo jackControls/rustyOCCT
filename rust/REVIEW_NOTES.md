@@ -13425,7 +13425,13 @@ Decisions for S9, recorded before its code (2026-09-28):
     `b48e9acf`'s 9.181 T (0.09 % fewer); the Python unit test (7 tests).
     Open: S9e.4b.4d.2b and 2c; a coaxial ruled pair on a turned frame met as
     a plane section rather than a quartic (the moved bodies' triples'
-    budget); the campaigns and the capture's Linux record.
+    budget). Merged and verified at `7b43d0b4` (`rust-kernel`); campaigns
+    there (600 s each, sampled replays, every switch on): `boolean` clean,
+    396 runs, the slowest input 31 s; `split` clean, 1,368 runs. The
+    capture's Linux record from run 38693933805 (the workflow "Rust Boolean
+    captures on Linux" at `7b43d0b4`): every case within rounding of the
+    macOS capture (1.1e-12 at most), 13 reviews copied under the Linux
+    rows' fingerprints by `take_platform_records.py`.
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces
