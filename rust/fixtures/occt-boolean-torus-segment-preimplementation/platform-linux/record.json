@@ -1,0 +1,7 @@
+{
+  "platform": "linux",
+  "source": "GitHub Actions run 38670188123 (commit 14a326de), ubuntu-24.04, source-pinned OCCT 8.1.0",
+  "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+  "observations_sha256": "f595074bce8a1968b64f50379866d35b24b1832ab91aab5f9c0dda11777796f2",
+  "review": "The same cases, statuses, validity, warnings, solid counts and face, edge and vertex counts (before and after unifying) as the macOS arm64 capture for every Boolean; volumes, areas and centres within 9.2e-14 of max(1, |value|) of the capture's, except that column_ih_cut's four equal corner pieces (3 faces, 3 edges, 2 vertices, centred at (+-0.7252, +-0.7252)) come in another order: matched in any order every value is within 6.7e-15 of the capture's (in the listed order a centre coordinate differs by 1.5, the largest deviation). The same solids; the case matches the reference on both platforms (no review). Every Linux result valid without warnings."
+}

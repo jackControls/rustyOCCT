@@ -1,0 +1,7 @@
+{
+  "platform": "linux",
+  "source": "GitHub Actions run 38670188123 (commit 14a326de), ubuntu-24.04, source-pinned OCCT 8.1.0",
+  "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+  "observations_sha256": "577e278bf7f4c77d9482a07721eaea9ea7766596e842b5668c3822dc13fdfdc5",
+  "review": "The same cases, statuses, validity, warnings, solid counts and face, edge and vertex counts (before and after unifying) as the macOS arm64 capture for every Boolean; volumes, areas and centres within 8.8e-14 of max(1, |value|) of the capture's but for three cases. frame_cut's three equal pieces (3 faces, 3 edges, 2 vertices, centred at (0, +-3.346) and (-3.346, 0)) and corner_caps_common's four equal caps (centred at (+-0.774, +-0.774)) come in another order: matched in any order every value is within 1.2e-14 and 5.0e-15 of the capture's (in the listed order a centre coordinate differs by up to 3.3 and 1.5, the largest deviations): the same solids, their reviewed measure differences (1.0e-06 and 2.4e-07 from the reference) the same on both platforms within 3.9e-15, with Linux reviews by hand. villarceau_common (declared degenerate) is 6.3e-09 from the capture: OCCT's approximated Villarceau circles landing differently, the Linux result 1.7e-08 in volume and 5.6e-08 in area from the reference against 2.2e-08 and 6.2e-08 on macOS (Linux closer), with a Linux review by hand (occt-boolean-torus-divergences.json). Every Linux result valid without warnings."
+}

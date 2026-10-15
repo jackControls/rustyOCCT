@@ -1,0 +1,7 @@
+{
+  "platform": "linux",
+  "source": "GitHub Actions run 38670188123 (commit 14a326de), ubuntu-24.04, source-pinned OCCT 8.1.0",
+  "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+  "observations_sha256": "62c781f8e86762e9d8d1f486c6d45fa475b3f2f580ba0e64b5c640b234689277",
+  "review": "The same cases, statuses, validity, warnings, solid counts and face, edge and vertex counts (before and after unifying) as the macOS arm64 capture for every Boolean; volumes, areas and centres within 2.6e-12 of max(1, |value|) of the capture's but for 12 cases beyond the 1e-11 of rounding, by 3.3e-11 (equal_offset_fuse) to 1.1e-07 (oblique_common): results whose default BRepGProp measures lie 1.3e-06 to 3.0e-04 from the reference on macOS (faces bounded by the Boolean's approximated intersection curves), OCCT's approximation landing differently on Linux. Each has a Linux review by hand (occt-boolean-procedural-divergences.json) with the same differences as on macOS: the platforms' errors from the reference differ by at most 7.1e-04 of the macOS error, Linux closer in 4 cases and macOS in 8. Every Linux result valid without warnings."
+}

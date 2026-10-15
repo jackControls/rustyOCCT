@@ -1,0 +1,7 @@
+{
+  "platform": "linux",
+  "source": "GitHub Actions run 38670188123 (commit 14a326de), ubuntu-24.04, source-pinned OCCT 8.1.0",
+  "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+  "observations_sha256": "36ce3a869ed611e0b96ad60aa5f0aa05b62608aacd7484b5c60c09ce03adc5cf",
+  "review": "The same cases, statuses, validity, warnings, solid counts and face, edge and vertex counts (before and after unifying) as the macOS arm64 capture for every Boolean; volumes, areas and centres within 2.0e-12 of max(1, |value|) of the capture's, except that pipe_ends_cut's two end pieces (mirror images about z = 0, each of volume 5.2359877559830 and 3 faces, 5 edges, 3 vertices) come in the other order: matched in either order every value is within 1.2e-15 of the capture's (in the listed order the centres' z, -2.6156 and 2.6156, differ by 2, the largest deviation). The same solids; the case matches the reference on both platforms (no review). Every Linux result valid without warnings."
+}

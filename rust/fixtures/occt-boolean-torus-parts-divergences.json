@@ -485,6 +485,491 @@
       "reason": "BRepAlgoAPI's result for a quarter wedge in LEAN against a sphere across its start disc's rim is off the reference: its volume 1.2e-04 and area 9.7e-06 relative and its centre 2.3e-05 of the case's size away with BRepGProp's default integration, and 1.6e-04, 5.1e-05 and 2.2e-05 with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe, unchanged at 1e-12): not the measure but the geometry, the wedge's rim crossings and sections in its turned frame. The result and its solid are invalid under BRepCheck_Analyzer. Entity counts (S9d.4c's kernel): BRepAlgoAPI's unified solid of 4 faces, 11 edges and 8 vertices against the kernel's of 3 faces, 10 edges and 8 vertices: the same faces, edges and vertices differing where each splits its curves (the kernel's meetings in exact `Curve3::Toric` pieces over either of the torus's angles, switched at rational parameters, and a part's rims and a cap's circles split at their crossings; OCCT's intersection curves, B-splines, at its own points). The kernel's result validates and its volume, area and centre lie inside the reference's, its enclosures within 1e-9.",
       "independent_evidence": "torus_parts_boolean_reference.py's rows (generate_torus_parts_boolean_fixtures.py --check) agree with closed forms of the 9 coaxial pairs (one quadrature along the torus's axis of both inputs' radial intervals, the walls by their own elements, a wedge by its turn and its meridian discs) within 6.9e-40 in exact frames and 3.8e-17 in turned ones, a half and the other half against the tool as the whole torus (S9d.4b.2's reference) and a cap or zone and the rest of its sphere against the torus as the whole sphere within 4.3e-42, every operation two ways (each face swept by two independent families of curves) within 1.5e-31, both inputs' measures from their faces within 8.3e-35 of their closed forms, inclusion and exclusion within 1.8e-35, the area identity within 8.3e-35, and Monte Carlo within 2.5 standard errors.",
       "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "zone_coax_fuse",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "612c86ea3dcdb4e01dfe728d32ed8460e0b70ace0905fcc56172dcc13e1816de",
+      "differences": [
+        "rust_entity_counts"
+      ],
+      "reason": "The native result agrees with the reference (volume, area and centre within the allowance). Entity counts (S9d.4c's kernel): BRepAlgoAPI's unified solid of 6 faces, 9 edges and 5 vertices against the kernel's of 5 faces, 7 edges and 4 vertices: both meet in circles about the axis (the kernel's ring edges, `Curve3::Circle`); the bands of the torus or of the sphere between them cross OCCT's seam parallels or meridians, where BRepAlgoAPI's unified solid keeps a band as faces split at its seams, while the kernel's faces are whole (its synthesized counts add a seam per periodic face). The kernel's result validates and its volume, area and centre lie inside the reference's, its enclosures within 1e-9.",
+      "independent_evidence": "torus_parts_boolean_reference.py's rows (generate_torus_parts_boolean_fixtures.py --check) agree with closed forms of the 9 coaxial pairs (one quadrature along the torus's axis of both inputs' radial intervals, the walls by their own elements, a wedge by its turn and its meridian discs) within 6.9e-40 in exact frames and 3.8e-17 in turned ones, a half and the other half against the tool as the whole torus (S9d.4b.2's reference) and a cap or zone and the rest of its sphere against the torus as the whole sphere within 4.3e-42, every operation two ways (each face swept by two independent families of curves) within 1.5e-31, both inputs' measures from their faces within 8.3e-35 of their closed forms, inclusion and exclusion within 1.8e-35, the area identity within 8.3e-35, and Monte Carlo within 2.5 standard errors.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 38670188123 at 14a326de); source-pinned OCCT 8.1.0; the same difference as the macOS review, the native values within 1.4e-16 of max(1, |value|) of the macOS capture's"
+    },
+    {
+      "case": "zone_coax_cut",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "32fb66b620cce4b139d8581e289f7f3d3e414d28bc14c14963ef9b81a9d3d5c1",
+      "differences": [
+        "rust_entity_counts"
+      ],
+      "reason": "The native result agrees with the reference (volume, area and centre within the allowance). Entity counts (S9d.4c's kernel): BRepAlgoAPI's unified solid of 3 faces, 6 edges and 3 vertices against the kernel's of 2 faces, 4 edges and 2 vertices: both meet in circles about the axis (the kernel's ring edges, `Curve3::Circle`); the bands of the torus or of the sphere between them cross OCCT's seam parallels or meridians, where BRepAlgoAPI's unified solid keeps a band as faces split at its seams, while the kernel's faces are whole (its synthesized counts add a seam per periodic face). The kernel's result validates and its volume, area and centre lie inside the reference's, its enclosures within 1e-9.",
+      "independent_evidence": "torus_parts_boolean_reference.py's rows (generate_torus_parts_boolean_fixtures.py --check) agree with closed forms of the 9 coaxial pairs (one quadrature along the torus's axis of both inputs' radial intervals, the walls by their own elements, a wedge by its turn and its meridian discs) within 6.9e-40 in exact frames and 3.8e-17 in turned ones, a half and the other half against the tool as the whole torus (S9d.4b.2's reference) and a cap or zone and the rest of its sphere against the torus as the whole sphere within 4.3e-42, every operation two ways (each face swept by two independent families of curves) within 1.5e-31, both inputs' measures from their faces within 8.3e-35 of their closed forms, inclusion and exclusion within 1.8e-35, the area identity within 8.3e-35, and Monte Carlo within 2.5 standard errors.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 38670188123 at 14a326de); source-pinned OCCT 8.1.0; the same difference as the macOS review, the native values within 2.8e-15 of max(1, |value|) of the macOS capture's"
+    },
+    {
+      "case": "cap_coax_cut",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "cedb2219d0e1eaa6d69beb0cdefe5a1680dd1d7d9bd73792c446439bef621ef6",
+      "differences": [
+        "rust_entity_counts"
+      ],
+      "reason": "The native result agrees with the reference (volume, area and centre within the allowance). Entity counts (S9d.4c's kernel): BRepAlgoAPI's unified solid of 4 faces, 7 edges and 4 vertices against the kernel's of 3 faces, 5 edges and 3 vertices: both meet in circles about the axis (the kernel's ring edges, `Curve3::Circle`); the bands of the torus or of the sphere between them cross OCCT's seam parallels or meridians, where BRepAlgoAPI's unified solid keeps a band as faces split at its seams, while the kernel's faces are whole (its synthesized counts add a seam per periodic face). The kernel's result validates and its volume, area and centre lie inside the reference's, its enclosures within 1e-9.",
+      "independent_evidence": "torus_parts_boolean_reference.py's rows (generate_torus_parts_boolean_fixtures.py --check) agree with closed forms of the 9 coaxial pairs (one quadrature along the torus's axis of both inputs' radial intervals, the walls by their own elements, a wedge by its turn and its meridian discs) within 6.9e-40 in exact frames and 3.8e-17 in turned ones, a half and the other half against the tool as the whole torus (S9d.4b.2's reference) and a cap or zone and the rest of its sphere against the torus as the whole sphere within 4.3e-42, every operation two ways (each face swept by two independent families of curves) within 1.5e-31, both inputs' measures from their faces within 8.3e-35 of their closed forms, inclusion and exclusion within 1.8e-35, the area identity within 8.3e-35, and Monte Carlo within 2.5 standard errors.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 38670188123 at 14a326de); source-pinned OCCT 8.1.0; the same difference as the macOS review, the native values within 6.4e-16 of max(1, |value|) of the macOS capture's"
+    },
+    {
+      "case": "cap_top_fuse",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "af0d2a40d66aca88c02a63ccadb6f145d90229f57183281b45d83a3e3a941b3d",
+      "differences": [
+        "measure",
+        "rust_entity_counts"
+      ],
+      "reason": "BRepGProp's default integration on a cap above latitude 1/2 on the tube's top, its rim of surd radius across the tube: the native result is valid with the reference's solid count, its volume 1.6e-08 and area 6.1e-08 relative and its centre 4.4e-09 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe, unchanged at 1e-12) is within 8.1e-12 in volume, 2.2e-11 in area (relative) and 6.0e-12 in centre. The geometry agrees with the reference; the default measure on faces bounded by B-spline sections does not reach the allowance. Entity counts (S9d.4c's kernel): BRepAlgoAPI's unified solid of 4 faces, 14 edges and 9 vertices against the kernel's of 4 faces, 9 edges and 6 vertices: the same faces, edges and vertices differing where each splits its curves (the kernel's meetings in exact `Curve3::Toric` pieces over either of the torus's angles, switched at rational parameters, and a part's rims and a cap's circles split at their crossings; OCCT's intersection curves, B-splines, at its own points). The kernel's result validates and its volume, area and centre lie inside the reference's, its enclosures within 1e-9.",
+      "independent_evidence": "torus_parts_boolean_reference.py's rows (generate_torus_parts_boolean_fixtures.py --check) agree with closed forms of the 9 coaxial pairs (one quadrature along the torus's axis of both inputs' radial intervals, the walls by their own elements, a wedge by its turn and its meridian discs) within 6.9e-40 in exact frames and 3.8e-17 in turned ones, a half and the other half against the tool as the whole torus (S9d.4b.2's reference) and a cap or zone and the rest of its sphere against the torus as the whole sphere within 4.3e-42, every operation two ways (each face swept by two independent families of curves) within 1.5e-31, both inputs' measures from their faces within 8.3e-35 of their closed forms, inclusion and exclusion within 1.8e-35, the area identity within 8.3e-35, and Monte Carlo within 2.5 standard errors.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 38670188123 at 14a326de); source-pinned OCCT 8.1.0; the same difference as the macOS review, the native values within 4.3e-16 of max(1, |value|) of the macOS capture's"
+    },
+    {
+      "case": "cap_top_cut",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "4617a9849f93f63aa3f5dfadb39c8b3e8553dfc2ae449dd933035712027bdf34",
+      "differences": [
+        "measure",
+        "rust_entity_counts"
+      ],
+      "reason": "BRepGProp's default integration on a cap above latitude 1/2 on the tube's top, its rim of surd radius across the tube: the native result is valid with the reference's solid count, its volume 1.9e-08 and area 6.3e-08 relative and its centre 5.0e-09 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe, unchanged at 1e-12) is within 8.6e-12 in volume, 1.8e-11 in area (relative) and 6.4e-12 in centre. The geometry agrees with the reference; the default measure on faces bounded by B-spline sections does not reach the allowance. Entity counts (S9d.4c's kernel): BRepAlgoAPI's unified solid of 4 faces, 11 edges and 7 vertices against the kernel's of 4 faces, 6 edges and 4 vertices: the same faces, edges and vertices differing where each splits its curves (the kernel's meetings in exact `Curve3::Toric` pieces over either of the torus's angles, switched at rational parameters, and a part's rims and a cap's circles split at their crossings; OCCT's intersection curves, B-splines, at its own points). The kernel's result validates and its volume, area and centre lie inside the reference's, its enclosures within 1e-9.",
+      "independent_evidence": "torus_parts_boolean_reference.py's rows (generate_torus_parts_boolean_fixtures.py --check) agree with closed forms of the 9 coaxial pairs (one quadrature along the torus's axis of both inputs' radial intervals, the walls by their own elements, a wedge by its turn and its meridian discs) within 6.9e-40 in exact frames and 3.8e-17 in turned ones, a half and the other half against the tool as the whole torus (S9d.4b.2's reference) and a cap or zone and the rest of its sphere against the torus as the whole sphere within 4.3e-42, every operation two ways (each face swept by two independent families of curves) within 1.5e-31, both inputs' measures from their faces within 8.3e-35 of their closed forms, inclusion and exclusion within 1.8e-35, the area identity within 8.3e-35, and Monte Carlo within 2.5 standard errors.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 38670188123 at 14a326de); source-pinned OCCT 8.1.0; the same difference as the macOS review, the native values within 4.5e-16 of max(1, |value|) of the macOS capture's"
+    },
+    {
+      "case": "cap_top_common",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "33c5af545947e7e28eaccda6771a13fe862a5ce8c83e35537c4a74761ac96e58",
+      "differences": [
+        "measure"
+      ],
+      "reason": "BRepGProp's default integration on a cap above latitude 1/2 on the tube's top, its rim of surd radius across the tube: the native result is valid with the reference's solid count, its volume 1.9e-07 and area 1.1e-07 relative and its centre 4.7e-09 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe, unchanged at 1e-12) is within 3.0e-09 in volume, 8.4e-10 in area (relative) and 9.7e-12 in centre. The geometry agrees with the reference; the default measure on faces bounded by B-spline sections does not reach the allowance.",
+      "independent_evidence": "torus_parts_boolean_reference.py's rows (generate_torus_parts_boolean_fixtures.py --check) agree with closed forms of the 9 coaxial pairs (one quadrature along the torus's axis of both inputs' radial intervals, the walls by their own elements, a wedge by its turn and its meridian discs) within 6.9e-40 in exact frames and 3.8e-17 in turned ones, a half and the other half against the tool as the whole torus (S9d.4b.2's reference) and a cap or zone and the rest of its sphere against the torus as the whole sphere within 4.3e-42, every operation two ways (each face swept by two independent families of curves) within 1.5e-31, both inputs' measures from their faces within 8.3e-35 of their closed forms, inclusion and exclusion within 1.8e-35, the area identity within 8.3e-35, and Monte Carlo within 2.5 standard errors.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 38670188123 at 14a326de); source-pinned OCCT 8.1.0; the same difference as the macOS review, the native values within 1.4e-15 of max(1, |value|) of the macOS capture's"
+    },
+    {
+      "case": "zone_side_cut",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "ac0925ac9adac75b773004eb089f63eeee23e03991b084bdab3b7da80955a4ce",
+      "differences": [
+        "centre",
+        "measure",
+        "rust_entity_counts"
+      ],
+      "reason": "BRepGProp's default integration on a zone about x across the tube's outer side, its disc cutting the tube and its rim crossing the disc's spiric loop: the native result is valid with the reference's solid count, its volume 5.8e-07 and area 3.0e-07 relative and its centre 2.0e-08 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe, unchanged at 1e-12) is within 1.8e-09 in volume, 2.0e-09 in area (relative) and 1.3e-10 in centre. The geometry agrees with the reference; the default measure on faces bounded by B-spline sections does not reach the allowance. Entity counts (S9d.4c's kernel): BRepAlgoAPI's unified solid of 4 faces, 12 edges and 8 vertices against the kernel's of 4 faces, 8 edges and 6 vertices: the same faces, edges and vertices differing where each splits its curves (the kernel's meetings in exact `Curve3::Toric` pieces over either of the torus's angles, switched at rational parameters, and a part's rims and a cap's circles split at their crossings; OCCT's intersection curves, B-splines, at its own points). The kernel's result validates and its volume, area and centre lie inside the reference's, its enclosures within 1e-9.",
+      "independent_evidence": "torus_parts_boolean_reference.py's rows (generate_torus_parts_boolean_fixtures.py --check) agree with closed forms of the 9 coaxial pairs (one quadrature along the torus's axis of both inputs' radial intervals, the walls by their own elements, a wedge by its turn and its meridian discs) within 6.9e-40 in exact frames and 3.8e-17 in turned ones, a half and the other half against the tool as the whole torus (S9d.4b.2's reference) and a cap or zone and the rest of its sphere against the torus as the whole sphere within 4.3e-42, every operation two ways (each face swept by two independent families of curves) within 1.5e-31, both inputs' measures from their faces within 8.3e-35 of their closed forms, inclusion and exclusion within 1.8e-35, the area identity within 8.3e-35, and Monte Carlo within 2.5 standard errors.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 38670188123 at 14a326de); source-pinned OCCT 8.1.0; the same difference as the macOS review, the native values within 1.9e-15 of max(1, |value|) of the macOS capture's"
+    },
+    {
+      "case": "zone_side_common",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "c4cc61ddc51f452e20d06bfaa0e4f611b6ace11c89c962f49855178f1a0020a8",
+      "differences": [
+        "measure",
+        "rust_entity_counts"
+      ],
+      "reason": "BRepGProp's default integration on a zone about x across the tube's outer side, its disc cutting the tube and its rim crossing the disc's spiric loop: the native result is valid with the reference's solid count, its volume 2.9e-07 and area 2.1e-07 relative and its centre 1.5e-08 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe, unchanged at 1e-12) is within 3.3e-10 in volume, 2.3e-09 in area (relative) and 1.1e-10 in centre. The geometry agrees with the reference; the default measure on faces bounded by B-spline sections does not reach the allowance. Entity counts (S9d.4c's kernel): BRepAlgoAPI's unified solid of 7 faces, 14 edges and 9 vertices against the kernel's of 4 faces, 8 edges and 6 vertices: the same faces, edges and vertices differing where each splits its curves (the kernel's meetings in exact `Curve3::Toric` pieces over either of the torus's angles, switched at rational parameters, and a part's rims and a cap's circles split at their crossings; OCCT's intersection curves, B-splines, at its own points). The kernel's result validates and its volume, area and centre lie inside the reference's, its enclosures within 1e-9.",
+      "independent_evidence": "torus_parts_boolean_reference.py's rows (generate_torus_parts_boolean_fixtures.py --check) agree with closed forms of the 9 coaxial pairs (one quadrature along the torus's axis of both inputs' radial intervals, the walls by their own elements, a wedge by its turn and its meridian discs) within 6.9e-40 in exact frames and 3.8e-17 in turned ones, a half and the other half against the tool as the whole torus (S9d.4b.2's reference) and a cap or zone and the rest of its sphere against the torus as the whole sphere within 4.3e-42, every operation two ways (each face swept by two independent families of curves) within 1.5e-31, both inputs' measures from their faces within 8.3e-35 of their closed forms, inclusion and exclusion within 1.8e-35, the area identity within 8.3e-35, and Monte Carlo within 2.5 standard errors.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 38670188123 at 14a326de); source-pinned OCCT 8.1.0; the same difference as the macOS review, the native values within 3.3e-15 of max(1, |value|) of the macOS capture's"
+    },
+    {
+      "case": "dome_lean_cut",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "e58c8dc2295ccebf2d0fd6d037f47469d284fb55a6106a944e69bdf791c73251",
+      "differences": [
+        "measure",
+        "rust_entity_counts"
+      ],
+      "reason": "BRepGProp's default integration on a hemisphere in LEAN on the tube's top (its rim on a basis of unequal lengths): the native result is valid with the reference's solid count, its volume 7.0e-08 and area 7.0e-08 relative and its centre 1.6e-08 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe, unchanged at 1e-12) is within 7.1e-10 in volume, 3.7e-09 in area (relative) and 2.3e-10 in centre. The geometry agrees with the reference; the default measure on faces bounded by B-spline sections does not reach the allowance. Entity counts (S9d.4c's kernel): BRepAlgoAPI's unified solid of 3 faces, 9 edges and 6 vertices against the kernel's of 3 faces, 5 edges and 4 vertices: the same faces, edges and vertices differing where each splits its curves (the kernel's meetings in exact `Curve3::Toric` pieces over either of the torus's angles, switched at rational parameters, and a part's rims and a cap's circles split at their crossings; OCCT's intersection curves, B-splines, at its own points). The kernel's result validates and its volume, area and centre lie inside the reference's, its enclosures within 1e-9.",
+      "independent_evidence": "torus_parts_boolean_reference.py's rows (generate_torus_parts_boolean_fixtures.py --check) agree with closed forms of the 9 coaxial pairs (one quadrature along the torus's axis of both inputs' radial intervals, the walls by their own elements, a wedge by its turn and its meridian discs) within 6.9e-40 in exact frames and 3.8e-17 in turned ones, a half and the other half against the tool as the whole torus (S9d.4b.2's reference) and a cap or zone and the rest of its sphere against the torus as the whole sphere within 4.3e-42, every operation two ways (each face swept by two independent families of curves) within 1.5e-31, both inputs' measures from their faces within 8.3e-35 of their closed forms, inclusion and exclusion within 1.8e-35, the area identity within 8.3e-35, and Monte Carlo within 2.5 standard errors.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 38670188123 at 14a326de); source-pinned OCCT 8.1.0; the same difference as the macOS review, the native values within 4.4e-16 of max(1, |value|) of the macOS capture's"
+    },
+    {
+      "case": "dome_lean_common",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "094d0f0e5a36346630879fd96a443328edc46a892d9a76632e2ddccfd3f6f922",
+      "differences": [
+        "measure",
+        "rust_entity_counts"
+      ],
+      "reason": "BRepGProp's default integration on a hemisphere in LEAN on the tube's top (its rim on a basis of unequal lengths): the native result is valid with the reference's solid count, its volume 7.2e-08 and area 2.8e-08 relative and its centre 7.7e-09 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe, unchanged at 1e-12) is within 8.8e-09 in volume, 2.1e-08 in area (relative) and 1.2e-09 in centre. The geometry agrees with the reference; the default measure on faces bounded by B-spline sections does not reach the allowance. Entity counts (S9d.4c's kernel): BRepAlgoAPI's unified solid of 3 faces, 6 edges and 5 vertices against the kernel's of 3 faces, 5 edges and 4 vertices: the same faces, edges and vertices differing where each splits its curves (the kernel's meetings in exact `Curve3::Toric` pieces over either of the torus's angles, switched at rational parameters, and a part's rims and a cap's circles split at their crossings; OCCT's intersection curves, B-splines, at its own points). The kernel's result validates and its volume, area and centre lie inside the reference's, its enclosures within 1e-9.",
+      "independent_evidence": "torus_parts_boolean_reference.py's rows (generate_torus_parts_boolean_fixtures.py --check) agree with closed forms of the 9 coaxial pairs (one quadrature along the torus's axis of both inputs' radial intervals, the walls by their own elements, a wedge by its turn and its meridian discs) within 6.9e-40 in exact frames and 3.8e-17 in turned ones, a half and the other half against the tool as the whole torus (S9d.4b.2's reference) and a cap or zone and the rest of its sphere against the torus as the whole sphere within 4.3e-42, every operation two ways (each face swept by two independent families of curves) within 1.5e-31, both inputs' measures from their faces within 8.3e-35 of their closed forms, inclusion and exclusion within 1.8e-35, the area identity within 8.3e-35, and Monte Carlo within 2.5 standard errors.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 38670188123 at 14a326de); source-pinned OCCT 8.1.0; the same difference as the macOS review, the native values within 4.8e-16 of max(1, |value|) of the macOS capture's"
+    },
+    {
+      "case": "zone_tilt_cut",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "f7bfc2ddde9e83f651019e50ef25b42216eafe47a24618a656629a24345d29ac",
+      "differences": [
+        "centre",
+        "measure",
+        "rust_entity_counts"
+      ],
+      "reason": "BRepGProp's default integration on a zone against the torus in TILT: the native result is valid with the reference's solid count, its volume 2.3e-06 and area 2.4e-06 relative and its centre 5.8e-07 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe, unchanged at 1e-12) is within 2.5e-09 in volume, 2.1e-10 in area (relative) and 4.0e-10 in centre. The geometry agrees with the reference; the default measure on faces bounded by B-spline sections does not reach the allowance. Entity counts (S9d.4c's kernel): BRepAlgoAPI's unified solid of 4 faces, 11 edges and 7 vertices against the kernel's of 4 faces, 11 edges and 9 vertices: the same faces, edges and vertices differing where each splits its curves (the kernel's meetings in exact `Curve3::Toric` pieces over either of the torus's angles, switched at rational parameters, and a part's rims and a cap's circles split at their crossings; OCCT's intersection curves, B-splines, at its own points). The kernel's result validates and its volume, area and centre lie inside the reference's, its enclosures within 1e-9.",
+      "independent_evidence": "torus_parts_boolean_reference.py's rows (generate_torus_parts_boolean_fixtures.py --check) agree with closed forms of the 9 coaxial pairs (one quadrature along the torus's axis of both inputs' radial intervals, the walls by their own elements, a wedge by its turn and its meridian discs) within 6.9e-40 in exact frames and 3.8e-17 in turned ones, a half and the other half against the tool as the whole torus (S9d.4b.2's reference) and a cap or zone and the rest of its sphere against the torus as the whole sphere within 4.3e-42, every operation two ways (each face swept by two independent families of curves) within 1.5e-31, both inputs' measures from their faces within 8.3e-35 of their closed forms, inclusion and exclusion within 1.8e-35, the area identity within 8.3e-35, and Monte Carlo within 2.5 standard errors.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 38670188123 at 14a326de); source-pinned OCCT 8.1.0; the same difference as the macOS review, the native values within 5.8e-12 of max(1, |value|) of the macOS capture's"
+    },
+    {
+      "case": "zone_tilt_common",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "395743c77813b34a6fb72e26e77bef99a4f5ca17eca805a0710e797baaffbabb",
+      "differences": [
+        "centre",
+        "measure",
+        "rust_entity_counts"
+      ],
+      "reason": "BRepGProp's default integration on a zone against the torus in TILT: the native result is valid with the reference's solid count, its volume 7.4e-06 and area 4.1e-06 relative and its centre 9.0e-07 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe, unchanged at 1e-12) is within 7.6e-10 in volume, 5.9e-10 in area (relative) and 1.1e-10 in centre. The geometry agrees with the reference; the default measure on faces bounded by B-spline sections does not reach the allowance. Entity counts (S9d.4c's kernel): BRepAlgoAPI's unified solid of 4 faces, 8 edges and 6 vertices against the kernel's of 4 faces, 11 edges and 9 vertices: the same faces, edges and vertices differing where each splits its curves (the kernel's meetings in exact `Curve3::Toric` pieces over either of the torus's angles, switched at rational parameters, and a part's rims and a cap's circles split at their crossings; OCCT's intersection curves, B-splines, at its own points). The kernel's result validates and its volume, area and centre lie inside the reference's, its enclosures within 1e-9.",
+      "independent_evidence": "torus_parts_boolean_reference.py's rows (generate_torus_parts_boolean_fixtures.py --check) agree with closed forms of the 9 coaxial pairs (one quadrature along the torus's axis of both inputs' radial intervals, the walls by their own elements, a wedge by its turn and its meridian discs) within 6.9e-40 in exact frames and 3.8e-17 in turned ones, a half and the other half against the tool as the whole torus (S9d.4b.2's reference) and a cap or zone and the rest of its sphere against the torus as the whole sphere within 4.3e-42, every operation two ways (each face swept by two independent families of curves) within 1.5e-31, both inputs' measures from their faces within 8.3e-35 of their closed forms, inclusion and exclusion within 1.8e-35, the area identity within 8.3e-35, and Monte Carlo within 2.5 standard errors.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 38670188123 at 14a326de); source-pinned OCCT 8.1.0; the same difference as the macOS review, the native values within 9.6e-12 of max(1, |value|) of the macOS capture's"
+    },
+    {
+      "case": "rim_touch_fuse",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "d1a97af0c8eaebf8ee5306adb0b873456ad6581e6016ff27a19e133053d7b8b4",
+      "differences": [
+        "centre",
+        "measure"
+      ],
+      "reason": "BRepGProp's default integration on a cap whose rim is within the resolution of tangency to the torus's outer equator (declared degenerate): the native result is valid with the reference's solid count, its volume 2.8e-06 and area 1.1e-06 relative and its centre 5.4e-07 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe, unchanged at 1e-12) is within 2.2e-12 in volume, 7.4e-12 in area (relative) and 2.3e-12 in centre. The geometry agrees with the reference; the default measure on faces bounded by B-spline sections does not reach the allowance.",
+      "independent_evidence": "torus_parts_boolean_reference.py's rows (generate_torus_parts_boolean_fixtures.py --check) agree with closed forms of the 9 coaxial pairs (one quadrature along the torus's axis of both inputs' radial intervals, the walls by their own elements, a wedge by its turn and its meridian discs) within 6.9e-40 in exact frames and 3.8e-17 in turned ones, a half and the other half against the tool as the whole torus (S9d.4b.2's reference) and a cap or zone and the rest of its sphere against the torus as the whole sphere within 4.3e-42, every operation two ways (each face swept by two independent families of curves) within 1.5e-31, both inputs' measures from their faces within 8.3e-35 of their closed forms, inclusion and exclusion within 1.8e-35, the area identity within 8.3e-35, and Monte Carlo within 2.5 standard errors.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 38670188123 at 14a326de); source-pinned OCCT 8.1.0; the same difference as the macOS review, the native values within 4.1e-15 of max(1, |value|) of the macOS capture's"
+    },
+    {
+      "case": "oh_ball_cut",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "8e87952e88bdd9914dc4e0414377776f991545b1728b8a089d956b4df1ccb850",
+      "differences": [
+        "rust_entity_counts"
+      ],
+      "reason": "The native result agrees with the reference (volume, area and centre within the allowance). Entity counts (S9d.4c's kernel): BRepAlgoAPI's unified solid of 4 faces, 8 edges and 5 vertices against the kernel's of 4 faces, 11 edges and 8 vertices: the same faces, edges and vertices differing where each splits its curves (the kernel's meetings in exact `Curve3::Toric` pieces over either of the torus's angles, switched at rational parameters, and a part's rims and a cap's circles split at their crossings; OCCT's intersection curves, B-splines, at its own points). The kernel's result validates and its volume, area and centre lie inside the reference's, its enclosures within 1e-9.",
+      "independent_evidence": "torus_parts_boolean_reference.py's rows (generate_torus_parts_boolean_fixtures.py --check) agree with closed forms of the 9 coaxial pairs (one quadrature along the torus's axis of both inputs' radial intervals, the walls by their own elements, a wedge by its turn and its meridian discs) within 6.9e-40 in exact frames and 3.8e-17 in turned ones, a half and the other half against the tool as the whole torus (S9d.4b.2's reference) and a cap or zone and the rest of its sphere against the torus as the whole sphere within 4.3e-42, every operation two ways (each face swept by two independent families of curves) within 1.5e-31, both inputs' measures from their faces within 8.3e-35 of their closed forms, inclusion and exclusion within 1.8e-35, the area identity within 8.3e-35, and Monte Carlo within 2.5 standard errors.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 38670188123 at 14a326de); source-pinned OCCT 8.1.0; the same difference as the macOS review, the native values within 2.3e-16 of max(1, |value|) of the macOS capture's"
+    },
+    {
+      "case": "oh_ball_common",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "3e063042070285f198f59f76e1fdda0f1e2a1adba296bccfeb5f7b30d7ccda69",
+      "differences": [
+        "measure",
+        "rust_entity_counts"
+      ],
+      "reason": "BRepGProp's default integration on the outer half against a sphere about a point of its top rim: the native result is valid with the reference's solid count, its volume 5.0e-08 and area 3.6e-08 relative and its centre 2.3e-09 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe, unchanged at 1e-12) is within 2.7e-10 in volume, 8.3e-10 in area (relative) and 1.5e-11 in centre. The geometry agrees with the reference; the default measure on faces bounded by B-spline sections does not reach the allowance. Entity counts (S9d.4c's kernel): BRepAlgoAPI's unified solid of 3 faces, 6 edges and 4 vertices against the kernel's of 3 faces, 8 edges and 6 vertices: the same faces, edges and vertices differing where each splits its curves (the kernel's meetings in exact `Curve3::Toric` pieces over either of the torus's angles, switched at rational parameters, and a part's rims and a cap's circles split at their crossings; OCCT's intersection curves, B-splines, at its own points). The kernel's result validates and its volume, area and centre lie inside the reference's, its enclosures within 1e-9.",
+      "independent_evidence": "torus_parts_boolean_reference.py's rows (generate_torus_parts_boolean_fixtures.py --check) agree with closed forms of the 9 coaxial pairs (one quadrature along the torus's axis of both inputs' radial intervals, the walls by their own elements, a wedge by its turn and its meridian discs) within 6.9e-40 in exact frames and 3.8e-17 in turned ones, a half and the other half against the tool as the whole torus (S9d.4b.2's reference) and a cap or zone and the rest of its sphere against the torus as the whole sphere within 4.3e-42, every operation two ways (each face swept by two independent families of curves) within 1.5e-31, both inputs' measures from their faces within 8.3e-35 of their closed forms, inclusion and exclusion within 1.8e-35, the area identity within 8.3e-35, and Monte Carlo within 2.5 standard errors.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 38670188123 at 14a326de); source-pinned OCCT 8.1.0; the same difference as the macOS review, the native values within 2.2e-16 of max(1, |value|) of the macOS capture's"
+    },
+    {
+      "case": "oh_torus_fuse",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "e84d13903072d2ac319f68fc4dc7d2c84d400922bce82efe6a00b1d50f725362",
+      "differences": [
+        "centre",
+        "measure",
+        "rust_entity_counts"
+      ],
+      "reason": "BRepGProp's default integration on the outer half against a small torus about x ringing the tube's outer side: the native result is valid with the reference's solid count, its volume 3.3e-08 and area 2.3e-08 relative and its centre 2.9e-08 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe, unchanged at 1e-12) is within 4.0e-12 in volume, 5.2e-12 in area (relative) and 2.3e-12 in centre. The geometry agrees with the reference; the default measure on faces bounded by B-spline sections does not reach the allowance. Entity counts (S9d.4c's kernel): BRepAlgoAPI's unified solid of 5 faces, 8 edges and 5 vertices against the kernel's of 4 faces, 12 edges and 10 vertices: the same faces, edges and vertices differing where each splits its curves (the kernel's meetings in exact `Curve3::Toric` pieces over either of the torus's angles, switched at rational parameters, and a part's rims and a cap's circles split at their crossings; OCCT's intersection curves, B-splines, at its own points). The kernel's result validates and its volume, area and centre lie inside the reference's, its enclosures within 1e-9.",
+      "independent_evidence": "torus_parts_boolean_reference.py's rows (generate_torus_parts_boolean_fixtures.py --check) agree with closed forms of the 9 coaxial pairs (one quadrature along the torus's axis of both inputs' radial intervals, the walls by their own elements, a wedge by its turn and its meridian discs) within 6.9e-40 in exact frames and 3.8e-17 in turned ones, a half and the other half against the tool as the whole torus (S9d.4b.2's reference) and a cap or zone and the rest of its sphere against the torus as the whole sphere within 4.3e-42, every operation two ways (each face swept by two independent families of curves) within 1.5e-31, both inputs' measures from their faces within 8.3e-35 of their closed forms, inclusion and exclusion within 1.8e-35, the area identity within 8.3e-35, and Monte Carlo within 2.5 standard errors.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 38670188123 at 14a326de); source-pinned OCCT 8.1.0; the same difference as the macOS review, the native values within 9.2e-15 of max(1, |value|) of the macOS capture's"
+    },
+    {
+      "case": "oh_torus_cut",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "a8f7053e5084b35e3fff52d0149898f82addf67baa1a325db3eb844802c93f7b",
+      "differences": [
+        "centre",
+        "measure",
+        "rust_entity_counts"
+      ],
+      "reason": "BRepGProp's default integration on the outer half against a small torus about x ringing the tube's outer side: the native result is valid with the reference's solid count, its volume 4.2e-08 and area 1.1e-07 relative and its centre 2.9e-08 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe, unchanged at 1e-12) is within 4.9e-12 in volume, 1.9e-11 in area (relative) and 2.7e-12 in centre. The geometry agrees with the reference; the default measure on faces bounded by B-spline sections does not reach the allowance. Entity counts (S9d.4c's kernel): BRepAlgoAPI's unified solid of 4 faces, 6 edges and 4 vertices against the kernel's of 4 faces, 12 edges and 10 vertices: the same faces, edges and vertices differing where each splits its curves (the kernel's meetings in exact `Curve3::Toric` pieces over either of the torus's angles, switched at rational parameters, and a part's rims and a cap's circles split at their crossings; OCCT's intersection curves, B-splines, at its own points). The kernel's result validates and its volume, area and centre lie inside the reference's, its enclosures within 1e-9.",
+      "independent_evidence": "torus_parts_boolean_reference.py's rows (generate_torus_parts_boolean_fixtures.py --check) agree with closed forms of the 9 coaxial pairs (one quadrature along the torus's axis of both inputs' radial intervals, the walls by their own elements, a wedge by its turn and its meridian discs) within 6.9e-40 in exact frames and 3.8e-17 in turned ones, a half and the other half against the tool as the whole torus (S9d.4b.2's reference) and a cap or zone and the rest of its sphere against the torus as the whole sphere within 4.3e-42, every operation two ways (each face swept by two independent families of curves) within 1.5e-31, both inputs' measures from their faces within 8.3e-35 of their closed forms, inclusion and exclusion within 1.8e-35, the area identity within 8.3e-35, and Monte Carlo within 2.5 standard errors.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 38670188123 at 14a326de); source-pinned OCCT 8.1.0; the same difference as the macOS review, the native values within 1.8e-14 of max(1, |value|) of the macOS capture's"
+    },
+    {
+      "case": "oh_torus_common",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "9dd18384b8198549ea58ab7f5f842869c97a7add037ff06cd938d484911d207a",
+      "differences": [
+        "centre",
+        "measure",
+        "rust_entity_counts"
+      ],
+      "reason": "BRepGProp's default integration on the outer half against a small torus about x ringing the tube's outer side: the native result is valid with the reference's solid count, its volume 8.4e-07 and area 2.7e-06 relative and its centre 6.8e-08 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe, unchanged at 1e-12) is within 3.0e-10 in volume, 9.9e-11 in area (relative) and 1.2e-11 in centre. The geometry agrees with the reference; the default measure on faces bounded by B-spline sections does not reach the allowance. Entity counts (S9d.4c's kernel): BRepAlgoAPI's unified solid of 3 faces, 3 edges and 2 vertices against the kernel's of 3 faces, 9 edges and 8 vertices: the same faces, edges and vertices differing where each splits its curves (the kernel's meetings in exact `Curve3::Toric` pieces over either of the torus's angles, switched at rational parameters, and a part's rims and a cap's circles split at their crossings; OCCT's intersection curves, B-splines, at its own points). The kernel's result validates and its volume, area and centre lie inside the reference's, its enclosures within 1e-9.",
+      "independent_evidence": "torus_parts_boolean_reference.py's rows (generate_torus_parts_boolean_fixtures.py --check) agree with closed forms of the 9 coaxial pairs (one quadrature along the torus's axis of both inputs' radial intervals, the walls by their own elements, a wedge by its turn and its meridian discs) within 6.9e-40 in exact frames and 3.8e-17 in turned ones, a half and the other half against the tool as the whole torus (S9d.4b.2's reference) and a cap or zone and the rest of its sphere against the torus as the whole sphere within 4.3e-42, every operation two ways (each face swept by two independent families of curves) within 1.5e-31, both inputs' measures from their faces within 8.3e-35 of their closed forms, inclusion and exclusion within 1.8e-35, the area identity within 8.3e-35, and Monte Carlo within 2.5 standard errors.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 38670188123 at 14a326de); source-pinned OCCT 8.1.0; the same difference as the macOS review, the native values within 4.3e-13 of max(1, |value|) of the macOS capture's"
+    },
+    {
+      "case": "band_ball_fuse",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "6057e6f17a988a4870bbc23f49d8e334ed88a2ffd444031b52b1a29419de19b6",
+      "differences": [
+        "centre",
+        "measure",
+        "rust_entity_counts"
+      ],
+      "reason": "BRepGProp's default integration on a band against a sphere across its lower rim (a surd radius): the native result is valid with the reference's solid count, its volume 2.8e-07 and area 7.0e-08 relative and its centre 3.1e-08 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe, unchanged at 1e-12) is within 1.6e-12 in volume, 5.2e-12 in area (relative) and 1.9e-12 in centre. The geometry agrees with the reference; the default measure on faces bounded by B-spline sections does not reach the allowance. Entity counts (S9d.4c's kernel): BRepAlgoAPI's unified solid of 4 faces, 9 edges and 6 vertices against the kernel's of 4 faces, 8 edges and 6 vertices: the same faces, edges and vertices differing where each splits its curves (the kernel's meetings in exact `Curve3::Toric` pieces over either of the torus's angles, switched at rational parameters, and a part's rims and a cap's circles split at their crossings; OCCT's intersection curves, B-splines, at its own points). The kernel's result validates and its volume, area and centre lie inside the reference's, its enclosures within 1e-9.",
+      "independent_evidence": "torus_parts_boolean_reference.py's rows (generate_torus_parts_boolean_fixtures.py --check) agree with closed forms of the 9 coaxial pairs (one quadrature along the torus's axis of both inputs' radial intervals, the walls by their own elements, a wedge by its turn and its meridian discs) within 6.9e-40 in exact frames and 3.8e-17 in turned ones, a half and the other half against the tool as the whole torus (S9d.4b.2's reference) and a cap or zone and the rest of its sphere against the torus as the whole sphere within 4.3e-42, every operation two ways (each face swept by two independent families of curves) within 1.5e-31, both inputs' measures from their faces within 8.3e-35 of their closed forms, inclusion and exclusion within 1.8e-35, the area identity within 8.3e-35, and Monte Carlo within 2.5 standard errors.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 38670188123 at 14a326de); source-pinned OCCT 8.1.0; the same difference as the macOS review, the native values within 1.2e-15 of max(1, |value|) of the macOS capture's"
+    },
+    {
+      "case": "band_ball_cut",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "8c6e0822b01f614254c1f58620fdbf5e800090cf87d5cc97fd9ae65bee662f93",
+      "differences": [
+        "centre",
+        "measure",
+        "rust_entity_counts"
+      ],
+      "reason": "BRepGProp's default integration on a band against a sphere across its lower rim (a surd radius): the native result is valid with the reference's solid count, its volume 2.9e-07 and area 7.6e-08 relative and its centre 2.3e-08 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe, unchanged at 1e-12) is within 4.9e-13 in volume, 1.2e-11 in area (relative) and 1.0e-12 in centre. The geometry agrees with the reference; the default measure on faces bounded by B-spline sections does not reach the allowance. Entity counts (S9d.4c's kernel): BRepAlgoAPI's unified solid of 4 faces, 6 edges and 4 vertices against the kernel's of 4 faces, 8 edges and 6 vertices: the same faces, edges and vertices differing where each splits its curves (the kernel's meetings in exact `Curve3::Toric` pieces over either of the torus's angles, switched at rational parameters, and a part's rims and a cap's circles split at their crossings; OCCT's intersection curves, B-splines, at its own points). The kernel's result validates and its volume, area and centre lie inside the reference's, its enclosures within 1e-9.",
+      "independent_evidence": "torus_parts_boolean_reference.py's rows (generate_torus_parts_boolean_fixtures.py --check) agree with closed forms of the 9 coaxial pairs (one quadrature along the torus's axis of both inputs' radial intervals, the walls by their own elements, a wedge by its turn and its meridian discs) within 6.9e-40 in exact frames and 3.8e-17 in turned ones, a half and the other half against the tool as the whole torus (S9d.4b.2's reference) and a cap or zone and the rest of its sphere against the torus as the whole sphere within 4.3e-42, every operation two ways (each face swept by two independent families of curves) within 1.5e-31, both inputs' measures from their faces within 8.3e-35 of their closed forms, inclusion and exclusion within 1.8e-35, the area identity within 8.3e-35, and Monte Carlo within 2.5 standard errors.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 38670188123 at 14a326de); source-pinned OCCT 8.1.0; the same difference as the macOS review, the native values within 4.1e-16 of max(1, |value|) of the macOS capture's"
+    },
+    {
+      "case": "band_ball_common",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "5f4e4468cc23d9bff5eaf2da01591b34e1813c185cd0ffe807a38a4d0693fad1",
+      "differences": [
+        "measure",
+        "rust_entity_counts"
+      ],
+      "reason": "BRepGProp's default integration on a band against a sphere across its lower rim (a surd radius): the native result is valid with the reference's solid count, its volume 2.3e-07 and area 1.4e-07 relative and its centre 9.0e-09 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe, unchanged at 1e-12) is within 8.7e-10 in volume, 3.0e-10 in area (relative) and 5.1e-11 in centre. The geometry agrees with the reference; the default measure on faces bounded by B-spline sections does not reach the allowance. Entity counts (S9d.4c's kernel): BRepAlgoAPI's unified solid of 3 faces, 4 edges and 3 vertices against the kernel's of 3 faces, 5 edges and 4 vertices: the same faces, edges and vertices differing where each splits its curves (the kernel's meetings in exact `Curve3::Toric` pieces over either of the torus's angles, switched at rational parameters, and a part's rims and a cap's circles split at their crossings; OCCT's intersection curves, B-splines, at its own points). The kernel's result validates and its volume, area and centre lie inside the reference's, its enclosures within 1e-9.",
+      "independent_evidence": "torus_parts_boolean_reference.py's rows (generate_torus_parts_boolean_fixtures.py --check) agree with closed forms of the 9 coaxial pairs (one quadrature along the torus's axis of both inputs' radial intervals, the walls by their own elements, a wedge by its turn and its meridian discs) within 6.9e-40 in exact frames and 3.8e-17 in turned ones, a half and the other half against the tool as the whole torus (S9d.4b.2's reference) and a cap or zone and the rest of its sphere against the torus as the whole sphere within 4.3e-42, every operation two ways (each face swept by two independent families of curves) within 1.5e-31, both inputs' measures from their faces within 8.3e-35 of their closed forms, inclusion and exclusion within 1.8e-35, the area identity within 8.3e-35, and Monte Carlo within 2.5 standard errors.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 38670188123 at 14a326de); source-pinned OCCT 8.1.0; the same difference as the macOS review, the native values within 3.3e-16 of max(1, |value|) of the macOS capture's"
+    },
+    {
+      "case": "band_cone_cut",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "acd89f41fff18039a4a42e9cbac5edab63a839bf308a916d589694078596ee3d",
+      "differences": [
+        "rust_entity_counts"
+      ],
+      "reason": "The native result agrees with the reference (volume, area and centre within the allowance). Entity counts (S9d.4c's kernel): BRepAlgoAPI's unified solid of 4 faces, 8 edges and 5 vertices against the kernel's of 4 faces, 11 edges and 8 vertices: the same faces, edges and vertices differing where each splits its curves (the kernel's meetings in exact `Curve3::Toric` pieces over either of the torus's angles, switched at rational parameters, and a part's rims and a cap's circles split at their crossings; OCCT's intersection curves, B-splines, at its own points). The kernel's result validates and its volume, area and centre lie inside the reference's, its enclosures within 1e-9.",
+      "independent_evidence": "torus_parts_boolean_reference.py's rows (generate_torus_parts_boolean_fixtures.py --check) agree with closed forms of the 9 coaxial pairs (one quadrature along the torus's axis of both inputs' radial intervals, the walls by their own elements, a wedge by its turn and its meridian discs) within 6.9e-40 in exact frames and 3.8e-17 in turned ones, a half and the other half against the tool as the whole torus (S9d.4b.2's reference) and a cap or zone and the rest of its sphere against the torus as the whole sphere within 4.3e-42, every operation two ways (each face swept by two independent families of curves) within 1.5e-31, both inputs' measures from their faces within 8.3e-35 of their closed forms, inclusion and exclusion within 1.8e-35, the area identity within 8.3e-35, and Monte Carlo within 2.5 standard errors.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 38670188123 at 14a326de); source-pinned OCCT 8.1.0; the same difference as the macOS review, the native values within 1.2e-16 of max(1, |value|) of the macOS capture's"
+    },
+    {
+      "case": "band_cone_common",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "2321866ba7190705f5bbb4413c4f2563e38a5520816eb99574253d5a9bf5f53c",
+      "differences": [
+        "rust_entity_counts"
+      ],
+      "reason": "The native result agrees with the reference (volume, area and centre within the allowance). Entity counts (S9d.4c's kernel): BRepAlgoAPI's unified solid of 4 faces, 6 edges and 4 vertices against the kernel's of 4 faces, 8 edges and 6 vertices: the same faces, edges and vertices differing where each splits its curves (the kernel's meetings in exact `Curve3::Toric` pieces over either of the torus's angles, switched at rational parameters, and a part's rims and a cap's circles split at their crossings; OCCT's intersection curves, B-splines, at its own points). The kernel's result validates and its volume, area and centre lie inside the reference's, its enclosures within 1e-9.",
+      "independent_evidence": "torus_parts_boolean_reference.py's rows (generate_torus_parts_boolean_fixtures.py --check) agree with closed forms of the 9 coaxial pairs (one quadrature along the torus's axis of both inputs' radial intervals, the walls by their own elements, a wedge by its turn and its meridian discs) within 6.9e-40 in exact frames and 3.8e-17 in turned ones, a half and the other half against the tool as the whole torus (S9d.4b.2's reference) and a cap or zone and the rest of its sphere against the torus as the whole sphere within 4.3e-42, every operation two ways (each face swept by two independent families of curves) within 1.5e-31, both inputs' measures from their faces within 8.3e-35 of their closed forms, inclusion and exclusion within 1.8e-35, the area identity within 8.3e-35, and Monte Carlo within 2.5 standard errors.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 38670188123 at 14a326de); source-pinned OCCT 8.1.0; the same difference as the macOS review, the native values within 1.3e-16 of max(1, |value|) of the macOS capture's"
+    },
+    {
+      "case": "band_torus_cut",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "325637d85ce4d4e123349a249b18d4b2f38153d91cac9f12a283481f5c0e08ea",
+      "differences": [
+        "centre",
+        "measure",
+        "rust_entity_counts"
+      ],
+      "reason": "BRepGProp's default integration on a band against a torus ringing the tube across its lower rim: the native result is valid with the reference's solid count, its volume 2.7e-07 and area 2.4e-07 relative and its centre 1.4e-07 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe, unchanged at 1e-12) is within 5.4e-11 in volume, 5.0e-10 in area (relative) and 9.5e-11 in centre. The geometry agrees with the reference; the default measure on faces bounded by B-spline sections does not reach the allowance. Entity counts (S9d.4c's kernel): BRepAlgoAPI's unified solid of 4 faces, 9 edges and 6 vertices against the kernel's of 4 faces, 10 edges and 7 vertices: the same faces, edges and vertices differing where each splits its curves (the kernel's meetings in exact `Curve3::Toric` pieces over either of the torus's angles, switched at rational parameters, and a part's rims and a cap's circles split at their crossings; OCCT's intersection curves, B-splines, at its own points). The kernel's result validates and its volume, area and centre lie inside the reference's, its enclosures within 1e-9.",
+      "independent_evidence": "torus_parts_boolean_reference.py's rows (generate_torus_parts_boolean_fixtures.py --check) agree with closed forms of the 9 coaxial pairs (one quadrature along the torus's axis of both inputs' radial intervals, the walls by their own elements, a wedge by its turn and its meridian discs) within 6.9e-40 in exact frames and 3.8e-17 in turned ones, a half and the other half against the tool as the whole torus (S9d.4b.2's reference) and a cap or zone and the rest of its sphere against the torus as the whole sphere within 4.3e-42, every operation two ways (each face swept by two independent families of curves) within 1.5e-31, both inputs' measures from their faces within 8.3e-35 of their closed forms, inclusion and exclusion within 1.8e-35, the area identity within 8.3e-35, and Monte Carlo within 2.5 standard errors.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 38670188123 at 14a326de); source-pinned OCCT 8.1.0; the same difference as the macOS review, the native values within 1.4e-14 of max(1, |value|) of the macOS capture's"
+    },
+    {
+      "case": "band_torus_common",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "7e95500de878dca1dea2b8241cb5d052575f96c20305a25e794b5087a3a6f53e",
+      "differences": [
+        "centre",
+        "measure",
+        "rust_entity_counts"
+      ],
+      "reason": "BRepGProp's default integration on a band against a torus ringing the tube across its lower rim: the native result is valid with the reference's solid count, its volume 6.9e-06 and area 4.3e-06 relative and its centre 6.7e-07 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe, unchanged at 1e-12) is within 3.1e-09 in volume, 1.6e-09 in area (relative) and 1.7e-09 in centre. The geometry agrees with the reference; the default measure on faces bounded by B-spline sections does not reach the allowance. Entity counts (S9d.4c's kernel): BRepAlgoAPI's unified solid of 5 faces, 9 edges and 6 vertices against the kernel's of 5 faces, 10 edges and 7 vertices: the same faces, edges and vertices differing where each splits its curves (the kernel's meetings in exact `Curve3::Toric` pieces over either of the torus's angles, switched at rational parameters, and a part's rims and a cap's circles split at their crossings; OCCT's intersection curves, B-splines, at its own points). The kernel's result validates and its volume, area and centre lie inside the reference's, its enclosures within 1e-9.",
+      "independent_evidence": "torus_parts_boolean_reference.py's rows (generate_torus_parts_boolean_fixtures.py --check) agree with closed forms of the 9 coaxial pairs (one quadrature along the torus's axis of both inputs' radial intervals, the walls by their own elements, a wedge by its turn and its meridian discs) within 6.9e-40 in exact frames and 3.8e-17 in turned ones, a half and the other half against the tool as the whole torus (S9d.4b.2's reference) and a cap or zone and the rest of its sphere against the torus as the whole sphere within 4.3e-42, every operation two ways (each face swept by two independent families of curves) within 1.5e-31, both inputs' measures from their faces within 8.3e-35 of their closed forms, inclusion and exclusion within 1.8e-35, the area identity within 8.3e-35, and Monte Carlo within 2.5 standard errors.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 38670188123 at 14a326de); source-pinned OCCT 8.1.0; the same difference as the macOS review, the native values within 5.5e-14 of max(1, |value|) of the macOS capture's"
+    },
+    {
+      "case": "qw_pipe_fuse",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "84052ea2a2928634aad6280185e61d32e86a8b865f78d76ca6ec5f6a1a04e4d4",
+      "differences": [
+        "rust_entity_counts"
+      ],
+      "reason": "The native result agrees with the reference (volume, area and centre within the allowance). Entity counts (S9d.4c's kernel): BRepAlgoAPI's unified solid of 7 faces, 15 edges and 10 vertices against the kernel's of 7 faces, 15 edges and 11 vertices: the same faces, edges and vertices differing where each splits its curves (the kernel's meetings in exact `Curve3::Toric` pieces over either of the torus's angles, switched at rational parameters, and a part's rims and a cap's circles split at their crossings; OCCT's intersection curves, B-splines, at its own points). The kernel's result validates and its volume, area and centre lie inside the reference's, its enclosures within 1e-9.",
+      "independent_evidence": "torus_parts_boolean_reference.py's rows (generate_torus_parts_boolean_fixtures.py --check) agree with closed forms of the 9 coaxial pairs (one quadrature along the torus's axis of both inputs' radial intervals, the walls by their own elements, a wedge by its turn and its meridian discs) within 6.9e-40 in exact frames and 3.8e-17 in turned ones, a half and the other half against the tool as the whole torus (S9d.4b.2's reference) and a cap or zone and the rest of its sphere against the torus as the whole sphere within 4.3e-42, every operation two ways (each face swept by two independent families of curves) within 1.5e-31, both inputs' measures from their faces within 8.3e-35 of their closed forms, inclusion and exclusion within 1.8e-35, the area identity within 8.3e-35, and Monte Carlo within 2.5 standard errors.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 38670188123 at 14a326de); source-pinned OCCT 8.1.0; the same difference as the macOS review, the native values within 1.8e-16 of max(1, |value|) of the macOS capture's"
+    },
+    {
+      "case": "qw_pipe_cut",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "7c622f3ad73c3a58ebb80f70f0900a040dade59b6844abb85644eb786a70e041",
+      "differences": [
+        "rust_entity_counts"
+      ],
+      "reason": "The native result agrees with the reference (volume, area and centre within the allowance). Entity counts (S9d.4c's kernel): BRepAlgoAPI's unified solid of 5 faces, 11 edges and 8 vertices against the kernel's of 5 faces, 12 edges and 9 vertices: the same faces, edges and vertices differing where each splits its curves (the kernel's meetings in exact `Curve3::Toric` pieces over either of the torus's angles, switched at rational parameters, and a part's rims and a cap's circles split at their crossings; OCCT's intersection curves, B-splines, at its own points). The kernel's result validates and its volume, area and centre lie inside the reference's, its enclosures within 1e-9.",
+      "independent_evidence": "torus_parts_boolean_reference.py's rows (generate_torus_parts_boolean_fixtures.py --check) agree with closed forms of the 9 coaxial pairs (one quadrature along the torus's axis of both inputs' radial intervals, the walls by their own elements, a wedge by its turn and its meridian discs) within 6.9e-40 in exact frames and 3.8e-17 in turned ones, a half and the other half against the tool as the whole torus (S9d.4b.2's reference) and a cap or zone and the rest of its sphere against the torus as the whole sphere within 4.3e-42, every operation two ways (each face swept by two independent families of curves) within 1.5e-31, both inputs' measures from their faces within 8.3e-35 of their closed forms, inclusion and exclusion within 1.8e-35, the area identity within 8.3e-35, and Monte Carlo within 2.5 standard errors.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 38670188123 at 14a326de); source-pinned OCCT 8.1.0; the same difference as the macOS review, the native values within 1.3e-16 of max(1, |value|) of the macOS capture's"
+    },
+    {
+      "case": "qw_pipe_common",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "ffd07470aff71e7fbb12762792212d44c61352f9d4acb00420b6409b27ccdb72",
+      "differences": [
+        "rust_entity_counts"
+      ],
+      "reason": "The native result agrees with the reference (volume, area and centre within the allowance). Entity counts (S9d.4c's kernel): BRepAlgoAPI's unified solid of 4 faces, 8 edges and 6 vertices against the kernel's of 4 faces, 10 edges and 8 vertices: the same faces, edges and vertices differing where each splits its curves (the kernel's meetings in exact `Curve3::Toric` pieces over either of the torus's angles, switched at rational parameters, and a part's rims and a cap's circles split at their crossings; OCCT's intersection curves, B-splines, at its own points). The kernel's result validates and its volume, area and centre lie inside the reference's, its enclosures within 1e-9.",
+      "independent_evidence": "torus_parts_boolean_reference.py's rows (generate_torus_parts_boolean_fixtures.py --check) agree with closed forms of the 9 coaxial pairs (one quadrature along the torus's axis of both inputs' radial intervals, the walls by their own elements, a wedge by its turn and its meridian discs) within 6.9e-40 in exact frames and 3.8e-17 in turned ones, a half and the other half against the tool as the whole torus (S9d.4b.2's reference) and a cap or zone and the rest of its sphere against the torus as the whole sphere within 4.3e-42, every operation two ways (each face swept by two independent families of curves) within 1.5e-31, both inputs' measures from their faces within 8.3e-35 of their closed forms, inclusion and exclusion within 1.8e-35, the area identity within 8.3e-35, and Monte Carlo within 2.5 standard errors.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 38670188123 at 14a326de); source-pinned OCCT 8.1.0; the same difference as the macOS review, the native values within 2.2e-16 of max(1, |value|) of the macOS capture's"
+    },
+    {
+      "case": "qw_torus_cut",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "577d0fdc83288d16b201b890462e9e0aa93d93071ca29b27a7f129f7704baddb",
+      "differences": [
+        "centre",
+        "measure",
+        "rust_entity_counts"
+      ],
+      "reason": "BRepGProp's default integration on a quarter wedge against a small torus of a parallel axis across its end disc: the native result is valid with the reference's solid count, its volume 3.4e-08 and area 6.0e-08 relative and its centre 5.5e-08 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe, unchanged at 1e-12) is within 1.3e-09 in volume, 1.3e-09 in area (relative) and 6.8e-10 in centre. The geometry agrees with the reference; the default measure on faces bounded by B-spline sections does not reach the allowance. Entity counts (S9d.4c's kernel): BRepAlgoAPI's unified solid of 5 faces, 14 edges and 9 vertices against the kernel's of 4 faces, 14 edges and 10 vertices: the same faces, edges and vertices differing where each splits its curves (the kernel's meetings in exact `Curve3::Toric` pieces over either of the torus's angles, switched at rational parameters, and a part's rims and a cap's circles split at their crossings; OCCT's intersection curves, B-splines, at its own points). The kernel's result validates and its volume, area and centre lie inside the reference's, its enclosures within 1e-9.",
+      "independent_evidence": "torus_parts_boolean_reference.py's rows (generate_torus_parts_boolean_fixtures.py --check) agree with closed forms of the 9 coaxial pairs (one quadrature along the torus's axis of both inputs' radial intervals, the walls by their own elements, a wedge by its turn and its meridian discs) within 6.9e-40 in exact frames and 3.8e-17 in turned ones, a half and the other half against the tool as the whole torus (S9d.4b.2's reference) and a cap or zone and the rest of its sphere against the torus as the whole sphere within 4.3e-42, every operation two ways (each face swept by two independent families of curves) within 1.5e-31, both inputs' measures from their faces within 8.3e-35 of their closed forms, inclusion and exclusion within 1.8e-35, the area identity within 8.3e-35, and Monte Carlo within 2.5 standard errors.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 38670188123 at 14a326de); source-pinned OCCT 8.1.0; the same difference as the macOS review, the native values within 1e-14 of max(1, |value|) of the macOS capture's"
+    },
+    {
+      "case": "qw_torus_common",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "e683a83cf044760f8eeb94fbcd7edb6ff746f24254ba96add3b8cdfa73ea5c1e",
+      "differences": [
+        "centre",
+        "measure",
+        "rust_entity_counts"
+      ],
+      "reason": "BRepGProp's default integration on a quarter wedge against a small torus of a parallel axis across its end disc: the native result is valid with the reference's solid count, its volume 5.8e-07 and area 2.1e-07 relative and its centre 1.0e-07 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe, unchanged at 1e-12) is within 2.1e-08 in volume, 9.6e-09 in area (relative) and 4.2e-09 in centre. The geometry agrees with the reference; the default measure on faces bounded by B-spline sections does not reach the allowance. Entity counts (S9d.4c's kernel): BRepAlgoAPI's unified solid of 6 faces, 11 edges and 7 vertices against the kernel's of 5 faces, 12 edges and 9 vertices: the same faces, edges and vertices differing where each splits its curves (the kernel's meetings in exact `Curve3::Toric` pieces over either of the torus's angles, switched at rational parameters, and a part's rims and a cap's circles split at their crossings; OCCT's intersection curves, B-splines, at its own points). The kernel's result validates and its volume, area and centre lie inside the reference's, its enclosures within 1e-9.",
+      "independent_evidence": "torus_parts_boolean_reference.py's rows (generate_torus_parts_boolean_fixtures.py --check) agree with closed forms of the 9 coaxial pairs (one quadrature along the torus's axis of both inputs' radial intervals, the walls by their own elements, a wedge by its turn and its meridian discs) within 6.9e-40 in exact frames and 3.8e-17 in turned ones, a half and the other half against the tool as the whole torus (S9d.4b.2's reference) and a cap or zone and the rest of its sphere against the torus as the whole sphere within 4.3e-42, every operation two ways (each face swept by two independent families of curves) within 1.5e-31, both inputs' measures from their faces within 8.3e-35 of their closed forms, inclusion and exclusion within 1.8e-35, the area identity within 8.3e-35, and Monte Carlo within 2.5 standard errors.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 38670188123 at 14a326de); source-pinned OCCT 8.1.0; the same difference as the macOS review, the native values within 2.9e-14 of max(1, |value|) of the macOS capture's"
+    },
+    {
+      "case": "hw_ball_cut",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "add8990ae1a307f7639d5f8c4fdc934b79ab247df5bf4c3d09ea971771e78835",
+      "differences": [
+        "rust_entity_counts"
+      ],
+      "reason": "The native result agrees with the reference (volume, area and centre within the allowance). Entity counts (S9d.4c's kernel): BRepAlgoAPI's unified solid of 4 faces, 8 edges and 5 vertices against the kernel's of 4 faces, 11 edges and 7 vertices: the same faces, edges and vertices differing where each splits its curves (the kernel's meetings in exact `Curve3::Toric` pieces over either of the torus's angles, switched at rational parameters, and a part's rims and a cap's circles split at their crossings; OCCT's intersection curves, B-splines, at its own points). The kernel's result validates and its volume, area and centre lie inside the reference's, its enclosures within 1e-9.",
+      "independent_evidence": "torus_parts_boolean_reference.py's rows (generate_torus_parts_boolean_fixtures.py --check) agree with closed forms of the 9 coaxial pairs (one quadrature along the torus's axis of both inputs' radial intervals, the walls by their own elements, a wedge by its turn and its meridian discs) within 6.9e-40 in exact frames and 3.8e-17 in turned ones, a half and the other half against the tool as the whole torus (S9d.4b.2's reference) and a cap or zone and the rest of its sphere against the torus as the whole sphere within 4.3e-42, every operation two ways (each face swept by two independent families of curves) within 1.5e-31, both inputs' measures from their faces within 8.3e-35 of their closed forms, inclusion and exclusion within 1.8e-35, the area identity within 8.3e-35, and Monte Carlo within 2.5 standard errors.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 38670188123 at 14a326de); source-pinned OCCT 8.1.0; the same difference as the macOS review, the native values within 9e-16 of max(1, |value|) of the macOS capture's"
+    },
+    {
+      "case": "hw_ball_common",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "63413dcd3528ee45501b0877aabd10c1f554ed2db9fd55fcf54226e5d5ec104b",
+      "differences": [
+        "centre",
+        "measure",
+        "rust_entity_counts"
+      ],
+      "reason": "BRepGProp's default integration on a half wedge against a sphere across its start disc and rim: the native result is valid with the reference's solid count, its volume 7.6e-07 and area 5.0e-07 relative and its centre 4.0e-08 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe, unchanged at 1e-12) is within 5.6e-10 in volume, 3.6e-10 in area (relative) and 5.7e-11 in centre. The geometry agrees with the reference; the default measure on faces bounded by B-spline sections does not reach the allowance. Entity counts (S9d.4c's kernel): BRepAlgoAPI's unified solid of 3 faces, 5 edges and 3 vertices against the kernel's of 3 faces, 9 edges and 6 vertices: the same faces, edges and vertices differing where each splits its curves (the kernel's meetings in exact `Curve3::Toric` pieces over either of the torus's angles, switched at rational parameters, and a part's rims and a cap's circles split at their crossings; OCCT's intersection curves, B-splines, at its own points). The kernel's result validates and its volume, area and centre lie inside the reference's, its enclosures within 1e-9.",
+      "independent_evidence": "torus_parts_boolean_reference.py's rows (generate_torus_parts_boolean_fixtures.py --check) agree with closed forms of the 9 coaxial pairs (one quadrature along the torus's axis of both inputs' radial intervals, the walls by their own elements, a wedge by its turn and its meridian discs) within 6.9e-40 in exact frames and 3.8e-17 in turned ones, a half and the other half against the tool as the whole torus (S9d.4b.2's reference) and a cap or zone and the rest of its sphere against the torus as the whole sphere within 4.3e-42, every operation two ways (each face swept by two independent families of curves) within 1.5e-31, both inputs' measures from their faces within 8.3e-35 of their closed forms, inclusion and exclusion within 1.8e-35, the area identity within 8.3e-35, and Monte Carlo within 2.5 standard errors.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 38670188123 at 14a326de); source-pinned OCCT 8.1.0; the same difference as the macOS review, the native values within 1.4e-15 of max(1, |value|) of the macOS capture's"
+    },
+    {
+      "case": "tw_cone_cut",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "8cb6847796ea8075e97160311d3ba91732c64f8474e42e27ba0f9ba3b18844b6",
+      "differences": [
+        "measure",
+        "rust_entity_counts"
+      ],
+      "reason": "BRepGProp's default integration on a three-quarter wedge against a frustum across its end disc: the native result is valid with the reference's solid count, its volume 3.4e-08 and area 5.8e-08 relative and its centre 5.9e-09 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe, unchanged at 1e-12) is within 2.8e-10 in volume, 1.6e-10 in area (relative) and 1.4e-10 in centre. The geometry agrees with the reference; the default measure on faces bounded by B-spline sections does not reach the allowance. Entity counts (S9d.4c's kernel): BRepAlgoAPI's unified solid of 5 faces, 9 edges and 6 vertices against the kernel's of 5 faces, 8 edges and 5 vertices: the same faces, edges and vertices differing where each splits its curves (the kernel's meetings in exact `Curve3::Toric` pieces over either of the torus's angles, switched at rational parameters, and a part's rims and a cap's circles split at their crossings; OCCT's intersection curves, B-splines, at its own points). The kernel's result validates and its volume, area and centre lie inside the reference's, its enclosures within 1e-9.",
+      "independent_evidence": "torus_parts_boolean_reference.py's rows (generate_torus_parts_boolean_fixtures.py --check) agree with closed forms of the 9 coaxial pairs (one quadrature along the torus's axis of both inputs' radial intervals, the walls by their own elements, a wedge by its turn and its meridian discs) within 6.9e-40 in exact frames and 3.8e-17 in turned ones, a half and the other half against the tool as the whole torus (S9d.4b.2's reference) and a cap or zone and the rest of its sphere against the torus as the whole sphere within 4.3e-42, every operation two ways (each face swept by two independent families of curves) within 1.5e-31, both inputs' measures from their faces within 8.3e-35 of their closed forms, inclusion and exclusion within 1.8e-35, the area identity within 8.3e-35, and Monte Carlo within 2.5 standard errors.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 38670188123 at 14a326de); source-pinned OCCT 8.1.0; the same difference as the macOS review, the native values within 6.7e-16 of max(1, |value|) of the macOS capture's"
+    },
+    {
+      "case": "tw_cone_common",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "1970e01688ca2603a41404f5a94db006feb0f4d771235a76c069461864b7724a",
+      "differences": [
+        "measure"
+      ],
+      "reason": "BRepGProp's default integration on a three-quarter wedge against a frustum across its end disc: the native result is valid with the reference's solid count, its volume 6.5e-08 and area 1.5e-08 relative and its centre 2.4e-09 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe, unchanged at 1e-12) is within 2.3e-08 in volume, 1.0e-08 in area (relative) and 5.3e-10 in centre. The geometry agrees with the reference; the default measure on faces bounded by B-spline sections does not reach the allowance.",
+      "independent_evidence": "torus_parts_boolean_reference.py's rows (generate_torus_parts_boolean_fixtures.py --check) agree with closed forms of the 9 coaxial pairs (one quadrature along the torus's axis of both inputs' radial intervals, the walls by their own elements, a wedge by its turn and its meridian discs) within 6.9e-40 in exact frames and 3.8e-17 in turned ones, a half and the other half against the tool as the whole torus (S9d.4b.2's reference) and a cap or zone and the rest of its sphere against the torus as the whole sphere within 4.3e-42, every operation two ways (each face swept by two independent families of curves) within 1.5e-31, both inputs' measures from their faces within 8.3e-35 of their closed forms, inclusion and exclusion within 1.8e-35, the area identity within 8.3e-35, and Monte Carlo within 2.5 standard errors.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 38670188123 at 14a326de); source-pinned OCCT 8.1.0; the same difference as the macOS review, the native values within 7e-15 of max(1, |value|) of the macOS capture's"
+    },
+    {
+      "case": "qw_rim_touch_common",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "539401f79a0cbb4a3751ec3462bd0478150b8c2ae8787ad1ae0662eb6fb4ede7",
+      "differences": [
+        "measure"
+      ],
+      "reason": "BRepGProp's default integration on a quarter wedge whose start rim touches a sphere (declared degenerate): the native result is valid with the reference's solid count, its volume 3.1e-08 and area 3.0e-07 relative and its centre 9.5e-09 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe, unchanged at 1e-12) is within 1.4e-08 in volume, 1.4e-08 in area (relative) and 4.5e-11 in centre. The geometry agrees with the reference; the default measure on faces bounded by B-spline sections does not reach the allowance.",
+      "independent_evidence": "torus_parts_boolean_reference.py's rows (generate_torus_parts_boolean_fixtures.py --check) agree with closed forms of the 9 coaxial pairs (one quadrature along the torus's axis of both inputs' radial intervals, the walls by their own elements, a wedge by its turn and its meridian discs) within 6.9e-40 in exact frames and 3.8e-17 in turned ones, a half and the other half against the tool as the whole torus (S9d.4b.2's reference) and a cap or zone and the rest of its sphere against the torus as the whole sphere within 4.3e-42, every operation two ways (each face swept by two independent families of curves) within 1.5e-31, both inputs' measures from their faces within 8.3e-35 of their closed forms, inclusion and exclusion within 1.8e-35, the area identity within 8.3e-35, and Monte Carlo within 2.5 standard errors.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 38670188123 at 14a326de); source-pinned OCCT 8.1.0; the same difference as the macOS review, the native values within 6.7e-16 of max(1, |value|) of the macOS capture's"
+    },
+    {
+      "case": "qw_lean_ball_cut",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "2f12e38dbec5aed6da3acbaa0fa7f324cdd45045e372760b39bb12f542175be4",
+      "differences": [
+        "centre",
+        "measure",
+        "rust_entity_counts"
+      ],
+      "reason": "BRepAlgoAPI's result for a quarter wedge in LEAN against a sphere across its start disc's rim is off the reference: its volume 2.1e-06 and area 4.9e-05 relative and its centre 1.6e-06 of the case's size away with BRepGProp's default integration, and 3.0e-06, 4.7e-05 and 1.4e-06 with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe, unchanged at 1e-12): not the measure but the geometry, the wedge's rim crossings and sections in its turned frame. The result is valid under BRepCheck_Analyzer. Entity counts (S9d.4c's kernel): BRepAlgoAPI's unified solid of 5 faces, 13 edges and 9 vertices against the kernel's of 4 faces, 12 edges and 9 vertices: the same faces, edges and vertices differing where each splits its curves (the kernel's meetings in exact `Curve3::Toric` pieces over either of the torus's angles, switched at rational parameters, and a part's rims and a cap's circles split at their crossings; OCCT's intersection curves, B-splines, at its own points). The kernel's result validates and its volume, area and centre lie inside the reference's, its enclosures within 1e-9.",
+      "independent_evidence": "torus_parts_boolean_reference.py's rows (generate_torus_parts_boolean_fixtures.py --check) agree with closed forms of the 9 coaxial pairs (one quadrature along the torus's axis of both inputs' radial intervals, the walls by their own elements, a wedge by its turn and its meridian discs) within 6.9e-40 in exact frames and 3.8e-17 in turned ones, a half and the other half against the tool as the whole torus (S9d.4b.2's reference) and a cap or zone and the rest of its sphere against the torus as the whole sphere within 4.3e-42, every operation two ways (each face swept by two independent families of curves) within 1.5e-31, both inputs' measures from their faces within 8.3e-35 of their closed forms, inclusion and exclusion within 1.8e-35, the area identity within 8.3e-35, and Monte Carlo within 2.5 standard errors.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 38670188123 at 14a326de); source-pinned OCCT 8.1.0; the same difference as the macOS review, the native values within 1.7e-14 of max(1, |value|) of the macOS capture's"
+    },
+    {
+      "case": "qw_lean_ball_common",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "5750d362d6c4552e7234848988300c9de6131ee33f23eae0a2fd32f443b376d6",
+      "differences": [
+        "centre",
+        "invalid_result",
+        "invalid_solid",
+        "measure",
+        "rust_entity_counts"
+      ],
+      "reason": "BRepAlgoAPI's result for a quarter wedge in LEAN against a sphere across its start disc's rim is off the reference: its volume 1.2e-04 and area 9.7e-06 relative and its centre 2.3e-05 of the case's size away with BRepGProp's default integration, and 1.6e-04, 5.1e-05 and 2.2e-05 with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe, unchanged at 1e-12): not the measure but the geometry, the wedge's rim crossings and sections in its turned frame. The result and its solid are invalid under BRepCheck_Analyzer. Entity counts (S9d.4c's kernel): BRepAlgoAPI's unified solid of 4 faces, 11 edges and 8 vertices against the kernel's of 3 faces, 10 edges and 8 vertices: the same faces, edges and vertices differing where each splits its curves (the kernel's meetings in exact `Curve3::Toric` pieces over either of the torus's angles, switched at rational parameters, and a part's rims and a cap's circles split at their crossings; OCCT's intersection curves, B-splines, at its own points). The kernel's result validates and its volume, area and centre lie inside the reference's, its enclosures within 1e-9.",
+      "independent_evidence": "torus_parts_boolean_reference.py's rows (generate_torus_parts_boolean_fixtures.py --check) agree with closed forms of the 9 coaxial pairs (one quadrature along the torus's axis of both inputs' radial intervals, the walls by their own elements, a wedge by its turn and its meridian discs) within 6.9e-40 in exact frames and 3.8e-17 in turned ones, a half and the other half against the tool as the whole torus (S9d.4b.2's reference) and a cap or zone and the rest of its sphere against the torus as the whole sphere within 4.3e-42, every operation two ways (each face swept by two independent families of curves) within 1.5e-31, both inputs' measures from their faces within 8.3e-35 of their closed forms, inclusion and exclusion within 1.8e-35, the area identity within 8.3e-35, and Monte Carlo within 2.5 standard errors.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 38670188123 at 14a326de); source-pinned OCCT 8.1.0; the same difference as the macOS review, the native values within 1.3e-13 of max(1, |value|) of the macOS capture's"
     }
   ]
 }

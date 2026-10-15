@@ -355,6 +355,361 @@
       "reason": "BRepGProp's default integration on the declared degenerate pair: a cylinder exactly along a cone's ruling (the kernel refuses it): the native result is valid with the reference's solid count, its volume 0.00045 and area 0.00013 relative and its centre 0.00011 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe, unchanged at 1e-12) is within 1.2e-11 in volume, 2.6e-10 in area (relative) and 1.6e-10 in centre; its edges' tolerance is at most 1e-7 (4 of its 8 edges B-splines). The geometry agrees with the reference; the default measure does not reach the allowance.",
       "independent_evidence": "cones_boolean_reference.py's rows (generate_cones_loops_boolean_fixtures.py --check) agree with inclusion and exclusion, the area identity and every face's classes within 6.9e-41, and Monte Carlo within 2.5 standard errors.",
       "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "tilt_rod_cut",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "37b780164de511bb61fa5ace4c327ddd819e9370d94c69353fefa984a013bbde",
+      "differences": [
+        "centre",
+        "measure",
+        "rust_entity_counts"
+      ],
+      "reason": "On Linux BRepAlgoAPI's result has the macOS capture's status, validity (valid), warnings (none), solid count and face, edge and vertex counts before and after unifying, its volumes, areas and centres within 1.5e-08 of max(1, |value|) of the macOS capture's, beyond the 1e-11 of rounding: OCCT's approximation (the Boolean's approximated intersection curves and BRepGProp's default integration on the faces they bound) landing differently on Linux. Against the reference (boolean-cones-loops-expected.tsv): volume 1.4e-07 and area 1.0e-07 relative and centre 2.1e-08 of the case's size on Linux, 1.3e-07, 1.2e-07 and 2.1e-08 on macOS (volume macOS closer by 3.4e-09, area Linux closer by 1.5e-08, centre macOS closer by 1.2e-10; the allowance is 2e-8), the same differences (centre, measure, rust_entity_counts) as on macOS. The macOS review of its own row: BRepGProp's default integration on a vertical rod against the frustum in TILT (a loop, an approximated quartic): the native result is valid with the reference's solid count, its volume 1.3e-7 and area 1.2e-7 relative and its centre 1.7e-8 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe, unchanged at 1e-12) is within 7.7e-10 in volume, 2.7e-9 in area (relative) and 2.6e-10 in centre; its edges' tolerance is at most 2.7e-7 (6 of its 24 edges B-splines). The geometry agrees with the reference; the default measure does not reach the allowance. Entity counts: BRepAlgoAPI's result, unified, has 6 faces, 12 edges and 8 vertices; the kernel's, counted with OCCT's seams, 5 faces, 10 edges and 7 vertices: the same faces, edges and vertices differing where each splits its curves (the kernel's loops at the switches between its graphs over each carrier's angle, or over the angle and the height, its circles at its seams' vertices; OCCT's intersection curves at their own points). The kernel's result validates and its volume, area and centre lie inside the reference's.",
+      "independent_evidence": "cones_boolean_reference.py's rows (generate_cones_loops_boolean_fixtures.py --check) agree with the pair with one input cut in two along its axis against the whole within 5.3e-42, inclusion and exclusion, the area identity and every face's classes within 6.9e-41, and Monte Carlo within 2.5 standard errors.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 38670188123 at 14a326de); source-pinned OCCT 8.1.0; the same difference as the macOS review, values within 1.5e-08 of max(1, |value|) of the macOS capture's"
+    },
+    {
+      "case": "tilt_rod_common",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "1ff97e5ecf718f55ba3ce069c5700779552ab1c8bd931b948962d1791594cbcc",
+      "differences": [
+        "measure"
+      ],
+      "reason": "On Linux BRepAlgoAPI's result has the macOS capture's status, validity (valid), warnings (none), solid count and face, edge and vertex counts before and after unifying, its volumes, areas and centres within 5.9e-08 of max(1, |value|) of the macOS capture's, beyond the 1e-11 of rounding: OCCT's approximation (the Boolean's approximated intersection curves and BRepGProp's default integration on the faces they bound) landing differently on Linux. Against the reference (boolean-cones-loops-expected.tsv): volume 6.2e-08 and area 1.1e-07 relative and centre 1.7e-08 of the case's size on Linux, 1.2e-07, 1.7e-07 and 1.9e-08 on macOS (volume Linux closer by 5.7e-08, area Linux closer by 5.9e-08, centre Linux closer by 2.3e-09; the allowance is 2e-8), the same differences (measure) as on macOS. The macOS review of its own row: BRepGProp's default integration on a vertical rod against the frustum in TILT (a loop, an approximated quartic): the native result is valid with the reference's solid count, its volume 1.2e-7 and area 1.7e-7 relative and its centre 1.8e-8 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe, unchanged at 1e-12) is within 6.9e-9 in volume, 1.3e-8 in area (relative) and 4.2e-9 in centre; its edges' tolerance is at most 2.7e-7 (6 of its 24 edges B-splines). The geometry agrees with the reference; the default measure does not reach the allowance.",
+      "independent_evidence": "cones_boolean_reference.py's rows (generate_cones_loops_boolean_fixtures.py --check) agree with the pair with one input cut in two along its axis against the whole within 5.3e-42, inclusion and exclusion, the area identity and every face's classes within 6.9e-41, and Monte Carlo within 2.5 standard errors.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 38670188123 at 14a326de); source-pinned OCCT 8.1.0; the same difference as the macOS review, values within 5.9e-08 of max(1, |value|) of the macOS capture's"
+    },
+    {
+      "case": "ball_tilt_fuse",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "4e7a570b866dc34b8aa202925e3619d077016f196400223e579f436c678a3ae3",
+      "differences": [
+        "centre",
+        "measure",
+        "rust_entity_counts"
+      ],
+      "reason": "On Linux BRepAlgoAPI's result has the macOS capture's status, validity (valid), warnings (none), solid count and face, edge and vertex counts before and after unifying, its volumes, areas and centres within 9.7e-11 of max(1, |value|) of the macOS capture's, beyond the 1e-11 of rounding: OCCT's approximation (the Boolean's approximated intersection curves and BRepGProp's default integration on the faces they bound) landing differently on Linux. Against the reference (boolean-cones-loops-expected.tsv): volume 2.8e-07 and area 1.7e-07 relative and centre 7.8e-08 of the case's size on Linux, 2.8e-07, 1.7e-07 and 7.8e-08 on macOS (volume Linux closer by 6.0e-11, area macOS closer by 3.4e-12, centre macOS closer by 1.7e-11; the allowance is 2e-8), the same differences (centre, measure, rust_entity_counts) as on macOS. The macOS review of its own row: BRepGProp's default integration on the frustum in TILT against a sphere off its axis (a loop, an approximated quartic): the native result is valid with the reference's solid count, its volume 2.8e-7 and area 1.7e-7 relative and its centre 6.2e-8 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe, unchanged at 1e-12) is within 2.1e-11 in volume, 4.5e-12 in area (relative) and 1.2e-11 in centre; its edges' tolerance is at most 1e-7 (8 of its 23 edges B-splines). The geometry agrees with the reference; the default measure does not reach the allowance. Entity counts: BRepAlgoAPI's result, unified, has 5 faces, 12 edges and 8 vertices; the kernel's, counted with OCCT's seams, 4 faces, 13 edges and 10 vertices: the same faces, edges and vertices differing where each splits its curves (the kernel's loops at the switches between its graphs over each carrier's angle, or over the angle and the height, its circles at its seams' vertices; OCCT's intersection curves at their own points). The kernel's result validates and its volume, area and centre lie inside the reference's.",
+      "independent_evidence": "cones_boolean_reference.py's rows (generate_cones_loops_boolean_fixtures.py --check) agree with S9d.3b's closed form of a whole sphere against a cone (the lens of two discs along the cone's ideal axis) within 1.3e-16 (ideal axes against stored ones), with a second slicing direction within 1.7e-41, inclusion and exclusion, the area identity and every face's classes within 6.9e-41, and Monte Carlo within 2.5 standard errors.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 38670188123 at 14a326de); source-pinned OCCT 8.1.0; the same difference as the macOS review, values within 9.7e-11 of max(1, |value|) of the macOS capture's"
+    },
+    {
+      "case": "ball_tilt_cut",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "4281a991d479268fb64665c61f2bc96642fd197eda8fd08e403c9ea4b1610193",
+      "differences": [
+        "centre",
+        "measure",
+        "rust_entity_counts"
+      ],
+      "reason": "On Linux BRepAlgoAPI's result has the macOS capture's status, validity (valid), warnings (none), solid count and face, edge and vertex counts before and after unifying, its volumes, areas and centres within 3.7e-10 of max(1, |value|) of the macOS capture's, beyond the 1e-11 of rounding: OCCT's approximation (the Boolean's approximated intersection curves and BRepGProp's default integration on the faces they bound) landing differently on Linux. Against the reference (boolean-cones-loops-expected.tsv): volume 3.8e-07 and area 3.6e-07 relative and centre 7.2e-08 of the case's size on Linux, 3.8e-07, 3.6e-07 and 7.2e-08 on macOS (volume Linux closer by 4.2e-11, area macOS closer by 3.7e-10, centre macOS closer by 1.1e-11; the allowance is 2e-8), the same differences (centre, measure, rust_entity_counts) as on macOS. The macOS review of its own row: BRepGProp's default integration on the frustum in TILT against a sphere off its axis (a loop, an approximated quartic): the native result is valid with the reference's solid count, its volume 3.8e-7 and area 3.6e-7 relative and its centre 5.1e-8 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe, unchanged at 1e-12) is within 8.1e-12 in volume, 1.3e-10 in area (relative) and 1.5e-11 in centre; its edges' tolerance is at most 1e-7 (8 of its 23 edges B-splines). The geometry agrees with the reference; the default measure does not reach the allowance. Entity counts: BRepAlgoAPI's result, unified, has 5 faces, 12 edges and 8 vertices; the kernel's, counted with OCCT's seams, 4 faces, 13 edges and 10 vertices: the same faces, edges and vertices differing where each splits its curves (the kernel's loops at the switches between its graphs over each carrier's angle, or over the angle and the height, its circles at its seams' vertices; OCCT's intersection curves at their own points). The kernel's result validates and its volume, area and centre lie inside the reference's.",
+      "independent_evidence": "cones_boolean_reference.py's rows (generate_cones_loops_boolean_fixtures.py --check) agree with S9d.3b's closed form of a whole sphere against a cone (the lens of two discs along the cone's ideal axis) within 1.3e-16 (ideal axes against stored ones), with a second slicing direction within 1.7e-41, inclusion and exclusion, the area identity and every face's classes within 6.9e-41, and Monte Carlo within 2.5 standard errors.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 38670188123 at 14a326de); source-pinned OCCT 8.1.0; the same difference as the macOS review, values within 3.7e-10 of max(1, |value|) of the macOS capture's"
+    },
+    {
+      "case": "ball_tilt_common",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "9babc57d87be13d203df0227e5ce2164bc20a3e9bd761619bc3a04e5ab3826f2",
+      "differences": [
+        "centre",
+        "measure",
+        "rust_entity_counts"
+      ],
+      "reason": "On Linux BRepAlgoAPI's result has the macOS capture's status, validity (valid), warnings (none), solid count and face, edge and vertex counts before and after unifying, its volumes, areas and centres within 3.1e-09 of max(1, |value|) of the macOS capture's, beyond the 1e-11 of rounding: OCCT's approximation (the Boolean's approximated intersection curves and BRepGProp's default integration on the faces they bound) landing differently on Linux. Against the reference (boolean-cones-loops-expected.tsv): volume 7.8e-07 and area 3.8e-07 relative and centre 8.1e-08 of the case's size on Linux, 7.8e-07, 3.8e-07 and 8.1e-08 on macOS (volume Linux closer by 1.3e-09, area Linux closer by 3.1e-09, centre macOS closer by 1.2e-10; the allowance is 2e-8), the same differences (centre, measure, rust_entity_counts) as on macOS. The macOS review of its own row: BRepGProp's default integration on the frustum in TILT against a sphere off its axis (a loop, an approximated quartic): the native result is valid with the reference's solid count, its volume 7.8e-7 and area 3.8e-7 relative and its centre 5.5e-8 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe, unchanged at 1e-12) is within 4.1e-11 in volume, 2.7e-11 in area (relative) and 1.3e-10 in centre; its edges' tolerance is at most 1e-7 (8 of its 17 edges B-splines). The geometry agrees with the reference; the default measure does not reach the allowance. Entity counts: BRepAlgoAPI's result, unified, has 3 faces, 8 edges and 6 vertices; the kernel's, counted with OCCT's seams, 3 faces, 10 edges and 8 vertices: the same faces, edges and vertices differing where each splits its curves (the kernel's loops at the switches between its graphs over each carrier's angle, or over the angle and the height, its circles at its seams' vertices; OCCT's intersection curves at their own points). The kernel's result validates and its volume, area and centre lie inside the reference's.",
+      "independent_evidence": "cones_boolean_reference.py's rows (generate_cones_loops_boolean_fixtures.py --check) agree with S9d.3b's closed form of a whole sphere against a cone (the lens of two discs along the cone's ideal axis) within 1.3e-16 (ideal axes against stored ones), with a second slicing direction within 1.7e-41, inclusion and exclusion, the area identity and every face's classes within 6.9e-41, and Monte Carlo within 2.5 standard errors.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 38670188123 at 14a326de); source-pinned OCCT 8.1.0; the same difference as the macOS review, values within 3.1e-09 of max(1, |value|) of the macOS capture's"
+    },
+    {
+      "case": "ball_lean_cut",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "fb9a9af6bf85396e873fb5a67c8f2d81805a49da810aa38f2c9b8e6467244f44",
+      "differences": [
+        "centre",
+        "measure",
+        "rust_entity_counts"
+      ],
+      "reason": "On Linux BRepAlgoAPI's result has the macOS capture's status, validity (valid), warnings (none), solid count and face, edge and vertex counts before and after unifying, its volumes, areas and centres within 4.1e-09 of max(1, |value|) of the macOS capture's, beyond the 1e-11 of rounding: OCCT's approximation (the Boolean's approximated intersection curves and BRepGProp's default integration on the faces they bound) landing differently on Linux. Against the reference (boolean-cones-loops-expected.tsv): volume 2.1e-07 and area 4.3e-07 relative and centre 4.4e-08 of the case's size on Linux, 2.1e-07, 4.3e-07 and 4.5e-08 on macOS (volume Linux closer by 2.0e-09, area macOS closer by 4.1e-09, centre Linux closer by 2.8e-10; the allowance is 2e-8), the same differences (centre, measure, rust_entity_counts) as on macOS. The macOS review of its own row: BRepGProp's default integration on the cone in LEAN against a sphere off its axis (a loop, an approximated quartic): the native result is valid with the reference's solid count, its volume 2.1e-7 and area 4.3e-7 relative and its centre 3.6e-8 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe, unchanged at 1e-12) is within 1.6e-11 in volume, 1.1e-11 in area (relative) and 3.5e-12 in centre; its edges' tolerance is at most 1e-7 (6 of its 16 edges B-splines). The geometry agrees with the reference; the default measure does not reach the allowance. Entity counts: BRepAlgoAPI's result, unified, has 3 faces, 9 edges and 6 vertices; the kernel's, counted with OCCT's seams, 3 faces, 10 edges and 8 vertices: the same faces, edges and vertices differing where each splits its curves (the kernel's loops at the switches between its graphs over each carrier's angle, or over the angle and the height, its circles at its seams' vertices; OCCT's intersection curves at their own points). The kernel's result validates and its volume, area and centre lie inside the reference's.",
+      "independent_evidence": "cones_boolean_reference.py's rows (generate_cones_loops_boolean_fixtures.py --check) agree with S9d.3b's closed form of a whole sphere against a cone (the lens of two discs along the cone's ideal axis) within 1.3e-16 (ideal axes against stored ones), with a second slicing direction within 1.7e-41, inclusion and exclusion, the area identity and every face's classes within 6.9e-41, and Monte Carlo within 2.5 standard errors.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 38670188123 at 14a326de); source-pinned OCCT 8.1.0; the same difference as the macOS review, values within 4.1e-09 of max(1, |value|) of the macOS capture's"
+    },
+    {
+      "case": "ball_lean_common",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "1607593d67373e258b2bfb7ad909f7dc2bf8c5ca8e0676779f246d846b44d525",
+      "differences": [
+        "centre",
+        "measure",
+        "rust_entity_counts"
+      ],
+      "reason": "On Linux BRepAlgoAPI's result has the macOS capture's status, validity (valid), warnings (none), solid count and face, edge and vertex counts before and after unifying, its volumes, areas and centres within 1.9e-08 of max(1, |value|) of the macOS capture's, beyond the 1e-11 of rounding: OCCT's approximation (the Boolean's approximated intersection curves and BRepGProp's default integration on the faces they bound) landing differently on Linux. Against the reference (boolean-cones-loops-expected.tsv): volume 2.1e-06 and area 2.0e-06 relative and centre 1.5e-07 of the case's size on Linux, 2.1e-06, 2.0e-06 and 1.5e-07 on macOS (volume macOS closer by 5.9e-08, area macOS closer by 1.9e-08, centre Linux closer by 1.6e-09; the allowance is 2e-8), the same differences (centre, measure, rust_entity_counts) as on macOS. The macOS review of its own row: BRepGProp's default integration on the cone in LEAN against a sphere off its axis (a loop, an approximated quartic): the native result is valid with the reference's solid count, its volume 2.1e-6 and area 2e-6 relative and its centre 1.3e-7 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe, unchanged at 1e-12) is within 6.4e-10 in volume, 6.7e-10 in area (relative) and 5.9e-11 in centre; its edges' tolerance is at most 1e-7 (6 of its 11 edges B-splines). The geometry agrees with the reference; the default measure does not reach the allowance. Entity counts: BRepAlgoAPI's result, unified, has 2 faces, 5 edges and 4 vertices; the kernel's, counted with OCCT's seams, 2 faces, 7 edges and 6 vertices: the same faces, edges and vertices differing where each splits its curves (the kernel's loops at the switches between its graphs over each carrier's angle, or over the angle and the height, its circles at its seams' vertices; OCCT's intersection curves at their own points). The kernel's result validates and its volume, area and centre lie inside the reference's.",
+      "independent_evidence": "cones_boolean_reference.py's rows (generate_cones_loops_boolean_fixtures.py --check) agree with S9d.3b's closed form of a whole sphere against a cone (the lens of two discs along the cone's ideal axis) within 1.3e-16 (ideal axes against stored ones), with a second slicing direction within 1.7e-41, inclusion and exclusion, the area identity and every face's classes within 6.9e-41, and Monte Carlo within 2.5 standard errors.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 38670188123 at 14a326de); source-pinned OCCT 8.1.0; the same difference as the macOS review, values within 1.9e-08 of max(1, |value|) of the macOS capture's"
+    },
+    {
+      "case": "dome_cone_turned_cut",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "07db642dfdf50fbb991634761c3a14abe894c6ff575b2e3c4314feea1748f42f",
+      "differences": [
+        "rust_entity_counts"
+      ],
+      "reason": "On Linux BRepAlgoAPI's result has the macOS capture's status, validity (valid), warnings (none), solid count and face, edge and vertex counts before and after unifying, its volumes, areas and centres within 2.5e-09 of max(1, |value|) of the macOS capture's, beyond the 1e-11 of rounding: OCCT's approximation (the Boolean's approximated intersection curves and BRepGProp's default integration on the faces they bound) landing differently on Linux. Against the reference (boolean-cones-loops-expected.tsv): volume 1.5e-08 and area 1.4e-08 relative and centre 2.7e-09 of the case's size on Linux, 1.8e-08, 1.6e-08 and 2.6e-09 on macOS (volume Linux closer by 2.5e-09, area Linux closer by 1.6e-09, centre macOS closer by 4.5e-11; the allowance is 2e-8), the same differences (rust_entity_counts) as on macOS. The macOS review of its own row: The native result is valid with the reference's solid count and within the allowance (volume 1.8e-8 and area 1.6e-8 relative, centre 2.1e-9 of the case's size). Entity counts: BRepAlgoAPI's result, unified, has 3 faces, 8 edges and 6 vertices; the kernel's, counted with OCCT's seams, 3 faces, 7 edges and 5 vertices: the same faces, edges and vertices differing where each splits its curves (the kernel's loops at the switches between its graphs over each carrier's angle, or over the angle and the height, its circles at its seams' vertices; OCCT's intersection curves at their own points). The kernel's result validates and its volume, area and centre lie inside the reference's.",
+      "independent_evidence": "cones_boolean_reference.py's rows (generate_cones_loops_boolean_fixtures.py --check) agree with the pair's hemisphere and its complement against the whole sphere within 1.4e-41, inclusion and exclusion, the area identity and every face's classes within 6.9e-41, and Monte Carlo within 2.5 standard errors.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 38670188123 at 14a326de); source-pinned OCCT 8.1.0; the same difference as the macOS review, values within 2.5e-09 of max(1, |value|) of the macOS capture's"
+    },
+    {
+      "case": "dome_cone_turned_common",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "8ab4e6d579abe43bbaaac4fb6d88c976fb20e5a0d4011878770452968fc40f77",
+      "differences": [
+        "rust_entity_counts"
+      ],
+      "reason": "On Linux BRepAlgoAPI's result has the macOS capture's status, validity (valid), warnings (none), solid count and face, edge and vertex counts before and after unifying, its volumes, areas and centres within 6.3e-10 of max(1, |value|) of the macOS capture's, beyond the 1e-11 of rounding: OCCT's approximation (the Boolean's approximated intersection curves and BRepGProp's default integration on the faces they bound) landing differently on Linux. Against the reference (boolean-cones-loops-expected.tsv): volume 5.0e-09 and area 5.2e-09 relative and centre 1.9e-09 of the case's size on Linux, 4.4e-09, 5.7e-09 and 1.8e-09 on macOS (volume macOS closer by 6.3e-10, area Linux closer by 5.3e-10, centre macOS closer by 7.0e-11; the allowance is 2e-8), the same differences (rust_entity_counts) as on macOS. The macOS review of its own row: The native result is valid with the reference's solid count and within the allowance (volume 4.4e-9 and area 5.7e-9 relative, centre 1.8e-9 of the case's size). Entity counts: BRepAlgoAPI's result, unified, has 3 faces, 6 edges and 5 vertices; the kernel's, counted with OCCT's seams, 3 faces, 4 edges and 3 vertices: the same faces, edges and vertices differing where each splits its curves (the kernel's loops at the switches between its graphs over each carrier's angle, or over the angle and the height, its circles at its seams' vertices; OCCT's intersection curves at their own points). The kernel's result validates and its volume, area and centre lie inside the reference's.",
+      "independent_evidence": "cones_boolean_reference.py's rows (generate_cones_loops_boolean_fixtures.py --check) agree with the pair's hemisphere and its complement against the whole sphere within 1.4e-41, inclusion and exclusion, the area identity and every face's classes within 6.9e-41, and Monte Carlo within 2.5 standard errors.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 38670188123 at 14a326de); source-pinned OCCT 8.1.0; the same difference as the macOS review, values within 6.3e-10 of max(1, |value|) of the macOS capture's"
+    },
+    {
+      "case": "rod_ruling_exact_common",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "d77a19e3836202fb1cd79406353d1d55d751b12800f407d1d35d2764981a90b0",
+      "differences": [
+        "centre",
+        "measure"
+      ],
+      "reason": "On Linux BRepAlgoAPI's result has the macOS capture's status, validity (valid), warnings (none), solid count and face, edge and vertex counts before and after unifying, its volumes, areas and centres within 6.3e-08 of max(1, |value|) of the macOS capture's, beyond the 1e-11 of rounding: OCCT's approximation (the Boolean's approximated intersection curves and BRepGProp's default integration on the faces they bound) landing differently on Linux. Against the reference (boolean-cones-loops-expected.tsv): volume 4.5e-04 and area 1.3e-04 relative and centre 1.2e-04 of the case's size on Linux, 4.5e-04, 1.3e-04 and 1.2e-04 on macOS (volume macOS closer by 1.9e-09, area macOS closer by 3.5e-09, centre macOS closer by 1.0e-08; the allowance is 2e-8), the same differences (centre, measure) as on macOS. The macOS review of its own row: BRepGProp's default integration on the declared degenerate pair: a cylinder exactly along a cone's ruling (the kernel refuses it): the native result is valid with the reference's solid count, its volume 0.00045 and area 0.00013 relative and its centre 0.00011 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe, unchanged at 1e-12) is within 1.2e-11 in volume, 2.6e-10 in area (relative) and 1.6e-10 in centre; its edges' tolerance is at most 1e-7 (4 of its 8 edges B-splines). The geometry agrees with the reference; the default measure does not reach the allowance.",
+      "independent_evidence": "cones_boolean_reference.py's rows (generate_cones_loops_boolean_fixtures.py --check) agree with inclusion and exclusion, the area identity and every face's classes within 6.9e-41, and Monte Carlo within 2.5 standard errors.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 38670188123 at 14a326de); source-pinned OCCT 8.1.0; the same difference as the macOS review, values within 6.3e-08 of max(1, |value|) of the macOS capture's"
+    },
+    {
+      "case": "rod_graze_fuse",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "c5bd9a66a0ac8fcfd3d1e8b20c9429d5c04d09df1d8bb3b4557d08c2d5dfe874",
+      "differences": [
+        "centre",
+        "measure",
+        "rust_entity_counts"
+      ],
+      "reason": "BRepGProp's default integration on a rod across the frustum's axis grazing its wall (a loop, an approximated quartic): the native result is valid with the reference's solid count, its volume 1.5e-7 and area 5.6e-7 relative and its centre 4.7e-8 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe, unchanged at 1e-12) is within 3.4e-11 in volume, 6.4e-11 in area (relative) and 1.3e-11 in centre; its edges' tolerance is at most 1.8e-7 (2 of its 14 edges B-splines). The geometry agrees with the reference; the default measure does not reach the allowance. Entity counts: BRepAlgoAPI's result, unified, has 6 faces, 7 edges and 5 vertices; the kernel's, counted with OCCT's seams, 6 faces, 10 edges and 8 vertices: the same faces, edges and vertices differing where each splits its curves (the kernel's loops at the switches between its graphs over each carrier's angle, or over the angle and the height, its circles at its seams' vertices; OCCT's intersection curves at their own points). The kernel's result validates and its volume, area and centre lie inside the reference's.",
+      "independent_evidence": "cones_boolean_reference.py's rows (generate_cones_loops_boolean_fixtures.py --check) agree with S9d.3b's closed form of a rod across the cone's axis (the strip against the section's disc along the axis, circular segments, one quadrature) within 2.2e-40, with the pair with one input cut in two along its axis against the whole within 5.3e-42, inclusion and exclusion, the area identity and every face's classes within 6.9e-41, and Monte Carlo within 2.5 standard errors.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 38670188123 at 14a326de); source-pinned OCCT 8.1.0; the same difference as the macOS review, the native values within 1e-15 of max(1, |value|) of the macOS capture's"
+    },
+    {
+      "case": "rod_graze_cut",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "f2a6a3a084645b6164818c46f27046d5c7f4ab7719477f14bd541331e0b47732",
+      "differences": [
+        "centre",
+        "measure",
+        "rust_entity_counts"
+      ],
+      "reason": "BRepGProp's default integration on a rod across the frustum's axis grazing its wall (a loop, an approximated quartic): the native result is valid with the reference's solid count, its volume 1.4e-7 and area 4e-7 relative and its centre 3.4e-8 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe, unchanged at 1e-12) is within 2.2e-10 in volume, 2.7e-10 in area (relative) and 7e-11 in centre; its edges' tolerance is at most 1.8e-7 (2 of its 8 edges B-splines). The geometry agrees with the reference; the default measure does not reach the allowance. Entity counts: BRepAlgoAPI's result, unified, has 4 faces, 4 edges and 3 vertices; the kernel's, counted with OCCT's seams, 4 faces, 7 edges and 6 vertices: the same faces, edges and vertices differing where each splits its curves (the kernel's loops at the switches between its graphs over each carrier's angle, or over the angle and the height, its circles at its seams' vertices; OCCT's intersection curves at their own points). The kernel's result validates and its volume, area and centre lie inside the reference's.",
+      "independent_evidence": "cones_boolean_reference.py's rows (generate_cones_loops_boolean_fixtures.py --check) agree with S9d.3b's closed form of a rod across the cone's axis (the strip against the section's disc along the axis, circular segments, one quadrature) within 2.2e-40, with the pair with one input cut in two along its axis against the whole within 5.3e-42, inclusion and exclusion, the area identity and every face's classes within 6.9e-41, and Monte Carlo within 2.5 standard errors.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 38670188123 at 14a326de); source-pinned OCCT 8.1.0; the same difference as the macOS review, the native values within 3.8e-16 of max(1, |value|) of the macOS capture's"
+    },
+    {
+      "case": "rod_graze_common",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "1bc54f9f0a97797356eea5873d921dd397e8993ea21b6d2a7977649ba648be48",
+      "differences": [
+        "centre",
+        "measure",
+        "rust_entity_counts"
+      ],
+      "reason": "BRepGProp's default integration on a rod across the frustum's axis grazing its wall (a loop, an approximated quartic): the native result is valid with the reference's solid count, its volume 5.8e-6 and area 4e-6 relative and its centre 7.5e-8 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe, unchanged at 1e-12) is within 1.4e-9 in volume, 9e-10 in area (relative) and 2.6e-10 in centre; its edges' tolerance is at most 1.8e-7 (2 of its 2 edges B-splines). The geometry agrees with the reference; the default measure does not reach the allowance. Entity counts: BRepAlgoAPI's result, unified, has 2 faces, 1 edges and 1 vertices; the kernel's, counted with OCCT's seams, 2 faces, 4 edges and 4 vertices: the same faces, edges and vertices differing where each splits its curves (the kernel's loops at the switches between its graphs over each carrier's angle, or over the angle and the height, its circles at its seams' vertices; OCCT's intersection curves at their own points). The kernel's result validates and its volume, area and centre lie inside the reference's.",
+      "independent_evidence": "cones_boolean_reference.py's rows (generate_cones_loops_boolean_fixtures.py --check) agree with S9d.3b's closed form of a rod across the cone's axis (the strip against the section's disc along the axis, circular segments, one quadrature) within 2.2e-40, with the pair with one input cut in two along its axis against the whole within 5.3e-42, inclusion and exclusion, the area identity and every face's classes within 6.9e-41, and Monte Carlo within 2.5 standard errors.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 38670188123 at 14a326de); source-pinned OCCT 8.1.0; the same difference as the macOS review, the native values within 1.4e-14 of max(1, |value|) of the macOS capture's"
+    },
+    {
+      "case": "rod_bitten_cut",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "5d735a4efa86139afddbf7b1ab5848cad472b905fa6bd78401016be59f499a1e",
+      "differences": [
+        "centre",
+        "measure",
+        "rust_entity_counts"
+      ],
+      "reason": "BRepGProp's default integration on the rod less the frustum grazing its wall (a loop, an approximated quartic): the native result is valid with the reference's solid count, its volume 1.5e-6 and area 1.9e-6 relative and its centre 3.3e-8 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe, unchanged at 1e-12) is within 9.7e-10 in volume, 6.9e-10 in area (relative) and 7.8e-11 in centre; its edges' tolerance is at most 1.8e-7 (2 of its 8 edges B-splines). The geometry agrees with the reference; the default measure does not reach the allowance. Entity counts: BRepAlgoAPI's result, unified, has 4 faces, 4 edges and 3 vertices; the kernel's, counted with OCCT's seams, 4 faces, 7 edges and 6 vertices: the same faces, edges and vertices differing where each splits its curves (the kernel's loops at the switches between its graphs over each carrier's angle, or over the angle and the height, its circles at its seams' vertices; OCCT's intersection curves at their own points). The kernel's result validates and its volume, area and centre lie inside the reference's.",
+      "independent_evidence": "cones_boolean_reference.py's rows (generate_cones_loops_boolean_fixtures.py --check) agree with S9d.3b's closed form of a rod across the cone's axis (the strip against the section's disc along the axis, circular segments, one quadrature) within 2.2e-40, with a second slicing direction within 1.7e-41, inclusion and exclusion, the area identity and every face's classes within 6.9e-41, and Monte Carlo within 2.5 standard errors.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 38670188123 at 14a326de); source-pinned OCCT 8.1.0; the same difference as the macOS review, the native values within 2.8e-15 of max(1, |value|) of the macOS capture's"
+    },
+    {
+      "case": "tip_graze_cut",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "8d077104fb1df5e97638a063e345b360677b02a21053a2873114326dffa0e091",
+      "differences": [
+        "measure",
+        "rust_entity_counts"
+      ],
+      "reason": "BRepGProp's default integration on a rod across the cone's tip region beside its apex (a loop, an approximated quartic): the native result is valid with the reference's solid count, its volume 4.7e-8 and area 2.1e-7 relative and its centre 1.3e-8 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe, unchanged at 1e-12) is within 2.3e-11 in volume, 1.1e-10 in area (relative) and 9e-12 in centre; its edges' tolerance is at most 1e-7 (2 of its 7 edges B-splines). The geometry agrees with the reference; the default measure does not reach the allowance. Entity counts: BRepAlgoAPI's result, unified, has 3 faces, 4 edges and 3 vertices; the kernel's, counted with OCCT's seams, 3 faces, 7 edges and 6 vertices: the same faces, edges and vertices differing where each splits its curves (the kernel's loops at the switches between its graphs over each carrier's angle, or over the angle and the height, its circles at its seams' vertices; OCCT's intersection curves at their own points). The kernel's result validates and its volume, area and centre lie inside the reference's.",
+      "independent_evidence": "cones_boolean_reference.py's rows (generate_cones_loops_boolean_fixtures.py --check) agree with S9d.3b's closed form of a rod across the cone's axis (the strip against the section's disc along the axis, circular segments, one quadrature) within 2.2e-40, with the pair with one input cut in two along its axis against the whole within 5.3e-42, inclusion and exclusion, the area identity and every face's classes within 6.9e-41, and Monte Carlo within 2.5 standard errors.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 38670188123 at 14a326de); source-pinned OCCT 8.1.0; the same difference as the macOS review, the native values within 8.1e-15 of max(1, |value|) of the macOS capture's"
+    },
+    {
+      "case": "tip_graze_common",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "aff4741e21ed404ebb2a8f1cc7b35bf43f0748e91888549f10526cb89dd97897",
+      "differences": [
+        "centre",
+        "measure",
+        "rust_entity_counts"
+      ],
+      "reason": "BRepGProp's default integration on a rod across the cone's tip region beside its apex (a loop, an approximated quartic): the native result is valid with the reference's solid count, its volume 1.7e-6 and area 1.3e-6 relative and its centre 7.2e-8 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe, unchanged at 1e-12) is within 7e-10 in volume, 1e-9 in area (relative) and 5.9e-11 in centre; its edges' tolerance is at most 1e-7 (2 of its 2 edges B-splines). The geometry agrees with the reference; the default measure does not reach the allowance. Entity counts: BRepAlgoAPI's result, unified, has 2 faces, 1 edges and 1 vertices; the kernel's, counted with OCCT's seams, 2 faces, 4 edges and 4 vertices: the same faces, edges and vertices differing where each splits its curves (the kernel's loops at the switches between its graphs over each carrier's angle, or over the angle and the height, its circles at its seams' vertices; OCCT's intersection curves at their own points). The kernel's result validates and its volume, area and centre lie inside the reference's.",
+      "independent_evidence": "cones_boolean_reference.py's rows (generate_cones_loops_boolean_fixtures.py --check) agree with S9d.3b's closed form of a rod across the cone's axis (the strip against the section's disc along the axis, circular segments, one quadrature) within 2.2e-40, with the pair with one input cut in two along its axis against the whole within 5.3e-42, inclusion and exclusion, the area identity and every face's classes within 6.9e-41, and Monte Carlo within 2.5 standard errors.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 38670188123 at 14a326de); source-pinned OCCT 8.1.0; the same difference as the macOS review, the native values within 1.2e-13 of max(1, |value|) of the macOS capture's"
+    },
+    {
+      "case": "rod_lean_cut",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "7d6e60bdfcc01b537a3fc54b787af9f1008dda14c435ab3927845fa96a5b5ddc",
+      "differences": [
+        "centre",
+        "measure",
+        "rust_entity_counts"
+      ],
+      "reason": "BRepGProp's default integration on a rod in LEAN grazing the frustum's wall (a loop, an approximated quartic): the native result is valid with the reference's solid count, its volume 4.2e-7 and area 6.4e-7 relative and its centre 9e-8 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe, unchanged at 1e-12) is within 1.7e-11 in volume, 1.1e-9 in area (relative) and 7.6e-12 in centre; its edges' tolerance is at most 1e-7 (2 of its 12 edges B-splines). The geometry agrees with the reference; the default measure does not reach the allowance. Entity counts: BRepAlgoAPI's result, unified, has 4 faces, 6 edges and 4 vertices; the kernel's, counted with OCCT's seams, 4 faces, 8 edges and 6 vertices: the same faces, edges and vertices differing where each splits its curves (the kernel's loops at the switches between its graphs over each carrier's angle, or over the angle and the height, its circles at its seams' vertices; OCCT's intersection curves at their own points). The kernel's result validates and its volume, area and centre lie inside the reference's.",
+      "independent_evidence": "cones_boolean_reference.py's rows (generate_cones_loops_boolean_fixtures.py --check) agree with the pair with one input cut in two along its axis against the whole within 5.3e-42, inclusion and exclusion, the area identity and every face's classes within 6.9e-41, and Monte Carlo within 2.5 standard errors.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 38670188123 at 14a326de); source-pinned OCCT 8.1.0; the same difference as the macOS review, the native values within 1.9e-14 of max(1, |value|) of the macOS capture's"
+    },
+    {
+      "case": "rod_lean_common",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "573db716c78a7a178ffe38c9cc6666285212d97997b8e90247a2014b4e05e711",
+      "differences": [
+        "centre",
+        "measure",
+        "rust_entity_counts"
+      ],
+      "reason": "BRepGProp's default integration on a rod in LEAN grazing the frustum's wall (a loop, an approximated quartic): the native result is valid with the reference's solid count, its volume 2.3e-6 and area 2.1e-6 relative and its centre 2.2e-7 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe, unchanged at 1e-12) is within 1.7e-8 in volume, 1.1e-8 in area (relative) and 1.8e-9 in centre; its edges' tolerance is at most 1e-7 (2 of its 6 edges B-splines). The geometry agrees with the reference; the default measure does not reach the allowance. Entity counts: BRepAlgoAPI's result, unified, has 3 faces, 3 edges and 2 vertices; the kernel's, counted with OCCT's seams, 3 faces, 5 edges and 4 vertices: the same faces, edges and vertices differing where each splits its curves (the kernel's loops at the switches between its graphs over each carrier's angle, or over the angle and the height, its circles at its seams' vertices; OCCT's intersection curves at their own points). The kernel's result validates and its volume, area and centre lie inside the reference's.",
+      "independent_evidence": "cones_boolean_reference.py's rows (generate_cones_loops_boolean_fixtures.py --check) agree with the pair with one input cut in two along its axis against the whole within 5.3e-42, inclusion and exclusion, the area identity and every face's classes within 6.9e-41, and Monte Carlo within 2.5 standard errors.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 38670188123 at 14a326de); source-pinned OCCT 8.1.0; the same difference as the macOS review, the native values within 1.2e-13 of max(1, |value|) of the macOS capture's"
+    },
+    {
+      "case": "cones_graze_fuse",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "a0742919125b05d454332e7aaf8a00bfc48ccb200c0b1c517db52dc23ac5b900",
+      "differences": [
+        "centre",
+        "measure",
+        "rust_entity_counts"
+      ],
+      "reason": "BRepGProp's default integration on a thin frustum across the axis grazing the frustum's wall (a loop, an approximated quartic): the native result is valid with the reference's solid count, its volume 4.6e-7 and area 9.5e-7 relative and its centre 7.6e-8 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe, unchanged at 1e-12) is within 2e-11 in volume, 5.3e-12 in area (relative) and 3.4e-12 in centre; its edges' tolerance is at most 2.4e-7 (2 of its 14 edges B-splines). The geometry agrees with the reference; the default measure does not reach the allowance. Entity counts: BRepAlgoAPI's result, unified, has 6 faces, 7 edges and 5 vertices; the kernel's, counted with OCCT's seams, 6 faces, 10 edges and 8 vertices: the same faces, edges and vertices differing where each splits its curves (the kernel's loops at the switches between its graphs over each carrier's angle, or over the angle and the height, its circles at its seams' vertices; OCCT's intersection curves at their own points). The kernel's result validates and its volume, area and centre lie inside the reference's.",
+      "independent_evidence": "cones_boolean_reference.py's rows (generate_cones_loops_boolean_fixtures.py --check) agree with the pair with one input cut in two along its axis against the whole within 5.3e-42, inclusion and exclusion, the area identity and every face's classes within 6.9e-41, and Monte Carlo within 2.5 standard errors.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 38670188123 at 14a326de); source-pinned OCCT 8.1.0; the same difference as the macOS review, the native values within 1e-14 of max(1, |value|) of the macOS capture's"
+    },
+    {
+      "case": "cones_graze_cut",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "ff73d8225b8c01e890186b5e1818e6037cfa7b9c6f8a4f4e351f5664d4305afc",
+      "differences": [
+        "centre",
+        "measure",
+        "rust_entity_counts"
+      ],
+      "reason": "BRepGProp's default integration on a thin frustum across the axis grazing the frustum's wall (a loop, an approximated quartic): the native result is valid with the reference's solid count, its volume 3.6e-7 and area 7e-7 relative and its centre 6.2e-8 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe, unchanged at 1e-12) is within 3.5e-11 in volume, 1.7e-12 in area (relative) and 5.3e-12 in centre; its edges' tolerance is at most 2.4e-7 (2 of its 8 edges B-splines). The geometry agrees with the reference; the default measure does not reach the allowance. Entity counts: BRepAlgoAPI's result, unified, has 4 faces, 4 edges and 3 vertices; the kernel's, counted with OCCT's seams, 4 faces, 7 edges and 6 vertices: the same faces, edges and vertices differing where each splits its curves (the kernel's loops at the switches between its graphs over each carrier's angle, or over the angle and the height, its circles at its seams' vertices; OCCT's intersection curves at their own points). The kernel's result validates and its volume, area and centre lie inside the reference's.",
+      "independent_evidence": "cones_boolean_reference.py's rows (generate_cones_loops_boolean_fixtures.py --check) agree with the pair with one input cut in two along its axis against the whole within 5.3e-42, inclusion and exclusion, the area identity and every face's classes within 6.9e-41, and Monte Carlo within 2.5 standard errors.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 38670188123 at 14a326de); source-pinned OCCT 8.1.0; the same difference as the macOS review, the native values within 2.9e-15 of max(1, |value|) of the macOS capture's"
+    },
+    {
+      "case": "cones_graze_common",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "0cf5aaf6a8412c65b583168d7bdd52c2dd40514a04059887d028a3b85d502d49",
+      "differences": [
+        "centre",
+        "measure",
+        "rust_entity_counts"
+      ],
+      "reason": "BRepGProp's default integration on a thin frustum across the axis grazing the frustum's wall (a loop, an approximated quartic): the native result is valid with the reference's solid count, its volume 2.1e-6 and area 1.7e-6 relative and its centre 1.3e-7 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe, unchanged at 1e-12) is within 8.2e-10 in volume, 6.7e-11 in area (relative) and 1.3e-10 in centre; its edges' tolerance is at most 2.4e-7 (2 of its 2 edges B-splines). The geometry agrees with the reference; the default measure does not reach the allowance. Entity counts: BRepAlgoAPI's result, unified, has 2 faces, 1 edges and 1 vertices; the kernel's, counted with OCCT's seams, 2 faces, 4 edges and 4 vertices: the same faces, edges and vertices differing where each splits its curves (the kernel's loops at the switches between its graphs over each carrier's angle, or over the angle and the height, its circles at its seams' vertices; OCCT's intersection curves at their own points). The kernel's result validates and its volume, area and centre lie inside the reference's.",
+      "independent_evidence": "cones_boolean_reference.py's rows (generate_cones_loops_boolean_fixtures.py --check) agree with the pair with one input cut in two along its axis against the whole within 5.3e-42, inclusion and exclusion, the area identity and every face's classes within 6.9e-41, and Monte Carlo within 2.5 standard errors.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 38670188123 at 14a326de); source-pinned OCCT 8.1.0; the same difference as the macOS review, the native values within 2.4e-14 of max(1, |value|) of the macOS capture's"
+    },
+    {
+      "case": "cones_turned_cut",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "d917a1b46d15e3772716df13cc9c3a7cd10456228f5090f760e1cb211b15be1b",
+      "differences": [
+        "measure",
+        "rust_entity_counts"
+      ],
+      "reason": "BRepGProp's default integration on the frustum in TILT against a frustum in LEAN (a loop, an approximated quartic): the native result is valid with the reference's solid count, its volume 1.4e-8 and area 3.2e-8 relative and its centre 2.8e-9 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe, unchanged at 1e-12) is within 6.7e-11 in volume, 5.8e-11 in area (relative) and 2.8e-11 in centre; its edges' tolerance is at most 1.5e-7 (2 of its 12 edges B-splines). The geometry agrees with the reference; the default measure does not reach the allowance. Entity counts: BRepAlgoAPI's result, unified, has 5 faces, 6 edges and 4 vertices; the kernel's, counted with OCCT's seams, 5 faces, 7 edges and 5 vertices: the same faces, edges and vertices differing where each splits its curves (the kernel's loops at the switches between its graphs over each carrier's angle, or over the angle and the height, its circles at its seams' vertices; OCCT's intersection curves at their own points). The kernel's result validates and its volume, area and centre lie inside the reference's.",
+      "independent_evidence": "cones_boolean_reference.py's rows (generate_cones_loops_boolean_fixtures.py --check) agree with a second slicing direction within 1.7e-41, inclusion and exclusion, the area identity and every face's classes within 6.9e-41, and Monte Carlo within 2.5 standard errors.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 38670188123 at 14a326de); source-pinned OCCT 8.1.0; the same difference as the macOS review, the native values within 9.4e-15 of max(1, |value|) of the macOS capture's"
+    },
+    {
+      "case": "cones_turned_common",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "3d253b2da61730662b4831b6b41719f9c3543bb55c5d29d8f8d1e078c49dc432",
+      "differences": [
+        "centre",
+        "measure",
+        "rust_entity_counts"
+      ],
+      "reason": "BRepGProp's default integration on the frustum in TILT against a frustum in LEAN (a loop, an approximated quartic): the native result is valid with the reference's solid count, its volume 4.5e-7 and area 2.1e-7 relative and its centre 2.3e-8 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe, unchanged at 1e-12) is within 4e-9 in volume, 2.4e-9 in area (relative) and 3.5e-10 in centre; its edges' tolerance is at most 1.5e-7 (2 of its 6 edges B-splines). The geometry agrees with the reference; the default measure does not reach the allowance. Entity counts: BRepAlgoAPI's result, unified, has 3 faces, 3 edges and 2 vertices; the kernel's, counted with OCCT's seams, 3 faces, 4 edges and 3 vertices: the same faces, edges and vertices differing where each splits its curves (the kernel's loops at the switches between its graphs over each carrier's angle, or over the angle and the height, its circles at its seams' vertices; OCCT's intersection curves at their own points). The kernel's result validates and its volume, area and centre lie inside the reference's.",
+      "independent_evidence": "cones_boolean_reference.py's rows (generate_cones_loops_boolean_fixtures.py --check) agree with a second slicing direction within 1.7e-41, inclusion and exclusion, the area identity and every face's classes within 6.9e-41, and Monte Carlo within 2.5 standard errors.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 38670188123 at 14a326de); source-pinned OCCT 8.1.0; the same difference as the macOS review, the native values within 6.5e-14 of max(1, |value|) of the macOS capture's"
+    },
+    {
+      "case": "cones_asymptotic_cut",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "dfc712cc4669f85e26c0beafae0fa88aa3f848fde5a12cc13389821f885a4804",
+      "differences": [
+        "centre",
+        "measure",
+        "rust_entity_counts"
+      ],
+      "reason": "BRepGProp's default integration on a cone in LEAN beside the frustum, their direction cones crossing (a curve through infinity, an approximated quartic): the native result is valid with the reference's solid count, its volume 2.2e-7 and area 3.8e-7 relative and its centre 3.6e-8 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe, unchanged at 1e-12) is within 1.4e-10 in volume, 1.1e-10 in area (relative) and 2.7e-11 in centre; its edges' tolerance is at most 1.5e-7 (2 of its 18 edges B-splines). The geometry agrees with the reference; the default measure does not reach the allowance. Entity counts: BRepAlgoAPI's result, unified, has 5 faces, 9 edges and 6 vertices; the kernel's, counted with OCCT's seams, 5 faces, 10 edges and 7 vertices: the same faces, edges and vertices differing where each splits its curves (the kernel's loops at the switches between its graphs over each carrier's angle, or over the angle and the height, its circles at its seams' vertices; OCCT's intersection curves at their own points). The kernel's result validates and its volume, area and centre lie inside the reference's.",
+      "independent_evidence": "cones_boolean_reference.py's rows (generate_cones_loops_boolean_fixtures.py --check) agree with the pair with one input cut in two along its axis against the whole within 5.3e-42, inclusion and exclusion, the area identity and every face's classes within 6.9e-41, and Monte Carlo within 2.5 standard errors.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 38670188123 at 14a326de); source-pinned OCCT 8.1.0; the same difference as the macOS review, the native values within 7e-14 of max(1, |value|) of the macOS capture's"
+    },
+    {
+      "case": "cones_asymptotic_common",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "77b5db89c6a4969aeb18a46d37b8c637fec873a5891423f351e6f8502c770cbf",
+      "differences": [
+        "centre",
+        "measure",
+        "rust_entity_counts"
+      ],
+      "reason": "BRepGProp's default integration on a cone in LEAN beside the frustum, their direction cones crossing (a curve through infinity, an approximated quartic): the native result is valid with the reference's solid count, its volume 7.7e-8 and area 7.4e-8 relative and its centre 2.9e-8 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe, unchanged at 1e-12) is within 7.2e-9 in volume, 4.6e-9 in area (relative) and 6.8e-11 in centre; its edges' tolerance is at most 1.5e-7 (2 of its 12 edges B-splines). The geometry agrees with the reference; the default measure does not reach the allowance. Entity counts: BRepAlgoAPI's result, unified, has 4 faces, 6 edges and 4 vertices; the kernel's, counted with OCCT's seams, 4 faces, 7 edges and 5 vertices: the same faces, edges and vertices differing where each splits its curves (the kernel's loops at the switches between its graphs over each carrier's angle, or over the angle and the height, its circles at its seams' vertices; OCCT's intersection curves at their own points). The kernel's result validates and its volume, area and centre lie inside the reference's.",
+      "independent_evidence": "cones_boolean_reference.py's rows (generate_cones_loops_boolean_fixtures.py --check) agree with the pair with one input cut in two along its axis against the whole within 5.3e-42, inclusion and exclusion, the area identity and every face's classes within 6.9e-41, and Monte Carlo within 2.5 standard errors.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 38670188123 at 14a326de); source-pinned OCCT 8.1.0; the same difference as the macOS review, the native values within 6.3e-13 of max(1, |value|) of the macOS capture's"
+    },
+    {
+      "case": "ball_r125_cut",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "198c30598ac737274e74e55408e6849a96c85cce2230ac05643876b72d1df8bd",
+      "differences": [
+        "centre",
+        "measure",
+        "rust_entity_counts"
+      ],
+      "reason": "BRepGProp's default integration on the frustum turned about its axis against a sphere off it (a loop, an approximated quartic): the native result is valid with the reference's solid count, its volume 1.4e-7 and area 7.4e-9 relative and its centre 1.4e-8 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe, unchanged at 1e-12) is within 5.8e-11 in volume, 2.2e-11 in area (relative) and 2.8e-11 in centre; its edges' tolerance is at most 1e-7 (8 of its 23 edges B-splines). The geometry agrees with the reference; the default measure does not reach the allowance. Entity counts: BRepAlgoAPI's result, unified, has 5 faces, 12 edges and 8 vertices; the kernel's, counted with OCCT's seams, 4 faces, 13 edges and 10 vertices: the same faces, edges and vertices differing where each splits its curves (the kernel's loops at the switches between its graphs over each carrier's angle, or over the angle and the height, its circles at its seams' vertices; OCCT's intersection curves at their own points). The kernel's result validates and its volume, area and centre lie inside the reference's.",
+      "independent_evidence": "cones_boolean_reference.py's rows (generate_cones_loops_boolean_fixtures.py --check) agree with S9d.3b's closed form of a whole sphere against a cone (the lens of two discs along the cone's ideal axis) within 1.3e-16 (ideal axes against stored ones), with a second slicing direction within 1.7e-41, inclusion and exclusion, the area identity and every face's classes within 6.9e-41, and Monte Carlo within 2.5 standard errors.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 38670188123 at 14a326de); source-pinned OCCT 8.1.0; the same difference as the macOS review, the native values within 5e-14 of max(1, |value|) of the macOS capture's"
     }
   ]
 }

@@ -161,6 +161,167 @@
       "reason": "OCCT keeps the point where the dome's spline wall touches the other boundary as vertices and edges on that wall and its caps, even after ShapeUpgrade_UnifySameDomain (4 faces, 16 edges, 22 vertices); the kernel's tangency cuts nothing (S9's decisions, S9a.1 amendment (b)) and keeps the wall whole (4 faces, 6 edges, 4 vertices). The volume, area and centre agree with the reference.",
       "independent_evidence": "The reference finds the meeting a root of even multiplicity of the other curve's equation on the dome's B\u00e9zier arc (exact square-free factors), and the regions on either side of it lie on one side of the other boundary.",
       "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "blobs_cut_tilted",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "8911ee3ceb2af11e43935edc7a3d067081ab3483ac78f5b41fb69eb7a7a8e251",
+      "differences": [
+        "centre",
+        "measure"
+      ],
+      "reason": "On Linux BRepAlgoAPI's result has the macOS capture's status, validity (valid), warnings (none), solid count and face, edge and vertex counts before and after unifying, its volumes, areas and centres within 2.7e-08 of max(1, |value|) of the macOS capture's, beyond the 1e-11 of rounding: OCCT's approximation (the Boolean's approximated intersection curves and BRepGProp's default integration on the faces they bound) landing differently on Linux. Against the reference (boolean-spline-expected.tsv): volume 1.8e-07 and area 1.5e-07 relative and centre 3.9e-08 of the case's size on Linux, 1.8e-07, 1.5e-07 and 4.3e-08 on macOS (volume macOS closer by 3.6e-09, area macOS closer by 3.0e-09, centre Linux closer by 3.5e-09; the allowance is 2e-8), the same differences (centre, measure) as on macOS. The macOS review of its own row: Two blobs of cubic B-splines crossing: BRepGProp's default integration of the faces bounded by the cut cubic edges errs by 1.8e-07 in volume, 1.5e-07 in area and 4.3e-08 of the size in the centre. The result is valid with the reference's solid count. The kernel refuses spline profiles before S9a.2's code (OutOfDomain): the case is rust_unsupported.",
+      "independent_evidence": "The blob of four cubic Beziers has area 52.25 exactly by Green's theorem in exact Fractions. OCCT's own cut and common of the same blobs (blobs_common, XY) sum to 261.2499799 instead of the blob prism's 261.25 (the reference's to 1e-38). With a scratch variant of occt_boolean_oracle.cpp (not the captured probe) calling BRepGProp with an adaptive accuracy of 1e-13 and integrating u dv - v du in the object's frame over OCCT's own edges of each planar cap face of the result (BRepAdaptor_Curve, 2,000 subintervals of 5-point Gauss-Legendre per edge): the caps by Green's theorem over OCCT's edges are within 1.3e-09 of the reference's (BRepGProp's face area errs by 5.4e-07), the adaptive volume within 8.2e-10.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 38670188123 at 14a326de); source-pinned OCCT 8.1.0; the same difference as the macOS review, values within 2.7e-08 of max(1, |value|) of the macOS capture's"
+    },
+    {
+      "case": "dome_tangent_line_fuse_tilted",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "dd26a32bb187087704ff416ca11a2d5cd72aa00652b3a0ca8399bd7c194eb4d0",
+      "differences": [
+        "rust_entity_counts"
+      ],
+      "reason": "OCCT keeps the point where the dome's spline wall touches the other boundary as vertices and edges on that wall and its caps, even after ShapeUpgrade_UnifySameDomain, on Linux fewer of them than on macOS: 22 faces, 45 edges and 27 vertices as built, 12, 34 and 26 unified, against 22/48/33 and 12/37/32 on macOS; the kernel's tangency cuts nothing (S9's decisions, S9a.1 amendment (b)) and keeps the wall whole (12 faces, 30 edges, 20 vertices). Both results are valid without warnings, one solid; the volume, area and centre agree with the reference within 2.1e-11, 2.3e-11 relative and 5.0e-12 of the case's size on both platforms (every value within 3.7e-13 of max(1, |value|) of the macOS capture's: equally close). The difference is in counts only, where OCCT splits the edges about the touching point, which the reference (solid counts and measures) does not decide.",
+      "independent_evidence": "The reference finds the meeting a root of even multiplicity of the other curve's equation on the dome's B\u00e9zier arc (exact square-free factors), and the regions on either side of it lie on one side of the other boundary.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 38670188123 at 14a326de); source-pinned OCCT 8.1.0; the same difference as the macOS review, the touching point kept with 3 edges and 6 vertices fewer"
+    },
+    {
+      "case": "dome_touch_line_cut_tilted",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "3f7583003fc46ab99f9f466146a1dccefa400cd7af2bf085d01cb0b8a3030fe1",
+      "differences": [
+        "rust_entity_counts"
+      ],
+      "reason": "OCCT keeps the point where the dome's spline wall touches the other boundary as vertices and edges on that wall and its caps, even after ShapeUpgrade_UnifySameDomain, on Linux more of them than on macOS: 4 faces, 11 edges and 11 vertices (unchanged by unifying), against 4/10/9 on macOS; the kernel's tangency cuts nothing (S9's decisions, S9a.1 amendment (b)) and keeps the wall whole (4 faces, 6 edges, 4 vertices). Both results are valid without warnings, one solid; the volume, area and centre agree with the reference within 1.3e-16, 1.2e-10 relative and 7.4e-17 of the case's size on macOS and 0, 1.2e-10 and 4.6e-18 on Linux (every value within 1.5e-16 of max(1, |value|) of the macOS capture's: equally close but for rounding). The difference is in counts only, where OCCT splits the edges about the touching point, which the reference (solid counts and measures) does not decide.",
+      "independent_evidence": "The reference finds the meeting a root of even multiplicity of the other curve's equation on the dome's B\u00e9zier arc (exact square-free factors), and the regions on either side of it lie on one side of the other boundary.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 38670188123 at 14a326de); source-pinned OCCT 8.1.0; the same difference as the macOS review, the touching point kept with 1 edge and 2 vertices more"
+    },
+    {
+      "case": "dome_tangent_disc_fuse_tilted",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "6a6344c42f7bb55842d370b12b1290e697f63f56a470161f495f6e3e57c96fbc",
+      "differences": [
+        "rust_entity_counts"
+      ],
+      "reason": "OCCT keeps the point where the dome's spline wall touches the other boundary as vertices and edges on that wall and its caps, even after ShapeUpgrade_UnifySameDomain, on Linux fewer of them than on macOS: 6 faces, 15 edges and 14 vertices as built, 4, 11 and 12 unified, against 6/20/24 and 4/16/22 on macOS; the kernel's tangency cuts nothing (S9's decisions, S9a.1 amendment (b)) and keeps the wall whole (4 faces, 6 edges, 4 vertices). Both results are valid without warnings, one solid; the volume, area and centre agree with the reference within 0, 1.2e-10 relative and 1.3e-16 of the case's size on macOS and 1.3e-16, 1.2e-10 and 2.0e-16 on Linux (every value within 2.3e-16 of max(1, |value|) of the macOS capture's: equally close but for rounding). The difference is in counts only, where OCCT splits the edges about the touching point, which the reference (solid counts and measures) does not decide.",
+      "independent_evidence": "The reference finds the meeting a root of even multiplicity of the other curve's equation on the dome's B\u00e9zier arc (exact square-free factors), and the regions on either side of it lie on one side of the other boundary.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 38670188123 at 14a326de); source-pinned OCCT 8.1.0; the same difference as the macOS review, the touching point kept with 5 edges and 10 vertices fewer"
+    },
+    {
+      "case": "blob_inside_common_tilted",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "facb15b8fab7f39bdeed11b510642eac6e8d073b88dc336051aeed0bfcd12fde",
+      "differences": [
+        "measure"
+      ],
+      "reason": "On Linux BRepAlgoAPI's result has the macOS capture's status, validity (valid), warnings (none), solid count and face, edge and vertex counts before and after unifying, its volumes, areas and centres within 1.0e-08 of max(1, |value|) of the macOS capture's, beyond the 1e-11 of rounding: OCCT's approximation (the Boolean's approximated intersection curves and BRepGProp's default integration on the faces they bound) landing differently on Linux. Against the reference (boolean-spline-expected.tsv): volume 1.6e-07 and area 2.2e-07 relative and centre 1.4e-09 of the case's size on Linux, 1.7e-07, 2.2e-07 and 2.3e-09 on macOS (volume Linux closer by 2.9e-09, area Linux closer by 3.9e-09, centre Linux closer by 8.7e-10; the allowance is 2e-8), the same differences (measure) as on macOS. The macOS review of its own row: As blob_inside_cut, in the tilted frame: the common is the blob prism, and BRepGProp's default integration errs by 1.7e-07 in volume (261.2499567) and 2.2e-07 in area. The result is valid with the reference's solid count. The kernel refuses spline profiles before S9a.2's code (OutOfDomain): the case is rust_unsupported.",
+      "independent_evidence": "The blob of four cubic Beziers has area 52.25 exactly by Green's theorem in exact Fractions. The common is the blob prism, 261.25 exactly (OCCT's identical-blob common gives 261.25 to 2e-16). With a scratch variant of occt_boolean_oracle.cpp (not the captured probe) calling BRepGProp with an adaptive accuracy of 1e-13 and integrating u dv - v du in the object's frame over OCCT's own edges of each planar cap face of the result (BRepAdaptor_Curve, 2,000 subintervals of 5-point Gauss-Legendre per edge): the caps by Green's theorem over OCCT's edges are within 3.5e-10, the adaptive volume within 1.1e-10.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 38670188123 at 14a326de); source-pinned OCCT 8.1.0; the same difference as the macOS review, values within 1.0e-08 of max(1, |value|) of the macOS capture's"
+    },
+    {
+      "case": "capsule_parabola_common",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "828312691190c6678a6199ecb03d51cf6c5fd2e254fb66f7fcf7c21c4153b2dd",
+      "differences": [
+        "centre",
+        "measure"
+      ],
+      "reason": "The parabola's quadratic B-spline wall crosses the capsule's cylinder, and BRepGProp's default integration of the faces bounded by the B-spline edges errs by 3.8e-08 in volume, 2.1e-08 in area and 2.5e-08 of the case's size in the centre (beyond the 2e-8 allowance). The result is valid with the reference's solid count. The kernel refuses spline profiles before S9a.2's code (OutOfDomain): the case is rust_unsupported.",
+      "independent_evidence": "With a scratch variant of occt_boolean_oracle.cpp (not the captured probe) calling BRepGProp with an adaptive accuracy of 1e-13 and integrating u dv - v du in the object's frame over OCCT's own edges of each planar cap face of the result (BRepAdaptor_Curve, 2,000 subintervals of 5-point Gauss-Legendre per edge): the caps' areas by Green's theorem over OCCT's edges are the reference's slab area within 9.7e-10 relative (BRepGProp's own face area errs by 1.1e-07), and the adaptive volume is within 2.1e-10.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 38670188123 at 14a326de); source-pinned OCCT 8.1.0; the same difference as the macOS review, the native values within 9.6e-16 of max(1, |value|) of the macOS capture's"
+    },
+    {
+      "case": "capsule_parabola_cut_tilted",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "4a7bc6a905187cbf8d044b89a5fbdc2ec7d0a36db6de7726a1f5942b4afb322f",
+      "differences": [
+        "measure"
+      ],
+      "reason": "As capsule_parabola_common, in the tilted frame: BRepGProp's default integration errs by 1.4e-07 in volume and 1.7e-07 in area. The result is valid with the reference's solid count. The kernel refuses spline profiles before S9a.2's code (OutOfDomain): the case is rust_unsupported.",
+      "independent_evidence": "With a scratch variant of occt_boolean_oracle.cpp (not the captured probe) calling BRepGProp with an adaptive accuracy of 1e-13 and integrating u dv - v du in the object's frame over OCCT's own edges of each planar cap face of the result (BRepAdaptor_Curve, 2,000 subintervals of 5-point Gauss-Legendre per edge): the caps by Green's theorem over OCCT's edges are within 9.9e-11 of the reference's (BRepGProp's face area errs by 4.1e-07), the adaptive volume within 2.1e-10.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 38670188123 at 14a326de); source-pinned OCCT 8.1.0; the same difference as the macOS review, the native values within 1.1e-15 of max(1, |value|) of the macOS capture's"
+    },
+    {
+      "case": "waves_common",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "0822d90146688d3573b8739df2216361077200d09ae6d0bd0b1fb32d92ac4289",
+      "differences": [
+        "centre",
+        "measure"
+      ],
+      "reason": "BRepGProp integrates the faces bounded by the wave, a quadratic B-spline of three spans, badly (S8b's wave reviews): the two lenses between the waves have volumes 14.534320 and 14.536522 against the reference's 14.533527 each, 1.3e-04 in total volume, 5.7e-05 in area, 1.9e-05 of the size in the centre. The adaptive integration is no better (1.9e-04). OCCT's section edges carry tolerance 2.6e-05 here. The result is valid with the reference's solid count. The kernel refuses spline profiles before S9a.2's code (OutOfDomain): the case is rust_unsupported.",
+      "independent_evidence": "The wave profile (the rectangle [0, 10] x [0, 6] under the quadratic B-spline of three spans through the poles (10, 6), (8, 8), (5, 5), (2, 8), (0, 6)) has area 65.75 exactly, the region above the second wave 68.0625, and both waves are symmetric about u = 5. S8b's split capture reviewed the same BRepGProp error on faces bounded by this wave (occt-split-divergences.json: wave_knot, wave_parallel_four, wave_tilted). The two lenses are mirror images about u = 5, so their volumes are equal; OCCT's differ by 2.2e-03. With a scratch variant of occt_boolean_oracle.cpp (not the captured probe) calling BRepGProp with an adaptive accuracy of 1e-13 and integrating u dv - v du in the object's frame over OCCT's own edges of each planar cap face of the result (BRepAdaptor_Curve, 2,000 subintervals of 5-point Gauss-Legendre per edge): each lens's caps by Green's theorem over OCCT's edges have area 2.9067054 (the reference 2.9067054, within 4.5e-08), where BRepGProp gives 2.9080086 and 2.9066872.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 38670188123 at 14a326de); source-pinned OCCT 8.1.0; the same difference as the macOS review, the native values within 5.6e-15 of max(1, |value|) of the macOS capture's"
+    },
+    {
+      "case": "waves_fuse_tilted",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "ad688ec376b8b19f2fb36dc8d2e55d690f781964f11cceefdd975cdebce95dde",
+      "differences": [
+        "centre",
+        "measure"
+      ],
+      "reason": "BRepGProp integrates the faces bounded by the waves, quadratic B-splines of three spans, badly (S8b's wave reviews): 5.0e-06 in volume, 7.3e-06 in area, 5.2e-07 of the size in the centre; the default caps' face areas err by up to 1.5e-05. The result is valid with the reference's solid count. The kernel refuses spline profiles before S9a.2's code (OutOfDomain): the case is rust_unsupported.",
+      "independent_evidence": "The wave profile (the rectangle [0, 10] x [0, 6] under the quadratic B-spline of three spans through the poles (10, 6), (8, 8), (5, 5), (2, 8), (0, 6)) has area 65.75 exactly, the region above the second wave 68.0625, and both waves are symmetric about u = 5. S8b's split capture reviewed the same BRepGProp error on faces bounded by this wave (occt-split-divergences.json: wave_knot, wave_parallel_four, wave_tilted). The fuse is symmetric about u = 5 (world x = 6); OCCT's centre is at x = 5.9999939. With a scratch variant of occt_boolean_oracle.cpp (not the captured probe) calling BRepGProp with an adaptive accuracy of 1e-13 and integrating u dv - v du in the object's frame over OCCT's own edges of each planar cap face of the result (BRepAdaptor_Curve, 2,000 subintervals of 5-point Gauss-Legendre per edge): the caps by Green's theorem over OCCT's edges agree with the reference's within 6.5e-14, and the adaptive volume within 1.9e-13.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 38670188123 at 14a326de); source-pinned OCCT 8.1.0; the same difference as the macOS review, the native values within 5.2e-13 of max(1, |value|) of the macOS capture's"
+    },
+    {
+      "case": "dome_tangent_line_common",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "64f22635dd8fe8208df6012816d6cfce755ea9b59966cacf0a0883784c6de82d",
+      "differences": [
+        "rust_entity_counts"
+      ],
+      "reason": "OCCT keeps the point where the dome's spline wall touches the other boundary as vertices and edges on that wall and its caps, even after ShapeUpgrade_UnifySameDomain (6 faces, 14 edges, 10 vertices); the kernel's tangency cuts nothing (S9's decisions, S9a.1 amendment (b)) and keeps the wall whole (6 faces, 12 edges, 8 vertices). The volume, area and centre agree with the reference.",
+      "independent_evidence": "The reference finds the meeting a root of even multiplicity of the other curve's equation on the dome's B\u00e9zier arc (exact square-free factors), and the regions on either side of it lie on one side of the other boundary.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 38670188123 at 14a326de); source-pinned OCCT 8.1.0; the same difference as the macOS review, the native values within 2.2e-16 of max(1, |value|) of the macOS capture's"
+    },
+    {
+      "case": "blob_inside_cut",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "dddeaae20ae82e8d20526706ccd3433ec359938111a4aafbb54891496e28c61f",
+      "differences": [
+        "measure"
+      ],
+      "reason": "The blob's walls cross the square's caps (the tool spans -1 to 6), and BRepGProp's default integration of the caps bounded by the section's cubic edges errs by 1.2e-07 in volume (238.7500297) and 8.4e-08 in area. The result is valid with the reference's solid count. The kernel refuses spline profiles before S9a.2's code (OutOfDomain): the case is rust_unsupported.",
+      "independent_evidence": "The blob of four cubic Beziers has area 52.25 exactly by Green's theorem in exact Fractions. The blob lies strictly inside the square [-1, 9]^2, so the cut is the square prism less the blob prism: 500 - 261.25 = 238.75 exactly. With a scratch variant of occt_boolean_oracle.cpp (not the captured probe) calling BRepGProp with an adaptive accuracy of 1e-13 and integrating u dv - v du in the object's frame over OCCT's own edges of each planar cap face of the result (BRepAdaptor_Curve, 2,000 subintervals of 5-point Gauss-Legendre per edge): the caps by Green's theorem over OCCT's edges have area 47.75000002 (3.8e-10; BRepGProp's face area errs by 3.7e-07), the adaptive volume 238.75000003.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 38670188123 at 14a326de); source-pinned OCCT 8.1.0; the same difference as the macOS review, the native values within 4.9e-15 of max(1, |value|) of the macOS capture's"
+    },
+    {
+      "case": "blob_pocket_cut",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "0965939800145b53a1594535092fed955c75947e25f2d9c41c43c36e757927f3",
+      "differences": [
+        "measure"
+      ],
+      "reason": "A pocket with the blob's walls from height 3 to 5: BRepGProp's default integration of the top cap bounded by the section's cubic edges errs by 2.6e-08 in volume (395.5000104) and 4.0e-08 in area. The result is valid with the reference's solid count. The kernel refuses spline profiles before S9a.2's code (OutOfDomain): the case is rust_unsupported.",
+      "independent_evidence": "The blob of four cubic Beziers has area 52.25 exactly by Green's theorem in exact Fractions. The pocket removes 2 / 5 of the blob prism from the square prism: 500 - 104.5 = 395.5 exactly. With a scratch variant of occt_boolean_oracle.cpp (not the captured probe) calling BRepGProp with an adaptive accuracy of 1e-13 and integrating u dv - v du in the object's frame over OCCT's own edges of each planar cap face of the result (BRepAdaptor_Curve, 2,000 subintervals of 5-point Gauss-Legendre per edge): the top cap by Green's theorem over OCCT's edges is within 3.8e-10 of the reference's 47.75 (BRepGProp's face area errs by 3.7e-07), the adaptive volume within 2.6e-11.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 38670188123 at 14a326de); source-pinned OCCT 8.1.0; the same difference as the macOS review, the native values within 1.5e-15 of max(1, |value|) of the macOS capture's"
+    },
+    {
+      "case": "waves_step_fuse_tilted",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "954e1f15bb4cdbe1122789764bd5ef8cf867583fa373eadd5a490f2169c72a83",
+      "differences": [
+        "centre",
+        "measure"
+      ],
+      "reason": "BRepGProp integrates the faces bounded by the waves, quadratic B-splines of three spans, badly (S8b's wave reviews): 8.0e-04 in volume (720.2583 against 719.6848), 3.2e-04 in area, 9.0e-06 of the size in the centre; the adaptive integration is worse (1.8e-03). OCCT's section edges carry tolerance 2.6e-05 here. The result is valid with the reference's solid count. The kernel refuses spline profiles before S9a.2's code (OutOfDomain): the case is rust_unsupported.",
+      "independent_evidence": "The wave profile (the rectangle [0, 10] x [0, 6] under the quadratic B-spline of three spans through the poles (10, 6), (8, 8), (5, 5), (2, 8), (0, 6)) has area 65.75 exactly, the region above the second wave 68.0625, and both waves are symmetric about u = 5. S8b's split capture reviewed the same BRepGProp error on faces bounded by this wave (occt-split-divergences.json: wave_knot, wave_parallel_four, wave_tilted). The stack is the wave prism alone from 0 to 2 (131.5), the fuse from 2 to 5 (3 x 127.9990892) and the upper region alone from 5 to 8 (204.1875): 719.6847677. With a scratch variant of occt_boolean_oracle.cpp (not the captured probe) calling BRepGProp with an adaptive accuracy of 1e-13 and integrating u dv - v du in the object's frame over OCCT's own edges of each planar cap face of the result (BRepAdaptor_Curve, 2,000 subintervals of 5-point Gauss-Legendre per edge): the caps by Green's theorem over OCCT's edges are the reference's within 2.6e-09 (bottom 65.7500002, top 68.0625000, the steps at heights 2 and 5 62.2490768 and 59.9365890), where BRepGProp gives 65.8445345 and 68.1511920 for the bottom and top.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 38670188123 at 14a326de); source-pinned OCCT 8.1.0; the same difference as the macOS review, the native values within 3.8e-16 of max(1, |value|) of the macOS capture's"
     }
   ]
 }

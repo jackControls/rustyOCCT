@@ -1,0 +1,7 @@
+{
+  "platform": "linux",
+  "source": "GitHub Actions run 38670188123 (commit 14a326de), ubuntu-24.04, source-pinned OCCT 8.1.0",
+  "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+  "observations_sha256": "a645dd38067ff87e929c8ab291b8fa9f696b91ce9167a9661dc8ce9dc3a211ae",
+  "review": "The same cases, statuses, validity, warnings, solid counts and face, edge and vertex counts (before and after unifying) as the macOS arm64 capture for every Boolean; volumes, areas and centres within 2.3e-12 of max(1, |value|) of the capture's but for slot_rod_common, 1.3e-11 from it: a result whose default BRepGProp measure lies 3.6e-06 from the reference on both platforms, OCCT's approximation landing differently on Linux, with a Linux review by hand (occt-boolean-piece-forms-divergences.json) with the same differences as on macOS, Linux closer by 1.2e-11 in volume, 1.3e-11 in area and 1.4e-12 in centre. Every Linux result valid without warnings."
+}
