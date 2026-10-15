@@ -1,0 +1,7 @@
+{
+  "platform": "linux",
+  "source": "GitHub Actions run 38670188123 (commit 14a326de), ubuntu-24.04, source-pinned OCCT 8.1.0",
+  "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+  "observations_sha256": "0a3f7af68ab1ca3645499f979e960a928e32d66e9b076ba26a645d2579bcc7e6",
+  "review": "The same cases, statuses, validity, warnings, solid counts and face, edge and vertex counts (before and after unifying) as the macOS arm64 capture for every Boolean; volumes, areas and centres within 2.2e-13 of max(1, |value|) of the capture's but for dome_touch_cut (6.9e-10) and dome_touch_common (2.3e-09), declared degenerate: results whose default BRepGProp measures lie 4.4e-07 to 5.7e-07 from the reference on macOS, OCCT's approximation landing differently on Linux. Each has a Linux review by hand (occt-boolean-spline-cone-divergences.json) with the same differences as on macOS: the platforms' errors from the reference differ by at most 4.0e-03 of the macOS error, Linux closer in both. Every Linux result valid; apex_wall_cut and apex_wall_common report warnings, as on macOS."
+}

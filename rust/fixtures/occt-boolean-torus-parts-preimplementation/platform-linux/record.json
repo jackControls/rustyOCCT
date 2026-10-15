@@ -1,0 +1,7 @@
+{
+  "platform": "linux",
+  "source": "GitHub Actions run 38670188123 (commit 14a326de), ubuntu-24.04, source-pinned OCCT 8.1.0",
+  "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+  "observations_sha256": "c36f572bad216c4b1106ba4408402909028954e58a0cc7f883346f41ad94c1b7",
+  "review": "The same cases, statuses, validity, warnings, solid counts and face, edge and vertex counts (before and after unifying) as the macOS arm64 capture for every Boolean; volumes, areas and centres within 9.6e-12 of max(1, |value|) of the capture's, except that ih_ball_cut's two pieces (mirror images about z = 0, each of volume 0.77328990205123 and 3 faces, 5 edges, 3 vertices) come in the other order: matched in either order every value is within 9.5e-15 of the capture's (in the listed order the centres' z, 0.92975 and -0.92975, differ by 1.9, the largest deviation). The same solids; the case matches the reference on both platforms (no review). qw_lean_ball_common is invalid (BRepCheck) on Linux as on macOS, its row within 1.3e-13 of the capture's, and hw_ball_cut and hw_ball_common report warnings on both; every other Linux result valid without warnings."
+}

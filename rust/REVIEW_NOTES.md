@@ -17190,6 +17190,91 @@ Decisions for S9, recorded before its code (2026-09-28):
   nonrational splines (S8b's profiles), where the two tests are one, and
   were not replayed.
 
+* **The Boolean captures' Linux records taken from run 38670188123
+  (2026-10-14; HANDOFF's item 2).** The workflow's first run, 38670188123
+  at `14a326de` (ubuntu-24.04), was green; its three artifacts hold the
+  Linux observation of each of the 45 captures without a record. All 45
+  have their `platform-linux/` records now (S9a.1's two prisms had theirs:
+  all 46 are compared strictly on Linux), and each of the run's 611
+  pending Linux differences has a review fingerprinted by its Linux row:
+  * **28 within rounding**, taken by `take_platform_records.py`: every
+    case's statuses, validity, warnings, solid counts and face, edge and
+    vertex counts the macOS capture's, every value within 5.6e-16
+    (imported-polyhedra) to 5.5e-12 (spline-parallel) of max(1, |value|)
+    of it; their 259 macOS reviews copied under the Linux fingerprints.
+  * **17 reviewed by hand** (capped, cones-loops, cones, given-met,
+    imported, piece-forms, plane-parts, primitive-chains, procedural,
+    spheres, spline-cone, spline, torus-curved, torus-parts, torus,
+    torus-segment, turned): each of their 75 cases beyond the 1e-11 of
+    rounding, or listed by hand, set beside the macOS row and the set's
+    expected TSV (the mpmath reference's exact volumes, areas, centres and
+    solid counts); a record's review for each (`--review`), 69 Linux
+    reviews written by hand (each naming the platform closer to the
+    reference, by how much, and the kind of difference, the macOS review
+    and its independent evidence kept beside it), 283 copied. The kinds:
+    * **Values, 63 cases** in 14 sets, 1.1e-11 (plane-parts'
+      `rod_flat_cut`) to 2.3e-07 (turned's `rings_pipe_cut`) of the
+      capture's values, the topology, validity and warnings the same:
+      results whose default BRepGProp measures lie 5.7e-09 to 4.5e-04 from
+      the reference on macOS (faces bounded by the Boolean's approximated
+      intersection curves), OCCT's approximation landing differently on
+      glibc. The differences against the reference are the same on both
+      (no case crossing the 2e-8 allowance either way); the platforms'
+      errors differ by under 1% of the error in 53 of the 63, at most 0.91
+      of it (torus-curved's `spike_common`: its volume 4.1e-09 from the
+      reference on Linux against 4.5e-08, its area 4.0e-08 against
+      7.0e-09); Linux closer in 41 cases, macOS in 22 (the sum of the
+      relative volume, area and centre errors).
+    * **Order, 5 cases: the large deviations.** spheres' `pipe_ends_cut`
+      (2), torus's `frame_cut` (3.3) and `corner_caps_common` (1.5),
+      torus-parts' `ih_ball_cut` (1.9) and torus-segment's `column_ih_cut`
+      (1.5) are not other results: Linux lists the same solids in another
+      order, symmetric pieces (mirror images about `z = 0`, a frame's equal
+      corner caps) exchanged, every solid within 1.2e-14 of one of the
+      capture's matched in any order; the deviation is a centre coordinate
+      compared with its mirror image. Three match the reference on both
+      platforms; `frame_cut` and `corner_caps_common` keep macOS's reviewed
+      measure differences (1.0e-06 and 2.4e-07, equal on both within
+      3.9e-15), with Linux reviews.
+    * **Cones' `rod_ruling_common`** (a cylinder 1e-16 off tangency along
+      a cone's ruling, declared degenerate): the same valid empty result
+      on both, the reference's; macOS reports warnings and Linux none, the
+      only difference.
+    * **Cones' `ball_inscribed_cut`** (a ball inscribed in a cone, tangent
+      along a circle, declared degenerate): Linux gives two valid solids
+      without warnings, the tip above the circle (2 faces, 5 edges, 3
+      vertices) and the rest, where macOS keeps one solid touching itself
+      along the circle (its count reviewed); the reference counts 2, so
+      Linux is the reference's result (totals within 4.0e-16), macOS's
+      count the departure: a different topology, valid on both.
+    * **Plane-parts' `flat_touch_fuse` and `flat_touch_cut`** (a ball
+      resting on the flat's top disc at one point, declared degenerate):
+      the solid counts do not change (2 and 1 on both; the fuse's 2 against
+      the reference's 1 is macOS's reviewed difference, kept by a Linux
+      review). The counts do: each Linux solid has one vertex fewer, the
+      inputs' own counts (the ball 1 face, 3 edges, 2 vertices; the flat 4,
+      6, 4 as `part_flat.brep` holds it), where macOS makes the one point
+      of contact a vertex of both. Valid without warnings on both, values
+      within 4.3e-16 of macOS's and 3.5e-15 of the reference; not an
+      invalid result.
+    * **Spline's three tilted tangencies** (`dome_tangent_line_fuse_tilted`,
+      `dome_touch_line_cut_tilted`, `dome_tangent_disc_fuse_tilted`): OCCT
+      keeps the dome's touching point as edges and vertices on both
+      platforms, a different number on Linux (unified 12/34/26 against
+      12/37/32, 4/11/11 against 4/10/9, 4/11/12 against 4/16/22), valid
+      without warnings, values within 3.7e-13 of macOS's: counts only,
+      which the reference does not decide; the Linux reviews set them
+      against the kernel's counts as the macOS ones do.
+  No Linux result is invalid where the macOS one is valid (torus-parts'
+  `qw_lean_ball_common` is invalid on both, as reviewed); no case is left
+  pending. Checks: a check of the written files against the run (each
+  record's digest its `native.txt`, that file the run's observation; all
+  611 pending differences finding their review; no review duplicated);
+  `test_platform_records.py`; all 46 comparisons on macOS with the pinned
+  SDK (`run_boolean_comparisons.py --shard 0 --shards 1`), 0 failures and
+  the table's counts, the records inert where the capture is the
+  platform's own. Next: the next scheduled run, green with all 46 strict.
+
 * **CI budget (U6).** Per-push fuzz runs replay a bounded sample plus every
   regression and new seed; the daily schedule replays everything; the heavy
   exact targets run on schedule only; Windows runs a smoke subset per push

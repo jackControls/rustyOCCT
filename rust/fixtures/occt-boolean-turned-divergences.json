@@ -174,6 +174,180 @@
    "reason": "BRepGProp's default integration on faces bounded by the Boolean's approximated intersection curves: the native result is valid with the reference's solid count, its volume 3.3e-04 and area 1.1e-04 relative and its centre 6.1e-05 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe) is within 5.8e-10 in volume, 5.0e-10 in area (relative) and 6.2e-11 in centre; its edges' tolerance is at most 1.0e-07. The geometry agrees with the reference; the default measure does not reach the allowance. Entity counts: BRepAlgoAPI gives 3 faces, 3 edges and 2 vertices (2 faces, 2 edges and 2 vertices after ShapeUpgrade_UnifySameDomain); the kernel's result, counted with OCCT's seams, has 2 faces, 4 edges and 4 vertices. The loop's graphs over each cylinder's angle meet at rational switch points (S9c.2b.1: between turning points of the two kinds), vertices OCCT does not have (its intersection curves are B-splines split at its own points); switch vertices stay in the result by decision (REVIEW_NOTES.md, S9c.2).",
    "independent_evidence": "curved_boolean_reference.py's rows (generate_turned_boolean_fixtures.py --check) agree with the common of the skew cylinders as the perpendicular one (one quadrature in eta) over sin phi = sqrt(0.7696), centred on the axes' common perpendicular (1e-15: turned frames), with inclusion and exclusion, the area identity and every face's classes within 1e-40, and with Monte Carlo within 2.4 standard errors; every cap's circle is clear of the other cylinder.",
    "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+  },
+  {
+   "case": "bite_tiltx_fuse",
+   "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+   "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+   "native_sha256": "cba14b57058ebb7acb3a016142957c08ffb022ad2dffce70e172498135c8b0a6",
+   "differences": [
+    "centre",
+    "measure",
+    "rust_entity_counts"
+   ],
+   "reason": "On Linux BRepAlgoAPI's result has the macOS capture's status, validity (valid), warnings (none), solid count and face, edge and vertex counts before and after unifying, its volumes, areas and centres within 8.4e-10 of max(1, |value|) of the macOS capture's, beyond the 1e-11 of rounding: OCCT's approximation (the Boolean's approximated intersection curves and BRepGProp's default integration on the faces they bound) landing differently on Linux. Against the reference (boolean-turned-expected.tsv): volume 1.9e-05 and area 2.6e-05 relative and centre 2.7e-06 of the case's size on Linux, 1.9e-05, 2.6e-05 and 2.7e-06 on macOS (volume Linux closer by 2.6e-10, area Linux closer by 3.1e-10, centre Linux closer by 2.1e-11; the allowance is 2e-8), the same differences (centre, measure, rust_entity_counts) as on macOS. The macOS review of its own row: BRepGProp's default integration on faces bounded by the Boolean's approximated intersection curves: the native result is valid with the reference's solid count, its volume 1.9e-05 and area 2.6e-05 relative and its centre 2.7e-06 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe) is within 3.7e-12 in volume, 9.4e-12 in area (relative) and 5.0e-12 in centre; its edges' tolerance is at most 1.4e-07. The geometry agrees with the reference; the default measure does not reach the allowance. Entity counts: BRepAlgoAPI gives 6 faces, 9 edges and 6 vertices; the kernel's result, counted with OCCT's seams, has 6 faces, 10 edges and 8 vertices. The loop's graphs over each cylinder's angle meet at rational switch points (S9c.2b.1: between turning points of the two kinds), vertices OCCT does not have (its intersection curves are B-splines split at its own points); switch vertices stay in the result by decision (REVIEW_NOTES.md, S9c.2).",
+   "independent_evidence": "curved_boolean_reference.py's rows (generate_turned_boolean_fixtures.py --check) agree with the common of the crossing cylinders as the perpendicular one (one quadrature in eta) over sin phi = 4/5, centred on the axes' common perpendicular (1e-15: turned frames), with inclusion and exclusion, the area identity and every face's classes within 1e-40, and with Monte Carlo within 2.4 standard errors; every cap's circle is clear of the other cylinder.",
+   "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 38670188123 at 14a326de); source-pinned OCCT 8.1.0; the same difference as the macOS review, values within 8.4e-10 of max(1, |value|) of the macOS capture's"
+  },
+  {
+   "case": "bite_tiltx_cut",
+   "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+   "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+   "native_sha256": "33facad7d6137b58eceb4f5d241b9b1347a85d3f768af85fcd7e5afb491c1eb4",
+   "differences": [
+    "centre",
+    "measure",
+    "rust_entity_counts"
+   ],
+   "reason": "On Linux BRepAlgoAPI's result has the macOS capture's status, validity (valid), warnings (none), solid count and face, edge and vertex counts before and after unifying, its volumes, areas and centres within 1.5e-09 of max(1, |value|) of the macOS capture's, beyond the 1e-11 of rounding: OCCT's approximation (the Boolean's approximated intersection curves and BRepGProp's default integration on the faces they bound) landing differently on Linux. Against the reference (boolean-turned-expected.tsv): volume 3.3e-05 and area 6.9e-06 relative and centre 4.9e-06 of the case's size on Linux, 3.3e-05, 6.9e-06 and 4.9e-06 on macOS (volume Linux closer by 5.3e-10, area Linux closer by 1.0e-09, centre Linux closer by 3.5e-11; the allowance is 2e-8), the same differences (centre, measure, rust_entity_counts) as on macOS. The macOS review of its own row: BRepGProp's default integration on faces bounded by the Boolean's approximated intersection curves: the native result is valid with the reference's solid count, its volume 3.3e-05 and area 6.9e-06 relative and its centre 4.9e-06 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe) is within 5.6e-12 in volume, 2.9e-11 in area (relative) and 1.1e-11 in centre; its edges' tolerance is at most 1.4e-07. The geometry agrees with the reference; the default measure does not reach the allowance. Entity counts: BRepAlgoAPI gives 4 faces, 6 edges and 4 vertices; the kernel's result, counted with OCCT's seams, has 4 faces, 7 edges and 6 vertices. The loop's graphs over each cylinder's angle meet at rational switch points (S9c.2b.1: between turning points of the two kinds), vertices OCCT does not have (its intersection curves are B-splines split at its own points); switch vertices stay in the result by decision (REVIEW_NOTES.md, S9c.2).",
+   "independent_evidence": "curved_boolean_reference.py's rows (generate_turned_boolean_fixtures.py --check) agree with the common of the crossing cylinders as the perpendicular one (one quadrature in eta) over sin phi = 4/5, centred on the axes' common perpendicular (1e-15: turned frames), with inclusion and exclusion, the area identity and every face's classes within 1e-40, and with Monte Carlo within 2.4 standard errors; every cap's circle is clear of the other cylinder.",
+   "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 38670188123 at 14a326de); source-pinned OCCT 8.1.0; the same difference as the macOS review, values within 1.5e-09 of max(1, |value|) of the macOS capture's"
+  },
+  {
+   "case": "bite_tiltx_common",
+   "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+   "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+   "native_sha256": "20b5602926238edb0d0af81581dc0ce3ca0b09af68ee48d5b7899b0101e12f33",
+   "differences": [
+    "centre",
+    "measure",
+    "rust_entity_counts"
+   ],
+   "reason": "On Linux BRepAlgoAPI's result has the macOS capture's status, validity (valid), warnings (none), solid count and face, edge and vertex counts before and after unifying, its volumes, areas and centres within 1.8e-09 of max(1, |value|) of the macOS capture's, beyond the 1e-11 of rounding: OCCT's approximation (the Boolean's approximated intersection curves and BRepGProp's default integration on the faces they bound) landing differently on Linux. Against the reference (boolean-turned-expected.tsv): volume 1.0e-04 and area 9.0e-05 relative and centre 2.8e-05 of the case's size on Linux, 1.0e-04, 9.0e-05 and 2.8e-05 on macOS (volume macOS closer by 3.8e-10, area Linux closer by 2.3e-10, centre macOS closer by 2.2e-10; the allowance is 2e-8), the same differences (centre, measure, rust_entity_counts) as on macOS. The macOS review of its own row: BRepGProp's default integration on faces bounded by the Boolean's approximated intersection curves: the native result is valid with the reference's solid count, its volume 1.0e-04 and area 9.0e-05 relative and its centre 2.8e-05 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe) is within 3.1e-11 in volume, 5.5e-11 in area (relative) and 6.0e-11 in centre; its edges' tolerance is at most 1.4e-07. The geometry agrees with the reference; the default measure does not reach the allowance. Entity counts: BRepAlgoAPI gives 3 faces, 3 edges and 2 vertices (2 faces, 2 edges and 2 vertices after ShapeUpgrade_UnifySameDomain); the kernel's result, counted with OCCT's seams, has 2 faces, 4 edges and 4 vertices. The loop's graphs over each cylinder's angle meet at rational switch points (S9c.2b.1: between turning points of the two kinds), vertices OCCT does not have (its intersection curves are B-splines split at its own points); switch vertices stay in the result by decision (REVIEW_NOTES.md, S9c.2).",
+   "independent_evidence": "curved_boolean_reference.py's rows (generate_turned_boolean_fixtures.py --check) agree with the common of the crossing cylinders as the perpendicular one (one quadrature in eta) over sin phi = 4/5, centred on the axes' common perpendicular (1e-15: turned frames), with inclusion and exclusion, the area identity and every face's classes within 1e-40, and with Monte Carlo within 2.4 standard errors; every cap's circle is clear of the other cylinder.",
+   "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 38670188123 at 14a326de); source-pinned OCCT 8.1.0; the same difference as the macOS review, values within 1.8e-09 of max(1, |value|) of the macOS capture's"
+  },
+  {
+   "case": "rings_pipe_fuse",
+   "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+   "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+   "native_sha256": "789df077b5b8ce1012fe9d4446db9c078fc3545708c9fc415274fc082a1d7580",
+   "differences": [
+    "centre",
+    "measure"
+   ],
+   "reason": "On Linux BRepAlgoAPI's result has the macOS capture's status, validity (valid), warnings (none), solid count and face, edge and vertex counts before and after unifying, its volumes, areas and centres within 5.7e-08 of max(1, |value|) of the macOS capture's, beyond the 1e-11 of rounding: OCCT's approximation (the Boolean's approximated intersection curves and BRepGProp's default integration on the faces they bound) landing differently on Linux. Against the reference (boolean-turned-expected.tsv): volume 2.1e-05 and area 1.8e-05 relative and centre 6.1e-06 of the case's size on Linux, 2.1e-05, 1.8e-05 and 6.1e-06 on macOS (volume Linux closer by 4.8e-08, area Linux closer by 3.6e-08, centre Linux closer by 7.9e-09; the allowance is 2e-8), the same differences (centre, measure) as on macOS. The macOS review of its own row: BRepGProp's default integration on faces bounded by the Boolean's approximated intersection curves: the native result is valid with the reference's solid count, its volume 2.1e-05 and area 1.8e-05 relative and its centre 6.1e-06 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe) is within 6.0e-11 in volume, 3.8e-11 in area (relative) and 1.6e-11 in centre; its edges' tolerance is at most 1.0e-07. The geometry agrees with the reference; the default measure does not reach the allowance.",
+   "independent_evidence": "curved_boolean_reference.py's rows (generate_turned_boolean_fixtures.py --check) agree with the common of the crossing cylinders as the perpendicular one (one quadrature in eta) over sin phi = 3/5, centred on the axes' common perpendicular (1e-15: turned frames), with inclusion and exclusion, the area identity and every face's classes within 1e-40, and with Monte Carlo within 2.4 standard errors; every cap's circle is clear of the other cylinder.",
+   "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 38670188123 at 14a326de); source-pinned OCCT 8.1.0; the same difference as the macOS review, values within 5.7e-08 of max(1, |value|) of the macOS capture's"
+  },
+  {
+   "case": "rings_pipe_cut",
+   "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+   "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+   "native_sha256": "1e49a191c281d84f4233ac050798c3a840c783686751948420b2966f69ad81fa",
+   "differences": [
+    "centre",
+    "measure"
+   ],
+   "reason": "On Linux BRepAlgoAPI's result has the macOS capture's status, validity (valid), warnings (none), solid count (2) and face, edge and vertex counts before and after unifying, its volumes, areas and centres within 2.3e-07 of max(1, |value|) of the macOS capture's, beyond the 1e-11 of rounding: OCCT's approximation (the Boolean's approximated intersection curves and BRepGProp's default integration on the faces they bound) landing differently on Linux. Against the reference (boolean-turned-expected.tsv): volume 3.0e-05 and area 3.7e-05 relative and centre 2.5e-05 of the case's size on Linux, 3.1e-05, 3.7e-05 and 2.5e-05 on macOS (volume Linux closer by 1.1e-07, area Linux closer by 1.1e-07, centre Linux closer by 5.4e-08; the allowance is 2e-8), the same differences (centre, measure) as on macOS. The macOS review of its own row: BRepGProp's default integration on faces bounded by the Boolean's approximated intersection curves: the native result is valid with the reference's solid count, its volume 3.1e-05 and area 3.7e-05 relative and its centre 2.5e-05 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe) is within 8.9e-10 in volume, 9.1e-10 in area (relative) and 3.5e-11 in centre; its edges' tolerance is at most 1.0e-07. The geometry agrees with the reference; the default measure does not reach the allowance.",
+   "independent_evidence": "curved_boolean_reference.py's rows (generate_turned_boolean_fixtures.py --check) agree with the common of the crossing cylinders as the perpendicular one (one quadrature in eta) over sin phi = 3/5, centred on the axes' common perpendicular (1e-15: turned frames), with inclusion and exclusion, the area identity and every face's classes within 1e-40, and with Monte Carlo within 2.4 standard errors; every cap's circle is clear of the other cylinder.",
+   "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 38670188123 at 14a326de); source-pinned OCCT 8.1.0; the same difference as the macOS review, values within 2.3e-07 of max(1, |value|) of the macOS capture's"
+  },
+  {
+   "case": "rings_pipe_common",
+   "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+   "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+   "native_sha256": "c95d617d01b2f16c0b737cae4be23c2aedd790f18abf61e685d594637e554544",
+   "differences": [
+    "centre",
+    "measure"
+   ],
+   "reason": "On Linux BRepAlgoAPI's result has the macOS capture's status, validity (valid), warnings (none), solid count and face, edge and vertex counts before and after unifying, its volumes, areas and centres within 1.5e-07 of max(1, |value|) of the macOS capture's, beyond the 1e-11 of rounding: OCCT's approximation (the Boolean's approximated intersection curves and BRepGProp's default integration on the faces they bound) landing differently on Linux. Against the reference (boolean-turned-expected.tsv): volume 5.5e-06 and area 2.0e-05 relative and centre 3.7e-06 of the case's size on Linux, 5.4e-06, 2.1e-05 and 3.6e-06 on macOS (volume macOS closer by 7.9e-08, area Linux closer by 1.1e-07, centre macOS closer by 1.6e-08; the allowance is 2e-8), the same differences (centre, measure) as on macOS. The macOS review of its own row: BRepGProp's default integration on faces bounded by the Boolean's approximated intersection curves: the native result is valid with the reference's solid count, its volume 5.4e-06 and area 2.1e-05 relative and its centre 3.6e-06 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe) is within 7.3e-10 in volume, 2.0e-10 in area (relative) and 1.4e-10 in centre; its edges' tolerance is at most 1.0e-07. The geometry agrees with the reference; the default measure does not reach the allowance.",
+   "independent_evidence": "curved_boolean_reference.py's rows (generate_turned_boolean_fixtures.py --check) agree with the common of the crossing cylinders as the perpendicular one (one quadrature in eta) over sin phi = 3/5, centred on the axes' common perpendicular (1e-15: turned frames), with inclusion and exclusion, the area identity and every face's classes within 1e-40, and with Monte Carlo within 2.4 standard errors; every cap's circle is clear of the other cylinder.",
+   "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 38670188123 at 14a326de); source-pinned OCCT 8.1.0; the same difference as the macOS review, values within 1.5e-07 of max(1, |value|) of the macOS capture's"
+  },
+  {
+   "case": "skew_lean_cut",
+   "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+   "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+   "native_sha256": "ccdb1f8714797ebd3e172dea93cfd108783d6e4d882ba4c854145a6f7870ee85",
+   "differences": [
+    "centre",
+    "measure",
+    "rust_entity_counts"
+   ],
+   "reason": "On Linux BRepAlgoAPI's result has the macOS capture's status, validity (valid), warnings (none), solid count and face, edge and vertex counts before and after unifying, its volumes, areas and centres within 2.1e-10 of max(1, |value|) of the macOS capture's, beyond the 1e-11 of rounding: OCCT's approximation (the Boolean's approximated intersection curves and BRepGProp's default integration on the faces they bound) landing differently on Linux. Against the reference (boolean-turned-expected.tsv): volume 7.4e-05 and area 2.4e-04 relative and centre 2.6e-05 of the case's size on Linux, 7.4e-05, 2.4e-04 and 2.6e-05 on macOS (volume Linux closer by 2.9e-11, area Linux closer by 9.1e-11, centre macOS closer by 3.0e-11; the allowance is 2e-8), the same differences (centre, measure, rust_entity_counts) as on macOS. The macOS review of its own row: BRepGProp's default integration on faces bounded by the Boolean's approximated intersection curves: the native result is valid with the reference's solid count, its volume 7.4e-05 and area 2.4e-04 relative and its centre 2.6e-05 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe) is within 1.4e-10 in volume, 2.2e-10 in area (relative) and 3.8e-11 in centre; its edges' tolerance is at most 1.0e-07. The geometry agrees with the reference; the default measure does not reach the allowance. Entity counts: BRepAlgoAPI gives 5 faces, 6 edges and 4 vertices (4 faces, 5 edges and 4 vertices after ShapeUpgrade_UnifySameDomain); the kernel's result, counted with OCCT's seams, has 4 faces, 7 edges and 6 vertices. The loop's graphs over each cylinder's angle meet at rational switch points (S9c.2b.1: between turning points of the two kinds), vertices OCCT does not have (its intersection curves are B-splines split at its own points); switch vertices stay in the result by decision (REVIEW_NOTES.md, S9c.2).",
+   "independent_evidence": "curved_boolean_reference.py's rows (generate_turned_boolean_fixtures.py --check) agree with the common of the skew cylinders as the perpendicular one (one quadrature in eta) over sin phi = sqrt(0.7696), centred on the axes' common perpendicular (1e-15: turned frames), with inclusion and exclusion, the area identity and every face's classes within 1e-40, and with Monte Carlo within 2.4 standard errors; every cap's circle is clear of the other cylinder.",
+   "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 38670188123 at 14a326de); source-pinned OCCT 8.1.0; the same difference as the macOS review, values within 2.1e-10 of max(1, |value|) of the macOS capture's"
+  },
+  {
+   "case": "skew_lean_common",
+   "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+   "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+   "native_sha256": "02d6b6e1147dfbb2ed3dc5379d1a612293744af8d4fa8f4e88b4d2328bac8e9c",
+   "differences": [
+    "centre",
+    "measure",
+    "rust_entity_counts"
+   ],
+   "reason": "On Linux BRepAlgoAPI's result has the macOS capture's status, validity (valid), warnings (none), solid count and face, edge and vertex counts before and after unifying, its volumes, areas and centres within 1.8e-09 of max(1, |value|) of the macOS capture's, beyond the 1e-11 of rounding: OCCT's approximation (the Boolean's approximated intersection curves and BRepGProp's default integration on the faces they bound) landing differently on Linux. Against the reference (boolean-turned-expected.tsv): volume 3.3e-04 and area 1.1e-04 relative and centre 6.1e-05 of the case's size on Linux, 3.3e-04, 1.1e-04 and 6.1e-05 on macOS (volume Linux closer by 2.9e-10, area Linux closer by 3.0e-10, centre macOS closer by 2.1e-10; the allowance is 2e-8), the same differences (centre, measure, rust_entity_counts) as on macOS. The macOS review of its own row: BRepGProp's default integration on faces bounded by the Boolean's approximated intersection curves: the native result is valid with the reference's solid count, its volume 3.3e-04 and area 1.1e-04 relative and its centre 6.1e-05 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe) is within 5.8e-10 in volume, 5.0e-10 in area (relative) and 6.2e-11 in centre; its edges' tolerance is at most 1.0e-07. The geometry agrees with the reference; the default measure does not reach the allowance. Entity counts: BRepAlgoAPI gives 3 faces, 3 edges and 2 vertices (2 faces, 2 edges and 2 vertices after ShapeUpgrade_UnifySameDomain); the kernel's result, counted with OCCT's seams, has 2 faces, 4 edges and 4 vertices. The loop's graphs over each cylinder's angle meet at rational switch points (S9c.2b.1: between turning points of the two kinds), vertices OCCT does not have (its intersection curves are B-splines split at its own points); switch vertices stay in the result by decision (REVIEW_NOTES.md, S9c.2).",
+   "independent_evidence": "curved_boolean_reference.py's rows (generate_turned_boolean_fixtures.py --check) agree with the common of the skew cylinders as the perpendicular one (one quadrature in eta) over sin phi = sqrt(0.7696), centred on the axes' common perpendicular (1e-15: turned frames), with inclusion and exclusion, the area identity and every face's classes within 1e-40, and with Monte Carlo within 2.4 standard errors; every cap's circle is clear of the other cylinder.",
+   "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 38670188123 at 14a326de); source-pinned OCCT 8.1.0; the same difference as the macOS review, values within 1.8e-09 of max(1, |value|) of the macOS capture's"
+  },
+  {
+   "case": "blind_tilt_fuse",
+   "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+   "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+   "native_sha256": "91646100fb5273dd573420be1b9c0958eeec3bfa50ff96cc8923f92b5fbfef1f",
+   "differences": [
+    "centre",
+    "measure"
+   ],
+   "reason": "BRepGProp's default integration on faces bounded by the Boolean's approximated intersection curves: the native result is valid with the reference's solid count, its volume 6.7e-06 and area 8.0e-06 relative and its centre 1.0e-06 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe) is within 2.6e-11 in volume, 4.7e-11 in area (relative) and 4.5e-12 in centre; its edges' tolerance is at most 1.0e-07. The geometry agrees with the reference; the default measure does not reach the allowance.",
+   "independent_evidence": "curved_boolean_reference.py's rows (generate_turned_boolean_fixtures.py --check) agree with one quadrature in eta of the perpendicular cylinders' common with the pipe's cap, its areas from the walls' angles and the caps' parts (1e-15: turned frames), with inclusion and exclusion, the area identity and every face's classes within 1e-40, and with Monte Carlo within 2.4 standard errors; every cap's circle is clear of the other cylinder.",
+   "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 38670188123 at 14a326de); source-pinned OCCT 8.1.0; the same difference as the macOS review, the native values within 2.9e-15 of max(1, |value|) of the macOS capture's"
+  },
+  {
+   "case": "blind_tilt_cut",
+   "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+   "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+   "native_sha256": "fe067fd909b42751a0954a57a9b9926b2db536df0260c8a1ffa869c7f8cdd986",
+   "differences": [
+    "centre",
+    "measure"
+   ],
+   "reason": "BRepGProp's default integration on faces bounded by the Boolean's approximated intersection curves: the native result is valid with the reference's solid count, its volume 1.0e-05 and area 8.8e-06 relative and its centre 1.2e-06 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe) is within 7.0e-11 in volume, 4.3e-11 in area (relative) and 1.4e-11 in centre; its edges' tolerance is at most 1.0e-07. The geometry agrees with the reference; the default measure does not reach the allowance.",
+   "independent_evidence": "curved_boolean_reference.py's rows (generate_turned_boolean_fixtures.py --check) agree with one quadrature in eta of the perpendicular cylinders' common with the pipe's cap, its areas from the walls' angles and the caps' parts (1e-15: turned frames), with inclusion and exclusion, the area identity and every face's classes within 1e-40, and with Monte Carlo within 2.4 standard errors; every cap's circle is clear of the other cylinder.",
+   "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 38670188123 at 14a326de); source-pinned OCCT 8.1.0; the same difference as the macOS review, the native values within 4.7e-15 of max(1, |value|) of the macOS capture's"
+  },
+  {
+   "case": "hole_tiltx_fuse",
+   "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+   "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+   "native_sha256": "2ff65f8b507352d6a37307de151c61bcecea1a1b21d0c32d14c3adf5f9e0fdc5",
+   "differences": [
+    "centre",
+    "measure"
+   ],
+   "reason": "BRepGProp's default integration on faces bounded by the Boolean's approximated intersection curves: the native result is valid with the reference's solid count, its volume 1.7e-07 and area 2.1e-07 relative and its centre 5.7e-08 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe) is within 3.4e-12 in volume, 4.8e-12 in area (relative) and 2.4e-13 in centre; its edges' tolerance is at most 1.0e-07. The geometry agrees with the reference; the default measure does not reach the allowance.",
+   "independent_evidence": "curved_boolean_reference.py's rows (generate_turned_boolean_fixtures.py --check) agree with the pipe between the box's parallel walls by Cavalieri less its common with the hole's cylinder over sin phi = 4/5 (1e-15: turned frames), with inclusion and exclusion, the area identity and every face's classes within 1e-40, and with Monte Carlo within 2.4 standard errors; every cap's circle is clear of the other cylinder.",
+   "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 38670188123 at 14a326de); source-pinned OCCT 8.1.0; the same difference as the macOS review, the native values within 5.8e-14 of max(1, |value|) of the macOS capture's"
+  },
+  {
+   "case": "hole_tiltx_cut",
+   "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+   "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+   "native_sha256": "3dc34a9100aed76722f42f050d154e951b63977aab3fbec4ca409c61a861e69e",
+   "differences": [
+    "centre",
+    "measure"
+   ],
+   "reason": "BRepGProp's default integration on faces bounded by the Boolean's approximated intersection curves: the native result is valid with the reference's solid count, its volume 1.8e-07 and area 2.4e-07 relative and its centre 6.0e-08 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe) is within 3.4e-12 in volume, 8.2e-12 in area (relative) and 2.4e-13 in centre; its edges' tolerance is at most 1.0e-07. The geometry agrees with the reference; the default measure does not reach the allowance.",
+   "independent_evidence": "curved_boolean_reference.py's rows (generate_turned_boolean_fixtures.py --check) agree with the pipe between the box's parallel walls by Cavalieri less its common with the hole's cylinder over sin phi = 4/5 (1e-15: turned frames), with inclusion and exclusion, the area identity and every face's classes within 1e-40, and with Monte Carlo within 2.4 standard errors; every cap's circle is clear of the other cylinder.",
+   "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 38670188123 at 14a326de); source-pinned OCCT 8.1.0; the same difference as the macOS review, the native values within 5.3e-14 of max(1, |value|) of the macOS capture's"
+  },
+  {
+   "case": "hole_tiltx_common",
+   "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+   "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+   "native_sha256": "d28c24bb684b18c2c4145a3a24e956ededb0914f457beed861f51759ecd011ce",
+   "differences": [
+    "centre",
+    "measure"
+   ],
+   "reason": "BRepGProp's default integration on faces bounded by the Boolean's approximated intersection curves: the native result is valid with the reference's solid count, its volume 3.9e-06 and area 2.8e-06 relative and its centre 1.6e-06 of the case's size from the reference (the allowance is 2e-8). The same native result measured by BRepGProp with an adaptive accuracy of 1e-10 (VolumeProperties and SurfaceProperties given Eps; a diagnostic build of occt_boolean_oracle.cpp, not the capture's probe) is within 1.8e-10 in volume, 1.4e-10 in area (relative) and 2.0e-10 in centre; its edges' tolerance is at most 1.0e-07. The geometry agrees with the reference; the default measure does not reach the allowance.",
+   "independent_evidence": "curved_boolean_reference.py's rows (generate_turned_boolean_fixtures.py --check) agree with the pipe between the box's parallel walls by Cavalieri less its common with the hole's cylinder over sin phi = 4/5 (1e-15: turned frames), with inclusion and exclusion, the area identity and every face's classes within 1e-40, and with Monte Carlo within 2.4 standard errors; every cap's circle is clear of the other cylinder.",
+   "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 38670188123 at 14a326de); source-pinned OCCT 8.1.0; the same difference as the macOS review, the native values within 1.1e-12 of max(1, |value|) of the macOS capture's"
   }
  ]
 }

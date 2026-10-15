@@ -2071,7 +2071,11 @@ campaign of every target the steps touch.
   capture's statuses and counts within 1e-11 of its values (a macOS review
   copied under the Linux row's fingerprint where the difference is that
   review's), by hand otherwise (REVIEW_NOTES.md's "The Boolean captures'
-  Linux records on CI, refined"; the steps in `HANDOFF.md`, item 2).
+  Linux records on CI, refined"; the steps in `HANDOFF.md`, item 2). All
+  46 captures have their Linux records since the first run, 38670188123:
+  28 within rounding, 17 reviewed by hand against the macOS capture and
+  the reference (REVIEW_NOTES.md's "The Boolean captures' Linux records
+  taken from run 38670188123").
 * **Spline profiles (S9a.2), before their kernel code.** The reference's
   `SplinePair` (`boolean_reference.py`, chosen by `make_pair` when either
   profile holds S8b's spline segments; S9a's pairs are unchanged) takes each
