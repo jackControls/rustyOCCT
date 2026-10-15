@@ -381,8 +381,130 @@ pub(super) fn rim_far(c: &TorusSec, far: &Far) -> Result<EdgeMeet> {
         let inv = int(1) / &c.small;
         ring.v_dir(&l0).map(|x| x.scale(&inv))
     };
-    let g = meeting_form(&c.f, &c.big, &c.small, far);
-    let (fa, fb, d) = g.at_dir(!c.over_v, &fixed);
+    fixed_far(
+        (&c.f, &c.big, &c.small),
+        c.over_v,
+        &fixed,
+        far,
+        &|x| c.place(x),
+        &|_| false,
+    )
+}
+
+/// S9e.4b.4d.2c.1a: a torus's coaxial ring (a turned body's circle where
+/// its tube meets a coaxial cylinder of its piece's box, a given edge) met
+/// by another face's surface as the circle of the torus at its fixed `v`
+/// (`rim_far`'s, a plane's equation along it at a rational one), not as
+/// three surfaces; `None` where it is no such ring.
+pub(super) fn ring_meet(
+    c: &super::torus_curved::ToricCrv,
+    py: &Prism,
+    fy: usize,
+) -> Option<Result<EdgeMeet>> {
+    if !c.coaxial || c.over_v {
+        return None;
+    }
+    let m = &c.m;
+    let v = c.rational_v()?;
+    let fixed: [Qd; 2] = v.clone().map(Qd::rat);
+    let place = |x: &QV| c.place(x);
+    let outside = |x: &QV| py.in_face(fy, x) == Loc::Out;
+    let far = match &py.faces[fy].surf {
+        Surf::Plane { p, m: normal } => {
+            return Some(ring_plane(m, &v, (p, normal), &place, &outside));
+        }
+        Surf::Cyl { .. } | Surf::Sphere { .. } | Surf::Cone { .. } => {
+            Far::Quadric(Box::new(super::cones::other_face(py, fy)))
+        }
+        Surf::Torus => {
+            let ring = py.ring.as_ref()?;
+            Far::Torus {
+                f: Box::new(py.f.clone()),
+                big: ring.big.clone(),
+                small: ring.small.clone(),
+            }
+        }
+        Surf::Spline(_) => return None,
+    };
+    Some(fixed_far(
+        (&m.f, &m.big, &m.small),
+        false,
+        &fixed,
+        &far,
+        &place,
+        &outside,
+    ))
+}
+
+/// The circle of a torus (`m`'s) at the rational `(cos v, sin v)` against a
+/// plane through `p0` normal to `normal`: where `rho (n . x cos u + n . y
+/// sin u) = -(n . (o - p0) + w n . n_axis)`, `trig`'s roots in `u`.
+fn ring_plane(
+    m: &super::torus_curved::Meeting,
+    [cv, sv]: &[R; 2],
+    (p0, normal): (&V, &V),
+    place: &dyn Fn(&QV) -> [Qd; 2],
+    outside: &dyn Fn(&QV) -> bool,
+) -> Result<EdgeMeet> {
+    let f = &m.f;
+    let rho = &m.big + &m.small * cv;
+    let w = &m.small * sv;
+    let alpha = &rho * dot(normal, &f.x);
+    let beta = &rho * dot(normal, &f.y);
+    let gamma = -(dot(normal, &sub(&f.o, p0)) + &w * dot(normal, &f.n));
+    let point = |cs: &[Qd; 2]| {
+        qadd(
+            &qv(&f.o),
+            &qadd(
+                &qadd(
+                    &qscale(&f.x, &cs[0].scale(&rho)),
+                    &qscale(&f.y, &cs[1].scale(&rho)),
+                ),
+                &qscale(&f.n, &Qd::rat(w.clone())),
+            ),
+        )
+    };
+    let rho2 = &alpha * &alpha + &beta * &beta;
+    if rho2 != zero() && rho2 == &gamma * &gamma {
+        // The plane tangent to the circle: no meeting off the face, else
+        // the tangency it is.
+        let cs = [
+            Qd::rat(&alpha * &gamma / &rho2),
+            Qd::rat(&beta * &gamma / &rho2),
+        ];
+        return if outside(&point(&cs)) {
+            Ok(EdgeMeet::Points(Vec::new()))
+        } else {
+            Err(tangency())
+        };
+    }
+    let Some(roots) = super::meet::trig(&alpha, &beta, &gamma)? else {
+        return Ok(EdgeMeet::Along);
+    };
+    Ok(EdgeMeet::Points(
+        roots
+            .into_iter()
+            .map(|cs| {
+                let x = point(&cs);
+                (Pos::Ang(place(&x)), x)
+            })
+            .collect(),
+    ))
+}
+
+/// `rim_far`'s meeting of the torus `(f, big, small)`'s circle at the fixed
+/// angle `fixed` (of `u` where `over_v`, else of `v`) with the surface
+/// `far`, each point placed by `place`.
+fn fixed_far(
+    (f, big, small): (&Affine, &R, &R),
+    over_v: bool,
+    fixed: &[Qd; 2],
+    far: &Far,
+    place: &dyn Fn(&QV) -> [Qd; 2],
+    outside: &dyn Fn(&QV) -> bool,
+) -> Result<EdgeMeet> {
+    let g = meeting_form(f, big, small, far);
+    let (fa, fb, d) = g.at_dir(!over_v, fixed);
     let chart = clear_chart(&fa, &fb, &d)?;
     let (pa, pb) = (trim(fa.poly(&chart)), trim(fb.poly(&chart)));
     let surd = d != zero() && !pb.is_empty();
@@ -416,9 +538,7 @@ pub(super) fn rim_far(c: &TorusSec, far: &Far) -> Result<EdgeMeet> {
             // half-plane's circle's.
             continue;
         }
-        if repeated && value(&da, &db, &t).sign() == Ordering::Equal {
-            return Err(rim_tangent());
-        }
+        let tangent = repeated && value(&da, &db, &t).sign() == Ordering::Equal;
         // The free angle's `(cos, sin)`: `(1 - t^2, 2 t) / (1 + t^2)` turned
         // by the chart's base.
         let inv = t
@@ -431,21 +551,28 @@ pub(super) fn rim_far(c: &TorusSec, far: &Far) -> Result<EdgeMeet> {
             Qd::of(cc.scale(&chart.c0).sub(&ss.scale(&chart.s0)).mul(&inv)),
             Qd::of(cc.scale(&chart.s0).add(&ss.scale(&chart.c0)).mul(&inv)),
         ];
-        let (cu, cv) = if c.over_v {
-            (&fixed, &free)
+        let (cu, cv) = if over_v {
+            (fixed, &free)
         } else {
-            (&free, &fixed)
+            (&free, fixed)
         };
-        let rho = cv[0].scale(&c.small).add_r(&c.big);
-        let l = [rho.mul(&cu[0]), rho.mul(&cu[1]), cv[1].scale(&c.small)];
+        let rho = cv[0].scale(small).add_r(big);
+        let l = [rho.mul(&cu[0]), rho.mul(&cu[1]), cv[1].scale(small)];
         let x = qadd(
-            &qv(&c.f.o),
+            &qv(&f.o),
             &qadd(
-                &qadd(&qscale(&c.f.x, &l[0]), &qscale(&c.f.y, &l[1])),
-                &qscale(&c.f.n, &l[2]),
+                &qadd(&qscale(&f.x, &l[0]), &qscale(&f.y, &l[1])),
+                &qscale(&f.n, &l[2]),
             ),
         );
-        out.push((Pos::Ang(c.place(&x)), x));
+        if tangent {
+            // S9e.4b.4d.2c.1a: a ring's tangency off the face is none.
+            if outside(&x) {
+                continue;
+            }
+            return Err(rim_tangent());
+        }
+        out.push((Pos::Ang(place(&x)), x));
     }
     Ok(EdgeMeet::Points(out))
 }

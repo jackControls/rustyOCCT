@@ -273,6 +273,52 @@ impl Ring {
     }
 }
 
+/// S9e.4b.4d.2c.1a: the circle of a whole torus at the fixed rational
+/// angle `v` (its tube's direction `(cos v, sin v)` from the core circle in
+/// the meridian) along which a surface coaxial with it touches it: a double
+/// root of their meeting at a rational angle. `refusal` is the tangency the
+/// meeting is refused as where no input's edge accounts for it.
+#[derive(Debug, Clone)]
+pub(super) struct TouchRing {
+    /// The operand whose torus it lies on.
+    pub(super) carrier: usize,
+    pub(super) f: Affine,
+    pub(super) big: R,
+    pub(super) small: R,
+    pub(super) v: P2,
+    pub(super) refusal: Error,
+}
+
+impl TouchRing {
+    /// Whether a point lies on the circle: on the torus, its tube's
+    /// direction `v`'s.
+    pub(super) fn on(&self, x: &QV) -> bool {
+        let ring = Ring {
+            big: self.big.clone(),
+            small: self.small.clone(),
+            e: [int(1), zero()],
+            v0: [int(1), zero()],
+            span: Span::Whole,
+            reversed: false,
+            rims: [None, None],
+        };
+        let l = self.f.local_q(x);
+        if ring.value(&l).sign() != Ordering::Equal {
+            return false;
+        }
+        let d = ring.v_dir(&l);
+        let v = [Qd::rat(self.v[0].clone()), Qd::rat(self.v[1].clone())];
+        super::graph::same_dir(&d, &v)
+    }
+
+    /// Its point at a rational direction `(cos u, sin u)` about the axis.
+    pub(super) fn point(&self, cs: &[R; 2]) -> QV {
+        let rho = &self.big + &self.small * &self.v[0];
+        let w = &self.small * &self.v[1];
+        qv(&self.f.point(&(&rho * &cs[0]), &(&rho * &cs[1]), &w))
+    }
+}
+
 /// A plane's section of a torus as a graph over `u` (or over `v`): the
 /// plane `alpha l_u + beta l_v + mu l_w + kappa = 0` in the torus's
 /// coordinates, the branch `plus` (`trig`'s second root), over the open
@@ -592,6 +638,31 @@ fn plane_torus_whole(
 ) -> Result<CylPair> {
     let plane = plane_in(f, p0, m);
     let (du, dv) = discriminants(ring, &plane);
+    // S9e.4b.4d.2c.1a: a plane normal to the axis touching a whole torus's
+    // tube along its top or bottom circle (`D_u` zero all round, `l_w =
+    // -kappa / mu = r sin v`, `sin v` one or minus one): that circle.
+    if vanishes(&du)
+        && plane[0] == zero()
+        && plane[1] == zero()
+        && plane[2] != zero()
+        && matches!(ring.span, Span::Whole)
+    {
+        let s = -(&plane[3] / (&plane[2] * &ring.small));
+        return Ok(CylPair::Touching(
+            Box::new(super::spheres::Mixed {
+                pieces: Vec::new(),
+                switches: Vec::new(),
+            }),
+            vec![TouchRing {
+                carrier: k,
+                f: f.clone(),
+                big: ring.big.clone(),
+                small: ring.small.clone(),
+                v: [zero(), s],
+                refusal: tangency(),
+            }],
+        ));
+    }
     if vanishes(&du) || vanishes(&dv) {
         return Err(tangency());
     }
@@ -851,6 +922,7 @@ pub(super) fn model(solid: &Solid, op: Operand, seam: &R) -> Result<Prism> {
         low,
         high,
         angle,
+        axis,
         ..
     } = &solid.construction
     else {
@@ -860,7 +932,16 @@ pub(super) fn model(solid: &Solid, op: Operand, seam: &R) -> Result<Prism> {
         // A v-segment or a wedge (S9d.4b.1).
         return super::torus_segment::model(solid, op, seam);
     }
-    let f = Affine::new(&solid.frame)?;
+    // S9e.4b.4d.2c.1a: a turned body's torus at its centre's height on the
+    // axis frame, exactly.
+    let f = match axis {
+        Some((frame, centre)) => {
+            let mut f = Affine::new(frame)?;
+            f.o = f.point(&zero(), &zero(), &q(*centre));
+            f
+        }
+        None => Affine::new(&solid.frame)?,
+    };
     let t = &solid.topology;
     let id = |slot: Slot| {
         t.id_of(slot)

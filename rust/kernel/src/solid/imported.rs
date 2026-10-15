@@ -83,7 +83,11 @@
 //! lines, a chain's tree), its cones' exact models on its axis.
 //! S9e.4b.4d.2b: in such a body, a cone within the resolution of a plane is
 //! that plane (`imported_flats`: the body stored with it so, its rims the
-//! model's circles). Every other body is S9e.4b's.
+//! model's circles). S9e.4b.4d.2c.1a: a body whose torus faces join their
+//! neighbours smoothly is first such a turned body with fillets and rounds
+//! between planes and cylinders (`turned`: each torus snapped tangent to its
+//! lines, the sharp profile's lattice with each fillet's piece and less each
+//! round's), else refused by name as before. Every other body is S9e.4b's.
 use super::{replayable, Construction, Context, Solid};
 use crate::history::{History, Relation};
 use crate::identity::{
@@ -105,6 +109,7 @@ use std::cell::RefCell;
 use std::collections::BTreeMap;
 
 mod turned;
+pub(crate) use turned::TURNED;
 
 /// An imported solid's construction and names (S9e.4a).
 #[derive(Debug, Clone, PartialEq)]
@@ -455,6 +460,25 @@ impl Solid {
             // prism leaf).
             Err(_) if primitives_shape(&topology) => {
                 return Self::imported_primitives(context, topology, resolution);
+            }
+            // S9e.4b.4d.2c.1a: a turned body whose fillets and rounds join
+            // their planes and cylinders smoothly, its sharp profile's
+            // lattice with its fillets' pieces and less its rounds'.
+            Err(e) if e == smooth_torus_text() => {
+                let op = construction_operation(operation);
+                if let Ok(p) = turned::turned_piece(&topology, resolution, op) {
+                    let done = Self::imported_as(
+                        context,
+                        topology,
+                        resolution,
+                        Recognized::Piece(Box::new(p)),
+                        BTreeMap::new(),
+                    );
+                    if done.is_ok() {
+                        return done;
+                    }
+                }
+                return Err(e);
             }
             Err(e) => return Err(e),
         };
@@ -1080,10 +1104,10 @@ fn recognize(t: &Topology, tolerance: Tolerance, op: OperationId) -> Result<Soli
         (0, 1, 0) if planes == n - 1 => cone(t, tolerance, op),
         (0, 0, 1) if n == 1 => torus(t, tolerance, op),
         (0, 0, 0) => prism(t, tolerance, op),
-        // S9e.4b.4d.1: a turned part's fillets and rounds, by name.
-        (_, _, 1..) if smooth_torus(t, tolerance.linear()) => Err(Error::OutOfDomain(
-            "an imported body whose torus faces join their neighbours smoothly (S9e.4b.4d)",
-        )),
+        // S9e.4b.4d.1: a body whose torus faces join their neighbours
+        // smoothly is named (S9e.4b.4d.2c.1a: tried as a turned body first,
+        // `imported_in`).
+        (_, _, 1..) if smooth_torus(t, tolerance.linear()) => Err(smooth_torus_text()),
         _ => Err(general()),
     };
     // A construction its stored data cannot build (a profile rounded onto
@@ -1093,6 +1117,13 @@ fn recognize(t: &Topology, tolerance: Tolerance, op: OperationId) -> Result<Soli
         Error::OutOfDomain(_) => e,
         _ => general(),
     })
+}
+
+/// S9e.4b.4d.1: a body whose torus faces join their neighbours smoothly.
+fn smooth_torus_text() -> Error {
+    Error::OutOfDomain(
+        "an imported body whose torus faces join their neighbours smoothly (S9e.4b.4d)",
+    )
 }
 
 /// A prism: its caps, frame, profile and heights.

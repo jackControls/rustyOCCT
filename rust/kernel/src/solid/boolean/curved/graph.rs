@@ -142,6 +142,10 @@ pub(super) struct Arr {
     /// edge of A (its `curve`) that is also a part of B's edge `eb`, run
     /// with it where `with` (the arrangement edge, B's faces' half-edges).
     pub(super) shared: BTreeMap<usize, (usize, bool)>,
+    /// S9e.4b.4d.2c.1a: the circles along which faces of the inputs touch,
+    /// each an edge of one on the other's face: a piece is classified at an
+    /// edge off them where it has one.
+    pub(super) touch_rings: Vec<super::torus::TouchRing>,
 }
 
 pub(super) fn boxes_meet(a: &([f64; 3], [f64; 3]), b: &([f64; 3], [f64; 3])) -> bool {
@@ -669,6 +673,17 @@ pub(super) fn rational_between_num(a: &Qd, b: &Qd) -> Result<R> {
 /// Builds the arrangement of two models, the one every operation shares:
 /// its pieces' sides decided, not yet kept or dropped (`Arr::for_op`).
 pub(super) fn arrange_shared(models: [Prism; 2]) -> Result<Arr> {
+    arrange_touching(models, false)
+}
+
+/// [`arrange_shared`]; S9e.4b.4d.2c.1a: with `touch` (the inner Booleans of
+/// a turned body's own tree), a whole torus touching a coaxial face of the
+/// other input along a circle (`CylPair::Touching`) where that circle is an
+/// edge of the torus's input lying on the other's face (`along_touch`: a
+/// fillet's or a round's piece's edge on the lattice's face), that edge
+/// splitting the face it lies on as a section would and every incidence at
+/// the circle taken on it; every other tangency refused as before.
+pub(super) fn arrange_touching(models: [Prism; 2], touch: bool) -> Result<Arr> {
     // Cylinder pairs, and faces on one surface (A's, B's).
     let mut pairs: BTreeMap<(usize, usize), CylPair> = BTreeMap::new();
     let mut coinc: BTreeSet<(usize, usize)> = BTreeSet::new();
@@ -834,6 +849,8 @@ pub(super) fn arrange_shared(models: [Prism; 2]) -> Result<Arr> {
     // A plane and a torus (S9d.4a): its spiric section, rings or loops,
     // the same for every patch (found once for each plane).
     let mut spiric: BTreeMap<(usize, usize), CylPair> = BTreeMap::new();
+    // S9e.4b.4d.2c.1a: the faces touching along circles (A's, B's, circle).
+    let mut touches: Vec<(usize, usize, super::torus::TouchRing)> = Vec::new();
     for fa in 0..models[0].faces.len() {
         for fb in 0..models[1].faces.len() {
             let (sa, sb) = (&models[0].faces[fa].surf, &models[1].faces[fb].surf);
@@ -862,6 +879,12 @@ pub(super) fn arrange_shared(models: [Prism; 2]) -> Result<Arr> {
             } else {
                 CylPair::Apart
             };
+            if let CylPair::Touching(_, rings) = &pair {
+                if !touch {
+                    return Err(rings[0].refusal.clone());
+                }
+                touches.extend(rings.iter().map(|r| (fa, fb, r.clone())));
+            }
             pairs.insert((fa, fb), pair);
         }
     }
@@ -919,6 +942,12 @@ pub(super) fn arrange_shared(models: [Prism; 2]) -> Result<Arr> {
             } else {
                 CylPair::Apart
             };
+            if let CylPair::Touching(_, rings) = &pair {
+                if !touch {
+                    return Err(rings[0].refusal.clone());
+                }
+                touches.extend(rings.iter().map(|r| (fa, fb, r.clone())));
+            }
             pairs.insert((fa, fb), pair);
         }
     }
@@ -1051,6 +1080,52 @@ pub(super) fn arrange_shared(models: [Prism; 2]) -> Result<Arr> {
                 .entry((o, ei))
                 .or_default()
                 .extend([(s, ps), (t, pt)]);
+        }
+    }
+    // S9e.4b.4d.2c.1a: an edge of the torus's input on the circle along
+    // which its torus touches the other's face lies on that face
+    // (`along_touch`: the edge, of operand `o`, and the face); its vertices
+    // are that face's too. Every circle touching inside both faces must be
+    // such an edge (sampled at sixteen rational turns: an arrangement takes
+    // no tangent section of its own).
+    let mut along_touch: BTreeSet<(usize, usize, usize)> = BTreeSet::new();
+    for (fa, fb, ring) in &touches {
+        let o = ring.carrier;
+        let (own, g) = if o == 0 { (*fa, *fb) } else { (*fb, *fa) };
+        for (ei, e) in models[o].edges.iter().enumerate() {
+            if !e.faces.contains(&own) || !coaxial_ring(&e.curve) {
+                continue;
+            }
+            let (s, t, with) = edge_places(&models[o], ei);
+            let (mid, _) = midpoint(&e.curve, &s, &t, with)?;
+            if ring.on(&mid) {
+                along_touch.insert((o, ei, g));
+            }
+        }
+    }
+    for (fa, fb, ring) in &touches {
+        let covered = along_touch.iter().any(|&(o, ei, g)| {
+            let own = models[o].edges[ei].faces;
+            (o == 0 && own.contains(fa) && g == *fb) || (o == 1 && own.contains(fb) && g == *fa)
+        });
+        if covered {
+            continue;
+        }
+        for k in 0..16i64 {
+            let x = ring.point(&super::model::circle_point(
+                &[zero(), zero()],
+                &int(1),
+                &(int(2 * k + 1) / int(17)),
+            ));
+            if models[0].in_face(*fa, &x) == Loc::In && models[1].in_face(*fb, &x) == Loc::In {
+                return Err(ring.refusal.clone());
+            }
+        }
+    }
+    for &(o, ei, g) in &along_touch {
+        let e = &models[o].edges[ei];
+        for v in [e.start, e.end] {
+            vx[input_vx[o][v]].faces.insert((1 - o, g));
         }
     }
     // A vertex of one input strictly inside a line or circle edge of the
@@ -1229,6 +1304,11 @@ pub(super) fn arrange_shared(models: [Prism; 2]) -> Result<Arr> {
                 if !boxes_meet(&ebox, &other.boxes[g]) {
                     continue;
                 }
+                // S9e.4b.4d.2c.1a: an edge on a touching circle lies on the
+                // face (below).
+                if along_touch.contains(&(o, ei, g)) {
+                    continue;
+                }
                 // S9e.4b.4b.1: an edge of a face on the face's surface lies on
                 // it (taken with the faces on one surface, as `Along`
                 // below): a given meeting on one sphere (a pin's rim on a
@@ -1284,7 +1364,30 @@ pub(super) fn arrange_shared(models: [Prism; 2]) -> Result<Arr> {
                 // The edge's and the face's boxes (S9e.3b: a three
                 // surfaces' point certainly outside them not constructed).
                 let clip = intersect(&ebox, &other.boxes[g]);
-                let meet = match edge_surface(&e.curve, own, own_ball, vo, vg, pair, Some(&clip)) {
+                // S9e.4b.4d.2c.1a: an edge of a face touching the other's along
+                // a circle meets it there (a double root) and where it crosses
+                // it elsewhere.
+                let rings: Vec<&super::torus::TouchRing> = touches
+                    .iter()
+                    .filter(|(fa, fb, _)| {
+                        if o == 0 {
+                            e.faces.contains(fa) && *fb == g
+                        } else {
+                            e.faces.contains(fb) && *fa == g
+                        }
+                    })
+                    .map(|(_, _, r)| r)
+                    .collect();
+                let touching = if rings.is_empty() {
+                    None
+                } else {
+                    super::touch::edge_touching(&e.curve, vo, vg, &rings)
+                };
+                let found = match touching {
+                    Some(found) => found,
+                    None => edge_surface(&e.curve, own, own_ball, vo, vg, pair, Some(&clip)),
+                };
+                let meet = match found {
                     // A seam's tangency with a torus, or a torus seam's
                     // (S9d.4b.2): another seam is tried.
                     Err(Error::Degenerate(_))
@@ -1357,6 +1460,11 @@ pub(super) fn arrange_shared(models: [Prism; 2]) -> Result<Arr> {
                     }
                     match (inside, region) {
                         (_, Loc::Out) | (Some(false), _) => continue,
+                        // S9e.4b.4d.2c.1a: a vertex of an edge on a touching
+                        // circle, on the face already.
+                        (None, _) if touch && vx[end_vertex].faces.contains(&(1 - o, g)) => {
+                            continue
+                        }
                         (None, Loc::In)
                             if vx[end_vertex]
                                 .faces
@@ -1393,6 +1501,9 @@ pub(super) fn arrange_shared(models: [Prism; 2]) -> Result<Arr> {
                                 fe.faces.iter().any(|&h| {
                                     h != g && e.faces.iter().any(|&ef| coincident_with(o, ef, h))
                                 }) || e.faces.iter().any(|&ef| along.contains(&(1 - o, f, ef)))
+                                    || e.faces
+                                        .iter()
+                                        .any(|&ef| along_touch.contains(&(1 - o, f, ef)))
                                     || fe
                                         .faces
                                         .iter()
@@ -1644,6 +1755,23 @@ pub(super) fn arrange_shared(models: [Prism; 2]) -> Result<Arr> {
             }
         }
     }
+    // S9e.4b.4d.2c.1a: an edge on a touching circle splits the face it lies
+    // on, its parts inside it.
+    for &(o, ei, g) in &along_touch {
+        for &gid in parts_of.get(&(o, ei)).map_or(&[][..], |x| x) {
+            match models[1 - o].in_face(g, &edges[gid].mid) {
+                Loc::In => {
+                    let h = half.entry((1 - o, g)).or_default();
+                    h.push((gid, true));
+                    h.push((gid, false));
+                }
+                Loc::On => return Err(Error::Degenerate("edges of both inputs overlapping")),
+                Loc::Out => {}
+            }
+        }
+    }
+    let touch_rings: Vec<super::torus::TouchRing> =
+        touches.iter().map(|(_, _, r)| r.clone()).collect();
     // Sections.
     let mut secs: Vec<Sec> = Vec::new();
     for fa in 0..models[0].faces.len() {
@@ -1867,6 +1995,9 @@ pub(super) fn arrange_shared(models: [Prism; 2]) -> Result<Arr> {
                         // Along an edge of a face on the other's surface:
                         // that face holds it.
                         _ if in_coinc[0].contains(&fa) || in_coinc[1].contains(&fb) => continue,
+                        // S9e.4b.4d.2c.1a: along an edge on a touching circle,
+                        // which the face it lies on holds.
+                        _ if touch_rings.iter().any(|r| r.on(&mid)) => continue,
                         // Along an edge of both (S9e.4b.3c.2): its faces
                         // hold it.
                         _ if shared.keys().any(|&g| {
@@ -1920,6 +2051,7 @@ pub(super) fn arrange_shared(models: [Prism; 2]) -> Result<Arr> {
         pieces: Vec::new(),
         coinc,
         shared,
+        touch_rings,
     };
     // Pieces. A half-edge's travel at its start is asked at every arrival
     // there, in each face along it: kept.
@@ -1928,7 +2060,7 @@ pub(super) fn arrange_shared(models: [Prism; 2]) -> Result<Arr> {
         let loops = arr.trace(*o, *f, hs, &travels)?;
         let pieces = arr.group(*o, *f, loops)?;
         for loops in pieces {
-            let sides = arr.sides(*o, *f, &loops[0])?;
+            let sides = arr.sides(*o, *f, &loops)?;
             arr.pieces.push(Piece {
                 op: *o,
                 face: *f,
@@ -1940,6 +2072,16 @@ pub(super) fn arrange_shared(models: [Prism; 2]) -> Result<Arr> {
         }
     }
     Ok(arr)
+}
+
+/// S9e.4b.4d.2c.1a: whether a curve is a circle of a torus at a fixed `v`
+/// (a plane normal to its axis's section, or a coaxial quadric's ring).
+fn coaxial_ring(crv: &Crv) -> bool {
+    match crv {
+        Crv::Torus(c) => c.fixed_angle() && !c.over_v,
+        Crv::Toric(c) => c.coaxial && !c.over_v,
+        _ => false,
+    }
 }
 
 /// S9e.4b.4b.1: the rational unit vector nearest a direction `d` of length
@@ -3107,8 +3249,16 @@ impl Arr {
     /// Whether the other solid holds a piece's front and its back: its
     /// membership at a point of the piece's first edge pushed into it, then
     /// off the face either way.
-    fn sides(&self, o: usize, f: usize, outer: &[(usize, bool)]) -> Result<(bool, bool)> {
-        let h = outer[0];
+    fn sides(&self, o: usize, f: usize, loops: &[Vec<(usize, bool)>]) -> Result<(bool, bool)> {
+        // S9e.4b.4d.2c.1a: at the first edge off every touching circle where
+        // the piece has one (a push along a face tangent to the other
+        // input's is no side of it).
+        let h = loops
+            .iter()
+            .flatten()
+            .copied()
+            .find(|h| !self.touch_rings.iter().any(|r| r.on(&self.edges[h.0].mid)))
+            .unwrap_or(loops[0][0]);
         let e = &self.edges[h.0];
         let x = &e.mid;
         let t = self.travel(h.0, h.1, &e.mid_pos, x);

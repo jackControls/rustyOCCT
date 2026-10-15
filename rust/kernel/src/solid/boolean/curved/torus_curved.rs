@@ -43,7 +43,7 @@ use super::meet::{CylPair, EdgeMeet, Pos};
 use super::model::*;
 use super::num::*;
 use super::procedural::Other;
-use super::torus::Ring;
+use super::torus::{Ring, TouchRing};
 use super::torus_segment::Span;
 use super::turned::{
     changes, padd, pmul, pscale, roots, square_sum, sturm, trim, Chart, Form, Poly,
@@ -507,7 +507,7 @@ impl Meeting {
         }
     }
 
-    fn ring(&self) -> Ring {
+    pub(super) fn ring(&self) -> Ring {
         Far::ring(&self.big, &self.small)
     }
 
@@ -896,6 +896,26 @@ impl ToricCrv {
         })
         .collect();
         Some((chart, poly, rs))
+    }
+
+    /// S9e.4b.4d.2c.1a: a coaxial ring's fixed `(cos v, sin v)` where it is
+    /// a quarter turn's (the tube's outer or inner equator, its top or its
+    /// bottom: a turned body's fillet's or round's circles against its
+    /// piece's box), the one root in its window, checked exactly on the
+    /// meeting's form; `None` otherwise.
+    pub(super) fn rational_v(&self) -> Option<[R; 2]> {
+        if !self.coaxial || self.over_v {
+            return None;
+        }
+        let v = self.root_f64(0.0);
+        let form = self.m.g.at(false, &[int(1), zero()]);
+        [(1, 0), (0, 1), (-1, 0), (0, -1)]
+            .into_iter()
+            .map(|(c, s)| [int(c), int(s)])
+            .find(|cs| {
+                let a = rational_f64(&cs[1]).atan2(rational_f64(&cs[0]));
+                (near(v, a) - a).abs() <= 1e-6 && form.value(cs) == zero()
+            })
     }
 
     /// The piece's point at a rational `(cos, sin)` of its parameter
@@ -2120,7 +2140,20 @@ fn torus_far(k: usize, t: &Prism, other: &Far) -> Result<CylPair> {
         }))
     };
     if !m.g.depends_on_u() {
-        return Ok(mixed(coaxial(k, &m)?, Vec::new()));
+        let (pieces, touches) = coaxial(k, t, &m)?;
+        if touches.is_empty() {
+            return Ok(mixed(pieces, Vec::new()));
+        }
+        return Ok(CylPair::Touching(
+            Box::new(super::spheres::Mixed {
+                pieces: pieces
+                    .into_iter()
+                    .map(|p| Crv::Toric(Box::new(p)))
+                    .collect(),
+                switches: Vec::new(),
+            }),
+            touches,
+        ));
     }
     // Of degree two in each angle, the critical values exactly (the
     // discriminant); two tori's in frames not exactly orthonormal, of
@@ -2164,20 +2197,61 @@ fn torus_far(k: usize, t: &Prism, other: &Far) -> Result<CylPair> {
     Ok(mixed(pieces, switches))
 }
 
-/// A coaxial quadric's rings: circles at the roots in `v`, rings over `u`.
-fn coaxial(k: usize, m: &Arc<Meeting>) -> Result<Vec<ToricCrv>> {
-    let (chart, _, rs) = m.roots_at(false, &[int(1), zero()])?;
-    let mut vs: Vec<f64> = rs.iter().map(|r| root_angle(&chart, r)).collect();
-    vs.sort_by(f64::total_cmp);
+/// A coaxial quadric's rings: circles at the roots in `v`, rings over `u`;
+/// S9e.4b.4d.2c.1a: a double root at a rational angle, where the other
+/// surface touches the torus along a circle, that circle (`TouchRing`, a
+/// whole torus's), each other root's window clear of it.
+fn coaxial(k: usize, t: &Prism, m: &Arc<Meeting>) -> Result<(Vec<ToricCrv>, Vec<TouchRing>)> {
+    let form = m.g.at(false, &[int(1), zero()]);
+    let chart = clear_chart(&form)?;
+    let poly = trim(form.poly(&chart));
+    if poly.is_empty() {
+        return Err(tangent());
+    }
+    let (_, rs) = super::turned::roots_repeated(&poly)?;
+    let whole = matches!(
+        t.ring.as_ref().map(|r| &r.span),
+        Some(super::torus_segment::Span::Whole)
+    );
+    let mut touches = Vec::new();
+    let mut vs: Vec<(f64, bool)> = Vec::new();
+    for (r, repeated) in &rs {
+        vs.push((root_angle(&chart, r), *repeated));
+        if !repeated {
+            continue;
+        }
+        // A double root at a rational half-angle tangent (a linear factor
+        // of the repeated part), on a whole torus: its circle.
+        let ring = t.ring.as_ref().expect("a torus");
+        let at = r
+            .rational_value()
+            .cloned()
+            .or_else(|| rational_root(&poly, r));
+        let Some(at) = at.filter(|_| whole) else {
+            return Err(super::meet::tangency());
+        };
+        touches.push(TouchRing {
+            carrier: k,
+            f: t.f.clone(),
+            big: ring.big.clone(),
+            small: ring.small.clone(),
+            v: chart.at(&at),
+            refusal: super::meet::tangency(),
+        });
+    }
+    vs.sort_by(|a, b| a.0.total_cmp(&b.0));
     let n = vs.len();
     let mut out = Vec::new();
     for i in 0..n {
-        let v = vs[i];
+        let (v, repeated) = vs[i];
+        if repeated {
+            continue;
+        }
         let window = if n == 1 {
             [v - 3.0, v + 3.0]
         } else {
-            let prev = v - (v - vs[(i + n - 1) % n]).rem_euclid(TAU);
-            let next = v + (vs[(i + 1) % n] - v).rem_euclid(TAU);
+            let prev = v - (v - vs[(i + n - 1) % n].0).rem_euclid(TAU);
+            let next = v + (vs[(i + 1) % n].0 - v).rem_euclid(TAU);
             [0.5 * (prev + v), 0.5 * (v + next)]
         };
         let piece = ToricCrv::new(k, m, false, window, None)?;
@@ -2186,7 +2260,19 @@ fn coaxial(k: usize, m: &Arc<Meeting>) -> Result<Vec<ToricCrv>> {
         }
         out.push(piece);
     }
-    Ok(out)
+    Ok((out, touches))
+}
+
+/// A repeated root's exact rational value, where it is one: the root of a
+/// linear factor of the polynomial's repeated part.
+fn rational_root(poly: &Poly, r: &AlgebraicRoot) -> Option<R> {
+    let ip = IntPolynomial::from_rationals(poly);
+    let g = ip.gcd(&ip.derivative());
+    if g.0.len() != 2 {
+        return None;
+    }
+    let x = R::new(-g.0[0].clone(), g.0[1].clone());
+    (r.compare_rational(&x) == Ordering::Equal).then_some(x)
 }
 
 // ------------------------------------------------------------ edges
