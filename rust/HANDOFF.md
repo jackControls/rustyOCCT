@@ -988,19 +988,17 @@ side by side; the campaigns with every switch on are clean at `59d0c57b`:
 `boolean` 1,080 runs, the slowest input 13 s; `split` 1,818 runs); the
 fuzz switches below.
 
-## Open user decisions
+## User decisions answered on 2026-10-14
 
-- **U9**: tessellation certifies every triangle's deflection; keep that as
-  the only mode, or add a display mode with sampled control and no bound.
-  Until answered, only the certified mode exists.
-- **U10**: R4's homogeneous C1 test refuses the usual rational NURBS circle
-  (STEP-b's `rational_cylinder`): (a) keep refusing, (b) test C1 of the
-  rational curve exactly at such knots (recommended), (c) split at such
-  knots on import. Until answered, (a) holds.
-- **S9e.4b.4d.2's scope** (not a numbered decision): whether turned bodies
-  of smooth joins (the e3i parts' fillets and rounds, `OCC485a`'s 9 DRAW
-  cases) are worth a turned-body construction. Until answered, they are
-  refused by name (S9e.4b.4d.1).
+- **U9**: tessellation's certified deflection stays the only mode (no
+  display mode with sampled control).
+- **U10**: (b), C1 of the rational curve tested exactly at a knot of
+  multiplicity equal to the degree (branch `u10-rational-c1`).
+- **S9e.4b.4d.2**: build the turned-body construction (branch `s9e4b4d2`).
+- **The per-set Boolean captures' Linux records**: taken on CI (branch
+  `ci-linux-captures`).
+
+No user decision is open.
 
 ## How a step is done
 

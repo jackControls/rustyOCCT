@@ -17612,7 +17612,8 @@ Decisions for S9, recorded before its code (2026-09-28):
   and tori, while BRepMesh exceeds the request on seven of 56 rows (up to 4.4
   times). Keep the certified contract as the only mode, or add a display
   mode with sampled control and no bound (fewer triangles, OCCT's
-  behaviour)? Until answered, only the certified mode exists.
+  behaviour)? **Answered 2026-10-14: the certified contract stays the
+  only mode.**
 * **U10 (recorded 2026-09-28 by the implementing agent, from STEP-b).**
   R4's continuity criterion is homogeneous: a knot of multiplicity equal to
   the degree passes only if the homogeneous curve is C1 there. The usual
@@ -17999,7 +18000,7 @@ Decisions for S9, recorded before its code (2026-09-28):
   * Clean local 600-second `tessellation` campaign at `c9dbf4f6`
     (AddressSanitizer, standard limits): 4,855 mutation executions after
     209 s of replay (350 inputs, 14,000 edges, 961 MB peak), no artifact.
-  * Open for the user: U9 (a display mode without a bound). T-c
+  * U9 answered (2026-10-14): the certified mode stays the only one. T-c
     (procedural edges) pending.
   * T-b implemented (`TESSELLATION.md`, splines); gate pending CI (the
     spline bridge on macOS and Linux; a Linux BRepMesh that meshes the

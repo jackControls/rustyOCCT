@@ -1973,7 +1973,9 @@ campaign of every target the steps touch.
   S9e.4b.4d.2 (a turned-body construction, a scope question), the
   near-miss rules not yet written (other curves' edges, two sphere
   circles, an apex against a sphere, torus or spline face, item 5's (b)
-  to (d)), and the refusals by design listed there. U9 and U10 stay open.
+  to (d)), and the refusals by design listed there. U9 and U10 stayed open
+  at acceptance (answered on 2026-10-14: U9 the certified mode only, U10
+  (b)).
 
 ## Evidence
 
