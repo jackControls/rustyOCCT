@@ -111,10 +111,10 @@
       "native_sha256": "2fa56a435e901e5d190e76468b9f2cee164be7d18503e0b7c203ade66e18ee81",
       "differences": [
         "measure",
-        "rust_invalid:edge_not_c1,face_not_c1,pcurve_not_c1"
+        "rust_outside_native"
       ],
-      "reason": "OCCT reads a valid solid whose default BRepGProp volume is 2.0e-3 and area 8.2e-4 relative above 200 pi and 130 pi (its adaptive integration: within 6.5e-12). The kernel translates every entity but its validator refuses the body: the circles are rational quarter arcs with knots of multiplicity 2 (the degree) at the quarter points, and R4 certifies C1 of the homogeneous curve, which fails there (the rational curve is C1: its weights alone jump). The issues are exactly the four arc edges, the two caps' pcurves derived from them and the two wall surfaces (tests/step.rs, quarter_arc_rational_circles_are_not_c1). Importing such bodies needs a rational C1 test or edges and faces split at those knots; both are open.",
-      "independent_evidence": "The homogeneous control points around the knot u = 1 are (5w, 5w, w), (0, 5, 1), (-5w, 5w, w) with w = sqrt(2)/2 rounded: removing one copy of the knot needs the middle point to be the mean of its neighbours, (0, 5w, w), which it is not; the rational end derivatives 2w (P2 - P1) and 2w (P3 - P2) are both (-10w, 0).",
+      "reason": "OCCT reads a valid solid whose default BRepGProp volume is 2.0e-3 and area 8.2e-4 relative above 200 pi and 130 pi (its adaptive integration: within 6.5e-12). The kernel imports it valid with OCCT's counts, its enclosures containing the reference's measures within 1e-12, so they miss OCCT's default measures. Its circles are rational quarter arcs with knots of multiplicity 2 (the degree) at the quarter points, C1 as rational curves though not in homogeneous form, which R4 tests since U10 (b); until then the kernel refused the body (edge_not_c1, face_not_c1, pcurve_not_c1).",
+      "independent_evidence": "step-expected.tsv: volume 200 pi and area 130 pi in closed form; the homogeneous control points around the knot u = 1 are (5w, 5w, w), (0, 5, 1), (-5w, 5w, w) with w = sqrt(2)/2 rounded, and the rational end derivatives 2w (P2 - P1) and 2w (P3 - P2) are both (-10w, 0) (tests/step.rs, quarter_arc_rational_circles_are_c1_and_g1_joints_are_not; test_rational_c1_reference.py).",
       "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
     },
     {
@@ -124,10 +124,10 @@
       "native_sha256": "90e15de7b156dfbc31eb27e385d727787978491645bf624abb4bd0d997ecca67",
       "differences": [
         "measure",
-        "rust_invalid:edge_not_c1,face_not_c1,pcurve_not_c1"
+        "rust_outside_native"
       ],
-      "reason": "OCCT reads a valid solid whose default BRepGProp volume is 2.0e-3 and area 8.2e-4 relative above 200 pi and 130 pi (its adaptive integration: within 6.5e-12). The kernel translates every entity but its validator refuses the body: the circles are rational quarter arcs with knots of multiplicity 2 (the degree) at the quarter points, and R4 certifies C1 of the homogeneous curve, which fails there (the rational curve is C1: its weights alone jump). The issues are exactly the four arc edges, the two caps' pcurves derived from them and the two wall surfaces (tests/step.rs, quarter_arc_rational_circles_are_not_c1). Importing such bodies needs a rational C1 test or edges and faces split at those knots; both are open. On Linux the same native row within 1.1e-15 relative (its last bits), the same differences.",
-      "independent_evidence": "The homogeneous control points around the knot u = 1 are (5w, 5w, w), (0, 5, 1), (-5w, 5w, w) with w = sqrt(2)/2 rounded: removing one copy of the knot needs the middle point to be the mean of its neighbours, (0, 5w, w), which it is not; the rational end derivatives 2w (P2 - P1) and 2w (P3 - P2) are both (-10w, 0).",
+      "reason": "OCCT reads a valid solid whose default BRepGProp volume is 2.0e-3 and area 8.2e-4 relative above 200 pi and 130 pi (its adaptive integration: within 6.5e-12). The kernel imports it valid with OCCT's counts, its enclosures containing the reference's measures within 1e-12, so they miss OCCT's default measures. Its circles are rational quarter arcs with knots of multiplicity 2 (the degree) at the quarter points, C1 as rational curves though not in homogeneous form, which R4 tests since U10 (b); until then the kernel refused the body (edge_not_c1, face_not_c1, pcurve_not_c1). On Linux the same native row within 1.1e-15 relative (its last bits), the same differences.",
+      "independent_evidence": "step-expected.tsv: volume 200 pi and area 130 pi in closed form; the homogeneous control points around the knot u = 1 are (5w, 5w, w), (0, 5, 1), (-5w, 5w, w) with w = sqrt(2)/2 rounded, and the rational end derivatives 2w (P2 - P1) and 2w (P3 - P2) are both (-10w, 0) (tests/step.rs, quarter_arc_rational_circles_are_c1_and_g1_joints_are_not; test_rational_c1_reference.py).",
       "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 36556520655 at 6f51406c); source-pinned OCCT 8.1.0"
     }
   ]
