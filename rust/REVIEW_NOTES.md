@@ -13950,7 +13950,24 @@ Decisions for S9, recorded before its code (2026-09-28):
     touching a round declared degenerate; the chained reference over each
     model profile's lattice with its pieces, its closed form by Pappus; a unit
     test, a CI group, and a capture keyed on the import's refusal of such
-    bodies by name.
+    bodies by name. *Amended from the code, before it (2026-10-15).* (5) *A
+    piece's rings met by a later face*: a piece's edges where the tube meets
+    its box's sides through the centre (circles of the torus at a quarter
+    turn of its tube, `(cos v, sin v)` one of `(+-1, 0)` and `(0, +-1)`) are
+    met by a third face of a later Boolean (a partner's plane or quadric, the
+    lattice's) as three surfaces (S9e.3b's triple), which on a turned frame
+    (the moved inputs of the tests, a body OCCT revolves about a turned axis)
+    refuses them, the frame's rationals past its domain. Instead such a ring
+    is met as the torus's circle at that rational angle
+    (`torus_parts.rs`'s `ring_meet`: S9d.4b's rim against a fixed angle, a
+    plane's equation along it a trigonometric one), a plane tangent to the
+    circle at a point outside the other's face meeting nothing, inside it
+    the tangency as before; every other curve of a torus as before. (6) *The
+    reference* (the evidence `d19d32a9` as built): the chained reference
+    takes each body as one input, its own planes, cylinders and torus bands
+    with its membership by the profile with arcs (`TurnedInput`), and checks
+    the kernel's construction (lattice, boxes, tori) against it at points of
+    the meridian; sweeping the construction itself passed CI's hour.
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces
