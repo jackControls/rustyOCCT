@@ -1,0 +1,153 @@
+{
+  "note": "Reviewed differences of the S9e.4b.4d.2b capture (occt-boolean-turned-flats-preimplementation): each fingerprinted by its native row; OCCT's results on the bodies it was given, whose near-flat cones the import takes as planes (the reference is the model's), within the sags' volumes of OCCT's own results on the model's bodies, and the resting box's fuse and cut invalid.",
+  "reviews": [
+    {
+      "case": "collar_rod_fuse",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "e7dc724fc9d130d1462c1caf2f0f2b9b607b0ec5e62779cbfba093202d95fb70",
+      "differences": [
+        "centre",
+        "measure"
+      ],
+      "reason": "BRepAlgoAPI's result is valid with the reference's solid count; its measures (and so its centre) differ from the reference's because the collar OCCT was given keeps its near-flat cones (its bottom bulged 2^-17 about its apex, its step out falling 2^-17 outward), which the import takes as the planes through their wider rims: between the two bodies lie 18 pi 2^-17 (4.3e-4) of volume, the bulge's 3 pi 2^-17 and the step's 15 pi 2^-17. The model's rows (the diagnostic below) are the reference's, and the rows on the body OCCT was given differ from them by -1.68e-04 in volume and 2.09e-04 in area (the partner's faces across the near-flat faces moved by the sags along their crossings).",
+      "independent_evidence": "chained_curved_boolean_reference.py's rows on the model's constructions (generate_turned_flats_boolean_fixtures.py --check, identical under Python 3.9 and 3.12; each body the max-min form of its model profile's lines, its near-flat cones level at their wider rims) agree two ways (each face swept by two independent families of curves) within 5.7e-36, every solid's measures from its faces within 4.1e-41 of its closed form, each body's within 8.2e-41 of its own (Pappus), the pair identities within 1.1e-41, and Monte Carlo within 2.3 standard errors; outside the declared group its solid counts are the declared ones by rays at two resolutions; every stored vertex of the imported files lies on its OCCT profile's surfaces. A diagnostic run (not committed) of this oracle built with BRepGProp's adaptive integration (Eps 1e-10) on OCCT's own revolve of each model profile (the same rows, the near-flat segments level, every tolerance 1e-3) gives every solid case's volume and area within 2.1e-9 of the reference (the pin's within 1.5e-10).",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "collar_rod_cut",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "0bd797dd438b66fa01f20a9043c0526ac8c198a98e617e5df949ca10753a03de",
+      "differences": [
+        "centre",
+        "measure"
+      ],
+      "reason": "BRepAlgoAPI's result is valid with the reference's solid count; its measures (and so its centre) differ from the reference's because the collar OCCT was given keeps its near-flat cones (its bottom bulged 2^-17 about its apex, its step out falling 2^-17 outward), which the import takes as the planes through their wider rims: between the two bodies lie 18 pi 2^-17 (4.3e-4) of volume, the bulge's 3 pi 2^-17 and the step's 15 pi 2^-17. The model's rows (the diagnostic below) are the reference's, and the rows on the body OCCT was given differ from them by -1.68e-04 in volume and 8.72e-05 in area (the partner's faces across the near-flat faces moved by the sags along their crossings).",
+      "independent_evidence": "chained_curved_boolean_reference.py's rows on the model's constructions (generate_turned_flats_boolean_fixtures.py --check, identical under Python 3.9 and 3.12; each body the max-min form of its model profile's lines, its near-flat cones level at their wider rims) agree two ways (each face swept by two independent families of curves) within 5.7e-36, every solid's measures from its faces within 4.1e-41 of its closed form, each body's within 8.2e-41 of its own (Pappus), the pair identities within 1.1e-41, and Monte Carlo within 2.3 standard errors; outside the declared group its solid counts are the declared ones by rays at two resolutions; every stored vertex of the imported files lies on its OCCT profile's surfaces. A diagnostic run (not committed) of this oracle built with BRepGProp's adaptive integration (Eps 1e-10) on OCCT's own revolve of each model profile (the same rows, the near-flat segments level, every tolerance 1e-3) gives every solid case's volume and area within 2.1e-9 of the reference (the pin's within 1.5e-10).",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "collar_rod_common",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "65ef4d6f994789c3a598a042f82bc6e5457c5eebb357870656e61855e45e1be1",
+      "differences": [
+        "centre",
+        "measure"
+      ],
+      "reason": "BRepAlgoAPI's result is valid with the reference's solid count; its measures (and so its centre) differ from the reference's because the collar OCCT was given keeps its near-flat cones (its bottom bulged 2^-17 about its apex, its step out falling 2^-17 outward), which the import takes as the planes through their wider rims: between the two bodies lie 18 pi 2^-17 (4.3e-4) of volume, the bulge's 3 pi 2^-17 and the step's 15 pi 2^-17. The model's rows (the diagnostic below) are the reference's, and the rows on the body OCCT was given differ from them by -4.73e-05 in volume and -6.53e-05 in area (the partner's faces across the near-flat faces moved by the sags along their crossings).",
+      "independent_evidence": "chained_curved_boolean_reference.py's rows on the model's constructions (generate_turned_flats_boolean_fixtures.py --check, identical under Python 3.9 and 3.12; each body the max-min form of its model profile's lines, its near-flat cones level at their wider rims) agree two ways (each face swept by two independent families of curves) within 5.7e-36, every solid's measures from its faces within 4.1e-41 of its closed form, each body's within 8.2e-41 of its own (Pappus), the pair identities within 1.1e-41, and Monte Carlo within 2.3 standard errors; outside the declared group its solid counts are the declared ones by rays at two resolutions; every stored vertex of the imported files lies on its OCCT profile's surfaces. A diagnostic run (not committed) of this oracle built with BRepGProp's adaptive integration (Eps 1e-10) on OCCT's own revolve of each model profile (the same rows, the near-flat segments level, every tolerance 1e-3) gives every solid case's volume and area within 2.1e-9 of the reference (the pin's within 1.5e-10).",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "pin_box_fuse",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "1ad9b114a94f601c628d4d6af63c2ebaf47547635b9b4aeb35502d8b2d6c0f55",
+      "differences": [
+        "centre",
+        "measure"
+      ],
+      "reason": "BRepAlgoAPI's result is valid with the reference's solid count; its measures (and so its centre) differ from the reference's because the pin OCCT was given keeps its near-flat cones (its bottom dimpled 2^-17 about its apex, its step rising 2^-17 inward), which the import takes as the planes through their wider rims: between the two bodies lie 64 pi 2^-17 / 3 (5.1e-4) of volume, the dimple's 12 pi 2^-17 and the step's 28 pi 2^-17 / 3. The model's rows (the diagnostic below) are the reference's, and the rows on the body OCCT was given differ from them by -8.43e-05 in volume and -1.76e-04 in area (the partner's faces across the near-flat faces moved by the sags along their crossings).",
+      "independent_evidence": "chained_curved_boolean_reference.py's rows on the model's constructions (generate_turned_flats_boolean_fixtures.py --check, identical under Python 3.9 and 3.12; each body the max-min form of its model profile's lines, its near-flat cones level at their wider rims) agree two ways (each face swept by two independent families of curves) within 5.7e-36, every solid's measures from its faces within 4.1e-41 of its closed form, each body's within 8.2e-41 of its own (Pappus), the pair identities within 1.1e-41, and Monte Carlo within 2.3 standard errors; outside the declared group its solid counts are the declared ones by rays at two resolutions; every stored vertex of the imported files lies on its OCCT profile's surfaces. A diagnostic run (not committed) of this oracle built with BRepGProp's adaptive integration (Eps 1e-10) on OCCT's own revolve of each model profile (the same rows, the near-flat segments level, every tolerance 1e-3) gives every solid case's volume and area within 2.1e-9 of the reference (the pin's within 1.5e-10).",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "pin_box_cut",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "f13058ef4db651b5540375126bc923e0ee8623dc48e12bf8c441581946d7d94b",
+      "differences": [
+        "centre",
+        "measure"
+      ],
+      "reason": "BRepAlgoAPI's result is valid with the reference's solid count; its measures (and so its centre) differ from the reference's because the pin OCCT was given keeps its near-flat cones (its bottom dimpled 2^-17 about its apex, its step rising 2^-17 inward), which the import takes as the planes through their wider rims: between the two bodies lie 64 pi 2^-17 / 3 (5.1e-4) of volume, the dimple's 12 pi 2^-17 and the step's 28 pi 2^-17 / 3. The model's rows (the diagnostic below) are the reference's, and the rows on the body OCCT was given differ from them by -8.43e-05 in volume and -1.29e-04 in area (the partner's faces across the near-flat faces moved by the sags along their crossings).",
+      "independent_evidence": "chained_curved_boolean_reference.py's rows on the model's constructions (generate_turned_flats_boolean_fixtures.py --check, identical under Python 3.9 and 3.12; each body the max-min form of its model profile's lines, its near-flat cones level at their wider rims) agree two ways (each face swept by two independent families of curves) within 5.7e-36, every solid's measures from its faces within 4.1e-41 of its closed form, each body's within 8.2e-41 of its own (Pappus), the pair identities within 1.1e-41, and Monte Carlo within 2.3 standard errors; outside the declared group its solid counts are the declared ones by rays at two resolutions; every stored vertex of the imported files lies on its OCCT profile's surfaces. A diagnostic run (not committed) of this oracle built with BRepGProp's adaptive integration (Eps 1e-10) on OCCT's own revolve of each model profile (the same rows, the near-flat segments level, every tolerance 1e-3) gives every solid case's volume and area within 2.1e-9 of the reference (the pin's within 1.5e-10).",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "pin_box_common",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "b0b7d3a2de3f331542a4468702a31d7696a35be0a0fb801e909bd10be2a7868d",
+      "differences": [
+        "centre",
+        "measure"
+      ],
+      "reason": "BRepAlgoAPI's result is valid with the reference's solid count; its measures (and so its centre) differ from the reference's because the pin OCCT was given keeps its near-flat cones (its bottom dimpled 2^-17 about its apex, its step rising 2^-17 inward), which the import takes as the planes through their wider rims: between the two bodies lie 64 pi 2^-17 / 3 (5.1e-4) of volume, the dimple's 12 pi 2^-17 and the step's 28 pi 2^-17 / 3. The model's rows (the diagnostic below) are the reference's, and the rows on the body OCCT was given differ from them by 2.04e-05 in volume and 6.50e-06 in area (the partner's faces across the near-flat faces moved by the sags along their crossings).",
+      "independent_evidence": "chained_curved_boolean_reference.py's rows on the model's constructions (generate_turned_flats_boolean_fixtures.py --check, identical under Python 3.9 and 3.12; each body the max-min form of its model profile's lines, its near-flat cones level at their wider rims) agree two ways (each face swept by two independent families of curves) within 5.7e-36, every solid's measures from its faces within 4.1e-41 of its closed form, each body's within 8.2e-41 of its own (Pappus), the pair identities within 1.1e-41, and Monte Carlo within 2.3 standard errors; outside the declared group its solid counts are the declared ones by rays at two resolutions; every stored vertex of the imported files lies on its OCCT profile's surfaces. A diagnostic run (not committed) of this oracle built with BRepGProp's adaptive integration (Eps 1e-10) on OCCT's own revolve of each model profile (the same rows, the near-flat segments level, every tolerance 1e-3) gives every solid case's volume and area within 2.1e-9 of the reference (the pin's within 1.5e-10).",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "pin_ball_fuse",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "537a7d348e7d820a11051981d71f73b1e28ef36bb4c8445e4a5bfb962974ef7f",
+      "differences": [
+        "centre",
+        "measure"
+      ],
+      "reason": "BRepAlgoAPI's result is valid with the reference's solid count; its measures (and so its centre) differ from the reference's because the pin OCCT was given keeps its near-flat cones (its bottom dimpled 2^-17 about its apex, its step rising 2^-17 inward), which the import takes as the planes through their wider rims: between the two bodies lie 64 pi 2^-17 / 3 (5.1e-4) of volume, the dimple's 12 pi 2^-17 and the step's 28 pi 2^-17 / 3. The model's rows (the diagnostic below) are the reference's, and the rows on the body OCCT was given differ from them by -6.92e-06 in volume and -6.81e-05 in area (the partner's faces across the near-flat faces moved by the sags along their crossings).",
+      "independent_evidence": "chained_curved_boolean_reference.py's rows on the model's constructions (generate_turned_flats_boolean_fixtures.py --check, identical under Python 3.9 and 3.12; each body the max-min form of its model profile's lines, its near-flat cones level at their wider rims) agree two ways (each face swept by two independent families of curves) within 5.7e-36, every solid's measures from its faces within 4.1e-41 of its closed form, each body's within 8.2e-41 of its own (Pappus), the pair identities within 1.1e-41, and Monte Carlo within 2.3 standard errors; outside the declared group its solid counts are the declared ones by rays at two resolutions; every stored vertex of the imported files lies on its OCCT profile's surfaces. A diagnostic run (not committed) of this oracle built with BRepGProp's adaptive integration (Eps 1e-10) on OCCT's own revolve of each model profile (the same rows, the near-flat segments level, every tolerance 1e-3) gives every solid case's volume and area within 2.1e-9 of the reference (the pin's within 1.5e-10).",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "pin_ball_cut",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "c2fdd16cb971a3610ba1fdc409fbfc3a2a858bd5929a2c8d8976af1f15abcef1",
+      "differences": [
+        "centre",
+        "measure"
+      ],
+      "reason": "BRepAlgoAPI's result is valid with the reference's solid count; its measures (and so its centre) differ from the reference's because the pin OCCT was given keeps its near-flat cones (its bottom dimpled 2^-17 about its apex, its step rising 2^-17 inward), which the import takes as the planes through their wider rims: between the two bodies lie 64 pi 2^-17 / 3 (5.1e-4) of volume, the dimple's 12 pi 2^-17 and the step's 28 pi 2^-17 / 3. The model's rows (the diagnostic below) are the reference's, and the rows on the body OCCT was given differ from them by -6.92e-06 in volume and -2.03e-04 in area (the partner's faces across the near-flat faces moved by the sags along their crossings).",
+      "independent_evidence": "chained_curved_boolean_reference.py's rows on the model's constructions (generate_turned_flats_boolean_fixtures.py --check, identical under Python 3.9 and 3.12; each body the max-min form of its model profile's lines, its near-flat cones level at their wider rims) agree two ways (each face swept by two independent families of curves) within 5.7e-36, every solid's measures from its faces within 4.1e-41 of its closed form, each body's within 8.2e-41 of its own (Pappus), the pair identities within 1.1e-41, and Monte Carlo within 2.3 standard errors; outside the declared group its solid counts are the declared ones by rays at two resolutions; every stored vertex of the imported files lies on its OCCT profile's surfaces. A diagnostic run (not committed) of this oracle built with BRepGProp's adaptive integration (Eps 1e-10) on OCCT's own revolve of each model profile (the same rows, the near-flat segments level, every tolerance 1e-3) gives every solid case's volume and area within 2.1e-9 of the reference (the pin's within 1.5e-10).",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "pin_ball_common",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "fe2bdb1a1e1ae2e935f44716a82499638ad609aea37b7d0d211bc6573823c647",
+      "differences": [
+        "centre",
+        "measure"
+      ],
+      "reason": "BRepAlgoAPI's result is valid with the reference's solid count; its measures (and so its centre) differ from the reference's because the pin OCCT was given keeps its near-flat cones (its bottom dimpled 2^-17 about its apex, its step rising 2^-17 inward), which the import takes as the planes through their wider rims: between the two bodies lie 64 pi 2^-17 / 3 (5.1e-4) of volume, the dimple's 12 pi 2^-17 and the step's 28 pi 2^-17 / 3. The model's rows (the diagnostic below) are the reference's, and the rows on the body OCCT was given differ from them by -5.70e-05 in volume and -1.01e-04 in area (the partner's faces across the near-flat faces moved by the sags along their crossings).",
+      "independent_evidence": "chained_curved_boolean_reference.py's rows on the model's constructions (generate_turned_flats_boolean_fixtures.py --check, identical under Python 3.9 and 3.12; each body the max-min form of its model profile's lines, its near-flat cones level at their wider rims) agree two ways (each face swept by two independent families of curves) within 5.7e-36, every solid's measures from its faces within 4.1e-41 of its closed form, each body's within 8.2e-41 of its own (Pappus), the pair identities within 1.1e-41, and Monte Carlo within 2.3 standard errors; outside the declared group its solid counts are the declared ones by rays at two resolutions; every stored vertex of the imported files lies on its OCCT profile's surfaces. A diagnostic run (not committed) of this oracle built with BRepGProp's adaptive integration (Eps 1e-10) on OCCT's own revolve of each model profile (the same rows, the near-flat segments level, every tolerance 1e-3) gives every solid case's volume and area within 2.1e-9 of the reference (the pin's within 1.5e-10).",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "pin_rest_fuse",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "3d85cdac29a5d0ebc0302fdafeb3bf174e9878ae475d959d57908fa6b92ca883",
+      "differences": [
+        "centre",
+        "invalid_result",
+        "invalid_solid",
+        "measure",
+        "solids"
+      ],
+      "reason": "BRepAlgoAPI's result is invalid (the oracle's BRepCheck_Analyzer) and its measures off the reference's: the declared degenerate group, a box whose floor rests 2^-12 (2.4e-4) over the pin's step, within the bodies' 1e-3 tolerances, which OCCT's Boolean takes as touching the step's cone (the kernel refuses the pair, the user's decision of contact only, as two faces within the resolution of one plane); OCCT's fuse keeps one solid of volume 480.9 and area 305.9 where the reference's two solids total 780.4 and 574.3; the pin OCCT was given keeps its near-flat cones (its bottom dimpled 2^-17 about its apex, its step rising 2^-17 inward), which the import takes as the planes through their wider rims: between the two bodies lie 64 pi 2^-17 / 3 (5.1e-4) of volume, the dimple's 12 pi 2^-17 and the step's 28 pi 2^-17 / 3.",
+      "independent_evidence": "chained_curved_boolean_reference.py's rows on the model's constructions (generate_turned_flats_boolean_fixtures.py --check, identical under Python 3.9 and 3.12; each body the max-min form of its model profile's lines, its near-flat cones level at their wider rims) agree two ways (each face swept by two independent families of curves) within 5.7e-36, every solid's measures from its faces within 4.1e-41 of its closed form, each body's within 8.2e-41 of its own (Pappus), the pair identities within 1.1e-41, and Monte Carlo within 2.3 standard errors; outside the declared group its solid counts are the declared ones by rays at two resolutions; every stored vertex of the imported files lies on its OCCT profile's surfaces. A diagnostic run (not committed) of this oracle built with BRepGProp's adaptive integration (Eps 1e-10) on OCCT's own revolve of each model profile (the same rows, the near-flat segments level, every tolerance 1e-3) gives every solid case's volume and area within 2.1e-9 of the reference (the pin's within 1.5e-10); on the model's pin the same diagnostic's cut is the pin itself within 2.8e-14 of the reference, and its fuse, where OCCT again takes the box as touching the plane step 2^-12 below it, within 3.1e-7 of the reference's volume and 1.0e-2 of its area (relative).",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "pin_rest_cut",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "3f827f28eb3026f0501921bb6f7599db2f628149c46aa247c038013cd3956ba1",
+      "differences": [
+        "centre",
+        "invalid_result",
+        "invalid_solid",
+        "measure"
+      ],
+      "reason": "BRepAlgoAPI's result is invalid (the oracle's BRepCheck_Analyzer) and its measures off the reference's: the declared degenerate group, a box whose floor rests 2^-12 (2.4e-4) over the pin's step, within the bodies' 1e-3 tolerances, which OCCT's Boolean takes as touching the step's cone (the kernel refuses the pair, the user's decision of contact only, as two faces within the resolution of one plane); OCCT's cut gives volume 762.360 and area 472.4 where the reference's pin is 762.360 and 532.3 (the box apart from it), a face missing; the pin OCCT was given keeps its near-flat cones (its bottom dimpled 2^-17 about its apex, its step rising 2^-17 inward), which the import takes as the planes through their wider rims: between the two bodies lie 64 pi 2^-17 / 3 (5.1e-4) of volume, the dimple's 12 pi 2^-17 and the step's 28 pi 2^-17 / 3.",
+      "independent_evidence": "chained_curved_boolean_reference.py's rows on the model's constructions (generate_turned_flats_boolean_fixtures.py --check, identical under Python 3.9 and 3.12; each body the max-min form of its model profile's lines, its near-flat cones level at their wider rims) agree two ways (each face swept by two independent families of curves) within 5.7e-36, every solid's measures from its faces within 4.1e-41 of its closed form, each body's within 8.2e-41 of its own (Pappus), the pair identities within 1.1e-41, and Monte Carlo within 2.3 standard errors; outside the declared group its solid counts are the declared ones by rays at two resolutions; every stored vertex of the imported files lies on its OCCT profile's surfaces. A diagnostic run (not committed) of this oracle built with BRepGProp's adaptive integration (Eps 1e-10) on OCCT's own revolve of each model profile (the same rows, the near-flat segments level, every tolerance 1e-3) gives every solid case's volume and area within 2.1e-9 of the reference (the pin's within 1.5e-10); on the model's pin the same diagnostic's cut is the pin itself within 2.8e-14 of the reference, and its fuse, where OCCT again takes the box as touching the plane step 2^-12 below it, within 3.1e-7 of the reference's volume and 1.0e-2 of its area (relative).",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    }
+  ]
+}
