@@ -637,6 +637,11 @@ then for the DRAW survey of the nested leaves and the speed-ups (branch
   case moving, no case trying a flush chain (the 5 restore cases importing a
   body of several primitives import before it, their leads with no flush
   part), nothing registered. Pending its capture's Linux record.
+- **U10 (b) implemented** (branch `u10-rational-c1`): R4 tests C1 of the
+  rational curve where the homogeneous removal leaves a residual
+  (`continuity.rs`), so the NURBS circle's quarter arcs pass and G1 joints
+  stay refused; STEP-b's `rational_cylinder` imports, one dataset body
+  more (REVIEW_NOTES.md's "U10 (b), done").
 - **CI.** Both workflows ("Rust kernel", "Rust geometry fuzzing") were green
   at `6c221525`. They had been red from S7 until 2026-09-29, unnoticed;
   check them after every push (see "Working rules").
@@ -993,10 +998,6 @@ fuzz switches below.
 - **U9**: tessellation certifies every triangle's deflection; keep that as
   the only mode, or add a display mode with sampled control and no bound.
   Until answered, only the certified mode exists.
-- **U10**: R4's homogeneous C1 test refuses the usual rational NURBS circle
-  (STEP-b's `rational_cylinder`): (a) keep refusing, (b) test C1 of the
-  rational curve exactly at such knots (recommended), (c) split at such
-  knots on import. Until answered, (a) holds.
 - **S9e.4b.4d.2's scope** (not a numbered decision): whether turned bodies
   of smooth joins (the e3i parts' fillets and rounds, `OCC485a`'s 9 DRAW
   cases) are worth a turned-body construction. Until answered, they are

@@ -17025,6 +17025,72 @@ Decisions for S9, recorded before its code (2026-09-28):
     it keep only OCCT's own measure difference; the dataset's 21 bodies,
     the `.brep` corpus (`hammer.brep`'s `face_not_c1` faces), the B-rep
     comparisons and the restore cases are run again.
+* **U10 (b), done (2026-10-14; the refined note above).** Evidence
+  (`450a5737`, before the code): `spline_cell_reference.py` decides C1 of
+  the rational curve in `Fraction`s (one-sided `(A' w - A w') / w^2` by
+  de Boor; on a surface the jump's numerator by exact power-basis
+  interpolation on each span, every coefficient zero), the homogeneous
+  test kept as evidence; `test_rational_c1_reference.py` checks each
+  verdict with mpmath at 60 digits (Cox-de Boor one-sided quotients at a
+  step of `1e-25` against the exact jump within `1e-15`, the NURBS circle
+  on its circle within `1e-15`); eleven fixtures in
+  `brep-rational-c1-cases.txt` with the reference's issues
+  (`-expected.tsv`) and the valid half disc's quadrature (`-mass.tsv`),
+  kept apart from `brep-cases.txt`, whose blocks the fuzz targets pick by
+  index: the half disc on the NURBS half circle (valid) and with spans 1
+  and 2, the NURBS circle as the cylinder's ring edge and with unequal
+  spans, a line edge and a cap pcurve whose knot's weight alone is
+  doubled and their G1 forms, a rational cap C1 only rationally, G1 only,
+  and one whose rows are each C1 rationally but whose surface is not; the
+  existing homogeneous-C1 rational edge (`spline_edge_rational_c1`) stays
+  valid and every expectation of `brep-cases.txt` is unchanged. At
+  `b48e9acf` the kernel failed exactly the five C1-only cells. Native
+  view (an uncommitted run of the existing BRepCheck probe,
+  `occt_brep_check_oracle.cpp`, on the two half discs' native rows, and a
+  scratch probe on the same curves and surfaces and `rational_cylinder.stp`,
+  OCCT 8.1.0): both half discs valid with counts `4 6 4 4 1 1`, every edge
+  and face valid by BRepCheck whatever its joints; `Geom_BSplineCurve`'s
+  `Continuity` is `GeomAbs_C0` and `IsCN(1)` false on all of them (OCCT
+  reads continuity from multiplicities), and `LocalD1`'s one-sided
+  derivatives differ by rounding (at most `4.4e-16`) where the
+  exact test says C1 and by `1.06`, `1.41`, `3`, `1` and `0.19` on the
+  G1 and rows cases. Kernel (`74586167`, `continuity.rs`): the
+  homogeneous removal first, then on a curve whose weights differ the
+  exact one-sided rational derivatives (`exact_evaluate` with
+  `KnotSide::Left` and `Right`), on a surface's knot line the rational
+  partial at `2 q + 1` points inside each span of the other parameter;
+  unit tests (the NURBS circle, a line whose weights alone jump, a speed
+  jump, equal weights other than one, caps C1 rationally and G1, rows each
+  C1 whose surface is not, product weights). `rational_cylinder` imports
+  valid with OCCT's counts and the reference's measures and reads back
+  from its `.brep` text; with its knots at 0, 1 and 3 (G1) it is refused
+  by exactly the three kinds; the `step` fuzz target requires every
+  unmutated fixture to import. 754 release tests (5 ignored);
+  `continuity`'s, `brep_validation`'s, `step`'s and `occt_brep`'s tests
+  pass under the emulated glibc `hypot` with debug assertions and overflow
+  checks. Reach (`79bb1d13`): `compare_step.py` 23 matches, 6 reviewed,
+  0 failures (`rational_cylinder`'s reviews now OCCT's default `BRepGProp`
+  measures, which the kernel's enclosures of the reference miss);
+  `compare_brep_io.py` 6,835 / 7, `compare_brep.py --family spline` 10 / 3
+  and `--family sheet` 17 / 1, as before. Correction of the STEP-b
+  survey: of the 21 dataset bodies R4 refused, 18 are nonrational (eleven
+  of degree-8 surfaces with tangents `5.95e-5` rad apart at their knots,
+  five of cubic and degree-9 curves, one of cubic curves up to `4.6e-4`
+  rad, one surface whose speed jumps 1.88 times) and three are rational
+  cubics of one file (`trj4_k1_top-tu-214`), not quarter-arc circles: one
+  of those now imports (a sheet, C1 rationally at its knot), the other two
+  are G1 with speeds a few ulps apart and stay refused (551 bodies import,
+  60 fail validation; `VALIDATION.md`). Every dataset `.brep` row is as
+  before; the rational test decides a knot C1 in one file
+  (`bug23400_thinring`, refused still), and the DRAW trial of the 386
+  cases restoring the 82 files it reaches moves no case
+  (`UPSTREAM_TESTS.md`). Moved and placed rational splines: a rational
+  knot C1 only rationally has no exact removal, so a motion whose
+  rounding breaks it is refused as before (`TOPOLOGY_MODEL.md`).
+  Checks: fmt, clippy (release, all targets, `-D warnings`), the 1.85
+  check, the fuzz crate's fmt and check, the release suite, the Python
+  references (`test_rational_c1_reference.py`, `test_brep_oracle.py`,
+  `generate_brep_fixtures.py --check`) and the comparisons above.
 * **U10 (b)'s corpus replays (2026-10-14, at `79bb1d13`).** A release
   build with debug assertions and overflow checks of the fuzz crate's
   replay examples (a `splines` one added locally, not committed), its
@@ -17748,6 +17814,7 @@ Decisions for S9, recorded before its code (2026-09-28):
   rationals), keeping OCCT's cells and counts; (c) split edges and faces at
   such knots on import (each piece C-infinity; more cells than OCCT's).
   The implementing agent recommends (b). **Answered 2026-10-14: (b).**
+  Implemented the same day ("U10 (b), done" under the parallel tracks).
 * **S9e.4b.4d.2's scope (recorded 2026-10-11; not a numbered decision).**
   Whether turned bodies of smooth joins and nearly degenerate cones (the
   dataset's e3i parts: `OCC485a`'s 9 DRAW cases, `OCC496b`, `OCC497c`,
@@ -18255,12 +18322,15 @@ Decisions for S9, recorded before its code (2026-09-28):
     regression).
   * Local survey (U1, counts only): 550 bodies of 131 files import (464 of
     114 before), 760 rejected (`PCurveNotDerived` 458 now leads), 61 fail
-    validation (21 through R4's C1 rule on rational quarter arcs, 21 with a
+    validation (21 through R4's C1 rule, not on rational quarter arcs as
+    first written but 18 nonrational corners and 3 rational cubics: "U10
+    (b), done"; 21 with a
     file's pcurve off its edge's parameter), no panic.
   * Open from STEP-b: (1) rational B-splines with knots of multiplicity equal
     to the degree (the usual NURBS circle) are refused by R4's homogeneous
     C1 test though C1 as rational curves; a rational C1 criterion, or
-    splitting such edges and faces at those knots, needs its own decision.
+    splitting such edges and faces at those knots, needs its own decision
+    (U10: answered (b), "U10 (b), done").
     (2) Pcurves on cylinders, cones, spheres and tori beyond rulings,
     parallels, meridians and cylinder sections (B-spline and other elliptic
     edges there: most of the 458 `PCurveNotDerived`), whether from the

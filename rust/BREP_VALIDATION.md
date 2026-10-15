@@ -227,8 +227,12 @@ only on a certified lower bound `> tol`. Otherwise it reports the matching
   exactly and never uncertified. A binary64 B-spline's interior knots have
   multiplicity at most its degree `p`, so only a knot of multiplicity `p`
   (every knot of degree 1, a periodic seam included) is tested, by one
-  exact homogeneous removal with zero residual (`MATHEMATICS.md`); a face
-  is tested along every knot line in `u` and `v`. Only knots strictly inside
+  exact homogeneous removal with zero residual or, where that leaves a
+  residual, by the exact one-sided derivatives of the rational curve (U10
+  (b): the NURBS circle's quarter arcs at double knots are C1, a G1 joint
+  whose speed jumps is not; `MATHEMATICS.md`); a face is tested along every
+  knot line in `u` and `v`, rows homogeneously or the rational partial
+  along the whole line. Only knots strictly inside
   a nonperiodic domain count. A spline ring edge must be periodic
   (`ring_edge_open`). A spline edge is degenerate when every pole lies
   within tolerance of the first, a spline pcurve when every pole is the
@@ -469,7 +473,16 @@ Evidence:
   parallel, and the bulge and the rounded corner with a knot in their
   walls. 63 cases are valid. `brep_validation.rs`
   requires Rust's complete sorted issue list to equal the reference's for
-  every case. For the nineteen valid spline cases, `cell_reference.mass_properties`
+  every case. U10 (b)'s eleven cells are in files of their own
+  (`brep-rational-c1-cases.txt` and `-expected.tsv`, so that the fuzz
+  targets' picks from `brep-cases.txt` keep their meaning): a half disc
+  on the NURBS half circle (a rational cylinder wall, valid, its
+  quadrature in `brep-rational-c1-mass.tsv`) and with spans 1 and 2, the
+  NURBS circle as a ring edge and with unequal spans, a line edge and a
+  pcurve whose knot's weight alone is doubled and their G1 forms, and a
+  rational cap C1 only rationally, G1 only, and with rows each C1 whose
+  surface is not; `rational_c1_issue_sets_match_the_independent_oracle`
+  and `rational_half_disc_mass_encloses_the_reference` check them. For the nineteen valid spline cases, `cell_reference.mass_properties`
   integrates volume, area, centroid and inertia by Green's theorem in UV
   with nested Gauss–Legendre quadrature of the exact surface jets
   (`brep-spline-mass.tsv`, twenty digits). F8: generation integrates every
