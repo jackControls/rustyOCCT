@@ -19678,6 +19678,14 @@ Decisions for S9, recorded before its code (2026-09-28):
   meridian profile with its fillets refitted to their lines, near-flat cones
   as planes, tangent edges in the engine: "S9e.4b.4d refined"'s (a) to (c)).
   **Answered 2026-10-14: build it** (S9e.4b.4d.2).
+* **`bug476_1` to `_8`'s registration (recorded 2026-10-15; not a numbered
+  decision).** S9e.4b.4d.2c.1a makes `OCC485a`'s eight Booleans with its
+  rib evaluate, consistent and within 3.5e-7 to 2.8e-6 of native DRAW, but
+  they fail `checknbshapes`: OCCT splits the body's step, fillet and shaft faces along its seam half-plane under the rib, keeps the near-flat bottom and step as cones (apex, degenerated edge, seam) where the kernel's model takes them as planes (S9e.4b.4d.2b), and counts the rib's shared side face once under its two locations. Options: (a) leave them
+  unregistered; (b) count mappings for those three rules, each confirmed
+  natively; (c) a contract that records a known count difference.
+  **Answered 2026-10-15: (a)**, left unregistered and noted in
+  `UPSTREAM_TESTS.md`'s "Evaluating but not registered" and `HANDOFF.md`.
 * **The per-set Boolean captures' Linux records (recorded 2026-10-11; a
   CI-budget question, not a numbered decision).** CI runs only
   `compare_boolean.py`'s default set, so no other capture has a Linux record.

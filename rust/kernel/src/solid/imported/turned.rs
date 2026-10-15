@@ -868,6 +868,12 @@ fn cone_corner(
 /// span and sheet kept); a vertex loop (a cone's apex, a disc's centre) at
 /// its model's point on the axis. `None` where it is no turned body or a fin
 /// is no such pcurve's.
+///
+/// A modelled body keeps no seams and takes near-flat cones as planes, so
+/// its face, edge and vertex counts are its model's, not OCCT's: DRAW's
+/// `bug476_1` to `_8` evaluate with OCCT's measures but fail
+/// `checknbshapes`, and stay unregistered by the user's decision
+/// (`UPSTREAM_TESTS.md`, "Evaluating but not registered").
 #[allow(clippy::too_many_lines)]
 pub(super) fn modelled(t: &Topology, tolerance: Tolerance) -> Option<Topology> {
     let m = meridian(t, tolerance.linear())?;

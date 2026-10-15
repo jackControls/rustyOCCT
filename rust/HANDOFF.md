@@ -959,7 +959,8 @@ then for the DRAW survey of the turned bodies (branch `s9-draw-19`, over
    split at the body's seam under the rib, its near-flat cones kept as
    cones and the rib's located face: the contract admits no `failed`, so
    registering them needs count mappings for those or a contract that
-   records a Rust count failure, a decision for the user), and it found
+   records a Rust count failure; the user answered (a), unregistered, see
+   "User decisions answered"), and it found
    two defects, **both fixed** ("S9e.4b.4d.2c.1a's consistency fixed",
    branch `fix-occ485a-consistency`): the kernel's eight `bug476` results
    were inconsistent with one another beyond their enclosures and boxes
@@ -1163,6 +1164,16 @@ fuzz switches below.
   `ci-linux-captures`); the records of all 46 from run 38670188123 (branch
   `linux-records-38670188123`, item 2), so the milestones' "pending its
   capture's Linux record" above are resolved.
+- **`bug476_1` to `_8` (answered 2026-10-15): (a), left unregistered.** They
+  evaluate on the Rust adapter with volumes, areas and centres consistent
+  with one another and within 3.5e-7 to 2.8e-6 of native DRAW (the model's
+  distance from `OCC485a`'s stored body), every `checkprops` holding, but
+  fail `checknbshapes`: OCCT splits the body's step, fillet and shaft faces along its seam half-plane under the rib, keeps the near-flat bottom and step as cones (apex, degenerated edge, seam) where the kernel's model takes them as planes (S9e.4b.4d.2b), and counts the rib's shared side face once under its two locations. The contract admits no `failed` Rust
+  status, and neither count mappings for those three rules nor a contract
+  that records a known count difference were wanted. They stay outside the
+  manifest, listed in `UPSTREAM_TESTS.md`'s "Evaluating but not
+  registered"; a survey reporting them `failed` at `checknbshapes` alone is
+  expected, not a regression.
 
 No user decision is open.
 

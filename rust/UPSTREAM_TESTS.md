@@ -2847,6 +2847,23 @@ not OCCT's shared one, and merges what OCCT keeps apart.
 `compare_split_merge.py` and `compare_boolean.py` compare the relations
 instead.
 
+## Evaluating but not registered
+
+Cases the Rust adapter evaluates whose expected status the manifest does not
+record, by decision; a survey or trial reporting them as below is expected,
+not a regression.
+
+- **`tests/bugs/modalg_2/bug476_1` to `bug476_8`** (`OCC485a` and its rib
+  `OCC485b`; S9e.4b.4d.2c.1a and its consistency fix). Rust status `failed`
+  at `checknbshapes` alone: every `checkprops` holds, and the kernel's
+  volumes, areas and centres agree with one another (cut and common summing
+  to each input, the fuse equal in both orders) and with native DRAW within
+  3.5e-7 to 2.8e-6 relative, the model's distance from the stored body. The
+  counts differ because OCCT splits the body's step, fillet and shaft faces along its seam half-plane under the rib, keeps the near-flat bottom and step as cones (apex, degenerated edge, seam) where the kernel's model takes them as planes (S9e.4b.4d.2b), and counts the rib's shared side face once under its two locations. The user's decision (2026-10-15): leave
+  them unregistered, rather than add count mappings for those rules or a
+  contract that records a Rust count failure (`REVIEW_NOTES.md`,
+  "`bug476_1` to `_8`'s registration").
+
 ## Deliberate limits
 
 - Rust signatures: positional `box` with three or six numbers, `pcylinder name
