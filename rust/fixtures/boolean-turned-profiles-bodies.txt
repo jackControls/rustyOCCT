@@ -1,0 +1,25 @@
+write point imported/profile_point.brep
+plane 0 0 0 0 -1 0 1 0 0
+wire S 6 0 0 0 L 3 0 3 L 3 0 6 L 4 0 8.5 L 4 0 16 L 0 0 16 L
+revolve 0 0 0 0 0 1 6.283185307179586
+end
+write point_x imported/profile_point_x.brep
+plane -1.5 4.125 0.375 0 -1 0 1 0 0
+wire S 6 -1.5 4.125 0.375 L 1.5 4.125 3.375 L 4.5 4.125 3.375 L 7 4.125 4.375 L 14.5 4.125 4.375 L 14.5 4.125 0.375 L
+revolve -1.5 4.125 0.375 1 0 0 6.283185307179586
+end
+write waist imported/profile_waist.brep
+plane 0 0 0 0 -1 0 1 0 0
+wire S 6 0 0 0 L 8 0 0 L 8 0 10 L 5 0 14 L 5 0 20 L 0 0 20 L
+revolve 0 0 0 0 0 1 6.283185307179586
+end
+write steps imported/profile_steps.brep
+plane 0 0 0 0 -1 0 1 0 0
+wire S 9 0 0 0 L 6 0 0 L 6 0 4 L 5 0 5 L 3 0 5 L 3 0 9 L 4 0 11 L 4 0 13 L 0 0 13 L
+revolve 0 0 0 0 0 1 6.283185307179586
+end
+write crown imported/profile_crown.brep
+plane 1 2 0 0 -1 0 1 0 0
+wire S 8 1 2 0 L 4 2 0 L 4 2 4 L 7 2 4 L 7 2 7 L 5 2 9 L 5 2 11 L 1 2 11 L
+revolve 1 2 0 0 0 1 6.283185307179586
+end
