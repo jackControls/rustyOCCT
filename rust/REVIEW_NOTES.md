@@ -13875,6 +13875,82 @@ Decisions for S9, recorded before its code (2026-09-28):
     centroid's turn); for 2c.2 partners across the smooth edges. *Not done in
     this task*: both parts are left for their own steps; nothing of 2c is
     built.
+  * **S9e.4b.4d.2c.1 refined, before its code (2026-10-15).** "S9e.4b.4d.2c
+    refined"'s first part (the bodies alone, partners across no smooth edge),
+    amended where a draft of it (not committed, on `61162084`; each file
+    imported in a process of its own) shows the decisions short, and split
+    again. *What the draft measured.* `turned_round_off` is no turned body by
+    the decisions' own rule: its round is snapped tangent to the shaft and the
+    top within 2.5e-9 (the tube's crossing of the shaft, which the decisions
+    quoted), but its stored edge with the shaft lies at height 8 and the
+    snapped tube touches the shaft at 8.0001: 1e-4 off, a thousand times its
+    resolution of 1e-7 (the faces' normals 5e-5 rad apart there), so it keeps
+    S9e.4b.4d.1's refusal by name. `OCC496b`'s third torus touches a cone (the
+    slope's snap to a Pythagorean direction, the piece bounded by cones): with
+    its kin it is the second part below. `OCC485a`'s fillet and round join a
+    plane and a cylinder each (its step S9e.4b.4d.2b's flat): the draft
+    imports it (volume 67,672.82 and area 9,291.875 of its model, OCCT's
+    67,672.8 and 9,291.88), its fillet's torus moved 7.5e-6 and its round's
+    3.76e-6 by the snap; its DRAW cases' Booleans with the rib cross its
+    smooth edges (2c.2's). So **S9e.4b.4d.2c.1a**: fillets and rounds between
+    a plane and a cylinder (`turned_fillet`, `OCC485a`'s import);
+    **S9e.4b.4d.2c.1b**: a fillet or a round beside a cone (`OCC496b`), left
+    for its own step. *Amendments for 2c.1a* (the draft's). (1) *The pieces*:
+    the kite less the tube would make a tangency inside the piece's own
+    Boolean (the tube touching the kite's tangent sides along the kite's
+    edges, an edge of one input on the other's face) and faces on one surface
+    with an edge of both in the lattice's Boolean with it (the kite's tangent
+    sides on the lattice's faces, its corner the lattice's edge). Instead each
+    piece is a box, an annular prism on the axis frame from the tube's centre
+    past the sharp corner by half the tube (into the lattice for a fillet, out
+    of it for a round; halved up to four times while another segment of the
+    sharp profile, another box, a node's height or a lattice part's end would
+    meet it), less the whole torus: its own Boolean meets the tube
+    transversally (the box's sides through the centre cross it normally at the
+    tangent points), and the tangency arises only in the lattice's Boolean
+    with the piece, where the piece's edge at a tangent point (the tube
+    against the box's side through that point) lies on the lattice's plane or
+    cylinder the tube touches along that circle. The body is the lattice fused
+    with the fillets' pieces, less the rounds'. (2) *The snap's numbers*: the
+    plane's height, the cylinder's radius and the tube's radius beside a torus
+    on the multiples of 2^-40 of the body's size (its power of two above it),
+    so that the centre, the tangent points and the box are binary64 numbers
+    exactly (the primitives' own data), each moved by less than 1e-11 of the
+    size; and a frustum's exact model on the axis frame reaches its top height
+    exactly (`Construction::Cone`'s axis holding both heights: its top at the
+    rounded difference left `OCC485a`'s step 1.8e-15 off the plane the fillet
+    touches). (3) *The engine*: (E1) as decided, each double root kept as the
+    circle the surfaces touch along (`CylPair::Touching`: a plane normal to a
+    whole torus's axis at its tube's top or bottom, a coaxial quadric's double
+    root at a rational angle), refused at once with today's text outside a
+    turned body's own tree; (E2) inside it, each circle touching inside both
+    faces must be an edge of the torus's input lying on the other's face
+    (`graph.rs`'s edges on a touching circle): that edge splits the face it
+    lies on, its parts inside it both ways as a face on one surface holds the
+    other's edges, its vertices that face's, the sections along it dropped, a
+    ruling's or a meridian's double root on the circle the crossing of two
+    edges on the face, and each piece classified at an edge off every touching
+    circle where it has one (a push along a face tangent to the other input's
+    decides no side); else the tangency as before. No tangent section is
+    built, so no fins need ordering by curvature, and (E3) the assembly is
+    unchanged: the smooth edge is the piece's edge, between the lattice's face
+    and the torus. (E4) as decided, `smooth_torus`'s refusal tried as a turned
+    body first, a flat's rim on a torus given its pcurve again; a turned
+    body's primitives' seams all apart (coaxial, one's seams through another's
+    rims otherwise). (4) *A flat beside a fillet* stays S9e.4b.4d.2b's plane
+    through its wider rim (not the decisions' narrower one): the fillet
+    touches that plane, `OCC485a`'s stored edge 7.5e-6 off the tangency
+    circle, within its resolution of 3e-3. Every other decision as recorded;
+    no new text. *Evidence* for 2c.1a, before its code: bodies OCCT writes by
+    the oracle's `revolve` row with arcs (a fillet under a step in and a round
+    at a top, `turned_fillet`'s kind; a round at a bottom, a fillet under a
+    step out and a round on a collar; a round refitted by 2^-20 at a
+    resolution of 1e-3, `OCC485a`'s kind), cases against a rod across a round
+    alone, a ball in a fillet alone, a box across a corner, and a ball
+    touching a round declared degenerate; the chained reference over each
+    model profile's lattice with its pieces, its closed form by Pappus; a unit
+    test, a CI group, and a capture keyed on the import's refusal of such
+    bodies by name.
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces
