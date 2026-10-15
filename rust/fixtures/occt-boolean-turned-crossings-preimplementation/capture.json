@@ -1,0 +1,14 @@
+{
+  "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+  "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+  "platform": "darwin",
+  "rust_revision": "20a6ac6460d1a416f7b8c04faea008c879d2e564",
+  "rust_turned_crossings_boolean_exists": false,
+  "rust_worktree_uncommitted": [
+    "?? rust/fixtures/occt-boolean-turned-crossings-preimplementation/"
+  ],
+  "sdk_manifest_sha256": "cf67084f02f40dc622ee350e0536985f7e138ed3e87d67982f696c9e2b56585e",
+  "input_sha256": "74caf27f89b41e3877178f1e0630e2adca19aaa0e0d851cff7f190f33e918863",
+  "probe_source_sha256": "46da58a6ec69466fbb79099152e7847539c7e78baf46491415f00e6b2a70cc5c",
+  "observations_sha256": "c7e92c82ef83679aa8080bed5ae2ea969e1cde6ae1b1d11b1adf82fbc2b7b1aa"
+}

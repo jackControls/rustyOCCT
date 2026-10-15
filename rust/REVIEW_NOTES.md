@@ -14475,6 +14475,178 @@ Decisions for S9, recorded before its code (2026-09-28):
     (S9e.4b.4d.2c.1b's torus beside a cone is a torus's and a cone's
     arm already, its cone's exact line rounded once into the stored
     cone).
+  * **S9e.4b.4d.2c.2 refined, before its code (2026-10-15).** "S9e.4b.4d.2c
+    refined"'s second part as 2c.1b's verification re-scoped it: partners
+    across a turned body's smooth edges (the tangent circles where a fillet
+    or a round meets its plane, cylinder or cone), against the reference,
+    and the engine's tangencies there (E5, a partner's two sections tangent
+    at a vertex on a ring, `graph.rs`'s `next_on_kept`; E6, a given ring
+    met by a partner's face, `triple.rs`). *The known failure, diagnosed
+    first* (a scratch build at `251d5227`, instrumented, not committed):
+    the rib whose side planes cross the round's tangent circle
+    (`consistency_ribbed.brep`, the triangle `(8, 34.5)`, `(20, 34.5)`,
+    `(8, 42)` in `(x, z)` over `|y| <= 1`, its top at 42 over the shaft's
+    end at 41) fails "an open Boolean of arcs in any position" in all six
+    operations, and it is no tangency: the arrangement's edges used once are
+    the round's ring between `y = +-1` and every section of the rib's
+    planes with the round, which has none. `arrange_touching` finds a
+    plane's spiric section of a torus once per plane face (`spiric`, keyed
+    by the operand and the plane's face: "the same for every patch") and a
+    torus's meeting with a quadric once per quadric (`toric`, keyed by the
+    operand and the quadric's first face; two tori's at the key 0), both
+    from S9d.4, where an input held one torus in patches. A turned body with
+    a fillet and a round is the first input holding two tori (its round
+    piece's and its fillet piece's models, `Prism::view`): a partner's face
+    whose box meets both tori's faces gets the first torus's meeting on the
+    second (the rib's side planes and hypotenuse the fillet's spiric
+    sections, the hypotenuse's `Apart`), whose vertices lie off it, so the
+    round's face has no section, its pieces keep the rib's whole faces and
+    the assembly finds edges used once. The rib at 41.5 crosses the fillet
+    alone, and the earlier boxes across the round (`round`, `round_skew`)
+    meet no fillet face; a vertical rod across both tori (`toric`) and a
+    box across both (`spiric`) fail the same way. *Measured with the key
+    taken per torus* (the first face on the same torus model as its key's
+    third member, both caches): the rib at 42 evaluates, its six results
+    consistent (the consistency fix's identities within 1.5e-15 of the
+    body's volume), as do the rod and the box (2.3e-15, 1.6e-15); and a
+    scan of 196 partners (boxes, ribs, rods along
+    `x` above and below each ring, rods parallel to the axis at each ring's
+    radius, a turned box and a leaning slab, across each tangent circle of
+    `consistency_ribbed`, `fillet_step`, `fillet_collar`, `fillet_refit`,
+    `turned_fillet` and the `cone_fillet_` bodies `round`, `fillet` and
+    `top`, 28 circles, six operations each) evaluates 178, every one
+    consistent (the identities within 6.8e-14 of the larger input), the
+    other 18 the scan's own contacts refused by S9's rules as before (a
+    rod's cap at a tube's top or bottom or on the step's plane, a slab's
+    side at a tube's outer equator: the tangency; a cap within the
+    resolution of the step's plane; a section within the resolution of a
+    node). Without the key the same 178 evaluate: one outcome alone
+    differs, `consistency_ribbed`'s rod at its round's lower circle,
+    across both tori (its caps refused either way, its other operations
+    the open Boolean without the key). *E5 and E6 are not
+    reached*: a partner crossing a ring transversally meets the two tangent
+    faces in sections that continue one another through the ring's point
+    (their common tangent the partner's tangent plane's line in the faces'
+    common one, across the ring), travelling opposite ways at the vertex,
+    so `next_on_kept` never compares them (one way on, or an angle of a
+    half turn); its two curves leave a vertex on a ring the same way only
+    where that line is the ring's tangent, a partner tangent to the ring
+    (the contact refused as S9c's tangency before any order is asked). A
+    ring met by a partner's face is the piece's ring at a quarter turn or
+    at the snapped direction (`ring_meet`, `rim_far`, `rim_plane`: 2c.1a's
+    amendment (5), 2c.1b's (5')), never three surfaces: no ring reaches
+    `triple.rs` in the scan. *Decisions.* (1) *Exact data*: nothing new;
+    the rings, their crossings with a partner and the sections through them
+    are 2c.1a's and 2c.1b's. (2) *The engine*: the meetings found once are
+    keyed per torus (`arrange_touching`'s `spiric` and `toric` by the
+    first face on the same torus model, each torus of an input its own
+    meetings); at a vertex where a partner's sections meet tangentially on
+    a ring nothing is accepted beyond today's order (none is asked), and
+    `next_on_kept` and `triple.rs` keep their refusals. (3) *Degenerate
+    and refused* (contact only, no new text): a partner tangent to a ring
+    at a point (a plane through the ring's tangent, S9c's "a tangency
+    between the inputs"), a partner tangent to a fillet or a round (S9d.4b.2's),
+    a partner's edge or vertex on a ring, and a partner's face within the
+    resolution of a body's plane stay refused. No split: the step is the
+    key, its evidence and its tests. *Evidence* (before the code): a set of
+    its own (`boolean-turned-crossings`), bodies OCCT writes by the oracle's
+    `revolve` and `tolerance` rows: `ribbed` (`OCC485a`'s form on exact
+    data at its resolution 3e-3: a base of radius 24 to 32, the chamfer to
+    21 at 35, the step's plane in to 10, a fillet of 1/2 to the shaft of
+    19/2, the shaft to 41, a round of 3 to the top at 44) with the known
+    failure's rib, a rod parallel to the axis across both tori and their
+    four circles, and a box across both, and 2c.1a's `fillet_step` and
+    `fillet_collar` and 2c.1b's `cone_fillet_round` and `cone_fillet_fillet`
+    with a rod along `x` at a round's circle's height, a box across a
+    fillet's two circles and a round's, a rib across a round's circles
+    beside a cylinder and a cone, and a rod across a fillet's circle on its
+    cone; declared degenerate, the box whose side touches the fillet's
+    circle on the step (`x = 10`); the chained reference (S9e.4b.4d.2c.1a's
+    `TurnedInput` over each model profile), a unit test, a CI group and the
+    comparison's time; and on `consistency_ribbed.brep` itself the known
+    failure's rib, the box and the rod with their commons by the
+    consistency generator's integral over the model.
+  * **S9e.4b.4d.2c.2 implemented** (`curved/graph.rs`'s `first_on_torus`;
+    refined `9e68fa66`, evidence `20a6ac64`, capture `0e758808`, kernel
+    `8854e3d9`; branch `s9e4b4d2c2` from `251d5227`). *Kernel* as decided:
+    `arrange_touching`'s spiric sections keyed by the operand, the plane's
+    face and the first face on the same torus model (`Prism::view`'s), its
+    torus meetings by the operand, that first face of the torus and the
+    quadric's first face (two tori's: each torus's first face), so each
+    torus of an input has its own meetings; nothing else changes (no new
+    refusal text, `next_on_kept` and `triple.rs` as before). *Evidence as
+    built*: the declared degenerate case moved from `ribbed` (its box side
+    at the fillet's circle of radius 10 took the reference past 20 minutes)
+    to `fillet_step` (the box `[7/2, 9/2] x [-1/2, 1/2] x [5/2, 5]`, its side
+    through the fillet's circle on the step at `(9/2, 0, 3)`, 85 s), the
+    collar's box raised off its fillet's tube's bottom (`z = 15/4`: at 4 its
+    cap touched the whole torus there, a tangency), the step's rod 1/32
+    above its round's circle (at the circle's height the reference found
+    each point of its generatrix through it as both surfaces' event, a
+    rounding apart), and a skew cube about the round's circle added (it
+    evaluates turned); 27 cases, 6 minutes on four workers under Python
+    3.12 (1,313 s of CPU), identical under 3.9. Before the code the four
+    groups across two tori of one body (`ribbed_post`, `_rib`, `_box`,
+    `collar_box`) failed the open Boolean on the kernel's probe, the others
+    within the reference. *Tests* (`tests/turned_crossing_booleans.rs`, six):
+    every case within the reference's enclosures (at most 1e-9 wide), the box
+    side through the circle refused as S9c's tangency; each solid group's six
+    Booleans valid and consistent (the common and the fuse both ways, each
+    cut and the common summing to its input, the fuse to both less the
+    common, within 1e-12 of the larger input, the moment along `y` zero for
+    the seven partners symmetric in `y`), the common the reference's; the
+    known failure's rib, the box and the rod on `consistency_ribbed.brep`
+    itself consistent the same way with the model's commons
+    (`boolean-turned-consistency-crossings.tsv`, the consistency
+    generator's integral at 40 digits, a lens of two discs for the rod);
+    histories complete over the stored ids; results deterministic and moved
+    rigidly; every group's common and the known failure's fuse and cut keep
+    the reference's volumes shifted by a dyadic translation, the skew cube's
+    three cases turned (the axis-aligned partners refused turned as within
+    rounding of the axis, S9's rule). The consistency identities are shared
+    (`tests/support/turned_consistency.rs`, `turned_consistency_booleans.rs`
+    using them). 13.5 s in release, 14.4 s at opt-level 2 with debug
+    assertions, 14.2 s under the emulated glibc `hypot` with debug
+    assertions and overflow checks (the nine turned suites passing there,
+    `turned_body_imports.rs` 30.8 s). `compare_turned_crossings_boolean.py`:
+    11 matches and 16 reviewed (OCCT's default BRepGProp measures where its
+    approximated curves on a torus bound the faces, within 1e-8 of the
+    reference with an adaptive accuracy of 1e-10 but the declared group's
+    2.4e-8; the kernel's meetings with a torus cut at their turning points,
+    OCCT's seams through the partners), the kernel within the reference on
+    all 24 solid cases and the 3 degenerate refused. *Reach after the
+    change* (an instrumented build, not committed, printing wherever the
+    new key finds no meeting where the old key would have found another
+    torus's): the dataset's 1,494 `.brep` files, the 139 imported fixtures
+    and `data/`'s 37, each imported in a process of its own (120 s a file):
+    no file reaches it (384 solids importing, 9 files past 120 s as large
+    assemblies or faces, `buc60531a` among them); the boolean and split
+    corpora with their regressions replayed (1,482 and 3,571 inputs): none
+    reaches it, so no import's and no fuzz input's outcome can move. The
+    `bug476` Booleans of `OCC485b` and `OCC485a` do (32 times in their six
+    operations, a rib face's box meeting both tori's faces, each time
+    another torus than the one found first), their results the same before
+    and after (the DRAW trial's logs below; the volumes 33.295952968,
+    49.101175965, 67,639.507473066 and 67,721.904601998 both orders, as
+    "S9e.4b.4d.2c.1a's consistency fixed" gives), so no section inside
+    both faces was lost there before. *DRAW trial*
+    (58 cases: every case restoring a data file that calls a Boolean only
+    inside `catch {...}`, and every case restoring `OCC485a`, `OCC485b`,
+    `OCC496a`, `OCC496b`, an `OCC497` body or `bug28626`'s; both backends,
+    before at `0e758808` and after, 120 s a case, three at once): every
+    status, reason and log the same but the logs' output paths; `bug476_1`
+    to `_8` failing only at `checknbshapes` as before. Nothing is
+    registered. *Verification* at the branch's
+    head: fmt, clippy with `-D warnings`, `cargo +1.85 check`, the release
+    tests (792, 5 ignored), all 52 comparisons with their documented counts
+    and no failure (770 s at load 8 to 10), the debug-assertion replays of
+    the boolean corpus and regressions (1,482, the slowest 9.2 s) and the
+    split's (3,571, 1.8 s), natively and under the emulated `hypot` with
+    overflow checks (48 s and 47 s the slowest there, at load 8 to 10), none
+    failing; the boolean corpus's instructions with debug assertions 9.185 T
+    against `0e758808`'s 9.191 T (0.06 % fewer); the Python unit tests (472,
+    3 skipped); the ledger holding. Open: S9e.4b.4d.2c.1c; the campaigns and
+    the capture's Linux record.
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces
