@@ -918,6 +918,24 @@ pub(super) fn edge_surface(
         // S9e.3a: a given result's plane section of a cone against a plane,
         // on the line of the two planes.
         (Crv::Cone(c), Surf::Plane { p: p0, m }) => c.meet_plane(p0, m),
+        // S9e.4b.4d.2c.1b: a cone's circle about its axis (a turned body's
+        // corner between its cone and a coaxial face, where their radii
+        // agree) against a torus: the circle it is (S9d.4b.2's), each point
+        // placed by the cone's angle.
+        (Crv::Cone(c), Surf::Torus) if c.normal_to_axis() => {
+            let Some(Crv::Conic { c: c0, a, b }) = c.as_conic() else {
+                unreachable!("a circle about the axis")
+            };
+            match super::torus_curved::conic_torus(&c0, &a, &b, py)? {
+                EdgeMeet::Points(points) => Ok(EdgeMeet::Points(
+                    points
+                        .into_iter()
+                        .map(|(_, x)| (Pos::Ang(c.place(&x)), x))
+                        .collect(),
+                )),
+                other => Ok(other),
+            }
+        }
         // S9e.3b: a given result's meeting of two curved faces met by
         // another face, or a cone's or a torus's general section met by a
         // curved face: three surfaces, two or three of them curved.

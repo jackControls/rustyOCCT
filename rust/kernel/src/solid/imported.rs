@@ -87,7 +87,10 @@
 //! neighbours smoothly is first such a turned body with fillets and rounds
 //! between planes and cylinders (`turned`: each torus snapped tangent to its
 //! lines, the sharp profile's lattice with each fillet's piece and less each
-//! round's), else refused by name as before. Every other body is S9e.4b's.
+//! round's), else refused by name as before; S9e.4b.4d.2c.1b: beside a cone
+//! too (its line snapped to a Pythagorean direction, exact in its
+//! primitive; the piece a slant box of cones normal to it). Every other body
+//! is S9e.4b's.
 use super::{replayable, Construction, Context, Solid};
 use crate::history::{History, Relation};
 use crate::identity::{

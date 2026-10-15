@@ -839,7 +839,7 @@ pub(super) fn arrange_touching(models: [Prism; 2], touch: bool) -> Result<Arr> {
             }
             let pair = if boxes_meet(&models[0].boxes[fa], &models[1].boxes[fb]) {
                 let ((va, ia), (vb, ib)) = (models[0].view(fa), models[1].view(fb));
-                super::cones::cone_pair([va, vb], [ia, ib], res)?
+                super::cones::cone_pair([va, vb], [ia, ib], res, touch)?
             } else {
                 CylPair::Apart
             };
