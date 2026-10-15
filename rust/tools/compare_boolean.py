@@ -40,10 +40,22 @@ enclosures must contain the reference's totals (1e-20 relative slack), their
 number must be the reference's, `refused` is accepted only where the case
 expects `degenerate`, and each solid's counts are compared with the native
 solid's after ShapeUpgrade_UnifySameDomain (a difference needs a review).
+
+`--allow-unrecorded-platform` (CI's scheduled Linux runs,
+`run_boolean_comparisons.py`): on a platform with neither the capture's own
+record nor a reviewed `platform-<name>/`, the capture's evidence is checked
+as usual, but the observation is set beside the capture (the report's
+`unrecorded_platform`: cases differing beyond captured()'s allowance and the
+largest deviation) and native differences without a review fingerprinted
+by this platform's rows are listed under `platform_reviews_pending` instead
+of failing; the kernel's failures still fail. Once the record exists the
+flag changes nothing. `take_platform_records.py` takes the record and the
+platform's reviews from such a report.
 """
 import argparse
 import json
 import math
+import os
 from pathlib import Path
 import subprocess
 import sys
@@ -290,7 +302,9 @@ def capture(executable, env, sdk_manifest):
         'observations_sha256': digest(CAPTURE/'native.txt')})
 
 
-def captured(observed):
+def capture_metadata():
+    """The capture's metadata, its evidence checked: the recorded
+    pre-implementation capture of today's inputs and probe source."""
     CAPTURE = SET.capture
     metadata = json.loads((CAPTURE/'capture.json').read_text())
     exists = metadata[SET.exists_key]
@@ -302,16 +316,74 @@ def captured(observed):
             raise ValueError('Boolean evidence changed: '+name)
     if (CAPTURE/'inputs.txt').read_text() != native_input():
         raise ValueError('the native inputs differ from the captured ones')
-    was = parse_native(platform_record(CAPTURE, metadata))
-    if set(was) != set(observed):
-        raise ValueError('native cases differ from the capture')
+    return metadata
+
+
+# captured()'s allowance: a native value within 1e-9 of max(1, |value|).
+ALLOWANCE = 1e-9
+
+
+def observation_differences(was, now):
+    """How the native observation `now` departs from the record `was`: the
+    cases whose status, validity, warnings, solid count, solids' face, edge
+    and vertex counts (before and after unifying) or validity differ, or
+    whose volumes, areas or centres differ by more than ALLOWANCE of
+    max(1, |value|) (`structural`, [(case, what)]), and the largest such
+    deviation of any value (`deviation`). Cases missing on either side are
+    `missing` and `extra`."""
     flat = lambda ss: [x for s in ss for x in [s[0], s[1], *s[2]]]
+    structural, deviation = [], 0.0
     for name, (status, valid, warnings, solids) in was.items():
-        now = observed[name]
-        if now[:3] != (status, valid, warnings) or len(now[3]) != len(solids) \
-                or [s[3:] for s in now[3]] != [s[3:] for s in solids] \
-                or any(abs(a-b) > 1e-9*max(1.0, abs(a)) for a, b in zip(flat(now[3]), flat(solids))):
-            raise ValueError('native observation of '+name+' differs from the capture')
+        if name not in now:
+            continue
+        got = now[name]
+        if got[:3] != (status, valid, warnings):
+            structural.append((name, 'status'))
+        elif len(got[3]) != len(solids):
+            structural.append((name, 'solids'))
+        elif [s[3:] for s in got[3]] != [s[3:] for s in solids]:
+            structural.append((name, 'counts'))
+        else:
+            gaps = [abs(a-b)/max(1.0, abs(a)) for a, b in zip(flat(got[3]), flat(solids))]
+            deviation = max([deviation]+gaps)
+            if any(g > ALLOWANCE for g in gaps):
+                structural.append((name, 'values'))
+    return {'structural': structural, 'deviation': deviation,
+            'missing': sorted(set(was)-set(now)), 'extra': sorted(set(now)-set(was))}
+
+
+def platform_recorded(metadata):
+    """Whether this platform has a record to compare with: the capture's own
+    platform, or a reviewed `platform-<name>/` (`platform_record` checks it)."""
+    return metadata['platform'] == sys.platform or \
+        (SET.capture/('platform-'+sys.platform)/'record.json').exists()
+
+
+def captured(observed):
+    CAPTURE = SET.capture
+    metadata = capture_metadata()
+    was = parse_native(platform_record(CAPTURE, metadata))
+    found = observation_differences(was, observed)
+    if found['missing'] or found['extra']:
+        raise ValueError('native cases differ from the capture')
+    if found['structural']:
+        raise ValueError('native observation of '+found['structural'][0][0]+' differs from the capture')
+
+
+def unrecorded(observed):
+    """The first observation on a platform without a record of the capture
+    (`--allow-unrecorded-platform`): the capture's evidence checked as
+    captured() does, the observation set beside the capture's own (its
+    platform's) instead of failing, for the record to be taken from it
+    (`take_platform_records.py`)."""
+    metadata = capture_metadata()
+    was = parse_native((SET.capture/'native.txt').read_text())
+    found = observation_differences(was, observed)
+    if found['missing'] or found['extra']:
+        raise ValueError('native cases differ from the capture')
+    return {'capture_platform': metadata['platform'],
+            'structural_differences': [{'case': c, 'what': w} for c, w in found['structural']],
+            'largest_deviation': found['deviation']}
 
 
 def main():
@@ -323,6 +395,9 @@ def main():
     parser.add_argument('--capture', action='store_true')
     parser.add_argument('--native-only', action='store_true')
     parser.add_argument('--splines', action='store_true', help="S9a.2's spline set")
+    parser.add_argument('--allow-unrecorded-platform', action='store_true',
+                        help='on a platform without a record of the capture (platform-<name>/), report '
+                             'the observation and its differences pending instead of failing')
     args = parser.parse_args()
     global SET
     SET = make_set(args.splines)
@@ -342,7 +417,14 @@ def main():
         raise SystemExit('native Boolean run failed: '+json.dumps(record)[:2000])
     (output/'native-observed.txt').write_text(record['stdout'])
     observed = parse_native(record['stdout'])
-    captured(observed)
+    # A platform without a record of the capture yet: with
+    # --allow-unrecorded-platform (CI's Linux runs), its observation is set
+    # beside the capture and its differences listed pending, not failed.
+    pending = None
+    if args.allow_unrecorded_platform and not platform_recorded(capture_metadata()):
+        pending = unrecorded(observed)
+    else:
+        captured(observed)
     oracle = next(iter(record['stderr'].splitlines()), None)
     reviews = [] if args.strict_native or not SET.reviews.exists() else \
         json.loads(SET.reviews.read_text())['reviews']
@@ -355,6 +437,13 @@ def main():
     pre_splines = SET.before_code()
     if SET.exists_key != 'rust_boolean_exists':
         report[SET.exists_key] = SET.exists()
+    if pending is not None:
+        report['unrecorded_platform'] = dict(
+            pending, platform=sys.platform, capture=SET.capture.relative_to(ROOT).as_posix(),
+            reviews=SET.reviews.relative_to(ROOT).as_posix(),
+            capture_observations_sha256=digest(SET.capture/'native.txt'),
+            observations_sha256=digest(output/'native-observed.txt'))
+        report['platform_reviews_pending'] = []
     rust = None
     if not args.native_only and PROBE.exists():
         rust, report['rust_probe_failed'] = rust_rows()
@@ -392,14 +481,25 @@ def main():
         evidence = {'case': name, 'source_reference': SOURCE, 'oracle': oracle,
                     'native_sha256': sha(json.dumps(native)), 'differences': found}
         review = review_for(evidence, reviews)
-        report['reviewed_differences' if review else 'failures'].append(
-            review or dict(evidence, solids=native[3]))
+        if review:
+            report['reviewed_differences'].append(review)
+        else:
+            # Without this platform's record, its reviews (fingerprinted by
+            # its own native rows) are taken with the record.
+            report['failures' if pending is None else 'platform_reviews_pending'].append(
+                dict(evidence, solids=native[3]))
     write(output/'capture.json', {'source_reference': SOURCE, 'oracle': oracle,
                                   'sdk_manifest_sha256': digest(args.sdk_manifest),
                                   'source_sha256': digest(SOURCE_FILE), 'probe_sha256': digest(executable),
                                   'loaded_libraries': loaded, 'build_command': command})
     write(output/'report.json', report)
     print(json.dumps({k: len(v) if isinstance(v, list) else v for k, v in report.items()}, indent=2))
+    if pending is not None:
+        notice = (f'no {sys.platform} record of {SET.capture.name} yet: '
+                  f'{len(pending["structural_differences"])} cases differ from the {pending["capture_platform"]} '
+                  f'capture beyond the allowance, {len(report["platform_reviews_pending"])} differences await '
+                  f'{sys.platform} reviews (take_platform_records.py)')
+        print(('::notice title=Unrecorded platform::' if os.environ.get('GITHUB_ACTIONS') == 'true' else '')+notice)
     if report['failures']:
         raise SystemExit(1)
 
