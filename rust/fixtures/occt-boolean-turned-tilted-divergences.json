@@ -1,0 +1,88 @@
+{
+  "note": "Reviewed differences of the moved turned bodies' capture (occt-boolean-turned-tilted-preimplementation): each fingerprinted by its native row; OCCT's results on the pin it was given, whose near-flat cones the import takes as planes, within the sags' volume of OCCT's own results on the model's pin, and BRepGProp's default measure of the ball's cases; the kernel's entity counts.",
+  "reviews": [
+    {
+      "case": "pin_box_fuse",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "325ea0ace38e1ac516fbe4220b46de0408d962d562bff180095c84e934e26649",
+      "differences": [
+        "centre",
+        "measure",
+        "rust_entity_counts"
+      ],
+      "reason": "BRepAlgoAPI's result is valid with the reference's solid count; its measures (and so its centre) differ from the reference's because the pin OCCT was given keeps its near-flat cones (its bottom dimpled 2^-17 about its apex, its step rising 2^-17 inward, three times that along the axis), which the import takes as the planes through their wider rims: between the two bodies lie 64 pi 2^-17 (1.5e-3) of volume. The model's rows (the diagnostic below) are the reference's, and the rows on the body OCCT was given differ from them by -2.30e-04 in volume and -5.05e-04 in area (the box's faces across the near-flat faces moved by the sags along their crossings). With the kernel, entity counts: faces, edges and vertices (11, 27, 18) where OCCT's unified are (11, 30, 20): the kernel's meetings with the partner split at their turning points and its whole circles rings without a seam vertex, where OCCT's are approximated edges split at its seams; the kernel's enclosures are within the reference.",
+      "independent_evidence": "chained_curved_boolean_reference.py's rows on the model's constructions (generate_turned_tilted_boolean_fixtures.py --check, identical under Python 3.9 and 3.12; each turned body the max-min form of its model profile's lines on the tilted frame, the box its SKEW spec) agree two ways (each face swept by two independent families of curves) within 1.7e-36, every solid's measures from its faces within 5.8e-41 of its closed form, each body's within 4.6e-16 of its own (Pappus; the reference's primitives on the kernel's stored axes of the tilted frame), the pair identities within 1.1e-41, and Monte Carlo within 2.5 standard errors; its solid counts are the declared ones by rays at two resolutions; every stored vertex of the imported files lies on its OCCT profile's surfaces (the box's at its corners). A diagnostic run (not committed) of this oracle built with BRepGProp's adaptive integration (Eps 1e-10) on OCCT's own revolve of each model profile (the near-flat segments level) gives every case's volume and area within 2.1e-9 of the reference.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "pin_box_cut",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "290688365c91135fcccbeaef413b7ae63facf0228a5bb5681267e9ef806ebe91",
+      "differences": [
+        "centre",
+        "measure",
+        "rust_entity_counts"
+      ],
+      "reason": "BRepAlgoAPI's result is valid with the reference's solid count; its measures (and so its centre) differ from the reference's because the pin OCCT was given keeps its near-flat cones (its bottom dimpled 2^-17 about its apex, its step rising 2^-17 inward, three times that along the axis), which the import takes as the planes through their wider rims: between the two bodies lie 64 pi 2^-17 (1.5e-3) of volume. The model's rows (the diagnostic below) are the reference's, and the rows on the body OCCT was given differ from them by -2.30e-04 in volume and -3.79e-04 in area (the box's faces across the near-flat faces moved by the sags along their crossings). With the kernel, entity counts: faces, edges and vertices (9, 21, 14) where OCCT's unified are (9, 24, 16): the kernel's meetings with the partner split at their turning points and its whole circles rings without a seam vertex, where OCCT's are approximated edges split at its seams; the kernel's enclosures are within the reference.",
+      "independent_evidence": "chained_curved_boolean_reference.py's rows on the model's constructions (generate_turned_tilted_boolean_fixtures.py --check, identical under Python 3.9 and 3.12; each turned body the max-min form of its model profile's lines on the tilted frame, the box its SKEW spec) agree two ways (each face swept by two independent families of curves) within 1.7e-36, every solid's measures from its faces within 5.8e-41 of its closed form, each body's within 4.6e-16 of its own (Pappus; the reference's primitives on the kernel's stored axes of the tilted frame), the pair identities within 1.1e-41, and Monte Carlo within 2.5 standard errors; its solid counts are the declared ones by rays at two resolutions; every stored vertex of the imported files lies on its OCCT profile's surfaces (the box's at its corners). A diagnostic run (not committed) of this oracle built with BRepGProp's adaptive integration (Eps 1e-10) on OCCT's own revolve of each model profile (the near-flat segments level) gives every case's volume and area within 2.1e-9 of the reference.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "pin_box_common",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "73e2a729de4be9990db094a827eebb8f54134c71dea2cae488f7b99f8ad8ca2c",
+      "differences": [
+        "centre",
+        "measure",
+        "rust_entity_counts"
+      ],
+      "reason": "BRepAlgoAPI's result is valid with the reference's solid count; its measures (and so its centre) differ from the reference's because the pin OCCT was given keeps its near-flat cones (its bottom dimpled 2^-17 about its apex, its step rising 2^-17 inward, three times that along the axis), which the import takes as the planes through their wider rims: between the two bodies lie 64 pi 2^-17 (1.5e-3) of volume. The model's rows (the diagnostic below) are the reference's, and the rows on the body OCCT was given differ from them by 3.78e-05 in volume and 1.78e-05 in area (the box's faces across the near-flat faces moved by the sags along their crossings). With the kernel, entity counts: faces, edges and vertices (7, 15, 10) where OCCT's unified are (7, 17, 12): the kernel's meetings with the partner split at their turning points and its whole circles rings without a seam vertex, where OCCT's are approximated edges split at its seams; the kernel's enclosures are within the reference.",
+      "independent_evidence": "chained_curved_boolean_reference.py's rows on the model's constructions (generate_turned_tilted_boolean_fixtures.py --check, identical under Python 3.9 and 3.12; each turned body the max-min form of its model profile's lines on the tilted frame, the box its SKEW spec) agree two ways (each face swept by two independent families of curves) within 1.7e-36, every solid's measures from its faces within 5.8e-41 of its closed form, each body's within 4.6e-16 of its own (Pappus; the reference's primitives on the kernel's stored axes of the tilted frame), the pair identities within 1.1e-41, and Monte Carlo within 2.5 standard errors; its solid counts are the declared ones by rays at two resolutions; every stored vertex of the imported files lies on its OCCT profile's surfaces (the box's at its corners). A diagnostic run (not committed) of this oracle built with BRepGProp's adaptive integration (Eps 1e-10) on OCCT's own revolve of each model profile (the near-flat segments level) gives every case's volume and area within 2.1e-9 of the reference.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "waist_ball_fuse",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "6cc5dd8158341cc4840cb6a4ba93a5d81ef31d98a96016e0475286ecfcd9ccc5",
+      "differences": [
+        "centre",
+        "measure",
+        "rust_entity_counts"
+      ],
+      "reason": "BRepAlgoAPI's result is valid with the reference's solid count; its measures differ from the reference's by up to 5.7e-7 relative where BRepGProp's default integration meets the ball's approximated section of the tilted cylinder; with its adaptive integration (Eps 1e-10, the diagnostic below) within 7.6e-9 in area and 2.5e-9 in volume, absolute. With the kernel, entity counts: faces, edges and vertices (6, 14, 10) where OCCT's unified are (6, 13, 8): the kernel's meetings with the partner split at their turning points and its whole circles rings without a seam vertex, where OCCT's are approximated edges split at its seams; the kernel's enclosures are within the reference.",
+      "independent_evidence": "chained_curved_boolean_reference.py's rows on the model's constructions (generate_turned_tilted_boolean_fixtures.py --check, identical under Python 3.9 and 3.12; each turned body the max-min form of its model profile's lines on the tilted frame, the box its SKEW spec) agree two ways (each face swept by two independent families of curves) within 1.7e-36, every solid's measures from its faces within 5.8e-41 of its closed form, each body's within 4.6e-16 of its own (Pappus; the reference's primitives on the kernel's stored axes of the tilted frame), the pair identities within 1.1e-41, and Monte Carlo within 2.5 standard errors; its solid counts are the declared ones by rays at two resolutions; every stored vertex of the imported files lies on its OCCT profile's surfaces (the box's at its corners). A diagnostic run (not committed) of this oracle built with BRepGProp's adaptive integration (Eps 1e-10) on OCCT's own revolve of each model profile (the near-flat segments level) gives every case's volume and area within 2.1e-9 of the reference.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "waist_ball_cut",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "ae74a393405c4a01f4ad5edd219e50f5538b7d077ebff7dd3599430915207ecf",
+      "differences": [
+        "centre",
+        "measure",
+        "rust_entity_counts"
+      ],
+      "reason": "BRepAlgoAPI's result is valid with the reference's solid count; its measures differ from the reference's by up to 5.7e-7 relative where BRepGProp's default integration meets the ball's approximated section of the tilted cylinder; with its adaptive integration (Eps 1e-10, the diagnostic below) within 7.6e-9 in area and 2.5e-9 in volume, absolute. With the kernel, entity counts: faces, edges and vertices (6, 14, 10) where OCCT's unified are (6, 13, 8): the kernel's meetings with the partner split at their turning points and its whole circles rings without a seam vertex, where OCCT's are approximated edges split at its seams; the kernel's enclosures are within the reference.",
+      "independent_evidence": "chained_curved_boolean_reference.py's rows on the model's constructions (generate_turned_tilted_boolean_fixtures.py --check, identical under Python 3.9 and 3.12; each turned body the max-min form of its model profile's lines on the tilted frame, the box its SKEW spec) agree two ways (each face swept by two independent families of curves) within 1.7e-36, every solid's measures from its faces within 5.8e-41 of its closed form, each body's within 4.6e-16 of its own (Pappus; the reference's primitives on the kernel's stored axes of the tilted frame), the pair identities within 1.1e-41, and Monte Carlo within 2.5 standard errors; its solid counts are the declared ones by rays at two resolutions; every stored vertex of the imported files lies on its OCCT profile's surfaces (the box's at its corners). A diagnostic run (not committed) of this oracle built with BRepGProp's adaptive integration (Eps 1e-10) on OCCT's own revolve of each model profile (the near-flat segments level) gives every case's volume and area within 2.1e-9 of the reference.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "waist_ball_common",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "5e03eab61f7b8843f943b38e3db3cfe6be1e1eeacdf10da67a0adb1430063991",
+      "differences": [
+        "measure",
+        "rust_entity_counts"
+      ],
+      "reason": "BRepAlgoAPI's result is valid with the reference's solid count; its measures differ from the reference's by up to 5.7e-7 relative where BRepGProp's default integration meets the ball's approximated section of the tilted cylinder; with its adaptive integration (Eps 1e-10, the diagnostic below) within 7.6e-9 in area and 2.5e-9 in volume, absolute. With the kernel, entity counts: faces, edges and vertices (2, 7, 6) where OCCT's unified are (2, 5, 4): the kernel's meetings with the partner split at their turning points and its whole circles rings without a seam vertex, where OCCT's are approximated edges split at its seams; the kernel's enclosures are within the reference.",
+      "independent_evidence": "chained_curved_boolean_reference.py's rows on the model's constructions (generate_turned_tilted_boolean_fixtures.py --check, identical under Python 3.9 and 3.12; each turned body the max-min form of its model profile's lines on the tilted frame, the box its SKEW spec) agree two ways (each face swept by two independent families of curves) within 1.7e-36, every solid's measures from its faces within 5.8e-41 of its closed form, each body's within 4.6e-16 of its own (Pappus; the reference's primitives on the kernel's stored axes of the tilted frame), the pair identities within 1.1e-41, and Monte Carlo within 2.5 standard errors; its solid counts are the declared ones by rays at two resolutions; every stored vertex of the imported files lies on its OCCT profile's surfaces (the box's at its corners). A diagnostic run (not committed) of this oracle built with BRepGProp's adaptive integration (Eps 1e-10) on OCCT's own revolve of each model profile (the near-flat segments level) gives every case's volume and area within 2.1e-9 of the reference.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    }
+  ]
+}
