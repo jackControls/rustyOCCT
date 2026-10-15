@@ -656,20 +656,30 @@ then for the DRAW survey of the nested leaves and the speed-ups (branch
    the torus meetings' root sampling (the certified integrals along a cone
    carrier's meetings are narrowed since the off switches' track:
    `487e8cac` 39 to 20 G instructions, 16.5 to 9.7 s under the sanitizer).
-2. **The Linux records and reviews** of every Boolean capture but S9a.1's
-   two prisms (`occt-boolean-preimplementation`, recorded): the 45 others
-   (S9a.2's splines, S9b to S9f, the recaptured spline-crossing one among
-   them) have never had a `platform-linux/` record, as the per-push B-rep
-   job runs only `compare_boolean.py`'s default set. Since the user's
-   answer of 2026-10-14 ("use CI"), the workflow "Rust Boolean captures on
-   Linux" (`.github/workflows/rust-boolean-linux.yml`, daily schedule and
+2. **The Linux records and reviews** of the Boolean captures: **taken for
+   all 46** (branch `linux-records-38670188123`). Since the user's answer
+   of 2026-10-14 ("use CI"), the workflow "Rust Boolean captures on Linux"
+   (`.github/workflows/rust-boolean-linux.yml`, daily schedule and
    `workflow_dispatch`, never per push) runs all 46 comparisons of the
    table below on the pinned SDK in three shards; a capture without a Linux
    record reports its observation pending, one with a record is compared
    strictly (REVIEW_NOTES.md's "The Boolean captures' Linux records on CI,
-   refined"). Its first run: `gh workflow run rust-boolean-linux.yml -R
-   jackControls/rustyOCCT --ref rust-kernel`. After a green run `RUN` at
-   commit `SHA`:
+   refined"). Its first run, 38670188123 at `14a326de`, was green, and the
+   45 captures without a record (S9a.2's splines, S9b to S9f) have their
+   `platform-linux/` records from it (REVIEW_NOTES.md's "The Boolean
+   captures' Linux records taken from run 38670188123"), S9a.1's two
+   prisms keeping theirs: 28 within rounding, taken by the tool with their
+   macOS reviews copied; 17 reviewed by hand (capped, cones-loops, cones,
+   given-met, imported, piece-forms, plane-parts, primitive-chains,
+   procedural, spheres, spline-cone, spline, torus-curved, torus-parts,
+   torus, torus-segment, turned), with 69 Linux reviews written by hand.
+   None is pending. Open: after the merge and push, check that the next
+   scheduled run is green with all 46 compared strictly (`gh run list -R
+   jackControls/rustyOCCT -w "Rust Boolean captures on Linux"`); a red set
+   there is a real change (OCCT's Linux result moving between runs would
+   show as a departure from its record). S9e.4b.4d.2's new capture takes
+   its record from the first run after its merge, by the steps below.
+   After a green run `RUN` at commit `SHA`:
    1. `gh run download RUN -R jackControls/rustyOCCT -p
       'boolean-linux-observations-*' -D target/boolean-linux-RUN`;
    2. `target/math-oracle-venv/bin/python rust/tools/take_platform_records.py
@@ -688,7 +698,10 @@ then for the DRAW survey of the nested leaves and the speed-ups (branch
       the complete captures only; review the diff, commit, push, and check
       that the next scheduled run is green with those captures strict
       (`gh run list -R jackControls/rustyOCCT -w "Rust Boolean captures on
-      Linux"`). Repeat for the rest.
+      Linux"`). Repeat for the rest. (Run 38670188123's reviews by hand
+      compared each listed case's Linux and macOS rows with the set's
+      expected TSV: which platform is closer to the reference, by how much,
+      and whether the difference is in values, counts, solids or order.)
 
    A new Boolean set: `run_boolean_comparisons.py` finds its
    `compare_*_boolean.py`; add its local time to `SECONDS` there (the test
@@ -1017,7 +1030,9 @@ fuzz switches below.
   multiplicity equal to the degree (branch `u10-rational-c1`).
 - **S9e.4b.4d.2**: build the turned-body construction (branch `s9e4b4d2`).
 - **The per-set Boolean captures' Linux records**: taken on CI (branch
-  `ci-linux-captures`).
+  `ci-linux-captures`); the records of all 46 from run 38670188123 (branch
+  `linux-records-38670188123`, item 2), so the milestones' "pending its
+  capture's Linux record" above are resolved.
 
 No user decision is open.
 
