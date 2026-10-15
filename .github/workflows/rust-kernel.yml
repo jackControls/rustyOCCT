@@ -116,7 +116,8 @@ jobs:
                 imported-polyhedra, spline-cone, imported-pieces, split-pieces, one-sphere, one-sphere-incidence,
                 piece-forms, piece-trees, imported-joints, primitive-chains, prism-leaves, plane-parts,
                 polyhedra-curved, deep-trees, two-leaves, rim-leaves, flush-leaves, stack-leaves,
-                nested-leaves, turned-profiles, turned-flats, turned-tilted, turned-fillets]
+                nested-leaves, turned-profiles, turned-flats, turned-tilted, turned-fillets,
+                turned-cone-fillets]
     steps:
       - uses: actions/checkout@v4.2.2
       - run: rustup toolchain install stable --profile minimal
@@ -297,6 +298,9 @@ jobs:
       - name: Verify the imported turned bodies' consistency reference (S9e.4b.4d.2c.1a's consistency fixed)
         if: matrix.group == 'turned-fillets'
         run: target/math-oracle-venv/bin/python rust/tools/generate_turned_consistency_fixtures.py --check
+      - name: Verify the imported turned bodies' fillets and rounds beside a cone independent reference (S9e.4b.4d.2c.1b)
+        if: matrix.group == 'turned-cone-fillets'
+        run: target/math-oracle-venv/bin/python rust/tools/generate_turned_cone_fillets_boolean_fixtures.py --check --workers 4
 
   pinned-degree-oracle:
     name: Degree elevation / source-pinned OCCT

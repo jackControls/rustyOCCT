@@ -532,7 +532,11 @@ pub(super) fn plane_cone(
 /// of the rims their vertices lie at.
 pub(super) fn model(solid: &Solid, op: Operand, seam: &R) -> Result<Prism> {
     let Construction::Cone {
-        bottom, top, axis, ..
+        bottom,
+        top,
+        axis,
+        exact,
+        ..
     } = &solid.construction
     else {
         unreachable!("a cone");
@@ -558,7 +562,11 @@ pub(super) fn model(solid: &Solid, op: Operand, seam: &R) -> Result<Prism> {
         Some((_, lo, hi)) => q(*hi) - q(*lo),
         None => q(solid.end),
     };
-    let radii = [q(*bottom), q(*top)];
+    // S9e.4b.4d.2c.1b: a cone of a rational line, its exact radii.
+    let radii = match exact {
+        Some(r) => (**r).clone(),
+        None => [q(*bottom), q(*top)],
+    };
     let heights = [zero(), h.clone()];
     let k = (&radii[1] - &radii[0]) / &h;
     let e = circle_point(&[zero(), zero()], &int(1), seam);

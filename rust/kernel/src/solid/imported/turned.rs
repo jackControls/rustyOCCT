@@ -68,6 +68,22 @@
 //! tube transversally, and the lattice's with it has the tube touch the
 //! lattice's plane or cylinder along the piece's edge at the tangent point
 //! (`graph.rs`'s touching circles, its tree's `arrange_touching`).
+//!
+//! S9e.4b.4d.2c.1b: a torus face between a cone and a plane or a cylinder
+//! (`cone_corner`): the other line's number and the tube's radius on that
+//! grid, the centre the tube from that line, the direction from the stored
+//! centre toward the stored cone turned to the rational one whose half-angle
+//! tangent is the nearest multiple of `2^-40`, the cone the line through the
+//! tube's point in that direction normal to it: no binary64 data, so its
+//! primitive carries its exact radii (`Solid::build_cone_exact_on`). The
+//! piece's box beside a cone is the parallelogram in the meridian along the
+//! two directions from the centre to its tangent points (`slant_box`): the
+//! frusta of cones normal to the cone through the centre and past the
+//! corner, between the plane through the centre and a far plane beside a
+//! cylinder, common an annulus between the cylinder through the centre and
+//! a far one beside a plane. A body of one curved face is its one primitive
+//! with its pieces. A cone beside two tori, or a torus between two cones, is
+//! no turned body's (S9e.4b.4d.2c.1b refined).
 use super::*;
 use crate::topology::{Curve2, LoopId, Projection};
 
@@ -127,6 +143,10 @@ struct Corner {
     radius: R,
     corner: [R; 2],
     round: bool,
+    /// S9e.4b.4d.2c.1b: beside a cone, the unit directions from the centre
+    /// to its tangent points on the cone and on the other line (its box's
+    /// axes).
+    slant: Option<[[R; 2]; 2]>,
 }
 
 /// One end of a face's segment in the meridian.
@@ -150,6 +170,9 @@ struct Meridian {
     rings: Vec<[R; 2]>,
     /// S9e.4b.4d.2c.1a: each torus face's snapped tube.
     corners: Vec<Corner>,
+    /// S9e.4b.4d.2c.1b: each face a cone snapped tangent to a torus (its
+    /// line no binary64 data: its primitive's exact radii).
+    exact: Vec<bool>,
 }
 
 impl Meridian {
@@ -364,20 +387,32 @@ fn meridian(t: &Topology, tol: f64) -> Option<Meridian> {
     if path.len() != faces.len() {
         return None;
     }
-    // S9e.4b.4d.2c.1a: each torus face a fillet or a round between a plane
-    // and a cylinder, snapped tangent to both: their height and radius and
-    // its tube's radius on the multiples of `2^-40` of the body's size (a
-    // power of two), so that its centre, its tangent points and its piece's
-    // box are binary64 numbers exactly; its centre where the two lines
-    // offset by the tube toward its stored centre meet, within the
-    // resolution of that.
+    // S9e.4b.4d.2c.1a: each torus face a fillet or a round snapped tangent
+    // to its two lines; between a plane and a cylinder, their height and
+    // radius and its tube's radius on the multiples of `2^-40` of the body's
+    // size (a power of two), so that its centre, its tangent points and its
+    // piece's box are binary64 numbers exactly; its centre where the two
+    // lines offset by the tube toward its stored centre meet, within the
+    // resolution of that. S9e.4b.4d.2c.1b: beside a cone, `cone_corner`.
     let grid = 2f64.powi(size.log2().ceil() as i32 - 40);
     let mut corners = Vec::new();
+    let mut exact = vec![false; faces.len()];
     for (s, &i) in path.iter().enumerate() {
         let Kind::Arc(tube) = kinds[i].clone() else {
             continue;
         };
         let (a, b) = (path[s.checked_sub(1)?], *path.get(s + 1)?);
+        // S9e.4b.4d.2c.1b: beside a cone.
+        let cone = match (&kinds[a], &kinds[b]) {
+            (Kind::Curved(l), _) if l.k != zero() => Some((a, b)),
+            (_, Kind::Curved(l)) if l.k != zero() => Some((b, a)),
+            _ => None,
+        };
+        if let Some(pair) = cone {
+            let c = cone_corner(&mut kinds, &mut exact, pair, &tube, grid, tol)?;
+            corners.push(Corner { at: s, ..c });
+            continue;
+        }
         let (cyl, plane) = match (&kinds[a], &kinds[b]) {
             (Kind::Curved(l), Kind::Plane(_)) if l.k == zero() => (a, b),
             (Kind::Plane(_), Kind::Curved(l)) if l.k == zero() => (b, a),
@@ -417,6 +452,7 @@ fn meridian(t: &Topology, tol: f64) -> Option<Meridian> {
             radius: t,
             corner: [radius, h],
             round: tube.round,
+            slant: None,
         });
     }
     // Each node exactly: a corner the two meridians' common point, within
@@ -429,11 +465,22 @@ fn meridian(t: &Topology, tol: f64) -> Option<Meridian> {
             End::Ring(e) => {
                 // S9e.4b.4d.2c.1a: a fillet's or a round's end its tangent
                 // point on its neighbour's line (the centre's foot there).
+                // S9e.4b.4d.2c.1b: on a cone, the tube's point along its
+                // direction to it.
                 let tangent = |at: usize, line: &Kind| -> Option<[R; 2]> {
                     let c = corners.iter().find(|c| c.at == at)?;
                     match line {
                         Kind::Plane(h) => Some([c.centre[0].clone(), h.clone()]),
-                        Kind::Curved(l) => Some([l.r0.clone(), c.centre[1].clone()]),
+                        Kind::Curved(l) if l.k == zero() => {
+                            Some([l.r0.clone(), c.centre[1].clone()])
+                        }
+                        Kind::Curved(_) => {
+                            let [e, _] = c.slant.as_ref()?;
+                            Some([
+                                &c.centre[0] + &c.radius * &e[0],
+                                &c.centre[1] + &c.radius * &e[1],
+                            ])
+                        }
                         Kind::Arc(_) => None,
                     }
                 };
@@ -526,6 +573,112 @@ fn meridian(t: &Topology, tol: f64) -> Option<Meridian> {
         nodes,
         rings: at_ring,
         corners,
+        exact,
+    })
+}
+
+/// S9e.4b.4d.2c.1b: a fillet or a round between a cone (`cone`, its face)
+/// and a plane or a cylinder (`other`) snapped tangent to both: the other's
+/// height or radius and the tube's radius on the multiples of `grid`, the
+/// centre the tube from it (its other number its stored one's on the grid),
+/// the direction from the stored centre toward the stored cone turned to the
+/// rational one whose half-angle tangent lies on the multiples of `2^-40`,
+/// the cone the line through the tube's point in that direction normal to
+/// it (exact, no binary64 data); the centre within the resolution of its
+/// stored one. A cone beside two tori is no turned body's.
+fn cone_corner(
+    kinds: &mut [Kind],
+    exact: &mut [bool],
+    (cone, other): (usize, usize),
+    tube: &Tube,
+    grid: f64,
+    tol: f64,
+) -> Option<Corner> {
+    let Kind::Curved(stored) = kinds[cone].clone() else {
+        return None;
+    };
+    if exact[cone] {
+        return None;
+    }
+    let t = on_grid(&tube.radius, grid);
+    let sign = |x: R| match x.cmp(&zero()) {
+        std::cmp::Ordering::Greater => Some(int(1)),
+        std::cmp::Ordering::Less => Some(int(-1)),
+        std::cmp::Ordering::Equal => None,
+    };
+    // The other line snapped, the centre the tube from it, the direction to
+    // it from the centre.
+    let (centre, toward) = match kinds[other].clone() {
+        Kind::Plane(h) => {
+            let h = on_grid(&h, grid);
+            kinds[other] = Kind::Plane(h.clone());
+            let up = sign(&tube.centre[1] - &h)?;
+            let centre = [on_grid(&tube.centre[0], grid), &h + &up * &t];
+            (centre, [zero(), -up])
+        }
+        Kind::Curved(l) if l.k == zero() => {
+            let radius = on_grid(&l.r0, grid);
+            kinds[other] = Kind::Curved(Line {
+                r0: radius.clone(),
+                k: zero(),
+            });
+            let out = sign(&tube.centre[0] - &radius)?;
+            let centre = [&radius + &out * &t, on_grid(&tube.centre[1], grid)];
+            (centre, [-out, zero()])
+        }
+        _ => return None,
+    };
+    // The direction from the stored centre to the stored cone (binary64),
+    // its half-angle tangent on the multiples of `2^-40`.
+    let (k, r0) = (rational_f64(&stored.k), rational_f64(&stored.r0));
+    let (cr, cw) = (rational_f64(&tube.centre[0]), rational_f64(&tube.centre[1]));
+    let len = (1.0 + k * k).sqrt();
+    let side = if cr - k * cw - r0 > 0.0 { -1.0 } else { 1.0 };
+    let n = [side / len, -side * k / len];
+    let half = if n[0] >= 0.0 {
+        n[1] / (1.0 + n[0])
+    } else {
+        (1.0 - n[0]) / n[1]
+    };
+    let unit = 2f64.powi(-40);
+    if !half.is_finite() || half.abs() > 4096.0 {
+        return None;
+    }
+    let half = q((half / unit).round() * unit);
+    let den = int(1) + &half * &half;
+    let e = [(int(1) - &half * &half) / &den, (&half * int(2)) / &den];
+    if e[0] == zero() || e[1] == zero() {
+        return None;
+    }
+    let point = [&centre[0] + &t * &e[0], &centre[1] + &t * &e[1]];
+    let slope = -(&e[1] / &e[0]);
+    let line = Line {
+        r0: &point[0] - &slope * &point[1],
+        k: slope,
+    };
+    let moved = rational_f64(&(&centre[0] - &tube.centre[0]))
+        .hypot(rational_f64(&(&centre[1] - &tube.centre[1])));
+    if t <= zero() || moved > tol || centre[0] <= zero() {
+        return None;
+    }
+    // The sharp profile's corner: the cone's and the other line's.
+    let corner = match &kinds[other] {
+        Kind::Plane(h) => [line.at(h), h.clone()],
+        Kind::Curved(l) => {
+            let w = (&l.r0 - &line.r0) / &line.k;
+            [l.r0.clone(), w]
+        }
+        Kind::Arc(_) => return None,
+    };
+    kinds[cone] = Kind::Curved(line);
+    exact[cone] = true;
+    Some(Corner {
+        at: 0,
+        centre,
+        radius: t,
+        corner,
+        round: tube.round,
+        slant: Some([e, toward]),
     })
 }
 
@@ -757,6 +910,9 @@ struct Part {
     reach: [Reach; 2],
     range: [Option<R>; 2],
     built: [f64; 2],
+    /// S9e.4b.4d.2c.1b: a cone tangent to a torus, its primitive's radii
+    /// exact.
+    exact: bool,
 }
 
 impl Part {
@@ -878,6 +1034,7 @@ pub(super) fn turned_piece(t: &Topology, tolerance: Tolerance, op: OperationId) 
             reach,
             range: [None, None],
             built: [0.0; 2],
+            exact: m.exact[i],
         };
         let potential = [0, 1].map(|end| match reach[end] {
             Reach::Cap(h) | Reach::Near(h) => h,
@@ -887,7 +1044,9 @@ pub(super) fn turned_piece(t: &Topology, tolerance: Tolerance, op: OperationId) 
         part.set(potential);
         parts.push(part);
     }
-    if parts.len() < 2 {
+    // S9e.4b.4d.2c.1b: one part where the body has fillets or rounds (its
+    // tree their pieces').
+    if parts.len() < 2 && m.corners.is_empty() {
         return Err(not_their_chain());
     }
     // Each curved face's term: the parts on or outside its line over its
@@ -954,7 +1113,7 @@ pub(super) fn turned_piece(t: &Topology, tolerance: Tolerance, op: OperationId) 
         .into_iter()
         .chain(common.iter().map(|&j| Tree::Primitive(j)));
     let mut tree = chain(Op2::Common, &mut leaves).ok_or_else(not_their_chain)?;
-    if !matches!(tree, Tree::Op(..)) {
+    if !matches!(tree, Tree::Op(..)) && m.corners.is_empty() {
         return Err(not_their_chain());
     }
     // Each part's primitive on the axis frame.
@@ -964,40 +1123,66 @@ pub(super) fn turned_piece(t: &Topology, tolerance: Tolerance, op: OperationId) 
     }
     // S9e.4b.4d.2c.1a: each fillet's piece fused and each round's cut: the
     // box from its tube's centre past its corner (into the lattice for a
-    // fillet, out of it for a round) less its whole torus.
+    // fillet, out of it for a round) less its whole torus; S9e.4b.4d.2c.1b:
+    // beside a cone the slant box's solids' tree.
     let ends: Vec<f64> = parts.iter().flat_map(|p| p.built).collect();
     let boxes = corner_boxes(&m, nodes, &ends)?;
-    for (c, [lo, hi]) in m.corners.iter().zip(&boxes) {
-        let j = solids.len();
+    let annulus = |radii: [f64; 2], heights: [f64; 2], op: OperationId| -> Result<Solid> {
         let profile = Profile::new(
-            Boundary::circle(Point2::new(0.0, 0.0), rational_f64(&hi[0]), tolerance)?,
+            Boundary::circle(Point2::new(0.0, 0.0), radii[1], tolerance)?,
             vec![Boundary::circle(
                 Point2::new(0.0, 0.0),
-                rational_f64(&lo[0]),
+                radii[0],
                 tolerance,
             )?],
             tolerance,
         )?;
-        solids.push(Solid::build(
-            mine(op, j),
-            profile,
-            m.axis,
-            rational_f64(&lo[1]),
-            rational_f64(&hi[1]),
-        )?);
+        Solid::build(op, profile, m.axis, heights[0], heights[1])
+    };
+    for (c, b) in m.corners.iter().zip(&boxes) {
+        let box_tree = match b {
+            CornerBox::Prism(prism) => {
+                let [lo, hi] = &**prism;
+                let j = solids.len();
+                solids.push(annulus(
+                    [rational_f64(&lo[0]), rational_f64(&hi[0])],
+                    [rational_f64(&lo[1]), rational_f64(&hi[1])],
+                    mine(op, j),
+                )?);
+                Tree::Primitive(j)
+            }
+            // S9e.4b.4d.2c.1b: beside a cone, its slant box's solids.
+            CornerBox::Slant(parts) => {
+                let mut leaves = Vec::new();
+                for part in parts {
+                    let j = solids.len();
+                    solids.push(match part {
+                        SlantPart::Annulus { radii, heights } => {
+                            annulus(*radii, *heights, mine(op, j))?
+                        }
+                        SlantPart::Frustum { heights, radii } => Solid::build_cone_exact_on(
+                            mine(op, j),
+                            m.axis,
+                            *heights,
+                            radii.clone(),
+                            tolerance,
+                        )?,
+                    });
+                    leaves.push(j);
+                }
+                slant_tree(&leaves)
+            }
+        };
+        let j = solids.len();
         solids.push(Solid::build_torus_on(
-            mine(op, j + 1),
+            mine(op, j),
             m.axis,
             rational_f64(&c.centre[1]),
             rational_f64(&c.centre[0]),
             rational_f64(&c.radius),
             tolerance,
         )?);
-        let piece = Tree::Op(
-            Op2::Cut,
-            Box::new(Tree::Primitive(j)),
-            Box::new(Tree::Primitive(j + 1)),
-        );
+        let piece = Tree::Op(Op2::Cut, Box::new(box_tree), Box::new(Tree::Primitive(j)));
         let op2 = if c.round { Op2::Cut } else { Op2::Fuse };
         tree = Tree::Op(op2, Box::new(tree), Box::new(piece));
     }
@@ -1135,10 +1320,18 @@ fn check_form(
 /// up to four times), on the grid of its numbers; the profile's other
 /// segments and the other boxes clear of it, the two lines' segments at the
 /// corner leaving it, its heights none of the lattice's (`ends`, the parts'
-/// built heights) nor its nodes'.
-fn corner_boxes(m: &Meridian, nodes: &[[R; 2]], ends: &[f64]) -> Result<Vec<[[R; 2]; 2]>> {
+/// built heights) nor its nodes'. S9e.4b.4d.2c.1b: beside a cone, its slant
+/// box (`slant_box`).
+fn corner_boxes(m: &Meridian, nodes: &[[R; 2]], ends: &[f64]) -> Result<Vec<CornerBox>> {
     let mut out: Vec<[[R; 2]; 2]> = Vec::new();
+    let mut boxes = Vec::new();
     for c in &m.corners {
+        if let Some(e) = &c.slant {
+            let (parts, rect) = slant_box(c, e, nodes, &out, ends).ok_or_else(not_their_chain)?;
+            out.push(rect);
+            boxes.push(CornerBox::Slant(parts));
+            continue;
+        }
         let toward = |k: usize| {
             if c.corner[k] > c.centre[k] {
                 int(1)
@@ -1183,9 +1376,203 @@ fn corner_boxes(m: &Meridian, nodes: &[[R; 2]], ends: &[f64]) -> Result<Vec<[[R;
             }
             d = &d / int(2);
         }
-        out.push(found.ok_or_else(not_their_chain)?);
+        let found = found.ok_or_else(not_their_chain)?;
+        out.push(found.clone());
+        boxes.push(CornerBox::Prism(Box::new(found)));
     }
-    Ok(out)
+    Ok(boxes)
+}
+
+/// A corner's box: S9e.4b.4d.2c.1a's annular prism `[(r, w) low, (r, w)
+/// high]`, or S9e.4b.4d.2c.1b's slant box's solids beside a cone.
+enum CornerBox {
+    Prism(Box<[[R; 2]; 2]>),
+    Slant(Vec<SlantPart>),
+}
+
+/// S9e.4b.4d.2c.1b: a slant box's solid on the axis frame: an annular prism
+/// (its radii and heights), or a frustum of a rational line (its heights
+/// and its exact radii there).
+enum SlantPart {
+    Annulus { radii: [f64; 2], heights: [f64; 2] },
+    Frustum { heights: [f64; 2], radii: [R; 2] },
+}
+
+/// S9e.4b.4d.2c.1b: a slant box's tree over its solids' leaves: the outer
+/// frustum less the inner (beside a cylinder), or the annulus common the
+/// outer less the inner (beside a plane).
+fn slant_tree(leaves: &[usize]) -> Tree {
+    let p = |j: usize| Box::new(Tree::Primitive(leaves[j]));
+    if leaves.len() == 2 {
+        return Tree::Op(Op2::Cut, p(0), p(1));
+    }
+    Tree::Op(Op2::Cut, Box::new(Tree::Op(Op2::Common, p(0), p(1))), p(2))
+}
+
+/// S9e.4b.4d.2c.1b: a corner's slant box beside a cone: the parallelogram
+/// in the meridian from the tube's centre along its directions `e` (to the
+/// cone, `x`; to the other line, `y`) past the corner by half the tube
+/// (halved up to four times), its far plane or cylinder and its far cone's
+/// point on the near plane or cylinder on the multiples of `2^-24` of the
+/// tube's power of two, outward; the profile's other segments and the
+/// other boxes (`rects`, their bounding rectangles) clear of it, the two
+/// lines at the corner leaving it, its solids' heights none of the
+/// lattice's nor the nodes'. Its solids and its bounding rectangle.
+fn slant_box(
+    c: &Corner,
+    e: &[[R; 2]; 2],
+    nodes: &[[R; 2]],
+    rects: &[[[R; 2]; 2]],
+    ends: &[f64],
+) -> Option<(Vec<SlantPart>, [[R; 2]; 2])> {
+    let [ec, ef] = e;
+    let det = &ec[0] * &ef[1] - &ec[1] * &ef[0];
+    if det == zero() {
+        return None;
+    }
+    let oblique = |p: &[R; 2]| -> [R; 2] {
+        let v = [&p[0] - &c.centre[0], &p[1] - &c.centre[1]];
+        [
+            (&v[0] * &ef[1] - &v[1] * &ef[0]) / &det,
+            (&ec[0] * &v[1] - &ec[1] * &v[0]) / &det,
+        ]
+    };
+    let corner = oblique(&c.corner);
+    if corner[0] <= zero() || corner[1] <= zero() {
+        return None;
+    }
+    let g = q(2f64.powi(rational_f64(&c.radius).log2().ceil() as i32 - 24));
+    // The coordinate the far side along `ef` fixes (a plane's height beside
+    // a cylinder, a cylinder's radius beside a plane), and the other.
+    let k = if ef[1] == zero() { 1 } else { 0 };
+    let j = 1 - k;
+    let mut d = &c.radius / int(2);
+    for _ in 0..5 {
+        let far = &c.centre[k] + (&corner[0] + &d) * &ec[k];
+        let x = (grid_toward(&far, &g, ec[k] > zero()) - &c.centre[k]) / &ec[k];
+        let near = &c.centre[j] + (&corner[1] + &d) * &ef[j];
+        let y = (grid_toward(&near, &g, ef[j] > zero()) - &c.centre[j]) / &ef[j];
+        let inside = |p: &[R; 2]| zero() <= p[0] && p[0] <= x && zero() <= p[1] && p[1] <= y;
+        let segments = nodes.windows(2).all(|seg| {
+            if seg[0] == c.corner || seg[1] == c.corner {
+                let other = if seg[0] == c.corner { &seg[1] } else { &seg[0] };
+                !inside(&oblique(other))
+            } else {
+                let box_hi = [x.clone(), y.clone()];
+                !segment_meets(
+                    &oblique(&seg[0]),
+                    &oblique(&seg[1]),
+                    &[zero(), zero()],
+                    &box_hi,
+                )
+            }
+        });
+        let at = |a: &R, b: &R| {
+            [
+                &c.centre[0] + a * &ec[0] + b * &ef[0],
+                &c.centre[1] + a * &ec[1] + b * &ef[1],
+            ]
+        };
+        let vertices = [
+            at(&zero(), &zero()),
+            at(&x, &zero()),
+            at(&zero(), &y),
+            at(&x, &y),
+        ];
+        let least = |k: usize| vertices.iter().map(|p| p[k].clone()).min().expect("four");
+        let most = |k: usize| vertices.iter().map(|p| p[k].clone()).max().expect("four");
+        let (lo, hi) = ([least(0), least(1)], [most(0), most(1)]);
+        let others = rects
+            .iter()
+            .all(|[a, b]| b[0] < lo[0] || hi[0] < a[0] || b[1] < lo[1] || hi[1] < a[1]);
+        let parts = slant_parts(c, e, k, (&x, &y), [&lo[1], &hi[1]], &g);
+        let heights = parts.as_ref().is_some_and(|ps| {
+            ps.iter().all(|p| {
+                let (SlantPart::Annulus { heights, .. } | SlantPart::Frustum { heights, .. }) = p;
+                heights
+                    .iter()
+                    .all(|w| !ends.contains(w) && !nodes.iter().any(|x| rational_f64(&x[1]) == *w))
+            })
+        });
+        if segments && others && heights && lo[0] > zero() {
+            return Some((parts?, [lo, hi]));
+        }
+        d = &d / int(2);
+    }
+    None
+}
+
+/// `x` on the multiples of `g`, up or down.
+fn grid_toward(x: &R, g: &R, up: bool) -> R {
+    let n = x / g;
+    (if up { n.ceil() } else { n.floor() }) * g
+}
+
+/// S9e.4b.4d.2c.1b: a slant box's solids: the cones normal to the cone (of
+/// its tube's direction `e[0]`) through the centre and through the far
+/// point `y` along `e[1]`, the outer's frustum less the inner's (past the
+/// box's ends by an eighth of the tube); beside a cylinder (`k` one)
+/// between the plane through the centre and the far plane `x` along
+/// `e[0]`, beside a plane over the box's heights `w` on the grid `g`,
+/// outward, common the annulus between the cylinder through the centre and
+/// the far one (past them by an eighth of the tube, the frusta by two and
+/// three). Every height a binary64 number, every radius positive.
+fn slant_parts(
+    c: &Corner,
+    [ec, ef]: &[[R; 2]; 2],
+    k: usize,
+    (x, y): (&R, &R),
+    [w_lo, w_hi]: [&R; 2],
+    g: &R,
+) -> Option<Vec<SlantPart>> {
+    let eps = &c.radius / int(8);
+    let slope = &ec[0] / &ec[1];
+    let radius_at = |p: &[R; 2], h: &R| &p[0] + &slope * (h - &p[1]);
+    let near = c.centre.clone();
+    let far = [&c.centre[0] + y * &ef[0], &c.centre[1] + y * &ef[1]];
+    let frustum = |p: &[R; 2], [a, b]: [R; 2]| -> Option<SlantPart> {
+        let radii = [radius_at(p, &a), radius_at(p, &b)];
+        let heights = [rational_f64(&a), rational_f64(&b)];
+        let exact = q(heights[0]) == a && q(heights[1]) == b && a < b;
+        (exact && radii.iter().all(|r| *r > zero()))
+            .then_some(SlantPart::Frustum { heights, radii })
+    };
+    let (outer, inner) = if radius_at(&far, &c.centre[1]) > c.centre[0] {
+        (&far, &near)
+    } else {
+        (&near, &far)
+    };
+    if k == 1 {
+        let wf = &c.centre[1] + x * &ec[1];
+        let (a, b) = if wf > c.centre[1] {
+            (c.centre[1].clone(), wf)
+        } else {
+            (wf, c.centre[1].clone())
+        };
+        return Some(vec![
+            frustum(outer, [a.clone(), b.clone()])?,
+            frustum(inner, [&a - &eps, &b + &eps])?,
+        ]);
+    }
+    let rf = &c.centre[0] + x * &ec[0];
+    let radii = if rf > c.centre[0] {
+        [c.centre[0].clone(), rf]
+    } else {
+        [rf, c.centre[0].clone()]
+    };
+    let (a, b) = (grid_toward(w_lo, g, false), grid_toward(w_hi, g, true));
+    let two = &eps * int(2);
+    let three = &eps * int(3);
+    let annulus = [&a - &eps, &b + &eps];
+    let binary = |x: &R| (q(rational_f64(x)) == *x).then(|| rational_f64(x));
+    Some(vec![
+        SlantPart::Annulus {
+            radii: [binary(&radii[0])?, binary(&radii[1])?],
+            heights: [binary(&annulus[0])?, binary(&annulus[1])?],
+        },
+        frustum(outer, [&a - &two, &b + &two])?,
+        frustum(inner, [&a - &three, &b + &three])?,
+    ])
 }
 
 /// Whether the segment from `a` to `b` meets the closed box `[lo, hi]`
@@ -1225,6 +1612,15 @@ fn primitive(axis: &Frame3, p: &Part, tolerance: Tolerance, op: OperationId) -> 
             tolerance,
         )?;
         return Solid::build(op, profile, *axis, lo, hi);
+    }
+    // S9e.4b.4d.2c.1b: a cone tangent to a torus, its line's radii exactly.
+    if p.exact {
+        let exact = |end: usize, w: f64| match &p.range[end] {
+            None => zero(),
+            Some(_) => p.line.at(&q(w)),
+        };
+        let radii = [exact(0, lo), exact(1, hi)];
+        return Solid::build_cone_exact_on(op, *axis, [lo, hi], radii, tolerance);
     }
     let radius = |end: usize, w: f64| match &p.range[end] {
         None => 0.0,

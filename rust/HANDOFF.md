@@ -968,13 +968,25 @@ then for the DRAW survey of the turned bodies (branch `s9-draw-19`, over
    body off its exact `y` symmetry by 9.7e-7), and boxes across
    `OCC485a`'s cylinders fail with invalid topology (`box h 20 -1 10 10 2
    5; bcommon r h s2`: `pcurve_off_edge`, native 43.9316), where
-   `turned_fillet` turned by the same 1.08e-8 rad evaluates. Next
-   **S9e.4b.4d.2c.1b** (a fillet or a round
-   beside a cone: `OCC496b`) and **S9e.4b.4d.2c.2** (partners across smooth
-   edges: the rib's planes cross `OCC485a`'s transversally and evaluate
-   already, so what remains is its evidence against the reference and any
-   tangency at a vertex on a ring, refused today); `turned_round_off` stays
-   refused by name (its stored edge 1e-4 off the snapped tangency).
+   `turned_fillet` turned by the same 1.08e-8 rad evaluates.
+   **S9e.4b.4d.2c.1b** (a fillet or a round tangent
+   to a cone and to a plane or a cylinder: the direction to the cone snapped
+   to a Pythagorean one, the cone exact in its primitive, each piece a slant
+   box of cones normal to the cone less its torus; the evidence's four bodies
+   importing) is implemented with its DRAW trial (45 cases: none moving), its
+   reach re-scanned (the dataset: none; the fixtures: the evidence's bodies;
+   the fuzz targets' results: none) and pending its campaigns and its
+   capture's Linux record; `OCC496b` stays refused by name: its first two
+   tori are tangent at one end only and meet the next cylinder at a corner,
+   split off as **S9e.4b.4d.2c.1c** (a torus at a corner, no other measured
+   body); next **S9e.4b.4d.2c.2**, re-scoped by 2c.1a's trial (the rib's
+   planes cross `OCC485a`'s smooth edges transversally and evaluate already):
+   partners across smooth edges as evidence against the reference, and a
+   partner's curves tangent at a vertex on a ring (E5's `next_on_kept`) or a
+   given ring met by a partner's face (E6's `triple.rs`), refused today;
+   `OCC485a`'s results' consistency (the DRAW survey `s9-draw-19` at
+   `712115c6`) is a separate fix's; `turned_round_off` stays refused by name
+   (its stored edge 1e-4 off the snapped tangency).
    The reader takes OCCT's version-3 line (`CASCADE Topology V3,
    (c) Open Cascade`, written since OCCT 7.6; REVIEW_NOTES.md's "The
    version-3 `.brep` header", branch `brep-v3-header`): the dataset's 26
@@ -1106,8 +1118,8 @@ fuzz switches below.
 - **U10**: (b), C1 of the rational curve tested exactly at a knot of
   multiplicity equal to the degree (branch `u10-rational-c1`).
 - **S9e.4b.4d.2**: build the turned-body construction (branch `s9e4b4d2`):
-  S9e.4b.4d.2a, 2b, the moved bodies' coaxial meetings and 2c.1a done,
-  2c.1b and 2c.2 next (item 3).
+  S9e.4b.4d.2a, 2b, the moved bodies' coaxial meetings, 2c.1a and 2c.1b
+  done, 2c.1c (`OCC496b`'s tori at corners) and 2c.2 next (item 3).
 - **The per-set Boolean captures' Linux records**: taken on CI (branch
   `ci-linux-captures`); the records of all 46 from run 38670188123 (branch
   `linux-records-38670188123`, item 2), so the milestones' "pending its
@@ -1211,9 +1223,10 @@ Each comparison takes `--occt-root target/spline-linear-preflight/pinned-sdk/ins
 | `compare_turned_flats_boolean.py` | 1 / 11 (the kernel within the reference on all 9 solid cases, the 3 degenerate refused) |
 | `compare_turned_tilted_boolean.py` | 2 / 7 (the kernel within the reference on all 9 solid cases) |
 | `compare_turned_fillets_boolean.py` | 7 / 8 (the kernel within the reference on all 12 solid cases, the 3 degenerate refused) |
+| `compare_turned_cone_fillets_boolean.py` | 7 / 8 (the kernel within the reference on all 12 solid cases, the 3 degenerate refused) |
 
 `rust/tools/run_boolean_comparisons.py --shard 0 --shards 1` with the same
-two arguments runs all 50 in turn (CI's three shards: item 2).
+two arguments runs all 51 in turn (CI's three shards: item 2).
 
 Every one must report 0 failures; since S9f.1 also `compare_split.py`
 (72 / 56) and `compare_brep.py --family spline` (10 / 3), which share its
