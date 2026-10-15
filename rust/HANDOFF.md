@@ -928,7 +928,12 @@ over `s9c2-kernel` at `7b43d0b4`).
    case moving) and reach (none moving), pending their campaigns and their
    capture's Linux record; next **S9e.4b.4d.2c** (fillets snapped tangent
    with tangent coaxial meetings in the engine, options (b) and (a):
-   `OCC485a`, `OCC496b`). The reader takes OCCT's
+   `OCC485a`, `OCC496b`), its refined decisions recorded and split in
+   "S9e.4b.4d.2c refined" (nothing of it built yet): **S9e.4b.4d.2c.1** (the
+   snap, the sharp lattice with each fillet's and round's kite and torus,
+   coaxial tangent rings as exact edges in the engine: the bodies alone and
+   partners across no smooth edge) then **S9e.4b.4d.2c.2** (partners across
+   smooth edges: `OCC485a`'s rib cases). The reader takes OCCT's
    version-3 line (`CASCADE Topology V3,
    (c) Open Cascade`, written since OCCT 7.6; REVIEW_NOTES.md's "The
    version-3 `.brep` header", branch `brep-v3-header`): the dataset's 26
@@ -1060,8 +1065,8 @@ fuzz switches below.
 - **U10**: (b), C1 of the rational curve tested exactly at a knot of
   multiplicity equal to the degree (branch `u10-rational-c1`).
 - **S9e.4b.4d.2**: build the turned-body construction (branch `s9e4b4d2`):
-  S9e.4b.4d.2a, 2b and the moved bodies' coaxial meetings done, 2c next
-  (item 3).
+  S9e.4b.4d.2a, 2b and the moved bodies' coaxial meetings done, 2c next,
+  its refined decisions split in 2c.1 and 2c.2 (item 3).
 - **The per-set Boolean captures' Linux records**: taken on CI (branch
   `ci-linux-captures`); the records of all 46 from run 38670188123 (branch
   `linux-records-38670188123`, item 2), so the milestones' "pending its

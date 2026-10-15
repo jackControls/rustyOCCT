@@ -13760,6 +13760,115 @@ Decisions for S9, recorded before its code (2026-09-28):
     both parts; S9e.4b.4d.2b alone 0.16 %); the Python unit tests (446, 3
     skipped); the ledger holding. Open: S9e.4b.4d.2c; the campaigns and the
     captures' Linux records.
+  * **S9e.4b.4d.2c refined, before its code (2026-10-15).** A turned body's
+    fillets and rounds, options (b) and (a) of "S9e.4b.4d refined" as
+    "S9e.4b.4d.2 refined" splits them: each torus snapped tangent to its
+    neighbouring lines (exact rational data, no new field), and the tangent
+    coaxial meetings that snap makes taken as exact data in the engine. *Why
+    such bodies are refused today*: `smooth_torus` names them
+    (`OutOfDomain("an imported body whose torus faces join their neighbours
+    smoothly (S9e.4b.4d)")`, `OCC496b`, `turned_fillet`, `turned_round_off`),
+    `OCC485a` first as S9e.4b.4d.1's near-flat cone (its step and bottom;
+    S9e.4b.4d.2b's reading takes those as planes, then fails at its tori);
+    behind those, no construction holds a torus whose surface touches a
+    neighbour's along a circle, and the engine refuses every tangency between
+    the two inputs of a Boolean (the inner Booleans of a turned body's tree
+    among them). *Reach*: the DRAW cases restoring `OCC485a`
+    (`bugs/modalg_2/bug476_1` to `_8`, its fuse, cuts and commons with the rib
+    `OCC485b`, and `bug485`, its fuse with itself; viewer-skipped natively,
+    fuse area 9,333.96, the cuts 99.5159 and 9,340.03, the common 105.587,
+    `bug485`'s fuse `OCC485a` itself) and `OCC496b` (`bugs/moddata_2/bug496`,
+    fused with `OCC496a`, private data: no case runs); the fixtures
+    `turned_fillet` and `turned_round_off`; no fuzz result (the writer refuses
+    every torus's section, D13). `OCC496b` (along the world's `x`, resolution
+    3e-3): a disc, cylinders of radii 15, 14 and 13, tori of tubes 2, 2 and
+    4.5 joining them and the cone that follows (the third torus tangent to the
+    cylinder of radius 13 and to the cone of half-angle 0.4432, its tube's
+    point at the stored edge 4.5 from its centre and its normal across the
+    cone's ruling there, measured on the file), a plane. *The bodies' profile,
+    snapped* (option (b)): the meridian read as S9e.4b.4d.2a's with arcs: a
+    torus face on the axis line within the resolution, its tube circle in the
+    meridian between two faces whose lines it touches within the resolution
+    (the tube's centre within the resolution of the tube's radius from each
+    line, as `smooth_torus` reads it). Each neighbour's line on a rational
+    unit direction (a plane's and a cylinder's exactly; a cone's slope snapped
+    to the nearest Pythagorean direction, S9e.4b.1's half-angle tangent
+    rounded once, moving its line by a rounding); the torus refitted tangent
+    to both at its stored tube's radius: its centre the meeting of the two
+    lines offset by the tube toward the stored centre (rational: the offsets
+    are the tube times the unit normals), its tangency points the centre's
+    feet on the lines (rational), the core radius the centre's distance from
+    the axis. Its move from the stored torus within the resolution
+    (`OCC485a`'s round 3.76e-6, its fillet 1.1e-13, `OCC496b`'s 9.5e-7 at
+    most, `turned_round_off`'s 2.5e-9), else no turned body; a torus meeting
+    another torus or a sphere (no line to keep), a torus at corners
+    (`turned_corner`), a bore, stay refused. The tangent edges are the model's
+    circles at the tangency points: the stored edges lie within 6.6e-6 of them
+    (`OCC485a`'s round's top), within the resolution. A near-flat plane next
+    to a fillet (`OCC485a`'s step) is the plane through its edge with the
+    fillet (the edge the fillet touches), not its wider rim (option (c)'s
+    first clause, S9e.4b.4d.2b's taking the other). *The construction*: the
+    sharp profile (each arc replaced by its two tangent lines meeting at the
+    corner) is S9e.4b.4d.2a's lattice; each fillet (a concave arc) adds the
+    corner's kite less the torus's tube (the region between the two tangent
+    lines, the two normals through the centre and the tube: the kite a coaxial
+    ring, a cylinder's or a frustum's band less another's, its torus a whole
+    torus on the axis frame exactly), each round (a convex arc) takes that
+    kite less the tube away; so the body's tree is the lattice's fused with
+    the fillets' pieces and cut by the rounds', each torus's model on the axis
+    frame at its centre's height exactly (a `Construction::Torus` axis as
+    S9e.4b.4d.2a's cone's), checked exactly against the profile (the form's
+    value at every height between breakpoints, the arcs' by their circles'
+    equations) before any model is built, built as a chain's tree and matched
+    to the stored topology (the arbiter). *The engine* (option (a), restricted
+    to coaxial tangent circles, every other tangency refused as before): (E1)
+    `torus_curved.rs`'s coaxial meeting (`coaxial`, the roots in the tube's
+    angle of a cylinder's, a cone's or a plane's restriction): a double root
+    at a rational angle, the tube touching the other surface along a circle, a
+    tangent ring (a `ToricCrv` marked tangent) instead of `tangent()`'s
+    `Degenerate`; `torus.rs`'s plane normal to the axis touching the tube (its
+    spiric section a double circle) likewise; (E2) `graph.rs`'s arrangement at
+    such a ring: an edge of both faces with one normal along it, the faces'
+    pieces on either side classified at interior points as now, the fins about
+    the edge ordered by the faces' curvatures in the meridian (the tube's
+    circle against the line, exact second-order data at the ring's rational
+    height) where the radial order now compares normals; (E3) `assemble.rs`'s
+    result faces meeting at a tangent ring (a smooth edge of the result: its
+    two faces' senses as any edge's); (E4) the import: `bends`' flat edges no
+    refusal for a turned body (its reading does not use them), `smooth_torus`
+    tried after the turned reading as `near_flat_cone` now is; `pieces.rs`'s
+    `model` renaming a tangency in a piece's own tree as the body's own
+    tangency kept for every other tangency; (E5) a partner's face across a
+    smooth edge: its sections of the two tangent faces meet at the ring's
+    crossing point with one tangent, `graph.rs`'s "two curves tangent at a
+    vertex" (`next_on_kept`'s angle order at a vertex) accepted where the
+    vertex lies on a tangent ring of the other input and the partner crosses
+    the ring transversally, the two curves ordered by their curvatures' side
+    of the ring (exact second-order data at the vertex); (E6) a given result's
+    edge on a tangent ring met by a partner's face: `triple.rs`'s three
+    surfaces, two of them tangent along the ring, refused as `TANGENT`
+    (dependent gradients) today; met instead as the ring's circle (a plane
+    normal to the axis and one surface) against the partner, S9e.1's given
+    circles' path; (E7) `torus_parts.rs`'s rim tangent to the other surface
+    and `meet.rs`'s `tangency()` unchanged (no coaxial tangency reaches them).
+    *Degenerate and refused*: no new text; a partner tangent to a fillet or a
+    round (S9's tangencies between the inputs) and a partner's edge on a
+    smooth edge stay refused. *Phasing*: the engine's part (E1)-(E6) is the
+    larger; so **S9e.4b.4d.2c.1**, the bodies alone: (E1)-(E4) and the
+    construction, `turned_fillet`, `turned_round_off` and `OCC496b` importing,
+    Booleans with partners that cross no smooth edge; **S9e.4b.4d.2c.2**,
+    partners across smooth edges: (E5) and (E6), `OCC485a`'s rib cases (its
+    planes cutting the step, the fillet and the shaft). *Evidence* for 2c.1
+    (before its code): bodies OCCT writes by the oracle's `revolve` row with
+    arcs (a fillet and a round between planes and cylinders, a round tangent
+    to a cone, a torus refitted by 1e-6), cases against partners away from the
+    smooth edges and one declared degenerate (a partner tangent to the round),
+    the chained reference with tori (S9e.3a's
+    `torus_curved_boolean_reference.py` primitives) over the snapped profile
+    and its closed form by Pappus (a torus's sector's volume and area by its
+    centroid's turn); for 2c.2 partners across the smooth edges. *Not done in
+    this task*: both parts are left for their own steps; nothing of 2c is
+    built.
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces

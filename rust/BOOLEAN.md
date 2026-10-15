@@ -2018,7 +2018,9 @@ campaign of every target the steps touch.
   no DRAW case imports),
   S9e.4b.4d.2c (turned bodies' fillets snapped tangent, the user's answer of
   2026-10-14; 2a's corners, 2b's near-flat cones and the moved bodies'
-  coaxial meetings done), the
+  coaxial meetings done; 2c's refined decisions split it in 2c.1, the bodies
+  with tangent coaxial rings in the engine, and 2c.2, partners across
+  smooth edges), the
   near-miss rules not yet written (other curves' edges, two sphere
   circles, an apex against a sphere, torus or spline face, item 5's (b)
   to (d)), and the refusals by design listed there. U9 and U10 stayed open
