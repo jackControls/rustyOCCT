@@ -14473,6 +14473,97 @@ Decisions for S9, recorded before its code (2026-09-28):
     (S9e.4b.4d.2c.1b's torus beside a cone is a torus's and a cone's
     arm already, its cone's exact line rounded once into the stored
     cone).
+  * **S9e.4b.4d.2c.2 refined, before its code (2026-10-15).** "S9e.4b.4d.2c
+    refined"'s second part as 2c.1b's verification re-scoped it: partners
+    across a turned body's smooth edges (the tangent circles where a fillet
+    or a round meets its plane, cylinder or cone), against the reference,
+    and the engine's tangencies there (E5, a partner's two sections tangent
+    at a vertex on a ring, `graph.rs`'s `next_on_kept`; E6, a given ring
+    met by a partner's face, `triple.rs`). *The known failure, diagnosed
+    first* (a scratch build at `251d5227`, instrumented, not committed):
+    the rib whose side planes cross the round's tangent circle
+    (`consistency_ribbed.brep`, the triangle `(8, 34.5)`, `(20, 34.5)`,
+    `(8, 42)` in `(x, z)` over `|y| <= 1`, its top at 42 over the shaft's
+    end at 41) fails "an open Boolean of arcs in any position" in all six
+    operations, and it is no tangency: the arrangement's edges used once are
+    the round's ring between `y = +-1` and every section of the rib's
+    planes with the round, which has none. `arrange_touching` finds a
+    plane's spiric section of a torus once per plane face (`spiric`, keyed
+    by the operand and the plane's face: "the same for every patch") and a
+    torus's meeting with a quadric once per quadric (`toric`, keyed by the
+    operand and the quadric's first face; two tori's at the key 0), both
+    from S9d.4, where an input held one torus in patches. A turned body with
+    a fillet and a round is the first input holding two tori (its round
+    piece's and its fillet piece's models, `Prism::view`): a partner's face
+    whose box meets both tori's faces gets the first torus's meeting on the
+    second (the rib's side planes and hypotenuse the fillet's spiric
+    sections, the hypotenuse's `Apart`), whose vertices lie off it, so the
+    round's face has no section, its pieces keep the rib's whole faces and
+    the assembly finds edges used once. The rib at 41.5 crosses the fillet
+    alone, and the earlier boxes across the round (`round`, `round_skew`)
+    meet no fillet face; a vertical rod across both tori (`toric`) and a
+    box across both (`spiric`) fail the same way. *Measured with the key
+    taken per torus* (the first face on the same torus model as its key's
+    third member, both caches): the rib at 42 evaluates, its six results
+    consistent (the consistency fix's identities within 1.5e-15 of the
+    body's volume), as do the rod and the box (2.3e-15, 1.6e-15); and a
+    scan of 196 partners (boxes, ribs, rods along
+    `x` above and below each ring, rods parallel to the axis at each ring's
+    radius, a turned box and a leaning slab, across each tangent circle of
+    `consistency_ribbed`, `fillet_step`, `fillet_collar`, `fillet_refit`,
+    `turned_fillet` and the `cone_fillet_` bodies `round`, `fillet` and
+    `top`, 28 circles, six operations each) evaluates 178, every one
+    consistent (the identities within 6.8e-14 of the larger input), the
+    other 18 the scan's own contacts refused by S9's rules as before (a
+    rod's cap at a tube's top or bottom or on the step's plane, a slab's
+    side at a tube's outer equator: the tangency; a cap within the
+    resolution of the step's plane; a section within the resolution of a
+    node). Without the key the same 178 evaluate: one outcome alone
+    differs, `consistency_ribbed`'s rod at its round's lower circle,
+    across both tori (its caps refused either way, its other operations
+    the open Boolean without the key). *E5 and E6 are not
+    reached*: a partner crossing a ring transversally meets the two tangent
+    faces in sections that continue one another through the ring's point
+    (their common tangent the partner's tangent plane's line in the faces'
+    common one, across the ring), travelling opposite ways at the vertex,
+    so `next_on_kept` never compares them (one way on, or an angle of a
+    half turn); its two curves leave a vertex on a ring the same way only
+    where that line is the ring's tangent, a partner tangent to the ring
+    (the contact refused as S9c's tangency before any order is asked). A
+    ring met by a partner's face is the piece's ring at a quarter turn or
+    at the snapped direction (`ring_meet`, `rim_far`, `rim_plane`: 2c.1a's
+    amendment (5), 2c.1b's (5')), never three surfaces: no ring reaches
+    `triple.rs` in the scan. *Decisions.* (1) *Exact data*: nothing new;
+    the rings, their crossings with a partner and the sections through them
+    are 2c.1a's and 2c.1b's. (2) *The engine*: the meetings found once are
+    keyed per torus (`arrange_touching`'s `spiric` and `toric` by the
+    first face on the same torus model, each torus of an input its own
+    meetings); at a vertex where a partner's sections meet tangentially on
+    a ring nothing is accepted beyond today's order (none is asked), and
+    `next_on_kept` and `triple.rs` keep their refusals. (3) *Degenerate
+    and refused* (contact only, no new text): a partner tangent to a ring
+    at a point (a plane through the ring's tangent, S9c's "a tangency
+    between the inputs"), a partner tangent to a fillet or a round (S9d.4b.2's),
+    a partner's edge or vertex on a ring, and a partner's face within the
+    resolution of a body's plane stay refused. No split: the step is the
+    key, its evidence and its tests. *Evidence* (before the code): a set of
+    its own (`boolean-turned-crossings`), bodies OCCT writes by the oracle's
+    `revolve` and `tolerance` rows: `ribbed` (`OCC485a`'s form on exact
+    data at its resolution 3e-3: a base of radius 24 to 32, the chamfer to
+    21 at 35, the step's plane in to 10, a fillet of 1/2 to the shaft of
+    19/2, the shaft to 41, a round of 3 to the top at 44) with the known
+    failure's rib, a rod parallel to the axis across both tori and their
+    four circles, and a box across both, and 2c.1a's `fillet_step` and
+    `fillet_collar` and 2c.1b's `cone_fillet_round` and `cone_fillet_fillet`
+    with a rod along `x` at a round's circle's height, a box across a
+    fillet's two circles and a round's, a rib across a round's circles
+    beside a cylinder and a cone, and a rod across a fillet's circle on its
+    cone; declared degenerate, the box whose side touches the fillet's
+    circle on the step (`x = 10`); the chained reference (S9e.4b.4d.2c.1a's
+    `TurnedInput` over each model profile), a unit test, a CI group and the
+    comparison's time; and on `consistency_ribbed.brep` itself the known
+    failure's rib, the box and the rod with their commons by the
+    consistency generator's integral over the model.
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces
