@@ -16924,6 +16924,108 @@ Decisions for S9, recorded before its code (2026-09-28):
   switch on): `analytic_intersections` clean, 10,337 runs; `boolean` clean,
   410 runs, the slowest input 15 s; `split` clean, 1,939 runs.
 
+* **U10 (b) refined, before its code (2026-10-14; the user's answer to
+  U10).** Why such cells are refused today: R4's test
+  (`topology/validate/continuity.rs`) removes one copy of each knot of
+  multiplicity equal to the degree exactly and requires zero residual,
+  which is C1 of the homogeneous curve `H = (w P, w)`. The usual NURBS
+  circle's quarter arcs meet at double knots where `H'` jumps by a
+  multiple of `H` (the weights alone jump): the rational curve `P = A / w`
+  is C1 there, the removal leaves a residual, and the cells are refused
+  (`edge_not_c1`, `pcurve_not_c1`, `face_not_c1`): STEP-b's
+  `rational_cylinder` and 21 bodies of the local dataset.
+  - **Where the criterion lives.** In one place, `continuity::curve_c1`
+    and `continuity::surface_c1`, which every user of R4 already calls,
+    so each decides alike: the validator's three issues (an edge over its
+    range, a pcurve over its range, a face over its whole domain), and
+    through it the `.brep` and STEP imports, which validate every body
+    they convert; tessellation's refusal of a spline that is not C1; the
+    profile's spline segment (nonrational by S8b, so unchanged); and
+    S9f.1's lifting, placing and rigid motion (`lift_c1`, `spline_wall`,
+    `moved_parts`, `moved_spline_surface`), which test the placed or moved
+    spline. Construction (`BSplineCurve3::new`, `BSplineSurface3::new`)
+    never tested C1 and still does not. S9f.1's `c1_reduced` (one exact
+    homogeneous removal of a C1 knot before placing, so that rounding
+    cannot break it) stays homogeneous: it changes the representation,
+    which is possible only where the homogeneous curve is C1, and applies
+    to nonrational splines only. A rational knot that is C1 only as a
+    rational curve cannot be removed, so a motion or placement whose
+    rounding breaks it leaves the spline not C1, reported as today.
+  - **The test on a curve.** At each knot R4 tests (multiplicity equal to
+    the degree, strictly inside the range, and a closed period's seam):
+    first the homogeneous removal as today (zero residual implies rational
+    C1, and a spline that passes today costs no more); where it leaves a
+    residual, the exact one-sided first derivatives of the rational curve,
+    `(A' w - A w') / w^2` from the left and from the right
+    (`ExactBSplineCurve3::exact_evaluate` with `KnotSide::Left` and
+    `Right`: de Boor on each side in rationals, a periodic seam's left
+    side the end of the preceding period), must be equal. `H` is
+    continuous at such a knot, so this is `ΔA' w = A Δw'`, the jump of
+    `H'` a multiple of `H`. A nonrational spline (equal weights) has
+    `w' = 0` on both sides, so its verdict is the homogeneous one: no
+    nonrational verdict moves.
+  - **The test on a surface.** Along each parameter direction, at each
+    tested knot line `u = k`: the homogeneous removal of every row across
+    it first, as today; otherwise the rational partial `S_u = (A_u w - A
+    w_u) / w^2` from both sides of `k` must agree for every `v` of the
+    domain. On each `v` span of the domain `N(v) = ΔA_u w - A Δw_u` is a
+    polynomial of degree at most `2 q` (`q` the degree in `v`), so the
+    kernel compares the two exact one-sided evaluations
+    (`ExactBSplineSurface3::exact_evaluate` with sides `[Left, Automatic]`
+    and `[Right, Automatic]`) at `2 q + 1` distinct rational points inside
+    each span: equal at all of them exactly when `N` vanishes on the span.
+    The same along `v`. Each row across the line being C1 as a rational
+    curve is not enough (the rows' blend in `v` mixes their multiples), so
+    rows are not tested one by one.
+  - **Degenerate weights and derivatives.** Weights stay positive: a
+    nonpositive stored weight is an invalid curve or surface at
+    construction, as before, so `w > 0` everywhere and `w = 0` never
+    reaches the test. A knot where both one-sided rational derivatives are
+    zero, or where `w'` vanishes on one side, is decided like any other
+    pair: R4 decides C1, not regularity, as the homogeneous test already
+    passed a C1 joint of zero speed. Degenerate curves and cusps stay with
+    the checks that own them (`degenerate_curve`, `degenerate_pcurve`, the
+    profile's cusp refusal).
+  - **G1 is not C1.** A joint whose rational derivatives are parallel but
+    of different lengths (a double knot between arcs of different
+    parameter speeds, a NURBS circle with unequal spans, a line spline
+    whose weights make the speed jump) stays refused: U3 holds, C1 in the
+    cell's own parameterisation.
+  - **Error kinds.** `edge_not_c1`, `pcurve_not_c1` and `face_not_c1`
+    stay, now meaning the rational cell is not C1; tessellation's
+    `OutOfDomain("tessellation of a spline that is not C1")`, the
+    profile's `InvalidCurve` and S9f.1's `PrecisionLoss` stay. No kind is
+    added or removed.
+  - **The independent reference.** `spline_cell_reference.py` decides the
+    rational condition in `Fraction`s by de Boor on each side, by another
+    route than the kernel's: on a curve `A' w - A w'` from both sides; on
+    a surface, per span of the other parameter, the power-basis
+    polynomials of `H(k, v)` and of the jump `ΔH_u(v)` by exact
+    interpolation, and every coefficient of `N` zero. A new
+    `test_rational_c1_reference.py` checks its verdicts on the evidence's
+    curves and surfaces with mpmath at 50 digits from exact rationals (no
+    `math.cos`, `sin` or `hypot`): one-sided difference quotients agree
+    within their step where the verdict is C1 and differ by the exact
+    jump otherwise, and the homogeneous verdict is the old one.
+  - **Evidence, before the kernel's code.** Cells of
+    `generate_brep_fixtures.py`: the NURBS circle as the cylinder's ring
+    edge (periodic, quarter arcs at double knots, `w = sqrt(2) / 2`
+    rounded); the same with one span twice as long (G1, not C1: refused);
+    a line spline whose weights alone jump (C1 rationally, not
+    homogeneously); a cap as a rational spline face C1 only rationally,
+    one G1 only, and one whose rows are each C1 rationally but whose
+    surface is not; the existing homogeneous-C1 cells (still valid
+    there). STEP-b's `rational_cylinder` (two rational half-cylinder walls
+    and their circles) is the rational cylinder face. Native: the STEP-b
+    capture holds OCCT's reading of `rational_cylinder` (valid); BRepCheck
+    and `GeomAbs` continuity of the new curves from an existing probe
+    where one fits.
+  - **Reach to measure.** `rational_cylinder` should import with OCCT's
+    counts and its reference's measures, and `compare_step.py`'s review of
+    it keep only OCCT's own measure difference; the dataset's 21 bodies,
+    the `.brep` corpus (`hammer.brep`'s `face_not_c1` faces), the B-rep
+    comparisons and the restore cases are run again.
+
 * **CI budget (U6).** Per-push fuzz runs replay a bounded sample plus every
   regression and new seed; the daily schedule replays everything; the heavy
   exact targets run on schedule only; Windows runs a smoke subset per push
