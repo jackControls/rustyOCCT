@@ -63,6 +63,19 @@ about `(77/8, 0)` of radius 5/8 from 33 to 47, its common each height's
 lens of two discs (the kinks where the model's radius is the rod's nearest
 or farthest distance from the axis).
 
+`boolean-turned-consistency-corners.tsv` (S9e.4b.4d.2c.1c): a `body` row
+for `imported/corner_step.brep` (`generate_turned_corners_boolean_fixtures.py`'s
+`step`: a cylinder of radius 4 to 3, a round of radius 1 about `(3, 3)`
+crossing the shaft of radius 7/2 at the corner `3 + sqrt(3)/2`, the shaft
+to 6), its volume by Pappus (the round's band between its tangent circle
+and its corner in closed form), then partners across its corner ring: the
+box `step_box` of that generator, a box off `y = 0` across the ring and the
+round, and a rod parallel to the axis about `(7/2, 0)` of radius 1/4 from
+9/4 to 5, each common by the same integral (the corner a kink of the model's
+radius); every partner's plane clear of the tube's top and bottom, of the
+planes `x` or `y` at a cylinder's radius and of the tube's equators (S9c's
+tangencies).
+
 The integrator is checked against the closed form first (a box holding the
 model is the model, within 1e-25; so is a rod about the axis holding it,
 and a lens is its chords' widths integrated). `--check` regenerates the texts and
@@ -86,6 +99,7 @@ PREFIX = 'boolean-turned-consistency'
 BODIES_FILE = f'{PREFIX}-bodies.txt'
 EXPECTED_FILE = f'{PREFIX}-expected.tsv'
 CROSSINGS_FILE = f'{PREFIX}-crossings.tsv'
+CORNERS_FILE = f'{PREFIX}-corners.tsv'
 
 EPS = F(1, 2**27)
 BOTTOM = F(1, 2**15)
@@ -179,9 +193,9 @@ MODEL = [
 ]
 
 
-def radius(z):
+def radius(z, model=None):
     """The model's radius at height `z` (an mpf; zero outside it)."""
-    for w0, w1, kind, data in MODEL:
+    for w0, w1, kind, data in model or MODEL:
         if m(w0) <= z <= m(w1):
             if kind == 'line':
                 r0, k = data
@@ -250,30 +264,30 @@ def roots(f, a, b, samples=64):
     return out
 
 
-def common(section, z0, z1, distances):
+def common(section, z0, z1, distances, model=None):
     """The volume of the partner (each height's section `x0, x1, y0, y1`)
     inside the model over `[z0, z1]`; `distances(z)` the distances from the
     axis where the section's area has a kink."""
     lo, hi = m(z0), m(z1)
     breaks = {lo, hi}
-    for w0, w1, _, _ in MODEL:
+    for w0, w1, _, _ in model or MODEL:
         for w in (w0, w1):
             if lo < m(w) < hi:
                 breaks.add(m(w))
     nodes = sorted(breaks)
     for a, b in zip(nodes, nodes[1:]):
         for g in distances:
-            breaks.update(roots(lambda z: radius(z) - g(z), a, b))
+            breaks.update(roots(lambda z: radius(z, model) - g(z), a, b))
     points = sorted(breaks)
-    return mp.quad(lambda z: segment_area(*section(z), radius(z)), points)
+    return mp.quad(lambda z: segment_area(*section(z), radius(z, model)), points)
 
 
-def box_common(x, y, z, dx, dy, dz):
+def box_common(x, y, z, dx, dy, dz, model=None):
     x0, x1 = m(x), m(x) + m(dx)
     y0, y1 = m(y), m(y) + m(dy)
     distances = [lambda z, d=abs(c): d for c in (x0, x1, y0, y1)]
     distances += [lambda z, d=mp.sqrt(a*a + b*b): d for a in (x0, x1) for b in (y0, y1)]
-    return common(lambda z: (x0, x1, y0, y1), z, z + dz, distances)
+    return common(lambda z: (x0, x1, y0, y1), z, z + dz, distances, model)
 
 
 def rib_common(x0, w0, x1, w1, y0, y1):
@@ -303,7 +317,7 @@ def lens(d, rho, r):
     return a+b-mp.sqrt((-d+r+rho)*(d+r-rho)*(d-r+rho)*(d+r+rho))/2
 
 
-def post_common(cx, cy, rho, z0, z1):
+def post_common(cx, cy, rho, z0, z1, model=None):
     """A rod parallel to the axis about `(cx, cy)` of radius `rho` from `z0`
     to `z1` inside the model: each height's lens, its kinks where the
     model's radius is the rod's nearest or farthest distance from the axis."""
@@ -311,15 +325,15 @@ def post_common(cx, cy, rho, z0, z1):
     rho = m(rho)
     lo, hi = m(z0), m(z1)
     breaks = {lo, hi}
-    for w0, w1, _, _ in MODEL:
+    for w0, w1, _, _ in model or MODEL:
         for w in (w0, w1):
             if lo < m(w) < hi:
                 breaks.add(m(w))
     nodes = sorted(breaks)
     for a, b in zip(nodes, nodes[1:]):
         for g in (d-rho, d+rho):
-            breaks.update(roots(lambda z: radius(z)-g, a, b))
-    return mp.quad(lambda z: lens(d, rho, radius(z)), sorted(breaks))
+            breaks.update(roots(lambda z: radius(z, model)-g, a, b))
+    return mp.quad(lambda z: lens(d, rho, radius(z, model)), sorted(breaks))
 
 
 RIB = (8, F(69, 2), 20, F(83, 2), -1, 1)
@@ -348,6 +362,44 @@ CROSSING_BOX = ('box_both', (8, -1, 34, 3, 2, 9))
 CROSSING_POST = ('post', (F(77, 8), 0, F(5, 8), 33, 47))
 
 
+# S9e.4b.4d.2c.1c's corner body (`boolean-turned-consistency-corners.tsv`):
+# `corner_step`'s model, its round's band from its tangent circle at 3 to
+# its corner at `3 + sqrt(3)/2` (an mpf: `radius` and `common` take one).
+CORNER = m(3) + mp.sqrt(3)/2
+CORNER_MODEL = [
+    (F(0), F(3), 'line', (F(4), F(0))),
+    (F(3), CORNER, 'arc', (F(3), F(3), F(1), 1)),
+    (CORNER, F(6), 'line', (F(7, 2), F(0))),
+]
+CORNER_BOXES = [
+    ('step_box', (3, F(-1, 2), F(13, 4), F(3, 2), 1, F(5, 4))),
+    ('box_off', (F(9, 4), F(9, 4), F(13, 4), 1, 1, F(5, 4))),
+]
+CORNER_POST = ('post', (F(7, 2), 0, F(1, 4), F(9, 4), 5))
+
+
+def pappus_of(model):
+    """A model's volume: each line's frustum, each arc's band between its
+    heights in closed form (`pi int (c + s sqrt(t^2 - u^2))^2 du`, `u` the
+    height off the centre)."""
+    total = m(0)
+    for w0, w1, kind, data in model:
+        if kind == 'line':
+            r0, k = (m(x) for x in data)
+            h = m(w1) - m(w0)
+            r1 = r0 + k*h
+            total += mp.pi*h*(r0*r0 + r0*r1 + r1*r1)/3
+        else:
+            c, cw, t, s = data
+            c, t = m(c), m(t)
+
+            def prim(u):
+                root = mp.sqrt(max(t*t - u*u, m(0)))
+                return c*c*u + s*c*(u*root + t*t*mp.asin(u/t)) + t*t*u - u**3/3
+            total += mp.pi*(prim(m(w1) - m(cw)) - prim(m(w0) - m(cw)))
+    return total
+
+
 def self_check():
     """The integrator against the closed form: a box holding the model is
     the model, by Pappus."""
@@ -357,6 +409,12 @@ def self_check():
     # its chords' widths integrated across the rod.
     whole = post_common(0, 0, 30, -1, 46)
     assert abs(whole - pappus()) < mp.mpf(10)**-25, (whole, pappus())
+    # The corner body: a box holding it is it; its closed form against a
+    # direct quadrature of its radius.
+    whole = box_common(-5, -5, -1, 10, 10, 8, CORNER_MODEL)
+    assert abs(whole - pappus_of(CORNER_MODEL)) < mp.mpf(10)**-25, (whole, pappus_of(CORNER_MODEL))
+    direct = mp.pi*mp.quad(lambda z: radius(z, CORNER_MODEL)**2, [0, 3, CORNER, 6])
+    assert abs(direct - pappus_of(CORNER_MODEL)) < mp.mpf(10)**-25
     d, rho = m(F(77, 8)), m(F(5, 8))
     for r in (m(9), m(F(19, 2)), m(10)):
         def width(x):
@@ -438,6 +496,26 @@ def crossings_text():
     return '\n'.join(lines) + '\n'
 
 
+def corners_text():
+    """S9e.4b.4d.2c.1c's corner body and its partners, in `expected_text`'s
+    rows."""
+    self_check()
+    lines = [
+        '# generated by rust/tools/generate_turned_consistency_fixtures.py (S9e.4b.4d.2c.1c)',
+        f'body\tstep imported/corner_step.brep volume {mp.nstr(pappus_of(CORNER_MODEL), 20)}',
+    ]
+    for name, b in CORNER_BOXES:
+        volume = F(b[3])*F(b[4])*F(b[5])
+        lines.append(f'case\t{name} box {" ".join(num(v) for v in b)} volume {mp.nstr(m(volume), 20)} '
+                     f'common {mp.nstr(box_common(*b, CORNER_MODEL), 20)}')
+    name, p = CORNER_POST
+    cx, cy, rho, z0, z1 = p
+    volume = mp.pi*m(rho)**2*m(z1-z0)
+    lines.append(f'case\t{name} post {" ".join(num(v) for v in p)} volume {mp.nstr(volume, 20)} '
+                 f'common {mp.nstr(post_common(*p, CORNER_MODEL), 20)}')
+    return '\n'.join(lines) + '\n'
+
+
 def write_bodies(args):
     sys.path.insert(0, str(ROOT/'rust/tools'))
     import compare_boolean as base
@@ -470,7 +548,8 @@ def main():
             parser.error('--write-bodies needs --occt-root and --sdk-manifest')
         write_bodies(args)
         return
-    texts = {BODIES_FILE: bodies_text(), EXPECTED_FILE: expected_text(), CROSSINGS_FILE: crossings_text()}
+    texts = {BODIES_FILE: bodies_text(), EXPECTED_FILE: expected_text(), CROSSINGS_FILE: crossings_text(),
+             CORNERS_FILE: corners_text()}
     stale = []
     body = FIXTURES/'imported/consistency_ribbed.brep'
     if body.exists() and stored_kinds(body) != KINDS:
