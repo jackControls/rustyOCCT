@@ -13432,6 +13432,449 @@ Decisions for S9, recorded before its code (2026-09-28):
     captures on Linux" at `7b43d0b4`): every case within rounding of the
     macOS capture (1.1e-12 at most), 13 reviews copied under the Linux
     rows' fingerprints by `take_platform_records.py`.
+  * **S9e.4b.4d.2b refined, before its code (2026-10-15).** A cone within the
+    resolution of a plane in a turned profile taken as that plane, option (c)
+    of "S9e.4b.4d refined", as "S9e.4b.4d.2 refined" splits it. *Why such
+    bodies are refused today*: `near_flat_cone` refuses on import, before any
+    construction is tried, every body with a cone face within the resolution
+    of a plane or a cylinder (S9e.4b.4d.1's `Degenerate("an imported cone
+    within the resolution of a plane or a cylinder (S9e.4b.4d)")`, whatever
+    the body): `OCC497c` (a pin about the world's `z`: a bottom cone whose
+    apex stands 1.1e-5 above its rim, two steps and that bottom 4.9e-7 to
+    5.6e-6 rad from flat, three draft cones of 1.5 to 1.6 degrees and a
+    cylinder), `OCC497e` (a step 8.1e-8 rad from flat and a bottom whose apex
+    lies 1.6e-5 below its rim, two draft cones), `OCC485a` (with its tori) and
+    the fixture `turned_pin`. *Reach, measured before the code* (an
+    instrumented draft of the decisions below on `7b43d0b4`, not committed;
+    each file imported in a process of its own, 120 s a file, by the base and
+    the draft builds). The DRAW case list (S9e.4b.4d.2 refined's: 2,342 cases,
+    842 public files, 840 `.brep` texts): 452 solids importing at `7b43d0b4`
+    and 454 with the draft, exactly `OCC497c` (its stored volume 5,554.65) and
+    `OCC497e` (7,712.70) moving, from the cone's `Degenerate` to imported;
+    `OCC485a` keeps that refusal (its tori: no turned body of S9e.4b.4d.2a's).
+    The 124 imported fixtures: `turned_pin` alone moves (917.345, its stored
+    volume). The fuzz targets' written results (S9e.4b.4d.2a's 2,904 boolean
+    and 371 split bodies): none moves, none having a cone within 1e-3 rad of
+    flat. Of the DRAW cases restoring the two, `bug497_3` stops at `OCC497f`'s
+    restore (the validator) as before, and `bug497_2` (`OCC497c` less
+    `OCC497d`, inside `catch {...}`) reaches its Boolean: `OCC497d` is a wedge
+    standing on the pin's step, its floor 1.86e-5 above the step's wider rim
+    (within the 3e-3 resolution) over a part of the annulus. "Contact only"
+    refuses such a pair, but the draft without (4) below gave the common
+    (278.2, one solid) and refused the cut and the fuse as `InvalidTopology("a
+    cone's wall winding without an apex")` (the pin's draft cone above the
+    step cut 1.86e-5 above its rim, a band thinner than the resolution
+    assembled into a face whose loops wind about the axis without its apex):
+    `graph.rs` tests two planes within the resolution of one plane only where
+    their faces' boxes meet, and a face's box is padded by 1e-9 of its size
+    (S9's rule was written for planes a rounding apart), so planes a fraction
+    of the resolution apart over each other's faces were never tested.
+    *Decisions.* (1) *The reading* (S9e.4b.4d.2a's meridian): a cone face
+    within the resolution of a plane by S9e.4b.4d.1's test (its half-angle
+    within `NEAR_FLAT`, 1e-3 rad, of a right angle and its boundary's height
+    over the face at most the resolution) is taken as the plane normal to the
+    axis through its wider rim: of its stored circles the one of the larger
+    radius, whose height on the axis frame is rounded once (as any plane's).
+    Its other rim's node is then the plane's meeting with its neighbour's
+    line, within the resolution of that stored circle as any corner's (2a's
+    check); a vertex loop on it (the cone's apex: `OCC497c`'s dimple,
+    `OCC497e`'s bulge) is the disc's centre, the stored vertex within the
+    resolution of the plane's centre on the axis (its offset from the axis and
+    its height from the plane); whether the plane is a cap or a step's
+    narrower side (2a's reaches) is read off the face's outward normal at its
+    first edge's middle. Every other rule is 2a's: the lattice, its exact
+    check against the profile, the model built and matched. A cone within the
+    resolution of a cylinder is not taken: OCCT's revolve stores a line within
+    1.6e-4 rad of the axis as a cylinder (measured with the oracle's `revolve`
+    row: walls widening by 2^-17 to 2^-10 over a height of 6 all written as
+    cylinders, while steps rising 2^-17 over 2 to 6 stay cones), no dataset
+    body of the list holds one within the resolution, and no evidence would
+    exercise it: it keeps S9e.4b.4d.1's refusal. (2) *Where*: on import, where
+    `near_flat_cone` holds, the turned reading with such cones taken as planes
+    is tried first and alone (no chain: such a cone as a chain's primitive
+    would be millions wide), its model built and matched as 2a's; where the
+    body is no turned body of 2a's so read, or its model is refused, the
+    cone's `Degenerate` as before. A body of one curved face beside its flats
+    (a rod whose top is a cone within the resolution of flat) is no lattice
+    (2a's forms take two primitives at least) and stays refused, as does
+    `OCC485a` with its tori; a body without such a cone goes as before, the
+    reading's flats changing nothing for it. (3) *The match* (S9e.2's, for an
+    imported piece): a stored cone face taken as a plane is matched by a model
+    plane face (the kinds otherwise equal, as before), and its vertex loop
+    (the apex) is left unmatched, as S9e.4b.3c.3's poles: the model's disc has
+    no vertex at its centre. The stored face keeps its id, its result faces
+    the model's planes. The imported solid's own mass properties stay its
+    stored topology's (OCCT's cones, as every import's); its Booleans' results
+    are the model's, off OCCT's by at most the sags times the faces' areas.
+    (4) *Contact only* (the user's decision of 2026-10-09) in `graph.rs`'s
+    test of planes within the resolution of one plane: a pair of plane faces
+    is tested where one face's box widened by the resolution meets the other's
+    (the offset taken at the overlap's centre, as before), so two faces of the
+    inputs apart by less than the resolution over each other are
+    `Degenerate("two faces within the resolution of one plane")` whatever
+    their boxes' padding: `bug497_2`'s three operations so with the draft,
+    every other outcome of the measurement above the same (the reach of the
+    imports above, which runs every piece's inner Booleans, moves nothing
+    else). Its reach is measured again in the verification: the release tests,
+    the comparisons, the corpus replays, the DRAW trial and every registered
+    DRAW case on the Rust adapter. (5) *Degenerate and refused*: no new text.
+    *Evidence* (before the code): bodies OCCT writes by the oracle's `revolve`
+    and `tolerance` rows (`generate_turned_flats_boolean_fixtures.py`,
+    `flat_*.brep`, resolution 1e-3): a pin of `OCC497c`'s kind (a dimpled
+    bottom, a step in rising 2^-17, a draft cone), a collar of `OCC497e`'s
+    kind (a bulged bottom, a step out falling 2^-17) and a rod whose top cone
+    rises 2^-17 to its apex (no lattice, refused on import); cases against a
+    box across the pin's step, a ball across its dimple's apex and a rod
+    across the collar's step out, and a box resting 2^-12 over the pin's step
+    declared degenerate (`bug497_2`'s configuration); the chained reference
+    over the model's profile (2a's `Lattice`) and its closed form by Pappus; a
+    unit test, a CI group, a capture keyed on the import's unconditional
+    refusal.
+  * **S9e.4b.4d.2b implemented** (`solid/imported/turned.rs`'s `flattened`,
+    `imported.rs`'s `imported_flats` and `flat_kind`, `curved/graph.rs`'s
+    planes within the resolution of one plane, `curved/matched.rs`'s poles;
+    evidence `f606a83b`, capture `068b1cea`, kernel `661197c8`). *Kernel*, as
+    decided, with one amendment the evidence brought: (i) the body is stored
+    as its model takes it (`flattened`: each cone within the resolution of a
+    plane a face on that plane, normal to the axis frame at its wider rim's
+    height rounded once, its sense keeping the side its material lies on, its
+    loops' windings zero and its outer loop first; each of its rims the
+    model's circle at its node, rounded once, its axes the stored circle's;
+    every fin on them given its pcurve again, a plane's arc of the circle, a
+    cylinder's or a cone's line at the circle's height; the apex's vertex loop
+    kept, its vertex within the resolution of the plane's centre), then
+    imported as S9e.4b.4d.2a's lattice; decision (3)'s match of a stored cone
+    by a model plane was drafted and left: a Boolean's history then took the
+    stored cone face into a plane face (`history::check`'s
+    `modified_family_differs` and `split_support_differs`), and the stored
+    rims 7.6e-6 off the model's moved the results' measures by up to 3.5e-7
+    relative. So the import's own mass properties are the model's (the flat
+    profile's by Pappus within 1e-9), not OCCT's, and the match only leaves a
+    stored plane face's vertex loop unmatched (S9e.4b.3c.3's poles,
+    generalized from a sphere's poles: no other imported body holds one).
+    Cones within the resolution of a cylinder stay refused (decision (1));
+    `facing` of a cone taken as a plane is no longer needed (the reading runs
+    on the flattened body). Contact only as decided (4): `bug497_2`'s wedge
+    over `OCC497c`'s step `Degenerate("two faces within the resolution of one
+    plane")` for its three operations. *Evidence* (before the code):
+    `generate_turned_flats_boolean_fixtures.py` (`--check`, identical under
+    Python 3.9 and 3.12: 8.2 and 3.8 minutes on four workers locally at load 6
+    to 10) and three bodies OCCT wrote by the oracle's `revolve` and
+    `tolerance` rows (`flat_*.brep`, resolution 1e-3, every one refused at
+    `7b43d0b4` as a cone within the resolution of a plane): 12 cases, 9 solid
+    and 3 declared degenerate; the chained reference with each body the
+    lattice of its model profile and its closed form by Pappus: two families
+    within 5.7e-36, every solid's closed form within 4.1e-41, each body's
+    within 8.2e-41, the pair identities within 1.1e-41, Monte Carlo within 2.3
+    standard errors. OCCT's revolve turns a wall widening by 2^-17 to 2^-10
+    over 6 into a cylinder, so the collar's near-cylinder wall planned first
+    was replaced by a bulged bottom (no body has a cone within the resolution
+    of a cylinder); the declared group's solid counts by rays are not taken
+    (its box's gap of 2^-12 lies below their spacing). The capture at
+    `f606a83b` (`068b1cea`): 1 match and 11 reviewed (OCCT's results on the
+    bodies it was given, which keep their near-flat cones, off the model's
+    reference by up to 1.7e-4 in volume and 2.1e-4 in area, within the sags'
+    volumes, 64 pi 2^-17 / 3 for the pin and 18 pi 2^-17 for the collar; a
+    diagnostic build, not committed, with BRepGProp's adaptive integration on
+    OCCT's own revolve of each model profile within 2.1e-9 of the reference;
+    the resting box's fuse and cut invalid, OCCT taking the box 2^-12 over the
+    step as touching it). *Tests* (`tests/turned_flat_booleans.rs`, six):
+    every case within the reference's enclosures, the resting box refused as
+    two faces within the resolution of one plane; histories complete over the
+    stored ids; results deterministic and moved rigidly; the inputs moved by a
+    dyadic shift keeping the reference's volumes, by a turn the ball's (the
+    box's refused as a plane within rounding of a cylinder's direction, the
+    rod's as S9e.4b.4d.2a's quartic past its eliminant's budget); each body's
+    volume and its common with a box holding it its model profile's by Pappus
+    within 1e-9, points classified, its stored vertices (the apex among them)
+    on its boundary, alike moved by a turn; `flat_rod` refused as before.
+    `turned_body_imports.rs`: `turned_pin` now imports (its flat profile's
+    volume, `pi 292`), `flat_rod` refused as a cone within the resolution of a
+    plane. 1.0 s in release, 3.7 s at opt-level 2 with debug assertions, 2.4 s
+    under the emulated glibc `hypot` with debug assertions and overflow checks
+    (`turned_body_imports` 49 s and `turned_profile_booleans` 6.7 s there,
+    every test passing). `compare_turned_flats_boolean.py`: 1 match and 11
+    reviewed (the capture's, the kernel's entity counts added to eight: its
+    rings without seam vertices and its curved faces without seam edges
+    against OCCT's seams), the kernel within the reference on all 9 solid
+    cases, the 3 degenerate refused. *Reach after the change* (each file
+    imported in a process of its own, 120 s a file, against `7b43d0b4`): the
+    DRAW case list's 840 dataset texts, 452 importing before and 454 after,
+    exactly `OCC497c` (5,554.651) and `OCC497e` (7,712.697) moving (their flat
+    profiles' volumes now); the 127 imported fixtures: `turned_pin` and the
+    two new bodies alone; the fuzz targets' written results (2,904 boolean and
+    371 split bodies): none moving. *DRAW trial* (not the survey: nothing
+    registered): S9e.4b.4d.2a's 41 cases (the 31 calling a Boolean inside
+    `catch {...}`, `bug476_1` to `_8`, `bug485`, `bug497_2`, `bug497_3`,
+    `bug28626_1`) on both backends before (`7b43d0b4`) and after, 120 s a
+    case, four at once: every status and reason the same; `bug497_2` still
+    stops at its Boolean on the Rust adapter as an argument other than a solid
+    the adapter made (its restored shape is no solid record the adapter
+    imports), `bug497_3` at `OCC497f`'s restore, `bug476_1` to `_8` and
+    `bug485` refused as a cone within the resolution of a plane (`OCC485a`'s
+    tori); no case newly evaluates, so none to audit. *Verification* at
+    `661197c8`: fmt, clippy with `-D warnings`, `cargo +1.85 check`, the
+    release tests (766, 759 s at load 6 to 11), all 48 comparisons with their
+    documented counts and no failure, the debug-assertion replays of the
+    boolean corpus and regressions (1,482, the slowest 5.3 s) and the split's
+    (3,571, 1.9 s), natively and under the emulated `hypot` with overflow
+    checks (the slowest 38 s and, at load 6 to 11, 100 s wall, 56 s CPU
+    there), none failing; the boolean corpus's instructions with debug
+    assertions 9.184 T against `7b43d0b4`'s 9.170 T (0.16 % more); the Python
+    unit tests (439, 3 skipped); the ledger holding. Open: S9e.4b.4d.2c; the
+    moved turned bodies' coaxial meetings (below); the campaigns and the
+    capture's Linux record.
+  * **Moved turned bodies refined, before its code (2026-10-15).** The fix
+    S9e.4b.4d.2a left open ("a coaxial ruled pair on a turned frame met as a
+    plane section rather than a quartic"), taken with S9e.4b.4d.2b as
+    contained. *Why such Booleans are refused today*: a turned body's
+    primitives stand on its axis frame, a cylinder's and a cone's exact models
+    on the same affine data (S9e.4b.4d.2a's `build_cone_on`), so the frame's
+    dual rows make each quadric a function of the local radius and height and
+    a coaxial cylinder's and cone's meeting a circle at one height; but
+    `cones.rs`'s `cone_pair` meets them as any ruled pair, a graph over the
+    carrier's rulings (`Quartic`'s `Meet` pieces, `w(theta) = (-B +- sqrt(D))
+    / A`). On the world's axes that graph is a constant height with a rational
+    root and every later stage is cheap; on a turned frame (the stored axes
+    rounded: a body moved by a rotation, or OCCT's revolve about an axis off
+    the world's) its coefficients carry the frame's 53-bit rationals, and a
+    third surface with rounded data of its own meeting that edge in a later
+    Boolean (S9e.3b's triple: the given meeting's restriction to the partner's
+    plane, a resultant of degree four) passes the eliminant's budget of 4,096
+    coefficient bits, `ComputationLimit("a given meeting's eliminant past its
+    budget of coefficient bits (S9e.3b)")`. *Reach, measured before the code*
+    (an instrumented draft of the decisions below on `022dc883`, not
+    committed). The 2a and 2b cases with both inputs moved by the turn of
+    their tests (about `(1, 2, 2)` by 0.5 rad): at `022dc883` 9 of 2a's 15
+    solid cases of two inputs (its chain's aside) are `ComputationLimit` so
+    (`point_tilt`, `waist_rod`, `box_crown`), 3 `Degenerate` (`point_box`: the
+    turned box's wall parallel to the point's axis in the construction, within
+    rounding of it once both are turned, `Degenerate("a plane within rounding
+    of a cylinder's direction")`, S9's rule) and 3 evaluate (`steps_ball`); of
+    2b's 9, the collar's rod 3 `ComputationLimit`, the pin's box 3
+    `Degenerate` so and the pin's ball 3 evaluate. With the draft
+    `point_tilt`'s 3 evaluate (the reference's volumes), `waist_rod`'s,
+    `box_crown`'s and the collar's rod's 9 move from `ComputationLimit` to
+    that `Degenerate` (their rod's or box's faces parallel to the body's axis
+    or normal to it in the construction, now met), every other outcome the
+    same. Bodies OCCT revolves about `(1, 2, 2) / 3`, a waist of corners and a
+    pin of S9e.4b.4d.2b's flats: against an exact `SKEW` box and a ball every
+    case evaluates at `022dc883` already; against a box OCCT wrote on the
+    `SKEW` frame (its planes rounded too) the waist's three are
+    `ComputationLimit` and evaluate with the draft (the pin's evaluate either
+    way, its step a plane). The imports (each file in a process of its own,
+    120 s a file, against `022dc883`): the DRAW case list's 840 dataset texts,
+    454 importing before and after, no outcome moving (the two `bug23849`
+    segments, past 120 s at load before, refused as spline bodies with the
+    draft: a load's timing); the 127 imported fixtures and the fuzz targets'
+    2,904 and 371 written results: none moving. *Decisions.* (1) In
+    `cone_pair`, before the rulings are taken: two faces whose models stand on
+    one affine frame (the same `x`, `y` and `n`, their origins on one line
+    along `n`, a cylinder's circle about it, a cone's axis it) meet where
+    their radii agree, `r` for a cylinder and `b + k (w - lambda)` for a cone
+    at its origin's height `lambda` on the first frame: a height `w` exactly
+    (rational), where the radius is positive (each cone's face on its own
+    nappe: the other nappe's circle holds no face) the plane through the
+    frame's point there normal to `x * y` (`CylPair::Plane`, the section of a
+    cone of the pair: S9d.3a's `plane_cone`, a circle about its axis,
+    `Crv::Cone`), at zero radius a cone's apex on the other's surface
+    (`Degenerate`, as before), a negative radius apart; two cones of one slope
+    as before (S9d.3b's affine-function planes). (2) Only on a turned frame
+    (some axis of the frame with two nonzero components): on a frame along the
+    world's axes the rulings' graph stays as it is, so every outcome and every
+    entity count there is as before (every comparison's). (3) A partner's face
+    parallel to the turned body's axis, or normal to it, in the construction
+    lies within rounding of that once the frames are rounded: S9's rule
+    refuses it, unchanged. (4) Degenerate and refused: no new text. *Evidence*
+    (before the code): bodies OCCT writes by the oracle's `revolve` and
+    `tolerance` rows about `(1, 2, 2) / 3` through `(1/2, -1/4, 0)`
+    (`generate_turned_tilted_boolean_fixtures.py`, `tilted_*.brep`): the waist
+    and the pin, and a box OCCT writes by its `prism` row on the `SKEW` frame
+    (an imported partner whose planes are rounded); cases of each body against
+    that box and of the waist against a ball; the chained reference over each
+    body's model profile on the tilted frame and its closed form by Pappus; a
+    unit test, a CI group, a capture keyed on the code's absence (`cones.rs`
+    without `coaxial_plane`), whose comparison before the code counts the
+    waist's box cases `ComputationLimit` and requires every other case within
+    the reference.
+  * **Moved turned bodies implemented** (`curved/cones.rs`'s `coaxial_plane`;
+    evidence `6c601119`, capture `9274a4cb`, kernel `a2e4e876`). *Kernel* as
+    decided: in `cone_pair`, before the rulings, two faces whose models stand
+    on one turned affine frame with their origins on one axis line meet on the
+    plane normal to the axis where their radii agree (`CylPair::Plane`, the
+    section of a cone of the pair), at zero radius a cone's apex on the
+    other's surface as before, a negative one apart; two cones of one slope,
+    and every pair on a frame along the world's axes, as before. *Evidence*
+    (before the code): `generate_turned_tilted_boolean_fixtures.py`
+    (`--check`, identical under Python 3.9 and 3.12: 7.1 and 3.6 minutes on
+    four workers locally at load 3 to 10) and three bodies OCCT wrote
+    (`tilted_*.brep`, resolution 1e-3): a waist of corners and a pin of
+    S9e.4b.4d.2b's near-flat cones revolved about `(1, 2, 2) / 3` through
+    `(1/2, -1/4, 0)`, their profiles' points off the dyadic grid rounded once
+    in the rows' text, and a box on the `SKEW` frame by the oracle's `prism`
+    row; 9 cases, each turned body against the box and the waist against a
+    ball; the chained reference over each model profile's lattice on the
+    tilted frame (its primitives at dyadic points on the axis, the height's
+    unit 3) and its closed form by Pappus: two families within 1.7e-36, every
+    solid's closed form within 5.8e-41, each body's within 4.6e-16 (the
+    reference takes the kernel's stored axes of a frame, so the primitives'
+    axes stand a rounding of their heights apart from one line; its limit
+    1e-15 for this generator), the pair identities within 1.1e-41, Monte Carlo
+    within 2.5 standard errors. Bodies OCCT revolves about a turned axis with
+    exact partners (a `SKEW` box given by its rows, balls) evaluate at
+    `022dc883` already: the eliminant passes its budget only where the
+    partner's plane is rounded too, so the box is OCCT's; a ball across the
+    waist's cone at first had a common whose volume's enclosure the kernel
+    left 5e-8 wide, so the ball crosses its upper cylinder. The capture at
+    `6c601119` (`9274a4cb`): 3 matches and 6 reviewed (OCCT's results on the
+    pin it was given, which keeps its near-flat cones, within the sags' volume
+    of OCCT's own results on the model's pin; the ball's cases measured by
+    BRepGProp's default integration off the reference by up to 5.7e-7, within
+    7.6e-9 adaptively in a diagnostic build; the kernel's entity counts), the
+    waist's box cases refused on the kernel past the eliminant's budget.
+    *Tests* (`tests/turned_tilted_booleans.rs`, five): every case within the
+    reference's enclosures; histories complete over the stored ids; results
+    deterministic and moved rigidly; the inputs moved by a dyadic shift and by
+    a turn keeping the reference's volumes, every turned case evaluating; each
+    body's volume and its common with a box holding it its model profile's by
+    Pappus within 1e-9, points classified, its stored vertices on its
+    boundary, alike moved by a turn. `turned_profile_booleans.rs` and
+    `turned_flat_booleans.rs` moved by their turn: `point_tilt` (two imported
+    bodies) and the balls evaluate, the boxes and rods whose faces are
+    parallel or normal to the body's axis in the construction are refused as
+    within rounding of it (S9's rule), none past the eliminant's budget. 3.4 s
+    in release, 5.4 s at opt-level 2 with debug assertions, 4.2 s under the
+    emulated glibc `hypot` with debug assertions and overflow checks (the
+    flats' 1.1 s and the profiles' 7.5 s there, every test passing).
+    `compare_turned_tilted_boolean.py`: 2 matches and 7 reviewed (the waist's
+    common's entity counts added: its whole circles rings without seam
+    vertices), the kernel within the reference on all 9 cases. *Reach after
+    the change* (each file imported in a process of its own, 120 s a file,
+    against `022dc883`): the DRAW case list's 840 dataset texts, the 127
+    imported fixtures and the fuzz targets' 2,904 and 371 written results: no
+    outcome moving (two `bug23849` segments past 120 s at load on one run).
+    *DRAW trial*: the 41 cases on both backends against S9e.4b.4d.2b's run:
+    every status and reason the same (no case moving; `bug497_2` stopping at
+    its argument on the Rust adapter as before). *Verification* at `a2e4e876`:
+    fmt, clippy with `-D warnings`, `cargo +1.85 check`, the release tests
+    (771, 584 s at load 5 to 8), all 49 comparisons with their documented
+    counts and no failure, the debug-assertion replays of the boolean corpus
+    and regressions (1,482, the slowest 3.9 s) and the split's (3,571, 1.2 s),
+    natively and under the emulated `hypot` with overflow checks (32 s and 36
+    s the slowest there), none failing; the boolean corpus's instructions with
+    debug assertions 9.179 T against `7b43d0b4`'s 9.165 T (0.15 % more over
+    both parts; S9e.4b.4d.2b alone 0.16 %); the Python unit tests (446, 3
+    skipped); the ledger holding. Open: S9e.4b.4d.2c; the campaigns and the
+    captures' Linux records.
+  * **S9e.4b.4d.2c refined, before its code (2026-10-15).** A turned body's
+    fillets and rounds, options (b) and (a) of "S9e.4b.4d refined" as
+    "S9e.4b.4d.2 refined" splits them: each torus snapped tangent to its
+    neighbouring lines (exact rational data, no new field), and the tangent
+    coaxial meetings that snap makes taken as exact data in the engine. *Why
+    such bodies are refused today*: `smooth_torus` names them
+    (`OutOfDomain("an imported body whose torus faces join their neighbours
+    smoothly (S9e.4b.4d)")`, `OCC496b`, `turned_fillet`, `turned_round_off`),
+    `OCC485a` first as S9e.4b.4d.1's near-flat cone (its step and bottom;
+    S9e.4b.4d.2b's reading takes those as planes, then fails at its tori);
+    behind those, no construction holds a torus whose surface touches a
+    neighbour's along a circle, and the engine refuses every tangency between
+    the two inputs of a Boolean (the inner Booleans of a turned body's tree
+    among them). *Reach*: the DRAW cases restoring `OCC485a`
+    (`bugs/modalg_2/bug476_1` to `_8`, its fuse, cuts and commons with the rib
+    `OCC485b`, and `bug485`, its fuse with itself; viewer-skipped natively,
+    fuse area 9,333.96, the cuts 99.5159 and 9,340.03, the common 105.587,
+    `bug485`'s fuse `OCC485a` itself) and `OCC496b` (`bugs/moddata_2/bug496`,
+    fused with `OCC496a`, private data: no case runs); the fixtures
+    `turned_fillet` and `turned_round_off`; no fuzz result (the writer refuses
+    every torus's section, D13). `OCC496b` (along the world's `x`, resolution
+    3e-3): a disc, cylinders of radii 15, 14 and 13, tori of tubes 2, 2 and
+    4.5 joining them and the cone that follows (the third torus tangent to the
+    cylinder of radius 13 and to the cone of half-angle 0.4432, its tube's
+    point at the stored edge 4.5 from its centre and its normal across the
+    cone's ruling there, measured on the file), a plane. *The bodies' profile,
+    snapped* (option (b)): the meridian read as S9e.4b.4d.2a's with arcs: a
+    torus face on the axis line within the resolution, its tube circle in the
+    meridian between two faces whose lines it touches within the resolution
+    (the tube's centre within the resolution of the tube's radius from each
+    line, as `smooth_torus` reads it). Each neighbour's line on a rational
+    unit direction (a plane's and a cylinder's exactly; a cone's slope snapped
+    to the nearest Pythagorean direction, S9e.4b.1's half-angle tangent
+    rounded once, moving its line by a rounding); the torus refitted tangent
+    to both at its stored tube's radius: its centre the meeting of the two
+    lines offset by the tube toward the stored centre (rational: the offsets
+    are the tube times the unit normals), its tangency points the centre's
+    feet on the lines (rational), the core radius the centre's distance from
+    the axis. Its move from the stored torus within the resolution
+    (`OCC485a`'s round 3.76e-6, its fillet 1.1e-13, `OCC496b`'s 9.5e-7 at
+    most, `turned_round_off`'s 2.5e-9), else no turned body; a torus meeting
+    another torus or a sphere (no line to keep), a torus at corners
+    (`turned_corner`), a bore, stay refused. The tangent edges are the model's
+    circles at the tangency points: the stored edges lie within 6.6e-6 of them
+    (`OCC485a`'s round's top), within the resolution. A near-flat plane next
+    to a fillet (`OCC485a`'s step) is the plane through its edge with the
+    fillet (the edge the fillet touches), not its wider rim (option (c)'s
+    first clause, S9e.4b.4d.2b's taking the other). *The construction*: the
+    sharp profile (each arc replaced by its two tangent lines meeting at the
+    corner) is S9e.4b.4d.2a's lattice; each fillet (a concave arc) adds the
+    corner's kite less the torus's tube (the region between the two tangent
+    lines, the two normals through the centre and the tube: the kite a coaxial
+    ring, a cylinder's or a frustum's band less another's, its torus a whole
+    torus on the axis frame exactly), each round (a convex arc) takes that
+    kite less the tube away; so the body's tree is the lattice's fused with
+    the fillets' pieces and cut by the rounds', each torus's model on the axis
+    frame at its centre's height exactly (a `Construction::Torus` axis as
+    S9e.4b.4d.2a's cone's), checked exactly against the profile (the form's
+    value at every height between breakpoints, the arcs' by their circles'
+    equations) before any model is built, built as a chain's tree and matched
+    to the stored topology (the arbiter). *The engine* (option (a), restricted
+    to coaxial tangent circles, every other tangency refused as before): (E1)
+    `torus_curved.rs`'s coaxial meeting (`coaxial`, the roots in the tube's
+    angle of a cylinder's, a cone's or a plane's restriction): a double root
+    at a rational angle, the tube touching the other surface along a circle, a
+    tangent ring (a `ToricCrv` marked tangent) instead of `tangent()`'s
+    `Degenerate`; `torus.rs`'s plane normal to the axis touching the tube (its
+    spiric section a double circle) likewise; (E2) `graph.rs`'s arrangement at
+    such a ring: an edge of both faces with one normal along it, the faces'
+    pieces on either side classified at interior points as now, the fins about
+    the edge ordered by the faces' curvatures in the meridian (the tube's
+    circle against the line, exact second-order data at the ring's rational
+    height) where the radial order now compares normals; (E3) `assemble.rs`'s
+    result faces meeting at a tangent ring (a smooth edge of the result: its
+    two faces' senses as any edge's); (E4) the import: `bends`' flat edges no
+    refusal for a turned body (its reading does not use them), `smooth_torus`
+    tried after the turned reading as `near_flat_cone` now is; `pieces.rs`'s
+    `model` renaming a tangency in a piece's own tree as the body's own
+    tangency kept for every other tangency; (E5) a partner's face across a
+    smooth edge: its sections of the two tangent faces meet at the ring's
+    crossing point with one tangent, `graph.rs`'s "two curves tangent at a
+    vertex" (`next_on_kept`'s angle order at a vertex) accepted where the
+    vertex lies on a tangent ring of the other input and the partner crosses
+    the ring transversally, the two curves ordered by their curvatures' side
+    of the ring (exact second-order data at the vertex); (E6) a given result's
+    edge on a tangent ring met by a partner's face: `triple.rs`'s three
+    surfaces, two of them tangent along the ring, refused as `TANGENT`
+    (dependent gradients) today; met instead as the ring's circle (a plane
+    normal to the axis and one surface) against the partner, S9e.1's given
+    circles' path; (E7) `torus_parts.rs`'s rim tangent to the other surface
+    and `meet.rs`'s `tangency()` unchanged (no coaxial tangency reaches them).
+    *Degenerate and refused*: no new text; a partner tangent to a fillet or a
+    round (S9's tangencies between the inputs) and a partner's edge on a
+    smooth edge stay refused. *Phasing*: the engine's part (E1)-(E6) is the
+    larger; so **S9e.4b.4d.2c.1**, the bodies alone: (E1)-(E4) and the
+    construction, `turned_fillet`, `turned_round_off` and `OCC496b` importing,
+    Booleans with partners that cross no smooth edge; **S9e.4b.4d.2c.2**,
+    partners across smooth edges: (E5) and (E6), `OCC485a`'s rib cases (its
+    planes cutting the step, the fillet and the shaft). *Evidence* for 2c.1
+    (before its code): bodies OCCT writes by the oracle's `revolve` row with
+    arcs (a fillet and a round between planes and cylinders, a round tangent
+    to a cone, a torus refitted by 1e-6), cases against partners away from the
+    smooth edges and one declared degenerate (a partner tangent to the round),
+    the chained reference with tori (S9e.3a's
+    `torus_curved_boolean_reference.py` primitives) over the snapped profile
+    and its closed form by Pappus (a torus's sector's volume and area by its
+    centroid's turn); for 2c.2 partners across the smooth edges. *Not done in
+    this task*: both parts are left for their own steps; nothing of 2c is
+    built.
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces

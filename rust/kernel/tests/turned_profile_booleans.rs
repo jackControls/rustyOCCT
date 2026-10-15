@@ -269,14 +269,15 @@ fn results_are_deterministic_and_move_rigidly() {
 
 /// Both inputs moved by a dyadic translation and by a rotation that rounds
 /// their frames keep the reference's volumes (a turn moving an exact
-/// incidence within rounding is refused as `Degenerate`, a given meeting's
-/// eliminant over the turned frames' data past its budget as
-/// `ComputationLimit`, S9e.3b's): the imported bodies read again off their
+/// incidence within rounding is refused as `Degenerate`): the imported
+/// bodies read again off their
 /// moved stored topologies, their cones on their moved axes exactly. On a
-/// turned frame a coaxial cylinder's and cone's meeting is a quartic graph
-/// (`Curve3::Meet`, the frame's stored axes orthonormal within rounding),
-/// and a partner's turned plane meeting it is S9e.3b's triple past its
-/// budget: the ball's case evaluates turned, the others' shift alone.
+/// turned frame a coaxial cylinder's and cone's meeting is a plane's section
+/// (the moved turned bodies'; before, a quartic graph whose meeting with a
+/// partner's turned plane passed S9e.3b's budget): the ball's and the two
+/// imported bodies' cases evaluate turned, the box's and the rod's, their
+/// faces parallel or normal to the body's axis in the construction, are
+/// refused as within rounding of it.
 #[test]
 fn moved_inputs_keep_their_volumes() {
     let shift = RigidTransform::translation(Vec3::new(0.5, -0.25, 1.0)).unwrap();
@@ -304,7 +305,7 @@ fn moved_inputs_keep_their_volumes() {
             };
             let (count, [v, _]) = expect[name].2.unwrap();
             match run {
-                Err(Error::Degenerate(_) | Error::ComputationLimit(_)) if k == 1 => continue,
+                Err(Error::Degenerate(_)) if k == 1 => continue,
                 Err(e) => panic!("{name} {k}: {e}"),
                 Ok((out, _)) => {
                     let got: f64 = out.iter().map(|s| s.mass_properties().volume).sum();
@@ -315,7 +316,7 @@ fn moved_inputs_keep_their_volumes() {
             }
         }
     }
-    assert!(turned >= 1, "{turned} turned cases evaluated");
+    assert!(turned >= 2, "{turned} turned cases evaluated");
 }
 
 fn body(name: &str, op: u64) -> Result<Solid, Error> {

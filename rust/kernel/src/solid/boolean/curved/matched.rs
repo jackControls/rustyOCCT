@@ -89,6 +89,16 @@ pub(crate) fn matched(parts: &TopologyParts, t: &Topology, tol: f64) -> Option<M
 fn pole_loops(t: &Topology, tol: f64) -> BTreeSet<usize> {
     let mut out = BTreeSet::new();
     for f in t.faces() {
+        // S9e.4b.4d.2b: a cone's apex where the cone is stored as the plane
+        // it lies within the resolution of.
+        if let crate::topology::Surface::Plane(_) = &f.surface {
+            for l in &f.loops {
+                if let Loop::Vertex(v) = &t.loops()[l.index()] {
+                    out.insert(v.index());
+                }
+            }
+            continue;
+        }
         let crate::topology::Surface::Sphere { frame, radius } = &f.surface else {
             continue;
         };

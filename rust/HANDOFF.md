@@ -74,7 +74,9 @@ then for S9e.4b.4c.2b's refined decisions and S9e.4b.4c.2b.1 (branch `s9e4b4c2b`
 then for the DRAW survey of the nested leaves and the speed-ups (branch
 `s9-draw-18`, over `rust-kernel` at `cc7af85c`),
 then for S9e.4b.4d.2's refined decisions and S9e.4b.4d.2a (branch
-`s9e4b4d2`, over `rust-kernel` at `b48e9acf`).
+`s9e4b4d2`, over `rust-kernel` at `b48e9acf`),
+then for S9e.4b.4d.2b and the moved turned bodies (branch `s9e4b4d2bc`,
+over `s9c2-kernel` at `7b43d0b4`).
 
 ## Where things stand
 
@@ -910,11 +912,28 @@ then for S9e.4b.4d.2's refined decisions and S9e.4b.4d.2a (branch
    (41 cases, the `catch {...}` forms among them: no case moving), its reach
    re-scanned (the dataset and the fuzz targets' results: only those two
    solids move) and pending its campaigns and its capture's Linux record;
-   next **S9e.4b.4d.2b** (near-flat cones as planes, option (c): `OCC497c`,
-   `OCC497e`; the match needs a stored cone face matched by a model plane
-   and a cone's apex vertex in a disc) and **S9e.4b.4d.2c** (fillets
-   snapped tangent with tangent coaxial meetings in the engine, options (b)
-   and (a): `OCC485a`, `OCC496b`). The reader takes OCCT's
+   **S9e.4b.4d.2b** (a cone within the resolution of a plane in such a
+   profile the plane through its wider rim, the body stored so with its rims
+   the model's circles: `OCC497c` and `OCC497e` importing; contact only in
+   the test of planes within the resolution of one plane, `bug497_2`'s
+   wedge over the step refused) is implemented with its DRAW trial (the same
+   41 cases: no case moving, `bug497_2` stopping at its argument on the Rust
+   adapter), its reach re-scanned (the dataset: only those two solids; the
+   fixtures: `turned_pin`; the fuzz targets' results: none) and pending its
+   campaigns and its capture's Linux record; the moved turned bodies'
+   coaxial meetings ("Moved turned bodies refined": on a turned frame a
+   coaxial cylinder's and cone's meeting the plane section where their radii
+   agree, not the rulings' quartic whose meeting with a partner's rounded
+   plane passed S9e.3b's budget) are implemented with the same trial (no
+   case moving) and reach (none moving), pending their campaigns and their
+   capture's Linux record; next **S9e.4b.4d.2c** (fillets snapped tangent
+   with tangent coaxial meetings in the engine, options (b) and (a):
+   `OCC485a`, `OCC496b`), its refined decisions recorded and split in
+   "S9e.4b.4d.2c refined" (nothing of it built yet): **S9e.4b.4d.2c.1** (the
+   snap, the sharp lattice with each fillet's and round's kite and torus,
+   coaxial tangent rings as exact edges in the engine: the bodies alone and
+   partners across no smooth edge) then **S9e.4b.4d.2c.2** (partners across
+   smooth edges: `OCC485a`'s rib cases). The reader takes OCCT's
    version-3 line (`CASCADE Topology V3,
    (c) Open Cascade`, written since OCCT 7.6; REVIEW_NOTES.md's "The
    version-3 `.brep` header", branch `brep-v3-header`): the dataset's 26
@@ -1046,7 +1065,8 @@ fuzz switches below.
 - **U10**: (b), C1 of the rational curve tested exactly at a knot of
   multiplicity equal to the degree (branch `u10-rational-c1`).
 - **S9e.4b.4d.2**: build the turned-body construction (branch `s9e4b4d2`):
-  S9e.4b.4d.2a done, 2b and 2c next (item 3).
+  S9e.4b.4d.2a, 2b and the moved bodies' coaxial meetings done, 2c next,
+  its refined decisions split in 2c.1 and 2c.2 (item 3).
 - **The per-set Boolean captures' Linux records**: taken on CI (branch
   `ci-linux-captures`); the records of all 46 from run 38670188123 (branch
   `linux-records-38670188123`, item 2), so the milestones' "pending its
@@ -1147,9 +1167,11 @@ Each comparison takes `--occt-root target/spline-linear-preflight/pinned-sdk/ins
 | `compare_stack_leaves_boolean.py` | 20 / 1 (the kernel within the reference on all 18 solid cases, the 3 degenerate refused) |
 | `compare_nested_leaves_boolean.py` | 19 / 2 (the kernel within the reference on all 18 solid cases, the 3 degenerate refused) |
 | `compare_turned_profiles_boolean.py` | 8 / 13 (the kernel within the reference on all 18 solid cases, the 3 degenerate refused) |
+| `compare_turned_flats_boolean.py` | 1 / 11 (the kernel within the reference on all 9 solid cases, the 3 degenerate refused) |
+| `compare_turned_tilted_boolean.py` | 2 / 7 (the kernel within the reference on all 9 solid cases) |
 
 `rust/tools/run_boolean_comparisons.py --shard 0 --shards 1` with the same
-two arguments runs all 46 in turn (CI's three shards: item 2).
+two arguments runs all 49 in turn (CI's three shards: item 2).
 
 Every one must report 0 failures; since S9f.1 also `compare_split.py`
 (72 / 56) and `compare_brep.py --family spline` (10 / 3), which share its

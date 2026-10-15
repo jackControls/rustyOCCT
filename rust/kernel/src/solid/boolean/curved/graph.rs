@@ -936,7 +936,13 @@ pub(super) fn arrange_shared(models: [Prism; 2]) -> Result<Arr> {
             let Surf::Plane { p: pb, m: mb } = &b.surf else {
                 continue;
             };
-            if !boxes_meet(&models[0].boxes[fa], &models[1].boxes[fb]) {
+            // S9e.4b.4d.2b: one face's box widened by the resolution, so two
+            // faces apart by less than it over each other are met whatever
+            // their boxes' padding (contact only: `bug497_2`'s wedge 1.86e-5
+            // over `OCC497c`'s step).
+            let (alo, ahi) = models[0].boxes[fa];
+            let wide = (alo.map(|c| c - res), ahi.map(|c| c + res));
+            if !boxes_meet(&wide, &models[1].boxes[fb]) {
                 continue;
             }
             let turn = cross(ma, mb);

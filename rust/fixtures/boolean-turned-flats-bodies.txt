@@ -1,0 +1,18 @@
+write pin imported/flat_pin.brep
+plane 0 0 0 0 -1 0 1 0 0
+wire S 6 0 0 7.62939453125e-06 L 6 0 0 L 6 0 4 L 3.9999990463256836 0 4.000007629394531 L 3 0 12 L 0 0 12 L
+revolve 0 0 0 0 0 1 6.283185307179586
+tolerance 0.001
+end
+write collar imported/flat_collar.brep
+plane 0 0 0 0 -1 0 1 0 0
+wire S 7 0 0 0 L 3 0 7.62939453125e-06 L 3 0 6 L 6 0 5.999992370605469 L 6 0 10 L 4 0 12 L 0 0 12 L
+revolve 0 0 0 0 0 1 6.283185307179586
+tolerance 0.001
+end
+write rod imported/flat_rod.brep
+plane 0 0 0 0 -1 0 1 0 0
+wire S 4 0 0 0 L 2 0 0 L 2 0 5 L 0 0 5.000007629394531 L
+revolve 0 0 0 0 0 1 6.283185307179586
+tolerance 0.001
+end

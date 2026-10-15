@@ -1,0 +1,66 @@
+case waist_box_fuse 1e-07
+op 91
+brep imported/tilted_waist.brep
+boolean fuse 93
+op 92
+brep imported/tilted_skewbox.brep
+end
+case waist_box_cut 1e-07
+op 91
+brep imported/tilted_waist.brep
+boolean cut 93
+op 92
+brep imported/tilted_skewbox.brep
+end
+case waist_box_common 1e-07
+op 91
+brep imported/tilted_waist.brep
+boolean common 93
+op 92
+brep imported/tilted_skewbox.brep
+end
+case pin_box_fuse 1e-07
+op 91
+brep imported/tilted_pin.brep
+boolean fuse 93
+op 92
+brep imported/tilted_skewbox.brep
+end
+case pin_box_cut 1e-07
+op 91
+brep imported/tilted_pin.brep
+boolean cut 93
+op 92
+brep imported/tilted_skewbox.brep
+end
+case pin_box_common 1e-07
+op 91
+brep imported/tilted_pin.brep
+boolean common 93
+op 92
+brep imported/tilted_skewbox.brep
+end
+case waist_ball_fuse 1e-07
+op 91
+brep imported/tilted_waist.brep
+boolean fuse 93
+op 92
+frame 5.25 6.0 2.75 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 1.25 -1.5707963267948966 1.5707963267948966
+end
+case waist_ball_cut 1e-07
+op 91
+brep imported/tilted_waist.brep
+boolean cut 93
+op 92
+frame 5.25 6.0 2.75 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 1.25 -1.5707963267948966 1.5707963267948966
+end
+case waist_ball_common 1e-07
+op 91
+brep imported/tilted_waist.brep
+boolean common 93
+op 92
+frame 5.25 6.0 2.75 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 1.25 -1.5707963267948966 1.5707963267948966
+end
