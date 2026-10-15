@@ -98,6 +98,9 @@ pub(super) fn cone_pair(ms: [&Prism; 2], faces: [usize; 2], res: f64) -> Result<
     if (0..2).any(|k| matches!(ms[k].faces[faces[k]].surf, Surf::Torus)) {
         return Err(Error::OutOfDomain("a torus against a curved face (S9d.4b)"));
     }
+    if let Some(pair) = coaxial_plane(ms, faces)? {
+        return Ok(pair);
+    }
     let axis: P2 = [zero(), zero()];
     let zero_k = zero();
     // Carriers: cylinders first, then cones.
@@ -313,6 +316,62 @@ fn parts(o: &Other) -> ([[R; 3]; 3], V, R) {
     }
     c -= &r0 * &r0;
     (m, l, c)
+}
+
+/// S9e.4b.4d.2b: two coaxial ruled faces on one turned frame (a moved turned
+/// body's cylinder and cone, or two of its cones: their models' frames with
+/// the same axes, their origins on one axis line, a cylinder's circle about
+/// it). Their quadrics differ by a function of the axial coordinate alone,
+/// so they meet where their radii agree, on the plane normal to the axis
+/// there, exactly in the frame's affine data (a cone's other nappe holds no
+/// face): where the rulings' graph over a turned frame's data is a quartic
+/// whose meetings with a third surface pass their eliminant's budget. `None`
+/// for any other pair, and on a frame along the world's axes (whose graph is
+/// exact and cheap), as before.
+fn coaxial_plane(ms: [&Prism; 2], faces: [usize; 2]) -> Result<Option<CylPair>> {
+    let (fa, fb) = (&ms[0].f, &ms[1].f);
+    if fa.x != fb.x || fa.y != fb.y || fa.n != fb.n {
+        return Ok(None);
+    }
+    let turned = [&fa.x, &fa.y, &fa.n]
+        .iter()
+        .any(|v| v.iter().filter(|c| **c != zero()).count() > 1);
+    if !turned {
+        return Ok(None);
+    }
+    // Frame b's origin at height `lambda` on frame a's axis.
+    let d = sub(&fb.o, &fa.o);
+    let lambda = dot(&d, &fa.n) / dot(&fa.n, &fa.n);
+    if !is_zero(&sub(&d, &scale(&fa.n, &lambda))) {
+        return Ok(None);
+    }
+    // Each face's radius `a + c w` at frame a's height `w`.
+    let radius = |k: usize, shift: &R| -> Option<(R, R)> {
+        match &ms[k].faces[faces[k]].surf {
+            Surf::Cyl { c, r, .. } if c[0] == zero() && c[1] == zero() => Some((r.clone(), zero())),
+            Surf::Cone { b, k } => Some((b - k * shift, k.clone())),
+            _ => None,
+        }
+    };
+    let (Some((a0, c0)), Some((a1, c1))) = (radius(0, &zero()), radius(1, &lambda)) else {
+        return Ok(None);
+    };
+    if c0 == c1 {
+        return Ok(None);
+    }
+    let w = (&a1 - &a0) / (&c0 - &c1);
+    let cone = usize::from(!matches!(ms[0].faces[faces[0]].surf, Surf::Cone { .. }));
+    match (&a0 + &c0 * &w).cmp(&zero()) {
+        Ordering::Less => Ok(Some(CylPair::Apart)),
+        Ordering::Equal => Err(Error::Degenerate(
+            "a cone's apex on the other input's surface",
+        )),
+        Ordering::Greater => Ok(Some(CylPair::Plane {
+            k: cone,
+            p: fa.point(&zero(), &zero(), &w),
+            m: cross(&fa.x, &fa.y),
+        })),
+    }
 }
 
 /// Two cones whose quadrics differ by an affine function: their meeting

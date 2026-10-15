@@ -270,10 +270,11 @@ fn results_are_deterministic_and_move_rigidly() {
 /// Both inputs moved by a dyadic translation and by a rotation that rounds
 /// their frames keep the reference's volumes, the imported bodies read again
 /// off their moved stored topologies (their near-flat cones taken as planes
-/// again); on a turned frame a coaxial meeting of a cylinder and a cone is
-/// S9e.3b's quartic, and a partner meeting it may pass its eliminant's
-/// budget (`ComputationLimit`, S9e.4b.4d.2a's), accepted for the turn with
-/// `Degenerate`.
+/// again); on a turned frame a coaxial meeting of a cylinder and a cone is a
+/// plane's section (the moved turned bodies'), and a partner's face parallel
+/// or normal to the axis in the construction lies within rounding of it once
+/// turned, `Degenerate` for the turn (the box's and the rod's): the ball's
+/// case evaluates turned.
 #[test]
 fn moved_inputs_keep_their_volumes() {
     let shift = RigidTransform::translation(Vec3::new(0.5, -0.25, 1.0)).unwrap();
@@ -295,7 +296,7 @@ fn moved_inputs_keep_their_volumes() {
             };
             let (count, [v, _]) = expect[name].2.unwrap();
             match run {
-                Err(Error::Degenerate(_) | Error::ComputationLimit(_)) if k == 1 => continue,
+                Err(Error::Degenerate(_)) if k == 1 => continue,
                 Err(e) => panic!("{name} {k}: {e}"),
                 Ok((out, _)) => {
                     let got: f64 = out.iter().map(|s| s.mass_properties().volume).sum();
@@ -306,7 +307,7 @@ fn moved_inputs_keep_their_volumes() {
             }
         }
     }
-    let _ = turned;
+    assert!(turned >= 1, "{turned} turned cases evaluated");
 }
 
 fn body(name: &str, op: u64) -> Result<Solid, Error> {
