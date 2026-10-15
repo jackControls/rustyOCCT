@@ -13426,6 +13426,104 @@ Decisions for S9, recorded before its code (2026-09-28):
     Open: S9e.4b.4d.2b and 2c; a coaxial ruled pair on a turned frame met as
     a plane section rather than a quartic (the moved bodies' triples'
     budget); the campaigns and the capture's Linux record.
+  * **S9e.4b.4d.2b refined, before its code (2026-10-15).** A cone within the
+    resolution of a plane in a turned profile taken as that plane, option (c)
+    of "S9e.4b.4d refined", as "S9e.4b.4d.2 refined" splits it. *Why such
+    bodies are refused today*: `near_flat_cone` refuses on import, before any
+    construction is tried, every body with a cone face within the resolution
+    of a plane or a cylinder (S9e.4b.4d.1's `Degenerate("an imported cone
+    within the resolution of a plane or a cylinder (S9e.4b.4d)")`, whatever
+    the body): `OCC497c` (a pin about the world's `z`: a bottom cone whose
+    apex stands 1.1e-5 above its rim, two steps and that bottom 4.9e-7 to
+    5.6e-6 rad from flat, three draft cones of 1.5 to 1.6 degrees and a
+    cylinder), `OCC497e` (a step 8.1e-8 rad from flat and a bottom whose apex
+    lies 1.6e-5 below its rim, two draft cones), `OCC485a` (with its tori) and
+    the fixture `turned_pin`. *Reach, measured before the code* (an
+    instrumented draft of the decisions below on `7b43d0b4`, not committed;
+    each file imported in a process of its own, 120 s a file, by the base and
+    the draft builds). The DRAW case list (S9e.4b.4d.2 refined's: 2,342 cases,
+    842 public files, 840 `.brep` texts): 452 solids importing at `7b43d0b4`
+    and 454 with the draft, exactly `OCC497c` (its stored volume 5,554.65) and
+    `OCC497e` (7,712.70) moving, from the cone's `Degenerate` to imported;
+    `OCC485a` keeps that refusal (its tori: no turned body of S9e.4b.4d.2a's).
+    The 124 imported fixtures: `turned_pin` alone moves (917.345, its stored
+    volume). The fuzz targets' written results (S9e.4b.4d.2a's 2,904 boolean
+    and 371 split bodies): none moves, none having a cone within 1e-3 rad of
+    flat. Of the DRAW cases restoring the two, `bug497_3` stops at `OCC497f`'s
+    restore (the validator) as before, and `bug497_2` (`OCC497c` less
+    `OCC497d`, inside `catch {...}`) reaches its Boolean: `OCC497d` is a wedge
+    standing on the pin's step, its floor 1.86e-5 above the step's wider rim
+    (within the 3e-3 resolution) over a part of the annulus. "Contact only"
+    refuses such a pair, but the draft without (4) below gave the common
+    (278.2, one solid) and refused the cut and the fuse as `InvalidTopology("a
+    cone's wall winding without an apex")` (the pin's draft cone above the
+    step cut 1.86e-5 above its rim, a band thinner than the resolution
+    assembled into a face whose loops wind about the axis without its apex):
+    `graph.rs` tests two planes within the resolution of one plane only where
+    their faces' boxes meet, and a face's box is padded by 1e-9 of its size
+    (S9's rule was written for planes a rounding apart), so planes a fraction
+    of the resolution apart over each other's faces were never tested.
+    *Decisions.* (1) *The reading* (S9e.4b.4d.2a's meridian): a cone face
+    within the resolution of a plane by S9e.4b.4d.1's test (its half-angle
+    within `NEAR_FLAT`, 1e-3 rad, of a right angle and its boundary's height
+    over the face at most the resolution) is taken as the plane normal to the
+    axis through its wider rim: of its stored circles the one of the larger
+    radius, whose height on the axis frame is rounded once (as any plane's).
+    Its other rim's node is then the plane's meeting with its neighbour's
+    line, within the resolution of that stored circle as any corner's (2a's
+    check); a vertex loop on it (the cone's apex: `OCC497c`'s dimple,
+    `OCC497e`'s bulge) is the disc's centre, the stored vertex within the
+    resolution of the plane's centre on the axis (its offset from the axis and
+    its height from the plane); whether the plane is a cap or a step's
+    narrower side (2a's reaches) is read off the face's outward normal at its
+    first edge's middle. Every other rule is 2a's: the lattice, its exact
+    check against the profile, the model built and matched. A cone within the
+    resolution of a cylinder is not taken: OCCT's revolve stores a line within
+    1.6e-4 rad of the axis as a cylinder (measured with the oracle's `revolve`
+    row: walls widening by 2^-17 to 2^-10 over a height of 6 all written as
+    cylinders, while steps rising 2^-17 over 2 to 6 stay cones), no dataset
+    body of the list holds one within the resolution, and no evidence would
+    exercise it: it keeps S9e.4b.4d.1's refusal. (2) *Where*: on import, where
+    `near_flat_cone` holds, the turned reading with such cones taken as planes
+    is tried first and alone (no chain: such a cone as a chain's primitive
+    would be millions wide), its model built and matched as 2a's; where the
+    body is no turned body of 2a's so read, or its model is refused, the
+    cone's `Degenerate` as before. A body of one curved face beside its flats
+    (a rod whose top is a cone within the resolution of flat) is no lattice
+    (2a's forms take two primitives at least) and stays refused, as does
+    `OCC485a` with its tori; a body without such a cone goes as before, the
+    reading's flats changing nothing for it. (3) *The match* (S9e.2's, for an
+    imported piece): a stored cone face taken as a plane is matched by a model
+    plane face (the kinds otherwise equal, as before), and its vertex loop
+    (the apex) is left unmatched, as S9e.4b.3c.3's poles: the model's disc has
+    no vertex at its centre. The stored face keeps its id, its result faces
+    the model's planes. The imported solid's own mass properties stay its
+    stored topology's (OCCT's cones, as every import's); its Booleans' results
+    are the model's, off OCCT's by at most the sags times the faces' areas.
+    (4) *Contact only* (the user's decision of 2026-10-09) in `graph.rs`'s
+    test of planes within the resolution of one plane: a pair of plane faces
+    is tested where one face's box widened by the resolution meets the other's
+    (the offset taken at the overlap's centre, as before), so two faces of the
+    inputs apart by less than the resolution over each other are
+    `Degenerate("two faces within the resolution of one plane")` whatever
+    their boxes' padding: `bug497_2`'s three operations so with the draft,
+    every other outcome of the measurement above the same (the reach of the
+    imports above, which runs every piece's inner Booleans, moves nothing
+    else). Its reach is measured again in the verification: the release tests,
+    the comparisons, the corpus replays, the DRAW trial and every registered
+    DRAW case on the Rust adapter. (5) *Degenerate and refused*: no new text.
+    *Evidence* (before the code): bodies OCCT writes by the oracle's `revolve`
+    and `tolerance` rows (`generate_turned_flats_boolean_fixtures.py`,
+    `flat_*.brep`, resolution 1e-3): a pin of `OCC497c`'s kind (a dimpled
+    bottom, a step in rising 2^-17, a draft cone), a collar of `OCC497e`'s
+    kind (a bulged bottom, a step out falling 2^-17) and a rod whose top cone
+    rises 2^-17 to its apex (no lattice, refused on import); cases against a
+    box across the pin's step, a ball across its dimple's apex and a rod
+    across the collar's step out, and a box resting 2^-12 over the pin's step
+    declared degenerate (`bug497_2`'s configuration); the chained reference
+    over the model's profile (2a's `Lattice`) and its closed form by Pappus; a
+    unit test, a CI group, a capture keyed on the import's unconditional
+    refusal.
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces
