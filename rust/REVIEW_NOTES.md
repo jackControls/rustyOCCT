@@ -17025,6 +17025,26 @@ Decisions for S9, recorded before its code (2026-09-28):
     it keep only OCCT's own measure difference; the dataset's 21 bodies,
     the `.brep` corpus (`hammer.brep`'s `face_not_c1` faces), the B-rep
     comparisons and the restore cases are run again.
+* **U10 (b)'s corpus replays (2026-10-14, at `79bb1d13`).** A release
+  build with debug assertions and overflow checks of the fuzz crate's
+  replay examples (a `splines` one added locally, not committed), its
+  kernel instrumented (not committed) with a line each time the rational
+  test decides a knot, each input in a process of its own: the corpora and
+  regressions of `step` (1,516 and 4), `brep_io` (2,145 and 2),
+  `brep_validation` (3,107 and 1), `splines` (1,291) and `tessellation`
+  (1,313 and 2), every input's oracle passing, the slowest 2.4, 0.7, 5.2,
+  0.3 and 3.4 seconds. Outcomes: 70 `step` inputs (mutations of
+  `rational_cylinder`) take the rational test's C1 verdict at 1,210 curve
+  knots and 232 surface knot lines, so their bodies are no longer refused
+  by R4 (their oracle requires an unmutated fixture's every body to import,
+  a mutated one's anything but a panic); 165 `brep_validation` inputs reach
+  the rational test after a failed removal, all of them nonrational (the
+  broken-knot mutations), whose verdict is the homogeneous one by
+  construction, so every one stays refused; `brep_io`, `splines` and
+  `tessellation` never reach it. The other targets that validate
+  (`boolean`, `split`, `split_merge`, `identity`, `history`) build only
+  nonrational splines (S8b's profiles), where the two tests are one, and
+  were not replayed.
 
 * **CI budget (U6).** Per-push fuzz runs replay a bounded sample plus every
   regression and new seed; the daily schedule replays everything; the heavy
