@@ -14341,7 +14341,8 @@ Decisions for S9, recorded before its code (2026-09-28):
     tangent to one line and meeting the other at a corner, `OCC496b`'s first
     two), S9e.4b.4d.2c.2; the campaigns and the capture's Linux record.
   * **S9e.4b.4d.2c.1a's consistency fixed (2026-10-15, branch
-    `fix-occ485a-consistency` from `ba6186d5`).** The survey's two defects
+    `fix-occ485a-consistency` from `ba6186d5`, S9e.4b.4d.2c.1b merged
+    into it before its checks).** The survey's two defects
     (above) have one cause, and every result was wrong, not one. *The
     model, exactly*: `OCC485a`'s model profile (the meridian the kernel
     reads: a bottom plane, the cylinder of radius 24.39999, the chamfer,
@@ -14420,22 +14421,24 @@ Decisions for S9, recorded before its code (2026-09-28):
     symmetric, the common the reference's (the model's integral at 40
     digits, every kink a breakpoint; the integrator checked against Pappus
     within 1e-25) within 1e-9, the body's volume its Pappus value within
-    1e-9; and 14 other turned fixtures (`turned_fillet`, `turned_pin`,
-    `turned_step`, the `fillet_`, `flat_`, `profile_` and `tilted_`
-    bodies) against a box across each, consistent the same way. Before the
+    1e-9; and 18 other turned fixtures (`turned_fillet`, `turned_pin`,
+    `turned_step`, the `fillet_`, `flat_`, `profile_`, `tilted_` and
+    S9e.4b.4d.2c.1b's `cone_fillet_` bodies) against a box across each,
+    consistent the same way. Before the
     fix the body's volume was 1.6e-3 under its model and every partner's
     common with the partner first failed the validator; `fillet_refit` and
-    `tilted_waist` failed it too. 7.9 s in release, 6.5 s at opt-level 2 with
-    debug assertions, 10.7 s under the emulated glibc `hypot` with debug
-    assertions and overflow checks (the turned suites there all passing).
+    `tilted_waist` failed it too. 9.5 s in release, 9.2 s at opt-level 2
+    with debug assertions, 10.6 s under the emulated glibc `hypot` with
+    debug assertions and overflow checks (the seven turned suites there,
+    S9e.4b.4d.2c.1b's among them, all passing).
     A rib whose side planes cross the round's tangent circle (its top at
     42 over the shaft's end at 41) fails "an open Boolean of arcs in any
     position" in all six operations before and after the fix: a partner
     across a smooth edge, S9e.4b.4d.2c.2's, left open. *Reach*: the
     imported fixtures' outcomes as before (`turned_body_imports.rs`); the
     turned comparisons with their counts (`compare_turned_profiles` 8 /
-    13, `flats` 1 / 11, `tilted` 2 / 7, `fillets` 7 / 8), every case
-    within the reference. *DRAW trial* (`bug476_1` to `_8`, `bug485`,
+    13, `flats` 1 / 11, `tilted` 2 / 7, `fillets` 7 / 8, `cone_fillets`
+    7 / 8), every case within the reference. *DRAW trial* (`bug476_1` to `_8`, `bug485`,
     `bug497_3`, `bug28626_1`, both backends, 120 s a case): every status
     as the survey's (the eight `failed` at `checknbshapes` alone, every
     `checkprops` holding; `bug485` refused by the Boolean as "a cone's
@@ -14449,16 +14452,19 @@ Decisions for S9, recorded before its code (2026-09-28):
     to the model's 67,672.803426, the fuse's identity to 1.5e-11, both
     orders equal), where native's own fuse misses its identity by 4.3e-4.
     *Verification* at the branch's head: fmt, clippy with `-D warnings`,
-    `cargo +1.85 check`, the release tests (779), all 50 comparisons with
+    `cargo +1.85 check`, the release tests (786), all 51 comparisons with
     their documented counts and no failure, the debug-assertion replays of
     the boolean corpus and regressions (1,482) and the split's (3,571),
-    none failing and none past 30 s, the Python unit tests (PYUNIT), the
+    none failing and none past 30 s, the Python unit tests (464, 3 skipped), the
     ledger holding.
+    The DRAW trial's values the same with S9e.4b.4d.2c.1b merged.
     *Interfaces*: `turned::flattened` is gone (`modelled` takes its place
     for every turned body), `Meridian` loses `flats`, and the three turned
     import paths share `Solid::imported_turned`; a new kind of turned face
-    (S9e.4b.4d.2c.1b's torus beside a cone) needs its arm in `modelled`,
-    else the import refuses the body.
+    needs its arm in `modelled`, else the import refuses the body
+    (S9e.4b.4d.2c.1b's torus beside a cone is a torus's and a cone's
+    arm already, its cone's exact line rounded once into the stored
+    cone).
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces
