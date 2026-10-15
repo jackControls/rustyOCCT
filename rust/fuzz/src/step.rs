@@ -50,10 +50,6 @@ const FIXTURES: [&str; 29] = [
     include_str!("../../fixtures/step/rational_cylinder.stp"),
 ];
 
-/// The fixture whose unmutated body the validator refuses: rational
-/// quarter arcs are not C1 in homogeneous form (R4).
-const NOT_C1: usize = 28;
-
 /// Tokens a mutation may put in place of another: other entities, loop and
 /// shell kinds, flags, references, special numbers and punctuation.
 const WORDS: [&str; 41] = [
@@ -258,11 +254,7 @@ pub fn check_step(data: &[u8]) {
             if u.ratio(1, 8).unwrap_or(true) {
                 let imported = check_text(base.as_bytes()).expect("a fixture reads and imports");
                 assert!(
-                    imported.bodies.iter().all(|b| if pick == NOT_C1 {
-                        matches!(b.result, Err(Rejected::Invalid { .. }))
-                    } else {
-                        b.result.is_ok()
-                    }),
+                    imported.bodies.iter().all(|b| b.result.is_ok()),
                     "an unmutated fixture imports every body"
                 );
                 return;
