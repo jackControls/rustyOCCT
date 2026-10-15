@@ -1,12 +1,19 @@
 """Independent reference for spline cells (R4 of REVIEW_NOTES.md).
 
 Rational B-spline edges, pcurves and faces in `Fraction`s. A cell is C1 in
-its own parameterisation when, at every knot strictly inside a nonperiodic
-domain (every knot, the seam included, of a periodic one), the homogeneous
-curve's one-sided first derivatives agree; a surface when every control row
-across each knot line is. The kernel decides the same property by one
-exact knot removal; this module never removes a knot, it differentiates
-each side by de Boor's recurrence.
+its own parameterisation (R4, as U10 (b) answered) when, at every knot
+strictly inside a nonperiodic domain (every knot, the seam included, of a
+periodic one), the rational curve's one-sided first derivatives
+`(A' w - A w') / w^2` agree; a surface when its rational partial across
+each knot line agrees from both sides at every point of the line. The
+kernel decides C1 of the homogeneous curve by one exact knot removal and,
+where that leaves a residual, compares exact one-sided rational derivatives
+(on a surface at sampled points of each span); this module never removes
+a knot, it differentiates each side by de Boor's recurrence, and on a
+surface forms the jump's polynomial on each span of the other parameter
+from exact interpolation and requires every coefficient to vanish. The
+homogeneous test R4 used before U10 is kept (`homogeneous_curve_c1`,
+`homogeneous_surface_c1`) as evidence.
 
 The data follow OCCT's (and the kernel's) conventions, which define the
 curve: nonperiodic multiplicities sum to poles + degree + 1 and the domain
@@ -178,6 +185,7 @@ def _one_sided(basis, ctrl, u, left):
 
 
 def _row_c1(basis, hpoles, lo=None, hi=None):
+    """C1 of the homogeneous curve (R4 before U10)."""
     ctrl = _controls(basis, hpoles)
     for ul, ur in _tested(basis, lo, hi):
         if _one_sided(basis, ctrl, ul, True) != _one_sided(basis, ctrl, ur, False):
@@ -185,19 +193,133 @@ def _row_c1(basis, hpoles, lo=None, hi=None):
     return True
 
 
+def rational_jet(value, derivative):
+    """The rational point and first derivative from a homogeneous value and
+    derivative: `A / w` and `(A' w - A w') / w^2`."""
+    w, dw = value[-1], derivative[-1]
+    point = tuple(a/w for a in value[:-1])
+    speed = tuple((da*w-a*dw)/(w*w) for a, da in zip(value[:-1], derivative[:-1]))
+    return point, speed
+
+
+def _row_rational_c1(basis, hpoles, lo=None, hi=None):
+    """C1 of the rational curve: equal rational jets from both sides."""
+    ctrl = _controls(basis, hpoles)
+    for ul, ur in _tested(basis, lo, hi):
+        if rational_jet(*_one_sided(basis, ctrl, ul, True)) != rational_jet(*_one_sided(basis, ctrl, ur, False)):
+            return False
+    return True
+
+
+def _poly_mul(a, b):
+    out = [F(0)]*(len(a)+len(b)-1)
+    for i, x in enumerate(a):
+        for j, y in enumerate(b):
+            out[i+j] += x*y
+    return out
+
+
+def _poly_sub(a, b):
+    n = max(len(a), len(b))
+    a, b = a+[F(0)]*(n-len(a)), b+[F(0)]*(n-len(b))
+    return [x-y for x, y in zip(a, b)]
+
+
+def _interpolate(xs, ys):
+    """Power-basis coefficients of the polynomial through (xs, ys), exactly
+    (Lagrange's form expanded)."""
+    out = [F(0)]*len(xs)
+    for i, (xi, yi) in enumerate(zip(xs, ys)):
+        term, denominator = [F(1)], F(1)
+        for j, xj in enumerate(xs):
+            if j != i:
+                term = _poly_mul(term, [-xj, F(1)])
+                denominator *= xi-xj
+        out = [o+yi*t/denominator for o, t in zip(out, term)]
+    return out
+
+
+def _spans(basis):
+    """The distinct knot spans of the domain, (a, b) each (a periodic
+    basis's base period)."""
+    _, _, (a, b) = basis.flat()
+    ks = sorted({F(k) for k in basis.knots if a <= F(k) <= b} | {a, b})
+    return list(zip(ks, ks[1:]))
+
+
+def _value(basis, ctrl, u):
+    """The spline's value at a point inside a span."""
+    return _one_sided(basis, ctrl, u, False)[0]
+
+
+def _line_c1(across, along, rows):
+    """C1 across every knot line of `across`: rows[j] are the homogeneous
+    controls across the line of the j-th control along `along`. At a tested
+    knot k each row gives its value H_j and one-sided derivatives; along
+    `along` the surface's H(k, .) and the jump of its partial ΔH(.) are the
+    splines of the H_j and of the jumps. On each span of `along` both are
+    polynomials of degree q: interpolated exactly at q + 1 points, the
+    jump's numerator N = ΔA w - A Δw must vanish coefficient by
+    coefficient."""
+    q = along.degree
+    jets = [(_controls(across, r)) for r in rows]
+    for ul, ur in _tested(across):
+        values, jumps = [], []
+        for ctrl in jets:
+            left, dleft = _one_sided(across, ctrl, ul, True)
+            right, dright = _one_sided(across, ctrl, ur, False)
+            if left != right:
+                return False  # not even C0
+            values.append(left)
+            jumps.append(tuple(x-y for x, y in zip(dright, dleft)))
+        hv, hj = _controls(along, values), _controls(along, jumps)
+        for a, b in _spans(along):
+            xs = [a+(b-a)*F(i, q+2) for i in range(1, q+2)]
+            h = [_value(along, hv, x) for x in xs]
+            d = [_value(along, hj, x) for x in xs]
+            dim = len(h[0])-1
+            w = _interpolate(xs, [y[-1] for y in h])
+            dw = _interpolate(xs, [y[-1] for y in d])
+            for c in range(dim):
+                ac = _interpolate(xs, [y[c] for y in h])
+                dac = _interpolate(xs, [y[c] for y in d])
+                if any(_poly_sub(_poly_mul(dac, w), _poly_mul(ac, dw))):
+                    return False
+    return True
+
+
 def curve_c1(curve):
-    """C1 of the homogeneous curve at every tested knot."""
+    """C1 of the rational curve at every tested knot (U10 (b))."""
+    lo, hi = span_of(curve)
+    return _row_rational_c1(curve.basis, homogeneous(curve.poles, curve.weights), lo, hi)
+
+
+def homogeneous_curve_c1(curve):
+    """C1 of the homogeneous curve at every tested knot (R4 before U10)."""
     lo, hi = span_of(curve)
     return _row_c1(curve.basis, homogeneous(curve.poles, curve.weights), lo, hi)
 
 
-def surface_c1(s):
-    """C1 across every knot line: each control row across it is C1."""
+def _rows(s):
     h = homogeneous(s.poles, s.weights)
     nu = len(s.poles)//_pole_count(s.v)
     nv = _pole_count(s.v)
     rows_u = [[h[i*nv+j] for i in range(nu)] for j in range(nv)]
     rows_v = [[h[i*nv+j] for j in range(nv)] for i in range(nu)]
+    return rows_u, rows_v
+
+
+def surface_c1(s):
+    """C1 across every knot line: the rational partial across it equal from
+    both sides along the whole line (U10 (b))."""
+    rows_u, rows_v = _rows(s)
+    return _line_c1(s.u, s.v, rows_u) and _line_c1(s.v, s.u, rows_v)
+
+
+def homogeneous_surface_c1(s):
+    """C1 across every knot line of the homogeneous surface: each control
+    row across it is C1 (R4 before U10)."""
+    rows_u, rows_v = _rows(s)
     return all(_row_c1(s.u, r) for r in rows_u) and all(_row_c1(s.v, r) for r in rows_v)
 
 

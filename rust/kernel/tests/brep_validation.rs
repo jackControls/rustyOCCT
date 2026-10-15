@@ -387,3 +387,103 @@ fn sheet_and_wire_measures_contain_the_native_properties() {
     }
     assert_eq!(checked, 15);
 }
+
+/// U10 (b): cells and seamed models whose rational splines are C1 only as
+/// rational curves (the NURBS circle's quarter arcs at double knots, a line
+/// or pcurve whose knot's weight alone is doubled, a cap whose rows' weights
+/// do so) carry no continuity issue, and those G1 only (unequal spans, a
+/// speed jump by the weights, rows each C1 whose surface is not) keep theirs:
+/// every issue set the independent reference's
+/// (`brep-rational-c1-expected.tsv`, from `spline_cell_reference.py`'s
+/// rational test, itself checked by `test_rational_c1_reference.py`).
+#[test]
+fn rational_c1_issue_sets_match_the_independent_oracle() {
+    let expected: BTreeMap<&str, Vec<&str>> =
+        include_str!("../../fixtures/brep-rational-c1-expected.tsv")
+            .lines()
+            .filter(|l| !l.starts_with('#'))
+            .map(|l| {
+                let (name, issues) = l.split_once('\t').unwrap();
+                (name, issues.split(';').filter(|s| !s.is_empty()).collect())
+            })
+            .collect();
+    let mut failures = Vec::new();
+    let mut checked = 0;
+    for block in include_str!("../../fixtures/brep-rational-c1-cases.txt")
+        .split("\nend")
+        .filter(|b| !b.trim().is_empty())
+    {
+        let (name, tolerance, parts) = parse(block.trim());
+        let tolerance = Tolerance::new(tolerance, 1e-12).unwrap();
+        let mut actual: Vec<String> = parts
+            .check(tolerance)
+            .iter()
+            .map(|i| i.to_string())
+            .collect();
+        actual.sort();
+        let mut want: Vec<String> = expected[name.as_str()]
+            .iter()
+            .map(|s| s.to_string())
+            .collect();
+        want.sort();
+        if actual != want {
+            failures.push(format!(
+                "{name}\n  expected {want:?}\n  actual   {actual:?}"
+            ));
+        }
+        checked += 1;
+    }
+    assert!(failures.is_empty(), "{}", failures.join("\n"));
+    assert_eq!((checked, expected.len()), (11, 11));
+}
+
+/// U10 (b): the half disc bounded by the NURBS half circle (a rational
+/// cylinder wall C1 only rationally) is valid, and its certified mass
+/// enclosure contains the reference's quadrature
+/// (`brep-rational-c1-mass.tsv`) with `spline_mass_encloses_the_reference`'s
+/// slack, each enclosure within `1e-12` of its property's scale.
+#[test]
+fn rational_half_disc_mass_encloses_the_reference() {
+    let mut checked = 0;
+    for line in include_str!("../../fixtures/brep-rational-c1-mass.tsv")
+        .lines()
+        .skip(1)
+    {
+        let (name, values) = line.split_once('\t').unwrap();
+        let want: Vec<f64> = values.split(' ').map(|x| x.parse().unwrap()).collect();
+        let block = include_str!("../../fixtures/brep-rational-c1-cases.txt")
+            .split("\nend")
+            .find(|b| b.trim().lines().next() == Some(&format!("case {name}")))
+            .unwrap();
+        let (_, tolerance, parts) = parse(block.trim());
+        let t = rusty_occt::topology::Topology::from_parts(
+            parts,
+            Tolerance::new(tolerance, 1e-12).unwrap(),
+        )
+        .unwrap_or_else(|e| panic!("{name}: {e:?}"));
+        let m = t
+            .mass_enclosure()
+            .unwrap_or_else(|| panic!("{name}: integrated"));
+        let mut got = vec![m.volume, m.surface_area];
+        got.extend(m.centroid);
+        got.extend(m.inertia.iter().flatten().copied());
+        assert_eq!(got.len(), want.len(), "{name}");
+        let group = |k: usize| match k {
+            0 => 0..1,
+            1 => 1..2,
+            2..=4 => 2..5,
+            _ => 5..14,
+        };
+        let scale = |k: usize| want[group(k)].iter().fold(0.0_f64, |a, x| a.max(x.abs()));
+        for (k, ([lo, hi], x)) in got.iter().zip(&want).enumerate() {
+            let slack = 1e-20 * scale(k) + 4.0 * f64::EPSILON * x.abs() + 1e-25;
+            assert!(
+                lo - slack <= *x && *x <= hi + slack,
+                "{name} value {k}: {x} outside [{lo}, {hi}]"
+            );
+            assert!(hi - lo <= 1e-12 * scale(k), "{name} value {k}: width");
+        }
+        checked += 1;
+    }
+    assert_eq!(checked, 1);
+}

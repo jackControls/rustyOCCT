@@ -1,0 +1,12 @@
+# U10 (b): name	sorted issues kind:entity separated by ;
+rational_half_disc	
+rational_half_disc_g1	edge_not_c1:edge 2;edge_not_c1:edge 3;face_not_c1:face 2;pcurve_not_c1:use 0.0.1;pcurve_not_c1:use 1.0.0
+rational_ring_nurbs_circle	pcurve_off_edge:use 0.0.0;pcurve_off_edge:use 2.1.0
+rational_ring_nurbs_circle_g1	edge_not_c1:edge 0;pcurve_off_edge:use 0.0.0;pcurve_off_edge:use 2.1.0
+rational_edge_weights_c1	pcurve_off_edge:use 2.0.3;pcurve_off_edge:use 5.0.1
+rational_edge_weights_g1	edge_not_c1:edge 0;pcurve_off_edge:use 2.0.3;pcurve_off_edge:use 5.0.1
+rational_pcurve_weights_c1	pcurve_off_edge:use 1.0.0
+rational_pcurve_weights_g1	pcurve_not_c1:use 1.0.0;pcurve_off_edge:use 1.0.0
+rational_face_c1	pcurve_off_edge:use 1.0.0;pcurve_off_edge:use 1.0.2
+rational_face_g1	face_not_c1:face 1;pcurve_off_edge:use 1.0.0;pcurve_off_edge:use 1.0.2
+rational_face_rows_not_c1	face_not_c1:face 1;pcurve_off_edge:use 1.0.0;pcurve_off_edge:use 1.0.2
