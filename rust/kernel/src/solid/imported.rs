@@ -80,8 +80,10 @@
 //! S9e.4b.4d.2a: a body of several primitives no chain matches that is a
 //! turned body of cylinders, cones and planes meeting at corners is the
 //! lattice of its primitives (`turned`: the max-min form of its profile's
-//! lines, a chain's tree), its cones' exact models on its axis. Every other
-//! body is S9e.4b's.
+//! lines, a chain's tree), its cones' exact models on its axis.
+//! S9e.4b.4d.2b: in such a body, a cone within the resolution of a plane is
+//! that plane (`imported_flats`: the body stored with it so, its rims the
+//! model's circles). Every other body is S9e.4b's.
 use super::{replayable, Construction, Context, Solid};
 use crate::history::{History, Relation};
 use crate::identity::{
@@ -417,11 +419,10 @@ impl Solid {
         replayable(level)?;
         let topology = renamed(topology, operation)?;
         // S9e.4b.4d.1: a cone within the resolution of a plane or a cylinder
-        // is no exact model's, whatever the body.
+        // is no exact model's; S9e.4b.4d.2b: but in a turned body one within
+        // the resolution of a plane is taken as that plane.
         if near_flat_cone(&topology, resolution.linear()) {
-            return Err(Error::Degenerate(
-                "an imported cone within the resolution of a plane or a cylinder (S9e.4b.4d)",
-            ));
+            return Self::imported_flats(context, topology, resolution);
         }
         // S9e.4a's construction where its recognition and match succeed,
         // else (S9e.4b.2) a polyhedron of one shell on its stored vertices.
@@ -503,6 +504,36 @@ impl Solid {
             }
         }
         Err(refusal)
+    }
+
+    /// S9e.4b.4d.2b: a body with a cone within the resolution of a plane or a
+    /// cylinder, a turned body with each cone within the resolution of a
+    /// plane stored as that plane, its rims as its model's circles
+    /// (`turned::flattened`), the lattice of its primitives; else S9e.4b.4d.1's
+    /// refusal.
+    fn imported_flats(
+        context: &Context,
+        topology: Topology,
+        resolution: Tolerance,
+    ) -> Result<(Self, History)> {
+        let op = construction_operation(context.operation);
+        if let Some(flat) = turned::flattened(&topology, resolution) {
+            if let Ok(p) = turned::turned_piece(&flat, resolution, op) {
+                let done = Self::imported_as(
+                    context,
+                    flat,
+                    resolution,
+                    Recognized::Piece(Box::new(p)),
+                    BTreeMap::new(),
+                );
+                if done.is_ok() {
+                    return done;
+                }
+            }
+        }
+        Err(Error::Degenerate(
+            "an imported cone within the resolution of a plane or a cylinder (S9e.4b.4d)",
+        ))
     }
 
     /// [`Solid::imported_primitives`]'s chains of primitives (before
@@ -2287,35 +2318,48 @@ fn face_points(t: &Topology, fi: usize) -> Vec<Point3> {
 /// the cone's radii times the cotangent (its height over the face) or along
 /// its axis times the tangent (its radii's spread) at most `tol`.
 fn near_flat_cone(t: &Topology, tol: f64) -> bool {
-    t.faces().iter().enumerate().any(|(fi, f)| {
-        let Surface::Cone {
-            frame, half_angle, ..
-        } = &f.surface
-        else {
-            return false;
-        };
-        let a = half_angle.abs();
-        let flat = std::f64::consts::FRAC_PI_2 - a;
-        if flat.min(a) > NEAR_FLAT {
-            return false;
-        }
-        let (mut r0, mut r1, mut z0, mut z1) = (f64::MAX, f64::MIN, f64::MAX, f64::MIN);
-        for p in face_points(t, fi) {
-            let c = frame.coordinates(p);
-            let r = c[0].hypot(c[1]);
-            (r0, r1, z0, z1) = (r0.min(r), r1.max(r), z0.min(c[2]), z1.max(c[2]));
-        }
-        if r0 > r1 {
-            return false;
-        }
-        let height = (r1 - r0) * (a.cos() / a.sin());
-        let spread = (z1 - z0) * a.tan();
-        if flat < a {
-            height <= tol
-        } else {
-            spread <= tol
-        }
-    })
+    (0..t.faces().len()).any(|fi| flat_kind(t, fi, tol).is_some())
+}
+
+/// What a nearly degenerate cone face is within the resolution of.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum Flat {
+    /// A plane normal to its axis (its half-angle near a right angle).
+    Plane,
+    /// A cylinder about its axis (its half-angle near zero).
+    Cylinder,
+}
+
+/// S9e.4b.4d.1: whether a face is a cone within the resolution of a plane
+/// or a cylinder (`near_flat_cone`'s test), and which.
+pub(crate) fn flat_kind(t: &Topology, fi: usize, tol: f64) -> Option<Flat> {
+    let Surface::Cone {
+        frame, half_angle, ..
+    } = &t.faces()[fi].surface
+    else {
+        return None;
+    };
+    let a = half_angle.abs();
+    let flat = std::f64::consts::FRAC_PI_2 - a;
+    if flat.min(a) > NEAR_FLAT {
+        return None;
+    }
+    let (mut r0, mut r1, mut z0, mut z1) = (f64::MAX, f64::MIN, f64::MAX, f64::MIN);
+    for p in face_points(t, fi) {
+        let c = frame.coordinates(p);
+        let r = c[0].hypot(c[1]);
+        (r0, r1, z0, z1) = (r0.min(r), r1.max(r), z0.min(c[2]), z1.max(c[2]));
+    }
+    if r0 > r1 {
+        return None;
+    }
+    let height = (r1 - r0) * (a.cos() / a.sin());
+    let spread = (z1 - z0) * a.tan();
+    if flat < a {
+        (height <= tol).then_some(Flat::Plane)
+    } else {
+        (spread <= tol).then_some(Flat::Cylinder)
+    }
 }
 
 /// A point's distance from an analytic surface (`None` for a spline).

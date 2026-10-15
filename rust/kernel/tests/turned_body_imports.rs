@@ -49,13 +49,21 @@ fn turned_fillets_and_rounds_are_refused_by_name() {
 }
 
 /// A pin whose step is a cone rising 1e-5 over its face (5e-6 rad from
-/// flat) in a body of resolution 1e-3 is refused as within the resolution of
-/// a plane (as `OCC497c`'s steps, refused before as two cylinders' section
-/// near a node); the same step rising 1e-3, ten thousand resolutions of 1e-7,
-/// imports as before, its volume the profile's.
+/// flat) in a body of resolution 1e-3 was refused as within the resolution
+/// of a plane (as `OCC497c`'s steps, refused before as two cylinders'
+/// section near a node); S9e.4b.4d.2b: a turned body, it imports with the
+/// step stored as the plane through its wider rim (its volume the flat
+/// profile's), and a rod whose top cone rises 2^-17 to its apex (one curved
+/// face beside it, no lattice) stays refused so. The same step rising 1e-3,
+/// ten thousand resolutions of 1e-7, imports as before, its volume the
+/// profile's.
 #[test]
 fn a_cone_within_the_resolution_of_a_plane_is_degenerate() {
-    assert_eq!(refusal("turned_pin"), Error::Degenerate(NEAR_FLAT));
+    assert_eq!(refusal("flat_rod"), Error::Degenerate(NEAR_FLAT));
+    let pin = body("turned_pin").unwrap_or_else(|e| panic!("turned_pin: {e}"));
+    let flat = std::f64::consts::PI * (180.0 + 16.0 * 7.0);
+    let v = pin.mass_properties().volume;
+    assert!((v - flat).abs() <= 1e-9 * flat, "{v} for {flat}");
     let s = body("turned_step").unwrap_or_else(|e| panic!("turned_step: {e}"));
     // Radius 6 to height 5, a frustum from radius 6 to 4 over 1e-3, radius 4
     // to height 12.
