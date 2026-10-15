@@ -72,7 +72,9 @@ residue (branch `s9-draw-17`, over `rust-kernel` at `f0bebb1c`),
 then for S9e.4b.4c.2b's refined decisions and S9e.4b.4c.2b.1 (branch `s9e4b4c2b`, over
 `s9c2-kernel` at `f0bebb1c`),
 then for the DRAW survey of the nested leaves and the speed-ups (branch
-`s9-draw-18`, over `rust-kernel` at `cc7af85c`).
+`s9-draw-18`, over `rust-kernel` at `cc7af85c`),
+then for S9e.4b.4d.2's refined decisions and S9e.4b.4d.2a (branch
+`s9e4b4d2`, over `rust-kernel` at `b48e9acf`).
 
 ## Where things stand
 
@@ -860,10 +862,20 @@ then for the DRAW survey of the nested leaves and the speed-ups (branch
    surfaces; two faces on one cylinder across a whole ring no longer the
    body's tangency) is implemented with six bodies OCCT wrote
    (`write_turned_bodies.py`) and its trial of the DRAW cases, the 30 calling
-   a Boolean inside `catch {...}` among them; **S9e.4b.4d.2** (turned bodies:
-   a meridian profile with fillets refitted to their lines, near-flat cones
-   as planes, tangent edges in the engine) is not scheduled, a scope question
-   for the user (9 cases, all of one dataset body). The reader takes OCCT's
+   a Boolean inside `catch {...}` among them; **S9e.4b.4d.2** (turned bodies,
+   built on the user's word of 2026-10-14), split in "S9e.4b.4d.2 refined":
+   **S9e.4b.4d.2a** (turned profiles of cylinders, cones and planes meeting
+   at corners, the lattice of their primitives as a chain's tree, cones'
+   exact models on the axis: `bug28626_case1_shapes`' two solids importing,
+   their case stopping at its `explode`) is implemented with its DRAW trial
+   (41 cases, the `catch {...}` forms among them: no case moving), its reach
+   re-scanned (the dataset and the fuzz targets' results: only those two
+   solids move) and pending its campaigns and its capture's Linux record;
+   next **S9e.4b.4d.2b** (near-flat cones as planes, option (c): `OCC497c`,
+   `OCC497e`; the match needs a stored cone face matched by a model plane
+   and a cone's apex vertex in a disc) and **S9e.4b.4d.2c** (fillets
+   snapped tangent with tangent coaxial meetings in the engine, options (b)
+   and (a): `OCC485a`, `OCC496b`). The reader takes OCCT's
    version-3 line (`CASCADE Topology V3,
    (c) Open Cascade`, written since OCCT 7.6; REVIEW_NOTES.md's "The
    version-3 `.brep` header", branch `brep-v3-header`): the dataset's 26
@@ -997,10 +1009,8 @@ fuzz switches below.
   (STEP-b's `rational_cylinder`): (a) keep refusing, (b) test C1 of the
   rational curve exactly at such knots (recommended), (c) split at such
   knots on import. Until answered, (a) holds.
-- **S9e.4b.4d.2's scope** (not a numbered decision): whether turned bodies
-  of smooth joins (the e3i parts' fillets and rounds, `OCC485a`'s 9 DRAW
-  cases) are worth a turned-body construction. Until answered, they are
-  refused by name (S9e.4b.4d.1).
+- **S9e.4b.4d.2's scope** (not a numbered decision): answered 2026-10-14,
+  build it; S9e.4b.4d.2a done, 2b and 2c next (item 3).
 
 ## How a step is done
 
@@ -1094,6 +1104,7 @@ Each comparison takes `--occt-root target/spline-linear-preflight/pinned-sdk/ins
 | `compare_flush_leaves_boolean.py` | 13 / 8 (the kernel within the reference on all 18 solid cases, the 3 degenerate refused) |
 | `compare_stack_leaves_boolean.py` | 20 / 1 (the kernel within the reference on all 18 solid cases, the 3 degenerate refused) |
 | `compare_nested_leaves_boolean.py` | 19 / 2 (the kernel within the reference on all 18 solid cases, the 3 degenerate refused) |
+| `compare_turned_profiles_boolean.py` | 8 / 13 (the kernel within the reference on all 18 solid cases, the 3 degenerate refused) |
 
 Every one must report 0 failures; since S9f.1 also `compare_split.py`
 (72 / 56) and `compare_brep.py --family spline` (10 / 3), which share its

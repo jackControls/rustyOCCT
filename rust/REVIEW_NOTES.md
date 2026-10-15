@@ -13321,6 +13321,111 @@ Decisions for S9, recorded before its code (2026-09-28):
     degenerate; the chained reference with each body the max-min form of its
     lines (the generator's own) and each body's closed form by Pappus; a
     unit test, a CI group, a capture keyed on the turned module's file.
+  * **S9e.4b.4d.2a implemented** (`solid/imported/turned.rs`,
+    `Construction::Cone`'s `axis`; evidence `2185a5fc`, capture `57c2169e`,
+    kernel `b8e131d4`). *Kernel*, as decided, with two amendments the
+    evidence brought: (i) each term of the max-min form is made as small as
+    the form allows (in the faces' order, a member dropped where the form,
+    its ranges taken again, is still the profile): the first draft's terms
+    held every primitive on or outside a face's line, so a point's apex cone
+    ran over the whole body in every term (to radius 16.75 on a body of
+    radius 4), each extended primitive another surface for every inner
+    Boolean and every partner to meet; the point's tree is now its apex cone
+    common its first cylinder fused with its widening cone common its last
+    cylinder, `bug28626`'s solids' alike, and the steps' tree on a turned
+    frame evaluates with a box (refused before as a ruling within rounding of
+    the other's direction); (ii) an extended
+    end moved on by a thirty-second of the body's height while within that
+    of a node, a cap, an apex or an earlier end (the decisions' (3), found
+    on `bug28626`'s second solid, whose apex cone's and widening cone's tops
+    0.94 apart left a band of a face the engine's grouping refused as a
+    piece thinner than the resolution). The turned reading is tried after
+    every chain (`imported_primitives` over `imported_chains`), its own
+    refusals never reported; `Imported::moved` reads it again off the moved
+    stored topology (the piece's `choice` `TURNED`). *Evidence* (before the
+    code): `generate_turned_profiles_boolean_fixtures.py` (`--check`,
+    identical under Python 3.9 and 3.12: 19.2 minutes on four workers
+    under 3.9 and 8.0 under 3.12 locally at load 13 to 40) and five bodies
+    OCCT wrote by the oracle's `revolve` row (`profile_*.brep`, every one
+    refused as no chain at `b48e9acf`); 21 cases, 18 solid and 3 declared
+    degenerate; the chained reference with each body its own max-min form
+    (the generator's `Lattice`, its terms made as small as the form allows
+    and its range ends on its lines' dyadic grid a sixteenth apart) and its
+    closed form by Pappus: two families within 1.8e-35, every solid's closed
+    form within 1.4e-36, each body's within 1.2e-40, the pair identities
+    within 1.2e-41, Monte Carlo within 3.1 standard errors; the events'
+    spacing unchecked for the point's box and the crown's box (a body's
+    corner circle through the box's walls found as both its solids'
+    surfaces' event, a rounding apart). Corrections from the draft on the
+    cases: the point's widening cone first passed through the apex cone's
+    apex (two cones of one apex, refused by S9's rule), so it widens by 2/5;
+    the steps' widening cone first rose by 2/3 from radius 3 at 9, its other
+    nappe's circle of radius 3 at height 0 on the bottom disc's plane (an
+    edge of one input on a face of the other in the tree), so by 1/2; the
+    `both` group was first the point along `x` crossing the waist (their
+    radius-4 and radius-5 cylinders tangent, their axes 1 apart; moved off
+    it, its reference ran over 30 worker-minutes), then crossing S9e.4a's
+    imported cylinder (its corner circles of radius 3 tangent to the
+    cylinder's caps; moved off them, over 30 worker-minutes), so it crosses
+    S9e.4a's imported turned box; the chain is the waist's (the steps' ran
+    28 worker-minutes). The capture at `2185a5fc` (`57c2169e`): 15 matches
+    and 6 reviewed (the waist's rod and the steps' ball measured by
+    BRepGProp's default integration off the reference by up to 1.9e-6,
+    within 3e-10 with an adaptive accuracy of 1e-10 and 1e-12 in a
+    diagnostic build; the touching ball's fuse two solids). *Tests*
+    (`tests/turned_profile_booleans.rs`, six): every case within the
+    reference's enclosures, the declared ones refused as a tangency;
+    histories complete over the stored ids; results deterministic and moved
+    rigidly; the inputs moved by a dyadic shift keeping the reference's
+    volumes, and by a turn the ball's (on a turned frame a coaxial
+    cylinder's and cone's meeting is a quartic graph over the frame's
+    affine data, and a partner's turned plane meeting it is S9e.3b's triple
+    past its eliminant's budget, `ComputationLimit`, accepted for the turn
+    with `Degenerate`); each body's volume its profile's by Pappus within
+    1e-9, points within its profile inside and beyond it outside, its stored
+    vertices on its boundary, alike moved by a turn; `turned_split` (a face
+    split at a vertex on its line) and `turned_corner` (a torus at corners)
+    refused as before and `turned_step` keeping its chain. 15.5 s in
+    release at load 40, 7.0 s at opt-level 2 with debug assertions at load
+    15, 7.3 s under the emulated glibc `hypot` with debug assertions and
+    overflow checks (with `turned_body_imports` 45 s and
+    `primitive_chain_booleans` 14 s there, every test passing). The
+    kernel's own turned bodies are no evidence: its writer refuses their
+    coaxial meetings (a procedural edge, D13), so no fuzz stage takes them.
+    `compare_turned_profiles_boolean.py`: 8 matches and 13 reviewed (the 6
+    capture's and 7 more of the kernel's entity counts: its meetings with
+    the partners split at their turning points and its rings without seam
+    vertices against OCCT's seams), the kernel within the reference on all
+    18 solid cases, the 3 degenerate refused. *Reach after the change*
+    (each file imported in a process of its own, 120 s a file): the DRAW
+    case list's 840 dataset texts, 509 solids converted, 450 importing
+    before and 452 after, exactly `bug28626_case1_shapes`' two moving (each
+    1,400,145.01, their cut 1,359,994.43, one solid); the 124 imported
+    fixtures (119 and the 5 new): only the 5 new; the fuzz targets' results
+    (every Boolean's solid results of the corpus inputs and regressions
+    written by an instrumented `b48e9acf`, one process an input, every input
+    exiting cleanly: boolean 2,904 distinct bodies, 2,842 converted, 2,192
+    importing; split 371, 355, 326) imported by both builds: none moving.
+    *DRAW trial* (not the survey: nothing registered): the 31 cases calling
+    a Boolean inside `catch {...}` and every case restoring a moved or a
+    target body (`bug476_1` to `_8`, `bug485`, `bug497_2`, `bug497_3`,
+    `bug28626_1`), 41 cases on both backends before (`2185a5fc`) and after,
+    120 s a case, four at once: every status and reason the same;
+    `bug28626_1` stops at its `explode` on the Rust adapter (unsupported
+    natively too), `bug476_1` to `_8` and `bug485` refused as S9e.4b.4d.1's
+    near-flat cone, `bug497_2` an argument other than a solid the adapter
+    made; no case newly evaluates, so none to audit. *Verification* at
+    `b8e131d4`: fmt, clippy with `-D warnings`, `cargo +1.85 check`, the
+    release tests (755, 855 s at load 13 to 40), all 47 comparisons with
+    their documented counts and no failure, the debug-assertion replays of
+    the boolean corpus and regressions (1,482, the slowest 5.3 s) and the
+    split's (3,571, 1.5 s), natively and under the emulated `hypot` with
+    overflow checks (40 s and 60 s the slowest there), none failing; the
+    boolean corpus's instructions with debug assertions 9.173 T against
+    `b48e9acf`'s 9.181 T (0.09 % fewer); the Python unit test (7 tests).
+    Open: S9e.4b.4d.2b and 2c; a coaxial ruled pair on a turned frame met as
+    a plane section rather than a quartic (the moved bodies' triples'
+    budget); the campaigns and the capture's Linux record.
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces

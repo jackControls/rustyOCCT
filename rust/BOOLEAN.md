@@ -1572,7 +1572,30 @@ faces of one
 surface on different sides, a widest primitive whose material lies outside
 it, a primitive meeting the earlier ones along both kinds of edge and a
 chain the match rejects `OutOfDomain("an imported body of several primitives other than a Boolean
-chain of them (S9e.4b.4c)")`.
+chain of them (S9e.4b.4c)")`. S9e.4b.4d.2a: where every chain is refused, a
+turned body of cylinders, cones and planes about one axis meeting at corners
+(`bug28626_case1_shapes`' two solids) is the lattice of its primitives
+(`solid/imported/turned.rs`): its meridian read off the stored faces (every
+curved face and every circle on one axis line within the resolution, every
+plane normal to it, the faces a path from the axis to the axis whose heights
+never fall; the axis frame the first curved face's, its components that move
+the body by less than a thousandth of the resolution taken to zero), each
+generatrix an exact rational line and each corner the two lines' common
+point within the resolution of its stored circle; the body the max-min form
+of those lines (for each curved face the common of the primitives on or
+outside its line over its heights, each term as small as the form allows,
+their fuse, the primitives every term holds taken out), each primitive past
+a corner over the heights it bounds and a quarter of its own, capped at a
+step's or an end's plane on its wider side, past a step into the wider side
+by a quarter of that one's height, clamped at its apex, its ends a
+thirty-second of the body's height from every node, cap, apex and other end;
+the form checked exactly against the profile at every height before any model
+is built, the tree built as any chain's and matched to the stored topology;
+its cones' exact models on the axis frame at their heights exactly
+(`Construction::Cone`'s `axis`, `Solid::build_cone_on`), coaxial with its
+cylinders. A body this reading does not take, or whose tree S9's rules refuse
+(two cones of one apex, a cone's other nappe through another's circle on a
+plane), keeps its chains' refusal.
 
 Refused: a joint of two arcs whose circles each hold other arcs of the
 path, off either (`OutOfDomain`, S9e.4b.4: neither circle can move); a
@@ -1593,7 +1616,9 @@ primitive) or no
 Boolean chain of them
 (`OutOfDomain`, S9e.4b.4c; S9e.4b.4c.2b.2: a widest primitive cut from the
 chain, the inside-first order a later choice, two cylinders on parallel axes
-sharing a cap, turned profiles of cones and cylinders at corners); a pocket's walls along a turned leaf's axis
+sharing a cap; turned profiles of cones and cylinders at corners S9e.4b.4d.2a's
+since, but a face split at a vertex on its line, a sphere in a profile or a
+bore); a pocket's walls along a turned leaf's axis
 within rounding of it (S9's `Degenerate`); a cone face within the
 resolution of a plane or a cylinder, whatever the body
 (`Degenerate("an imported cone within the resolution of a plane or a
@@ -1606,7 +1631,7 @@ join their neighbours smoothly (S9e.4b.4d)")`, the tangency read off the
 stored surfaces: at an edge's middle the torus's tube circle in that meridian
 within the resolution of tangent to the other face's surface; a turned
 part's fillets and rounds, `OCC496b`, `cts21199_base`, `pro14942b`; turned
-bodies are S9e.4b.4d.2's, not scheduled); a
+bodies' near-flat cones and fillets are S9e.4b.4d.2b's and 2c's); a
 torus's v-segment or wedge and every other body of curved faces, a torus
 among several among them (`OutOfDomain`, S9e.4b: a general body on its
 stored surfaces); spline faces or edges (S9f); S9's
@@ -1970,7 +1995,8 @@ campaign of every target the steps touch.
   records of the per-set captures (CI never runs their compare scripts, a
   CI-budget decision), S9e.4b.4b.2b.2b.3b and S9e.4b.4c.2b.2 (no measured
   body reaches them but one dataset solid no DRAW case imports),
-  S9e.4b.4d.2 (a turned-body construction, a scope question), the
+  S9e.4b.4d.2b and 2c (turned bodies' near-flat cones as planes and fillets
+  snapped tangent, the user's answer of 2026-10-14; 2a's corners done), the
   near-miss rules not yet written (other curves' edges, two sphere
   circles, an apex against a sphere, torus or spline face, item 5's (b)
   to (d)), and the refusals by design listed there. U9 and U10 stay open.
@@ -4353,6 +4379,26 @@ campaign of every target the steps touch.
   imported fixture's outcome as before (107 importing, six refusals by their
   texts, `leaf_post`'s post on its fillet's cylinder across an arc still the
   body's tangency).
+* **S9e.4b.4d.2a evidence (turned profiles at corners), before its kernel
+  code.** Five bodies OCCT wrote by the oracle's `revolve` row
+  (`generate_turned_profiles_boolean_fixtures.py`, `profile_*.brep`): a
+  point of `bug28626`'s kind about `z` and about `x`, a waist, steps in, a
+  crown stepping out; every one refused as no chain before. 21 cases: a turned
+  box across the point's first corner, a rod through the waist's cone, a ball
+  across the steps' annulus, a turned box less the crown, the point along `x`
+  with S9e.4a's imported turned box, the waist less a box then with a slab,
+  and a ball resting on the waist's top disc (declared degenerate). The
+  chained reference with each body its own max-min form of its profile's
+  lines (each term as small as the form allows) and its closed form by
+  Pappus; the generator's check a CI group of its own (`turned-profiles`).
+* **Kernel (S9e.4b.4d.2a).** `tests/turned_profile_booleans.rs`: every case
+  within the reference's enclosures (the touching ball refused as a
+  tangency), histories complete over the stored ids, results deterministic
+  and moved rigidly, each body's volume its profile's by Pappus with its
+  points classified, profiles this step does not take refused as before.
+  `compare_turned_profiles_boolean.py`: 8 matches and 13 reviewed (BRepGProp's
+  default measure, the touching ball's fuse two solids, the kernel's split
+  meetings and rings against OCCT's seams).
 * **Fuzzing.** The `boolean` target (`FUZZING.md`): the split target's line
   and arc profiles, the tool offset exactly in the axis-aligned frame or
   sharing the tilted one's origin, heights equal, spanning, overlapping,
