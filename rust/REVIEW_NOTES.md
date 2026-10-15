@@ -14339,6 +14339,131 @@ Decisions for S9, recorded before its code (2026-09-28):
     by a partner's face (E6, `triple.rs`). Open: S9e.4b.4d.2c.1c (a torus
     tangent to one line and meeting the other at a corner, `OCC496b`'s first
     two), S9e.4b.4d.2c.2; the campaigns and the capture's Linux record.
+  * **S9e.4b.4d.2c.1a's consistency fixed (2026-10-15, branch
+    `fix-occ485a-consistency` from `ba6186d5`, S9e.4b.4d.2c.1b merged
+    into it before its checks).** The survey's two defects
+    (above) have one cause, and every result was wrong, not one. *The
+    model, exactly*: `OCC485a`'s model profile (the meridian the kernel
+    reads: a bottom plane, the cylinder of radius 24.39999, the chamfer,
+    the step's plane at 37.30002, the fillet of 1/2, the shaft of 9.39999,
+    the round of 3, the top) by Pappus at 30 digits: 67,672.80342603329.
+    The kernel's import gave 67,672.817487 (0.0141 over) and its common
+    with a box holding it 67,672.817766 (0.0143 over: the survey's "model"
+    was this). Commons with slabs across the axis located the excess
+    against the same profile's slabs: 0.0120 in the chamfer's slab, 1.0e-3
+    to 8.9e-5 in the fillet's and the round's, none (2e-10) in the plain
+    cylinders'. *Cause*: an imported piece's Boolean results keep the
+    stored surfaces of the faces they hold (`given.rs`'s `MFace::stored`)
+    and the stored curves of the edges they keep, beside the model's new
+    edges; S9e.4b.4d.2b re-stored the flats and their rims as the model's,
+    and every other face and ring kept OCCT's geometry, off the model
+    within the resolution: every surface on the axis tilted by 1.08e-8 rad
+    (up to 5e-7 off the model's axis, which the snap takes along the
+    world's `z`), the ring between the cylinder and the chamfer at radius
+    24.40000118 and height 34.2313845 where the model's corner is 24.3999939
+    and 34.2313918 (1.0e-5 off), the tori 7.5e-6 and 3.8e-6 off their
+    snaps. The results (and the import itself) held faces bounded by edges
+    off their surfaces by up to 1e-5, whose certified mass integration
+    (the divergence theorem over the faces as stored, exact for that
+    B-rep) measures no set: each result off the model by an amount
+    depending on the faces and edges it kept, so they disagreed with one
+    another: the body less the rib 67,639.503414 for the model's
+    67,639.507473 (0.0041 short), the rib less the body 49.101129 for
+    49.101176 (4.7e-5), the common 33.2959532 for 33.2959530 (2.7e-7
+    over), the fuses 67,721.903099 and 67,721.902944 for 67,721.904602,
+    the rib less the body's centre at `y = -9.7e-7`; and where the
+    result's resolution was the partner's (1e-7, the box first) the
+    validator refused it (`pcurve_off_edge`, `vertex_off_curve`). *Fix*
+    (`solid/imported/turned.rs`'s `modelled`, generalizing `flattened`;
+    `imported.rs`'s `imported_turned`): every turned body (S9e.4b.4d.2a's
+    corners, 2b's flats, 2c.1a's fillets and rounds) is stored as its
+    model before its lattice is built and matched: each face on its model's
+    surface on the axis frame (a plane at its height, its sense the
+    material's side, its outer loop first; a cylinder at its line's radius;
+    a cone through its line at its stored frame's height; a torus its
+    snapped tube; each turned over where its stored frame points down the
+    axis), each edge its model's circle at its node, a vertex on a ring at
+    its curve's start, a vertex loop at its model's point on the axis,
+    every pcurve again (a plane's arc, a curved face's line at the circle's
+    parameters on its stored sheet); ids, kinds, loops and senses kept. A
+    body whose faces or pcurves are none of these is no turned body
+    (`None`, the refusal before it). No engine change. *After* (`OCC485a`
+    and `OCC485b` imported as the DRAW adapter does): the body
+    67,672.803426033 (enclosure `[..33133, ..33483]`, the Pappus value
+    inside), its common with the holder the same; the rib 82.397128932578,
+    the rib less the body 49.101175964850 and the common 33.295952967728
+    summing to it within 2e-14, the body less the rib 67,639.507473065576
+    and the common summing to the body within 1e-11, the fuse
+    67,721.904601998 in both orders (the body plus the rib less the common
+    within 2e-11), every centre's `y` enclosure holding 0; the rib less
+    the body and the common within 8e-11 of an independent integral over
+    the model profile (each height's rectangle inside its radius, mpmath at
+    30 digits). The boxes:
+    `box h 20 -1 10 10 2 5; bcommon r h s2` 43.931615716846 (native
+    43.9316), the box along `y` the same, boxes across the fillet and the
+    round consistent in their six Booleans. *Tests*
+    (`tests/turned_consistency_booleans.rs`, two;
+    `tools/generate_turned_consistency_fixtures.py`, its check a step of
+    CI's `turned-fillets` group, 15 to 40 s, identical under Python 3.9
+    and 3.12): a body OCCT writes by the oracle's `revolve` and `tolerance`
+    rows (`imported/consistency_ribbed.brep`, resolution 3e-3, `OCC485a`'s
+    form: a near-flat bottom and step, a chamfer, a fillet beside the step
+    moved 2^-17 by the snap, a round refitted by 2^-18, the axis tilted by
+    2^-27 rad), against a rib through its step, fillet, shaft and the
+    round's heights (its side planes across the fillet's tangent circles)
+    and seven boxes (across the base cylinder along `x` and `y`, the
+    chamfer, the fillet, the shaft, the round, the round off `y = 0`):
+    every partner's six Booleans (the common and the fuse both ways, both
+    cuts) valid at their own resolution, each enclosure at most 1e-9 wide,
+    `cut + common` each input and `fuse` both less the common within
+    1e-12 of the larger input, the `y` moment zero where both are
+    symmetric, the common the reference's (the model's integral at 40
+    digits, every kink a breakpoint; the integrator checked against Pappus
+    within 1e-25) within 1e-9, the body's volume its Pappus value within
+    1e-9; and 18 other turned fixtures (`turned_fillet`, `turned_pin`,
+    `turned_step`, the `fillet_`, `flat_`, `profile_`, `tilted_` and
+    S9e.4b.4d.2c.1b's `cone_fillet_` bodies) against a box across each,
+    consistent the same way. Before the
+    fix the body's volume was 1.6e-3 under its model and every partner's
+    common with the partner first failed the validator; `fillet_refit` and
+    `tilted_waist` failed it too. 9.5 s in release, 9.2 s at opt-level 2
+    with debug assertions, 10.6 s under the emulated glibc `hypot` with
+    debug assertions and overflow checks (the seven turned suites there,
+    S9e.4b.4d.2c.1b's among them, all passing).
+    A rib whose side planes cross the round's tangent circle (its top at
+    42 over the shaft's end at 41) fails "an open Boolean of arcs in any
+    position" in all six operations before and after the fix: a partner
+    across a smooth edge, S9e.4b.4d.2c.2's, left open. *Reach*: the
+    imported fixtures' outcomes as before (`turned_body_imports.rs`); the
+    turned comparisons with their counts (`compare_turned_profiles` 8 /
+    13, `flats` 1 / 11, `tilted` 2 / 7, `fillets` 7 / 8, `cone_fillets`
+    7 / 8), every case within the reference. *DRAW trial* (`bug476_1` to `_8`, `bug485`,
+    `bug497_3`, `bug28626_1`, both backends, 120 s a case): every status
+    as the survey's (the eight `failed` at `checknbshapes` alone, every
+    `checkprops` holding; `bug485` refused by the Boolean as "a cone's
+    apex on the other input's surface"); the volumes (`vprops`, natively
+    with `-full`): the fuse 67,721.904602 against native 67,721.928979,
+    the rib less the body 49.1011760 against 49.1010843, the body less the
+    rib 67,639.507473 against 67,639.531418, the common 33.2959530 against
+    33.2960448 (3.5e-7 to 2.8e-6 relative, within the model's distance from
+    the stored body: the flattened bottom alone 0.019); the Rust adapter's
+    eight now consistent (the rib's cut and common to 1.4e-14, the body's
+    to the model's 67,672.803426, the fuse's identity to 1.5e-11, both
+    orders equal), where native's own fuse misses its identity by 4.3e-4.
+    *Verification* at the branch's head: fmt, clippy with `-D warnings`,
+    `cargo +1.85 check`, the release tests (786), all 51 comparisons with
+    their documented counts and no failure, the debug-assertion replays of
+    the boolean corpus and regressions (1,482) and the split's (3,571),
+    none failing and none past 30 s, the Python unit tests (464, 3 skipped), the
+    ledger holding.
+    The DRAW trial's values the same with S9e.4b.4d.2c.1b merged.
+    *Interfaces*: `turned::flattened` is gone (`modelled` takes its place
+    for every turned body), `Meridian` loses `flats`, and the three turned
+    import paths share `Solid::imported_turned`; a new kind of turned face
+    needs its arm in `modelled`, else the import refuses the body
+    (S9e.4b.4d.2c.1b's torus beside a cone is a torus's and a cone's
+    arm already, its cone's exact line rounded once into the stored
+    cone).
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces
