@@ -417,7 +417,13 @@ fn arranged(
     if let Some(tree) = &piece.tree {
         // S9e.4b.4b.1: every primitive of a body of several.
         let prims: Vec<&Solid> = std::iter::once(&**p).chain(&piece.others).collect();
-        return of_tree(&prims, tree, tolerance, first, stored);
+        // S9e.4b.4d.2c.1a: a turned body's tree with fillets or rounds, whose
+        // tori touch its lattice's faces along their pieces' edges.
+        let touch = piece.choice == crate::solid::imported::TURNED
+            && prims
+                .iter()
+                .any(|s| matches!(s.construction, Construction::Torus { .. }));
+        return of_tree(&prims, tree, tolerance, first, stored, touch);
     }
     let (centre, half) = cube(p);
     let hull = hull_model(
@@ -535,7 +541,25 @@ struct Tree<'a> {
     /// other data's (`INNER`'s keys).
     texts: Vec<String>,
     context: String,
+    /// S9e.4b.4d.2c.1a: a turned body's tree (`graph::arrange_touching`).
+    touch: bool,
 }
+
+/// S9e.4b.4d.2c.1a: a turned body's primitives' seams past the tried ones.
+const TURNED_SEAMS: [(i64, i64); 12] = [
+    (13, 29),
+    (17, 31),
+    (19, 37),
+    (23, 41),
+    (29, 43),
+    (31, 47),
+    (37, 53),
+    (41, 59),
+    (43, 61),
+    (47, 67),
+    (53, 71),
+    (59, 73),
+];
 
 /// Inner Booleans' given models kept (`INNER`).
 const INNER_KEPT: usize = 16;
@@ -651,7 +675,7 @@ impl Tree<'_> {
     ) -> Result<(Arr, Vec<(Component, Made)>)> {
         let ma = self.node(a, Operand::A, count)?;
         let mb = self.node(b, Operand::B, count)?;
-        let mut arr = arrange_shared([ma, mb])?;
+        let mut arr = super::graph::arrange_touching([ma, mb], self.touch)?;
         arr.split_at(self.stored, self.p.resolution().linear())?;
         arr.for_op(op);
         let out = assemble_made(&arr, op)?;
@@ -707,6 +731,7 @@ fn of_tree(
     tolerance: crate::Tolerance,
     first: Option<&R>,
     stored: &[[f64; 3]],
+    touch: bool,
 ) -> Result<(Arr, Vec<(Component, Made)>)> {
     let PieceTree::Op(op, a, b) = tree else {
         return Err(crate::solid::imported::not_its_primitive());
@@ -720,18 +745,28 @@ fn of_tree(
         .collect();
     let p = prims[0];
     let cube = tree_cube(p, stored);
+    // S9e.4b.4d.2c.1a: a turned body's every primitive's seam apart from
+    // every other's (coaxial, each one's seams through the others' rims
+    // otherwise): past the tried seams, further ones.
+    let extra: Vec<R> = TURNED_SEAMS.iter().map(|&s| r(s)).collect();
     for k in 0..tried.len() {
         // Each primitive's seam apart from the others' (one surface's seams
         // on one line otherwise; S9e.4b.4b.1).
         let seams: Vec<&R> = (0..prims.len())
-            .map(|i| &tried[(k + i) % tried.len()])
+            .map(|i| {
+                if touch && i >= tried.len() {
+                    &extra[(k + i - tried.len()) % extra.len()]
+                } else {
+                    &tried[(k + i) % tried.len()]
+                }
+            })
             .collect();
         let texts = prims
             .iter()
             .zip(&seams)
             .map(|(x, seam)| format!("{x:?}\n{seam:?}"))
             .collect::<Vec<_>>();
-        let context = format!("{}\n{cube:?}\n{stored:?}\n{tolerance:?}", texts[0]);
+        let context = format!("{}\n{cube:?}\n{stored:?}\n{tolerance:?}\n{touch}", texts[0]);
         let ctx = Tree {
             p,
             prims,
@@ -741,6 +776,7 @@ fn of_tree(
             tolerance,
             texts,
             context,
+            touch,
         };
         match ctx.boolean(*op, a, b, &mut 0) {
             Err(Error::Degenerate(_)) if first.is_some() && k == 0 => continue,

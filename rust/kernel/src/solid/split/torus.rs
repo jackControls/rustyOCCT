@@ -238,6 +238,7 @@ impl Solid {
             high,
             angle,
             tolerance,
+            ..
         } = self.construction
         else {
             return Ok(None);

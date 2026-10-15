@@ -70,8 +70,9 @@ enum Construction {
         /// S9e.4b.4d.2a: a turned body's cone on its axis frame, its bottom
         /// at that height on it exactly (its frame the axis frame at that
         /// point rounded once): its exact model on the axis, coaxial with
-        /// the body's other primitives.
-        axis: Option<(Frame3, f64)>,
+        /// the body's other primitives; S9e.4b.4d.2c.1a: its top at the
+        /// second height exactly (a fillet's plane its cap).
+        axis: Option<(Frame3, f64, f64)>,
     },
     /// The latitudes of its ends; `start` and `end` are their heights.
     Sphere {
@@ -89,6 +90,11 @@ enum Construction {
         high: f64,
         angle: f64,
         tolerance: Tolerance,
+        /// S9e.4b.4d.2c.1a: a turned body's whole torus on its axis frame, its
+        /// centre at that height on it exactly (its frame the axis frame at
+        /// that point rounded once): its exact model on the axis, coaxial
+        /// with the body's other primitives.
+        axis: Option<(Frame3, f64)>,
     },
     /// A piece of a prism split by a plane oblique to its axis (S8a.2).
     Clipped(Box<split::Clipped>),
@@ -302,21 +308,42 @@ impl Solid {
     }
 
     /// S9e.4b.4d.2a: a cone or frustum on an axis frame from height `lo`
-    /// on it: [`Solid::build_cone`] on the axis frame at that point rounded
-    /// once, its exact model at that height on the axis frame exactly.
+    /// to `hi` on it: [`Solid::build_cone`] on the axis frame at that point
+    /// rounded once, its height `hi - lo` rounded once, its exact model
+    /// between those heights on the axis frame exactly.
     pub(crate) fn build_cone_on(
         operation: OperationId,
         axis: Frame3,
-        lo: f64,
+        [lo, hi]: [f64; 2],
         bottom: f64,
         top: f64,
-        height: f64,
         tolerance: Tolerance,
     ) -> Result<Self> {
         let base = axis.at(axis.point(Point2::default(), lo));
-        let mut s = Self::build_cone(operation, base, bottom, top, height, tolerance)?;
+        let mut s = Self::build_cone(operation, base, bottom, top, hi - lo, tolerance)?;
         if let Construction::Cone { axis: on, .. } = &mut s.construction {
-            *on = Some((axis, lo));
+            *on = Some((axis, lo, hi));
+        }
+        Ok(s)
+    }
+
+    /// S9e.4b.4d.2c.1a: a whole torus on an axis frame about its point at
+    /// height `centre`: [`Solid::build_torus`] on the axis frame at that point
+    /// rounded once, its exact model at that height on the axis frame
+    /// exactly.
+    pub(crate) fn build_torus_on(
+        operation: OperationId,
+        axis: Frame3,
+        centre: f64,
+        major: f64,
+        minor: f64,
+        tolerance: Tolerance,
+    ) -> Result<Self> {
+        let base = axis.at(axis.point(Point2::default(), centre));
+        let turn = std::f64::consts::TAU;
+        let mut s = Self::build_torus(operation, base, major, minor, 0.0, turn, turn, tolerance)?;
+        if let Construction::Torus { axis: on, .. } = &mut s.construction {
+            *on = Some((axis, centre));
         }
         Ok(s)
     }
@@ -346,6 +373,7 @@ impl Solid {
                 high,
                 angle,
                 tolerance,
+                ..
             } => Self::build_torus(
                 operation, frame, *major, *minor, *low, *high, *angle, *tolerance,
             ),
@@ -425,6 +453,7 @@ impl Solid {
                 high,
                 angle,
                 tolerance,
+                axis: None,
             },
             frame,
             start,

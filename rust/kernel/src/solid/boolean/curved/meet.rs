@@ -203,6 +203,12 @@ pub(super) enum CylPair {
     },
     /// One surface.
     Same,
+    /// S9e.4b.4d.2c.1a: a whole torus and a surface coaxial with it that
+    /// touches it along circles (double roots of their meeting) besides its
+    /// transversal pieces: `graph.rs` refuses the tangency it is unless each
+    /// circle is an edge of one input lying on the other's face in a turned
+    /// body's own tree.
+    Touching(Box<super::spheres::Mixed>, Vec<super::torus::TouchRing>),
 }
 
 /// Two cylinders' relation: `x` a cylinder of `px`, `y` one of `py`;
@@ -552,7 +558,9 @@ pub(super) fn section(
         // S9d.4a: a plane's section of a torus, by the pair's relation.
         (Surf::Plane { .. }, Surf::Torus) | (Surf::Torus, Surf::Plane { .. }) => {
             match pair.expect("a plane and a torus's relation") {
-                CylPair::Mixed(x) => Ok(Section::Curves(x.pieces.clone())),
+                CylPair::Mixed(x) | CylPair::Touching(x, _) => {
+                    Ok(Section::Curves(x.pieces.clone()))
+                }
                 _ => Ok(Section::Curves(Vec::new())),
             }
         }
@@ -560,7 +568,9 @@ pub(super) fn section(
         // torus, by the pair's relation.
         (Surf::Torus, _) | (_, Surf::Torus) => {
             match pair.expect("a torus and a quadric's relation") {
-                CylPair::Mixed(x) => Ok(Section::Curves(x.pieces.clone())),
+                CylPair::Mixed(x) | CylPair::Touching(x, _) => {
+                    Ok(Section::Curves(x.pieces.clone()))
+                }
                 _ => Ok(Section::Curves(Vec::new())),
             }
         }
@@ -603,7 +613,10 @@ pub(super) fn section(
                 CylPair::Mixed(x) => Ok(Section::Curves(x.pieces.clone())),
                 CylPair::Same => Ok(Section::Same),
                 CylPair::Apart => Ok(Section::Curves(Vec::new())),
-                CylPair::Parallel { .. } | CylPair::Crossing(_) | CylPair::Lines(..) => {
+                CylPair::Parallel { .. }
+                | CylPair::Crossing(_)
+                | CylPair::Lines(..)
+                | CylPair::Touching(..) => {
                     unreachable!("two cylinders' relations")
                 }
             }
@@ -661,7 +674,7 @@ pub(super) fn section(
         )),
         (Surf::Cyl { c, r, .. }, Surf::Cyl { .. }) => {
             match pair.expect("a cylinder pair's relation") {
-                CylPair::Mixed(_) | CylPair::Plane { .. } => {
+                CylPair::Mixed(_) | CylPair::Touching(..) | CylPair::Plane { .. } => {
                     unreachable!("a cylinder and a sphere's or two cones'")
                 }
                 CylPair::Apart => Ok(Section::Curves(Vec::new())),
@@ -908,6 +921,14 @@ pub(super) fn edge_surface(
         // S9e.3b: a given result's meeting of two curved faces met by
         // another face, or a cone's or a torus's general section met by a
         // curved face: three surfaces, two or three of them curved.
+        // S9e.4b.4d.2c.1a: a coaxial ring of a torus's meeting as the circle
+        // of the torus it is.
+        (Crv::Toric(c), _) if c.coaxial && !c.over_v => {
+            match super::torus_parts::ring_meet(c, py, fy) {
+                Some(found) => found,
+                None => super::triple::meet(curve, py, fy, clip),
+            }
+        }
         (Crv::Meet(_) | Crv::Rise(_) | Crv::Cone(_) | Crv::Toric(_) | Crv::Torus(_), _) => {
             super::triple::meet(curve, py, fy, clip)
         }
@@ -1002,7 +1023,7 @@ pub(super) fn edge_surface(
                 unreachable!("matched above")
             };
             match pair.expect("a cylinder pair's relation") {
-                CylPair::Mixed(_) | CylPair::Plane { .. } => {
+                CylPair::Mixed(_) | CylPair::Touching(..) | CylPair::Plane { .. } => {
                     unreachable!("a cylinder and a sphere's or two cones'")
                 }
                 CylPair::Apart => Ok(EdgeMeet::None),

@@ -13884,6 +13884,188 @@ Decisions for S9, recorded before its code (2026-09-28):
     centroid's turn); for 2c.2 partners across the smooth edges. *Not done in
     this task*: both parts are left for their own steps; nothing of 2c is
     built.
+  * **S9e.4b.4d.2c.1 refined, before its code (2026-10-15).** "S9e.4b.4d.2c
+    refined"'s first part (the bodies alone, partners across no smooth edge),
+    amended where a draft of it (not committed, on `61162084`; each file
+    imported in a process of its own) shows the decisions short, and split
+    again. *What the draft measured.* `turned_round_off` is no turned body by
+    the decisions' own rule: its round is snapped tangent to the shaft and the
+    top within 2.5e-9 (the tube's crossing of the shaft, which the decisions
+    quoted), but its stored edge with the shaft lies at height 8 and the
+    snapped tube touches the shaft at 8.0001: 1e-4 off, a thousand times its
+    resolution of 1e-7 (the faces' normals 5e-5 rad apart there), so it keeps
+    S9e.4b.4d.1's refusal by name. `OCC496b`'s third torus touches a cone (the
+    slope's snap to a Pythagorean direction, the piece bounded by cones): with
+    its kin it is the second part below. `OCC485a`'s fillet and round join a
+    plane and a cylinder each (its step S9e.4b.4d.2b's flat): the draft
+    imports it (volume 67,672.82 and area 9,291.875 of its model, OCCT's
+    67,672.8 and 9,291.88), its fillet's torus moved 7.5e-6 and its round's
+    3.76e-6 by the snap; its DRAW cases' Booleans with the rib cross its
+    smooth edges (2c.2's). So **S9e.4b.4d.2c.1a**: fillets and rounds between
+    a plane and a cylinder (`turned_fillet`, `OCC485a`'s import);
+    **S9e.4b.4d.2c.1b**: a fillet or a round beside a cone (`OCC496b`), left
+    for its own step. *Amendments for 2c.1a* (the draft's). (1) *The pieces*:
+    the kite less the tube would make a tangency inside the piece's own
+    Boolean (the tube touching the kite's tangent sides along the kite's
+    edges, an edge of one input on the other's face) and faces on one surface
+    with an edge of both in the lattice's Boolean with it (the kite's tangent
+    sides on the lattice's faces, its corner the lattice's edge). Instead each
+    piece is a box, an annular prism on the axis frame from the tube's centre
+    past the sharp corner by half the tube (into the lattice for a fillet, out
+    of it for a round; halved up to four times while another segment of the
+    sharp profile, another box, a node's height or a lattice part's end would
+    meet it), less the whole torus: its own Boolean meets the tube
+    transversally (the box's sides through the centre cross it normally at the
+    tangent points), and the tangency arises only in the lattice's Boolean
+    with the piece, where the piece's edge at a tangent point (the tube
+    against the box's side through that point) lies on the lattice's plane or
+    cylinder the tube touches along that circle. The body is the lattice fused
+    with the fillets' pieces, less the rounds'. (2) *The snap's numbers*: the
+    plane's height, the cylinder's radius and the tube's radius beside a torus
+    on the multiples of 2^-40 of the body's size (its power of two above it),
+    so that the centre, the tangent points and the box are binary64 numbers
+    exactly (the primitives' own data), each moved by less than 1e-11 of the
+    size; and a frustum's exact model on the axis frame reaches its top height
+    exactly (`Construction::Cone`'s axis holding both heights: its top at the
+    rounded difference left `OCC485a`'s step 1.8e-15 off the plane the fillet
+    touches). (3) *The engine*: (E1) as decided, each double root kept as the
+    circle the surfaces touch along (`CylPair::Touching`: a plane normal to a
+    whole torus's axis at its tube's top or bottom, a coaxial quadric's double
+    root at a rational angle), refused at once with today's text outside a
+    turned body's own tree; (E2) inside it, each circle touching inside both
+    faces must be an edge of the torus's input lying on the other's face
+    (`graph.rs`'s edges on a touching circle): that edge splits the face it
+    lies on, its parts inside it both ways as a face on one surface holds the
+    other's edges, its vertices that face's, the sections along it dropped, a
+    ruling's or a meridian's double root on the circle the crossing of two
+    edges on the face, and each piece classified at an edge off every touching
+    circle where it has one (a push along a face tangent to the other input's
+    decides no side); else the tangency as before. No tangent section is
+    built, so no fins need ordering by curvature, and (E3) the assembly is
+    unchanged: the smooth edge is the piece's edge, between the lattice's face
+    and the torus. (E4) as decided, `smooth_torus`'s refusal tried as a turned
+    body first, a flat's rim on a torus given its pcurve again; a turned
+    body's primitives' seams all apart (coaxial, one's seams through another's
+    rims otherwise). (4) *A flat beside a fillet* stays S9e.4b.4d.2b's plane
+    through its wider rim (not the decisions' narrower one): the fillet
+    touches that plane, `OCC485a`'s stored edge 7.5e-6 off the tangency
+    circle, within its resolution of 3e-3. Every other decision as recorded;
+    no new text. *Evidence* for 2c.1a, before its code: bodies OCCT writes by
+    the oracle's `revolve` row with arcs (a fillet under a step in and a round
+    at a top, `turned_fillet`'s kind; a round at a bottom, a fillet under a
+    step out and a round on a collar; a round refitted by 2^-20 at a
+    resolution of 1e-3, `OCC485a`'s kind), cases against a rod across a round
+    alone, a ball in a fillet alone, a box across a corner, and a ball
+    touching a round declared degenerate; the chained reference over each
+    model profile's lattice with its pieces, its closed form by Pappus; a unit
+    test, a CI group, and a capture keyed on the import's refusal of such
+    bodies by name. *Amended from the code, before it (2026-10-15).* (5) *A
+    piece's rings met by a later face*: a piece's edges where the tube meets
+    its box's sides through the centre (circles of the torus at a quarter
+    turn of its tube, `(cos v, sin v)` one of `(+-1, 0)` and `(0, +-1)`) are
+    met by a third face of a later Boolean (a partner's plane or quadric, the
+    lattice's) as three surfaces (S9e.3b's triple), which on a turned frame
+    (the moved inputs of the tests, a body OCCT revolves about a turned axis)
+    refuses them, the frame's rationals past its domain. Instead such a ring
+    is met as the torus's circle at that rational angle
+    (`torus_parts.rs`'s `ring_meet`: S9d.4b's rim against a fixed angle, a
+    plane's equation along it a trigonometric one), a plane tangent to the
+    circle at a point outside the other's face meeting nothing, inside it
+    the tangency as before; every other curve of a torus as before. (6) *The
+    reference* (the evidence `d19d32a9` as built): the chained reference
+    takes each body as one input, its own planes, cylinders and torus bands
+    with its membership by the profile with arcs (`TurnedInput`), and checks
+    the kernel's construction (lattice, boxes, tori) against it at points of
+    the meridian; sweeping the construction itself passed CI's hour.
+  * **S9e.4b.4d.2c.1a implemented** (`solid/imported/turned.rs`'s arcs,
+    `curved/touch.rs`, `curved/graph.rs`'s touching circles,
+    `curved/torus_parts.rs`'s `ring_meet`; refined `438ffa75`, evidence
+    `d19d32a9`, capture `1d22a0db`, amended `813cb4c7`, kernel `ad9eae7b`).
+    *Kernel* as decided and amended. The import: where `smooth_torus` names a
+    body, `turned_piece` is tried first (else the refusal by name as before);
+    the meridian reads each torus face as an arc (its stored centre, tube and
+    side: a fillet's material outside the tube, a round's inside), snaps it
+    tangent to its plane and cylinder (their numbers on the multiples of
+    `2^-40` of the body's size, the centre where the lines offset by the tube
+    meet within the resolution of its stored one, the tangent points the
+    centre's feet within the resolution of the stored circles), and builds the
+    sharp profile's lattice (`Meridian::sharp`: each arc its lines' corner)
+    fused with each fillet's piece and less each round's, a piece the annular
+    box from the centre past the corner (`corner_boxes`, halved up to four
+    times until clear) less the whole torus on the axis frame
+    (`Solid::build_torus_on`); a frustum's model reaching its top height
+    exactly (`Construction::Cone`'s axis with both heights); a turned body's
+    primitives' seams apart (`pieces.rs`'s `TURNED_SEAMS`); a flat's rim on a
+    torus given its pcurve again. The engine: a whole torus and a plane normal
+    to its axis at its tube's top or bottom, or a coaxial quadric at a double
+    root of their meeting at a rational angle, keep that circle
+    (`CylPair::Touching`, `torus.rs`'s `TouchRing`; `torus_curved.rs`'s
+    repeated roots), refused at once with the tangency's text outside a turned
+    body's own tree (`arrange_touching`, `touch` only there and only with a
+    torus among its primitives); inside it each touching circle inside both
+    faces must be an edge of the torus's input lying on the other's face
+    (sampled at 16 rational points), which then splits that face, its vertices
+    that face's, the sections along it dropped, a ruling's or a meridian's
+    double root on it a crossing of two edges (`touch.rs`'s `edge_touching`),
+    each piece classified at an edge off every touching circle; a piece's
+    rings at a quarter turn of its tube met by a later face as the torus's
+    circle (`ring_meet`, amendment (5)). No tangent section is built and the
+    assembly is unchanged. *Tests* (`tests/turned_fillet_booleans.rs`, six):
+    every case within the reference's enclosures, at most 1e-9 wide, the
+    touching ball refused as a tangency; histories complete over the stored
+    ids; results deterministic and moved rigidly; the inputs moved by a dyadic
+    shift and by a turn keeping the reference's volumes (the ball's cases
+    evaluating turned, the boxes and the rod parallel or normal to the axis in
+    the construction refused as within rounding of it, S9's rule); each body
+    its model profile by Pappus (volume and common with a holder within 1e-9,
+    points inside and outside at heights across its tori, its stored vertices
+    on its boundary), alike turned; `turned_round_off` refused by name.
+    `turned_body_imports.rs`: `turned_fillet` imports with its profile's
+    volume (`pi 550` with its fillet's corner region and less its round's,
+    within 1e-9), `turned_round_off` keeps its refusal by name. 8.1 s in
+    release, 8.9 s at opt-level 2 with debug assertions, 9.0 s under the
+    emulated glibc `hypot` with debug assertions and overflow checks
+    (`turned_body_imports.rs` 2.7 s and 21.6 s there, every turned test
+    passing). `compare_turned_fillets_boolean.py`: 7 matches and 8 reviewed
+    (the capture's 4 and the kernel's entity counts of 4 more: its meetings of
+    the rod and the ball with the tori cut at their turning points, OCCT's at
+    its seams; OCCT's collar's and refit's cylinder's seam through the box),
+    the kernel within the reference on all 12 solid cases and the 3 degenerate
+    refused. *Reach after the change* (each file in a process of its own, 120
+    s a file, against `61162084`): the DRAW case list's 842 dataset texts:
+    only `OCC485a` moves (refused as a near-flat cone before, now 67,672.817
+    and 9,291.875, its model's); the 133 imported fixtures: only
+    `turned_fillet` and the evidence's three bodies; the fuzz targets' 5,775
+    boolean and 3,104 split written results: none moving. *DRAW trial*: the 41
+    cases on both backends against `61162084`'s run: `OCC485a`'s eight
+    `bug476` Booleans with its rib `OCC485b` (fuse, cut, the reversed cut and
+    common, each both ways) now evaluate on the Rust adapter, their
+    `checkprops` areas holding and only `checknbshapes` failing (the kernel's
+    cell model: no seams, its rings whole; native DRAW's counts the case's);
+    the volume audit (`vprops` and `sprops` before each `checkprops`, both
+    backends): every volume, area and centre native DRAW's to its printed
+    digits (the fuse 67,721.9 and 9,333.96, the rib less the body 49.1011 and
+    99.5159, the body less the rib 67,639.5 and 9,340.03, the common 33.296
+    and 105.587); not registered. `bug485` (the body fused with itself) is
+    refused by the Boolean (`Degenerate("a cone's apex on the other input's
+    surface")`) instead of the import; every other status and reason the same.
+    The rib's side planes and top cross the fillet's and the round's smooth
+    edges (the planes `y = +-1` through both tangency circles, its top at 43.2
+    across the round's at 43.1): "S9e.4b.4d.2c refined" counted these as
+    2c.2's, but each crossing is transversal on both faces, the vertex on the
+    ring ordered exactly (`next_on_kept` refusing curves tangent there, as
+    before), so they evaluate already; 2c.2 keeps its evidence (partners
+    across smooth edges against the reference) and any tangency there.
+    *Verification* at `ad9eae7b`: fmt, clippy with `-D warnings`, `cargo +1.85
+    check`, the release tests (777, 492 s at load 4 to 8), all 50 comparisons
+    with their documented counts and no failure, the debug-assertion replays
+    of the boolean corpus and regressions (1,482, the slowest 4.4 s) and the
+    split's (3,571, 1.6 s), natively and under the emulated `hypot` with
+    overflow checks (38 s and 41 s the slowest there, at load 6 to 9), none
+    failing; the boolean corpus's instructions with debug assertions 9.173 T
+    against `61162084`'s 9.174 T (0.01 % fewer); the Python unit tests (455, 3
+    skipped); the ledger holding. Open: S9e.4b.4d.2c.1b (beside a cone:
+    `OCC496b`), S9e.4b.4d.2c.2; the campaigns and the capture's Linux record.
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces

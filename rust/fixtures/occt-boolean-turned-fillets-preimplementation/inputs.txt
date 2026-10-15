@@ -1,0 +1,93 @@
+case step_rod_fuse
+brep imported/fillet_step.brep
+boolean fuse
+plane -10.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0 0.0
+wire C -10.0 0.5 7.625 0.25
+prism 20.0 0.0 0.0
+end
+case step_rod_cut
+brep imported/fillet_step.brep
+boolean cut
+plane -10.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0 0.0
+wire C -10.0 0.5 7.625 0.25
+prism 20.0 0.0 0.0
+end
+case step_rod_common
+brep imported/fillet_step.brep
+boolean common
+plane -10.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0 0.0
+wire C -10.0 0.5 7.625 0.25
+prism 20.0 0.0 0.0
+end
+case collar_box_fuse
+brep imported/fillet_collar.brep
+boolean fuse
+plane 0.0 -0.6 4.2 0.0 0.6 0.8 1.0 -0.0 0.0
+wire P 4 5.0 -1.4 4.8 7.5 -1.4 4.8 7.5 0.20000000000000007 3.6000000000000005 5.0 0.20000000000000007 3.6000000000000005
+prism 0.0 1.2 1.6
+end
+case collar_box_cut
+brep imported/fillet_collar.brep
+boolean cut
+plane 0.0 -0.6 4.2 0.0 0.6 0.8 1.0 -0.0 0.0
+wire P 4 5.0 -1.4 4.8 7.5 -1.4 4.8 7.5 0.20000000000000007 3.6000000000000005 5.0 0.20000000000000007 3.6000000000000005
+prism 0.0 1.2 1.6
+end
+case collar_box_common
+brep imported/fillet_collar.brep
+boolean common
+plane 0.0 -0.6 4.2 0.0 0.6 0.8 1.0 -0.0 0.0
+wire P 4 5.0 -1.4 4.8 7.5 -1.4 4.8 7.5 0.20000000000000007 3.6000000000000005 5.0 0.20000000000000007 3.6000000000000005
+prism 0.0 1.2 1.6
+end
+case refit_box_fuse
+brep imported/fillet_refit.brep
+boolean fuse
+plane 0.0 -0.6 -0.8 0.0 0.6 0.8 1.0 -0.0 0.0
+wire P 4 6.5 -1.4 -0.20000000000000007 9.5 -1.4 -0.20000000000000007 9.5 0.20000000000000007 -1.4 6.5 0.20000000000000007 -1.4
+prism 0.0 1.2 1.6
+end
+case refit_box_cut
+brep imported/fillet_refit.brep
+boolean cut
+plane 0.0 -0.6 -0.8 0.0 0.6 0.8 1.0 -0.0 0.0
+wire P 4 6.5 -1.4 -0.20000000000000007 9.5 -1.4 -0.20000000000000007 9.5 0.20000000000000007 -1.4 6.5 0.20000000000000007 -1.4
+prism 0.0 1.2 1.6
+end
+case refit_box_common
+brep imported/fillet_refit.brep
+boolean common
+plane 0.0 -0.6 -0.8 0.0 0.6 0.8 1.0 -0.0 0.0
+wire P 4 6.5 -1.4 -0.20000000000000007 9.5 -1.4 -0.20000000000000007 9.5 0.20000000000000007 -1.4 6.5 0.20000000000000007 -1.4
+prism 0.0 1.2 1.6
+end
+case step_ball_fuse
+brep imported/fillet_step.brep
+boolean fuse
+sphere 4.25 0.0 3.25 0.0 0.0 1.0 1.0 0.0 0.0 0.1875 -1.5707963267948966 1.5707963267948966
+end
+case step_ball_cut
+brep imported/fillet_step.brep
+boolean cut
+sphere 4.25 0.0 3.25 0.0 0.0 1.0 1.0 0.0 0.0 0.1875 -1.5707963267948966 1.5707963267948966
+end
+case step_ball_common
+brep imported/fillet_step.brep
+boolean common
+sphere 4.25 0.0 3.25 0.0 0.0 1.0 1.0 0.0 0.0 0.1875 -1.5707963267948966 1.5707963267948966
+end
+case step_touch_fuse
+brep imported/fillet_step.brep
+boolean fuse
+sphere 3.875 0.0 8.5 0.0 0.0 1.0 1.0 0.0 0.0 0.625 -1.5707963267948966 1.5707963267948966
+end
+case step_touch_cut
+brep imported/fillet_step.brep
+boolean cut
+sphere 3.875 0.0 8.5 0.0 0.0 1.0 1.0 0.0 0.0 0.625 -1.5707963267948966 1.5707963267948966
+end
+case step_touch_common
+brep imported/fillet_step.brep
+boolean common
+sphere 3.875 0.0 8.5 0.0 0.0 1.0 1.0 0.0 0.0 0.625 -1.5707963267948966 1.5707963267948966
+end

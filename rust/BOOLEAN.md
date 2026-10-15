@@ -1612,7 +1612,20 @@ radii agree (`curved/cones.rs`'s `coaxial_plane`, the section of the cone),
 not the rulings' quartic graph whose meeting with a partner's rounded plane
 passed S9e.3b's eliminant's budget; a partner's face parallel or normal to
 the axis in the construction lies within rounding of it once turned, S9's
-`Degenerate`.
+`Degenerate`. S9e.4b.4d.2c.1a: a torus face between a plane and a cylinder
+of such a profile (a fillet or a round, `turned_fillet`, `OCC485a`) is snapped
+tangent to both (their numbers on the multiples of `2^-40` of the body's size,
+the tube's centre where the lines offset by it meet, each within the
+resolution of the stored data), and the body is the sharp profile's lattice
+fused with each fillet's piece and less each round's, a piece the annular box
+from the tube's centre past the corner less the whole torus on the axis frame
+(`turned::corner_boxes`, `Solid::build_torus_on`); in a turned body's own tree
+the circles where the tube touches the lattice's plane or cylinder are exact
+(`CylPair::Touching`), each an edge of the piece lying on the other's face
+that splits it (`curved/touch.rs`, `graph.rs`'s touching circles), and a
+piece's rings at a quarter turn of its tube met by a later face as the torus's
+circles (`torus_parts.rs`'s `ring_meet`); every other touching circle, and
+every one outside such a tree, the tangency as before.
 
 Refused: a joint of two arcs whose circles each hold other arcs of the
 path, off either (`OutOfDomain`, S9e.4b.4: neither circle can move); a
@@ -1648,8 +1661,10 @@ their neighbours smoothly (`OutOfDomain("an imported body whose torus faces
 join their neighbours smoothly (S9e.4b.4d)")`, the tangency read off the
 stored surfaces: at an edge's middle the torus's tube circle in that meridian
 within the resolution of tangent to the other face's surface; a turned
-part's fillets and rounds, `OCC496b`, `cts21199_base`, `pro14942b`; turned
-bodies' fillets are S9e.4b.4d.2c's); a
+part's fillets and rounds, `OCC496b`, `cts21199_base`, `pro14942b`, unless
+S9e.4b.4d.2c.1a's turned body takes it: `OCC496b`'s torus beside a cone is
+S9e.4b.4d.2c.1b's; `turned_round_off`, whose stored edge lies 1e-4 off the
+snapped tangency, a thousand resolutions); a
 torus's v-segment or wedge and every other body of curved faces, a torus
 among several among them (`OutOfDomain`, S9e.4b: a general body on its
 stored surfaces); spline faces or edges (S9f); S9's
@@ -2017,10 +2032,10 @@ campaign of every target the steps touch.
   and S9e.4b.4c.2b.2 (no measured body reaches them but one dataset solid
   no DRAW case imports),
   S9e.4b.4d.2c (turned bodies' fillets snapped tangent, the user's answer of
-  2026-10-14; 2a's corners, 2b's near-flat cones and the moved bodies'
-  coaxial meetings done; 2c's refined decisions split it in 2c.1, the bodies
-  with tangent coaxial rings in the engine, and 2c.2, partners across
-  smooth edges), the
+  2026-10-14; 2a's corners, 2b's near-flat cones, the moved bodies'
+  coaxial meetings and 2c.1a's fillets and rounds between planes and
+  cylinders done; open 2c.1b, beside a cone, and 2c.2, the evidence of
+  partners across smooth edges and any tangency there), the
   near-miss rules not yet written (other curves' edges, two sphere
   circles, an apex against a sphere, torus or spline face, item 5's (b)
   to (d)), and the refusals by design listed there. U9 and U10 stayed open
@@ -4492,6 +4507,33 @@ campaign of every target the steps touch.
   each body's volume its model profile's. `compare_turned_tilted_boolean.py`:
   2 matches and 7 reviewed (the pin's sags, BRepGProp's default measure of
   the ball's cases, the kernel's rings against OCCT's seams).
+* **S9e.4b.4d.2c.1a evidence (turned fillets and rounds), before its kernel
+  code.** Three bodies OCCT wrote by the oracle's `revolve` row with arcs
+  (`generate_turned_fillets_boolean_fixtures.py`, `fillet_*.brep`): a step
+  with a fillet under its step in and a round at its top, a collar with a
+  round at its bottom, a fillet under a step out and a round on the collar,
+  and the step with its round refitted by 2^-20 at a resolution of 1e-3
+  (`OCC485a`'s kind); every one refused by name before. 15 cases: a rod
+  across the step's round alone, `TILT` boxes across the collar's and the
+  refit's sharp corners, a ball across the step's fillet alone, and a ball
+  touching the step's round (declared degenerate). The chained reference
+  with each body one input of its own planes, cylinders and torus bands
+  (its membership the profile with arcs) and its closed form by Pappus; the
+  generator's check a CI group of its own (`turned-fillets`).
+* **Kernel (S9e.4b.4d.2c.1a).** `tests/turned_fillet_booleans.rs`: every
+  case within the reference's enclosures (the touching ball refused as a
+  tangency), histories complete over the stored ids, results deterministic
+  and moved rigidly, the ball's cases evaluating turned, each body its model
+  profile by Pappus with its points classified and its stored vertices on
+  its boundary; `turned_body_imports.rs`: `turned_fillet` importing with its
+  profile's volume, `turned_round_off` refused by name.
+  `compare_turned_fillets_boolean.py`: 7 matches and 8 reviewed (BRepGProp's
+  default measure of the rod's and the ball's cases, the kernel's meetings
+  with the tori cut at their turning points and OCCT's seams). `OCC485a`'s
+  eight `bug476` Booleans with its rib evaluate on the Rust adapter (the rib's
+  planes crossing the smooth edges transversally), their volumes, areas and
+  centres native DRAW's to its printed digits (not registered: their
+  `checknbshapes` counts OCCT's seams').
 * **Fuzzing.** The `boolean` target (`FUZZING.md`): the split target's line
   and arc profiles, the tool offset exactly in the axis-aligned frame or
   sharing the tilted one's origin, heights equal, spanning, overlapping,

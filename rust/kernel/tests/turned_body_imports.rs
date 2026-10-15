@@ -1,8 +1,9 @@
 //! S9e.4b.4d.1 (REVIEW_NOTES.md, "S9e.4b.4d refined"): turned bodies OCCT
 //! wrote (`tools/write_turned_bodies.py`, `fixtures/imported/turned_*.brep`)
-//! refused by name, a cylinder OCCT stores as two faces on frames apart no
-//! longer the body's tangency, and every other imported fixture's outcome as
-//! before the step (`eefb2294`).
+//! refused by name (S9e.4b.4d.2c.1a: but a fillet's and a round's body
+//! snapped within its resolution), a cylinder OCCT stores as two faces on
+//! frames apart no longer the body's tangency, and every other imported
+//! fixture's outcome as before the step (`eefb2294`).
 
 #[path = "support/boolean_protocol.rs"]
 #[allow(dead_code)]
@@ -35,16 +36,27 @@ fn refusal(name: &str) -> Error {
 }
 
 /// A turned part's fillet and round (tori tangent to the step's plane, the
-/// shaft and the top's plane) are refused by name, also where the round's
-/// tube crosses the shaft by 2.5e-9 and the faces' normals at the stored
-/// edge differ by 5e-5 rad (the tangency read off the surfaces, as
-/// `OCC485a`'s round 3.76e-6 past its shaft); a torus meeting cones at
-/// corners keeps the general refusal.
+/// shaft and the top's plane) were refused by name; S9e.4b.4d.2c.1a: such a
+/// body imports, its tori snapped tangent to their lines (its volume its
+/// profile's by Pappus: its sharp profile's `pi (400 + 150)` with its
+/// fillet's corner region and less its round's), while one whose round's
+/// stored edge with the shaft lies 1e-4 off the snapped tangency (its tube
+/// crossing the shaft by 2.5e-9, the faces' normals at that edge 5e-5 rad
+/// apart: a thousand times its resolution of 1e-7) stays refused by name; a
+/// torus meeting cones at corners keeps the general refusal.
 #[test]
 fn turned_fillets_and_rounds_are_refused_by_name() {
-    for name in ["turned_fillet", "turned_round_off"] {
-        assert_eq!(refusal(name), Error::OutOfDomain(SMOOTH), "{name}");
-    }
+    let fillet = body("turned_fillet").unwrap_or_else(|e| panic!("turned_fillet: {e}"));
+    let pi = std::f64::consts::PI;
+    // A corner region's `int r dA`: the square of side `t` from the centre
+    // `cr` toward the corner (`sr` its side) less the quarter disc.
+    let corner = |cr: f64, t: f64, sr: f64| {
+        t * t * (cr + sr * t / 2.0) - (cr * pi * t * t / 4.0 + sr * t * t * t / 3.0)
+    };
+    let want = pi * 550.0 + 2.0 * pi * (corner(5.5, 0.5, -1.0) - corner(3.0, 2.0, 1.0));
+    let v = fillet.mass_properties().volume;
+    assert!((v - want).abs() <= 1e-9 * want, "{v} for {want}");
+    assert_eq!(refusal("turned_round_off"), Error::OutOfDomain(SMOOTH));
     assert_eq!(refusal("turned_corner"), Error::OutOfDomain(GENERAL));
 }
 

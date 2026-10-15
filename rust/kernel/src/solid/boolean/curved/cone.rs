@@ -540,7 +540,7 @@ pub(super) fn model(solid: &Solid, op: Operand, seam: &R) -> Result<Prism> {
     // S9e.4b.4d.2a: a turned body's cone at its height on the axis frame,
     // exactly.
     let f = match axis {
-        Some((frame, lo)) => {
+        Some((frame, lo, _)) => {
             let mut f = Affine::new(frame)?;
             f.o = f.point(&zero(), &zero(), &q(*lo));
             f
@@ -552,7 +552,12 @@ pub(super) fn model(solid: &Solid, op: Operand, seam: &R) -> Result<Prism> {
         t.id_of(slot)
             .ok_or(Error::InvalidTopology("an unnamed slot"))
     };
-    let h = q(solid.end);
+    // S9e.4b.4d.2c.1a: on an axis frame, its top at its height there
+    // exactly.
+    let h = match axis {
+        Some((_, lo, hi)) => q(*hi) - q(*lo),
+        None => q(solid.end),
+    };
     let radii = [q(*bottom), q(*top)];
     let heights = [zero(), h.clone()];
     let k = (&radii[1] - &radii[0]) / &h;

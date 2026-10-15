@@ -48,6 +48,7 @@ mod torus;
 mod torus_curved;
 mod torus_parts;
 mod torus_segment;
+mod touch;
 mod triple;
 mod turned;
 
