@@ -34,7 +34,7 @@ TOOLS = ROOT/'rust/tools'
 SHARDS = 3
 # Local wall seconds of each comparison, the kernel probe built (2026-10-14,
 # all 46 sets 378 s; the native probe's compilation included; the turned
-# profiles' and flats' 2026-10-15).
+# profiles', flats' and tilted bodies' 2026-10-15).
 SECONDS = {
     'compare_boolean.py': 3,
     'compare_boolean.py --splines': 9,
@@ -83,6 +83,7 @@ SECONDS = {
     'compare_turned_boolean.py': 7,
     'compare_turned_flats_boolean.py': 5,
     'compare_turned_profiles_boolean.py': 6,
+    'compare_turned_tilted_boolean.py': 5,
     'compare_two_leaves_boolean.py': 6,
 }
 UNKNOWN_SECONDS = 60
