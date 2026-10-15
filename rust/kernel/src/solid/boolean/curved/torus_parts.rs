@@ -28,7 +28,7 @@ use super::model::*;
 use super::num::*;
 use super::sphere::Circ;
 use super::torus::{Ring, TorusSec};
-use super::torus_curved::{meeting_form, Far};
+use super::torus_curved::{linear_form, meeting_form, Far};
 use super::turned::{pderiv, roots, roots_repeated, trim, Chart, Form, Poly};
 use crate::polynomial::real::AlgebraicRoot;
 use crate::solid::split::{q, zero};
@@ -405,10 +405,49 @@ pub(super) fn ring_meet(
         return None;
     }
     let m = &c.m;
-    let v = c.rational_v()?;
-    let fixed: [Qd; 2] = v.clone().map(Qd::rat);
     let place = |x: &QV| c.place(x);
     let outside = |x: &QV| py.in_face(fy, x) == Loc::Out;
+    let Some(v) = c.rational_v() else {
+        // S9e.4b.4d.2c.1c: a ring at a rational cosine (a turned body's
+        // corner where its round's tube crosses a coaxial cylinder), its
+        // sine in `Q(sqrt(d))`: the circle at that fixed angle, a plane's
+        // meeting with it by its linear form.
+        let fixed = c.surd_v()?;
+        let far = match &py.faces[fy].surf {
+            Surf::Plane { p, m: normal } => {
+                let g = linear_form(&m.f, &m.big, &m.small, normal, &dot(normal, p));
+                return Some(fixed_form(
+                    g,
+                    (&m.f, &m.big, &m.small),
+                    false,
+                    &fixed,
+                    &place,
+                    &outside,
+                ));
+            }
+            Surf::Cyl { .. } | Surf::Sphere { .. } | Surf::Cone { .. } => {
+                Far::Quadric(Box::new(super::cones::other_face(py, fy)))
+            }
+            Surf::Torus => {
+                let ring = py.ring.as_ref()?;
+                Far::Torus {
+                    f: Box::new(py.f.clone()),
+                    big: ring.big.clone(),
+                    small: ring.small.clone(),
+                }
+            }
+            Surf::Spline(_) => return None,
+        };
+        return Some(fixed_far(
+            (&m.f, &m.big, &m.small),
+            false,
+            &fixed,
+            &far,
+            &place,
+            &outside,
+        ));
+    };
+    let fixed: [Qd; 2] = v.clone().map(Qd::rat);
     let far = match &py.faces[fy].surf {
         Surf::Plane { p, m: normal } => {
             return Some(ring_plane(m, &v, (p, normal), &place, &outside));
@@ -504,6 +543,20 @@ fn fixed_far(
     outside: &dyn Fn(&QV) -> bool,
 ) -> Result<EdgeMeet> {
     let g = meeting_form(f, big, small, far);
+    fixed_form(g, (f, big, small), over_v, fixed, place, outside)
+}
+
+/// `fixed_far`'s meeting of the circle at the fixed angle with the surface
+/// whose meeting form with the torus is `g` (S9e.4b.4d.2c.1c: a plane's,
+/// linear, too).
+fn fixed_form(
+    g: super::torus_curved::Bi,
+    (f, big, small): (&Affine, &R, &R),
+    over_v: bool,
+    fixed: &[Qd; 2],
+    place: &dyn Fn(&QV) -> [Qd; 2],
+    outside: &dyn Fn(&QV) -> bool,
+) -> Result<EdgeMeet> {
     let (fa, fb, d) = g.at_dir(!over_v, fixed);
     let chart = clear_chart(&fa, &fb, &d)?;
     let (pa, pb) = (trim(fa.poly(&chart)), trim(fb.poly(&chart)));

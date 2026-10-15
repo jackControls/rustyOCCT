@@ -530,6 +530,39 @@ impl Form {
         Self { terms, deg: 1 }
     }
 
+    /// S9e.4b.4d.2c.1c: the form as a polynomial in the cosine alone
+    /// (`sin^2 = 1 - cos^2`), where every power of the sine is even
+    /// (coefficients from the constant up); `None` otherwise.
+    pub(super) fn in_cos(&self) -> Option<Vec<R>> {
+        let mut out: Vec<R> = Vec::new();
+        for (&(i, j), x) in &self.terms {
+            if j % 2 == 1 {
+                return None;
+            }
+            // x c^i (1 - c^2)^(j / 2), by the binomial theorem.
+            let half = j / 2;
+            let mut binom = R::from_integer(1.into());
+            for k in 0..=half {
+                let at = (i + 2 * k) as usize;
+                if out.len() <= at {
+                    out.resize(at + 1, zero());
+                }
+                let term = if k % 2 == 0 {
+                    crate::rational::mul(x, &binom)
+                } else {
+                    -crate::rational::mul(x, &binom)
+                };
+                out[at] = crate::rational::add(&out[at], &term);
+                binom =
+                    binom * R::from_integer((half - k).into()) / R::from_integer((k + 1).into());
+            }
+        }
+        while out.last().is_some_and(|x| *x == zero()) {
+            out.pop();
+        }
+        Some(out)
+    }
+
     pub(super) fn add_const(&mut self, k: &R) {
         let e = self.terms.entry((0, 0)).or_insert_with(zero);
         *e = crate::rational::add(e, k);

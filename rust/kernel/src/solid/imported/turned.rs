@@ -84,6 +84,17 @@
 //! a far one beside a plane. A body of one curved face is its one primitive
 //! with its pieces. A cone beside two tori, or a torus between two cones, is
 //! no turned body's (S9e.4b.4d.2c.1b refined).
+//!
+//! S9e.4b.4d.2c.1c: a round between two coaxial cylinders tangent to the
+//! wider and meeting the narrower at a corner (`OCC496b`'s first two tori,
+//! `reentrant_corner`): both radii and the tube's on the grid, the centre the
+//! tube inside the wider at its stored height on the grid; the corner where
+//! the tube crosses the narrower (its cosine rational, its height in
+//! `Q(sqrt(d))`, rounded once for the stored edge). The sharp profile takes
+//! a step between the two cylinders past the corner (a plane of no stored
+//! face), and the piece (the box from the centre past the step less the
+//! whole torus) is taken from the wider cylinder's part alone: the narrower's
+//! part, fused after it, makes the corner across the tube.
 use super::*;
 use crate::topology::{Curve2, LoopId, Projection};
 
@@ -147,6 +158,24 @@ struct Corner {
     /// to its tangent points on the cone and on the other line (its box's
     /// axes).
     slant: Option<[[R; 2]; 2]>,
+    /// S9e.4b.4d.2c.1c: a round tangent to one cylinder and meeting a
+    /// narrower one at a corner.
+    reentrant: Option<Reentrant>,
+}
+
+/// S9e.4b.4d.2c.1c: a round tangent to a cylinder (`tangent`, a face) at
+/// one end, its tube meeting a narrower coaxial cylinder (`other`) at a
+/// corner at the other (`OCC496b`'s first two tori): the squared height of
+/// that corner from the tube's centre, `t^2 - (r_other - r_centre)^2`
+/// (exact; the corner's height irrational in general), and the sharp
+/// profile's step between the two cylinders (`step`, its height: past the
+/// corner, short of the tube's top and of the other cylinder's far end).
+#[derive(Debug, Clone)]
+struct Reentrant {
+    tangent: usize,
+    other: usize,
+    rise: R,
+    step: Option<R>,
 }
 
 /// One end of a face's segment in the meridian.
@@ -177,20 +206,36 @@ struct Meridian {
 
 impl Meridian {
     /// S9e.4b.4d.2c.1a: the sharp profile, each fillet or round replaced by
-    /// the corner its lines meet at: its path and nodes.
-    fn sharp(&self) -> (Vec<usize>, Vec<[R; 2]>) {
+    /// the corner its lines meet at: its path, nodes and faces' meridians.
+    /// S9e.4b.4d.2c.1c: a round between two cylinders replaced by its step,
+    /// a plane of no stored face (its index past the faces').
+    fn sharp(&self) -> (Vec<usize>, Vec<[R; 2]>, Vec<Kind>) {
         let mut path = Vec::new();
         let mut nodes = vec![self.nodes[0].clone()];
+        let mut kinds = self.kinds.clone();
         for (s, &i) in self.path.iter().enumerate() {
             if let Kind::Arc(_) = self.kinds[i] {
                 let c = self.corners.iter().find(|c| c.at == s).expect("a corner");
+                if let Some(x) = &c.reentrant {
+                    let h = x.step.clone().expect("a step");
+                    let radius = |f: usize| match &self.kinds[f] {
+                        Kind::Curved(l) => l.r0.clone(),
+                        Kind::Plane(_) | Kind::Arc(_) => unreachable!("a cylinder"),
+                    };
+                    let (below, above) = (self.path[s - 1], self.path[s + 1]);
+                    *nodes.last_mut().expect("a node") = [radius(below), h.clone()];
+                    path.push(kinds.len());
+                    kinds.push(Kind::Plane(h.clone()));
+                    nodes.push([radius(above), h]);
+                    continue;
+                }
                 *nodes.last_mut().expect("a node") = c.corner.clone();
                 continue;
             }
             path.push(i);
             nodes.push(self.nodes[s + 1].clone());
         }
-        (path, nodes)
+        (path, nodes, kinds)
     }
 }
 
@@ -413,6 +458,15 @@ fn meridian(t: &Topology, tol: f64) -> Option<Meridian> {
             corners.push(Corner { at: s, ..c });
             continue;
         }
+        // S9e.4b.4d.2c.1c: between two cylinders, a round tangent to one and
+        // meeting the other at a corner.
+        if let (Kind::Curved(la), Kind::Curved(lb)) = (&kinds[a], &kinds[b]) {
+            if la.k == zero() && lb.k == zero() {
+                let c = reentrant_corner(&mut kinds, (a, b), &tube, grid, tol)?;
+                corners.push(Corner { at: s, ..c });
+                continue;
+            }
+        }
         let (cyl, plane) = match (&kinds[a], &kinds[b]) {
             (Kind::Curved(l), Kind::Plane(_)) if l.k == zero() => (a, b),
             (Kind::Plane(_), Kind::Curved(l)) if l.k == zero() => (b, a),
@@ -453,6 +507,7 @@ fn meridian(t: &Topology, tol: f64) -> Option<Meridian> {
             corner: [radius, h],
             round: tube.round,
             slant: None,
+            reentrant: None,
         });
     }
     // Each node exactly: a corner the two meridians' common point, within
@@ -467,13 +522,24 @@ fn meridian(t: &Topology, tol: f64) -> Option<Meridian> {
                 // point on its neighbour's line (the centre's foot there).
                 // S9e.4b.4d.2c.1b: on a cone, the tube's point along its
                 // direction to it.
-                let tangent = |at: usize, line: &Kind| -> Option<[R; 2]> {
+                let tangent = |at: usize, face: usize| -> Option<[R; 2]> {
                     let c = corners.iter().find(|c| c.at == at)?;
-                    match line {
+                    match &kinds[face] {
                         Kind::Plane(h) => Some([c.centre[0].clone(), h.clone()]),
-                        Kind::Curved(l) if l.k == zero() => {
-                            Some([l.r0.clone(), c.centre[1].clone()])
-                        }
+                        // S9e.4b.4d.2c.1c: the corner on the other cylinder,
+                        // its height rounded once (a node's check and the
+                        // stored edge's circle; the construction takes it
+                        // exactly).
+                        Kind::Curved(l) if l.k == zero() => match &c.reentrant {
+                            Some(x) if x.other == face => {
+                                let rise = rational_f64(&x.rise).sqrt();
+                                let stored = &rings[*e].3;
+                                let up = rational_f64(&(stored - &c.centre[1])) > 0.0;
+                                let w = rational_f64(&c.centre[1]) + if up { rise } else { -rise };
+                                Some([l.r0.clone(), q(w)])
+                            }
+                            _ => Some([l.r0.clone(), c.centre[1].clone()]),
+                        },
                         Kind::Curved(_) => {
                             let [e, _] = c.slant.as_ref()?;
                             Some([
@@ -485,8 +551,8 @@ fn meridian(t: &Topology, tol: f64) -> Option<Meridian> {
                     }
                 };
                 let node = match (&kinds[path[s - 1]], own) {
-                    (Kind::Arc(_), line) => tangent(s - 1, line)?,
-                    (line, Kind::Arc(_)) => tangent(s, line)?,
+                    (Kind::Arc(_), _) => tangent(s - 1, path[s])?,
+                    (_, Kind::Arc(_)) => tangent(s, path[s - 1])?,
                     (Kind::Curved(a), Kind::Curved(b)) => {
                         if a.k == b.k {
                             return None;
@@ -566,6 +632,45 @@ fn meridian(t: &Topology, tol: f64) -> Option<Meridian> {
             c.at = n - 1 - c.at;
         }
     }
+    // S9e.4b.4d.2c.1c: each corner's step between its two cylinders, halfway
+    // from the corner to the nearer of the tube's top (or bottom) and the
+    // other cylinder's far end, on the multiples of `2^-24` of the tube's
+    // power of two; checked exactly past the corner and short of both.
+    for c in &mut corners {
+        let Some(x) = c.reentrant.as_mut() else {
+            continue;
+        };
+        let py = path.iter().position(|&f| f == x.other)?;
+        let up = py == c.at + 1;
+        let (corner, far) = if up {
+            (&nodes[py], &nodes[py + 1])
+        } else {
+            (&nodes[py + 1], &nodes[py])
+        };
+        let top = if up {
+            &c.centre[1] + &c.radius
+        } else {
+            &c.centre[1] - &c.radius
+        };
+        let limit = if up {
+            top.min(far[1].clone())
+        } else {
+            top.max(far[1].clone())
+        };
+        let g = 2f64.powi(rational_f64(&c.radius).log2().ceil() as i32 - 24);
+        let h = on_grid(&((&corner[1] + &limit) / int(2)), g);
+        let d = &h - &c.centre[1];
+        let past = (if up { d > zero() } else { d < zero() }) && &d * &d > x.rise;
+        let short = if up { h < limit } else { h > limit };
+        if !past || !short {
+            return None;
+        }
+        let Kind::Curved(tangent) = &kinds[x.tangent] else {
+            return None;
+        };
+        c.corner = [tangent.r0.clone(), h.clone()];
+        x.step = Some(h);
+    }
     Some(Meridian {
         axis,
         kinds,
@@ -574,6 +679,67 @@ fn meridian(t: &Topology, tol: f64) -> Option<Meridian> {
         rings: at_ring,
         corners,
         exact,
+    })
+}
+
+/// S9e.4b.4d.2c.1c: a round between two coaxial cylinders (faces `a` and
+/// `b`), tangent to the wider at one end and meeting the narrower at a
+/// corner at the other: both radii and the tube's on the multiples of
+/// `grid` (2c.1a's), the centre the tube inside the wider, its height its
+/// stored one's on the grid, within the resolution of its stored centre; the
+/// narrower strictly between the centre and the wider (the tube crossing it
+/// before its top), the corner more than the resolution from the tube's
+/// equator (else a tangency). Its step is found once the path is known.
+fn reentrant_corner(
+    kinds: &mut [Kind],
+    (a, b): (usize, usize),
+    tube: &Tube,
+    grid: f64,
+    tol: f64,
+) -> Option<Corner> {
+    let radius = |i: usize| match &kinds[i] {
+        Kind::Curved(l) => Some(on_grid(&l.r0, grid)),
+        Kind::Plane(_) | Kind::Arc(_) => None,
+    };
+    let (ra, rb) = (radius(a)?, radius(b)?);
+    let t = on_grid(&tube.radius, grid);
+    if !tube.round || t <= zero() || ra == rb {
+        return None;
+    }
+    let (x, y, rx, ry) = if ra > rb {
+        (a, b, ra, rb)
+    } else {
+        (b, a, rb, ra)
+    };
+    let centre = [&rx - &t, on_grid(&tube.centre[1], grid)];
+    let off = &ry - &centre[0];
+    let moved = rational_f64(&(&centre[0] - &tube.centre[0]))
+        .hypot(rational_f64(&(&centre[1] - &tube.centre[1])));
+    if off <= zero() || off >= t || moved > tol || centre[0] <= zero() {
+        return None;
+    }
+    let rise = &t * &t - &off * &off;
+    if rational_f64(&rise).sqrt() <= tol {
+        return None;
+    }
+    kinds[x] = Kind::Curved(Line {
+        r0: rx.clone(),
+        k: zero(),
+    });
+    kinds[y] = Kind::Curved(Line { r0: ry, k: zero() });
+    Some(Corner {
+        at: 0,
+        corner: [rx, centre[1].clone()],
+        centre,
+        radius: t,
+        round: true,
+        slant: None,
+        reentrant: Some(Reentrant {
+            tangent: x,
+            other: y,
+            rise,
+            step: None,
+        }),
     })
 }
 
@@ -679,6 +845,7 @@ fn cone_corner(
         corner,
         round: tube.round,
         slant: Some([e, toward]),
+        reentrant: None,
     })
 }
 
@@ -982,8 +1149,8 @@ pub(super) fn turned_piece(t: &Topology, tolerance: Tolerance, op: OperationId) 
     let m = meridian(t, tol).ok_or_else(not_their_chain)?;
     // S9e.4b.4d.2c.1a: the lattice of the sharp profile (each fillet and
     // round its lines' corner), its pieces added and taken away below.
-    let (path, nodes) = m.sharp();
-    let (nodes, path) = (&nodes, &path);
+    let (path, nodes, kinds) = m.sharp();
+    let (nodes, path, kinds) = (&nodes, &path, &kinds);
     let last = nodes.len() - 1;
     let (w_min, w_max) = (rational_f64(&nodes[0][1]), rational_f64(&nodes[last][1]));
     let r_max = nodes
@@ -994,10 +1161,12 @@ pub(super) fn turned_piece(t: &Topology, tolerance: Tolerance, op: OperationId) 
     let up = m.axis.normal();
     // Each curved face's part and how far each end may reach.
     let mut parts: Vec<Part> = Vec::new();
+    let mut part_faces: Vec<usize> = Vec::new();
     for (s, &i) in path.iter().enumerate() {
-        let Kind::Curved(line) = &m.kinds[i] else {
+        let Kind::Curved(line) = &kinds[i] else {
             continue;
         };
+        part_faces.push(i);
         let mut reach = [Reach::Corner, Reach::Corner];
         for (end, beyond) in [(0usize, s.checked_sub(1)), (1, Some(s + 1))] {
             if nodes[s + end][0] == zero() {
@@ -1007,11 +1176,25 @@ pub(super) fn turned_piece(t: &Topology, tolerance: Tolerance, op: OperationId) 
             let Some(&other) = beyond.and_then(|b| path.get(b)) else {
                 return Err(not_their_chain());
             };
-            let Kind::Plane(h) = &m.kinds[other] else {
+            let Kind::Plane(h) = &kinds[other] else {
                 continue;
             };
             let sign = if end == 0 { -1.0 } else { 1.0 };
-            let facing = outward(t, other).ok_or_else(general)?.dot(up) * sign;
+            // S9e.4b.4d.2c.1c: a step of no stored face faces up where the
+            // profile steps in (its material below).
+            let facing = if other < t.faces().len() {
+                outward(t, other).ok_or_else(general)?.dot(up)
+            } else {
+                let b = path
+                    .iter()
+                    .position(|&f| f == other)
+                    .ok_or_else(not_their_chain)?;
+                if nodes[b + 1][0] < nodes[b][0] {
+                    1.0
+                } else {
+                    -1.0
+                }
+            } * sign;
             reach[end] = if facing > 0.0 {
                 Reach::Cap(rational_f64(h))
             } else {
@@ -1081,7 +1264,7 @@ pub(super) fn turned_piece(t: &Topology, tolerance: Tolerance, op: OperationId) 
             let kept = every[i].clone();
             every[i].retain(|&x| x != j);
             let fewer = settle(&mut parts, &every, nodes, span);
-            if check_form(&parts, &fewer, nodes, path, &m.kinds).is_ok() {
+            if check_form(&parts, &fewer, nodes, path, kinds).is_ok() {
                 terms = fewer;
             } else {
                 every[i] = kept;
@@ -1089,7 +1272,7 @@ pub(super) fn turned_piece(t: &Topology, tolerance: Tolerance, op: OperationId) 
             }
         }
     }
-    check_form(&parts, &terms, nodes, path, &m.kinds)?;
+    check_form(&parts, &terms, nodes, path, kinds)?;
     // The common of every term's parts taken out.
     let common: Vec<usize> = (0..parts.len())
         .filter(|j| terms.iter().all(|x| x.contains(j)))
@@ -1183,6 +1366,27 @@ pub(super) fn turned_piece(t: &Topology, tolerance: Tolerance, op: OperationId) 
             tolerance,
         )?);
         let piece = Tree::Op(Op2::Cut, Box::new(box_tree), Box::new(Tree::Primitive(j)));
+        // S9e.4b.4d.2c.1c: a round at a corner taken from its tangent
+        // cylinder's part alone (the other's part, fused after it, makes the
+        // corner across the tube), that part reaching past the corner.
+        if let Some(x) = &c.reentrant {
+            let part = |f: usize| part_faces.iter().position(|&g| g == f);
+            let (jx, jy) = (
+                part(x.tangent).ok_or_else(not_their_chain)?,
+                part(x.other).ok_or_else(not_their_chain)?,
+            );
+            let step = x.step.as_ref().ok_or_else(not_their_chain)?;
+            let up = *step > c.centre[1];
+            let end = q(parts[jy].built[usize::from(!up)]);
+            let d = &end - &c.centre[1];
+            let beyond = (if up { d < zero() } else { d > zero() }) || &d * &d < x.rise;
+            if !beyond || parts[jy].range[usize::from(!up)].is_none() {
+                return Err(not_their_chain());
+            }
+            let cut = Tree::Op(Op2::Cut, Box::new(Tree::Primitive(jx)), Box::new(piece));
+            tree = substitute(tree, jx, &cut);
+            continue;
+        }
         let op2 = if c.round { Op2::Cut } else { Op2::Fuse };
         tree = Tree::Op(op2, Box::new(tree), Box::new(piece));
     }
@@ -1199,6 +1403,19 @@ pub(super) fn turned_piece(t: &Topology, tolerance: Tolerance, op: OperationId) 
         stack: false,
         nested: false,
     })
+}
+
+/// S9e.4b.4d.2c.1c: `tree` with every leaf `j` replaced by `by`.
+fn substitute(tree: Tree, j: usize, by: &Tree) -> Tree {
+    match tree {
+        Tree::Primitive(k) if k == j => by.clone(),
+        Tree::Op(op, a, b) => Tree::Op(
+            op,
+            Box::new(substitute(*a, j, by)),
+            Box::new(substitute(*b, j, by)),
+        ),
+        other => other,
+    }
 }
 
 /// The terms of the faces' terms `every` (each once, a term holding
@@ -1326,6 +1543,39 @@ fn corner_boxes(m: &Meridian, nodes: &[[R; 2]], ends: &[f64]) -> Result<Vec<Corn
     let mut out: Vec<[[R; 2]; 2]> = Vec::new();
     let mut boxes = Vec::new();
     for c in &m.corners {
+        // S9e.4b.4d.2c.1c: a round at a corner, its box from the centre past
+        // its step at the tangent cylinder (its piece is that cylinder's
+        // part's alone: no other segment or box meets it), its heights none
+        // of the lattice's nor the nodes'.
+        if c.reentrant.is_some() {
+            let toward = |k: usize| {
+                if c.corner[k] > c.centre[k] {
+                    int(1)
+                } else {
+                    int(-1)
+                }
+            };
+            let mut found = None;
+            let mut d = &c.radius / int(2);
+            for _ in 0..5 {
+                let far = [&c.corner[0] + toward(0) * &d, &c.corner[1] + toward(1) * &d];
+                let lo = [c.centre[0].clone(), c.centre[1].clone().min(far[1].clone())];
+                let hi = [far[0].clone(), c.centre[1].clone().max(far[1].clone())];
+                let clear = [&c.centre[1], &far[1]].iter().all(|w| {
+                    let w = rational_f64(w);
+                    !ends.contains(&w) && !nodes.iter().any(|x| rational_f64(&x[1]) == w)
+                });
+                if clear && lo[0] > zero() {
+                    found = Some([lo, hi]);
+                    break;
+                }
+                d = &d / int(2);
+            }
+            boxes.push(CornerBox::Prism(Box::new(
+                found.ok_or_else(not_their_chain)?,
+            )));
+            continue;
+        }
         if let Some(e) = &c.slant {
             let (parts, rect) = slant_box(c, e, nodes, &out, ends).ok_or_else(not_their_chain)?;
             out.push(rect);
