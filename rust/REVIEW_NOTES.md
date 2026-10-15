@@ -14071,6 +14071,80 @@ Decisions for S9, recorded before its code (2026-09-28):
     293 runs, the slowest input 42 s; `split` clean, 768 runs. The
     capture's Linux record from run 38743845525 at `712115c6`: every case
     within rounding of the macOS capture (1.5e-14 at most).
+  * **DRAW survey of the turned bodies (2026-10-15, `UPSTREAM_TESTS.md`).**
+    At `712115c6` (`rust-kernel`: the near-miss conic pairs, S9e.4b.4d.1,
+    the analytic timeout's and the coaxial cones' fixes, U10 (b),
+    S9e.4b.4d.2a, 2b, the moved turned bodies and 2c.1a merged; the public
+    dataset, the debug worker, 120 s a case, four at once, at load 5 to
+    18). **Only `OCC485a`'s cases move; no audited value moves; nothing is
+    registered; the kernel's `bug476` results disagree with one another.**
+    The 1,802 self-contained cases on both backends: every status, reason
+    and error `s9-draw-18`'s (`cc7af85c`) field for field (987 evaluating,
+    every one registered, 592 refused, 223 unsupported on both). The 1,814
+    restore cases on the Rust adapter: `bugs/modalg_2/bug476_1` to `_8` move
+    from the general refusal to `failed` at `checknbshapes` alone;
+    `buc60532_1`, `_2` and `bug23585` time out at load 13 to 15 and end
+    unsupported as before alone (130 to 135 s with 300); every other field
+    as there, the 276 validator rejections' texts unchanged (U10 (b) moving
+    none). The 171 the import reaches: native DRAW as before, the Rust
+    adapter only the eight. The 41 cases of the S9e.4b.4d trials (the 31
+    `catch {...}` forms, `bug476_1` to `_8`, `bug497_3`, `bug28626_1`) on
+    both backends and with `cc7af85c`'s worker: only the eight and `bug485`
+    (to "a cone's apex on the other input's surface") move, native as at
+    2c.1a's trial, none of the 31 evaluating. The 16 version-3 cases: every
+    field as before. *Registration*: not, under the contract.
+    `run_upstream_tests.py` fails on any `failed` status, and the counts do
+    not differ by seams `Topology::occt_counts` could add: OCCT splits the
+    body's step, fillet and shaft faces under the rib along the body's seam
+    half-plane (`y = 0, x > 0`, through the rib's middle), so the cut and
+    the common have 9 and 12 faces natively against the kernel's 6 and 9;
+    OCCT keeps the near-flat bottom and step as cones (apex, degenerated
+    edge, seam, the step one wire) where the kernel's model has planes
+    (S9e.4b.4d.2b); and the rib's side faces are one face under two
+    locations, counted once natively. It needs count mappings for those
+    (a face crossed by its stored surface's seam, a flattened cone's stored
+    structure, shared faces) confirmed natively, or a contract admitting a
+    recorded Rust count failure: a decision for the user. *Audit*: the 1,046
+    values both backends' bit for bit (largest relative move 0, the same 35
+    disagreements); the eight `bug476` cases native DRAW's to its printed
+    digits but the rib less the body's area (99.516020 against 99.5159;
+    99.515913 with `-full`, 1.1e-6 relative); with `-full` the volumes 3.8e-7
+    to 2.7e-6 relative off native's. *Disagreement*: the kernel's eight
+    results are inconsistent beyond their certified enclosures (each at most
+    1e-8 wide): cut and common of the rib sum to its volume less 4.7e-5; the
+    body less the rib and the common to the model's (67,672.8178, its common
+    with a box holding it) less 0.0184; the fuse is 67,721.903099 with the
+    rib first and 67,721.902944 with the body first; the rib less the body's
+    centre is at `y = -9.67e-7` (enclosure `[-9.6754e-7, -9.6744e-7]`) though
+    both inputs are exactly symmetric in `y` (native 1.1e-8). Reproducer:
+    `restore OCC485b.brep s1; restore OCC485a.brep s2; bop s1 s2` and
+    `bopcut`, `bopcommon`, `boptuc`, `bopfuse`, then `bop s2 s1; bopfuse`.
+    Boxes across `OCC485a`'s cylinders fail with invalid topology, no DRAW
+    case among them: `restore OCC485a.brep s2; box h 20 -1 10 10 2 5;
+    bcommon r h s2` (the base cylinder alone) `pcurve_off_edge` (native
+    43.9316), the box along `y` `uncertified_pcurve_off_edge`, boxes across
+    the fillet or the round `vertex_off_curve` or "an open Boolean of arcs
+    in any position"; `turned_fillet` turned by `OCC485a`'s tilt of its axis
+    (1.08e-8 rad) or by 1e-3 against such boxes evaluates as natively, so
+    the failures are `OCC485a`'s model's, for S9e.4b.4d.2c.2 or a fix before
+    it. *Reach* (an instrumented build, not committed, over the 3,664
+    distinct cases, statuses those of the runs): the turned import paths by
+    `OCC485a`'s nine cases alone, each by the near-flat cones' path
+    (`flattened`, then `turned_piece`: one fillet, one round, three parts);
+    no case by the smooth tori's branch, the turned lattice after the
+    chains or a moved turned body; the same nine arrange turned trees (24 to
+    60 touching circles, all inside them, none refused; `edge_touching` 48
+    to 120 meetings, `ring_meet` 24 in each `bug476` case, none refused;
+    `TURNED_SEAMS` used only there); `coaxial_plane` called in 138 cases
+    and never on a turned frame; the rational C1 test in 252 restore cases
+    (367 knots, none C1, each rejected as before), no surface's line test.
+    Controls took each path (`turned_fillet`, `turned_pin`,
+    `bug23400_thinring` deciding two knots C1). No crash or panic. A full
+    contract run with the dataset (both backends, 30 s a case, an absolute
+    output directory, at load 6 to 11) holds for all 1,132 cases (Rust: 18
+    pass, 1,050 viewer-skipped, 53 unsupported, 11 private data), the
+    slowest Boolean case 4.9 s (`bcut_complex/D1`); `--ledger` holds and
+    the ledger does not change. No kernel change.
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces

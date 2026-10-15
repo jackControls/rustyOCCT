@@ -76,7 +76,9 @@ then for the DRAW survey of the nested leaves and the speed-ups (branch
 then for S9e.4b.4d.2's refined decisions and S9e.4b.4d.2a (branch
 `s9e4b4d2`, over `rust-kernel` at `b48e9acf`),
 then for S9e.4b.4d.2b and the moved turned bodies (branch `s9e4b4d2bc`,
-over `s9c2-kernel` at `7b43d0b4`).
+over `s9c2-kernel` at `7b43d0b4`),
+then for the DRAW survey of the turned bodies (branch `s9-draw-19`, over
+`rust-kernel` at `712115c6`).
 
 ## Where things stand
 
@@ -94,11 +96,14 @@ over `s9c2-kernel` at `7b43d0b4`).
   arcs, and one solid of a result of several (S9e.2, `curved/matched.rs`),
   results of spheres, cones and tori, deeper chains and given results
   against spheres, cones and tori (S9e.3a, `curved/chain.rs`), each with its
-  DRAW survey (the last full survey, that of the nested leaves and the
-  speed-ups at `cc7af85c`, branch `s9-draw-18`: the Boolean group's 987
-  cases and 59 restore cases registered, none failing, no case moving
-  against `f0bebb1c`'s survey, both backends' audited values `f0bebb1c`'s
-  bit for bit, the Rust adapter's CPU time 3.4 % less) and a clean campaign (S9e.3a's and S9f.1's at `b2765f20`, 989
+  DRAW survey (the last full survey, that of the turned bodies at
+  `712115c6`, branch `s9-draw-19`: the Boolean group's 987 cases and 59
+  restore cases registered, none failing; only `OCC485a`'s `bug476_1` to
+  `_8` moving, to `failed` at `checknbshapes` alone and not registered,
+  and `bug485`; both backends' audited values `cc7af85c`'s bit for bit;
+  the kernel's `bug476` results inconsistent with one another by up to
+  0.018 in volume, and boxes across `OCC485a`'s cylinders failing with
+  invalid topology: item 3) and a clean campaign (S9e.3a's and S9f.1's at `b2765f20`, 989
   runs).
 - **S9f.1 done.** Spline prisms against polyhedral prisms in any position
   (`curved/spline_walls.rs`), with its survey and campaign as above.
@@ -763,7 +768,13 @@ over `s9c2-kernel` at `7b43d0b4`).
    text S9e.4b.4c.2b.1 extends, none reaching a nested pocket or a
    `same_chain` skip, `INNER` hit once, the binary64 skips passing over no
    near miss, no audited value moving, the Rust adapter's CPU time 1,438 s
-   against `f0bebb1c`'s 1,488 s, nothing registered).
+   against `f0bebb1c`'s 1,488 s, nothing registered), that of the turned
+   bodies at `712115c6` (branch `s9-draw-19`: the near-miss conic pairs,
+   S9e.4b.4d.1, 2a, 2b, the moved turned bodies, 2c.1a and U10 (b); only
+   `OCC485a`'s `bug476_1` to `_8` (to `failed` at `checknbshapes`) and
+   `bug485` moving, the 31 `catch {...}` forms and the version-3 cases as
+   before, no audited value moving, nothing registered; the `bug476`
+   results' inconsistency and the boxes' invalid topology in item 3).
 3. **S9e.4b**, split in "S9e.4b refined": S9e.4b.1 (arcs rounded off
    their circles) and S9e.4b.2 (polyhedra other than prisms, on their
    stored vertices) are implemented with their DRAW surveys and
@@ -941,7 +952,24 @@ over `s9c2-kernel` at `7b43d0b4`).
    refused by the Boolean instead of the import), its reach re-scanned (the
    dataset: only `OCC485a`; the fixtures: `turned_fillet` and the evidence's
    bodies; the fuzz targets' results: none) and pending its campaigns and its
-   capture's Linux record; next **S9e.4b.4d.2c.1b** (a fillet or a round
+   capture's Linux record. Its DRAW survey (`s9-draw-19` at `712115c6`,
+   with S9e.4b.4d.1, 2a, 2b, the moved bodies and U10 (b); "DRAW survey of
+   the turned bodies"): only `OCC485a`'s nine cases move, nothing is
+   registered (the `bug476` cases fail `checknbshapes` on OCCT's faces
+   split at the body's seam under the rib, its near-flat cones kept as
+   cones and the rib's located face: the contract admits no `failed`, so
+   registering them needs count mappings for those or a contract that
+   records a Rust count failure, a decision for the user), and it found
+   **two defects to fix before or within S9e.4b.4d.2c.2**: the kernel's
+   eight `bug476` results are inconsistent with one another beyond their
+   enclosures (the body less the rib and the common short of the model by
+   0.0184, the cut and the common of the rib short of it by 4.7e-5, the
+   fuse differing by 1.5e-4 with the operands swapped, the rib less the
+   body off its exact `y` symmetry by 9.7e-7), and boxes across
+   `OCC485a`'s cylinders fail with invalid topology (`box h 20 -1 10 10 2
+   5; bcommon r h s2`: `pcurve_off_edge`, native 43.9316), where
+   `turned_fillet` turned by the same 1.08e-8 rad evaluates. Next
+   **S9e.4b.4d.2c.1b** (a fillet or a round
    beside a cone: `OCC496b`) and **S9e.4b.4d.2c.2** (partners across smooth
    edges: the rib's planes cross `OCC485a`'s transversally and evaluate
    already, so what remains is its evidence against the reference and any
