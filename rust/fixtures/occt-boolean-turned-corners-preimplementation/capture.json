@@ -1,0 +1,14 @@
+{
+  "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+  "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+  "platform": "darwin",
+  "rust_revision": "8fa518d739727c60965e065aaae2d2afb82640f8",
+  "rust_turned_corners_boolean_exists": false,
+  "rust_worktree_uncommitted": [
+    "?? rust/fixtures/occt-boolean-turned-corners-preimplementation/"
+  ],
+  "sdk_manifest_sha256": "cf67084f02f40dc622ee350e0536985f7e138ed3e87d67982f696c9e2b56585e",
+  "input_sha256": "668677352f4cde3afb6d144179741e99170ef0bebbb60f9a1986c0c7d0f9b7e0",
+  "probe_source_sha256": "46da58a6ec69466fbb79099152e7847539c7e78baf46491415f00e6b2a70cc5c",
+  "observations_sha256": "6d3e69eee3ac9eaee6adaddd5564c3d6f81a5c4ec3965aa694b1670d65d63059"
+}
