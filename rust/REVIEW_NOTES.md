@@ -14338,7 +14338,12 @@ Decisions for S9, recorded before its code (2026-09-28):
     tangent at a vertex on a ring (E5, `next_on_kept`) and a given ring met
     by a partner's face (E6, `triple.rs`). Open: S9e.4b.4d.2c.1c (a torus
     tangent to one line and meeting the other at a corner, `OCC496b`'s first
-    two), S9e.4b.4d.2c.2; the campaigns and the capture's Linux record.
+    two), S9e.4b.4d.2c.2. Merged and verified at `5aaf69ce`
+    (`rust-kernel`); campaigns there (600 s each, sampled replays, every
+    switch on): `boolean` clean, 367 runs, the slowest input 15 s; `split`
+    clean, 1,381 runs. The capture's Linux record from run 38771430570 at
+    `5aaf69ce`: every case within rounding of the macOS capture (2.1e-14 at
+    most).
   * **S9e.4b.4d.2c.1a's consistency fixed (2026-10-15, branch
     `fix-occ485a-consistency` from `ba6186d5`, S9e.4b.4d.2c.1b merged
     into it before its checks).** The survey's two defects
@@ -14457,6 +14462,10 @@ Decisions for S9, recorded before its code (2026-09-28):
     none failing and none past 30 s, the Python unit tests (464, 3 skipped), the
     ledger holding.
     The DRAW trial's values the same with S9e.4b.4d.2c.1b merged.
+    Merged and verified at `a6f394cb` (`s9c2-kernel`): every comparison of
+    HANDOFF's table (51) with its documented counts and no failure, the
+    debug-assertion replays as above, `generate_turned_consistency_fixtures.py
+    --check`.
     *Interfaces*: `turned::flattened` is gone (`modelled` takes its place
     for every turned body), `Meridian` loses `flats`, and the three turned
     import paths share `Solid::imported_turned`; a new kind of turned face
