@@ -960,15 +960,24 @@ then for the DRAW survey of the turned bodies (branch `s9-draw-19`, over
    cones and the rib's located face: the contract admits no `failed`, so
    registering them needs count mappings for those or a contract that
    records a Rust count failure, a decision for the user), and it found
-   **two defects to fix before or within S9e.4b.4d.2c.2**: the kernel's
-   eight `bug476` results are inconsistent with one another beyond their
-   enclosures (the body less the rib and the common short of the model by
-   0.0184, the cut and the common of the rib short of it by 4.7e-5, the
-   fuse differing by 1.5e-4 with the operands swapped, the rib less the
-   body off its exact `y` symmetry by 9.7e-7), and boxes across
-   `OCC485a`'s cylinders fail with invalid topology (`box h 20 -1 10 10 2
-   5; bcommon r h s2`: `pcurve_off_edge`, native 43.9316), where
-   `turned_fillet` turned by the same 1.08e-8 rad evaluates.
+   two defects, **both fixed** ("S9e.4b.4d.2c.1a's consistency fixed",
+   branch `fix-occ485a-consistency`): the kernel's eight `bug476` results
+   were inconsistent with one another beyond their enclosures and boxes
+   across `OCC485a`'s cylinders failed the validator, because a Boolean's
+   results keep an imported body's stored surfaces and edges beside the
+   model's new edges and OCCT's (an axis tilted 1.08e-8 rad, a ring 1e-5
+   off its corner, tori off their snaps) lay off the model, so every
+   measure was off (the import's own volume 0.0141 over its model's
+   67,672.803426 by Pappus); every turned body is now stored as its model
+   (`turned::modelled`: each face on its model's surface, each edge its
+   model's circle), the eight results agree to 1e-11 (the fuse 67,721.904602
+   both ways, the cuts and the common summing to each input, `y` symmetric)
+   and the boxes evaluate (`box h 20 -1 10 10 2 5; bcommon r h s2`
+   43.931616, native 43.9316); `tests/turned_consistency_booleans.rs`
+   checks an OCCT-written body of its form against a rib and seven boxes,
+   and the other turned fixtures against a box. A rib whose side planes
+   cross the round's tangent circle still fails "an open Boolean of arcs
+   in any position" (as before the fix): S9e.4b.4d.2c.2's.
    **S9e.4b.4d.2c.1b** (a fillet or a round tangent
    to a cone and to a plane or a cylinder: the direction to the cone snapped
    to a Pythagorean one, the cone exact in its primitive, each piece a slant
@@ -984,8 +993,7 @@ then for the DRAW survey of the turned bodies (branch `s9-draw-19`, over
    partners across smooth edges as evidence against the reference, and a
    partner's curves tangent at a vertex on a ring (E5's `next_on_kept`) or a
    given ring met by a partner's face (E6's `triple.rs`), refused today;
-   `OCC485a`'s results' consistency (the DRAW survey `s9-draw-19` at
-   `712115c6`) is a separate fix's; `turned_round_off` stays refused by name
+   `turned_round_off` stays refused by name
    (its stored edge 1e-4 off the snapped tangency).
    The reader takes OCCT's version-3 line (`CASCADE Topology V3,
    (c) Open Cascade`, written since OCCT 7.6; REVIEW_NOTES.md's "The

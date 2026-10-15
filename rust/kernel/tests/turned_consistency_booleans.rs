@@ -281,6 +281,10 @@ fn other_turned_bodies_booleans_are_consistent() {
         "profile_waist",
         "tilted_waist",
         "tilted_pin",
+        "cone_fillet_fillet",
+        "cone_fillet_refit",
+        "cone_fillet_round",
+        "cone_fillet_top",
     ] {
         let body = match imported(&format!("imported/{name}.brep")) {
             Ok(b) => b,
@@ -292,7 +296,7 @@ fn other_turned_bodies_booleans_are_consistent() {
         let b = body.bounds();
         let (lo, hi) = (b.min.to_array(), b.max.to_array());
         let at = |k: usize, f: f64| lo[k] + f * (hi[k] - lo[k]);
-        let start = Point3::new(at(0, 0.5625), at(1, 0.3125), at(2, 0.28125));
+        let start = Point3::new(at(0, 0.5625), at(1, 0.3125), at(2, 0.296875));
         let size = Vec3::new(
             hi[0] - lo[0],
             (hi[1] - lo[1]) * 0.40625,
