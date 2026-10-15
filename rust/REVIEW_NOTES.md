@@ -14178,6 +14178,88 @@ Decisions for S9, recorded before its code (2026-09-28):
     turned input (its cones' bands added), its closed form by Pappus; a unit
     test, a CI group and a capture keyed on today's meridian (its torus only
     between a plane and a cylinder).
+  * **S9e.4b.4d.2c.1b implemented** (`solid/imported/turned.rs`'s
+    `cone_corner` and `slant_box`, `Construction::Cone`'s exact radii,
+    `curved/torus_curved.rs`'s `rational_v`, `curved/cones.rs`'s
+    `coaxial_plane`, `curved/meet.rs`'s cone circle against a torus; refined
+    `433876c1`, evidence `7971a7b2`, capture `fbb822fd`, kernel `257be593`).
+    *Kernel* as decided: where the meridian finds a torus beside a cone and a
+    plane or a cylinder, `cone_corner` snaps the other line and the tube on
+    the body's `2^-40` grid, turns the direction from the stored centre to
+    the stored cone to the Pythagorean one whose half-angle tangent is the
+    nearest multiple of `2^-40`, and takes the cone as the line through the
+    tube's point normal to it, its primitive built by
+    `Solid::build_cone_exact_on` (its exact model's radii the line's at its
+    heights, its stored ones rounded once); a cone tangent to two tori, or a
+    torus between two cones, is no turned body's. The piece is the slant
+    box's tree (`slant_box`, `slant_parts`: the outer frustum of the cones
+    normal to the cone through the centre and past the corner less the
+    inner, beside a cylinder between the plane through the centre and the far
+    plane, beside a plane common the annulus between the cylinder through
+    the centre and the far one) less the whole torus; a lattice of one part
+    with its pieces. In the engine, `rational_v` finds a piece's ring at the
+    snapped direction (the nearest multiple of `2^-40` of its half-angle
+    tangent, checked exactly), `coaxial_plane` meets coaxial ruled faces on
+    the plane where their radii agree on every frame inside a turned body's
+    own tree with tori, and a cone's circle about its axis is met by a torus
+    as the conic it is (`as_conic`, `conic_torus`); the coaxial touching
+    circle between a cone and a torus needed nothing new. *Tests*
+    (`tests/turned_cone_fillet_booleans.rs`, seven): every case within the
+    reference's enclosures, the touching ball refused as a tangency; each
+    group's results consistent within their certified enclosures (the fuse
+    and the common the two inputs', the cut and the common the body's, the
+    reversed cut and the common the partner's, the fuse in either order the
+    same, the centroids of the rod's and the ball's results on their mirror
+    planes and each body's on its axis), added after the DRAW survey
+    `s9-draw-19` at `712115c6` found `OCC485a`'s results inconsistent (a fix
+    of its own); histories complete over the stored ids; results
+    deterministic and moved rigidly; the inputs moved by a dyadic shift and
+    a turn keeping the reference's volumes (the ball's and the skew box's
+    cases evaluating turned, the rod and the `TILT` box refused as within
+    rounding of the axis, S9's rule); each body its model profile by Pappus
+    (volume and common with a holder, also turned, within 1e-9; points
+    inside and outside; its stored vertices on its boundary);
+    `turned_corner` and `turned_round_off` refused as before. 7.4 s in
+    release, 12.2 s at opt-level 2 with debug assertions, 9.4 s under the
+    emulated glibc `hypot` with debug assertions and overflow checks (the
+    other turned tests passing there, `turned_body_imports.rs` 29.3 s).
+    `compare_turned_cone_fillets_boolean.py`: 7 matches and 8 reviewed (the
+    capture's 2 and the kernel's entity counts of 6 more: its meetings of the
+    rod and the ball with the tori cut at their turning points, OCCT's at its
+    seams; OCCT's cones' seams through the boxes), the kernel within the
+    reference on all 12 solid cases and the 3 degenerate refused. *Reach
+    after the change* (an instrumented scan, not committed; each file in a
+    process of its own, 120 s a file, against `fbb822fd`): the DRAW case
+    list's 842 dataset files (2,342 cases, 1,505 files) and the 137 imported
+    fixtures: only the evidence's four bodies move (from the refusal by name
+    to imported), `OCC496b` refused by name as before (its tori at corners),
+    `OCC485a` as before, `buc60531a` past 120 s on both; the fuzz targets'
+    written results (every Boolean's and split's result of the boolean and
+    split corpora and regressions written by an instrumented replay, 2,904
+    and 2,750 distinct bodies) imported by both kernels: none moving. *DRAW
+    trial* (the 30 cases calling a Boolean only inside `catch {...}` and the
+    15 others restoring a turned body of S9e.4b.4d's, 45 cases, both
+    backends, before and after, 120 s a case, four at once): every status,
+    reason and value the same (`bug476_1` to `_8` failing only at
+    `checknbshapes` as at 2c.1a, `bug496` private data); no case newly
+    evaluates, so no volume audit and nothing registered. *Verification* at
+    `257be593`: fmt, clippy with `-D warnings`, `cargo +1.85 check`, the
+    release tests (784, 680 s under load), all 51 comparisons with their
+    documented counts and no failure (431 s), the debug-assertion replays of
+    the boolean corpus and regressions (1,482, the slowest 7.0 s) and the
+    split's (3,571, 2.1 s), natively and under the emulated `hypot` with
+    overflow checks (40 s and 57 s the slowest there), none failing; the
+    boolean corpus's instructions with debug assertions 9.192 T against
+    `fbb822fd`'s 9.177 T (0.16 % more); the Python unit tests (464, 3
+    skipped); the ledger holding. *S9e.4b.4d.2c.2 re-scoped* (by 2c.1a's
+    trial, the rib's planes crossing `OCC485a`'s smooth edges transversally
+    and evaluating already):
+    partners across smooth edges as evidence against the reference, and the
+    engine's tangencies there that stay refused: a partner's two sections
+    tangent at a vertex on a ring (E5, `next_on_kept`) and a given ring met
+    by a partner's face (E6, `triple.rs`). Open: S9e.4b.4d.2c.1c (a torus
+    tangent to one line and meeting the other at a corner, `OCC496b`'s first
+    two), S9e.4b.4d.2c.2; the campaigns and the capture's Linux record.
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces
