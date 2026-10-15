@@ -33,7 +33,8 @@ ROOT = Path(__file__).resolve().parents[2]
 TOOLS = ROOT/'rust/tools'
 SHARDS = 3
 # Local wall seconds of each comparison, the kernel probe built (2026-10-14,
-# all 46 sets 378 s; the native probe's compilation included).
+# all 46 sets 378 s; the native probe's compilation included; the turned
+# profiles' and flats' 2026-10-15).
 SECONDS = {
     'compare_boolean.py': 3,
     'compare_boolean.py --splines': 9,
@@ -80,6 +81,8 @@ SECONDS = {
     'compare_torus_parts_boolean.py': 15,
     'compare_torus_segment_boolean.py': 5,
     'compare_turned_boolean.py': 7,
+    'compare_turned_flats_boolean.py': 5,
+    'compare_turned_profiles_boolean.py': 6,
     'compare_two_leaves_boolean.py': 6,
 }
 UNKNOWN_SECONDS = 60
