@@ -1,0 +1,189 @@
+case ribbed_post_fuse
+brep imported/crossing_ribbed.brep
+boolean fuse
+plane 0.0 0.0 33.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire C 9.625 0.0 33.0 0.625
+prism 0.0 0.0 14.0
+end
+case ribbed_post_cut
+brep imported/crossing_ribbed.brep
+boolean cut
+plane 0.0 0.0 33.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire C 9.625 0.0 33.0 0.625
+prism 0.0 0.0 14.0
+end
+case ribbed_post_common
+brep imported/crossing_ribbed.brep
+boolean common
+plane 0.0 0.0 33.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire C 9.625 0.0 33.0 0.625
+prism 0.0 0.0 14.0
+end
+case ribbed_rib_fuse
+brep imported/crossing_ribbed.brep
+boolean fuse
+plane 0.0 -1.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0
+wire P 3 8.0 -1.0 34.5 8.0 -1.0 42.0 20.0 -1.0 34.5
+prism 0.0 2.0 0.0
+end
+case ribbed_rib_cut
+brep imported/crossing_ribbed.brep
+boolean cut
+plane 0.0 -1.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0
+wire P 3 8.0 -1.0 34.5 8.0 -1.0 42.0 20.0 -1.0 34.5
+prism 0.0 2.0 0.0
+end
+case ribbed_rib_common
+brep imported/crossing_ribbed.brep
+boolean common
+plane 0.0 -1.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0
+wire P 3 8.0 -1.0 34.5 8.0 -1.0 42.0 20.0 -1.0 34.5
+prism 0.0 2.0 0.0
+end
+case ribbed_box_fuse
+brep imported/crossing_ribbed.brep
+boolean fuse
+plane 0.0 0.0 34.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire P 4 8.0 -1.0 34.0 11.0 -1.0 34.0 11.0 1.0 34.0 8.0 1.0 34.0
+prism 0.0 0.0 9.0
+end
+case ribbed_box_cut
+brep imported/crossing_ribbed.brep
+boolean cut
+plane 0.0 0.0 34.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire P 4 8.0 -1.0 34.0 11.0 -1.0 34.0 11.0 1.0 34.0 8.0 1.0 34.0
+prism 0.0 0.0 9.0
+end
+case ribbed_box_common
+brep imported/crossing_ribbed.brep
+boolean common
+plane 0.0 0.0 34.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire P 4 8.0 -1.0 34.0 11.0 -1.0 34.0 11.0 1.0 34.0 8.0 1.0 34.0
+prism 0.0 0.0 9.0
+end
+case ribbed_skew_fuse
+brep imported/crossing_ribbed.brep
+boolean fuse
+plane 8.61111111111111 -0.4444444444444444 40.888888888888886 0.8888888888888888 0.4444444444444444 0.1111111111111111 -0.1111111111111111 0.4444444444444444 -0.8888888888888888
+wire P 4 9.166666666666666 -1.6666666666666667 41.33333333333333 8.944444444444445 -0.7777777777777778 39.55555555555556 8.055555555555555 0.7777777777777779 40.44444444444444 8.277777777777777 -0.11111111111111105 42.222222222222214
+prism 1.7777777777777777 0.8888888888888888 0.2222222222222222
+end
+case ribbed_skew_cut
+brep imported/crossing_ribbed.brep
+boolean cut
+plane 8.61111111111111 -0.4444444444444444 40.888888888888886 0.8888888888888888 0.4444444444444444 0.1111111111111111 -0.1111111111111111 0.4444444444444444 -0.8888888888888888
+wire P 4 9.166666666666666 -1.6666666666666667 41.33333333333333 8.944444444444445 -0.7777777777777778 39.55555555555556 8.055555555555555 0.7777777777777779 40.44444444444444 8.277777777777777 -0.11111111111111105 42.222222222222214
+prism 1.7777777777777777 0.8888888888888888 0.2222222222222222
+end
+case ribbed_skew_common
+brep imported/crossing_ribbed.brep
+boolean common
+plane 8.61111111111111 -0.4444444444444444 40.888888888888886 0.8888888888888888 0.4444444444444444 0.1111111111111111 -0.1111111111111111 0.4444444444444444 -0.8888888888888888
+wire P 4 9.166666666666666 -1.6666666666666667 41.33333333333333 8.944444444444445 -0.7777777777777778 39.55555555555556 8.055555555555555 0.7777777777777779 40.44444444444444 8.277777777777777 -0.11111111111111105 42.222222222222214
+prism 1.7777777777777777 0.8888888888888888 0.2222222222222222
+end
+case collar_box_fuse
+brep imported/fillet_collar.brep
+boolean fuse
+plane 0.0 0.0 3.75 0.0 0.0 1.0 1.0 0.0 0.0
+wire P 4 2.5 -0.5 3.75 6.5 -0.5 3.75 6.5 0.5 3.75 2.5 0.5 3.75
+prism 0.0 0.0 3.75
+end
+case collar_box_cut
+brep imported/fillet_collar.brep
+boolean cut
+plane 0.0 0.0 3.75 0.0 0.0 1.0 1.0 0.0 0.0
+wire P 4 2.5 -0.5 3.75 6.5 -0.5 3.75 6.5 0.5 3.75 2.5 0.5 3.75
+prism 0.0 0.0 3.75
+end
+case collar_box_common
+brep imported/fillet_collar.brep
+boolean common
+plane 0.0 0.0 3.75 0.0 0.0 1.0 1.0 0.0 0.0
+wire P 4 2.5 -0.5 3.75 6.5 -0.5 3.75 6.5 0.5 3.75 2.5 0.5 3.75
+prism 0.0 0.0 3.75
+end
+case step_ring_fuse
+brep imported/fillet_step.brep
+boolean fuse
+plane -10.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0 0.0
+wire C -10.0 0.0 7.03125 0.25
+prism 20.0 0.0 0.0
+end
+case step_ring_cut
+brep imported/fillet_step.brep
+boolean cut
+plane -10.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0 0.0
+wire C -10.0 0.0 7.03125 0.25
+prism 20.0 0.0 0.0
+end
+case step_ring_common
+brep imported/fillet_step.brep
+boolean common
+plane -10.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0 0.0
+wire C -10.0 0.0 7.03125 0.25
+prism 20.0 0.0 0.0
+end
+case fillet_rod_fuse
+brep imported/cone_fillet_fillet.brep
+boolean fuse
+plane -10.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0 0.0
+wire C -10.0 0.0 2.53125 0.25
+prism 20.0 0.0 0.0
+end
+case fillet_rod_cut
+brep imported/cone_fillet_fillet.brep
+boolean cut
+plane -10.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0 0.0
+wire C -10.0 0.0 2.53125 0.25
+prism 20.0 0.0 0.0
+end
+case fillet_rod_common
+brep imported/cone_fillet_fillet.brep
+boolean common
+plane -10.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0 0.0
+wire C -10.0 0.0 2.53125 0.25
+prism 20.0 0.0 0.0
+end
+case round_rib_fuse
+brep imported/cone_fillet_round.brep
+boolean fuse
+plane 0.0 -0.5 0.0 0.0 1.0 0.0 0.0 0.0 1.0
+wire P 3 3.0 -0.5 3.0 3.0 -0.5 7.5 8.0 -0.5 3.0
+prism 0.0 1.0 0.0
+end
+case round_rib_cut
+brep imported/cone_fillet_round.brep
+boolean cut
+plane 0.0 -0.5 0.0 0.0 1.0 0.0 0.0 0.0 1.0
+wire P 3 3.0 -0.5 3.0 3.0 -0.5 7.5 8.0 -0.5 3.0
+prism 0.0 1.0 0.0
+end
+case round_rib_common
+brep imported/cone_fillet_round.brep
+boolean common
+plane 0.0 -0.5 0.0 0.0 1.0 0.0 0.0 0.0 1.0
+wire P 3 3.0 -0.5 3.0 3.0 -0.5 7.5 8.0 -0.5 3.0
+prism 0.0 1.0 0.0
+end
+case step_touch_fuse
+brep imported/fillet_step.brep
+boolean fuse
+plane 0.0 0.0 2.5 0.0 0.0 1.0 1.0 0.0 0.0
+wire P 4 3.5 -0.5 2.5 4.5 -0.5 2.5 4.5 0.5 2.5 3.5 0.5 2.5
+prism 0.0 0.0 2.5
+end
+case step_touch_cut
+brep imported/fillet_step.brep
+boolean cut
+plane 0.0 0.0 2.5 0.0 0.0 1.0 1.0 0.0 0.0
+wire P 4 3.5 -0.5 2.5 4.5 -0.5 2.5 4.5 0.5 2.5 3.5 0.5 2.5
+prism 0.0 0.0 2.5
+end
+case step_touch_common
+brep imported/fillet_step.brep
+boolean common
+plane 0.0 0.0 2.5 0.0 0.0 1.0 1.0 0.0 0.0
+wire P 4 3.5 -0.5 2.5 4.5 -0.5 2.5 4.5 0.5 2.5 3.5 0.5 2.5
+prism 0.0 0.0 2.5
+end
