@@ -780,6 +780,7 @@ impl Solid {
                 bottom,
                 top,
                 tolerance,
+                ..
             } => (
                 Primitive::Cone {
                     bottom: *bottom,
