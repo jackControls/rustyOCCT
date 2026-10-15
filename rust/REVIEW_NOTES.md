@@ -16924,6 +16924,85 @@ Decisions for S9, recorded before its code (2026-09-28):
   switch on): `analytic_intersections` clean, 10,337 runs; `boolean` clean,
   410 runs, the slowest input 15 s; `split` clean, 1,939 runs.
 
+* **The Boolean captures' Linux records on CI, refined (2026-10-14; the
+  user's answer "use CI", HANDOFF's item 2).** Why: 45 of the 46 Boolean
+  captures have no `platform-linux/` record ("The Boolean captures' Linux
+  records, open"), because CI ran only `compare_boolean.py`'s default set.
+  What: a workflow of its own, `.github/workflows/rust-boolean-linux.yml`
+  ("Rust Boolean captures on Linux"), on a daily schedule and
+  `workflow_dispatch`, never per push (the per-push B-rep job keeps the
+  default set alone, strict). Its `sdk` job builds the pinned SDK
+  (`TKBO`, `TKPrim`, four build jobs) and hands it to the shards as a tar
+  (symbolic links kept; each shard's comparisons check every library, the
+  version header and the source archive against the manifest, as every
+  pinned job does); its three `compare` jobs run
+  `run_boolean_comparisons.py --shard K --shards 3`, which balances the 46
+  comparisons longest first by their measured local times (`SECONDS`) and
+  runs every one, with `--allow-unrecorded-platform`, even after a failure;
+  each uploads its sets' `target/boolean*-oracle/` (`native-observed.txt`,
+  `report.json`, `capture.json`, the build and loader logs; not the probe)
+  as `boolean-linux-observations-K`; its `summary` job writes
+  `take_platform_records.py`'s table into the run's summary, writing
+  nothing. Cost: the 46 comparisons took 378 s here, one after another with
+  the kernel probe built (2.4 to 38 s each, `compare_cones_boolean.py` the
+  longest; each including its native probe's compilation), the probe's cold
+  release build 63 s (240 s CPU). At 2.6 times on a runner a shard's
+  comparisons (about 126 s here) take about 5.5 minutes, and the checkout,
+  the venv, the SDK's download and the probe's build about 8 more: about 14
+  minutes a shard against the 60-minute limit (`test_platform_records.py`
+  keeps every shard's estimate under 30); the SDK job about 10 to 16 (the
+  B-rep job's SDK of four toolkits took 16 at two build jobs). One job
+  would take about 40 minutes and grow with every set.
+  First runs and later ones: with `--allow-unrecorded-platform` on a
+  platform that has neither the capture's own record nor a
+  `platform-<name>/record.json`, `compare_boolean.py` checks the capture's
+  evidence as before (inputs, probe source and rows unchanged, a failure
+  otherwise), sets the observation beside the capture's rows (the report's
+  `unrecorded_platform`: the cases whose status, validity, warnings, solid
+  count or counts differ or whose values differ beyond `captured()`'s 1e-9
+  of max(1, |value|), the largest deviation, both rows' digests) and lists
+  each native difference without a review fingerprinted by this platform's
+  row under `platform_reviews_pending` instead of failing, with a notice;
+  the kernel's failures (outside the reference, `unsupported` after its
+  code, refused unexpectedly) still fail. With the record the flag changes
+  nothing: the comparison is the default set's, strict on the record and on
+  reviews fingerprinted by the Linux rows. So a red job is a real failure:
+  the kernel, a native run, a changed capture, or a recorded set departing
+  from its record or lacking a review.
+  The records: `take_platform_records.py` reads the downloaded artifacts
+  against the captures as committed (a run whose capture rows or
+  observation changed since is refused). It writes a record's review only
+  where every case keeps the capture's status, validity, warnings, solid
+  count and counts and every value lies within 1e-11 of max(1, |value|) of
+  the capture's (the records taken so far: 1.1e-15 to 2.1e-12), stating
+  the largest deviation; otherwise the review is written by hand
+  (`--review CAPTURE=TEXT`) after reading the cases it lists, as the sheet
+  capture's mirror pieces in the other order were. The Linux reviews: a
+  review is fingerprinted by its native row (`native_sha256`, the hash of
+  the case's parsed row), so a Linux row an ulp from the macOS one needs its
+  own. Each of the 622 Boolean reviews fingerprints its capture's row
+  (checked), so the tool copies a macOS review (its differences, reason and
+  independent evidence) under the Linux row's fingerprint only where the
+  pending difference is that review's and the case lies within the bound,
+  `platform_observed` naming the run and the case's deviation, as the
+  split captures' Linux reviews do. Any other pending difference (new on
+  Linux, or on a case beyond the bound) needs a review written by hand with
+  its independent evidence. `--write` writes only the captures complete in
+  both, so a commit of its output never turns the schedule red for want of
+  a review; its diff is reviewed before the commit. Tests:
+  `test_platform_records.py` (every set in exactly one shard within the
+  budget, the workflow's matrix and triggers, the unrecorded comparison and
+  the strict one after the record, records and reviews taken, refused for
+  a difference beyond rounding, a new difference or a stale run). Dry runs
+  on macOS: the three shards with the CI command line, every comparison
+  with 0 failures (the flag inert where the capture is the platform's own;
+  160, 122 and 216 s on a host loaded by other builds, at most 17 minutes
+  a shard on a runner at that pace),
+  and the cone set with its record taken as missing (the report pending,
+  its five reviewed differences listed, a record written into a copy of the
+  fixtures). Pending: the first run (`gh workflow run
+  rust-boolean-linux.yml --ref rust-kernel`) and the records from it.
+
 * **CI budget (U6).** Per-push fuzz runs replay a bounded sample plus every
   regression and new seed; the daily schedule replays everything; the heavy
   exact targets run on schedule only; Windows runs a smoke subset per push
@@ -17637,7 +17716,8 @@ Decisions for S9, recorded before its code (2026-09-28):
   CI-budget question, not a numbered decision).** CI runs only
   `compare_boolean.py`'s default set, so no other capture has a Linux record.
   **Answered 2026-10-14: use CI** (run the per-set compare scripts there and
-  record each capture's `platform-linux` from its observations).
+  record each capture's `platform-linux` from its observations; "The
+  Boolean captures' Linux records on CI, refined").
 
 ## Status
 

@@ -1967,9 +1967,11 @@ campaign of every target the steps touch.
   since (`UPSTREAM_TESTS.md`): 1,132 registered cases, every one holding its
   manifest status in a full contract run on both backends.
 * **Open beyond acceptance** (`HANDOFF.md`, items 2, 3 and 5): the Linux
-  records of the per-set captures (CI never runs their compare scripts, a
-  CI-budget decision), S9e.4b.4b.2b.2b.3b and S9e.4b.4c.2b.2 (no measured
-  body reaches them but one dataset solid no DRAW case imports),
+  records of the per-set captures (CI ran only the default set's compare
+  script; the scheduled workflow "Rust Boolean captures on Linux", added
+  2026-10-14, runs every set's, its first run pending), S9e.4b.4b.2b.2b.3b
+  and S9e.4b.4c.2b.2 (no measured body reaches them but one dataset solid
+  no DRAW case imports),
   S9e.4b.4d.2 (a turned-body construction, a scope question), the
   near-miss rules not yet written (other curves' edges, two sphere
   circles, an apex against a sphere, torus or spline face, item 5's (b)
@@ -2043,6 +2045,31 @@ campaign of every target the steps touch.
   keeps each input's cap and wall images and its cylinders' seams (counts
   compared after unifying). `compare_boolean.py` runs the probe
   (`examples/boolean_probe.rs`) on every case.
+* **Linux records (CI).** Every capture is taken on macOS; on Linux a
+  comparison reads the capture's reviewed `platform-linux/` record
+  (`native.txt` and `record.json`: the run, the rows' digest and the
+  review), and its native differences need reviews fingerprinted by the
+  Linux rows. The per-push B-rep job ("Rust kernel") runs only
+  `compare_boolean.py`'s default set. The workflow "Rust Boolean captures
+  on Linux" (`.github/workflows/rust-boolean-linux.yml`, daily schedule and
+  `workflow_dispatch`, never per push) runs all 46 comparisons of
+  `HANDOFF.md`'s table: one job builds the pinned SDK (`TKBO`, `TKPrim`)
+  and hands it to three shard jobs, each running
+  `run_boolean_comparisons.py --shard K --shards 3` (the comparisons
+  balanced by their measured local times, about 14 minutes a shard on a
+  runner) with `--allow-unrecorded-platform` and uploading its sets'
+  `target/boolean*-oracle/` as `boolean-linux-observations-K`; a last job
+  writes what each capture's record needs into the run's summary. A
+  capture without a Linux record reports its observation pending (the
+  report's `unrecorded_platform` and `platform_reviews_pending`) and fails
+  only on the kernel's failures or a changed capture; a capture with one is
+  compared strictly, so a red job is a real failure.
+  `take_platform_records.py` turns a run's downloaded artifacts into
+  records and Linux reviews: automatically only where every case keeps the
+  capture's statuses and counts within 1e-11 of its values (a macOS review
+  copied under the Linux row's fingerprint where the difference is that
+  review's), by hand otherwise (REVIEW_NOTES.md's "The Boolean captures'
+  Linux records on CI, refined"; the steps in `HANDOFF.md`, item 2).
 * **Spline profiles (S9a.2), before their kernel code.** The reference's
   `SplinePair` (`boolean_reference.py`, chosen by `make_pair` when either
   profile holds S8b's spline segments; S9a's pairs are unchanged) takes each
