@@ -83,7 +83,7 @@ SECONDS = {
     'compare_torus_segment_boolean.py': 5,
     'compare_turned_boolean.py': 7,
     'compare_turned_cone_fillets_boolean.py': 7,
-    'compare_turned_corners_boolean.py': 10,
+    'compare_turned_corners_boolean.py': 18,
     'compare_turned_crossings_boolean.py': 15,
     'compare_turned_fillets_boolean.py': 9,
     'compare_turned_flats_boolean.py': 5,

@@ -985,10 +985,27 @@ then for the DRAW survey of the turned bodies (branch `s9-draw-19`, over
    importing) is implemented with its DRAW trial (45 cases: none moving), its
    reach re-scanned (the dataset: none; the fixtures: the evidence's bodies;
    the fuzz targets' results: none) and pending its campaigns and its
-   capture's Linux record; `OCC496b` stays refused by name: its first two
-   tori are tangent at one end only and meet the next cylinder at a corner,
-   split off as **S9e.4b.4d.2c.1c** (a torus at a corner, no other measured
-   body); **S9e.4b.4d.2c.2** (partners across smooth edges, branch
+   capture's Linux record; `OCC496b`'s first two tori are tangent at one
+   end only and meet the next cylinder at a corner, split off as
+   **S9e.4b.4d.2c.1c** (branch `s9e4b4d2c1c`; "S9e.4b.4d.2c.1c refined" and
+   "implemented"), now implemented: a round tangent to the wider of two
+   coaxial cylinders whose tube crosses the narrower before its top, snapped
+   on the `2^-40` grid with its corner the tube's exact crossing in
+   `Q(sqrt(d))`, the sharp profile's step between the cylinders, the piece
+   taken from the wider cylinder's part alone (the narrower's part, fused
+   after it, making the corner), a corner ring met by a later face at its
+   rational cosine (`ring_meet`'s new arm, `ToricCrv::surd_v`); `OCC496b`
+   imports (15,824.5926094 against native `vprops` 15,824.5915520, its
+   model's distance from the stored body); its evidence
+   (`generate_turned_corners_boolean_fixtures.py`, 27 cases on
+   `corner_shaft`, `OCC496b`'s profile in its own numbers, `corner_step`
+   and `corner_collar`, and `corner_step`'s partners by the consistency
+   generator's integral), its capture, its kernel tests and its DRAW trial
+   (59 cases, both backends: none moving), its reach re-scanned (an
+   instrumented build: of the dataset's files, the fixtures and `data/`
+   only `OCC496b` and the evidence's bodies reach the new arms; no fuzz
+   input does) and pending its campaigns and its capture's Linux record;
+   **S9e.4b.4d.2c.2** (partners across smooth edges, branch
    `s9e4b4d2c2`; "S9e.4b.4d.2c.2 refined" and "implemented") is
    implemented: the known failure was no tangency but the arrangement's
    meetings found once per plane (`spiric`) and per quadric (`toric`),
@@ -1140,8 +1157,8 @@ fuzz switches below.
 - **U10**: (b), C1 of the rational curve tested exactly at a knot of
   multiplicity equal to the degree (branch `u10-rational-c1`).
 - **S9e.4b.4d.2**: build the turned-body construction (branch `s9e4b4d2`):
-  S9e.4b.4d.2a, 2b, the moved bodies' coaxial meetings, 2c.1a, 2c.1b and
-  2c.2 done, 2c.1c (`OCC496b`'s tori at corners) next (item 3).
+  S9e.4b.4d.2a, 2b, the moved bodies' coaxial meetings, 2c.1a, 2c.1b,
+  2c.2 and 2c.1c (`OCC496b`'s tori at corners) done (item 3).
 - **The per-set Boolean captures' Linux records**: taken on CI (branch
   `ci-linux-captures`); the records of all 46 from run 38670188123 (branch
   `linux-records-38670188123`, item 2), so the milestones' "pending its
@@ -1247,9 +1264,10 @@ Each comparison takes `--occt-root target/spline-linear-preflight/pinned-sdk/ins
 | `compare_turned_fillets_boolean.py` | 7 / 8 (the kernel within the reference on all 12 solid cases, the 3 degenerate refused) |
 | `compare_turned_cone_fillets_boolean.py` | 7 / 8 (the kernel within the reference on all 12 solid cases, the 3 degenerate refused) |
 | `compare_turned_crossings_boolean.py` | 11 / 16 (the kernel within the reference on all 24 solid cases, the 3 degenerate refused) |
+| `compare_turned_corners_boolean.py` | 11 / 16 (the kernel within the reference on all 24 solid cases, the 3 degenerate refused) |
 
 `rust/tools/run_boolean_comparisons.py --shard 0 --shards 1` with the same
-two arguments runs all 52 in turn (CI's three shards: item 2).
+two arguments runs all 53 in turn (CI's three shards: item 2).
 
 Every one must report 0 failures; since S9f.1 also `compare_split.py`
 (72 / 56) and `compare_brep.py --family spline` (10 / 3), which share its

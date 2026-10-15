@@ -14770,6 +14770,91 @@ Decisions for S9, recorded before its code (2026-09-28):
     commons also by the consistency generator's integral; a generator with
     `--check`, its unit test, a CI group, the comparison's time, and a
     capture keyed on today's meridian (no arm between two cylinders).
+  * **S9e.4b.4d.2c.1c implemented** (`solid/imported/turned.rs`'s
+    `reentrant_corner`, `curved/torus_curved.rs`'s `ToricCrv::surd_v`,
+    `curved/torus_parts.rs`'s `ring_meet` arm and `fixed_form`; refined
+    `bc5d9ceb`, evidence `8fa518d7`, capture `4f085ef1`, kernel `2a0b49d4`;
+    branch `s9e4b4d2c1c` from `679fdf39`). *Kernel* as decided: where the
+    meridian finds a torus between two cylinders, `reentrant_corner` snaps
+    both radii and the tube on the grid, the centre the tube inside the
+    wider at its stored height on the grid, and keeps the corner's squared
+    height `t^2 - (r_Y - r_c)^2` exactly (its node rounded once); the step
+    is found once the path is known; `Meridian::sharp` puts the step in the
+    sharp path as a plane of no stored face (its facing read off the
+    profile), and `turned_piece` replaces the wider cylinder's leaf by that
+    leaf less the piece (`substitute`), after checking the narrower's part
+    reaches past the corner. In the engine `surd_v` reads a coaxial ring's
+    form along `v` as a polynomial in the cosine (`Form::in_cos`, even in
+    the sine) and takes its rational root nearest the ring's angle, the sine
+    `+-sqrt(1 - c^2)` in `Q(sqrt(d))`; `ring_meet` meets such a ring with a
+    plane by its linear form (`linear_form`) and with a quadric or a torus
+    by `fixed_far`, through one `fixed_form`. *Evidence as built*:
+    `collar`'s ball moved 1/8 off the ring's point (centred on it its poles
+    lay on the narrower cylinder's line: "a section through a sphere's pole
+    off its meridians"), the consistency rows' box and rod kept off the
+    tube's bottom and the planes at a cylinder's radius (S9c's tangencies
+    with the construction's own surfaces); the reference's membership at a
+    node's height the radius both curved faces give there (a slab missing
+    at the corner's height counted `collar_box`'s common two solids), the
+    events' spacing unchecked where a partner crosses a corner ring (both
+    surfaces' event a rounding apart) and the shaft's rod's and skew cube's
+    commons too small for Monte Carlo over the shaft's box. *Tests*
+    (`tests/turned_corner_booleans.rs`, eight): every case within the
+    reference's enclosures, the touching ball refused as S9d.4b.2's
+    tangency; each solid group's six Booleans valid and consistent (the
+    consistency identities, the moment along `y` zero for the four groups
+    symmetric in `y`), the common the reference's; `corner_step`'s box, box
+    off `y = 0` and rod parallel to the axis consistent with the model's
+    commons (`boolean-turned-consistency-corners.tsv`); histories complete;
+    results deterministic and moved rigidly; every group's common keeping
+    the reference's volume shifted by a dyadic translation, the skew cubes'
+    and the ball's cases turned (the corner rings met on a turned frame), the
+    axis-aligned partners refused turned as within rounding of the axis
+    (S9's rule); each body its model profile by Pappus (its volume and its
+    common with a holder, also turned, within 1e-9, points inside and
+    outside across its round and corner, its stored vertices on its
+    boundary); `turned_corner` and `turned_round_off` refused as before.
+    17.0 s in release, 22.8 s at opt-level 2 with debug assertions, 21.9 s
+    under the emulated glibc `hypot` with debug assertions and overflow
+    checks (the ten turned suites passing there, `turned_body_imports.rs`
+    40.0 s), at load 6 to 7. `compare_turned_corners_boolean.py`: 11
+    matches and 16 reviewed (the capture's 10, measures: BRepGProp's where
+    a partner crosses a corner ring, still past the bound adaptively but for
+    the ball's common, native's own cuts and fuses off its commons and its
+    bodies by 1.5e-5 to 8e-4; and the kernel's entity counts of 11: its
+    meetings with the tori cut at their turning points, OCCT's at its
+    seams), the kernel within the reference on all 24 solid cases and the 3
+    degenerate refused. *`OCC496b`* (its dataset file, imported as the DRAW
+    adapter does): volume 15,824.5926094082 (enclosure `[..408137,
+    ..408279]`) and area 3,528.7787790245, native `vprops` 15,824.5915520339
+    and `sprops` 3,528.7786434 (6.7e-8 and 3.8e-8 relative: the model's
+    distance from the stored body, as "S9e.4b.4d.2c.1c refined" measures).
+    *Reach after the change* (an instrumented build, not committed,
+    printing wherever `reentrant_corner`, its piece or `surd_v` takes a
+    body or a ring): the dataset's 1,494 `.brep` files, the 142 imported
+    fixtures and `data/`'s 37, each imported in a process of its own (120 s a
+    file; 387 solids importing, 7 files past 120 s as large assemblies or
+    faces, `buc60531a` among them): only `OCC496b` and the evidence's three
+    bodies reach them (`OCC496b`'s and `corner_shaft`'s trees `surd_v` too),
+    so no other import's outcome can move; the boolean and split corpora
+    with their regressions replayed (1,482 and 3,571 inputs): none reaches
+    them. *DRAW trial* (59 cases: every case restoring a data file that
+    calls a Boolean only inside `catch {...}`, and every case restoring
+    `OCC485a`, `OCC485b`, `OCC496a`, `OCC496b`, an `OCC497` body or
+    `bug28626`'s; both backends, before at `679fdf39` and after, 120 s a
+    case, three at once): every status, reason and error the same;
+    `bug476_1` to `_8` failing only at `checknbshapes` as before, `bug496`
+    private data (its partner `OCC496a`). Nothing is registered.
+    *Verification* at the branch's head: fmt, clippy with `-D warnings`,
+    `cargo +1.85 check`, the release tests (800, 5 ignored), all 53
+    comparisons with their documented counts and no failure (767 s at load
+    6 to 8), the debug-assertion replays of the boolean corpus and
+    regressions (1,482, the slowest 6.1 s) and the split's (3,571, 1.5 s),
+    natively and under the emulated `hypot` with overflow checks (37 s and
+    43 s the slowest there), none failing; the boolean corpus's
+    instructions with debug assertions 9.177 T against `679fdf39`'s 9.190 T
+    (0.13 % fewer); the Python unit tests (483, 3 skipped); the ledger
+    holding. Open: the campaigns and the capture's Linux record.
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces
