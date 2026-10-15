@@ -96,6 +96,90 @@
       "reason": "BRepAlgoAPI's result is valid with the reference's solid count and its measures within 2e-8 of the reference. With the kernel, entity counts (an upright rod across the post and the plate's arc less the slot): OCCT's result keeps the rod's seam edge on its cylinder (an edge and its two vertices, the rod's circles split there), which the kernel's faces do not hold ((10, 24, 16) raw, (10, 24, 16) unified, the kernel's (10, 21, 14)); the kernel's enclosures are within the reference.",
       "independent_evidence": "chained_curved_boolean_reference.py's rows on the constructions OCCT was given (generate_flush_leaves_boolean_fixtures.py --check, identical under Python 3.9 and 3.12) agree two ways (each face swept by two independent families of curves) within 9.9e-32, every solid's measures from its faces within 9.0e-36 of its closed form, each body's within 4.6e-33 of its own (the arms, the slot 78 + 13 pi / 2 - 2 sqrt 5 + 9 asin(sqrt 5 / 3) and the open pocket 51 + 8 pi + 3 sqrt 3 / 2, each section times its stored axes' determinant), the pair identities within 4.8e-42, and Monte Carlo within 2.8 standard errors; its solid counts are the declared ones by rays at two resolutions; every stored vertex of the imported files lies on its construction's surfaces.",
       "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "arms_slot_cut",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "ac3bff294a9c7fba761beeffab4570b31c1d05c6d5eb89a11e6e84a0f707242b",
+      "differences": [
+        "rust_entity_counts"
+      ],
+      "reason": "BRepAlgoAPI's result is valid with the reference's solid count and its measures within 2e-8 of the reference. With the kernel, entity counts (the arms less the slot): the slot's pocket wall (the disc's arc) is two faces in the imported file, which OCCT wrote split at its circle's seam, and the kernel keeps them (its results name the stored faces) where OCCT's unification merges them (a face, the seam edge and its two vertices, the arcs on its circles split there) ((21, 57, 38) raw, (20, 54, 36) unified, the kernel's (21, 57, 38)); the kernel's enclosures are within the reference.",
+      "independent_evidence": "chained_curved_boolean_reference.py's rows on the constructions OCCT was given (generate_flush_leaves_boolean_fixtures.py --check, identical under Python 3.9 and 3.12) agree two ways (each face swept by two independent families of curves) within 9.9e-32, every solid's measures from its faces within 9.0e-36 of its closed form, each body's within 4.6e-33 of its own (the arms, the slot 78 + 13 pi / 2 - 2 sqrt 5 + 9 asin(sqrt 5 / 3) and the open pocket 51 + 8 pi + 3 sqrt 3 / 2, each section times its stored axes' determinant), the pair identities within 4.8e-42, and Monte Carlo within 2.8 standard errors; its solid counts are the declared ones by rays at two resolutions; every stored vertex of the imported files lies on its construction's surfaces.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 38670188123 at 14a326de); source-pinned OCCT 8.1.0; the same difference as the macOS review, the native values within 7.7e-16 of max(1, |value|) of the macOS capture's"
+    },
+    {
+      "case": "arms_slot_common",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "b57bab7411041db1f9dbe6c4d09f857c626ca630815e8d9e542fb87d72cc1b1b",
+      "differences": [
+        "rust_entity_counts"
+      ],
+      "reason": "BRepAlgoAPI's result is valid with the reference's solid count and its measures within 2e-8 of the reference. With the kernel, entity counts (the arms common the slot): the slot's pocket wall (the disc's arc) is two faces in the imported file, which OCCT wrote split at its circle's seam, and the kernel keeps them (its results name the stored faces) where OCCT's unification merges them (a face, the seam edge and its two vertices, the arcs on its circles split there) ((19, 51, 34) raw, (18, 48, 32) unified, the kernel's (19, 51, 34)); the kernel's enclosures are within the reference.",
+      "independent_evidence": "chained_curved_boolean_reference.py's rows on the constructions OCCT was given (generate_flush_leaves_boolean_fixtures.py --check, identical under Python 3.9 and 3.12) agree two ways (each face swept by two independent families of curves) within 9.9e-32, every solid's measures from its faces within 9.0e-36 of its closed form, each body's within 4.6e-33 of its own (the arms, the slot 78 + 13 pi / 2 - 2 sqrt 5 + 9 asin(sqrt 5 / 3) and the open pocket 51 + 8 pi + 3 sqrt 3 / 2, each section times its stored axes' determinant), the pair identities within 4.8e-42, and Monte Carlo within 2.8 standard errors; its solid counts are the declared ones by rays at two resolutions; every stored vertex of the imported files lies on its construction's surfaces.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 38670188123 at 14a326de); source-pinned OCCT 8.1.0; the same difference as the macOS review, the native values within 2.6e-16 of max(1, |value|) of the macOS capture's"
+    },
+    {
+      "case": "arms_rod_fuse",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "8fb53173f5b296845d4016b19fc462af364d0efc02ad922bdf4bc0181a160198",
+      "differences": [
+        "rust_entity_counts"
+      ],
+      "reason": "BRepAlgoAPI's result is valid with the reference's solid count and its measures within 2e-8 of the reference. With the kernel, entity counts (an upright rod across the arms' upper part fused with the arms): OCCT's result keeps the rod's seam edge on its cylinder (an edge and its two vertices, the rod's circles split there), which the kernel's faces do not hold ((17, 45, 30) raw, (17, 45, 30) unified, the kernel's (17, 42, 28)); the kernel's enclosures are within the reference.",
+      "independent_evidence": "chained_curved_boolean_reference.py's rows on the constructions OCCT was given (generate_flush_leaves_boolean_fixtures.py --check, identical under Python 3.9 and 3.12) agree two ways (each face swept by two independent families of curves) within 9.9e-32, every solid's measures from its faces within 9.0e-36 of its closed form, each body's within 4.6e-33 of its own (the arms, the slot 78 + 13 pi / 2 - 2 sqrt 5 + 9 asin(sqrt 5 / 3) and the open pocket 51 + 8 pi + 3 sqrt 3 / 2, each section times its stored axes' determinant), the pair identities within 4.8e-42, and Monte Carlo within 2.8 standard errors; its solid counts are the declared ones by rays at two resolutions; every stored vertex of the imported files lies on its construction's surfaces.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 38670188123 at 14a326de); source-pinned OCCT 8.1.0; the same difference as the macOS review, the native values within 5.2e-16 of max(1, |value|) of the macOS capture's"
+    },
+    {
+      "case": "slot_rod_fuse",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "5ab71eed65d2d06b86f997e0edf64cd01170564807d551e80c709854c08fd85c",
+      "differences": [
+        "rust_entity_counts"
+      ],
+      "reason": "BRepAlgoAPI's result is valid with the reference's solid count and its measures within 2e-8 of the reference. With the kernel, entity counts (an upright rod across the slot's pocket wall fused with the slot): the slot's pocket wall (the disc's arc) is two faces in the imported file, which OCCT wrote split at its circle's seam, and the kernel keeps them (its results name the stored faces) where OCCT's unification merges them (a face, the seam edge and its two vertices, the arcs on its circles split there) ((18, 42, 28) raw, (17, 39, 26) unified, the kernel's (18, 42, 28)); the kernel's enclosures are within the reference.",
+      "independent_evidence": "chained_curved_boolean_reference.py's rows on the constructions OCCT was given (generate_flush_leaves_boolean_fixtures.py --check, identical under Python 3.9 and 3.12) agree two ways (each face swept by two independent families of curves) within 9.9e-32, every solid's measures from its faces within 9.0e-36 of its closed form, each body's within 4.6e-33 of its own (the arms, the slot 78 + 13 pi / 2 - 2 sqrt 5 + 9 asin(sqrt 5 / 3) and the open pocket 51 + 8 pi + 3 sqrt 3 / 2, each section times its stored axes' determinant), the pair identities within 4.8e-42, and Monte Carlo within 2.8 standard errors; its solid counts are the declared ones by rays at two resolutions; every stored vertex of the imported files lies on its construction's surfaces.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 38670188123 at 14a326de); source-pinned OCCT 8.1.0; the same difference as the macOS review, the native values within 3.8e-16 of max(1, |value|) of the macOS capture's"
+    },
+    {
+      "case": "slot_rod_cut",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "ffb621d36149e217843d6eb0ff0f71996960bbc42243ad477a100b48a12f8c9e",
+      "differences": [
+        "rust_entity_counts"
+      ],
+      "reason": "BRepAlgoAPI's result is valid with the reference's solid count and its measures within 2e-8 of the reference. With the kernel, entity counts (the slot less an upright rod across its pocket wall): the slot's pocket wall (the disc's arc) is two faces in the imported file, which OCCT wrote split at its circle's seam, and the kernel keeps them (its results name the stored faces) where OCCT's unification merges them (a face, the seam edge and its two vertices, the arcs on its circles split there) ((14, 39, 26) raw, (13, 36, 24) unified, the kernel's (14, 39, 26)); the kernel's enclosures are within the reference.",
+      "independent_evidence": "chained_curved_boolean_reference.py's rows on the constructions OCCT was given (generate_flush_leaves_boolean_fixtures.py --check, identical under Python 3.9 and 3.12) agree two ways (each face swept by two independent families of curves) within 9.9e-32, every solid's measures from its faces within 9.0e-36 of its closed form, each body's within 4.6e-33 of its own (the arms, the slot 78 + 13 pi / 2 - 2 sqrt 5 + 9 asin(sqrt 5 / 3) and the open pocket 51 + 8 pi + 3 sqrt 3 / 2, each section times its stored axes' determinant), the pair identities within 4.8e-42, and Monte Carlo within 2.8 standard errors; its solid counts are the declared ones by rays at two resolutions; every stored vertex of the imported files lies on its construction's surfaces.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 38670188123 at 14a326de); source-pinned OCCT 8.1.0; the same difference as the macOS review, the native values within 4.5e-16 of max(1, |value|) of the macOS capture's"
+    },
+    {
+      "case": "rod_slot_cut",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "98e1bf0ec6b226bc2da079089e025bec5d496c74bc489cc576603215778c70de",
+      "differences": [
+        "rust_entity_counts"
+      ],
+      "reason": "BRepAlgoAPI's result is valid with the reference's solid count and its measures within 2e-8 of the reference. With the kernel, entity counts (an upright rod across the post and the plate's arc less the slot): OCCT's result keeps the rod's seam edge on its cylinder (an edge and its two vertices, the rod's circles split there), which the kernel's faces do not hold ((10, 24, 16) raw, (10, 24, 16) unified, the kernel's (10, 21, 14)); the kernel's enclosures are within the reference.",
+      "independent_evidence": "chained_curved_boolean_reference.py's rows on the constructions OCCT was given (generate_flush_leaves_boolean_fixtures.py --check, identical under Python 3.9 and 3.12) agree two ways (each face swept by two independent families of curves) within 9.9e-32, every solid's measures from its faces within 9.0e-36 of its closed form, each body's within 4.6e-33 of its own (the arms, the slot 78 + 13 pi / 2 - 2 sqrt 5 + 9 asin(sqrt 5 / 3) and the open pocket 51 + 8 pi + 3 sqrt 3 / 2, each section times its stored axes' determinant), the pair identities within 4.8e-42, and Monte Carlo within 2.8 standard errors; its solid counts are the declared ones by rays at two resolutions; every stored vertex of the imported files lies on its construction's surfaces.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 38670188123 at 14a326de); source-pinned OCCT 8.1.0; the same difference as the macOS review, the native values within 4.4e-16 of max(1, |value|) of the macOS capture's"
+    },
+    {
+      "case": "slot_touch_fuse",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "550916fecf3da5340583df30c6c65728e3e2f9ef1da79ae3be543b5945920229",
+      "differences": [
+        "solids"
+      ],
+      "reason": "BRepAlgoAPI's result is valid; the slot (a stadium plate less a disc with a round hole within its heights across its arc end) fused with a ball of radius 1 resting on the plate's top cap at a point (the declared degenerate group, the kernel refusing it as a tangency between the inputs): OCCT keeps the ball (volume 4 pi / 3) and the slot as two solids touching at that point, where the reference's rays count their union one; the two solids' volumes and areas sum to the reference's totals within 6.4e-16 relative (the slot alone its closed form, 78 + 13 pi / 2 - 2 sqrt 5 + 9 asin(sqrt 5 / 3)).",
+      "independent_evidence": "chained_curved_boolean_reference.py's rows on the constructions OCCT was given (generate_flush_leaves_boolean_fixtures.py --check, identical under Python 3.9 and 3.12) agree two ways (each face swept by two independent families of curves) within 9.9e-32, every solid's measures from its faces within 9.0e-36 of its closed form, each body's within 4.6e-33 of its own (the arms, the slot 78 + 13 pi / 2 - 2 sqrt 5 + 9 asin(sqrt 5 / 3) and the open pocket 51 + 8 pi + 3 sqrt 3 / 2, each section times its stored axes' determinant), the pair identities within 4.8e-42, and Monte Carlo within 2.8 standard errors; its solid counts are the declared ones by rays at two resolutions; every stored vertex of the imported files lies on its construction's surfaces.",
+      "platform_observed": "Linux x86_64 (GitHub Actions ubuntu-24.04, run 38670188123 at 14a326de); source-pinned OCCT 8.1.0; the same difference as the macOS review, the native values within 3.8e-16 of max(1, |value|) of the macOS capture's"
     }
   ]
 }
