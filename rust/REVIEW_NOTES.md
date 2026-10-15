@@ -13172,6 +13172,155 @@ Decisions for S9, recorded before its code (2026-09-28):
     Merged and verified at `6ffeb554` (`rust-kernel`). Campaigns there (600
     s each, sampled replays, every switch on): `boolean` clean, 434 runs, the
     slowest input 15 s; `split` clean, 1,489 runs.
+  * **S9e.4b.4d.2 refined, before its code (2026-10-14).** Turned bodies,
+    built on the user's word of 2026-10-14 ("S9e.4b.4d.2's scope"), split as
+    "S9e.4b.4d refined" recommends: **S9e.4b.4d.2a**, turned profiles of
+    cylinders, cones and planes meeting at corners only (`bug28626`'s two
+    solids; no tangent edge); **S9e.4b.4d.2b**, a cone within the resolution
+    of a plane or a cylinder taken as that plane or cylinder in such a
+    profile, option (c) (`OCC497c`, `OCC497e`); **S9e.4b.4d.2c**, a torus
+    fillet or round snapped tangent to its neighbouring lines, option (b),
+    with the tangent edges it makes decided in the engine, option (a)
+    (`OCC485a`, `OCC496b`). `cts21199_base` (three fillets on cylinders on
+    parallel axes 0.03 to 0.06 apart) and `pro14942b` (a bent tube, its
+    elbows tori on several axes) are no one turned body: they stay refused by
+    S9e.4b.4d.1's torus text. *Reach, measured before the code* (an
+    instrumented draft of S9e.4b.4d.2a below on `b48e9acf`, not committed;
+    each file imported in a process of its own, 120 s a file). The DRAW
+    case list: every case `tests/<group>/<grid>/<case>` whose script restores
+    a data file by `locate_data_file` and calls `bfuse`, `bcut`, `bcommon`,
+    `bop`, `bopfuse`, `bopcut`, `bopcommon`, `boptuc` or `bbop`, `{` allowed
+    before it (the `catch {...}` forms): 2,342 cases (S9e.4b.4d.1's count,
+    2,339, three more by `bbop`'s), 1,505 files, 842 in the public dataset,
+    840 of them `.brep` texts (two STEP files): 509 solids converted, 450
+    importing at `b48e9acf`; with the draft exactly two move,
+    `bug28626_case1_shapes`' solids (`bugs/modalg_6/bug28626_1`, stopping at
+    its `explode` on the Rust adapter), from "no chain" to imported, each of
+    volume 1,400,145.01 (`pi 445,680`, the profile's frusta by Pappus); the
+    draft's `b_1` less `b_2` 1,359,994.43, one solid, the case's `checkprops
+    -v 1.35999e+06`. The 119 imported fixtures: none moves (`turned_split`, a
+    face OCCT split at a vertex on its line, stays "no chain";
+    `turned_corner`, a torus at corners, stays the general text). Every other
+    outcome the same text. The fuzz targets: S9e.4b.4d refined's measurement
+    stands (no refused result has its curved faces on one axis), to be
+    measured again after the kernel. *Why `bug28626`'s solids are refused
+    today*: each is an apex, a cone of half-angle pi/4 to radius 30, a
+    cylinder, a cone widening by 2/5 to radius 42, a cylinder of radius 42
+    and its disc (on axes 1.2e-16 off the world's `-y` and `x`); every chain
+    of S9e.4b.4b.1 extends each primitive past its faces by a quarter of
+    them, its ends capped only by plane faces, and the cones' and cylinders'
+    extensions past the corners stand outside their neighbours (S9e.4b.4c.2b
+    refined's (iii)). *Decisions for S9e.4b.4d.2a.* (1) *Recognition* (a
+    body the chains refuse, tried after every chain): one solid of one shell,
+    every face a plane, a cylinder or a cone, every edge a whole circle; the
+    axis frame the first curved face's stored frame, each of its axes'
+    components that would move the body by less than a thousandth of the
+    resolution over its size taken to zero (a stored axis within rounding of
+    the world's, `bug28626`'s: its exact data short), every curved face's
+    axis and every circle's on that axis line within the resolution (its
+    direction and its origin's offset, over the body's size), every plane
+    normal to it alike; the faces a path from an apex or a disc's centre on
+    the axis to another, two ends a face (its circles, a cone's apex, a
+    disc's centre), the material inside every curved face (a bore, outside,
+    stays refused). (2) *The exact profile* (option (b)'s method, no new
+    field): each curved face's generatrix the line `r = r0 + k w` in exact
+    rationals of its stored data on the axis frame (a cylinder's radius; a
+    cone's radius at its origin's height and its half-angle's tangent
+    rounded once, signed by its axis's sense), each plane its height rounded
+    once; each node the two meridians' common point (two lines', or a line
+    and a plane's), an apex its line's root, a disc's centre its plane's on
+    the axis; each node within the resolution of its stored circle (radius
+    and height) or apex vertex, else no turned body; the heights never
+    falling from the bottom up, each curved face rising by more than the
+    resolution, every corner off the axis by more than it, no two curved
+    faces on one line (a face OCCT split at a vertex on its line stays
+    refused: the model would hold one face where two are stored). The
+    snap's bounds per body: the axis components cut (each below the
+    resolution over 1,024 times the size), the nodes' offsets from the
+    stored circles (within the resolution). (3) *The construction: a chain
+    of the kernel's primitives, the lattice of the profile's lines*
+    (Ovchinnikov's max-min form of a piecewise linear function), which the
+    engine already builds as any chain's tree (`Tree`, S9e.4b.4b.1's): for
+    each curved face `i` the common of the primitives whose lines lie on or
+    outside `i`'s at both its ends and whose ranges may cover its heights,
+    the fuse of those commons; a term holding another's dropped (it lies
+    below it everywhere), the primitives every term holds taken out as a
+    common. Each primitive a cylinder (the prism of its circle on the axis
+    frame) or a cone on the axis over a range: at a cap (a plane on its
+    wider side: a disc, or a step's annulus) that plane's height; at a
+    step's narrower side past the plane into the wider side by a quarter of
+    that side's height; at its apex its apex; past a corner over the heights
+    of the faces whose terms it bounds and a quarter of its own height
+    beyond; an end other than a cap moved on by a thirty-second of the
+    body's height while nearer than that to a node, a cap, an apex or an
+    earlier primitive's end (two ends on one plane are refused by S9's rule,
+    and a band of a face between two nearby planes is refused as a piece
+    too thin by the engine's grouping: the draft's first ranges failed so on
+    `bug28626`). The form is checked exactly on the lines before any model is
+    built: between every two breakpoints (the nodes' heights, the ranges'
+    ends, the apexes, the lines' crossings) at two points, and beyond them,
+    its value the profile's radius, empty outside the body; else no turned
+    body. Its model is the tree's (S9e.4b.3c.3b's inner Booleans as given
+    models), matched to the stored topology by S9e.2's match (the arbiter),
+    the body decided on it, its history over the stored ids, its classify
+    the tree's ranks; moved rigidly, read off the moved stored topology
+    again (the piece's `choice` marks the reading). A new primitive (a
+    turned solid with its own exact model) was not chosen: every primitive
+    and Boolean it needs exists. (4) *The cones on the axis exactly*
+    (engine): a cone's exact model is on its frame at its base (`cone.rs`'s
+    `Affine`), and a turned body's cone based at a height on the axis frame
+    has that point rounded once as its origin, off the axis line by
+    rounding: its meetings with the coaxial cylinders are then quartic
+    (`Meet`), and a third coaxial surface met by them is a triple whose
+    eliminant overran its budget (the draft on `bug28626`'s second solid:
+    `ComputationLimit("a given meeting's eliminant past its budget of
+    coefficient bits (S9e.3b)")`). So `Construction::Cone` gains `axis:
+    Option<(Frame3, f64)>` (`Solid::build_cone_on`): its exact model on the
+    axis frame with its origin at that height exactly (rational), its stored
+    frame the rounded one as before; a coaxial cylinder's and cone's meeting
+    is then a plane's section (S9d.3b's `CylPair::Plane`), exact. Every
+    other cone's `axis` is `None`, its model as before. (5) *Degenerate and
+    refused*: no new text. A body that is no turned body of this step, whose
+    form is not its profile, or whose tree the engine refuses (two of its
+    cones' lines meeting on the axis, an apex on the other's surface; a
+    cone's other nappe through another primitive's circle on a plane, an
+    edge on a face; two cones' rulings of one direction, exact on its own
+    axes but within rounding on a turned frame) keeps the refusal its chains
+    gave before: only intended moves. A moved body whose tree the engine
+    refuses so is refused in its Boolean, as S9e.4b.4b.1's moved chains are.
+    Spheres in a profile (arcs), bores, split faces and tori stay refused as
+    before; a cone within the resolution of a plane or a cylinder stays
+    S9e.4b.4d.1's `Degenerate` until S9e.4b.4d.2b. *Tangent joins inside
+    one body* (for S9e.4b.4d.2c). Today one input's own tangency is refused
+    at these places: `imported.rs`'s `bends` (the faces' normals at the
+    stored edge's middle within 1e-6) read in every chain
+    (`tangent_body`, but a prism's walls' joints and two faces on one
+    surface) and in the trees' groupings; `smooth_torus` (S9e.4b.4d.1, read
+    off the surfaces); `pieces.rs`'s `model`, which takes any `Degenerate`
+    naming a tangency in a piece's own tree (its inner Booleans) as the
+    body's tangency; and in the engine every tangency between the two inputs
+    of an inner Boolean: `meet.rs`'s `tangency()` (a double root, "a tangency
+    between the inputs (S9c)"), `torus_curved.rs`'s "a torus tangent to the
+    other input's surface (S9d.4b.2)", `torus_parts.rs`'s rim, `triple.rs`'s
+    `TANGENT` and `graph.rs`'s "two curves tangent at a vertex". The engine
+    decides a tangency exactly (a double root of an exact polynomial) and
+    refuses it; a fillet's torus in a lattice meets its neighbours' cylinder,
+    cone or plane tangentially along a circle in an inner Boolean, so
+    S9e.4b.4d.2c needs those meetings, coaxial and exact after (b)'s snap (a
+    double root at a rational height), taken as an edge of both faces (the
+    circle where they touch, the faces on either side) in the coaxial path
+    alone, every other tangency refused as before. *Evidence* (before the
+    code): bodies OCCT writes by the oracle's `revolve` row
+    (`generate_turned_profiles_boolean_fixtures.py`, `profile_*.brep`): a
+    point (`bug28626`'s kind, about `z` and about `x`), a waist (a convex
+    corner below a cone, a concave one above), steps (a chamfer, a step in,
+    a widening cone), a crown (a step out, a narrowing cone, a concave
+    corner); every one refused at `b48e9acf` and imported by the draft; cases
+    against a box, a rod, a ball, a box less the crown, two bodies on
+    crossing axes, a chain, and a ball resting on a disc declared
+    degenerate; the chained reference with each body the max-min form of its
+    lines (the generator's own) and each body's closed form by Pappus; a
+    unit test, a CI group, a capture keyed on the turned module's file.
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces
