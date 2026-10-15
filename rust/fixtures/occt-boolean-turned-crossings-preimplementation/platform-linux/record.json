@@ -1,0 +1,7 @@
+{
+  "platform": "linux",
+  "source": "GitHub Actions run 38804180007 (commit 679fdf39), ubuntu-24.04, source-pinned OCCT 8.1.0",
+  "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+  "observations_sha256": "e31b17f185365334bec019245dfb2b2a1b5ebe483d0e509a8f96f61457ed4ef0",
+  "review": "The same cases, statuses, validity, warnings, solid counts and face, edge and vertex counts as the macOS arm64 capture for every Boolean; volumes, areas and centres within rounding of the capture's but for the three step_ring cases (the step body and a rod across its round's lower circle), by up to 2.4e-07: OCCT's default BRepGProp measures of faces bounded by its approximated meetings with the round landing differently on glibc. Fuse and cut within the allowance on both platforms (1.2e-09 and 1.3e-09 relative on Linux, 2.4e-09 and 2.5e-09 on macOS); the small common beyond it on Linux only (volume 8.2e-08 relative, centre x 2.15e-07 from its exact 0, macOS 9.7e-09 and 2.9e-08). Each has a Linux review by hand (occt-boolean-turned-crossings-divergences.json). Every Linux result valid without warnings."
+}

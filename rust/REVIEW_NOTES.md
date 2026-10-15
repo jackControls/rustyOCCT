@@ -14645,8 +14645,17 @@ Decisions for S9, recorded before its code (2026-09-28):
     overflow checks (48 s and 47 s the slowest there, at load 8 to 10), none
     failing; the boolean corpus's instructions with debug assertions 9.185 T
     against `0e758808`'s 9.191 T (0.06 % fewer); the Python unit tests (472,
-    3 skipped); the ledger holding. Open: S9e.4b.4d.2c.1c; the campaigns and
-    the capture's Linux record.
+    3 skipped); the ledger holding. Open: S9e.4b.4d.2c.1c. Merged and
+    verified at `679fdf39` (`rust-kernel`); campaigns there (600 s each,
+    sampled replays, every switch on): `boolean` clean, 338 runs, the
+    slowest input 22 s; `split` clean, 1,370 runs. The capture's Linux
+    record from run 38804180007 at `679fdf39`: every case within rounding
+    of the macOS capture but the three `step_ring` cases, values only, each
+    reviewed by hand: the fuse and the cut within the allowance on both
+    platforms, the small common (a lens of the rod and the round) beyond it
+    on Linux only (OCCT's default volume 8.2e-08 relative from the
+    reference, its centre's `x` 2.15e-07 off its exact 0; macOS 9.7e-09 and
+    2.9e-08), the counts and validity the capture's.
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces
