@@ -14564,6 +14564,87 @@ Decisions for S9, recorded before its code (2026-09-28):
     comparison's time; and on `consistency_ribbed.brep` itself the known
     failure's rib, the box and the rod with their commons by the
     consistency generator's integral over the model.
+  * **S9e.4b.4d.2c.2 implemented** (`curved/graph.rs`'s `first_on_torus`;
+    refined `9e68fa66`, evidence `20a6ac64`, capture `0e758808`, kernel
+    `8854e3d9`; branch `s9e4b4d2c2` from `251d5227`). *Kernel* as decided:
+    `arrange_touching`'s spiric sections keyed by the operand, the plane's
+    face and the first face on the same torus model (`Prism::view`'s), its
+    torus meetings by the operand, that first face of the torus and the
+    quadric's first face (two tori's: each torus's first face), so each
+    torus of an input has its own meetings; nothing else changes (no new
+    refusal text, `next_on_kept` and `triple.rs` as before). *Evidence as
+    built*: the declared degenerate case moved from `ribbed` (its box side
+    at the fillet's circle of radius 10 took the reference past 20 minutes)
+    to `fillet_step` (the box `[7/2, 9/2] x [-1/2, 1/2] x [5/2, 5]`, its side
+    through the fillet's circle on the step at `(9/2, 0, 3)`, 85 s), the
+    collar's box raised off its fillet's tube's bottom (`z = 15/4`: at 4 its
+    cap touched the whole torus there, a tangency), the step's rod 1/32
+    above its round's circle (at the circle's height the reference found
+    each point of its generatrix through it as both surfaces' event, a
+    rounding apart), and a skew cube about the round's circle added (it
+    evaluates turned); 27 cases, 6 minutes on four workers under Python
+    3.12 (1,313 s of CPU), identical under 3.9. Before the code the four
+    groups across two tori of one body (`ribbed_post`, `_rib`, `_box`,
+    `collar_box`) failed the open Boolean on the kernel's probe, the others
+    within the reference. *Tests* (`tests/turned_crossing_booleans.rs`, six):
+    every case within the reference's enclosures (at most 1e-9 wide), the box
+    side through the circle refused as S9c's tangency; each solid group's six
+    Booleans valid and consistent (the common and the fuse both ways, each
+    cut and the common summing to its input, the fuse to both less the
+    common, within 1e-12 of the larger input, the moment along `y` zero for
+    the seven partners symmetric in `y`), the common the reference's; the
+    known failure's rib, the box and the rod on `consistency_ribbed.brep`
+    itself consistent the same way with the model's commons
+    (`boolean-turned-consistency-crossings.tsv`, the consistency
+    generator's integral at 40 digits, a lens of two discs for the rod);
+    histories complete over the stored ids; results deterministic and moved
+    rigidly; every group's common and the known failure's fuse and cut keep
+    the reference's volumes shifted by a dyadic translation, the skew cube's
+    three cases turned (the axis-aligned partners refused turned as within
+    rounding of the axis, S9's rule). The consistency identities are shared
+    (`tests/support/turned_consistency.rs`, `turned_consistency_booleans.rs`
+    using them). 13.5 s in release, 14.4 s at opt-level 2 with debug
+    assertions, 14.2 s under the emulated glibc `hypot` with debug
+    assertions and overflow checks (the nine turned suites passing there,
+    `turned_body_imports.rs` 30.8 s). `compare_turned_crossings_boolean.py`:
+    11 matches and 16 reviewed (OCCT's default BRepGProp measures where its
+    approximated curves on a torus bound the faces, within 1e-8 of the
+    reference with an adaptive accuracy of 1e-10 but the declared group's
+    2.4e-8; the kernel's meetings with a torus cut at their turning points,
+    OCCT's seams through the partners), the kernel within the reference on
+    all 24 solid cases and the 3 degenerate refused. *Reach after the
+    change* (an instrumented build, not committed, printing wherever the
+    new key finds no meeting where the old key would have found another
+    torus's): the dataset's 1,494 `.brep` files, the 139 imported fixtures
+    and `data/`'s 37, each imported in a process of its own (120 s a file):
+    no file reaches it (384 solids importing, 9 files past 120 s as large
+    assemblies or faces, `buc60531a` among them); the boolean and split
+    corpora with their regressions replayed (1,482 and 3,571 inputs): none
+    reaches it, so no import's and no fuzz input's outcome can move. The
+    `bug476` Booleans of `OCC485b` and `OCC485a` do (32 times in their six
+    operations, a rib face's box meeting both tori's faces, each time
+    another torus than the one found first), their results the same before
+    and after (the DRAW trial's logs below; the volumes 33.295952968,
+    49.101175965, 67,639.507473066 and 67,721.904601998 both orders, as
+    "S9e.4b.4d.2c.1a's consistency fixed" gives), so no section inside
+    both faces was lost there before. *DRAW trial*
+    (58 cases: every case restoring a data file that calls a Boolean only
+    inside `catch {...}`, and every case restoring `OCC485a`, `OCC485b`,
+    `OCC496a`, `OCC496b`, an `OCC497` body or `bug28626`'s; both backends,
+    before at `0e758808` and after, 120 s a case, three at once): every
+    status, reason and log the same but the logs' output paths; `bug476_1`
+    to `_8` failing only at `checknbshapes` as before. Nothing is
+    registered. *Verification* at the branch's
+    head: fmt, clippy with `-D warnings`, `cargo +1.85 check`, the release
+    tests (792, 5 ignored), all 52 comparisons with their documented counts
+    and no failure (770 s at load 8 to 10), the debug-assertion replays of
+    the boolean corpus and regressions (1,482, the slowest 9.2 s) and the
+    split's (3,571, 1.8 s), natively and under the emulated `hypot` with
+    overflow checks (48 s and 47 s the slowest there, at load 8 to 10), none
+    failing; the boolean corpus's instructions with debug assertions 9.185 T
+    against `0e758808`'s 9.191 T (0.06 % fewer); the Python unit tests (472,
+    3 skipped); the ledger holding. Open: S9e.4b.4d.2c.1c; the campaigns and
+    the capture's Linux record.
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces

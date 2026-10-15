@@ -976,8 +976,8 @@ then for the DRAW survey of the turned bodies (branch `s9-draw-19`, over
    43.931616, native 43.9316); `tests/turned_consistency_booleans.rs`
    checks an OCCT-written body of its form against a rib and seven boxes,
    and the other turned fixtures against a box. A rib whose side planes
-   cross the round's tangent circle still fails "an open Boolean of arcs
-   in any position" (as before the fix): S9e.4b.4d.2c.2's.
+   cross the round's tangent circle failed "an open Boolean of arcs in any
+   position" (before and after the fix): fixed by S9e.4b.4d.2c.2 below.
    **S9e.4b.4d.2c.1b** (a fillet or a round tangent
    to a cone and to a plane or a cylinder: the direction to the cone snapped
    to a Pythagorean one, the cone exact in its primitive, each piece a slant
@@ -988,12 +988,26 @@ then for the DRAW survey of the turned bodies (branch `s9-draw-19`, over
    capture's Linux record; `OCC496b` stays refused by name: its first two
    tori are tangent at one end only and meet the next cylinder at a corner,
    split off as **S9e.4b.4d.2c.1c** (a torus at a corner, no other measured
-   body); next **S9e.4b.4d.2c.2**, re-scoped by 2c.1a's trial (the rib's
-   planes cross `OCC485a`'s smooth edges transversally and evaluate already):
-   partners across smooth edges as evidence against the reference, and a
-   partner's curves tangent at a vertex on a ring (E5's `next_on_kept`) or a
-   given ring met by a partner's face (E6's `triple.rs`), refused today;
-   `turned_round_off` stays refused by name
+   body); **S9e.4b.4d.2c.2** (partners across smooth edges, branch
+   `s9e4b4d2c2`; "S9e.4b.4d.2c.2 refined" and "implemented") is
+   implemented: the known failure was no tangency but the arrangement's
+   meetings found once per plane (`spiric`) and per quadric (`toric`),
+   which handed a turned body's second torus (its round) its first's (its
+   fillet's) sections; keyed per torus model too (`graph.rs`'s
+   `first_on_torus`), the rib, a rod and a box across both tori evaluate,
+   consistent to the identities; E5 and E6 are never reached (a transversal
+   crossing's two sections continue one another through the ring's point;
+   a ring is met as its circle), and a partner tangent to a circle stays
+   refused (contact only); its evidence
+   (`generate_turned_crossings_boolean_fixtures.py`, 27 cases on
+   `crossing_ribbed` and four earlier bodies, and
+   the known failure on `consistency_ribbed` itself), its capture, its
+   kernel tests and its DRAW trial (58 cases, both backends: none moving),
+   its reach re-scanned (an instrumented build: no dataset file's or
+   fixture's import and no fuzz input reaches the new key; the `bug476`
+   Booleans do, their results unchanged) and pending its
+   campaigns and its capture's Linux record; `turned_round_off` stays
+   refused by name
    (its stored edge 1e-4 off the snapped tangency).
    The reader takes OCCT's version-3 line (`CASCADE Topology V3,
    (c) Open Cascade`, written since OCCT 7.6; REVIEW_NOTES.md's "The
@@ -1126,8 +1140,8 @@ fuzz switches below.
 - **U10**: (b), C1 of the rational curve tested exactly at a knot of
   multiplicity equal to the degree (branch `u10-rational-c1`).
 - **S9e.4b.4d.2**: build the turned-body construction (branch `s9e4b4d2`):
-  S9e.4b.4d.2a, 2b, the moved bodies' coaxial meetings, 2c.1a and 2c.1b
-  done, 2c.1c (`OCC496b`'s tori at corners) and 2c.2 next (item 3).
+  S9e.4b.4d.2a, 2b, the moved bodies' coaxial meetings, 2c.1a, 2c.1b and
+  2c.2 done, 2c.1c (`OCC496b`'s tori at corners) next (item 3).
 - **The per-set Boolean captures' Linux records**: taken on CI (branch
   `ci-linux-captures`); the records of all 46 from run 38670188123 (branch
   `linux-records-38670188123`, item 2), so the milestones' "pending its
@@ -1232,9 +1246,10 @@ Each comparison takes `--occt-root target/spline-linear-preflight/pinned-sdk/ins
 | `compare_turned_tilted_boolean.py` | 2 / 7 (the kernel within the reference on all 9 solid cases) |
 | `compare_turned_fillets_boolean.py` | 7 / 8 (the kernel within the reference on all 12 solid cases, the 3 degenerate refused) |
 | `compare_turned_cone_fillets_boolean.py` | 7 / 8 (the kernel within the reference on all 12 solid cases, the 3 degenerate refused) |
+| `compare_turned_crossings_boolean.py` | 11 / 16 (the kernel within the reference on all 24 solid cases, the 3 degenerate refused) |
 
 `rust/tools/run_boolean_comparisons.py --shard 0 --shards 1` with the same
-two arguments runs all 51 in turn (CI's three shards: item 2).
+two arguments runs all 52 in turn (CI's three shards: item 2).
 
 Every one must report 0 failures; since S9f.1 also `compare_split.py`
 (72 / 56) and `compare_brep.py --family spline` (10 / 3), which share its

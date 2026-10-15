@@ -1640,7 +1640,14 @@ piece's ring at the snapped direction is met as the torus's circle
 plane where their radii agree on every frame (`cones.rs`'s `coaxial_plane`),
 and a cone's circle about its axis is met by a torus as the circle it is.
 A torus at a corner (`OCC496b`'s first two, S9e.4b.4d.2c.1c), between two
-cones, or two tori beside one cone stay no turned body's.
+cones, or two tori beside one cone stay no turned body's. S9e.4b.4d.2c.2:
+partners across a turned body's smooth edges (ribs, boxes and rods crossing
+the tangent circles of its fillets and rounds transversally) evaluate; the
+arrangement's meetings found once per plane or quadric (a plane's spiric
+section of a torus, a torus's meeting with a quadric or a torus) are keyed
+per torus model too (`graph.rs`'s `first_on_torus`), a body with a fillet
+and a round being the first input of two tori; a partner tangent to such a
+circle (a plane through its tangent) stays refused as S9c's tangency.
 
 Refused: a joint of two arcs whose circles each hold other arcs of the
 path, off either (`OutOfDomain`, S9e.4b.4: neither circle can move); a
@@ -2050,9 +2057,8 @@ campaign of every target the steps touch.
   S9e.4b.4d.2c (turned bodies' fillets snapped tangent, the user's answer of
   2026-10-14; 2a's corners, 2b's near-flat cones, the moved bodies'
   coaxial meetings, 2c.1a's fillets and rounds between planes and
-  cylinders and 2c.1b's beside a cone done; open 2c.1c, a torus at a
-  corner (`OCC496b`'s), and 2c.2, the evidence of partners across smooth
-  edges and any tangency at a vertex on a ring), the
+  cylinders, 2c.1b's beside a cone and 2c.2's partners across smooth
+  edges done; open 2c.1c, a torus at a corner (`OCC496b`'s)), the
   near-miss rules not yet written (other curves' edges, two sphere
   circles, an apex against a sphere, torus or spline face, item 5's (b)
   to (d)), and the refusals by design listed there. U9 and U10 stayed open
@@ -4577,6 +4583,34 @@ campaign of every target the steps touch.
   the kernel's meetings with the tori cut at their turning points and OCCT's
   cones' seams). No DRAW case moves (`OCC496b`'s partner is private data, and
   it stays refused by name for its tori at corners).
+* **S9e.4b.4d.2c.2 evidence (partners across smooth edges), before its
+  kernel code.** A body OCCT wrote by the oracle's `revolve` and `tolerance`
+  rows (`crossing_ribbed.brep`, `OCC485a`'s form on exact data at its
+  resolution 3e-3) and four earlier bodies (`fillet_step`, `fillet_collar`,
+  `cone_fillet_round`, `cone_fillet_fillet`), 27 cases
+  (`generate_turned_crossings_boolean_fixtures.py`): the known failure's rib
+  (its side planes across the round's tangent circle), a rod parallel to the
+  axis and a box across both the fillet and the round, a skew cube, a box
+  across a collar's fillet and round, rods along `x` across a round's and a
+  cone fillet's circles, a rib across a round's circles on a cylinder and a
+  cone, and a box side through a fillet's circle's tangent (declared
+  degenerate); the chained reference over each model profile; the generator's
+  check a CI group of its own (`turned-crossings`). On
+  `consistency_ribbed.brep` itself the known failure's rib, the box and a rod
+  across both tori, their commons by the consistency generator's integral
+  (`boolean-turned-consistency-crossings.tsv`).
+* **Kernel (S9e.4b.4d.2c.2).** `tests/turned_crossing_booleans.rs`: every case
+  within the reference's enclosures (the box side through the circle refused
+  as a tangency), each group's six Booleans consistent (the consistency
+  identities of `tests/support/turned_consistency.rs`, shared with
+  `turned_consistency_booleans.rs`), the known failure consistent on its own
+  body with the model's commons, histories complete, results deterministic
+  and moved rigidly, the skew cube's cases evaluating turned.
+  `compare_turned_crossings_boolean.py`: 11 matches and 16 reviewed
+  (BRepGProp's default measure where the Boolean's approximated curves on a
+  torus bound the faces, within 1e-8 adaptively but the declared group's; the
+  kernel's meetings with the tori cut at their turning points and OCCT's
+  seams). No DRAW case moves.
 * **Fuzzing.** The `boolean` target (`FUZZING.md`): the split target's line
   and arc profiles, the tool offset exactly in the axis-aligned frame or
   sharing the tilted one's origin, heights equal, spanning, overlapping,
