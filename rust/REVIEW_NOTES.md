@@ -13968,6 +13968,95 @@ Decisions for S9, recorded before its code (2026-09-28):
     with its membership by the profile with arcs (`TurnedInput`), and checks
     the kernel's construction (lattice, boxes, tori) against it at points of
     the meridian; sweeping the construction itself passed CI's hour.
+  * **S9e.4b.4d.2c.1a implemented** (`solid/imported/turned.rs`'s arcs,
+    `curved/touch.rs`, `curved/graph.rs`'s touching circles,
+    `curved/torus_parts.rs`'s `ring_meet`; refined `438ffa75`, evidence
+    `d19d32a9`, capture `1d22a0db`, amended `813cb4c7`, kernel `ad9eae7b`).
+    *Kernel* as decided and amended. The import: where `smooth_torus` names a
+    body, `turned_piece` is tried first (else the refusal by name as before);
+    the meridian reads each torus face as an arc (its stored centre, tube and
+    side: a fillet's material outside the tube, a round's inside), snaps it
+    tangent to its plane and cylinder (their numbers on the multiples of
+    `2^-40` of the body's size, the centre where the lines offset by the tube
+    meet within the resolution of its stored one, the tangent points the
+    centre's feet within the resolution of the stored circles), and builds the
+    sharp profile's lattice (`Meridian::sharp`: each arc its lines' corner)
+    fused with each fillet's piece and less each round's, a piece the annular
+    box from the centre past the corner (`corner_boxes`, halved up to four
+    times until clear) less the whole torus on the axis frame
+    (`Solid::build_torus_on`); a frustum's model reaching its top height
+    exactly (`Construction::Cone`'s axis with both heights); a turned body's
+    primitives' seams apart (`pieces.rs`'s `TURNED_SEAMS`); a flat's rim on a
+    torus given its pcurve again. The engine: a whole torus and a plane normal
+    to its axis at its tube's top or bottom, or a coaxial quadric at a double
+    root of their meeting at a rational angle, keep that circle
+    (`CylPair::Touching`, `torus.rs`'s `TouchRing`; `torus_curved.rs`'s
+    repeated roots), refused at once with the tangency's text outside a turned
+    body's own tree (`arrange_touching`, `touch` only there and only with a
+    torus among its primitives); inside it each touching circle inside both
+    faces must be an edge of the torus's input lying on the other's face
+    (sampled at 16 rational points), which then splits that face, its vertices
+    that face's, the sections along it dropped, a ruling's or a meridian's
+    double root on it a crossing of two edges (`touch.rs`'s `edge_touching`),
+    each piece classified at an edge off every touching circle; a piece's
+    rings at a quarter turn of its tube met by a later face as the torus's
+    circle (`ring_meet`, amendment (5)). No tangent section is built and the
+    assembly is unchanged. *Tests* (`tests/turned_fillet_booleans.rs`, six):
+    every case within the reference's enclosures, at most 1e-9 wide, the
+    touching ball refused as a tangency; histories complete over the stored
+    ids; results deterministic and moved rigidly; the inputs moved by a dyadic
+    shift and by a turn keeping the reference's volumes (the ball's cases
+    evaluating turned, the boxes and the rod parallel or normal to the axis in
+    the construction refused as within rounding of it, S9's rule); each body
+    its model profile by Pappus (volume and common with a holder within 1e-9,
+    points inside and outside at heights across its tori, its stored vertices
+    on its boundary), alike turned; `turned_round_off` refused by name.
+    `turned_body_imports.rs`: `turned_fillet` imports with its profile's
+    volume (`pi 550` with its fillet's corner region and less its round's,
+    within 1e-9), `turned_round_off` keeps its refusal by name. 8.1 s in
+    release, 8.9 s at opt-level 2 with debug assertions, 9.0 s under the
+    emulated glibc `hypot` with debug assertions and overflow checks
+    (`turned_body_imports.rs` 2.7 s and 21.6 s there, every turned test
+    passing). `compare_turned_fillets_boolean.py`: 7 matches and 8 reviewed
+    (the capture's 4 and the kernel's entity counts of 4 more: its meetings of
+    the rod and the ball with the tori cut at their turning points, OCCT's at
+    its seams; OCCT's collar's and refit's cylinder's seam through the box),
+    the kernel within the reference on all 12 solid cases and the 3 degenerate
+    refused. *Reach after the change* (each file in a process of its own, 120
+    s a file, against `61162084`): the DRAW case list's 842 dataset texts:
+    only `OCC485a` moves (refused as a near-flat cone before, now 67,672.817
+    and 9,291.875, its model's); the 133 imported fixtures: only
+    `turned_fillet` and the evidence's three bodies; the fuzz targets' 5,775
+    boolean and 3,104 split written results: none moving. *DRAW trial*: the 41
+    cases on both backends against `61162084`'s run: `OCC485a`'s eight
+    `bug476` Booleans with its rib `OCC485b` (fuse, cut, the reversed cut and
+    common, each both ways) now evaluate on the Rust adapter, their
+    `checkprops` areas holding and only `checknbshapes` failing (the kernel's
+    cell model: no seams, its rings whole; native DRAW's counts the case's);
+    the volume audit (`vprops` and `sprops` before each `checkprops`, both
+    backends): every volume, area and centre native DRAW's to its printed
+    digits (the fuse 67,721.9 and 9,333.96, the rib less the body 49.1011 and
+    99.5159, the body less the rib 67,639.5 and 9,340.03, the common 33.296
+    and 105.587); not registered. `bug485` (the body fused with itself) is
+    refused by the Boolean (`Degenerate("a cone's apex on the other input's
+    surface")`) instead of the import; every other status and reason the same.
+    The rib's side planes and top cross the fillet's and the round's smooth
+    edges (the planes `y = +-1` through both tangency circles, its top at 43.2
+    across the round's at 43.1): "S9e.4b.4d.2c refined" counted these as
+    2c.2's, but each crossing is transversal on both faces, the vertex on the
+    ring ordered exactly (`next_on_kept` refusing curves tangent there, as
+    before), so they evaluate already; 2c.2 keeps its evidence (partners
+    across smooth edges against the reference) and any tangency there.
+    *Verification* at `ad9eae7b`: fmt, clippy with `-D warnings`, `cargo +1.85
+    check`, the release tests (777, 492 s at load 4 to 8), all 50 comparisons
+    with their documented counts and no failure, the debug-assertion replays
+    of the boolean corpus and regressions (1,482, the slowest 4.4 s) and the
+    split's (3,571, 1.6 s), natively and under the emulated `hypot` with
+    overflow checks (38 s and 41 s the slowest there, at load 6 to 9), none
+    failing; the boolean corpus's instructions with debug assertions 9.173 T
+    against `61162084`'s 9.174 T (0.01 % fewer); the Python unit tests (455, 3
+    skipped); the ledger holding. Open: S9e.4b.4d.2c.1b (beside a cone:
+    `OCC496b`), S9e.4b.4d.2c.2; the campaigns and the capture's Linux record.
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces

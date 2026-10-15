@@ -926,15 +926,28 @@ over `s9c2-kernel` at `7b43d0b4`).
    agree, not the rulings' quartic whose meeting with a partner's rounded
    plane passed S9e.3b's budget) are implemented with the same trial (no
    case moving) and reach (none moving), pending their campaigns and their
-   capture's Linux record; next **S9e.4b.4d.2c** (fillets snapped tangent
-   with tangent coaxial meetings in the engine, options (b) and (a):
-   `OCC485a`, `OCC496b`), its refined decisions recorded and split in
-   "S9e.4b.4d.2c refined" (nothing of it built yet): **S9e.4b.4d.2c.1** (the
-   snap, the sharp lattice with each fillet's and round's kite and torus,
-   coaxial tangent rings as exact edges in the engine: the bodies alone and
-   partners across no smooth edge) then **S9e.4b.4d.2c.2** (partners across
-   smooth edges: `OCC485a`'s rib cases). The reader takes OCCT's
-   version-3 line (`CASCADE Topology V3,
+   capture's Linux record; **S9e.4b.4d.2c** (fillets snapped tangent with
+   tangent coaxial meetings in the engine, options (b) and (a): `OCC485a`,
+   `OCC496b`), its refined decisions split in "S9e.4b.4d.2c refined" and
+   again in "S9e.4b.4d.2c.1 refined": **S9e.4b.4d.2c.1a** (fillets and rounds
+   between a plane and a cylinder snapped tangent on a `2^-40` grid of the
+   body's size, the sharp profile's lattice fused with each fillet's box less
+   its torus and less each round's, the touching circles exact edges in a
+   turned body's own tree, a piece's rings met as the torus's circles:
+   `turned_fillet` and `OCC485a` importing) is implemented with its DRAW
+   trial (the 41 cases: `OCC485a`'s eight `bug476` Booleans with its rib
+   evaluating, their volumes, areas and centres native DRAW's to its printed
+   digits, only `checknbshapes` failing, not registered; `bug485`'s self-fuse
+   refused by the Boolean instead of the import), its reach re-scanned (the
+   dataset: only `OCC485a`; the fixtures: `turned_fillet` and the evidence's
+   bodies; the fuzz targets' results: none) and pending its campaigns and its
+   capture's Linux record; next **S9e.4b.4d.2c.1b** (a fillet or a round
+   beside a cone: `OCC496b`) and **S9e.4b.4d.2c.2** (partners across smooth
+   edges: the rib's planes cross `OCC485a`'s transversally and evaluate
+   already, so what remains is its evidence against the reference and any
+   tangency at a vertex on a ring, refused today); `turned_round_off` stays
+   refused by name (its stored edge 1e-4 off the snapped tangency).
+   The reader takes OCCT's version-3 line (`CASCADE Topology V3,
    (c) Open Cascade`, written since OCCT 7.6; REVIEW_NOTES.md's "The
    version-3 `.brep` header", branch `brep-v3-header`): the dataset's 26
    version-3 texts read and convert (one solid and 11 free shapes import,
@@ -1065,8 +1078,8 @@ fuzz switches below.
 - **U10**: (b), C1 of the rational curve tested exactly at a knot of
   multiplicity equal to the degree (branch `u10-rational-c1`).
 - **S9e.4b.4d.2**: build the turned-body construction (branch `s9e4b4d2`):
-  S9e.4b.4d.2a, 2b and the moved bodies' coaxial meetings done, 2c next,
-  its refined decisions split in 2c.1 and 2c.2 (item 3).
+  S9e.4b.4d.2a, 2b, the moved bodies' coaxial meetings and 2c.1a done,
+  2c.1b and 2c.2 next (item 3).
 - **The per-set Boolean captures' Linux records**: taken on CI (branch
   `ci-linux-captures`); the records of all 46 from run 38670188123 (branch
   `linux-records-38670188123`, item 2), so the milestones' "pending its
@@ -1169,9 +1182,10 @@ Each comparison takes `--occt-root target/spline-linear-preflight/pinned-sdk/ins
 | `compare_turned_profiles_boolean.py` | 8 / 13 (the kernel within the reference on all 18 solid cases, the 3 degenerate refused) |
 | `compare_turned_flats_boolean.py` | 1 / 11 (the kernel within the reference on all 9 solid cases, the 3 degenerate refused) |
 | `compare_turned_tilted_boolean.py` | 2 / 7 (the kernel within the reference on all 9 solid cases) |
+| `compare_turned_fillets_boolean.py` | 7 / 8 (the kernel within the reference on all 12 solid cases, the 3 degenerate refused) |
 
 `rust/tools/run_boolean_comparisons.py --shard 0 --shards 1` with the same
-two arguments runs all 49 in turn (CI's three shards: item 2).
+two arguments runs all 50 in turn (CI's three shards: item 2).
 
 Every one must report 0 failures; since S9f.1 also `compare_split.py`
 (72 / 56) and `compare_brep.py --family spline` (10 / 3), which share its
