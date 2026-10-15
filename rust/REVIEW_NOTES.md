@@ -14647,6 +14647,129 @@ Decisions for S9, recorded before its code (2026-09-28):
     against `0e758808`'s 9.191 T (0.06 % fewer); the Python unit tests (472,
     3 skipped); the ledger holding. Open: S9e.4b.4d.2c.1c; the campaigns and
     the capture's Linux record.
+  * **S9e.4b.4d.2c.1c refined, before its code (2026-10-15).** "S9e.4b.4d.2c.1b
+    refined"'s split: a torus tangent to one line of the meridian and
+    meeting the other at a corner, `OCC496b`'s first two tori, built on the
+    user's decision (branch `s9e4b4d2c1c` from `679fdf39`), from a draft of
+    it (not committed; `OCC496b` imported in a process of its own). *Why
+    such a body is refused today*: `turned.rs`'s meridian snaps a torus only
+    beside a plane and a cylinder (S9e.4b.4d.2c.1a) or beside a cone (2c.1b);
+    between two cylinders it reads no turned body, and `smooth_torus`'s
+    refusal by name stands (`OutOfDomain("an imported body whose torus faces
+    join their neighbours smoothly (S9e.4b.4d)")`). *`OCC496b` measured on
+    its file*: its first torus (tube 2 about `(13.0000005, -33.7504692)`) is
+    tangent to the cylinder of radius 15.0000005 (its centre the tube inside
+    it exactly) and its tube crosses the cylinder of radius 13.9999995 a
+    sixth of a turn round (the faces' normals 60 degrees apart, the stored
+    circle 3.2e-7 from the tube's crossing); its second (tube 2 about
+    `(11.9999995, -31.3504467)`) is tangent to that cylinder, its stored edge
+    1.7e-5 below the centre (the torus's range starting 8.6e-6 rad below its
+    equator), and crosses the cylinder of radius 13.0000005 likewise; neither
+    tube reaches its top: each is a step in from a wider cylinder to a
+    narrower one rounded off past its plane, no plane face between them. Its
+    third torus is 2c.1b's; nothing else in it is new, so `OCC496b` needs no
+    more than this form and there is no split. *Decisions.* (1) *The snap*
+    (a round between two coaxial cylinders, tangent to the wider): both
+    radii and the tube's on the multiples of `2^-40` of the body's size
+    (2c.1a's grid, a cylinder beside two tori snapped once), the centre the
+    tube inside the wider (`r_c = r_X - t`) at its stored height on that
+    grid, within the resolution of its stored centre; the tangent circle at
+    the centre's height on the wider, the corner where the tube crosses the
+    narrower: `cos v = (r_Y - r_c) / t` rational, `sin v = +-sqrt(1 -
+    cos^2 v)`, its height `w_c +- sqrt(t^2 - (r_Y - r_c)^2)` irrational in
+    general (`OCC496b`'s `w_c + sqrt(3)`), exact in the engine in
+    `Q(sqrt(d))`; each stored circle within the resolution of its node (the
+    corner's height rounded once there). The corner is not snapped to a
+    rational one: a Pythagorean `(a, b, t)` with `a = t - (r_X - r_Y)` makes
+    the tube `((r_X - r_Y)^2 + b^2) / (2 (r_X - r_Y))` or a cylinder's
+    radius no binary64 number. The narrower must lie strictly between the
+    centre and the wider (`0 < r_Y - r_c < t`: the tube crossing it before
+    its top), the corner more than the resolution from the tube's equator
+    (`sqrt(t^2 - a^2)` above it: else a tangency within the resolution).
+    (2) *The piece*: the sharp profile replaces the round by a step between
+    the two cylinders (a plane of no stored face) at the height `H` halfway
+    from the corner to the nearer of the tube's top (its bottom, for a round
+    tangent at its upper end) and the narrower cylinder's far end, on the
+    multiples of `2^-24` of the tube's power of two, checked exactly past
+    the corner and short of both; the lattice is S9e.4b.4d.2a's of that
+    profile (the wider's part capped at `H`, the narrower's reaching into the
+    wider's as at any step, a step's facing read off the profile). The piece
+    is S9e.4b.4d.2c.1a's box from the tube's centre past `(r_X, H)` by half
+    the tube (halved up to four times while one of its heights is a lattice
+    part's end or a node's) less the whole torus, taken from the wider
+    cylinder's part alone (its leaf in the lattice's tree replaced by that
+    leaf less the piece), and the narrower's part, fused after it, cuts the
+    corner across the tube: its end inside the wider's part must lie beyond
+    the corner (checked exactly). Neither the piece taken from the lattice
+    (the narrower's material between the corner and the step would go with
+    it) nor the piece first cut at the corner by the narrower's primitive and
+    then taken from the lattice (that piece's face on the narrower cylinder
+    over the box's heights past the step would lie on the lattice's own: two
+    inputs' faces on one cylinder) builds it. In the piece's Boolean the
+    tube touches the wider cylinder along the piece's edge at the tangent
+    circle (2c.1a's touching circle), the step's plane crosses the tube
+    between the corner and the tube's top, and no face of the box or of the
+    step is left in the body (the box's sides inside the tube, the step
+    inside the narrower's part); the narrower's cylinder meets the tube at
+    the corner transversally (`torus_curved.rs`'s `coaxial`, its simple
+    roots). (3) *The corner ring as exact data* (a new arm of
+    `torus_parts.rs`'s `ring_meet`): a coaxial ring whose cosine is rational
+    and whose sine lies in `Q(sqrt(d))` (`ToricCrv::surd_v`: the meeting's
+    form along `v` even in the sine, a polynomial in the cosine of degree at
+    most two, its rational root nearest the ring's angle, checked exactly,
+    the sine's sign the angle's) met by a later face (a partner's, the
+    lattice's) as the torus's circle at that fixed angle: a plane by its
+    linear form along the circle, a quadric or a torus as `rim_far`'s
+    `fixed_far` (the roots of `A + sqrt(d) B`, a tangency inside the face
+    refused as a rim's, outside it none); a corner of a Pythagorean
+    direction whose half-angle tangent is dyadic is 2c.1b's grid arm's; every
+    other ring as before. In the draft a skew cube across `OCC496b`'s first
+    corner fails three surfaces' budget without it (S9e.3b's eliminant, on
+    its own frame and turned) and evaluates with it. (4) *`modelled`*: no
+    new arm: the torus face is a torus's (its snapped tube), the corner's
+    edge its model's circle at the corner's height rounded once (its radius
+    the cylinder's, exact), every pcurve again. (5) *Degenerate and refused*
+    (no new text): a fillet at a corner, a torus at a corner beside a plane
+    or a cone (either line), a torus at corners at both ends (`turned_corner`,
+    the general refusal as before), a tube crossing the narrower beyond its
+    top (its heights falling), a corner within the resolution of a tangency,
+    a step that does not fit, the narrower's part not reaching past the
+    corner: no turned body (the refusal by name); a partner tangent to the
+    round (S9d.4b.2's) or touching the corner ring at a point (S9c's), as
+    before. *What the draft measured*: `OCC496b` imports, volume
+    15,824.5926094082 (enclosure `[..408137, ..408279]`) and area
+    3,528.778779024, its model profile by Pappus 15,824.59260941 (an
+    independent integral at 40 digits, its cone 2c.1b's snap a rounding
+    apart); native `vprops` 15,824.5915520339 (`-full`, at 1e-10 and 1e-12
+    alike) and `sprops` 3,528.7786434, 6.7e-8 and 3.8e-8 relative: the
+    model's distance from the stored body, its cone stored 7.8e-7 inside the
+    tangent to its stored third torus (its half-angle 1.8e-7 rad off the
+    torus's range: 6.7e-4 of the 1.06e-3) and that torus 9.5e-7 inside its
+    cylinder; a box, a skew cube (also turned), a ball and a rod across its
+    first corner evaluate, their six Booleans each consistent (the cuts and
+    the common summing to each input within 1e-11). *Evidence* (before the
+    code; `boolean-turned-corners`): bodies OCCT writes by the oracle's
+    `revolve` and `tolerance` rows: `shaft`, `OCC496b`'s profile about its
+    own axis (the world's `x` through `(0, -2^-21, 38.5 + 3 2^-18)`) in its
+    own numbers on the multiples of `2^-30` (moved by less than 5e-10),
+    its first two tori at corners, its second's stored edge `9 2^-19`
+    below its centre as `OCC496b`'s, its third tangent to the cylinder of
+    radius `13 + 2^-21` (its centre moved 9.5e-7 from `OCC496b`'s, which the
+    oracle cannot write: an arc's ends on its circle), its cone from that
+    torus's point at `OCC496b`'s stored angle to `OCC496b`'s top circle, at
+    `OCC496b`'s resolution 3e-3; `step`, a cylinder of radius 4 rounded by
+    a tube of radius 1 into a shaft of radius 7/2, the corner at `3 +
+    sqrt(3)/2`; `collar`, a shaft of radius 7/2 rising through a corner into
+    a round of radius 5/4 tangent to a collar of radius 4 above it (tangent
+    at its upper end, the corner's direction `(3/5, -4/5)`, the grid arm's);
+    against boxes, rods, a ball and skew cubes across the corner rings (the
+    skew cubes evaluating turned), and declared degenerate a ball touching
+    `step`'s round between its tangent circle and its corner; the chained
+    reference (2c.1a's `TurnedInput` over each model profile, the corner's
+    height exact) with each body's closed form by Pappus, `step`'s partners'
+    commons also by the consistency generator's integral; a generator with
+    `--check`, its unit test, a CI group, the comparison's time, and a
+    capture keyed on today's meridian (no arm between two cylinders).
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces
