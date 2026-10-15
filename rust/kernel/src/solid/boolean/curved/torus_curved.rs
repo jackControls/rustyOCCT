@@ -414,21 +414,25 @@ impl Far {
     }
 }
 
+/// `g . p - e` at the torus's point `p = o + (R + r cv)(cu x + su y) + r sv
+/// n` (S9e.4b.4d.2c.1c: a plane's meeting form with it, `g` its normal).
+pub(super) fn linear_form(f: &Affine, big: &R, small: &R, g: &V, e: &R) -> Bi {
+    let mut b = Bi::default();
+    b.add_term([0, 0, 0, 0], &(dot(g, &f.o) - e));
+    b.add_term([1, 0, 0, 0], &(big * dot(g, &f.x)));
+    b.add_term([0, 1, 0, 0], &(big * dot(g, &f.y)));
+    b.add_term([1, 0, 1, 0], &(small * dot(g, &f.x)));
+    b.add_term([0, 1, 1, 0], &(small * dot(g, &f.y)));
+    b.add_term([0, 0, 0, 1], &(small * dot(g, &f.n)));
+    b
+}
+
 /// The other surface's function on a torus's angles, `G(u, v)`: its
 /// quadric's (S9d.4b.2a) or its torus's (S9d.4b.2b) at the torus's point
 /// `o + (R + r cv)(cu x + su y) + r sv n`, reduced.
 pub(super) fn meeting_form(f: &Affine, big: &R, small: &R, other: &Far) -> Bi {
     // The torus's point: o + (R + r cv)(cu x + su y) + r sv n.
-    let lin = |g: &V, e: &R| -> Bi {
-        let mut b = Bi::default();
-        b.add_term([0, 0, 0, 0], &(dot(g, &f.o) - e));
-        b.add_term([1, 0, 0, 0], &(big * dot(g, &f.x)));
-        b.add_term([0, 1, 0, 0], &(big * dot(g, &f.y)));
-        b.add_term([1, 0, 1, 0], &(small * dot(g, &f.x)));
-        b.add_term([0, 1, 1, 0], &(small * dot(g, &f.y)));
-        b.add_term([0, 0, 0, 1], &(small * dot(g, &f.n)));
-        b
-    };
+    let lin = |g: &V, e: &R| -> Bi { linear_form(f, big, small, g, e) };
     match other {
         Far::Quadric(other) => {
             let mut g = Bi::default();
@@ -937,6 +941,48 @@ impl ToricCrv {
             let cs = [(int(1) - &s * &s) / &den, (&s * int(2)) / &den];
             (form.value(&cs) == zero()).then_some(cs)
         })
+    }
+
+    /// S9e.4b.4d.2c.1c: a coaxial ring's fixed `(cos v, sin v)` where its
+    /// cosine is rational and its sine a square root's multiple (a turned
+    /// body's corner where a round's tube crosses a coaxial cylinder): the
+    /// form along `v` a polynomial in the cosine (even in the sine), the
+    /// ring's root its rational root nearest the ring's binary64 angle,
+    /// checked exactly, the sine's sign the angle's; `None` otherwise.
+    pub(super) fn surd_v(&self) -> Option<[Qd; 2]> {
+        if !self.coaxial || self.over_v {
+            return None;
+        }
+        let v = self.root_f64(0.0);
+        let form = self.m.g.at(false, &[int(1), zero()]);
+        let p = form.in_cos()?;
+        let near = v.cos();
+        let c = match p.len() {
+            2 => -(&p[0] / &p[1]),
+            3 => {
+                let disc = &p[1] * &p[1] - int(4) * &p[0] * &p[2];
+                let root = rational_sqrt(&disc)?;
+                let two = int(2) * &p[2];
+                let roots = [(-&p[1] + &root) / &two, (-&p[1] - &root) / &two];
+                roots.into_iter().min_by(|a, b| {
+                    (rational_f64(a) - near)
+                        .abs()
+                        .total_cmp(&(rational_f64(b) - near).abs())
+                })?
+            }
+            _ => return None,
+        };
+        let value = p.iter().rev().fold(zero(), |acc, x| acc * &c + x);
+        let d = int(1) - &c * &c;
+        if value != zero() || d <= zero() || (rational_f64(&c) - near).abs() > 1e-6 {
+            return None;
+        }
+        let sign = if v.sin() < 0.0 { int(-1) } else { int(1) };
+        let s = match rational_sqrt(&d) {
+            Some(r) => Qd::rat(r * sign),
+            None => Qd::new(zero(), sign, d),
+        };
+        Some([Qd::rat(c), s])
     }
 
     /// The piece's point at a rational `(cos, sin)` of its parameter

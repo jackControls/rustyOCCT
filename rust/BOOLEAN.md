@@ -1639,7 +1639,18 @@ piece's ring at the snapped direction is met as the torus's circle
 (`ToricCrv::rational_v`), coaxial ruled faces in such a tree meet on the
 plane where their radii agree on every frame (`cones.rs`'s `coaxial_plane`),
 and a cone's circle about its axis is met by a torus as the circle it is.
-A torus at a corner (`OCC496b`'s first two, S9e.4b.4d.2c.1c), between two
+S9e.4b.4d.2c.1c: a round tangent to the wider of two coaxial cylinders whose
+tube crosses the narrower before its top (`OCC496b`'s first two tori, a step
+in rounded off past its plane) is snapped on the same grid, its corner the
+tube's exact crossing (its cosine rational, its height in `Q(sqrt(d))`); the
+sharp profile takes a step between the two cylinders (a plane of no stored
+face) past the corner, and the piece (the box from the centre past the step
+less the whole torus) is taken from the wider cylinder's part alone, the
+narrower's part, fused after it, making the corner across the tube
+(`turned::reentrant_corner`); such a corner ring met by a later face is the
+torus's circle at its fixed angle (`ToricCrv::surd_v`, `ring_meet`'s arm: a
+plane by its linear form along it). A torus at a corner beside a plane or a
+cone, a fillet at a corner, a torus at corners at both ends, between two
 cones, or two tori beside one cone stay no turned body's. S9e.4b.4d.2c.2:
 partners across a turned body's smooth edges (ribs, boxes and rods crossing
 the tangent circles of its fillets and rounds transversally) evaluate; the
@@ -1684,8 +1695,8 @@ join their neighbours smoothly (S9e.4b.4d)")`, the tangency read off the
 stored surfaces: at an edge's middle the torus's tube circle in that meridian
 within the resolution of tangent to the other face's surface; a turned
 part's fillets and rounds, `OCC496b`, `cts21199_base`, `pro14942b`, unless
-S9e.4b.4d.2c.1a's or 2c.1b's turned body takes it: `OCC496b`'s first two
-tori meet the next cylinder at a corner, S9e.4b.4d.2c.1c's;
+S9e.4b.4d.2c.1a's, 2c.1b's or 2c.1c's turned body takes it (`OCC496b`
+importing since S9e.4b.4d.2c.1c);
 `turned_round_off`, whose stored edge lies 1e-4 off the snapped tangency, a
 thousand resolutions); a
 torus's v-segment or wedge and every other body of curved faces, a torus
@@ -2057,8 +2068,8 @@ campaign of every target the steps touch.
   S9e.4b.4d.2c (turned bodies' fillets snapped tangent, the user's answer of
   2026-10-14; 2a's corners, 2b's near-flat cones, the moved bodies'
   coaxial meetings, 2c.1a's fillets and rounds between planes and
-  cylinders, 2c.1b's beside a cone and 2c.2's partners across smooth
-  edges done; open 2c.1c, a torus at a corner (`OCC496b`'s)), the
+  cylinders, 2c.1b's beside a cone, 2c.2's partners across smooth
+  edges and 2c.1c's rounds at corners (`OCC496b`'s) done), the
   near-miss rules not yet written (other curves' edges, two sphere
   circles, an apex against a sphere, torus or spline face, item 5's (b)
   to (d)), and the refusals by design listed there. U9 and U10 stayed open
@@ -4611,6 +4622,35 @@ campaign of every target the steps touch.
   torus bound the faces, within 1e-8 adaptively but the declared group's; the
   kernel's meetings with the tori cut at their turning points and OCCT's
   seams). No DRAW case moves.
+* **S9e.4b.4d.2c.1c evidence (rounds at corners), before its kernel code.**
+  Three bodies OCCT wrote by the oracle's `revolve` and `tolerance` rows
+  (`corner_shaft.brep`, `OCC496b`'s profile about its own axis in its own
+  numbers on the multiples of `2^-30` at its resolution 3e-3;
+  `corner_step.brep`, a round crossing a narrower shaft at `3 +
+  sqrt(3)/2`; `corner_collar.brep`, a round tangent at its upper end, its
+  corner a Pythagorean direction), 27 cases
+  (`generate_turned_corners_boolean_fixtures.py`): boxes, rods, a ball and
+  skew cubes across the corner rings, and a ball touching `step`'s round
+  (declared degenerate); the chained reference over each model profile, each
+  corner's height exact; the construction (each piece taken from its wider
+  cylinder's part) checked against the profile in its unit test; the
+  generator's check a CI group of its own (`turned-corners`). `step`'s
+  partners' commons also by the consistency generator's integral
+  (`boolean-turned-consistency-corners.tsv`).
+* **Kernel (S9e.4b.4d.2c.1c).** `tests/turned_corner_booleans.rs`: every
+  case within the reference's enclosures (the touching ball refused as a
+  tangency), each group's six Booleans consistent (the consistency
+  identities), `corner_step`'s partners giving the model's commons,
+  histories complete, results deterministic and moved rigidly, the skew
+  cubes' and the ball's cases evaluating turned (the corner rings met on a
+  turned frame), each body its model profile by Pappus, `turned_corner` and
+  `turned_round_off` refused as before. `compare_turned_corners_boolean.py`:
+  11 matches and 16 reviewed (BRepGProp's measures where a partner crosses
+  a corner ring, native's own cuts and fuses off its commons and bodies by
+  as much; the kernel's meetings with the tori cut at their turning points
+  and OCCT's seams). `OCC496b` imports (volume 15,824.5926094, native
+  `vprops` 15,824.5915520: its model's distance from the stored body); no
+  DRAW case moves (its partner `OCC496a` is private data).
 * **Fuzzing.** The `boolean` target (`FUZZING.md`): the split target's line
   and arc profiles, the tool offset exactly in the axis-aligned frame or
   sharing the tilted one's origin, heights equal, spanning, overlapping,
