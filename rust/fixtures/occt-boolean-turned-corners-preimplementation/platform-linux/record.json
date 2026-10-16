@@ -1,0 +1,7 @@
+{
+  "platform": "linux",
+  "source": "GitHub Actions run 38825939717 (commit 3ae2e597), ubuntu-24.04, source-pinned OCCT 8.1.0",
+  "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+  "observations_sha256": "eda9033d231910fb526c45678822c2ec511b987b49db88293c67fce7b7e4a359",
+  "review": "The same cases, statuses, validity, warnings, solid counts and face, edge and vertex counts (before and after unifying) as the macOS arm64 capture for every Boolean; volumes, areas and centres within 8.2e-15 of max(1, |value|) of the capture's (take_platform_records.py, bound 1e-11)."
+}

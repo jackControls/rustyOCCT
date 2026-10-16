@@ -14863,7 +14863,13 @@ Decisions for S9, recorded before its code (2026-09-28):
     43 s the slowest there), none failing; the boolean corpus's
     instructions with debug assertions 9.177 T against `679fdf39`'s 9.190 T
     (0.13 % fewer); the Python unit tests (483, 3 skipped); the ledger
-    holding. Open: the campaigns and the capture's Linux record.
+    holding. Merged and verified at `12a6545e` (every comparison of
+    HANDOFF's table, 53, with its documented counts and no failure), pushed
+    at `3ae2e597`; campaigns there (600 s each, sampled replays, every
+    switch on): `boolean` clean, 369 runs, the slowest input 18 s; `split`
+    clean, 1,079 runs. The capture's Linux record from run 38825939717 at
+    `3ae2e597`: every case within rounding of the macOS capture (8.2e-15 at
+    most). S9e.4b.4d.2 is complete.
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces
