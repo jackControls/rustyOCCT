@@ -83,7 +83,10 @@ then for the near misses of other curves, of points of two fields and of
 a cone's apex against a spline or torus face (branch `near-miss-curves`,
 over `rust-kernel` at `5a7acb4c`),
 then for the near misses of faces with no rule of their own (branch
-`near-miss-faces`, over `s9c2-kernel` at `5f50b30c`).
+`near-miss-faces`, over `s9c2-kernel` at `5f50b30c`),
+then for the DRAW survey after the near misses, the shallow lens, the
+import tail and a Boolean's resolution (branch `s9-draw-20`, over
+`rust-kernel` at `1bc0c327`).
 
 ## Where things stand
 
@@ -101,14 +104,15 @@ then for the near misses of faces with no rule of their own (branch
   arcs, and one solid of a result of several (S9e.2, `curved/matched.rs`),
   results of spheres, cones and tori, deeper chains and given results
   against spheres, cones and tori (S9e.3a, `curved/chain.rs`), each with its
-  DRAW survey (the last full survey, that of the turned bodies at
-  `712115c6`, branch `s9-draw-19`: the Boolean group's 987 cases and 59
-  restore cases registered, none failing; only `OCC485a`'s `bug476_1` to
-  `_8` moving, to `failed` at `checknbshapes` alone and not registered,
-  and `bug485`; both backends' audited values `cc7af85c`'s bit for bit;
-  the kernel's `bug476` results inconsistent with one another by up to
-  0.018 in volume, and boxes across `OCC485a`'s cylinders failing with
-  invalid topology: item 3) and a clean campaign (S9e.3a's and S9f.1's at `b2765f20`, 989
+  DRAW survey (the last full survey, that after the near misses, the
+  shallow lens, the import tail and a Boolean's resolution at `1bc0c327`,
+  branch `s9-draw-20`: the Boolean group's 987 cases and 59 restore cases
+  registered, none failing; no case moving against `712115c6`'s worker,
+  `bug476_1` to `_8` failing `checknbshapes` alone and not registered;
+  the 1,046 audited cases' values bit for bit, only `bug476`'s moving, to
+  the consistency fix's values; no new near-miss rule refusing any case,
+  no case reaching the narrow tier, a crossed or inside-first import or
+  the verification budget's end; nothing disagreeing or crashing) and a clean campaign (S9e.3a's and S9f.1's at `b2765f20`, 989
   runs).
 - **S9f.1 done.** Spline prisms against polyhedral prisms in any position
   (`curved/spline_walls.rs`), with its survey and campaign as above.
@@ -779,7 +783,17 @@ then for the near misses of faces with no rule of their own (branch
    `OCC485a`'s `bug476_1` to `_8` (to `failed` at `checknbshapes`) and
    `bug485` moving, the 31 `catch {...}` forms and the version-3 cases as
    before, no audited value moving, nothing registered; the `bug476`
-   results' inconsistency and the boxes' invalid topology in item 3).
+   results' inconsistency and the boxes' invalid topology in item 3),
+   that after the near misses, the shallow lens, the import tail and a
+   Boolean's resolution at `1bc0c327` (branch `s9-draw-20`: S9e.4b.4d.2c.1b,
+   1c, 2c.2 and the consistency fix, the near misses of other curves, of
+   two fields and of faces, the shallow lens, crossed leaves and chains
+   inside first, a Boolean's resolution and the torus verification
+   budget; no case moving, only `bug476`'s 40 audited values, to the
+   fix's; face pairs searched in 463 cases, every exact gap of rounding's
+   size, 13 cases of two resolutions as their trial found, none reaching
+   the narrow tier or a crossed or inside-first import, the budget at
+   most 62 boxes; nothing registered).
 3. **S9e.4b**, split in "S9e.4b refined": S9e.4b.1 (arcs rounded off
    their circles) and S9e.4b.2 (polyhedra other than prisms, on their
    stored vertices) are implemented with their DRAW surveys and
