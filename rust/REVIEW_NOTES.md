@@ -15410,6 +15410,65 @@ Decisions for S9, recorded before its code (2026-09-28):
     and its regressions 9.2035 T instructions against `5a7acb4c`'s 9.2150 T
     (-0.12%), the split corpus's 4.7487 T against 4.7606 T (-0.25%), none
     failing.
+  * **A Boolean's resolution, decided before its code (2026-10-17).** The
+    defect (found with S9e.4b.4b.2b.2b.3b, the note on `consistent_at` in
+    `tests/support/turned_consistency.rs`): a Boolean whose tool is an
+    imported body and whose object is a kernel construction returns a
+    result invalid at its own resolution. *Where the resolution is chosen
+    today*: every path takes the object's: S9a's arrangement and result
+    profiles (`profile::boolean::boolean`, `pa.tolerance()`), S9a.2's
+    `Stack::tolerance` (its `a`'s), S9b on `Polyhedron::tolerance`
+    (`self.a.resolution()`: every polyhedral, curved and imported result),
+    which also validates the result (`Polyhedron::solid`'s
+    `Topology::from_parts`); the curved engine's models each carry their
+    own input's, and its decisions within the resolution read mostly
+    `models[0]`'s (the object's), some a face's own model's and one the
+    larger of two. So the result's resolution depends on the inputs'
+    order. *Why such a result is invalid*: `from_parts` validates it at the
+    object's resolution with freshly measured enclosures, which pass; then
+    `finish` raises each continued entity's enclosure to its parents'
+    (Contract 5's T5), and an imported entity's enclosure is its file
+    tolerance (`Imported`), for example `1.5e-7`. Nothing validates after
+    the raise, so the result keeps `enclosure_exceeds_resolution`.
+    Measured over the 147 bodies of `fixtures/imported/` against a box at
+    `1e-7` (a probe, both orders, all three operations): 49 bodies give
+    results invalid at their own resolution in the tool's order (the common
+    and the fuse; never the cut, whose tool's entities are only touched,
+    never continued), every one valid at the body's resolution, none
+    invalid in the object's order. The `3e-3` turned bodies (`OCC485a`'s
+    kind) pass as the tool: their stored entities are their model
+    (`turned::modelled`), with computed enclosures well below `1e-7`. The
+    `1e-3` `tilted_skewbox` fails. *Decision*: a Boolean works at one
+    resolution, the coarser of its inputs' (the larger linear and the
+    larger angular value), whatever their order: the result's stored
+    resolution, its validation, and every decision within the resolution
+    (every model of the curved engine, given results' leaves among them,
+    carries it once the models are built; a model is still built at its own
+    input's resolution: its arcs snapped, a given result re-run, a piece's
+    hull at the input's own). An input returned whole (a cut missing its
+    object, a fuse of disjoint inputs) is that body and keeps its own.
+    Why: one resolution per body (D7, Contract 5's T1, whose "explicit,
+    documented combination rule" this is); a result keeping entities valid
+    only at the coarser input's resolution can declare no finer one, and
+    deciding at the finer one leaves features (gaps, slivers) between the
+    two that the result's validation then refuses or keeps unnamed. The
+    rule is fixed by the inputs before any step and never by a step's
+    outcome, so T4 holds (it refuses more near misses, never fewer). OCCT
+    agrees: a new vertex takes the larger of its two entities' tolerances
+    plus half their distance (`BOPTools_AlgoTools::MakeNewVertex`), an
+    edge's on a face the sum of theirs, and kept entities keep their own,
+    so a result's tolerance is never below its inputs'. Expected reach: a
+    construction at `1e-7` with an imported tool now decides as the
+    reversed order already did (at the file's tolerance); results of mixed
+    inputs given to later Booleans carry the coarser; Booleans of inputs of
+    one resolution do not move. Tests: a reproducer (every imported body
+    of several primitives' kind against a box at `1e-7`, both orders, each
+    result valid at its own resolution, equal to the other order's,
+    histories and ids as before), the consistency identities at each
+    result's own resolution (`consistent_at` kept only as an extra check),
+    determinism; then the reach (an instrumented build's outcomes before
+    and after over the boolean and split corpora and their regressions,
+    the fixtures, and the DRAW trial over the restore cases).
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces
