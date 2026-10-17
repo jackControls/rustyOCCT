@@ -146,8 +146,10 @@ only on a certified lower bound `> tol`. Otherwise it reports the matching
   another torus (S9d.4b.2b, `other_minor` positive) a ring torus there too,
   neither a sphere nor a cone; its
   points and jets are its root inside the window (interval Newton, then
-  the implicit function theorem), undecided where Newton's step does not
-  close inside the window.
+  the implicit function theorem, on its function's harmonic forms in the
+  torus's two angles, their constants summed before any jet, so a pair
+  coaxial within rounding keeps its terms in the parameter at rounding's
+  size), undecided where Newton's step does not close inside the window.
 * **UV closure.** Consecutive fins meet in UV within tolerance, with cylinder
   angle differences scaled by the radius, cone ones by `|R + v sin a|` and
   sphere ones by `|R cos v|` and torus ones by `R + r cos v` at the larger

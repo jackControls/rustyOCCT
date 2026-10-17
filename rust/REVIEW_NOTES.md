@@ -15662,7 +15662,111 @@ Decisions for S9, recorded before its code (2026-09-28):
     analytic_intersections corpora and their regressions replayed with
     debug assertions, none failing (the slowest 6.6 s, 2.3 s and 1.3 s of
     CPU). *Open* (HANDOFF, item 6): the tilted crossings beyond the
-    resolution evaluating in minutes in their results' validation.
+    resolution evaluating in minutes in their results' validation (done
+    since: the next bullet).
+  * **A tilted torus meeting's validation, done (2026-10-17; branch
+    `torus-validation-speed` from `d86e8b74`).** *The finding* (HANDOFF
+    item 6, left open by the bullet above): in the boolean target's tilted
+    frame a rod of radius `2 + g` about a torus's axis (radii 3 and 1, the
+    rod's frame built in the torus's, coaxial within rounding) crossing the
+    torus's inner equator beyond the resolution evaluated, its meeting's
+    pieces verified at once, but each operation took minutes (100, 72, 112
+    and 274 s for the fuse, cut, cut back and common at `g = 1e-6`; some
+    200 s a fuse at `5e-7` and `8e-7`); the level and turned frames 0.3 to
+    0.7 s. *The cause* (macOS `sample` of the `1e-6` fuse, 106 s here, and
+    an instrumented build): the time is the result's validation
+    (`topology::validate::check`'s `periodic_area`, `face_flux` and
+    `mass::sphere_flux`), each integral along one of the meeting's `Toric`
+    pcurves (on the torus and on the rod) taking 64,703 pieces at the loose
+    sign width (`integrate_many`, order 12), twelve such integrals a fuse,
+    nearly all of it `toric_jet`'s interval products. The meeting is two
+    closed curves `1.4e-3` either side of `v = pi`, near a double root,
+    `G_s` about `6e-3` there. `toric_jet_of` carried `G` as the other
+    surface's affine functionals' squares, `sum sign L^2`, each `L` a jet
+    whose terms in the torus's `u` are of the torus's size (`rho cos u`)
+    and cancel in the sum only exactly; every order's step divides its rest
+    by `G_s`, so the cancelling terms' widths grew about a hundredfold an
+    order even at a point (the other angle's jet `1e-11` wide at order 0,
+    `2.6e-9` at 2, `16` at 12, all width), and over a piece of `1e-3` the
+    slope's enclosure held zero (no jet at all). Not the narrow tier (never
+    reached), nor a tier retried: every integral settles at its first
+    width, only in tiny pieces. The level and turned frames are coaxial
+    exactly and meet in S9d.4b.2a's circles, so they never reach a `Toric`;
+    any frame off the world's axes holds the rod's axis only within
+    rounding. *The fix* (`topology/validate/projection.rs`): `G` as
+    trigonometric polynomials of degree two in each of the torus's angles
+    (`Harmonic`: `sum w[a][b] D_a(s) D_b(t)` over the harmonics `1, cos,
+    sin, cos 2, sin 2` of the other angle `s` and the parameter `t`; another
+    torus's `Q = |w|^2` and `P` with `(Q + k)^2 - 4 R2^2 P`), each
+    functional `alpha + beta z + rho (xi cos u + eta sin u)` squared and its
+    constants summed over the functionals before any jet, as a `Meet`'s
+    quadratic was (`trig_product`): a pair coaxial within rounding keeps
+    its terms in `u` at rounding's size (`1e-16`). The implicit function's
+    step: the `k`-th coefficient of `G` along the meeting without the other
+    angle's `k`-th harmonics' terms (`z`), those linear in `C_k` and `S_k`
+    with `G`'s partials at the base, and `C_k = C P - S q`, `S_k = S P + C
+    q` with `P = C C_k + S S_k` from the lower orders (`C^2 + S^2 = 1`) and
+    `q = C S_k - S C_k = -(z + K P) / G_s`, `s_k = q - (C S_k' - S C_k')`:
+    each term taken once, as the step it replaces did; over a wide base `G`
+    at `s*`, `G_s` and the first coefficient also in mean-value forms about
+    the base's middle, the narrower kept, as before (another torus's `(Q +
+    k)^2 - 4 R2^2 P` cancels over a piece). Every operation is inclusion
+    isotone, so each coefficient encloses the meeting's at every point of
+    the base, and a reversed use's jets stay the reflected ones bit for bit
+    (the memo's test). The functionals' jets (`toric_parts`, `toric_g`,
+    `toric_second`, `toric_ff`, `torus_g`) are gone. Not taken: a budget
+    (`ComputationLimit`), since the jets themselves could be narrow; the
+    validator's widths and tiers are unchanged. *Outcomes*: the tilted
+    meeting's jets `5e-12` wide at order 0 and `2e-8` at order 12, at a
+    point and over a sixty-fourth of the turn alike (the frames' rounding
+    in `cos 2u`'s coefficient, `1e-16`, over the slope, times `(4 pi)^k /
+    k!`). The tilted operations (release, the scratch probe's fuse, cut,
+    cut back and common in turn, both builds at load 25 to 30 on ten
+    cores): `1e-6` 220, 86, 156 and 681 s before, 1.5, 0.11, 1.7 and 0.97 s
+    now; `8e-7` 205, 142, 224 and 641 s before, 1.5, 0.09, 1.1 and 0.81 s;
+    `5e-7` 341, 167, 267 and 766 s before, 1.3, 0.09, 1.0 and 0.66 s (at
+    load 10, the `1e-6` fuse 106 s before, 0.68 s now); the level and
+    turned frames' as before. Every one a solid of the reference's volumes,
+    the certified volumes `3e-10` to `8e-10` wide now (`1.4e-9` to
+    `3.1e-9` before) and holding the references.
+    *Tests* (`tests/torus_hole_rod_booleans.rs`): the crossings of `1e-6`,
+    `8e-7` and `5e-7` in the level, turned and tilted frames (a test a
+    frame; the tilted one no longer ignored), all four operations, one
+    solid each, each solid's certified volume (`mass_enclosure`) at most
+    `1e-9` wide (relative, at least one) and holding the mpmath reference
+    within its rounding (the torus `6 pi^2`, the rod `3 pi rho^2`, their
+    common by Pappus over the tube's segment, 25 digits, checked against
+    the closed form), with the pair identities within `1e-12`; the
+    refusals within the resolution as before; 8.5 s in release. A unit
+    test of the tilted meeting's jets' widths and enclosures
+    (`a_meeting_near_a_double_root_coaxial_within_rounding_stays_narrow`).
+    Under the emulated glibc `hypot` with debug assertions and overflow
+    checks they pass (8.9 s), with `torus_curved_booleans`,
+    `torus_parts_booleans`, `curve_field_near_miss_booleans` and the
+    projection unit tests. *Reach and cost* (instrumented scratch builds of
+    `d86e8b74` and the branch: every `check`'s issues and every `mass`'s
+    volume and area enclosures traced; each input under both builds back to
+    back, alternating which first, one process an input, CPU by `wait4`):
+    the boolean (1,444 inputs and 38 regressions), split (3,551 and 20) and
+    brep_validation (3,152 and 1) corpora, 8,206 inputs: every exit code
+    and all 80,529 validations' issues alike; 239 of 22,480 mass
+    enclosures moved, in 76 boolean inputs (those integrating along a
+    torus meeting), every new midpoint inside the old enclosure (312 of
+    the 478 bounds' pairs narrower, 160 wider, 6 shifted; the widest
+    relative width `4.48e-10` before and after); CPU boolean 1,011.4 s
+    against 1,010.7 s, split 595.9 s against 595.9 s, brep_validation
+    138.5 s against 138.9 s, the 76 inputs 211.1 s against 206.4 s. The
+    release suite (all its tests, built first, at load 25 to 30): before
+    844 passing and 6 ignored, 1,371 s and 2,917 s of CPU; now 848 passing
+    and 5 ignored (the tilted crossings' test run, a test for each other
+    frame and the unit test added), 1,223 s and 2,819 s of CPU. *Checks*:
+    fmt, clippy (release, all targets, `-D warnings`), the 1.85 check, the
+    release suite (848 tests, 5 ignored); all 55 comparisons of HANDOFF's
+    table with their documented counts and 0 failures on the pinned SDK,
+    `compare_brep.py --family spline` 10 / 3, `compare_brep_io.py` 6,835 /
+    7 and `compare_split.py` 72 / 56; the boolean, split and
+    brep_validation corpora and their regressions replayed with debug
+    assertions, none failing (the slowest 7.2 s, 2.1 s and 1.8 s of CPU).
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces
