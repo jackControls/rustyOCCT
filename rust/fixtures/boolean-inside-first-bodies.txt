@@ -1,0 +1,19 @@
+write dimple imported/inside_dimple.brep
+plane 1 2 0.5 0 -1 0 1 0 0
+wire S 4 1 2 1.5 A 1 2 -3.5 5 0 4 2 0.5 L 4 2 6.5 L 1 2 6.5 L
+revolve 1 2 0.5 0 0 1 6.283185307179586
+end
+write cup imported/inside_cup.brep
+plane -1 0.5 1 0 -1 0 1 0 0
+wire S 5 -1 0.5 1.5 A -1 0.5 -3.5 5 0 1.1794494717703368 0.5 1 L 2 0.5 1 L 2 0.5 7 L -1 0.5 7 L
+revolve -1 0.5 1 0 0 1 6.283185307179586
+end
+write flange imported/inside_flange.brep
+plane 3 3 0.5 0 -1 0 1 0 0
+wire S 8 3 3 0 L 5 3 0 L 5 3 1 L 6 3 1 L 6 3 0.5 L 7 3 0.5 L 7 3 2 L 3 3 2 L
+revolve 3 3 0.5 0 0 1 6.283185307179586
+boolean fuse
+plane 3.0 3.0 2.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire S 4 4.0 2.25 2.0 L 5.0 1.5 2.0 A 3.0 3.0 2.0 2.5 1 5.0 4.5 2.0 L 4.0 3.75 2.0 L
+prism 0.0 0.0 1.0
+end

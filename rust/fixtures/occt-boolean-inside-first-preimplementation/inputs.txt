@@ -1,0 +1,168 @@
+case flange_cyl_fuse
+brep imported/inside_flange.brep
+boolean fuse
+brep imported/cyl.brep
+end
+case flange_cyl_cut
+brep imported/inside_flange.brep
+boolean cut
+brep imported/cyl.brep
+end
+case flange_cyl_common
+brep imported/inside_flange.brep
+boolean common
+brep imported/cyl.brep
+end
+case chain_cup_fuse
+brep imported/inside_cup.brep
+boolean cut
+plane -1.0 0.5 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire C -3.5 1.0 0.0 1.0
+prism 0.0 0.0 8.0
+then fuse
+plane -1.0 0.5 -0.5 0.0 0.0 1.0 1.0 0.0 0.0
+wire P 4 -4.75 -0.75 -0.5 -0.75 -0.75 -0.5 -0.75 2.25 -0.5 -4.75 2.25 -0.5
+prism 0.0 0.0 3.0
+end
+case chain_cup_cut
+brep imported/inside_cup.brep
+boolean cut
+plane -1.0 0.5 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire C -3.5 1.0 0.0 1.0
+prism 0.0 0.0 8.0
+then cut
+plane -1.0 0.5 -0.5 0.0 0.0 1.0 1.0 0.0 0.0
+wire P 4 -4.75 -0.75 -0.5 -0.75 -0.75 -0.5 -0.75 2.25 -0.5 -4.75 2.25 -0.5
+prism 0.0 0.0 3.0
+end
+case chain_cup_common
+brep imported/inside_cup.brep
+boolean cut
+plane -1.0 0.5 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire C -3.5 1.0 0.0 1.0
+prism 0.0 0.0 8.0
+then common
+plane -1.0 0.5 -0.5 0.0 0.0 1.0 1.0 0.0 0.0
+wire P 4 -4.75 -0.75 -0.5 -0.75 -0.75 -0.5 -0.75 2.25 -0.5 -4.75 2.25 -0.5
+prism 0.0 0.0 3.0
+end
+case dimple_rod_fuse
+brep imported/inside_dimple.brep
+boolean fuse
+plane 1.0 2.0 -0.5 0.0 0.0 1.0 1.0 0.0 0.0
+wire C 3.5 2.25 -0.5 1.0
+prism 0.0 0.0 4.0
+end
+case dimple_rod_cut
+brep imported/inside_dimple.brep
+boolean cut
+plane 1.0 2.0 -0.5 0.0 0.0 1.0 1.0 0.0 0.0
+wire C 3.5 2.25 -0.5 1.0
+prism 0.0 0.0 4.0
+end
+case dimple_rod_common
+brep imported/inside_dimple.brep
+boolean common
+plane 1.0 2.0 -0.5 0.0 0.0 1.0 1.0 0.0 0.0
+wire C 3.5 2.25 -0.5 1.0
+prism 0.0 0.0 4.0
+end
+case cup_box_fuse
+brep imported/inside_cup.brep
+boolean fuse
+plane -1.0 0.5 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire P 4 0.25 -0.25 0.0 3.25 -0.25 0.0 3.25 1.75 0.0 0.25 1.75 0.0
+prism 0.0 0.0 3.0
+end
+case cup_box_cut
+brep imported/inside_cup.brep
+boolean cut
+plane -1.0 0.5 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire P 4 0.25 -0.25 0.0 3.25 -0.25 0.0 3.25 1.75 0.0 0.25 1.75 0.0
+prism 0.0 0.0 3.0
+end
+case cup_box_common
+brep imported/inside_cup.brep
+boolean common
+plane -1.0 0.5 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire P 4 0.25 -0.25 0.0 3.25 -0.25 0.0 3.25 1.75 0.0 0.25 1.75 0.0
+prism 0.0 0.0 3.0
+end
+case flange_rod_fuse
+brep imported/inside_flange.brep
+boolean fuse
+plane 3.0 3.0 -0.5 0.0 0.0 1.0 1.0 0.0 0.0
+wire C 5.25 3.125 -0.5 0.875
+prism 0.0 0.0 4.0
+end
+case flange_rod_cut
+brep imported/inside_flange.brep
+boolean cut
+plane 3.0 3.0 -0.5 0.0 0.0 1.0 1.0 0.0 0.0
+wire C 5.25 3.125 -0.5 0.875
+prism 0.0 0.0 4.0
+end
+case flange_rod_common
+brep imported/inside_flange.brep
+boolean common
+plane 3.0 3.0 -0.5 0.0 0.0 1.0 1.0 0.0 0.0
+wire C 5.25 3.125 -0.5 0.875
+prism 0.0 0.0 4.0
+end
+case flange_box_fuse
+brep imported/inside_flange.brep
+boolean fuse
+plane 3.0 3.0 1.25 0.0 0.0 1.0 1.0 0.0 0.0
+wire P 4 5.25 1.25 1.25 8.0 1.25 1.25 8.0 3.25 1.25 5.25 3.25 1.25
+prism 0.0 0.0 1.25
+end
+case flange_box_cut
+brep imported/inside_flange.brep
+boolean cut
+plane 3.0 3.0 1.25 0.0 0.0 1.0 1.0 0.0 0.0
+wire P 4 5.25 1.25 1.25 8.0 1.25 1.25 8.0 3.25 1.25 5.25 3.25 1.25
+prism 0.0 0.0 1.25
+end
+case flange_box_common
+brep imported/inside_flange.brep
+boolean common
+plane 3.0 3.0 1.25 0.0 0.0 1.0 1.0 0.0 0.0
+wire P 4 5.25 1.25 1.25 8.0 1.25 1.25 8.0 3.25 1.25 5.25 3.25 1.25
+prism 0.0 0.0 1.25
+end
+case rod_dimple_fuse
+plane 1.0 2.0 2.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire C 3.5 2.5 2.0 1.0
+prism 0.0 0.0 2.5
+boolean fuse
+brep imported/inside_dimple.brep
+end
+case rod_dimple_cut
+plane 1.0 2.0 2.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire C 3.5 2.5 2.0 1.0
+prism 0.0 0.0 2.5
+boolean cut
+brep imported/inside_dimple.brep
+end
+case rod_dimple_common
+plane 1.0 2.0 2.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire C 3.5 2.5 2.0 1.0
+prism 0.0 0.0 2.5
+boolean common
+brep imported/inside_dimple.brep
+end
+case flange_touch_fuse
+brep imported/inside_flange.brep
+boolean fuse
+sphere 4.75 3.0 4.0 0.0 0.0 1.0 1.0 0.0 0.0 1.0 -1.5707963267948966 1.5707963267948966
+end
+case flange_touch_cut
+brep imported/inside_flange.brep
+boolean cut
+sphere 4.75 3.0 4.0 0.0 0.0 1.0 1.0 0.0 0.0 1.0 -1.5707963267948966 1.5707963267948966
+end
+case flange_touch_common
+brep imported/inside_flange.brep
+boolean common
+sphere 4.75 3.0 4.0 0.0 0.0 1.0 1.0 0.0 0.0 1.0 -1.5707963267948966 1.5707963267948966
+end

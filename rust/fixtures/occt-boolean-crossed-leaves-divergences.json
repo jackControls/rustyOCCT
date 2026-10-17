@@ -1,0 +1,41 @@
+{
+  "note": "Reviewed differences of the S9e.4b.4b.2b.2b.3b capture (occt-boolean-crossed-leaves-preimplementation): each fingerprinted by its native row; the touching ball's fuse OCCT keeps as two solids, and with the kernel the rod's seam OCCT's chain results keep.",
+  "reviews": [
+    {
+      "case": "joint_touch_fuse",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "189f5d1c0b4ce151b42c69ac77f246de14c7db08098be09869c36d89af6fc3cd",
+      "differences": [
+        "solids"
+      ],
+      "reason": "BRepAlgoAPI's result is valid; the joint (a stadium plate fused with a stadium slab across its line-arc joints on crossing axes) fused with a ball of radius 1 resting on the plate's top at its point (5/2, 0), off the slab (the declared degenerate group, the kernel refusing it as a tangency between the inputs): OCCT keeps the ball (volume 4 pi / 3) and the joint as two solids touching at that point, where the reference's rays count their union one; the two solids' volumes and areas sum to the reference's totals within 1e-16 relative (the joint alone its closed form, 65.4198419926526).",
+      "independent_evidence": "chained_curved_boolean_reference.py's rows on the constructions OCCT was given (generate_crossed_leaves_boolean_fixtures.py --check, identical under Python 3.9 and 3.12) agree two ways (each face swept by two independent families of curves) within 6.1e-34, every solid's measures from its faces within 4.6e-41 of its closed form, each body's within 2.7e-37 of its own (the plate's and the slab's sections less their common part), the pair identities within 5.7e-42, and Monte Carlo within 2.6 standard errors; its solid counts are the declared ones by rays at two resolutions; every stored vertex of the imported files lies on its construction's surfaces.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "chain_waist_fuse",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "4b7178a9bd36aecfdb02918f0c7e266fff7214bce7b0e05379cc26a9f8455b5d",
+      "differences": [
+        "rust_entity_counts"
+      ],
+      "reason": "BRepAlgoAPI's result is valid with the reference's solid count and its measures within the comparison's allowance. With the kernel, entity counts (the waist less an upright rod across the slab's cap x = 3, then fused with a box across the plate's right piece and the rod's hole): OCCT's result splits the rod's hole wall, which crosses the rod cylinder's seam (its stored frame's x direction, inside the slab) without closing round it, into two faces there, an edge along the seam and its two vertices splitting the wall's rims, which the kernel's wall does not hold (one face) ((30, 84, 56) raw and unified, the kernel's (29, 81, 54)); the kernel's enclosures are within the reference.",
+      "independent_evidence": "chained_curved_boolean_reference.py's rows on the constructions OCCT was given (generate_crossed_leaves_boolean_fixtures.py --check, identical under Python 3.9 and 3.12) agree two ways (each face swept by two independent families of curves) within 6.1e-34, every solid's measures from its faces within 4.6e-41 of its closed form, each body's within 2.7e-37 of its own (the plate's and the slab's sections less their common part), the pair identities within 5.7e-42, and Monte Carlo within 2.6 standard errors; its solid counts are the declared ones by rays at two resolutions; every stored vertex of the imported files lies on its construction's surfaces.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    },
+    {
+      "case": "chain_waist_cut",
+      "source_reference": "3d097a0328e71b826377d4814ab05ec3c3d23871",
+      "oracle": "OCCT 8.1.0 BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut, BRepAlgoAPI_Common",
+      "native_sha256": "ad757988bfc9163ad177fdb10f9ccfe99c3563044995591eef9569594a74318c",
+      "differences": [
+        "rust_entity_counts"
+      ],
+      "reason": "BRepAlgoAPI's result is valid with the reference's solid count and its measures within the comparison's allowance. With the kernel, entity counts (the waist less an upright rod across the slab's cap x = 3, then less a box across the plate's right piece and the rod's hole): OCCT's result splits the rod's hole wall, which crosses the rod cylinder's seam (its stored frame's x direction, inside the slab) without closing round it, into two faces there, an edge along the seam and its two vertices splitting the wall's rims, which the kernel's wall does not hold (one face) ((28, 84, 56) raw and unified, the kernel's (27, 81, 54)); the kernel's enclosures are within the reference.",
+      "independent_evidence": "chained_curved_boolean_reference.py's rows on the constructions OCCT was given (generate_crossed_leaves_boolean_fixtures.py --check, identical under Python 3.9 and 3.12) agree two ways (each face swept by two independent families of curves) within 6.1e-34, every solid's measures from its faces within 4.6e-41 of its closed form, each body's within 2.7e-37 of its own (the plate's and the slab's sections less their common part), the pair identities within 5.7e-42, and Monte Carlo within 2.6 standard errors; its solid counts are the declared ones by rays at two resolutions; every stored vertex of the imported files lies on its construction's surfaces.",
+      "platform_observed": "macOS arm64; source-pinned OCCT 8.1.0"
+    }
+  ]
+}
