@@ -15409,7 +15409,15 @@ Decisions for S9, recorded before its code (2026-09-28):
     files' constructs; OCCT's side of all three needing the viewer). *Corpus cost*: the debug-assertion replays of the boolean corpus
     and its regressions 9.2035 T instructions against `5a7acb4c`'s 9.2150 T
     (-0.12%), the split corpus's 4.7487 T against 4.7606 T (-0.25%), none
-    failing.
+    failing. Merged with S9e.4b.4b.2b.2b.3b, the near misses of other curves
+    and the shallow lens, verified (55 comparisons with their documented
+    counts and no failure, both generators' checks) and pushed at
+    `aebc7650`. Campaigns there (600 s each, sampled replays, every switch
+    on): `boolean` clean, 253 runs, the slowest input 60 s on a loaded host
+    (`bdab60a0...`, a slow unit since October 10, 20.6 s of CPU alone under
+    AddressSanitizer at load 10); `split` clean, 667 runs. Both captures'
+    Linux records from run 39035585455 at `aebc7650`: every case within
+    rounding of the macOS capture (1e-13 at most).
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces
