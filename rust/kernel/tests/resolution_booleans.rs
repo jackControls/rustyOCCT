@@ -4,7 +4,7 @@
 //! tolerance, `1e-7` to `3e-3`) against a kernel box at `1e-7` in both
 //! orders: each result valid at its own resolution, the coarser one, the
 //! two orders' commons and fuses alike, every history complete, results
-//! deterministic, and each Boolean's history and result ids and vertices
+//! deterministic, and each Boolean's history and result ids
 //! those of the kernel before the rule (`fixtures/boolean-resolution-
 //! histories.tsv`, written by the kernel at `37949a87`, whose results in the
 //! tool's order were invalid at their own resolution: the imported body's
@@ -89,22 +89,27 @@ fn fnv(text: &str) -> u64 {
     })
 }
 
-/// A Boolean's outcome as a digest: its history, and each result's ids by
-/// slot and its vertices' bits; or its error.
-fn digest(r: &Result<(Vec<Solid>, History), Error>) -> String {
+/// A Boolean's outcome as a digest: its history and each result's ids by
+/// slot, with `points` its vertices' bits too (which differ by an ulp
+/// between macOS's `hypot` and glibc's, so the pinned digests leave them
+/// out); or its error.
+fn digest(r: &Result<(Vec<Solid>, History), Error>, points: bool) -> String {
     match r {
         Err(e) => format!("error {e}"),
         Ok((out, h)) => {
             let mut text = format!("{h:?}");
             for s in out {
                 let ids: Vec<_> = s.topology().ids().collect();
-                let points: Vec<[u64; 3]> = s
-                    .topology()
-                    .vertices()
-                    .iter()
-                    .map(|v| v.position.to_array().map(f64::to_bits))
-                    .collect();
-                text += &format!("\n{:?} {ids:?} {points:?}", s.topology().body_id());
+                text += &format!("\n{:?} {ids:?}", s.topology().body_id());
+                if points {
+                    let bits: Vec<[u64; 3]> = s
+                        .topology()
+                        .vertices()
+                        .iter()
+                        .map(|v| v.position.to_array().map(f64::to_bits))
+                        .collect();
+                    text += &format!(" {bits:?}");
+                }
             }
             format!("{:016x}", fnv(&text))
         }
@@ -175,9 +180,9 @@ fn outcomes(failures: &mut Vec<String>) -> BTreeMap<(String, String, String), St
                         for op in OPS {
                             let r = boolean(p, op, q);
                             let again = boolean(p, op, q);
-                            let d = digest(&r);
+                            let d = digest(&r, false);
                             let mut failure = None;
-                            if digest(&again) != d {
+                            if digest(&again, true) != digest(&r, true) {
                                 failure = Some("not deterministic".to_string());
                             }
                             if let Ok((out, h)) = &r {
@@ -233,7 +238,7 @@ fn outcomes(failures: &mut Vec<String>) -> BTreeMap<(String, String, String), St
 
 /// Every imported body against its box, both orders: each result valid at
 /// the coarser resolution, the orders alike, histories complete, results
-/// deterministic; each outcome (history, ids, vertices) the kernel's before
+/// deterministic; each outcome (history, result ids) the kernel's before
 /// the rule. `WRITE_DIGESTS=1` prints the rows instead.
 #[test]
 fn imported_bodies_and_boxes_at_the_coarser_resolution() {
