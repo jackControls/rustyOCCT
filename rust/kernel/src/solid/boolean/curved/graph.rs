@@ -1281,6 +1281,11 @@ pub(super) fn arrange_touching(models: [Prism; 2], touch: bool) -> Result<Arr> {
     super::near::edge_faces(&models, res)?;
     super::near::vertex_faces(&models, res)?;
     super::near::edges_and_vertices(&models, res)?;
+    // Edges and vertices against tori and spline walls, then faces with no
+    // near-miss rule of their own (REVIEW_NOTES.md, "Faces with no near-miss
+    // rule of their own"), after every earlier rule.
+    super::near::curved_edges_and_vertices(&models, res)?;
+    super::near::face_pairs(&models, res)?;
     // Pierces: every edge against every face of the other.
     for o in 0..2 {
         let (me, other) = (&models[o], &models[1 - o]);

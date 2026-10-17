@@ -2679,6 +2679,50 @@ the dataset (30 seconds a case) holds for all 1,132 cases (Rust: 18
 pass, 1,050 viewer-skipped, 53 unsupported, 11 private data); `--ledger`
 holds.
 
+**Faces with no near-miss rule of their own: a trial of the Boolean group,
+the restore cases and the `catch` forms.** Two cylinders' or cones'
+walls, a plane along a ruling, a torus or a spline wall against another
+input's face within the resolution of touching at a point, along a line or
+along a circle, and edges and vertices against a torus or a spline wall,
+are refused where they miss with the gap outside either input or cross
+(2026-10-17, branch `near-miss-faces` over `5f50b30c`; REVIEW_NOTES.md's
+"Faces with no near-miss rule of their own, done", which has the counts).
+An instrumented build of this branch's debug worker (not committed: a line
+for each face pair searched, each candidate and exact decision, each
+torus's or spline wall's vertex and edge extremum, each refusal), on the
+Rust adapter, the public dataset, 120 seconds a case, four at once on a
+host at load 8 to 45, against the trial of `near-miss-curves` above (the
+same selection: the 1,802 self-contained cases of the Boolean group, the
+2,128 restoring a shape for a Boolean at a command's place, the 1,814 among
+them, and the 40 `catch {...}` forms, the 30 among them). Every status,
+reason and error is that trial's field for field: the 1,802 (987
+evaluating, every one registered; 815 refused or unsupported), the 40 (25
+private data, 15 unsupported) and the 2,128 (982 unsupported, 795 private
+data, 284 `failed`, `bug476_1` to `_8` among them failing `checknbshapes`
+alone as before, 59 evaluating, every one registered) but
+`bugs/modalg_4/bug779`, which timed out at that trial's load and ends
+unsupported at its restore as before; the other eight timeouts are the
+four first restores and `buc60532`, `_1`, `_2` and `bug23585` at load, as
+before. Every registered case among them (1,081) has its manifest status.
+The new paths are reached by 463 cases (399 self-contained, 62 restore,
+2 `catch`): 140 hold critical points within twice the resolution, 726
+decided at exact points in 126 cases, every gap of rounding's size (`0` to
+`9.9e-14`, `bfuse_complex/H2`, each below its `rho`: the `bop*_simple`
+grids' rods with boxes on their tangent planes, `R2` to `Y6`, U1 and Y5
+among them, `bfuse_complex/L3`, `bug14777`, `bug485`'s coincident
+walls), so none is a contact; 8 restore cases hold
+a vertex in a torus's or a spline wall's box, none within the resolution;
+no case is refused by the new rules, none moves and none is registered
+(1,132 cases); the ledger holds. Controls on the instrumented worker took
+each path: two rods crossing `1e-10` apart refused by the face rule, a
+ball `1e-10` off a torus's equator by it, a box's edge `1e-10` off the
+equator by the edge rule. A full contract run of the manifest with the
+dataset (30 seconds a case, an absolute output directory, at load 8 to 25)
+holds for all 1,132 cases (Rust: 18 pass, 1,050 viewer-skipped, 53
+unsupported, 11 private data), the slowest case 9.1 seconds
+(`bcommon_complex/B4`), the derived `boolean_polyhedra` 9.0;
+`--ledger` holds.
+
 Three more `intss` cases run on the Rust adapter but are not registered,
 because the contract admits no failing status: `bug23178`, `bug28222_2` and
 `bug28222_3` count the pieces IntPatch splits its walking lines into (6, 4

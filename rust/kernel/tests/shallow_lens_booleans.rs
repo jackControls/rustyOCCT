@@ -405,7 +405,11 @@ type Crossing = (&'static str, fn(f64) -> (Solid, Solid), f64);
 /// crossing a rod's wall at right angles (two cylinders' meeting), balls
 /// at a torus's outer equator and its top, a rod of radius 0.5 by its
 /// outer wall (torus meetings) and a slab's face across its equator (a
-/// spiric section), by `1.5e-7` or `1e-6` of the smaller radius: every
+/// spiric section), by `1.5e-7` or `1e-6` of the smaller radius (the rod
+/// across a rod by `3e-7` of its radius, `1.5e-7` deep: by `1.5e-7` of it
+/// the lens, `7.5e-8` deep, lay within the resolution, a crossing the face
+/// rule refuses, REVIEW_NOTES.md's "Faces with no near-miss rule of their
+/// own, done"), beyond the resolution: every
 /// operation evaluates, the commons (refused before, as an undecided
 /// orientation or an unrepresentable mass) within `1e-9` and positive, and
 /// fuse and common, each cut and common, enclose the bodies' sums
@@ -438,7 +442,7 @@ fn other_procedural_curves_shallow_loops_evaluate_consistently() {
                     .0;
                 (rod(f), small)
             },
-            1.5e-7,
+            3e-7,
         ),
         (
             "ball at a torus's equator, turned",
@@ -582,7 +586,9 @@ fn slab(f: Frame3, s: f64, lo: f64, hi: f64) -> Solid {
 /// A lens on a spline wall stays refused, now a `ComputationLimit`: a rod
 /// of radius 0.5 along `x` crossing the ridge of a dome prism (the profile
 /// `y = x (4 - x) / 2` over `[0, 4]`, a quadratic spline, extruded along
-/// `z`) by `1.4e-7` of its radius. Its meeting runs on the spline wall
+/// `z`) by `2.8e-7` of its radius, `1.4e-7` deep (by `1.4e-7` of it the
+/// lens, `7e-8` deep, lay within the resolution, a crossing the face rule
+/// refuses). Its meeting runs on the spline wall
 /// (S9f.2b), whose fluxes the narrow tier does not narrow: the common's
 /// orientation stays undecided (`uncertified_shell_orientation` before),
 /// the fuse and both cuts evaluate.
@@ -608,7 +614,7 @@ fn a_shallow_lens_on_a_spline_wall_is_a_computation_limit() {
     .0;
     let r = 0.5;
     let f = frame(
-        [0.5, 2.0 + r * (1.0 - 1.4e-7), 0.25],
+        [0.5, 2.0 + r * (1.0 - 2.8e-7), 0.25],
         [1.0, 0.0, 0.0],
         [0.0, 1.0, 0.0],
     );

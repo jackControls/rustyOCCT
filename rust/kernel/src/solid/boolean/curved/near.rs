@@ -59,16 +59,43 @@ pub(super) const NEAR_LIMIT: &str =
 pub(super) const NEAR_FIELDS: &str = "a near miss's gap along a face between points of two fields";
 
 /// A face's surface: a plane, or a cylinder or a cone on its model's frame
-/// (its local coordinates `(u, v, w)`).
+/// (its local coordinates `(u, v, w)`); for the edges' and vertices' rules
+/// against tori and spline walls (REVIEW_NOTES.md, "Faces with no near-miss
+/// rule of their own"), a torus or a spline wall too, their functions their
+/// signed distances.
 enum Kind<'a> {
-    Plane { p: &'a V, m: &'a V },
-    Cyl { f: &'a Affine, c: &'a P2, r: &'a R },
-    Cone { f: &'a Affine, b: &'a R, k: &'a R },
+    Plane {
+        p: &'a V,
+        m: &'a V,
+    },
+    Cyl {
+        f: &'a Affine,
+        c: &'a P2,
+        r: &'a R,
+    },
+    Cone {
+        f: &'a Affine,
+        b: &'a R,
+        k: &'a R,
+    },
+    Torus {
+        f: &'a Affine,
+        ring: &'a super::torus::Ring,
+    },
+    /// A spline wall, face `fi` of `m` (its outward normal `normal_at`'s),
+    /// its arcs in binary64 for its searches.
+    Spline {
+        f: &'a Affine,
+        seg: &'a super::spline_walls::SplineSeg,
+        m: &'a Prism,
+        fi: usize,
+        arcs: Vec<PArc<f64>>,
+    },
 }
 
 /// A face's surface and its data in binary64 (for searches only): a
 /// plane's point and normal, or the frame's map to local coordinates and
-/// a cylinder's centre and radius or a cone's `b` and `k`.
+/// a cylinder's centre and radius, a cone's `b` and `k` or a torus's radii.
 struct Quad<'a> {
     kind: Kind<'a>,
     o: [f64; 3],
@@ -136,6 +163,41 @@ impl<'a> Quad<'a> {
         })
     }
 
+    /// A torus's or a spline wall's face (the edges' and vertices' rules'
+    /// second pass); `None` for the others.
+    fn of_curved(m: &'a Prism, fi: usize) -> Option<Self> {
+        let (vm, vi) = m.view(fi);
+        let g = |v: &V| [0, 1, 2].map(|k| rational_f64(&v[k]));
+        let o = g(&vm.f.o);
+        let rows = [g(vm.f.row(0)), g(vm.f.row(1)), g(vm.f.row(2))];
+        let (kind, data) = match &vm.faces[vi].surf {
+            Surf::Torus => {
+                let ring = vm.ring.as_ref()?;
+                (
+                    Kind::Torus { f: &vm.f, ring },
+                    [rational_f64(&ring.big), rational_f64(&ring.small), 0.0],
+                )
+            }
+            Surf::Spline(seg) => (
+                Kind::Spline {
+                    f: &vm.f,
+                    seg,
+                    m,
+                    fi,
+                    arcs: parcs(seg),
+                },
+                [0.0; 3],
+            ),
+            _ => return None,
+        };
+        Some(Self {
+            kind,
+            o,
+            rows,
+            data,
+        })
+    }
+
     /// Local coordinates in binary64.
     fn local64(&self, x: [f64; 3]) -> [f64; 3] {
         let d = [0, 1, 2].map(|k| x[k] - self.o[k]);
@@ -157,6 +219,14 @@ impl<'a> Quad<'a> {
                 let rad = l[2].scale(k).add_r(b);
                 l[0].mul(&l[0]).add(&l[1].mul(&l[1])).sub(&rad.mul(&rad))
             }
+            // The torus's quartic, negative inside.
+            Kind::Torus { f, ring } => ring.value(&f.local_q(x)),
+            // The offset along the outward normal at the wall's point near
+            // the foot (zero, on the surface, where none is found).
+            Kind::Spline { m, fi, .. } => match self.foot(x) {
+                Some(s) => qqdot(&qsub(x, &s), &m.normal_at(*fi, &s)),
+                None => Qd::rat(zero()),
+            },
         }
     }
 
@@ -178,6 +248,20 @@ impl<'a> Quad<'a> {
                         .sub(&rk.scale(&f.row(2)[j]))
                 })
             }
+            Kind::Torus { f, ring } => {
+                let lg = ring.gradient(&f.local_q(x));
+                [0, 1, 2].map(|j| {
+                    lg[0]
+                        .scale(&f.row(0)[j])
+                        .add(&lg[1].scale(&f.row(1)[j]))
+                        .add(&lg[2].scale(&f.row(2)[j]))
+                })
+            }
+            // The outward normal at the wall's point near the foot.
+            Kind::Spline { m, fi, .. } => match self.foot(x) {
+                Some(s) => m.normal_at(*fi, &s),
+                None => qv(&[zero(), zero(), zero()]),
+            },
         }
     }
 
@@ -205,6 +289,24 @@ impl<'a> Quad<'a> {
                     .map(|j| 2.0 * (l[0] * rows[0][j] + l[1] * rows[1][j] - rad * k * rows[2][j]));
                 (l[0] * l[0] + l[1] * l[1] - rad * rad, g)
             }
+            // Signed distances and their unit gradients.
+            Kind::Torus { .. } => {
+                let l = self.local64(x);
+                let [big, small, _] = self.data;
+                let rho = l[0].hypot(l[1]);
+                let (e, z) = (rho - big, l[2]);
+                let d = e.hypot(z);
+                let lg = [e / d * l[0] / rho, e / d * l[1] / rho, z / d];
+                let g =
+                    [0, 1, 2].map(|j| lg[0] * rows[0][j] + lg[1] * rows[1][j] + lg[2] * rows[2][j]);
+                (d - small, g)
+            }
+            Kind::Spline { seg, arcs, .. } => {
+                let l = self.local64(x);
+                let (d, n) = profile_distance(arcs, seg.hole, [l[0], l[1]]);
+                let g = [0, 1, 2].map(|j| n[0] * rows[0][j] + n[1] * rows[1][j]);
+                (d, g)
+            }
         }
     }
 
@@ -222,6 +324,8 @@ impl<'a> Quad<'a> {
             Kind::Plane { .. } => v.abs() > 4.0 * res * gg,
             Kind::Cyl { .. } => self.data[2] > 4.0 * res && v.abs() > 4.0 * res * gg,
             Kind::Cone { .. } => false,
+            // A distance.
+            Kind::Torus { .. } | Kind::Spline { .. } => v.abs() > 4.0 * res,
         }
     }
 
@@ -257,6 +361,32 @@ impl<'a> Quad<'a> {
                 let [cs, sn] = unit_at(l[1].atan2(l[0]));
                 let loc = [Qd::rat(&rad * &cs), Qd::rat(&rad * &sn), Qd::rat(h)];
                 Some(world(f, &loc))
+            }
+            // A torus's exact point at the rational half-angle tangents of
+            // the binary64 foot's angles (as `apex_face`'s).
+            Kind::Torus { f, ring } => {
+                let l = self.local64(qv_f64(x));
+                let rho = l[0].hypot(l[1]);
+                let (u, v) = (l[1].atan2(l[0]), l[2].atan2(rho - self.data[0]));
+                if !(u.is_finite() && v.is_finite() && rho > 0.0) {
+                    return None;
+                }
+                let ([cu, su], [cv, sv]) = (unit_at(u), unit_at(v));
+                let rad = &ring.big + &ring.small * &cv;
+                Some(qv(&f.point(
+                    &(&rad * &cu),
+                    &(&rad * &su),
+                    &(&ring.small * &sv),
+                )))
+            }
+            // A spline wall's exact point at a rational run parameter near the
+            // binary64 nearest profile point, at the point's height.
+            Kind::Spline { f, seg, arcs, .. } => {
+                let l = self.local64(qv_f64(x));
+                let tau = near_run(arcs, [l[0], l[1]])?;
+                let uv = seg.point(&Qd::rat(run_rational(seg, tau)));
+                let h = f.local_q(x);
+                Some(super::spline_walls::qpoint(f, &uv[0], &uv[1], &h[2]))
             }
         }
     }
@@ -309,7 +439,7 @@ fn nearest_to(quad: &Quad, c: &V) -> Option<QV> {
     let (f, centre) = match &quad.kind {
         Kind::Cyl { f, c: cc, .. } => (*f, [cc[0].clone(), cc[1].clone()]),
         Kind::Cone { f, .. } => (*f, [zero(), zero()]),
-        Kind::Plane { .. } => return None,
+        _ => return None,
     };
     let l = f.local(c);
     let (du, dv) = (&l[0] - &centre[0], &l[1] - &centre[1]);
@@ -342,7 +472,7 @@ fn nearest_to(quad: &Quad, c: &V) -> Option<QV> {
             }
             (rad, h)
         }
-        Kind::Plane { .. } => unreachable!("taken above"),
+        _ => unreachable!("taken above"),
     };
     let loc = [
         dir[0].mul(&rad).add_r(&centre[0]),
@@ -432,6 +562,12 @@ fn sphere_quadric(
 /// faces heads toward the surface, or runs along it, is no contact
 /// (`leaves_away`).
 pub(super) fn edge_faces(models: &[Prism; 2], res: f64) -> Result<()> {
+    edge_faces_with(models, res, false)
+}
+
+/// `edge_faces` against plane, cylinder and cone faces, or (`curved`)
+/// against torus and spline faces (`curved_edges_and_vertices`).
+fn edge_faces_with(models: &[Prism; 2], res: f64, curved: bool) -> Result<()> {
     let wide = |b: &([f64; 3], [f64; 3])| (b.0.map(|x| x - res), b.1.map(|x| x + res));
     for o in 0..2 {
         let (em, qm) = (&models[o], &models[1 - o]);
@@ -443,7 +579,12 @@ pub(super) fn edge_faces(models: &[Prism; 2], res: f64) -> Result<()> {
             let (from, to, with) = edge_places(em, ei);
             let run = Run::new(em, ei);
             for fq in 0..qm.faces.len() {
-                let Some(quad) = Quad::of(qm, fq) else {
+                let quad = if curved {
+                    Quad::of_curved(qm, fq)
+                } else {
+                    Quad::of(qm, fq)
+                };
+                let Some(quad) = quad else {
                     continue;
                 };
                 if !boxes_meet(&wide(&qm.boxes[fq]), &ebox) {
@@ -466,6 +607,9 @@ pub(super) fn edge_faces(models: &[Prism; 2], res: f64) -> Result<()> {
                                 Some((run.settle(s, &slope)?, kind))
                             })
                             .collect()
+                    }
+                    None if curved && matches!(e.curve, Crv::Line { .. }) => {
+                        line_extrema(em, ei, &quad)
                     }
                     None => extrema(&e.curve, &quad),
                 };
@@ -735,6 +879,8 @@ fn along(g: &QV, w: &QV) -> bool {
 fn extrema(crv: &Crv, quad: &Quad) -> Vec<(QV, Ordering)> {
     match (crv, &quad.kind) {
         (Crv::Line { .. }, Kind::Plane { .. }) => Vec::new(),
+        // Over the edge's range (`line_extrema`).
+        (Crv::Line { .. }, Kind::Torus { .. } | Kind::Spline { .. }) => Vec::new(),
         (Crv::Line { p, d }, Kind::Cyl { f, .. } | Kind::Cone { f, .. }) => {
             // The function is quadratic in the parameter: `A t^2 + B t + C`.
             let (lp, ld) = (f.local_q(p), f.local_dir(d));
@@ -757,7 +903,7 @@ fn extrema(crv: &Crv, quad: &Quad) -> Vec<(QV, Ordering)> {
                             .scale(&int(2)),
                     )
                 }
-                Kind::Plane { .. } => unreachable!("taken above"),
+                _ => unreachable!("taken above"),
             };
             if a == zero() {
                 return Vec::new();
@@ -911,6 +1057,14 @@ fn search(at: &dyn Fn(f64) -> ([f64; 3], [f64; 3]), quad: &Quad) -> Vec<(f64, Or
 /// the resolution of each other"): a cone standing `1e-12` under a slab was
 /// fused with it into two solids.
 pub(super) fn vertex_faces(models: &[Prism; 2], res: f64) -> Result<()> {
+    vertex_faces_with(models, res, false)
+}
+
+/// `vertex_faces` against plane, cylinder and cone faces (and a cone's apex
+/// against the others, `apex_face`), or (`curved`) the vertices but a
+/// cone's apex against torus and spline faces
+/// (`curved_edges_and_vertices`).
+fn vertex_faces_with(models: &[Prism; 2], res: f64, curved: bool) -> Result<()> {
     let wide = |b: &([f64; 3], [f64; 3])| (b.0.map(|x| x - res), b.1.map(|x| x + res));
     for o in 0..2 {
         let (vm, qm) = (&models[o], &models[1 - o]);
@@ -919,10 +1073,19 @@ pub(super) fn vertex_faces(models: &[Prism; 2], res: f64) -> Result<()> {
             let Some(spot) = spot_of(vm, &ends, v) else {
                 continue;
             };
+            if curved && matches!(spot, Spot::Apex) {
+                continue;
+            }
             let x = qv_f64(&mv.p);
             for fq in 0..qm.faces.len() {
                 let b = wide(&qm.boxes[fq]);
                 if !(0..3).all(|k| b.0[k] <= x[k] && x[k] <= b.1[k]) {
+                    continue;
+                }
+                if curved {
+                    if let Some(quad) = Quad::of_curved(qm, fq) {
+                        vertex_face(vm, &spot, &mv.p, qm, fq, &quad, res)?;
+                    }
                     continue;
                 }
                 let Some(quad) = Quad::of(qm, fq) else {
@@ -3900,6 +4063,1728 @@ pub(super) fn nearest_on_run(m: &Prism, ei: usize, c: &V, r: &R, res: f64) -> Ve
         .collect()
 }
 
+// ------------------------------------------------------------ faces
+
+/// Two cylinders' or cones' walls, or a plane and one, within the
+/// resolution of tangency (REVIEW_NOTES.md, "Faces with no near-miss rule of
+/// their own").
+pub(super) const NEAR_WALLS: &str =
+    "a cylinder's or cone's wall within the resolution of tangency to the other input's (S9c)";
+/// A torus within the resolution of tangency to the other input's face.
+pub(super) const NEAR_TORUS: &str =
+    "a torus within the resolution of tangency to the other input's surface (S9d.4)";
+/// A spline wall within the resolution of tangency to the other input's
+/// face.
+pub(super) const NEAR_SPLINE: &str =
+    "a spline wall within the resolution of tangency to the other input's surface (S9f)";
+
+/// The arithmetic of the face pairs' searches: binary64 (`f64`), forward
+/// jets of first and second derivatives in two parameters (`J`), and
+/// binary64 intervals (`Iv`) for the certified bounds beyond the resolution.
+trait Num: Clone {
+    /// A binary64 constant.
+    fn k(x: f64) -> Self;
+    /// A rational datum (enclosed in the interval arithmetic).
+    fn of_r(x: &R) -> Self;
+    fn add(&self, o: &Self) -> Self;
+    fn sub(&self, o: &Self) -> Self;
+    fn mul(&self, o: &Self) -> Self;
+    fn div(&self, o: &Self) -> Self;
+    fn sqrt(&self) -> Self;
+    fn cos_sin(&self) -> (Self, Self);
+    /// A binary64 view of the value (an interval's midpoint).
+    fn mid(&self) -> f64;
+    /// The square (an interval's never below zero).
+    fn sq(&self) -> Self {
+        self.mul(self)
+    }
+}
+
+impl Num for f64 {
+    fn k(x: f64) -> Self {
+        x
+    }
+    fn of_r(x: &R) -> Self {
+        rational_f64(x)
+    }
+    fn add(&self, o: &Self) -> Self {
+        self + o
+    }
+    fn sub(&self, o: &Self) -> Self {
+        self - o
+    }
+    fn mul(&self, o: &Self) -> Self {
+        self * o
+    }
+    fn div(&self, o: &Self) -> Self {
+        self / o
+    }
+    fn sqrt(&self) -> Self {
+        f64::sqrt(*self)
+    }
+    fn cos_sin(&self) -> (Self, Self) {
+        (self.cos(), self.sin())
+    }
+    fn mid(&self) -> f64 {
+        *self
+    }
+}
+
+/// A binary64 interval (`Fast`, outward rounded); a division by an interval
+/// holding zero gives NaN bounds, never certain.
+#[derive(Clone, Copy, Debug)]
+struct Iv(Fast);
+
+impl Iv {
+    fn span(lo: f64, hi: f64) -> Self {
+        Iv(Fast::exact_f64(lo).union(&Fast::exact_f64(hi)))
+    }
+
+    fn bounds(&self) -> (f64, f64) {
+        self.0.bounds_f64()
+    }
+
+    /// Whether it lies strictly within `(lo, hi)`.
+    fn inside(&self, lo: f64, hi: f64) -> bool {
+        let (a, b) = self.bounds();
+        lo < a && b < hi
+    }
+}
+
+impl Num for Iv {
+    fn k(x: f64) -> Self {
+        Iv(Fast::exact_f64(x))
+    }
+    fn of_r(x: &R) -> Self {
+        Iv(Fast::from_r(x))
+    }
+    fn add(&self, o: &Self) -> Self {
+        Iv(self.0.add(&o.0))
+    }
+    fn sub(&self, o: &Self) -> Self {
+        Iv(self.0.sub(&o.0))
+    }
+    fn mul(&self, o: &Self) -> Self {
+        Iv(self.0.mul(&o.0))
+    }
+    fn div(&self, o: &Self) -> Self {
+        match self.0.div(&o.0) {
+            Some(x) => Iv(x),
+            None => Iv(Fast::exact_f64(f64::NAN)),
+        }
+    }
+    fn sqrt(&self) -> Self {
+        let (lo, _) = self.bounds();
+        if lo.is_nan() || lo < 0.0 {
+            return Iv(Fast::exact_f64(f64::NAN));
+        }
+        Iv(self.0.sqrt())
+    }
+    fn cos_sin(&self) -> (Self, Self) {
+        let (c, s) = Fast::cos_sin(&self.0);
+        (Iv(c), Iv(s))
+    }
+    fn mid(&self) -> f64 {
+        let (lo, hi) = self.bounds();
+        0.5 * lo + 0.5 * hi
+    }
+    fn sq(&self) -> Self {
+        Iv(self.0.square())
+    }
+}
+
+/// A forward jet in two parameters: a value, its gradient and its Hessian
+/// (`h = [d00, d01, d11]`).
+#[derive(Clone, Debug)]
+struct J<B> {
+    v: B,
+    d: [B; 2],
+    h: [B; 3],
+}
+
+impl<B: Num> J<B> {
+    fn con(v: B) -> Self {
+        let z = B::k(0.0);
+        J {
+            v,
+            d: [z.clone(), z.clone()],
+            h: [z.clone(), z.clone(), z],
+        }
+    }
+
+    /// The parameter `i` at the value `v`.
+    fn var(v: B, i: usize) -> Self {
+        let mut j = Self::con(v);
+        j.d[i] = B::k(1.0);
+        j
+    }
+
+    /// `f` of this jet from `f`, `f'` and `f''` at its value.
+    fn chain(&self, f: B, f1: B, f2: B) -> Self {
+        let d = [self.d[0].mul(&f1), self.d[1].mul(&f1)];
+        let h = [
+            f2.mul(&self.d[0].mul(&self.d[0])).add(&f1.mul(&self.h[0])),
+            f2.mul(&self.d[0].mul(&self.d[1])).add(&f1.mul(&self.h[1])),
+            f2.mul(&self.d[1].mul(&self.d[1])).add(&f1.mul(&self.h[2])),
+        ];
+        J { v: f, d, h }
+    }
+}
+
+impl<B: Num> Num for J<B> {
+    fn k(x: f64) -> Self {
+        Self::con(B::k(x))
+    }
+    fn of_r(x: &R) -> Self {
+        Self::con(B::of_r(x))
+    }
+    fn add(&self, o: &Self) -> Self {
+        J {
+            v: self.v.add(&o.v),
+            d: [self.d[0].add(&o.d[0]), self.d[1].add(&o.d[1])],
+            h: [
+                self.h[0].add(&o.h[0]),
+                self.h[1].add(&o.h[1]),
+                self.h[2].add(&o.h[2]),
+            ],
+        }
+    }
+    fn sub(&self, o: &Self) -> Self {
+        J {
+            v: self.v.sub(&o.v),
+            d: [self.d[0].sub(&o.d[0]), self.d[1].sub(&o.d[1])],
+            h: [
+                self.h[0].sub(&o.h[0]),
+                self.h[1].sub(&o.h[1]),
+                self.h[2].sub(&o.h[2]),
+            ],
+        }
+    }
+    fn mul(&self, o: &Self) -> Self {
+        let (a, b) = (self, o);
+        let cross = |i: usize, j: usize| a.d[i].mul(&b.d[j]).add(&a.d[j].mul(&b.d[i]));
+        J {
+            v: a.v.mul(&b.v),
+            d: [
+                a.d[0].mul(&b.v).add(&a.v.mul(&b.d[0])),
+                a.d[1].mul(&b.v).add(&a.v.mul(&b.d[1])),
+            ],
+            h: [
+                a.h[0].mul(&b.v).add(&cross(0, 0)).add(&a.v.mul(&b.h[0])),
+                a.h[1].mul(&b.v).add(&cross(0, 1)).add(&a.v.mul(&b.h[1])),
+                a.h[2].mul(&b.v).add(&cross(1, 1)).add(&a.v.mul(&b.h[2])),
+            ],
+        }
+    }
+    fn div(&self, o: &Self) -> Self {
+        let one = B::k(1.0);
+        let r = one.div(&o.v);
+        let r2 = r.mul(&r);
+        let recip = o.chain(r.clone(), B::k(0.0).sub(&r2), B::k(2.0).mul(&r2.mul(&r)));
+        self.mul(&recip)
+    }
+    fn sqrt(&self) -> Self {
+        let s = self.v.sqrt();
+        let f1 = B::k(0.5).div(&s);
+        let f2 = B::k(-0.25).div(&s.mul(&self.v));
+        self.chain(s, f1, f2)
+    }
+    fn cos_sin(&self) -> (Self, Self) {
+        let (c, s) = self.v.cos_sin();
+        let neg = |x: &B| B::k(0.0).sub(x);
+        (
+            self.chain(c.clone(), neg(&s), neg(&c)),
+            self.chain(s.clone(), c, neg(&s)),
+        )
+    }
+    fn mid(&self) -> f64 {
+        self.v.mid()
+    }
+    fn sq(&self) -> Self {
+        let two = B::k(2.0);
+        self.chain(self.v.sq(), two.mul(&self.v), two)
+    }
+}
+
+/// Whether `a > b` (neither NaN).
+fn above(a: f64, b: f64) -> bool {
+    a.partial_cmp(&b) == Some(Ordering::Greater)
+}
+
+/// Whether `a <= b` (neither NaN).
+fn at_most(a: f64, b: f64) -> bool {
+    matches!(a.partial_cmp(&b), Some(Ordering::Less | Ordering::Equal))
+}
+
+fn dot3<T: Num>(a: &[T; 3], b: &[T; 3]) -> T {
+    a[0].mul(&b[0]).add(&a[1].mul(&b[1])).add(&a[2].mul(&b[2]))
+}
+
+fn horner<T: Num>(c: &[T], s: &T) -> T {
+    c.iter().rev().fold(T::k(0.0), |acc, ci| acc.mul(s).add(ci))
+}
+
+/// A spline wall's arc in any arithmetic: its run range (`d0`, `d1` in
+/// binary64 to pick it, `d0t` and `inv = 1 / (d1 - d0)` in its arithmetic)
+/// and its coordinates' coefficients in powers of its own parameter `s`
+/// (`tau = d0 + s (d1 - d0)`), with their first and second derivatives'.
+#[derive(Clone, Debug)]
+struct PArc<T> {
+    d0: f64,
+    d1: f64,
+    d0t: T,
+    inv: T,
+    x: [Vec<T>; 3],
+    y: [Vec<T>; 3],
+}
+
+fn parcs_of<T: Num>(seg: &super::spline_walls::SplineSeg) -> Vec<PArc<T>> {
+    let deriv = |c: &[R]| -> Vec<R> {
+        c.iter()
+            .enumerate()
+            .skip(1)
+            .map(|(i, x)| x * int(i as i64))
+            .collect()
+    };
+    let lift = |c: &[R]| c.iter().map(T::of_r).collect::<Vec<T>>();
+    let three = |c: &[R]| {
+        let d1 = deriv(c);
+        let d2 = deriv(&d1);
+        [lift(c), lift(&d1), lift(&d2)]
+    };
+    seg.arcs
+        .iter()
+        .map(|a| PArc {
+            d0: rational_f64(&a.d[0]),
+            d1: rational_f64(&a.d[1]),
+            d0t: T::of_r(&a.d[0]),
+            inv: T::of_r(&(int(1) / (&a.d[1] - &a.d[0]))),
+            x: three(&a.x),
+            y: three(&a.y),
+        })
+        .collect()
+}
+
+/// A spline wall's arcs in binary64.
+fn parcs(seg: &super::spline_walls::SplineSeg) -> Vec<PArc<f64>> {
+    parcs_of(seg)
+}
+
+/// The arc holding a run parameter (the first whose range reaches it).
+fn arc_at<T>(arcs: &[PArc<T>], tau: f64) -> &PArc<T> {
+    arcs.iter()
+        .find(|a| tau <= a.d1)
+        .unwrap_or(&arcs[arcs.len() - 1])
+}
+
+/// A profile's point and its first and second derivatives in the run
+/// parameter.
+fn profile_jet<T: Num>(arcs: &[PArc<T>], tau: &T) -> [[T; 2]; 3] {
+    let a = arc_at(arcs, tau.mid());
+    let s = tau.sub(&a.d0t).mul(&a.inv);
+    let i2 = a.inv.mul(&a.inv);
+    [
+        [horner(&a.x[0], &s), horner(&a.y[0], &s)],
+        [
+            horner(&a.x[1], &s).mul(&a.inv),
+            horner(&a.y[1], &s).mul(&a.inv),
+        ],
+        [horner(&a.x[2], &s).mul(&i2), horner(&a.y[2], &s).mul(&i2)],
+    ]
+}
+
+/// The run parameter of a profile's point nearest a point (binary64: 32
+/// samples an arc, then Newton's method; a search only).
+fn near_run(arcs: &[PArc<f64>], p: [f64; 2]) -> Option<f64> {
+    let mut best = (f64::INFINITY, 0.0f64);
+    for a in arcs {
+        for i in 0..=32 {
+            let tau = a.d0 + (a.d1 - a.d0) * f64::from(i) / 32.0;
+            let [c, ..] = profile_jet(arcs, &tau);
+            let d = (c[0] - p[0]).powi(2) + (c[1] - p[1]).powi(2);
+            if d < best.0 {
+                best = (d, tau);
+            }
+        }
+    }
+    if !best.0.is_finite() {
+        return None;
+    }
+    let (lo, hi) = (arcs[0].d0, arcs[arcs.len() - 1].d1);
+    let mut tau = best.1;
+    for _ in 0..32 {
+        let [c, d1, d2] = profile_jet(arcs, &tau);
+        let e = [c[0] - p[0], c[1] - p[1]];
+        let g = e[0] * d1[0] + e[1] * d1[1];
+        let h = d1[0] * d1[0] + d1[1] * d1[1] + e[0] * d2[0] + e[1] * d2[1];
+        if !above(h, 0.0) {
+            break;
+        }
+        let next = (tau - g / h).clamp(lo, hi);
+        if next == tau {
+            break;
+        }
+        tau = next;
+    }
+    tau.is_finite().then_some(tau)
+}
+
+/// A rational run parameter at a binary64 one, within the segment's run.
+fn run_rational(seg: &super::spline_walls::SplineSeg, tau: f64) -> R {
+    let t = q(tau);
+    if t < seg.first {
+        seg.first.clone()
+    } else if t > seg.last {
+        seg.last.clone()
+    } else {
+        t
+    }
+}
+
+/// A profile point's signed distance from a spline segment (positive on its
+/// outward side: the run's right on an outer boundary, its left on a
+/// hole's) and the unit direction of its growth (binary64).
+fn profile_distance(arcs: &[PArc<f64>], hole: bool, p: [f64; 2]) -> (f64, [f64; 2]) {
+    let Some(tau) = near_run(arcs, p) else {
+        return (f64::NAN, [0.0; 2]);
+    };
+    let [c, d1, _] = profile_jet(arcs, &tau);
+    let len = d1[0].hypot(d1[1]);
+    let s = if hole { -1.0 } else { 1.0 };
+    let m = [s * d1[1] / len, -s * d1[0] / len];
+    let d = (p[0] - c[0]) * m[0] + (p[1] - c[1]) * m[1];
+    (d, m)
+}
+
+/// The kind of a face sampled in its parameters (`P`).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum PKind {
+    Cyl,
+    Cone,
+    Torus,
+    Spline,
+}
+
+/// A face's surface as a map of two parameters: a cylinder's or a cone's
+/// angle and height, a torus's angles about its axis and its tube, a spline
+/// wall's run parameter and height; its frame and shape in any arithmetic.
+#[derive(Clone, Debug)]
+struct Patch<T> {
+    kind: PKind,
+    o: [T; 3],
+    axes: [[T; 3]; 3],
+    /// A cylinder's `(cu, cv, r)`, a cone's `(b, k, 0)`, a torus's `(R, r,
+    /// 0)`.
+    c: [T; 3],
+    arcs: Vec<PArc<T>>,
+}
+
+impl<T: Num> Patch<T> {
+    fn of(m: &Prism, fi: usize) -> Option<Self> {
+        let (vm, vi) = m.view(fi);
+        let f = &vm.f;
+        let v3 = |v: &V| [T::of_r(&v[0]), T::of_r(&v[1]), T::of_r(&v[2])];
+        let z = || T::k(0.0);
+        let (kind, c, arcs) = match &vm.faces[vi].surf {
+            Surf::Cyl { c, r, .. } => (
+                PKind::Cyl,
+                [T::of_r(&c[0]), T::of_r(&c[1]), T::of_r(r)],
+                Vec::new(),
+            ),
+            Surf::Cone { b, k } => (PKind::Cone, [T::of_r(b), T::of_r(k), z()], Vec::new()),
+            Surf::Torus => {
+                let ring = vm.ring.as_ref()?;
+                (
+                    PKind::Torus,
+                    [T::of_r(&ring.big), T::of_r(&ring.small), z()],
+                    Vec::new(),
+                )
+            }
+            Surf::Spline(seg) => (PKind::Spline, [z(), z(), z()], parcs_of(seg)),
+            _ => return None,
+        };
+        Some(Self {
+            kind,
+            o: v3(&f.o),
+            axes: [v3(&f.x), v3(&f.y), v3(&f.n)],
+            c,
+            arcs,
+        })
+    }
+
+    /// The local coordinates at parameters.
+    fn local(&self, p: &[T; 2]) -> [T; 3] {
+        match self.kind {
+            PKind::Cyl => {
+                let (cs, sn) = p[0].cos_sin();
+                [
+                    self.c[0].add(&self.c[2].mul(&cs)),
+                    self.c[1].add(&self.c[2].mul(&sn)),
+                    p[1].clone(),
+                ]
+            }
+            PKind::Cone => {
+                let (cs, sn) = p[0].cos_sin();
+                let rad = self.c[0].add(&self.c[1].mul(&p[1]));
+                [rad.mul(&cs), rad.mul(&sn), p[1].clone()]
+            }
+            PKind::Torus => {
+                let (cu, su) = p[0].cos_sin();
+                let (cv, sv) = p[1].cos_sin();
+                let rad = self.c[0].add(&self.c[1].mul(&cv));
+                [rad.mul(&cu), rad.mul(&su), self.c[1].mul(&sv)]
+            }
+            PKind::Spline => {
+                let [c, ..] = profile_jet(&self.arcs, &p[0]);
+                let [u, v] = c;
+                [u, v, p[1].clone()]
+            }
+        }
+    }
+
+    fn point(&self, p: &[T; 2]) -> [T; 3] {
+        let l = self.local(p);
+        [0, 1, 2].map(|k| {
+            self.o[k]
+                .add(&self.axes[0][k].mul(&l[0]))
+                .add(&self.axes[1][k].mul(&l[1]))
+                .add(&self.axes[2][k].mul(&l[2]))
+        })
+    }
+}
+
+/// The kind of a face held by its signed distance (`Q`).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum QKind {
+    Plane,
+    Sphere,
+    Cyl,
+    Cone,
+    Torus,
+    Spline,
+}
+
+/// A face's surface held by its signed distance, positive where its
+/// function (`Quad::value`'s, the sphere's `|x - c|^2 - r^2`, the torus's
+/// quartic, a spline wall's outward offset) grows, as a function of `P`'s
+/// local coordinates: its own coordinates `y = t + a l` of `P`'s local `l`
+/// (composed exactly, so that a coordinate along `P`'s axis enters only
+/// through its coefficient): a plane's offset along its normal, a sphere's
+/// point less its centre, the others' local coordinates in their frame.
+#[derive(Clone, Debug)]
+struct Field<T> {
+    kind: QKind,
+    a: [[T; 3]; 3],
+    t: [T; 3],
+    /// A plane's `|m|`, a sphere's `r`, a cylinder's `(cu, cv, r)`, a
+    /// cone's `(b, k, sqrt(1 + k^2))`, a torus's `(R, r)`.
+    c: [T; 3],
+    arcs: Vec<PArc<T>>,
+    arcs64: Vec<PArc<f64>>,
+    hole: bool,
+}
+
+impl<T: Num> Field<T> {
+    /// Face `fi` of `m` against `P`'s frame `pf`.
+    fn of(m: &Prism, fi: usize, pf: &Affine) -> Option<Self> {
+        let (vm, vi) = m.view(fi);
+        let f = &vm.f;
+        let z = || T::k(0.0);
+        let axes = [&pf.x, &pf.y, &pf.n];
+        // `y = t + a l` from rows `r` applied to `x - o`.
+        let compose = |rows: [V; 3], o: &V| -> ([[T; 3]; 3], [T; 3]) {
+            let d = sub(&pf.o, o);
+            (
+                rows.clone()
+                    .map(|r| [0, 1, 2].map(|i| T::of_r(&dot(&r, axes[i])))),
+                rows.map(|r| T::of_r(&dot(&r, &d))),
+            )
+        };
+        let frame = || compose([f.row(0).clone(), f.row(1).clone(), f.row(2).clone()], &f.o);
+        let none = (Vec::new(), Vec::new(), false);
+        let zero3 = || [zero(), zero(), zero()];
+        let ((a, t), kind, c, (arcs, arcs64, hole)) = match &vm.faces[vi].surf {
+            Surf::Plane { p, m } => (
+                compose([m.clone(), zero3(), zero3()], p),
+                QKind::Plane,
+                [T::of_r(&dot(m, m)).sqrt(), z(), z()],
+                none,
+            ),
+            Surf::Sphere { c, r } => {
+                let unit = |k: usize| {
+                    let mut e = zero3();
+                    e[k] = int(1);
+                    e
+                };
+                (
+                    compose([unit(0), unit(1), unit(2)], c),
+                    QKind::Sphere,
+                    [T::of_r(r), z(), z()],
+                    none,
+                )
+            }
+            Surf::Cyl { c, r, .. } => (
+                frame(),
+                QKind::Cyl,
+                [T::of_r(&c[0]), T::of_r(&c[1]), T::of_r(r)],
+                none,
+            ),
+            Surf::Cone { b, k } => (
+                frame(),
+                QKind::Cone,
+                [T::of_r(b), T::of_r(k), T::of_r(&(int(1) + k * k)).sqrt()],
+                none,
+            ),
+            Surf::Torus => {
+                let ring = vm.ring.as_ref()?;
+                (
+                    frame(),
+                    QKind::Torus,
+                    [T::of_r(&ring.big), T::of_r(&ring.small), z()],
+                    none,
+                )
+            }
+            Surf::Spline(seg) => (
+                frame(),
+                QKind::Spline,
+                [z(), z(), z()],
+                (parcs_of(seg), parcs(seg), seg.hole),
+            ),
+        };
+        Some(Self {
+            kind,
+            a,
+            t,
+            c,
+            arcs,
+            arcs64,
+            hole,
+        })
+    }
+
+    /// The signed distance at `P`'s local coordinates `l`.
+    fn dist(&self, l: &[T; 3]) -> T {
+        let y = [0, 1, 2].map(|k| self.t[k].add(&dot3(&self.a[k], l)));
+        match self.kind {
+            QKind::Plane => y[0].div(&self.c[0]),
+            QKind::Sphere => y[0]
+                .sq()
+                .add(&y[1].sq())
+                .add(&y[2].sq())
+                .sqrt()
+                .sub(&self.c[0]),
+            QKind::Cyl => {
+                let (du, dv) = (y[0].sub(&self.c[0]), y[1].sub(&self.c[1]));
+                du.sq().add(&dv.sq()).sqrt().sub(&self.c[2])
+            }
+            QKind::Cone => {
+                let rho = y[0].sq().add(&y[1].sq()).sqrt();
+                let rad = self.c[0].add(&self.c[1].mul(&y[2]));
+                rho.sub(&rad).div(&self.c[2])
+            }
+            QKind::Torus => {
+                let rho = y[0].sq().add(&y[1].sq()).sqrt();
+                let e = rho.sub(&self.c[0]);
+                e.sq().add(&y[2].sq()).sqrt().sub(&self.c[1])
+            }
+            QKind::Spline => {
+                let Some(t0) = near_run(&self.arcs64, [y[0].mid(), y[1].mid()]) else {
+                    return T::k(f64::NAN);
+                };
+                // Two Newton steps in this arithmetic from the binary64
+                // foot carry its derivatives.
+                let mut tau = T::k(t0);
+                for _ in 0..2 {
+                    let [c, d1, d2] = profile_jet(&self.arcs, &tau);
+                    let e = [y[0].sub(&c[0]), y[1].sub(&c[1])];
+                    let g = e[0].mul(&d1[0]).add(&e[1].mul(&d1[1]));
+                    let h = e[0]
+                        .mul(&d2[0])
+                        .add(&e[1].mul(&d2[1]))
+                        .sub(&d1[0].sq())
+                        .sub(&d1[1].sq());
+                    tau = tau.sub(&g.div(&h));
+                }
+                let [c, d1, _] = profile_jet(&self.arcs, &tau);
+                let e = [y[0].sub(&c[0]), y[1].sub(&c[1])];
+                let len = d1[0].sq().add(&d1[1].sq()).sqrt();
+                let right = e[0].mul(&d1[1]).sub(&e[1].mul(&d1[0])).div(&len);
+                if self.hole {
+                    T::k(0.0).sub(&right)
+                } else {
+                    right
+                }
+            }
+        }
+    }
+}
+
+/// A face's rank as `Q`: a plane, a sphere, a cylinder, a cone, a torus, a
+/// spline wall.
+fn rank(s: &Surf) -> usize {
+    match s {
+        Surf::Plane { .. } => 0,
+        Surf::Sphere { .. } => 1,
+        Surf::Cyl { .. } => 2,
+        Surf::Cone { .. } => 3,
+        Surf::Torus => 4,
+        Surf::Spline(_) => 5,
+    }
+}
+
+/// Whether the face pairs' rule takes two surfaces of these ranks, and its
+/// reason: two cylinders or cones, or a plane and one; a torus and anything
+/// but a spline wall; a spline wall and anything but a torus.
+fn taken(a: usize, b: usize) -> Option<&'static str> {
+    let (lo, hi) = (a.min(b), a.max(b));
+    match hi {
+        2 | 3 if lo != 1 => Some(NEAR_WALLS),
+        4 => Some(NEAR_TORUS),
+        5 if lo != 4 => Some(NEAR_SPLINE),
+        _ => None,
+    }
+}
+
+/// Faces of the two inputs within the resolution of touching at a point,
+/// along a line or along a circle (REVIEW_NOTES.md, "Faces with no near-miss
+/// rule of their own"): two cylinders' or cones' walls, a plane and one, a
+/// torus or a spline wall against another surface. One face (`P`) is
+/// sampled in its parameters, the other (`Q`) held by its signed distance
+/// `phi`; each local least or greatest of `phi` over `P` within twice the
+/// resolution in binary64 (Newton's method on forward jets) is decided at
+/// exact points of both faces (`face_pair`): within the resolution (their
+/// exact gap at most it, above the gap's own rounding), both in their
+/// faces, a crossing or a miss with the gap outside either input is
+/// `Degenerate`; beyond it, apart where Krawczyk's operator certifies it,
+/// else a `ComputationLimit`. Two rods crossing whose walls missed by
+/// `1e-12`, a ball by a torus, a rod by a spline wall were fused into two
+/// solids.
+pub(super) fn face_pairs(models: &[Prism; 2], res: f64) -> Result<()> {
+    let wide = |b: &([f64; 3], [f64; 3])| (b.0.map(|x| x - 2.0 * res), b.1.map(|x| x + 2.0 * res));
+    for fa in 0..models[0].faces.len() {
+        let (va, ia) = models[0].view(fa);
+        let ra = rank(&va.faces[ia].surf);
+        for fb in 0..models[1].faces.len() {
+            let (vb, ib) = models[1].view(fb);
+            let rb = rank(&vb.faces[ib].surf);
+            let Some(why) = taken(ra, rb) else {
+                continue;
+            };
+            if !boxes_meet(&wide(&models[0].boxes[fa]), &models[1].boxes[fb]) {
+                continue;
+            }
+            // `P` the higher rank, the first input's on a tie.
+            let (ip, fp, fq) = if ra >= rb { (0, fa, fb) } else { (1, fb, fa) };
+            face_pair(models, ip, fp, fq, res, why)?;
+        }
+    }
+    Ok(())
+}
+
+/// A critical point of `phi` over `P`'s parameters (binary64): its
+/// parameters, value, gradient and Hessian, and the point's derivatives.
+#[derive(Clone, Debug)]
+struct Crit {
+    p: [f64; 2],
+    phi: f64,
+    h: [f64; 3],
+    dx: [[f64; 3]; 2],
+}
+
+/// The kind of a critical point: a point least or greatest (`Less`,
+/// `Greater`), or one along a curve of them (the null direction in the
+/// parameters); `None` a saddle or coincident surfaces.
+#[derive(Clone, Copy, Debug)]
+enum Contact {
+    Point(Ordering),
+    Curve(Ordering, [f64; 2]),
+}
+
+/// The parameter grid of a face pair: `P`'s parameters' ranges and counts,
+/// whether each is periodic, and `P`'s speed bounds in each.
+struct Grid {
+    lo: [f64; 2],
+    hi: [f64; 2],
+    n: [usize; 2],
+    periodic: [bool; 2],
+    speed: [f64; 2],
+}
+
+impl Grid {
+    fn step(&self, k: usize) -> f64 {
+        (self.hi[k] - self.lo[k]) / self.n[k] as f64
+    }
+
+    fn at(&self, i: usize, j: usize) -> [f64; 2] {
+        [
+            self.lo[0] + self.step(0) * i as f64,
+            self.lo[1] + self.step(1) * j as f64,
+        ]
+    }
+
+    /// Whether parameters lie within the grid's domain (a periodic one
+    /// always), widened by a cell.
+    fn holds(&self, p: &[f64; 2]) -> bool {
+        (0..2).all(|k| {
+            self.periodic[k]
+                || (self.lo[k] - self.step(k) <= p[k] && p[k] <= self.hi[k] + self.step(k))
+        })
+    }
+
+    fn wrap(&self, p: [f64; 2]) -> [f64; 2] {
+        [0, 1].map(|k| {
+            if self.periodic[k] {
+                let w = (p[k] - self.lo[k]).rem_euclid(TAU);
+                self.lo[k] + w
+            } else {
+                p[k]
+            }
+        })
+    }
+}
+
+/// Whether `Q`'s surface lies beyond `reach` of every point of a box
+/// (binary64, with a rounding allowance of `1e-12` of the box's size): a
+/// plane's offsets at the box's corners all of one sign beyond it (an
+/// affine function's extremes); a sphere's distances from its centre to
+/// the box against its radius; a cylinder's, a cone's or a torus's
+/// distance over the box of its local coordinates holding the box's image
+/// (its corners' extents). A spline wall is never passed over so.
+fn box_apart(m: &Prism, fi: usize, b: &([f64; 3], [f64; 3]), reach: f64) -> bool {
+    let (vm, vi) = m.view(fi);
+    let f = &vm.f;
+    let corners: Vec<[f64; 3]> = (0..8)
+        .map(|c| std::array::from_fn(|k| if c >> k & 1 == 1 { b.1[k] } else { b.0[k] }))
+        .collect();
+    let size = corners
+        .iter()
+        .flatten()
+        .fold(1.0f64, |acc, x| acc.max(x.abs()));
+    let reach = reach + 1e-12 * size;
+    let g = |v: &V| [0, 1, 2].map(|k| rational_f64(&v[k]));
+    // Beyond `reach` either way of an enclosed signed distance.
+    let apart = |lo: f64, hi: f64| lo > reach || hi < -reach;
+    // The box of the corners' local coordinates.
+    let local = || {
+        let (o, rows) = (g(&f.o), [g(f.row(0)), g(f.row(1)), g(f.row(2))]);
+        let mut lo = [f64::INFINITY; 3];
+        let mut hi = [f64::NEG_INFINITY; 3];
+        for c in &corners {
+            for k in 0..3 {
+                let l: f64 = (0..3).map(|j| rows[k][j] * (c[j] - o[j])).sum();
+                lo[k] = lo[k].min(l);
+                hi[k] = hi[k].max(l);
+            }
+        }
+        (lo, hi)
+    };
+    // The least and greatest distance from the origin over a 2D box.
+    let radial = |lo: [f64; 2], hi: [f64; 2]| {
+        let near = [0, 1].map(|k| 0.0f64.clamp(lo[k], hi[k]));
+        let far = [0, 1].map(|k| lo[k].abs().max(hi[k].abs()));
+        (near[0].hypot(near[1]), far[0].hypot(far[1]))
+    };
+    match &vm.faces[vi].surf {
+        Surf::Plane { p, m } => {
+            let (p, m) = (g(p), g(m));
+            let len = m[0].hypot(m[1]).hypot(m[2]);
+            let ds: Vec<f64> = corners
+                .iter()
+                .map(|c| (0..3).map(|k| m[k] * (c[k] - p[k])).sum::<f64>() / len)
+                .collect();
+            let (lo, hi) = ds
+                .iter()
+                .fold((f64::INFINITY, f64::NEG_INFINITY), |(a, b), &x| {
+                    (a.min(x), b.max(x))
+                });
+            apart(lo, hi)
+        }
+        Surf::Sphere { c, r } => {
+            let (c, r) = (g(c), rational_f64(r));
+            let near: f64 = (0..3)
+                .map(|k| (c[k].clamp(b.0[k], b.1[k]) - c[k]).powi(2))
+                .sum::<f64>()
+                .sqrt();
+            let far: f64 = (0..3)
+                .map(|k| (c[k] - b.0[k]).abs().max((c[k] - b.1[k]).abs()).powi(2))
+                .sum::<f64>()
+                .sqrt();
+            apart(near - r, far - r)
+        }
+        Surf::Cyl { c, r, .. } => {
+            let (lo, hi) = local();
+            let (cu, cv, r) = (rational_f64(&c[0]), rational_f64(&c[1]), rational_f64(r));
+            let (near, far) = radial([lo[0] - cu, lo[1] - cv], [hi[0] - cu, hi[1] - cv]);
+            apart(near - r, far - r)
+        }
+        Surf::Cone { b: cb, k } => {
+            let (lo, hi) = local();
+            let (bf, kf) = (rational_f64(cb), rational_f64(k));
+            let (near, far) = radial([lo[0], lo[1]], [hi[0], hi[1]]);
+            let rads = [bf + kf * lo[2], bf + kf * hi[2]];
+            let (rl, rh) = (rads[0].min(rads[1]), rads[0].max(rads[1]));
+            let s = (1.0 + kf * kf).sqrt();
+            apart((near - rh) / s, (far - rl) / s)
+        }
+        Surf::Torus => {
+            let Some(ring) = vm.ring.as_ref() else {
+                return false;
+            };
+            let (lo, hi) = local();
+            let (big, small) = (rational_f64(&ring.big), rational_f64(&ring.small));
+            let (rn, rf) = radial([lo[0], lo[1]], [hi[0], hi[1]]);
+            let (near, far) = radial([rn - big, lo[2]], [rf - big, hi[2]]);
+            apart(near - small, far - small)
+        }
+        Surf::Spline(_) => false,
+    }
+}
+
+/// The local heights in `P`'s frame over a box (its eight corners).
+fn heights(o: &[f64; 3], rows: &[[f64; 3]; 3], b: &([f64; 3], [f64; 3])) -> [f64; 2] {
+    let mut lo = f64::INFINITY;
+    let mut hi = f64::NEG_INFINITY;
+    for m in 0..8 {
+        let c: [f64; 3] = std::array::from_fn(|k| if m >> k & 1 == 1 { b.1[k] } else { b.0[k] });
+        let w: f64 = (0..3).map(|k| rows[2][k] * (c[k] - o[k])).sum();
+        lo = lo.min(w);
+        hi = hi.max(w);
+    }
+    [lo, hi]
+}
+
+/// `P`'s grid over its face's box met by `Q`'s widened by twice the
+/// resolution: an angle's turn in 32 cells, heights and runs in cells of
+/// about the angle's cells' length (at most 32, a height range a cell
+/// wider each way), and `P`'s speed bounds (its radii or its control
+/// polygon, a ten-thousandth for its frame's axes' lengths).
+fn grid_of(m: &Prism, fi: usize, b: &([f64; 3], [f64; 3])) -> Option<Grid> {
+    let (vm, vi) = m.view(fi);
+    let f = &vm.f;
+    let g = |v: &V| [0, 1, 2].map(|k| rational_f64(&v[k]));
+    let (o, rows) = (g(&f.o), [g(f.row(0)), g(f.row(1)), g(f.row(2))]);
+    let slack = 1.0001;
+    let turn = TAU / 32.0;
+    let span = |lo: f64, hi: f64, cell: f64| -> (f64, f64, usize) {
+        let n = (((hi - lo) / cell.max(1e-300)).ceil() as usize).clamp(1, 30);
+        let c = (hi - lo) / n as f64;
+        (lo - c, hi + c, n + 2)
+    };
+    let full = (-PI, PI);
+    match &vm.faces[vi].surf {
+        Surf::Cyl { r, .. } => {
+            let r = rational_f64(r).abs();
+            let [wl, wh] = heights(&o, &rows, b);
+            let (lo, hi, n) = span(wl, wh, r * turn);
+            Some(Grid {
+                lo: [full.0, lo],
+                hi: [full.1, hi],
+                n: [32, n],
+                periodic: [true, false],
+                speed: [r * slack, slack],
+            })
+        }
+        Surf::Cone { b: cb, k } => {
+            let (bf, kf) = (rational_f64(cb), rational_f64(k));
+            let [mut wl, mut wh] = heights(&o, &rows, b);
+            // On the nappe's side of the apex, clear of it.
+            if kf != 0.0 {
+                let apex = -bf / kf;
+                let clear = 1e-9 * (1.0 + apex.abs());
+                if kf > 0.0 {
+                    wl = wl.max(apex + clear);
+                } else {
+                    wh = wh.min(apex - clear);
+                }
+            }
+            if !above(wh, wl) {
+                return None;
+            }
+            let rad = (bf + kf * wl).abs().max((bf + kf * wh).abs());
+            let (lo, hi, n) = span(wl, wh, rad * turn);
+            // The heights a cell wider stay off the apex.
+            let (lo, hi) = if kf > 0.0 {
+                (lo.max(-bf / kf + 1e-9 * (1.0 + (bf / kf).abs())), hi)
+            } else if kf < 0.0 {
+                (lo, hi.min(-bf / kf - 1e-9 * (1.0 + (bf / kf).abs())))
+            } else {
+                (lo, hi)
+            };
+            let rad = rad.max((bf + kf * lo).abs()).max((bf + kf * hi).abs());
+            Some(Grid {
+                lo: [full.0, lo],
+                hi: [full.1, hi],
+                n: [32, n],
+                periodic: [true, false],
+                speed: [rad * slack, (1.0 + kf * kf).sqrt() * slack],
+            })
+        }
+        Surf::Torus => {
+            let ring = vm.ring.as_ref()?;
+            let (big, small) = (rational_f64(&ring.big), rational_f64(&ring.small));
+            Some(Grid {
+                lo: [full.0, full.0],
+                hi: [full.1, full.1],
+                n: [32, 32],
+                periodic: [true, true],
+                speed: [(big + small.abs()) * slack, small.abs() * slack],
+            })
+        }
+        Surf::Spline(seg) => {
+            // The run's speed from each arc's control polygon (a Bézier
+            // derivative's control points hold it).
+            let mut speed = 0.0f64;
+            for a in &seg.arcs {
+                let deg = (a.cps.len() - 1) as f64;
+                let len = rational_f64(&(&a.d[1] - &a.d[0]));
+                for w in a.cps.windows(2) {
+                    let du = rational_f64(&(&w[1][0] - &w[0][0]));
+                    let dv = rational_f64(&(&w[1][1] - &w[0][1]));
+                    speed = speed.max(deg * du.hypot(dv) / len);
+                }
+            }
+            let (first, last) = (rational_f64(&seg.first), rational_f64(&seg.last));
+            let nt = (16 * seg.arcs.len()).min(64);
+            let cell = speed * (last - first) / nt as f64;
+            let [wl, wh] = heights(&o, &rows, b);
+            let (lo, hi, n) = span(wl, wh, cell);
+            Some(Grid {
+                lo: [first, lo],
+                hi: [last, hi],
+                n: [nt, n],
+                periodic: [false, false],
+                speed: [speed * slack, slack],
+            })
+        }
+        _ => None,
+    }
+}
+
+/// `phi` and its derivatives at parameters (binary64 jets), with the
+/// point's first derivatives.
+fn jet_at(pp: &Patch<J<f64>>, qf: &Field<J<f64>>, p: [f64; 2]) -> (J<f64>, [[f64; 3]; 2]) {
+    let vars = [J::var(p[0], 0), J::var(p[1], 1)];
+    let x = pp.point(&vars);
+    let dx = [0, 1].map(|i| [x[0].d[i], x[1].d[i], x[2].d[i]]);
+    (qf.dist(&pp.local(&vars)), dx)
+}
+
+/// Newton's method on `phi`'s gradient from parameters `p` (steps within a
+/// cell, directions of an eigenvalue below `10^-9` of the larger left
+/// alone): the critical point where it converges within the grid.
+fn newton(pp: &Patch<J<f64>>, qf: &Field<J<f64>>, grid: &Grid, p: [f64; 2]) -> Option<Crit> {
+    let norm = |j: &J<f64>| j.d[0] * j.d[0] + j.d[1] * j.d[1];
+    let crit = |p: [f64; 2], (j, dx): (J<f64>, [[f64; 3]; 2])| Crit {
+        p,
+        phi: j.v,
+        h: [j.h[0], j.h[1], j.h[2]],
+        dx,
+    };
+    let mut p = p;
+    let mut cur = jet_at(pp, qf, p);
+    for _ in 0..60 {
+        let j = &cur.0;
+        let (g, h) = ([j.d[0], j.d[1]], [j.h[0], j.h[1], j.h[2]]);
+        if !(j.v.is_finite() && g.iter().chain(&h).all(|x| x.is_finite())) {
+            return None;
+        }
+        let (vals, vecs) = sym_eigen(h);
+        let big = vals[0].abs().max(vals[1].abs());
+        let mut step = [0.0f64; 2];
+        for k in 0..2 {
+            if vals[k].abs() <= 1e-9 * big || big == 0.0 {
+                continue;
+            }
+            let c = -(vecs[k][0] * g[0] + vecs[k][1] * g[1]) / vals[k];
+            step[0] += c * vecs[k][0];
+            step[1] += c * vecs[k][1];
+        }
+        // Within a cell each way.
+        let scale = (0..2)
+            .map(|k| step[k].abs() / grid.step(k))
+            .fold(0.0f64, f64::max);
+        if scale > 1.0 {
+            step = step.map(|s| s / scale);
+        }
+        let tiny = (0..2).all(|k| step[k].abs() <= 1e-14 * (1.0 + p[k].abs()));
+        if tiny {
+            return Some(crit(p, cur));
+        }
+        // Halved until the gradient shrinks; at rounding's level, where no
+        // step shrinks it, the point is taken as found when the step is
+        // well within a cell.
+        let gn = norm(j);
+        let mut t = 1.0;
+        let mut next = None;
+        for _ in 0..40 {
+            let q = grid.wrap([p[0] + t * step[0], p[1] + t * step[1]]);
+            if grid.holds(&q) {
+                let nj = jet_at(pp, qf, q);
+                if norm(&nj.0) < gn {
+                    next = Some((q, nj));
+                    break;
+                }
+            }
+            t *= 0.5;
+        }
+        match next {
+            Some((q, nj)) => {
+                p = q;
+                cur = nj;
+            }
+            None => {
+                let small = (0..2).all(|k| step[k].abs() <= 1e-6 * grid.step(k));
+                return small.then(|| crit(p, cur));
+            }
+        }
+    }
+    None
+}
+
+/// A symmetric 2x2 matrix's eigenvalues and unit eigenvectors.
+fn sym_eigen(h: [f64; 3]) -> ([f64; 2], [[f64; 2]; 2]) {
+    let (a, b, c) = (h[0], h[1], h[2]);
+    let m = 0.5 * (a + c);
+    let r = (0.5 * (a - c)).hypot(b);
+    let vals = [m - r, m + r];
+    let vec = |l: f64| -> [f64; 2] {
+        let (x, y) = if (a - l).abs() + b.abs() >= (c - l).abs() + b.abs() {
+            (-b, a - l)
+        } else {
+            (c - l, -b)
+        };
+        let n = x.hypot(y);
+        if n > 0.0 {
+            [x / n, y / n]
+        } else {
+            [1.0, 0.0]
+        }
+    };
+    let v0 = if b == 0.0 {
+        if a <= c {
+            [1.0, 0.0]
+        } else {
+            [0.0, 1.0]
+        }
+    } else {
+        vec(vals[0])
+    };
+    (vals, [v0, [-v0[1], v0[0]]])
+}
+
+/// The kind of a critical point by its Hessian in `P`'s tangent metric
+/// (its generalized eigenvalues, the faces' curvatures' differences across
+/// the gap): both of one sign beyond `10^-9` of the larger, a point least
+/// or greatest; one within `10^-6` of the larger, a curve of them along its
+/// eigenvector; of both signs, a saddle (`None`); both nil, coincident
+/// surfaces (`None`).
+fn contact_of(c: &Crit, size: f64) -> Option<Contact> {
+    let g = [
+        dot64(&c.dx[0], &c.dx[0]),
+        dot64(&c.dx[0], &c.dx[1]),
+        dot64(&c.dx[1], &c.dx[1]),
+    ];
+    let det = g[0] * g[2] - g[1] * g[1];
+    if !above(det, 0.0) {
+        return None;
+    }
+    // det(H - l G) = 0: A l^2 - B l + C = 0.
+    let (h0, h1, h2) = (c.h[0], c.h[1], c.h[2]);
+    let qa = det;
+    let qb = h0 * g[2] + h2 * g[0] - 2.0 * h1 * g[1];
+    let qc = h0 * h2 - h1 * h1;
+    let disc = (qb * qb - 4.0 * qa * qc).max(0.0).sqrt();
+    let (l1, l2) = ((qb - disc) / (2.0 * qa), (qb + disc) / (2.0 * qa));
+    let (small, large) = if l1.abs() <= l2.abs() {
+        (l1, l2)
+    } else {
+        (l2, l1)
+    };
+    if !above(large.abs(), 1e-9 / size.max(1e-300)) {
+        return None;
+    }
+    let kind = |l: f64| {
+        if l > 0.0 {
+            Ordering::Less
+        } else {
+            Ordering::Greater
+        }
+    };
+    if small.abs() <= 1e-6 * large.abs() {
+        // The null direction: (H - small G) v = 0.
+        let (a, b) = (h0 - small * g[0], h1 - small * g[1]);
+        let (cc, d) = (h1 - small * g[1], h2 - small * g[2]);
+        let v = if a.abs() + b.abs() >= cc.abs() + d.abs() {
+            [-b, a]
+        } else {
+            [-d, cc]
+        };
+        let n = v[0].hypot(v[1]);
+        if !above(n, 0.0) {
+            return None;
+        }
+        return Some(Contact::Curve(kind(large), [v[0] / n, v[1] / n]));
+    }
+    if small.abs() <= 1e-9 * large.abs() || (small > 0.0) != (large > 0.0) {
+        return None;
+    }
+    Some(Contact::Point(kind(large)))
+}
+
+/// The exact point of `P` at rational parameters near `p` (half-angle
+/// tangents of its angles, rational heights and run parameters).
+fn patch_point(m: &Prism, fi: usize, p: [f64; 2]) -> Option<QV> {
+    let (vm, vi) = m.view(fi);
+    let f = &vm.f;
+    let x = match &vm.faces[vi].surf {
+        Surf::Cyl { c, r, .. } => {
+            let [cs, sn] = unit_at(p[0]);
+            f.point(&(&c[0] + r * &cs), &(&c[1] + r * &sn), &q(p[1]))
+        }
+        Surf::Cone { b, k } => {
+            let [cs, sn] = unit_at(p[0]);
+            let w = q(p[1]);
+            let rad = b + k * &w;
+            if sign(&rad) != Ordering::Greater {
+                return None;
+            }
+            f.point(&(&rad * &cs), &(&rad * &sn), &w)
+        }
+        Surf::Torus => {
+            let ring = vm.ring.as_ref()?;
+            let ([cu, su], [cv, sv]) = (unit_at(p[0]), unit_at(p[1]));
+            let rad = &ring.big + &ring.small * &cv;
+            f.point(&(&rad * &cu), &(&rad * &su), &(&ring.small * &sv))
+        }
+        Surf::Spline(seg) => {
+            let uv = seg.point(&Qd::rat(run_rational(seg, p[0])));
+            return Some(super::spline_walls::qpoint(
+                f,
+                &uv[0],
+                &uv[1],
+                &Qd::rat(q(p[1])),
+            ));
+        }
+        _ => return None,
+    };
+    Some(qv(&x))
+}
+
+/// `Q`'s exact point near the foot of `a` and `Q`'s function's sign at `a`
+/// (`Quad`'s for a plane, a cylinder, a cone, a torus or a spline wall; a
+/// rational point of a sphere toward `a`, `|a - c|^2 - r^2`).
+fn field_foot(m: &Prism, fi: usize, a: &QV) -> Option<(QV, Ordering)> {
+    let (vm, vi) = m.view(fi);
+    if let Surf::Sphere { c, r } = &vm.faces[vi].surf {
+        let w = qsub(a, &qv(c));
+        let s = qv(&sphere_toward(c, r, qv_f64(&w)));
+        return Some((s, qqdot(&w, &w).add_r(&-(r * r)).sign()));
+    }
+    let quad = Quad::of(m, fi).or_else(|| Quad::of_curved(m, fi))?;
+    let s = quad.foot(a)?;
+    let side = match &quad.kind {
+        // Its outward offset at `s` (`value` would find `s` again).
+        Kind::Spline { m, fi, .. } => qqdot(&qsub(a, &s), &m.normal_at(*fi, &s)).sign(),
+        _ => quad.value(a).sign(),
+    };
+    Some((s, side))
+}
+
+/// What the exact points at a critical point decide: no contact of the
+/// rule's own, or a contact beyond the resolution (within twice it in
+/// binary64: to be certified apart); within it, the refusal.
+enum Decided {
+    None,
+    Beyond,
+}
+
+/// The decision at `P`'s parameters `p` of a critical point of the kind
+/// `kind`: `a` exactly on `P` near them, `s` on `Q` near `a`'s foot; a gap
+/// of rounding's size, a point outside its face or `a` on `Q` is no
+/// contact; a least below `Q` or a greatest above it a crossing, otherwise
+/// a miss, a contact unless the gap lies inside both inputs; a contact
+/// within the resolution `Degenerate`. `Ok(None)` (with `out` set) where a
+/// point lies outside its face.
+#[allow(clippy::too_many_arguments)]
+fn decide(
+    models: &[Prism; 2],
+    ip: usize,
+    fp: usize,
+    fq: usize,
+    p: [f64; 2],
+    kind: Ordering,
+    res: f64,
+    why: &'static str,
+    out: &mut bool,
+) -> Result<Decided> {
+    let (mp, mq) = (&models[ip], &models[1 - ip]);
+    let Some(a) = patch_point(mp, fp, p) else {
+        return Ok(Decided::None);
+    };
+    let Some((s, side)) = field_foot(mq, fq, &a) else {
+        return Ok(Decided::None);
+    };
+    let gap = qsub(&s, &a);
+    let gg = qqdot(&gap, &gap);
+    if side == Ordering::Equal || gg.sub(&Qd::rat(gap_rounding(&a, &s))).sign() != Ordering::Greater
+    {
+        // On `Q`, or a gap of rounding's size: the faces' own rules.
+        return Ok(Decided::None);
+    }
+    if mp.in_face(fp, &a) == Loc::Out || mq.in_face(fq, &s) == Loc::Out {
+        *out = true;
+        return Ok(Decided::None);
+    }
+    if side != kind {
+        // Missing: no contact where the gap lies inside both inputs.
+        let inside = [
+            mp.member(&a, std::slice::from_ref(&gap)) == Loc::In,
+            mq.member(&s, &[gap.map(|x| x.neg())]) == Loc::In,
+        ];
+        if inside == [true, true] {
+            return Ok(Decided::None);
+        }
+    }
+    let tol = q(res);
+    if gg.add_r(&-(&tol * &tol)).sign() != Ordering::Greater {
+        return Err(Error::Degenerate(why));
+    }
+    Ok(Decided::Beyond)
+}
+
+/// The face pairs' rule for `P` (face `fp` of input `ip`) and `Q` (face
+/// `fq` of the other).
+fn face_pair(
+    models: &[Prism; 2],
+    ip: usize,
+    fp: usize,
+    fq: usize,
+    res: f64,
+    why: &'static str,
+) -> Result<()> {
+    let (mp, mq) = (&models[ip], &models[1 - ip]);
+    let bq = &mq.boxes[fq];
+    let bp = &mp.boxes[fp];
+    let lo: [f64; 3] = std::array::from_fn(|k| bp.0[k].max(bq.0[k] - 2.0 * res));
+    let hi: [f64; 3] = std::array::from_fn(|k| bp.1[k].min(bq.1[k] + 2.0 * res));
+    if (0..3).any(|k| lo[k] > hi[k]) {
+        return Ok(());
+    }
+    let b = (lo, hi);
+    if box_apart(mq, fq, &b, 2.0 * res) {
+        return Ok(());
+    }
+    let Some(grid) = grid_of(mp, fp, &b) else {
+        return Ok(());
+    };
+    let (Some(pp), Some(qf)) = (
+        Patch::<f64>::of(mp, fp),
+        Field::<f64>::of(mq, fq, &mp.view(fp).0.f),
+    ) else {
+        return Ok(());
+    };
+    // The grid's nodes: `phi` and the point (a periodic parameter's last
+    // node its first).
+    let count = |k: usize| grid.n[k] + usize::from(!grid.periodic[k]);
+    let (n0, n1) = (count(0), count(1));
+    let mut phi = vec![0.0f64; n0 * n1];
+    let mut far = vec![false; n0 * n1];
+    let size = b.1.iter().chain(&b.0).fold(1.0f64, |m, x| m.max(x.abs()));
+    let cell = 0.5 * (grid.speed[0] * grid.step(0) + grid.speed[1] * grid.step(1));
+    // A rounding allowance for the binary64 distances.
+    let reach = 2.0 * res + cell + 1e-12 * size;
+    let checked = qf.kind != QKind::Spline;
+    let mut all_far = true;
+    for i in 0..n0 {
+        for j in 0..n1 {
+            let at = grid.at(i, j);
+            let x = pp.point(&at);
+            let v = qf.dist(&pp.local(&at));
+            let outside = (0..3).any(|k| x[k] < lo[k] - cell || x[k] > hi[k] + cell);
+            let f = checked && (outside || v.abs() > reach);
+            phi[i * n1 + j] = v;
+            far[i * n1 + j] = f;
+            all_far &= f;
+        }
+    }
+    if all_far {
+        // No point of `P` within twice the resolution of `Q` in the box.
+        return Ok(());
+    }
+    // Seeds: interior nodes, not far, each a least or a greatest of `phi`
+    // among its eight neighbours.
+    let index = |i: isize, k: usize, n: usize| -> Option<usize> {
+        if grid.periodic[k] {
+            Some(i.rem_euclid(n as isize) as usize)
+        } else if i < 0 || i >= n as isize {
+            None
+        } else {
+            Some(i as usize)
+        }
+    };
+    let at =
+        |i: isize, j: isize| -> Option<f64> { Some(phi[index(i, 0, n0)? * n1 + index(j, 1, n1)?]) };
+    let inner = |i: usize, k: usize, n: usize| grid.periodic[k] || (i > 0 && i + 1 < n);
+    let mut seeds: Vec<(f64, [f64; 2])> = Vec::new();
+    for i in 0..n0 {
+        if !inner(i, 0, n0) {
+            continue;
+        }
+        for j in 0..n1 {
+            if !inner(j, 1, n1) {
+                continue;
+            }
+            let v = phi[i * n1 + j];
+            if far[i * n1 + j] || !v.is_finite() {
+                continue;
+            }
+            let (mut least, mut most) = (true, true);
+            for di in -1..=1isize {
+                for dj in -1..=1isize {
+                    if di == 0 && dj == 0 {
+                        continue;
+                    }
+                    if let Some(w) = at(i as isize + di, j as isize + dj) {
+                        least &= v <= w;
+                        most &= v >= w;
+                    }
+                }
+            }
+            if least || most {
+                seeds.push((v.abs(), grid.at(i, j)));
+            }
+        }
+    }
+    if seeds.is_empty() {
+        return Ok(());
+    }
+    seeds.sort_by(|a, b| a.0.total_cmp(&b.0));
+    seeds.truncate(16);
+    let (Some(pj), Some(qj)) = (
+        Patch::<J<f64>>::of(mp, fp),
+        Field::<J<f64>>::of(mq, fq, &mp.view(fp).0.f),
+    ) else {
+        return Ok(());
+    };
+    let mut crits: Vec<Crit> = Vec::new();
+    for (_, s) in seeds {
+        let Some(c) = newton(&pj, &qj, &grid, s) else {
+            continue;
+        };
+        if !at_most(c.phi.abs(), 2.0 * res + 1e-12 * size) {
+            continue;
+        }
+        let near = |d: &Crit| {
+            (0..2).all(|k| {
+                let mut e = (d.p[k] - c.p[k]).abs();
+                if grid.periodic[k] {
+                    e = e.min(TAU - e);
+                }
+                e <= 0.5 * grid.step(k)
+            })
+        };
+        if crits.iter().any(near) {
+            continue;
+        }
+        crits.push(c);
+        if crits.len() == 8 {
+            break;
+        }
+    }
+    // A curve of critical points is decided once.
+    let mut curves: Vec<f64> = Vec::new();
+    for c in crits {
+        let Some(contact) = contact_of(&c, size) else {
+            continue;
+        };
+        let (kind, null) = match contact {
+            Contact::Point(k) => (k, None),
+            Contact::Curve(k, v) => {
+                if curves.iter().any(|f| (f - c.phi).abs() <= 1e-12 * size) {
+                    continue;
+                }
+                curves.push(c.phi);
+                (k, Some(v))
+            }
+        };
+        let mut out = false;
+        let mut decided = decide(models, ip, fp, fq, c.p, kind, res, why, &mut out)?;
+        let mut at = c.clone();
+        if out {
+            // Along a curve of critical points: another of its points in
+            // both faces (Newton's method again from steps along it).
+            let Some(v) = null else {
+                continue;
+            };
+            let Some(next) =
+                along_curve(models, ip, fp, fq, &pj, &qj, &grid, &c, v, kind, res, why)?
+            else {
+                continue;
+            };
+            (decided, at) = next;
+        }
+        if let Decided::Beyond = decided {
+            if !certified_apart(mp, fp, mq, fq, &grid, &at, null, res) {
+                return Err(Error::ComputationLimit(NEAR_LIMIT));
+            }
+        }
+    }
+    Ok(())
+}
+
+/// A curve of critical points' point inside both faces: Newton's method
+/// from steps along its null direction (at most seven, the middle of the
+/// grid's range along it first), each decided as `decide`; `None` where no
+/// point of it lies in both faces.
+#[allow(clippy::too_many_arguments)]
+fn along_curve(
+    models: &[Prism; 2],
+    ip: usize,
+    fp: usize,
+    fq: usize,
+    pj: &Patch<J<f64>>,
+    qj: &Field<J<f64>>,
+    grid: &Grid,
+    c: &Crit,
+    v: [f64; 2],
+    kind: Ordering,
+    res: f64,
+    why: &'static str,
+) -> Result<Option<(Decided, Crit)>> {
+    // The range of steps keeping the parameters in the grid's domain.
+    let mut t = [-f64::INFINITY, f64::INFINITY];
+    for (k, &vk) in v.iter().enumerate() {
+        if grid.periodic[k] || vk.abs() < 1e-12 {
+            if grid.periodic[k] && vk.abs() >= 1e-12 {
+                let reach = PI / vk.abs();
+                t = [t[0].max(-reach), t[1].min(reach)];
+            }
+            continue;
+        }
+        let (a, b) = ((grid.lo[k] - c.p[k]) / vk, (grid.hi[k] - c.p[k]) / vk);
+        t = [t[0].max(a.min(b)), t[1].min(a.max(b))];
+    }
+    if !above(t[1], t[0]) || !t[0].is_finite() || !t[1].is_finite() {
+        return Ok(None);
+    }
+    for frac in [0.5, 0.25, 0.75, 0.125, 0.375, 0.625, 0.875] {
+        let s = t[0] + (t[1] - t[0]) * frac;
+        let start = grid.wrap([c.p[0] + s * v[0], c.p[1] + s * v[1]]);
+        let Some(d) = newton(pj, qj, grid, start) else {
+            continue;
+        };
+        if !at_most(d.phi.abs(), 2.0 * res + 1e-12) {
+            continue;
+        }
+        let mut out = false;
+        let decided = decide(models, ip, fp, fq, d.p, kind, res, why, &mut out)?;
+        if !out {
+            return Ok(Some((decided, d)));
+        }
+    }
+    Ok(None)
+}
+
+/// `phi` at a box of parameters in binary64 intervals: its jet.
+fn jet_over(pp: &Patch<J<Iv>>, qf: &Field<J<Iv>>, p: [Iv; 2]) -> J<Iv> {
+    qf.dist(&pp.local(&[J::var(p[0], 0), J::var(p[1], 1)]))
+}
+
+/// Whether a contact beyond the resolution is certified apart: Krawczyk's
+/// operator on `phi`'s gradient over a box `N` of parameters about the
+/// critical point (both parameters for a point; the transverse one for a
+/// curve whose null direction is a parameter's, the other the grid's whole
+/// range) maps `N` inside itself (one critical point in it, for each value
+/// of the other parameter), and `|phi|` over `N` by the mean-value form
+/// exceeds the resolution over `1 - g` (`g` the Frobenius norm of `M^T M -
+/// I` for `Q`'s frame's axes `M`: its local distance against the world's).
+/// A spline wall as `Q` is not certified.
+#[allow(clippy::too_many_arguments)]
+fn certified_apart(
+    mp: &Prism,
+    fp: usize,
+    mq: &Prism,
+    fq: usize,
+    grid: &Grid,
+    c: &Crit,
+    null: Option<[f64; 2]>,
+    res: f64,
+) -> bool {
+    let (Some(pp), Some(qf)) = (
+        Patch::<J<Iv>>::of(mp, fp),
+        Field::<J<Iv>>::of(mq, fq, &mp.view(fp).0.f),
+    ) else {
+        return false;
+    };
+    if qf.kind == QKind::Spline {
+        return false;
+    }
+    let g = match qf.kind {
+        QKind::Plane | QKind::Sphere => 0.0,
+        _ => frame_defect(&mq.view(fq).0.f),
+    };
+    if !above(0.5, g) {
+        return false;
+    }
+    let thr = res / (1.0 - g) * (1.0 + 1e-12);
+    // The parameters' half widths: about `1e-5` in length each.
+    let delta = [0, 1].map(|k| 1e-5 / grid.speed[k].max(1e-300));
+    let around = |k: usize| Iv::span(c.p[k] - delta[k], c.p[k] + delta[k]);
+    let beyond = |v: &Iv| {
+        let (lo, hi) = v.bounds();
+        lo > thr || hi < -thr
+    };
+    match null {
+        None => {
+            // Both parameters.
+            let n = [around(0), around(1)];
+            let at = jet_over(&pp, &qf, [Iv::k(c.p[0]), Iv::k(c.p[1])]);
+            let over = jet_over(&pp, &qf, n);
+            // Y, the inverse of the binary64 Hessian.
+            let det = c.h[0] * c.h[2] - c.h[1] * c.h[1];
+            if !above(det.abs(), 0.0) {
+                return false;
+            }
+            let y = [[c.h[2] / det, -c.h[1] / det], [-c.h[1] / det, c.h[0] / det]];
+            let hn = [[over.h[0], over.h[1]], [over.h[1], over.h[2]]];
+            let off = [n[0].sub(&Iv::k(c.p[0])), n[1].sub(&Iv::k(c.p[1]))];
+            for i in 0..2 {
+                let mut k = Iv::k(c.p[i]);
+                for j in 0..2 {
+                    k = k.sub(&Iv::k(y[i][j]).mul(&at.d[j]));
+                    let mut m = Iv::k(if i == j { 1.0 } else { 0.0 });
+                    for l in 0..2 {
+                        m = m.sub(&Iv::k(y[i][l]).mul(&hn[l][j]));
+                    }
+                    k = k.add(&m.mul(&off[j]));
+                }
+                if !k.inside(c.p[i] - delta[i], c.p[i] + delta[i]) {
+                    return false;
+                }
+            }
+            let bound =
+                at.v.add(&over.d[0].mul(&off[0]))
+                    .add(&over.d[1].mul(&off[1]));
+            beyond(&bound)
+        }
+        Some(v) => {
+            // The null direction a parameter's: the other transverse.
+            let (k, j) = if v[1].abs() >= 1e6 * v[0].abs() {
+                (1, 0)
+            } else if v[0].abs() >= 1e6 * v[1].abs() {
+                (0, 1)
+            } else {
+                return false;
+            };
+            let whole = Iv::span(grid.lo[k] - grid.step(k), grid.hi[k] + grid.step(k));
+            let mut point = [Iv::k(c.p[0]), Iv::k(c.p[1])];
+            point[k] = whole;
+            let mut boxed = point;
+            boxed[j] = around(j);
+            let at = jet_over(&pp, &qf, point);
+            let over = jet_over(&pp, &qf, boxed);
+            let hj = c.h[if j == 0 { 0 } else { 2 }];
+            if !above(hj.abs(), 0.0) {
+                return false;
+            }
+            let y = 1.0 / hj;
+            let off = boxed[j].sub(&Iv::k(c.p[j]));
+            let hh = &over.h[if j == 0 { 0 } else { 2 }];
+            let kk = Iv::k(c.p[j])
+                .sub(&Iv::k(y).mul(&at.d[j]))
+                .add(&Iv::k(1.0).sub(&Iv::k(y).mul(hh)).mul(&off));
+            if !kk.inside(c.p[j] - delta[j], c.p[j] + delta[j]) {
+                return false;
+            }
+            beyond(&at.v.add(&over.d[j].mul(&off)))
+        }
+    }
+}
+
+/// The Frobenius norm of `M^T M - I` for a frame's axes `M` (an upper bound
+/// in binary64 of the exact value).
+fn frame_defect(f: &Affine) -> f64 {
+    let ax = [&f.x, &f.y, &f.n];
+    let mut sum = zero();
+    for i in 0..3 {
+        for j in 0..3 {
+            let e = dot(ax[i], ax[j]) - if i == j { int(1) } else { zero() };
+            sum += &e * &e;
+        }
+    }
+    rational_f64(&sum).sqrt() * (1.0 + 1e-12) + 1e-300
+}
+
+// ------------------------------------------- edges and vertices, curved
+
+/// The edges' and vertices' rules (`edge_faces`, `vertex_faces`) against a
+/// torus's or a spline wall's faces (REVIEW_NOTES.md, "Faces with no
+/// near-miss rule of their own"), after the earlier rules: a box's edge or
+/// a cube's corner `1e-12` off a torus's equator or a spline dome's crest
+/// was fused with it into two solids.
+pub(super) fn curved_edges_and_vertices(models: &[Prism; 2], res: f64) -> Result<()> {
+    edge_faces_with(models, res, true)?;
+    vertex_faces_with(models, res, true)
+}
+
+/// The points of a line edge where a torus's or a spline wall's function
+/// along it is least or greatest: each change of its derivative's sign
+/// among 64 samples over the edge bisected to rounding, at a rational
+/// parameter of the line.
+fn line_extrema(em: &Prism, ei: usize, quad: &Quad) -> Vec<(QV, Ordering)> {
+    let e = &em.edges[ei];
+    let Crv::Line { p, d } = &e.curve else {
+        return Vec::new();
+    };
+    let (pf, df) = (qv_f64(p), d.clone().map(|x| rational_f64(&x)));
+    let dd = dot64(&df, &df);
+    if !above(dd, 0.0) {
+        return Vec::new();
+    }
+    let t_of = |v: usize| {
+        let x = qv_f64(&em.verts[v].p);
+        dot64(&sub64(&x, &pf), &df) / dd
+    };
+    let (t0, t1) = (t_of(e.start), t_of(e.end));
+    let (t0, t1) = (t0.min(t1), t0.max(t1));
+    let at = |t: f64| [0, 1, 2].map(|k| pf[k] + t * df[k]);
+    let slope = |t: f64| {
+        let (_, g) = quad.value64(at(t));
+        dot64(&g, &df)
+    };
+    const N: usize = 64;
+    let ts: Vec<f64> = (0..=N)
+        .map(|i| t0 + (t1 - t0) * i as f64 / N as f64)
+        .collect();
+    let ds: Vec<f64> = ts.iter().map(|&t| slope(t)).collect();
+    let mut out = Vec::new();
+    for i in 0..N {
+        let (d0, d1) = (ds[i], ds[i + 1]);
+        let kind = if d0 < 0.0 && d1 >= 0.0 {
+            Ordering::Less
+        } else if d0 > 0.0 && d1 <= 0.0 {
+            Ordering::Greater
+        } else {
+            continue;
+        };
+        let (mut lo, mut hi) = (ts[i], ts[i + 1]);
+        for _ in 0..80 {
+            let mid = 0.5 * lo + 0.5 * hi;
+            if !(above(mid, lo) && above(hi, mid)) {
+                break;
+            }
+            if (slope(mid) < 0.0) == (kind == Ordering::Less) {
+                lo = mid;
+            } else {
+                hi = mid;
+            }
+        }
+        let t = Qd::rat(q(0.5 * lo + 0.5 * hi));
+        out.push((qadd(p, &qscale(d, &t)), kind));
+    }
+    out
+}
+
 /// A gap below which a point found in binary64 on another curve stands for
 /// an incidence (far below its rounding's effect on the distance, the
 /// square of binary64's precision): `2^-80`.
@@ -4404,5 +6289,188 @@ mod tests {
                 assert!(!quad.clearly_off([0.0, 0.0, 5.0], res));
             }
         }
+    }
+
+    /// A level frame's dome prism, a whole torus, a cone, a rod and a ball:
+    /// the face pairs' surfaces.
+    fn face_models() -> Vec<Prism> {
+        let tol = Tolerance::default();
+        let seam = R::new(BigInt::from(2), BigInt::from(7));
+        let pi = std::f64::consts::PI;
+        let turned = Frame3::new(
+            Point3::new(0.3, -0.2, 0.1),
+            Vec3::new(0.0, 3.0, 4.0),
+            Vec3::new(1.0, 0.0, 0.0),
+            tol,
+        )
+        .unwrap();
+        let rod = Solid::cylinder_with(OperationId(1), turned, 1.0, -3.0, 3.0, tol)
+            .unwrap()
+            .0;
+        let cone = Solid::cone_with(OperationId(1), level(), 1.0, 0.0, 1.0, tol)
+            .unwrap()
+            .0;
+        let torus = Solid::torus_with(OperationId(1), turned, 3.0, 1.0, -pi, pi, 2.0 * pi, tol)
+            .unwrap()
+            .0;
+        let ball = Solid::sphere_with(OperationId(1), level(), 0.8, -pi / 2.0, pi / 2.0, tol)
+            .unwrap()
+            .0;
+        let curve = crate::BSplineCurve2::new(
+            2,
+            vec![
+                crate::Point2::new(4.0, 0.0),
+                crate::Point2::new(2.0, 4.0),
+                crate::Point2::new(0.0, 0.0),
+            ],
+            None,
+            vec![0.0, 1.0],
+            vec![3, 3],
+        )
+        .unwrap();
+        let outer = crate::Boundary::path(
+            vec![crate::Point2::new(0.0, 0.0), crate::Point2::new(4.0, 0.0)],
+            vec![
+                crate::Segment::Line,
+                crate::Segment::Spline(crate::topology::SplineSpan::whole(curve)),
+            ],
+            tol,
+        )
+        .unwrap();
+        let dome = Solid::extrude_with(
+            OperationId(1),
+            crate::Profile::new(outer, vec![], tol).unwrap(),
+            turned,
+            0.0,
+            2.0,
+        )
+        .unwrap()
+        .0;
+        vec![
+            Prism::new(&rod, Operand::A, &seam).unwrap(),
+            super::super::cone::model(&cone, Operand::A, &seam).unwrap(),
+            super::super::torus::model(&torus, Operand::A, &seam).unwrap(),
+            super::super::sphere::model(&ball, Operand::A, &seam).unwrap(),
+            Prism::new(&dome, Operand::A, &seam).unwrap(),
+        ]
+    }
+
+    /// The face pairs' forward jets agree with central differences of their
+    /// binary64 values, and their binary64 interval jets hold them, for
+    /// every patch (a cylinder, a cone, a torus, a spline wall) against
+    /// every field (a plane, a sphere, a cylinder, a cone, a torus, a spline
+    /// wall), at several parameters each.
+    #[test]
+    fn face_jets_hold_their_differences() {
+        let models = face_models();
+        let faces = |kinds: &dyn Fn(&Surf) -> bool| -> Vec<(usize, usize)> {
+            let mut out = Vec::new();
+            for (k, m) in models.iter().enumerate() {
+                for fi in 0..m.faces.len() {
+                    if kinds(&m.faces[fi].surf) && !out.iter().any(|&(j, _)| j == k) {
+                        out.push((k, fi));
+                    }
+                }
+            }
+            out
+        };
+        let patches = faces(&|s| {
+            matches!(
+                s,
+                Surf::Cyl { .. } | Surf::Cone { .. } | Surf::Torus | Surf::Spline(_)
+            )
+        });
+        let fields = faces(&|s| !matches!(s, Surf::Plane { .. }));
+        let planes = faces(&|s| matches!(s, Surf::Plane { .. }));
+        assert_eq!(patches.len(), 4);
+        let mut checked = 0;
+        for &(pk, pf) in &patches {
+            let mp = &models[pk];
+            let frame = &mp.view(pf).0.f;
+            let p64 = Patch::<f64>::of(mp, pf).unwrap();
+            let pj = Patch::<J<f64>>::of(mp, pf).unwrap();
+            let pi = Patch::<J<Iv>>::of(mp, pf).unwrap();
+            for &(qk, qf) in fields.iter().chain(planes.iter().take(1)) {
+                if qk == pk {
+                    continue;
+                }
+                let mq = &models[qk];
+                let q64 = Field::<f64>::of(mq, qf, frame).unwrap();
+                let qj = Field::<J<f64>>::of(mq, qf, frame).unwrap();
+                let qi = Field::<J<Iv>>::of(mq, qf, frame).unwrap();
+                let first = if p64.kind == PKind::Spline { 0.2 } else { -2.1 };
+                for p in [[first, 0.4], [first + 0.5, 1.3], [first + 0.9, 0.7]] {
+                    let phi = |p: [f64; 2]| q64.dist(&p64.local(&p));
+                    let (j, _) = jet_at(&pj, &qj, p);
+                    let h = 1e-5;
+                    let e = |k: usize| {
+                        let mut d = [0.0; 2];
+                        d[k] = h;
+                        d
+                    };
+                    let at = |d: [f64; 2]| phi([p[0] + d[0], p[1] + d[1]]);
+                    let close = |x: f64, y: f64| (x - y).abs() <= 1e-5 * (1.0 + y.abs());
+                    assert!(close(j.v, phi(p)));
+                    for k in 0..2 {
+                        let d1 = (at(e(k)) - at(e(k).map(|x| -x))) / (2.0 * h);
+                        assert!(close(j.d[k], d1), "{pk}/{qk} d{k} {} {d1}", j.d[k]);
+                    }
+                    let d00 = (at(e(0)) - 2.0 * phi(p) + at(e(0).map(|x| -x))) / (h * h);
+                    let d11 = (at(e(1)) - 2.0 * phi(p) + at(e(1).map(|x| -x))) / (h * h);
+                    assert!((j.h[0] - d00).abs() <= 1e-3 * (1.0 + d00.abs()));
+                    assert!((j.h[2] - d11).abs() <= 1e-3 * (1.0 + d11.abs()));
+                    if q64.kind != QKind::Spline {
+                        let ji = jet_over(&pi, &qi, [Iv::k(p[0]), Iv::k(p[1])]);
+                        let holds = |v: &Iv, x: f64| {
+                            let (lo, hi) = v.bounds();
+                            lo <= x && x <= hi
+                        };
+                        assert!(holds(&ji.v, j.v) && holds(&ji.d[0], j.d[0]));
+                        assert!(holds(&ji.h[2], j.h[2]));
+                    }
+                    checked += 1;
+                }
+            }
+        }
+        assert!(checked >= 54, "{checked}");
+    }
+
+    /// Two rods crossing at right angles with their walls `d` apart: within
+    /// the resolution `Degenerate`, just beyond it certified apart by
+    /// Krawczyk's operator, within rounding of it a `ComputationLimit`.
+    #[test]
+    fn face_pairs_decide_about_the_resolution() {
+        let tol = Tolerance::default();
+        let seam = R::new(BigInt::from(2), BigInt::from(7));
+        let res = tol.linear();
+        let rod = Solid::cylinder_with(OperationId(1), level(), 1.0, -2.0, 2.0, tol)
+            .unwrap()
+            .0;
+        let across = |d: f64| {
+            let f = Frame3::new(
+                Point3::new(-3.0, 1.5 + d, 0.0),
+                Vec3::new(1.0, 0.0, 0.0),
+                Vec3::new(0.0, 1.0, 0.0),
+                tol,
+            )
+            .unwrap();
+            let bar = Solid::cylinder_with(OperationId(2), f, 0.5, 0.0, 6.0, tol)
+                .unwrap()
+                .0;
+            [
+                Prism::new(&rod, Operand::A, &seam).unwrap(),
+                Prism::new(&bar, Operand::B, &seam).unwrap(),
+            ]
+        };
+        assert!(matches!(
+            face_pairs(&across(0.9 * res), res),
+            Err(Error::Degenerate(m)) if m == NEAR_WALLS
+        ));
+        assert!(face_pairs(&across(1.5 * res), res).is_ok());
+        assert!(face_pairs(&across(1e-3), res).is_ok());
+        assert!(matches!(
+            face_pairs(&across(res * (1.0 + 1e-14)), res),
+            Err(Error::ComputationLimit(m)) if m == NEAR_LIMIT
+        ));
     }
 }

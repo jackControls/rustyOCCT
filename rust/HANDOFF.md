@@ -81,7 +81,9 @@ then for the DRAW survey of the turned bodies (branch `s9-draw-19`, over
 `rust-kernel` at `712115c6`),
 then for the near misses of other curves, of points of two fields and of
 a cone's apex against a spline or torus face (branch `near-miss-curves`,
-over `rust-kernel` at `5a7acb4c`).
+over `rust-kernel` at `5a7acb4c`),
+then for the near misses of faces with no rule of their own (branch
+`near-miss-faces`, over `s9c2-kernel` at `5f50b30c`).
 
 ## Where things stand
 
@@ -1138,10 +1140,29 @@ over `rust-kernel` at `5a7acb4c`).
    there (exactly or within `10^-12`) is no contact either, the faces' own
    tangency or incidence (S9c.1's turned box on a rod's tangent plane,
    DRAW's `bop*_simple` U1 and Y5, evaluating as before). (c) Faces with
-   no near-miss rule of their own: cylinders and cones against each other
-   beyond S9c's node rule (their edges' extrema hold a ruling tangent to
-   a wall only where it ends on an edge), tori and spline walls against anything but a cone's apex (their
-   tangency rules only), and edges against torus or spline faces. (d)
+   no near-miss rule of their own are closed on branch `near-miss-faces`
+   (REVIEW_NOTES.md's "Faces with no near-miss rule of their own"): two
+   cylinders' or cones' walls (beyond S9c's node rule, which S9c.2a's
+   extents across the common perpendicular pass over for two rods missing
+   each other) or a plane along a ruling, a torus against a plane, a
+   quadric or a torus (beyond its near-node rule's band, which is not the
+   resolution), a spline wall against a plane, a quadric or a parallel
+   spline wall, within the resolution of touching at a point, along a line
+   or along a circle, by the critical points of one face's signed distance
+   over the other's parameters (a grid passed over with proved bounds,
+   Newton's method on forward jets, the kind by the Hessian in the face's
+   metric), decided at exact points of both faces (a gap of rounding's size
+   the faces' own: U1, Y5 and the grids' boxes), and beyond the resolution
+   certified apart by Krawczyk's operator on binary64 interval jets (a
+   `ComputationLimit` along a cone's ruling, a torus's coaxial circle or
+   two spline walls' generatrix); edges and vertices against torus and
+   spline faces by the edge and vertex rules. A spline wall against a
+   torus and two spline walls on crossing axes are refused by design, so
+   unreachable. No corpus input and no DRAW case moves (its trial in
+   UPSTREAM_TESTS.md), the corpus's CPU 1.1 % more. Found alongside and
+   open: a rod crossing a torus's inner equator by `1e-9` in a tilted
+   frame runs for over 25 minutes in the torus meeting's verification
+   (`ToricCrv::verified`), before any near-miss rule. (d)
    The shallow lens is closed on branch `shallow-lens` (REVIEW_NOTES.md's
    "The shallow lens"): beyond the resolution a ball crossing a rod's wall
    evaluates every operation, its common too (refused from `1e-6` of the

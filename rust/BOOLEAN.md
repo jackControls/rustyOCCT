@@ -657,6 +657,34 @@ validator decides a ray against a whole sphere (a cavity in a sphere); a
 result's bounds hold its spheres' boxes. A sphere against a cylinder or
 another sphere is S9d.2's.
 
+Faces with no near-miss rule of their own are refused by the same rule
+(REVIEW_NOTES.md's "Faces with no near-miss rule of their own"; after
+every earlier rule, before the pierces): two cylinders' or cones' walls
+or a plane along a ruling ("a cylinder's or cone's wall within the
+resolution of tangency to the other input's (S9c)"), a torus against a
+plane, a quadric or a torus ("a torus within the resolution of tangency
+to the other input's surface (S9d.4)"), a spline wall against a plane, a
+quadric or a parallel spline wall ("a spline wall within the resolution
+of tangency to the other input's surface (S9f)"). One face is sampled in
+its parameters and the other held by its signed distance; the pair is
+passed over where a binary64 bound of that distance over the faces' boxes'
+overlap, or over a grid of the first's parameters with its cells'
+movement bounds, lies beyond twice the resolution; else the distance's
+critical points within twice the resolution, found by Newton's method on
+forward jets, are taken by their kind (the Hessian in the face's tangent
+metric: a point least or greatest, a curve of them along parallel rulings
+or coaxial circles, a saddle none) at exact points of both faces: a gap
+of rounding's size or a point outside its face is no contact, a least
+below the other surface or a greatest above it a crossing, else a miss
+refused unless the gap lies inside both inputs; beyond the resolution
+Krawczyk's operator on binary64 interval jets certifies the pair apart, at
+a point and along a cylinder's, a plane's or a spline wall's ruling (a
+`ComputationLimit` along a cone's ruling, a torus's coaxial circle or two
+spline walls' generatrix). Edges and vertices against a torus or a spline
+wall take the edge and vertex rules with those surfaces' signed distances
+and exact feet. Two rods crossing `1e-12` apart, a ball by a torus, a rod
+by a spline wall, a box's edge or corner by either were two solids.
+
 A crossing just beyond the resolution leaves a lens thinner than the
 validator's tight enclosures (HANDOFF item 5 (d), REVIEW_NOTES.md's "The
 shallow lens"): a ball of radius 0.75 crossing a rod's wall by `1.4e-7`
@@ -2166,7 +2194,8 @@ campaign of every target the steps touch.
   near-miss rules not yet written (item 5's (c) and (d): faces with no
   rule of their own; other curves' edges, points of two fields and a
   cone's apex against a spline or torus face done since, branch
-  `near-miss-curves`), and the refusals by design listed there. U9 and U10 stayed open
+  `near-miss-curves`, and the faces, branch `near-miss-faces`), and the
+  refusals by design listed there. U9 and U10 stayed open
   at acceptance (answered on 2026-10-14: U9 the certified mode only, U10
   (b)).
 
