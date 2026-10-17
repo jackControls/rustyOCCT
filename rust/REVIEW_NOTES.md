@@ -18494,6 +18494,109 @@ Decisions for S9, recorded before its code (2026-09-28):
   s each, sampled replays, every switch on): `boolean` clean, 401 runs, the
   slowest input 15 s; `split` clean, 1,727 runs.
 
+* **The shallow lens refined, before its code (2026-10-16; HANDOFF's item
+  5 (d), from a draft not committed).** Measured at `5a7acb4c` (release,
+  one operation at a time): a ball of radius 0.75 crossing a rod's wall
+  (radius 1) by `d` of its radius, `d` from `1e-5` down to `1.4e-7`
+  (`1.05e-7` deep, just beyond the resolution `1e-7`, within which S9d.2's
+  rule refuses the crossing), in the level and the turned frame. Fuse and
+  both cuts evaluate at every depth in 0.03 to 0.14 s. The common
+  evaluates at `1e-5` and `3e-6`, its volume enclosed 1.4 % and 30 % wide
+  in the level frame (`[2.7e-12, 1.5e-11]` about `9.0e-12` in the turned
+  one), and from `1e-6` down is refused as `uncertified_shell_orientation`
+  in 65 to 80 ms. Why: neither the faces' parameter ranges nor the
+  orientation test's absolute width against the lens's thickness as such.
+  The shell's flux, `3 V` (`3e-12` at `1e-6`, `6e-14` at `1.4e-7`), is the
+  sum of its two faces' integrals along the meeting's projections; the
+  wall's narrows with the width asked (to `1e-17` at `1e-18`), the
+  sphere's stays `2.5e-11` to `5e-11` wide at every width from `1e-12` to
+  `1e-21`: a rounding floor of the natural interval form. Two causes, both
+  measured on the integrand's jets: (1) the sphere's Green integrand `F(u,
+  v)` is its antiderivative in `v` from the south pole, terms of the
+  sphere's size (the origin a vertex `r` from the centre) cancelling to
+  the lens's `1e-10`; (2) the meeting's points are enclosed `1.3e-10` wide
+  along the wall's ruling (the meeting over the angle, `Meet`: `v = (-b +
+  sqrt(b^2 - a c)) / a`, the discriminant of the depth's order and its
+  enclosure some `1e-15`), and the natural form multiplies that width by
+  the terms' size: `F` at a point `1.4e-10` wide, `4e-14` a fin (the
+  `Meet` pieces; the `Rise` pieces `5e-15` in the turned frame). The mass
+  properties alike (their volume's enclosure holding zero,
+  `Unrepresentable("a polyhedral Boolean's mass properties")`, where the
+  orientation is decided), with two more floors: the wall's terms are
+  polynomials in powers of the face's height (`3.25` from the wall's frame
+  at the bottom cap) whose terms cancel (`1.1e-14` at a point), and the
+  mass integrals' widths are relative to their integrands' scales at
+  least one (`1e-12` absolutely for a lens). The other procedural curves'
+  jets on shallow loops (the same depths `1e-5`, `1e-6`, `1.5e-7`, both
+  frames, every operation timed): none slow (every operation under 0.35
+  s), every piece's jets defined (no `acos` past one, as the rise's were
+  before S9d.2's fix), the meetings' integrals settling in 2 to 16 pieces;
+  what limits them is the floor above. A ball crossing a frustum's wall
+  (the meeting over the cone's angle): the common evaluates at `1e-5` (4 %
+  wide) and is refused below (the orientation, or the mass in the level
+  frame at `1e-6`). A rod of radius 0.5 crossing a rod's wall at right
+  angles (two cylinders' meeting over the angle): level, the common
+  evaluates at `1e-5` and `1e-6` (13 % wide) and is refused at `1.5e-7`;
+  turned, every operation `Degenerate` ("a plane within rounding of a
+  cylinder's direction": the small rod's caps parallel to the other's axis
+  but for the frame's rounding, the configuration's, not the loop's). A
+  ball crossing a torus's outer equator or its top, a rod crossing its
+  outer wall and a slab's face crossing its equator (torus meetings and a
+  spiric section): commons refused at `1e-6` or `1.5e-7` (the
+  orientation; the mass at the top at `1e-5`), but for the ball at the
+  outer equator in the level frame and the rod in both frames at
+  `1.5e-7`, where every operation is `ComputationLimit("a torus meeting's
+  trace stalls")` within 5 ms (the meeting's trace, not its jets).
+  Decisions: (a) **A narrow tier** of the validator's integrals along
+  projections (`projection::with_narrow`), tried by `tiered_integral`
+  after the loose and the tight tiers and before the exact one (which
+  takes no jets along projections): widths `2^-30` of each integrand's
+  own scale (its largest value at eight points, floored at `2^-80`, where
+  the tight tier's are `1e-12` absolutely), and in the faces' integrands
+  along projections (i) **a loop's own height**: on a sphere, torus,
+  cylinder or cone face a loop that does not wind, every fin a line or a
+  projection (on a cylinder a spline of constant `u` too, which adds
+  nothing), takes `F`'s antiderivative in `v` from its own height `v0` (its
+  first fin's start's binary64 `v`), not from the pole, the apex or zero
+  (`∮ G(u) du = 0` around such a loop, so the value is the same and `F`
+  is the lens's size); on a cylinder or cone the mass polynomials are
+  built in `w = v - v0` (the integrands about the loop's height, `R + v0
+  sin a` and `d + v0 cos a n`); (ii) **centred forms**: `F(U, V)` as `F(Um,
+  Vm) + F_u(U, V) (U - Um) + F_v(U, V) (V - Vm)`, `Um`, `Vm` the jets of
+  the coefficients' binary64 middles and the partials exact polynomials
+  of the same families (the mean value theorem in the algebra of
+  truncated series: the segment between the point jet and any jet inside
+  the enclosures lies inside them; no partial against a deviation exactly
+  zero, a carrier's own angle); (iii) a sphere's or torus's mass terms
+  integrated together in that form, not through the trigonometric basis,
+  whose integrals' widths add where their combinations cancel; a closing
+  chord between two fins' enclosed ends keeps the narrower of its closed
+  form and its box. (b) **Mass properties**: `mass` integrates a body
+  again in the narrow tier where its integrals run along projections and
+  its volume is not enclosed or is enclosed more widely than `2^-30` of
+  itself, and keeps the meet of the two enclosures (each holds the
+  values). (c) **Undecided after every tier**: a result whose only issues
+  are uncertified shell orientations (and uncertified containments) is
+  `ComputationLimit("a shell's orientation the validator's integrals leave
+  undecided")`, as an undecided cavity or loop winding is (`undecided`),
+  not `InvalidTopology`; a mass the narrow tier cannot enclose stays
+  `Unrepresentable` as before. (d) **What stays refused**: a lens bounded
+  by a spline wall (S9f.2b's meeting on a wall: the spline faces' fluxes
+  and `wall_pieces` keep their widths; a parabolic dome's ridge crossed by
+  a rod of radius 0.5 at `1.4e-7` of it, its common refused, `1e-6`
+  evaluating 50 % wide), with (c)'s reason; loops with sinusoid or spline
+  pcurves (no own height; centred forms only); the torus meetings' stalled
+  traces (a tracing limit, unchanged); a crossing within the resolution
+  (S9d.2's rule, unchanged). (e) **Cost**: the tier runs only where the
+  tight one leaves a sign undecided or a volume wide; a prototype took a
+  lens's common 0.7 to 0.9 s and a torus's 1.5 to 5 s, one second of
+  which the centred forms (three evaluations a point). Evidence:
+  `tests/shallow_lens_booleans.rs` against `tools/shallow_lens_reference.py`
+  (the lens's volume and its wall's and sphere's areas to 30 digits from
+  the stored data, two ways), the controls `0.05` and `0.25`; the
+  kernel's tests the other curves' commons, consistent with their fuses
+  and cuts, and the dome's refusal.
+
 * **Thin cones' rings near their points at infinity, a timeout at
   `dbf15607`, done (2026-10-12).** CI's scheduled run 38271718656 at
   `dbf15607` was green but for `analytic_intersections`' campaign, whose
