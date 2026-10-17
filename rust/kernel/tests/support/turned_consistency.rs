@@ -128,12 +128,18 @@ pub struct Measure {
 }
 
 pub fn measure(out: &[Solid]) -> Result<Measure, String> {
+    measure_at(out, None)
+}
+
+/// [`measure`], each solid valid at `at` where given (else at its own
+/// resolution).
+pub fn measure_at(out: &[Solid], at: Option<Tolerance>) -> Result<Measure, String> {
     let mut m = Measure {
         volume: [0.0; 2],
         moment: [0.0; 2],
     };
     for s in out {
-        let issues = s.topology().check(s.resolution());
+        let issues = s.topology().check(at.unwrap_or(s.resolution()));
         if !issues.is_empty() {
             return Err(format!("an invalid result: {issues:?}"));
         }
@@ -175,9 +181,23 @@ fn sub(a: [f64; 2], b: [f64; 2]) -> [f64; 2] {
 /// result's moment along `y` zero within its enclosure. The common's
 /// enclosure.
 pub fn consistent(a: &Solid, b: &Solid, symmetric: bool) -> Result<[f64; 2], String> {
+    consistent_at(a, b, symmetric, None)
+}
+
+/// [`consistent`], each result valid at `at` where given (S9e.4b.4b.2b.2b.3b:
+/// at the larger of the inputs' resolutions, where an imported body, whose
+/// resolution is its file's tolerance, is the tool of a construction of a
+/// smaller one: the result takes the object's and keeps the imported body's
+/// stored entities, valid at the body's alone).
+pub fn consistent_at(
+    a: &Solid,
+    b: &Solid,
+    symmetric: bool,
+    at: Option<Tolerance>,
+) -> Result<[f64; 2], String> {
     let run = |r: Result<(Vec<Solid>, rusty_occt::history::History), Error>, what: &str| {
         r.map_err(|e| format!("{what}: {e}"))
-            .and_then(|(out, _)| measure(&out).map_err(|e| format!("{what}: {e}")))
+            .and_then(|(out, _)| measure_at(&out, at).map_err(|e| format!("{what}: {e}")))
     };
     let op = OperationId(93);
     let ab = run(a.common(op, b), "common")?;

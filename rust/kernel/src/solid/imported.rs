@@ -67,6 +67,9 @@
 //! second on the first's frame with its caps taken onto the first's heights
 //! (`Levels`: the caps on one plane exactly), and each leaf with the prisms of
 //! one cap read with their holes (a lower prism the upper one hides).
+//! S9e.4b.4b.2b.2b.3b: then each leaf leading the leaves whose caps it
+//! splits crossing them (`crossed`: a crossed leaf read off the faces of its
+//! cap's plane at once, its pieces bridged through the lead, one prism).
 //! S9e.4b.4c.2b.1: in any of those chains, a component of the other plane
 //! faces of both kinds is a pocket with pockets of its own (`nested_pocket`:
 //! a post or an island standing in it, S9e.4b.4c.2a's `pocket` on the
@@ -111,6 +114,7 @@ use num_rational::BigRational as R;
 use std::cell::RefCell;
 use std::collections::BTreeMap;
 
+mod crossed;
 mod turned;
 pub(crate) use turned::TURNED;
 
@@ -486,8 +490,8 @@ impl Solid {
     /// the parts flush with its walls; S9e.4b.4b.2b.2b.3a: then each stack's
     /// (S9e.4b.4c.2b.1: in each, a component of the other plane faces of both
     /// kinds a pocket with pockets of its own, any refusal of such a chain the
-    /// one it gave before); the first whose model matches the stored topology,
-    /// else the first
+    /// one it gave before); S9e.4b.4b.2b.2b.3b: then each crossed chain's; the
+    /// first whose model matches the stored topology, else the first
     /// refusal an earlier chain's Booleans give, else the body's own tangency,
     /// else S9e.4b.4b.2b.2b.3b's. S9e.4b.4d.2a: where every chain is refused, a
     /// turned body of corners as the lattice of its primitives (`turned`),
@@ -3145,6 +3149,9 @@ struct Leaf {
     /// void cut from the chain (a pocket open sideways) rather than fused.
     run: Vec<bool>,
     void: bool,
+    /// S9e.4b.4b.2b.2b.3b: a crossed leaf's bottom cap's faces (its pieces,
+    /// the lead leaf crossing it splitting them; empty where none).
+    pieces: Vec<usize>,
 }
 
 /// Whether a face is a wall along `up`: a plane whose outward normal is
@@ -3384,6 +3391,7 @@ fn leaves_with(t: &Topology, tolerance: Tolerance, rim: bool, strict: bool) -> V
                     open: None,
                     run: Vec::new(),
                     void: false,
+                    pieces: Vec::new(),
                 });
             }
         }
@@ -3502,6 +3510,7 @@ fn flush_parts(t: &Topology, tolerance: Tolerance, lead: &Leaf) -> Vec<Leaf> {
                         open: Some(own),
                         run,
                         void,
+                        pieces: Vec::new(),
                     });
                     continue;
                 }
@@ -3556,6 +3565,7 @@ fn flush_parts(t: &Topology, tolerance: Tolerance, lead: &Leaf) -> Vec<Leaf> {
                     open: None,
                     run,
                     void,
+                    pieces: Vec::new(),
                 });
             }
         }
@@ -3683,7 +3693,9 @@ fn leaf_pairs(all: &[Leaf]) -> Vec<[usize; 2]> {
 /// `S = M + 2 F` on (`L''` the stack leaves, `stack_leaves`, `P''` their pairs),
 /// `S + k` the `k`-th pair's stack chain alone, `S + P'' + k` with the other
 /// plane faces, `S + 2 P'' + k` the `k`-th stack leaf with them (`chain_piece`'s
-/// `stack`).
+/// `stack`). S9e.4b.4b.2b.2b.3b: from `C = S + 2 P'' + L''` on, `C + k` the
+/// `k`-th crossed chain (`crossed::chains`: a lead leaf with the leaves whose
+/// caps it splits).
 fn primitives_piece(
     t: &Topology,
     tolerance: Tolerance,
@@ -3730,6 +3742,18 @@ fn primitives_piece_with(
                 let s = j - 2 * leads.len();
                 let strict = stack_leaves(t, tolerance);
                 let pairs = leaf_pairs(&strict);
+                // S9e.4b.4b.2b.2b.3b: then each crossed chain.
+                if s >= 2 * pairs.len() + strict.len() {
+                    let x = s - 2 * pairs.len() - strict.len();
+                    let chosen = crossed::chains(t, tolerance)
+                        .into_iter()
+                        .nth(x)
+                        .ok_or_else(not_their_chain)?;
+                    let mut piece =
+                        chain_piece(t, tolerance, op, &chosen, None, true, true, false, nesting)?;
+                    piece.choice = choice;
+                    return Ok(piece);
+                }
                 let (chosen, extra) = if s < 2 * pairs.len() {
                     let [i, l] = *pairs
                         .get(s % pairs.len().max(1))
@@ -3854,8 +3878,8 @@ fn primitives_piece_with(
 /// first of those with the other plane faces or of two leaves (a tangency in
 /// such a chain's is one the body is not) and the first over the leaves cut
 /// at their rim (any refusal of such a chain's is one too, and of a flush
-/// chain's, S9e.4b.4b.2b.2b.2, and of a stack chain's, S9e.4b.4b.2b.2b.3a,
-/// tried last).
+/// chain's, S9e.4b.4b.2b.2b.2, of a stack chain's, S9e.4b.4b.2b.2b.3a, and of
+/// a crossed chain's, S9e.4b.4b.2b.2b.3b, tried last).
 fn primitives_choices(t: &Topology, tolerance: Tolerance) -> (Vec<u32>, u32, u32) {
     let all = leaves(t, tolerance);
     let count = u32::try_from(all.len() + 1).unwrap_or(u32::MAX / 4);
@@ -3869,6 +3893,8 @@ fn primitives_choices(t: &Topology, tolerance: Tolerance) -> (Vec<u32>, u32, u32
     // other plane faces, then each stack leaf with them.
     let strict = stack_leaves(t, tolerance);
     let stacks = u32::try_from(2 * leaf_pairs(&strict).len() + strict.len()).unwrap_or(0);
+    // S9e.4b.4b.2b.2b.3b: then each crossed chain.
+    let crossed = u32::try_from(crossed::chains(t, tolerance).len()).unwrap_or(0);
     let first = 2 * count + 2 * pairs;
     let flush = first + 2 * lone + 2 * rim_pairs;
     let order = (0..count)
@@ -3876,7 +3902,7 @@ fn primitives_choices(t: &Topology, tolerance: Tolerance) -> (Vec<u32>, u32, u32
         .chain(2 * count..first)
         .chain(first..flush)
         .chain(flush..flush + 2 * leads)
-        .chain(flush + 2 * leads..flush + 2 * leads + stacks)
+        .chain(flush + 2 * leads..flush + 2 * leads + stacks + crossed)
         .collect();
     (order, count, first)
 }
@@ -4019,6 +4045,7 @@ fn bosses(
             open: Some(walls),
             run: Vec::new(),
             void: false,
+            pieces: Vec::new(),
         });
     }
     out
@@ -4298,6 +4325,13 @@ fn chain_piece_with(
         let levels = stack.then(|| Levels {
             first: built.first().map(|s| (s.frame, [s.start, s.end])),
         });
+        // S9e.4b.4b.2b.2b.3b: a crossed leaf, its pieces bridged through the
+        // lead.
+        if !l.pieces.is_empty() {
+            let lead = built.first().cloned().ok_or_else(not_their_chain)?;
+            built.push(crossed::crossed_prism(t, l, &lead, tolerance, mine(op, i))?);
+            continue;
+        }
         built.push(
             completed_on(
                 t,
@@ -4351,9 +4385,12 @@ fn chain_piece_with(
     for (q, l) in prisms.iter().enumerate().take(lead) {
         let mine = faces_of(q);
         let (convex, concave) = meets(&mine, &earlier);
-        // S9e.4b.4b.2b.2b.2: a flush part fused, a void cut.
+        // S9e.4b.4b.2b.2b.2: a flush part fused, a void cut;
+        // S9e.4b.4b.2b.2b.3b: a crossed leaf fused.
         ops.push(if q == 0 {
             Op2::Common
+        } else if !l.pieces.is_empty() {
+            Op2::Fuse
         } else if l.void {
             Op2::Cut
         } else if !l.run.is_empty() {
