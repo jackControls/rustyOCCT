@@ -254,8 +254,22 @@ struct OnCurve {
 /// cone's section by a plane through `(0, 0, 0.4)` normal to `(0, 0.6,
 /// 0.8)` at `(0.6, 0, 0.4)`; a torus's section by such a plane through `(0,
 /// 0, 0.5)` at `(3 + sqrt(0.75), 0, 0.5)`; a spline dome prism's top cap
-/// edge at its apex `(2, 2, 2)`.
-fn curves(f: &Frame3) -> Vec<OnCurve> {
+/// edge at its apex `(2, 2, 2)`. Built once in each frame for the file's
+/// tests.
+fn curves(f: &Frame3) -> &'static [OnCurve] {
+    static BUILT: [std::sync::OnceLock<Vec<OnCurve>>; 3] = [
+        std::sync::OnceLock::new(),
+        std::sync::OnceLock::new(),
+        std::sync::OnceLock::new(),
+    ];
+    let k = frames()
+        .iter()
+        .position(|(_, g)| g == f)
+        .expect("one of the frames");
+    BUILT[k].get_or_init(|| build_curves(f))
+}
+
+fn build_curves(f: &Frame3) -> Vec<OnCurve> {
     let pi = std::f64::consts::PI;
     let mut out = Vec::new();
     let body = rod(*f, 1.0, -3.0, 3.0, 1);
@@ -384,25 +398,48 @@ fn a_corner_off_another_curve_is_degenerate() {
     }
 }
 
+/// A small rod (radius and height 0.1) whose bottom rim passes through `q`
+/// with its tangent there normal to the unit `t` (the gap's direction) and
+/// the unit `along` (the other curve's tangent), its cap and its wall
+/// leaving `q` along `t`; `q` at the angle 1 of its frame (off its seam).
+fn rim_rod(q: [f64; 3], along: [f64; 3], t: [f64; 3]) -> Solid {
+    let r = 0.1;
+    let n = unit(add(along, t, 1.0));
+    let inward = unit(add(t, along, -1.0));
+    let e1 = inward.map(|x| -x);
+    let e2 = cross(n, e1);
+    let x = add(e1.map(|c| c * 1f64.cos()), e2, -1f64.sin());
+    rod(frame(add(q, inward, r), n, x), r, 0.0, r, 2)
+}
+
 /// A block's edge across a hole's rim or a spline prism's cap edge (normal
-/// to the curve's tangent and to the gap), `d` off it with its faces
-/// leaving it away, is `Degenerate`; so is one crossing it that deep; at
-/// `1e-6` every operation evaluates.
+/// to the curve's tangent and to the gap), and a small rod's rim across a
+/// hole's or a dimple's rim or a spline prism's cap edge (a conic against
+/// another curve), `d` off it with their faces leaving it away, are
+/// `Degenerate`; so are they crossing it that deep; at `1e-6` every
+/// operation evaluates.
 #[test]
 fn an_edge_across_another_curve_is_degenerate() {
     for (name, f) in frames() {
         for c in curves(&f) {
-            if !["hole's rim", "spline's cap edge"].contains(&c.what) {
+            if !["hole's rim", "dimple's rim", "spline's cap edge"].contains(&c.what) {
                 continue;
             }
-            let what = format!("{name} {} edge", c.what);
             let e = unit(cross(c.t, c.tangent));
             let across = |d: f64| edge_block(add(c.p, c.t, d), e, c.t, 0.1);
-            for d in MISSES {
-                refused(&format!("{what} {d:e}"), &c.body, &across(d), NEAR_EE);
-                degenerate(&format!("{what} {:e}", -d), &c.body, &across(-d));
+            let rim = |d: f64| rim_rod(add(c.p, c.t, d), c.tangent, c.t);
+            let tools: [(&str, &dyn Fn(f64) -> Solid); 2] = [("edge", &across), ("rim", &rim)];
+            for (kind, tool) in tools {
+                if kind == "edge" && c.what == "dimple's rim" {
+                    continue;
+                }
+                let what = format!("{name} {} {kind}", c.what);
+                for d in MISSES {
+                    refused(&format!("{what} {d:e}"), &c.body, &tool(d), NEAR_EE);
+                    degenerate(&format!("{what} {:e}", -d), &c.body, &tool(-d));
+                }
+                assert_eq!(evaluates(&what, &c.body, &tool(1e-6), 2), 0.0);
             }
-            assert_eq!(evaluates(&what, &c.body, &across(1e-6), 2), 0.0);
         }
     }
 }

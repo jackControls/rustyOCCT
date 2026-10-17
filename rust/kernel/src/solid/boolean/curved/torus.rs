@@ -392,6 +392,44 @@ impl TorusSec {
         ))
     }
 
+    /// A binary64 interval enclosure of the section's points over an
+    /// enclosure of its parameter's `(cos, sin)` (`at`'s formula, the other
+    /// angle from `trig`'s root on its branch; REVIEW_NOTES.md, "Other
+    /// curves, points of two fields ..."): `None` where that root's
+    /// discriminant is not certainly positive.
+    pub(super) fn enclose(&self, cs: &[Fast; 2]) -> Option<[Fast; 3]> {
+        let r = |x: &R| Fast::from_r(x);
+        let [a, b, m, k] = self.plane.clone().map(|x| r(&x));
+        let (big, small) = (r(&self.big), r(&self.small));
+        let other = if self.over_v {
+            let rv = big.add(&small.mul(&cs[0]));
+            let g = m.mul(&small).mul(&cs[1]).add(&k).neg().div(&rv)?;
+            super::meet::trig_fast(&a, &b, &g, self.plus)?
+        } else {
+            let aa = a.mul(&cs[0]).add(&b.mul(&cs[1]));
+            super::meet::trig_fast(
+                &small.mul(&aa),
+                &small.mul(&m),
+                &big.mul(&aa).add(&k).neg(),
+                self.plus,
+            )?
+        };
+        let (u, v) = if self.over_v {
+            (other, *cs)
+        } else {
+            (*cs, other)
+        };
+        let rho = v[0].mul(&small).add(&big);
+        let l = [rho.mul(&u[0]), rho.mul(&u[1]), v[1].mul(&small)];
+        let f = &self.f;
+        Some([0, 1, 2].map(|j| {
+            r(&f.o[j])
+                .add(&r(&f.x[j]).mul(&l[0]))
+                .add(&r(&f.y[j]).mul(&l[1]))
+                .add(&r(&f.n[j]).mul(&l[2]))
+        }))
+    }
+
     /// A point's place: the `(cos, sin)` of the graph's parameter (the
     /// directions over their lengths, `r` and `rho`, exact).
     pub(super) fn place(&self, x: &QV) -> [Qd; 2] {

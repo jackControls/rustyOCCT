@@ -137,6 +137,22 @@ pub(super) fn trig(alpha: &R, beta: &R, gamma: &R) -> Result<Option<Vec<[Qd; 2]>
     }
 }
 
+/// `trig`'s root `plus` (its second) over binary64 interval enclosures of
+/// `alpha`, `beta` and `gamma`: `None` where the discriminant `alpha^2 +
+/// beta^2 - gamma^2` is not certainly positive.
+pub(super) fn trig_fast(alpha: &Fast, beta: &Fast, gamma: &Fast, plus: bool) -> Option<[Fast; 2]> {
+    let rho2 = alpha.square().add(&beta.square());
+    let d = rho2.sub(&gamma.square());
+    if d.sign() != Some(Ordering::Greater) {
+        return None;
+    }
+    let root = if plus { d.sqrt() } else { d.sqrt().neg() };
+    Some([
+        alpha.mul(gamma).sub(&beta.mul(&root)).div(&rho2)?,
+        beta.mul(gamma).add(&alpha.mul(&root)).div(&rho2)?,
+    ])
+}
+
 /// A point of a conic at `(cos, sin)`.
 pub(super) fn conic_point(c: &V, a: &V, b: &V, cs: &[Qd; 2]) -> QV {
     qadd(&qadd(&qv(c), &qscale(a, &cs[0])), &qscale(b, &cs[1]))

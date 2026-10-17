@@ -10,6 +10,7 @@ use super::graph::{between_ccw, rational_between, same_dir};
 use super::meet::{tangency, CylPair};
 use super::model::*;
 use super::num::*;
+use crate::certified::{Fast, Real};
 use crate::solid::split::{rational_f64, zero};
 use crate::{Error, Result};
 use num_rational::BigRational as R;
@@ -394,6 +395,69 @@ impl MeetCrv {
         } else {
             t
         }
+    }
+
+    /// A binary64 interval enclosure of the piece's points over an enclosure
+    /// of the carrier's `(cos, sin)` (REVIEW_NOTES.md, "Other curves, points
+    /// of two fields ..."): `at`'s formula, the discriminant certainly
+    /// positive and the ruling's parameter `w` from whichever of its two
+    /// forms, `(-B + s sqrt(D)) / A` and `C / (-B - s sqrt(D))`, is the
+    /// narrower (both enclose it); `None` where neither is certain.
+    pub(super) fn enclose(&self, cs: &[Fast; 2]) -> Option<[Fast; 3]> {
+        let f = |v: &V| v.clone().map(|x| Fast::from_r(&x));
+        let d3 = |a: &[Fast; 3], b: &[Fast; 3]| {
+            a[0].mul(&b[0]).add(&a[1].mul(&b[1])).add(&a[2].mul(&b[2]))
+        };
+        let (o, x, y, n) = (f(&self.o), f(&self.x), f(&self.y), f(&self.n));
+        let (r, slope) = (Fast::from_r(&self.r), Fast::from_r(&self.slope));
+        let radial: [Fast; 3] = [0, 1, 2].map(|j| x[j].mul(&cs[0]).add(&y[j].mul(&cs[1])));
+        let base: [Fast; 3] = [0, 1, 2].map(|j| o[j].add(&r.mul(&radial[j])));
+        let dir: [Fast; 3] = [0, 1, 2].map(|j| n[j].add(&slope.mul(&radial[j])));
+        let zero = Fast::exact_f64(0.0);
+        let (mut a, mut b, mut c) = (zero, zero, zero);
+        for (g, e) in self.g.iter().zip(&self.e) {
+            let g = f(g);
+            let (gn, s) = (d3(&g, &dir), d3(&g, &base).sub(&Fast::from_r(e)));
+            a = a.add(&gn.square());
+            b = b.add(&s.mul(&gn));
+            c = c.add(&s.square());
+        }
+        let h = f(&self.h);
+        let tt = Fast::from_r(&self.t);
+        let r0 = Fast::from_r(&self.r2).add(&tt.mul(&d3(&h, &base).sub(&Fast::from_r(&self.eh))));
+        let rd = tt.mul(&d3(&h, &dir));
+        let (a, b, c) = (
+            a.sub(&rd.square()),
+            b.sub(&r0.mul(&rd)),
+            c.sub(&r0.square()),
+        );
+        let disc = b.square().sub(&a.mul(&c));
+        if disc.sign() != Some(Ordering::Greater) {
+            return None;
+        }
+        let root = if self.plus {
+            disc.sqrt()
+        } else {
+            disc.sqrt().neg()
+        };
+        let first = b.neg().add(&root).div(&a);
+        let second = c.div(&b.neg().sub(&root));
+        let width = |w: &Fast| {
+            let (lo, hi) = w.bounds_f64();
+            hi - lo
+        };
+        let w = match (first, second) {
+            (Some(p), Some(q)) => {
+                if width(&p) <= width(&q) {
+                    p
+                } else {
+                    q
+                }
+            }
+            (Some(p), None) | (None, Some(p)) => p,
+            (None, None) => return None,
+        };
+        Some([0, 1, 2].map(|j| base[j].add(&w.mul(&dir[j]))))
     }
 
     /// Binary64 points over the angle from `t0` turning `sweep`.
