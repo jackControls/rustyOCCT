@@ -15767,6 +15767,11 @@ Decisions for S9, recorded before its code (2026-09-28):
     7 and `compare_split.py` 72 / 56; the boolean, split and
     brep_validation corpora and their regressions replayed with debug
     assertions, none failing (the slowest 7.2 s, 2.1 s and 1.8 s of CPU).
+    Merged and verified at `216ca888` (`rust-kernel`, with the DRAW survey
+    `s9-draw-20`; the brep_validation corpus replayed with debug
+    assertions too, 3,153 files). Campaigns there (600 s each, every switch
+    on): `boolean` clean, 312 runs, the slowest input 32 s; `split` clean,
+    882 runs; `brep_validation` clean (full replay), 6,093 runs.
   * **DRAW survey after the near misses, the shallow lens, the import tail
     and a Boolean's resolution (2026-10-17, `UPSTREAM_TESTS.md`).** At
     `1bc0c327` (`rust-kernel`: S9e.4b.4d.2c.1b, 1c, 2c.2 and 2c.1a's
