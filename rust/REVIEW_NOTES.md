@@ -15095,6 +15095,122 @@ Decisions for S9, recorded before its code (2026-09-28):
     fuse, which OCCT keeps as two solids touching at a point where the
     reference's rays count one, their totals the reference's within 1e-16.
     S9e.4b.4b.2b.2b.3b's kernel next.
+  * **S9e.4b.4c.2b.2 refined, before its code (2026-10-17).** Why it is
+    refused today: a body of several primitives is a chain of its prisms
+    (leaves first, then prisms of one cap) and then its primitives widest
+    first, the first of them inside its quadric, each next one cut, in
+    common or fused; a body that is a Boolean chain of its parts only in
+    another order is refused as no chain matching, `OutOfDomain("an imported
+    body of several primitives other than a Boolean chain of them
+    (S9e.4b.4c)")`. *Reach*, the measurement of "S9e.4b.4b.2b.2b.3b refined"
+    (at `5a7acb4c`, every chain traced): no fuzz body is refused as no chain
+    matching; of the dataset's and the fixtures' bodies 7 are (the 7
+    S9e.4b.4c.2b refined listed: `bug28626_case1_shapes`' two solids import
+    since S9e.4b.4d.2a, and `bug25966_Revolution` and the fixture
+    `turned_split` are refused so since S9e.4b.4d.1's named refusals moved
+    them, turned bodies S9e.4b.4d left), and of S9e.4b.4c.2b.2's other forms
+    a flat with pockets of its own (a component of the other plane faces of
+    both kinds meeting one part along convex edges) is reached in some chain
+    by 5 fuzz bodies (`18da950e`, `3b4928e7`, `8107cbf2`, `e99eeb4e`,
+    `ee0cdb9c`) and no dataset body, a nested pocket holding a primitive by
+    none. *Diagnosis*, read off the files and each chain's trace with the
+    model's and the stored topology's counts at the match: (ii)
+    `OCC14536-sh1` (`bugs/modalg_1/bug14536`'s `s1`), a rod of radius 100
+    over `[0, 300]` less a ball of radius 200 about its axis's point at
+    height `-100 sqrt 3`, which meets the rod's wall exactly at its bottom
+    rim (three faces: the top, the wall, the dimple): the ball is the widest
+    primitive and its material lies outside its sphere, so the chain of the
+    primitives alone is refused at once; a draft (not committed) putting
+    the primitives inside their quadrics first imports it (8,993,811.4197,
+    native `vprops` 8.99381e+06). (iv a) `CTO904_cts21347a`
+    (`bcut_complex/O1`'s and `P7`'s object), a turned flange (a disc of
+    radius 12.55 over `[0, 3]`, an underside recess between radii 8.25 and
+    11.05 up to `1.5`, a spigot of radius 8.25 down to `-0.5`) with a lug
+    (a sector between radii 5.75 and 10.25 and two planes, over `[3,
+    6.4]`): every chain reading the spigot and the lug as prisms of one cap
+    builds them before the recess's cylinder is cut, and the cut takes the
+    spigot away (the model 10 faces and 16 edges, the stored 12 and 18: no
+    spigot, the recess's ceiling a whole disc); a draft putting the
+    primitives before the prisms of one cap imports it (1,432.8135514, native
+    `vprops` 1432.81). The same draft over every chain at once loses
+    `bug28773_2` (S9e.4b.4b.1's, then no chain matching) and one fuzz body
+    (`ad33b5ff`, then two faces within the resolution of one plane), so it
+    is a later choice: tried after every chain, both import and nothing else
+    moves. (i) `CTO900_pro6066a` and `CTO900_pro6066-part`: two cylinders on
+    parallel axes, the narrower shorter, their caps on one plane; the chain
+    is right (the wider's primitive fused with the narrower's) but OCCT
+    stores the narrower's wall split at its seam (two faces on one surface,
+    a seam line edge, the rims split at its ends) and the wider's rims and
+    arcs split at its seam vertices, where the model has one face and whole
+    edges (the model 4 vertices, 7 edges, 5 faces, the stored 7, 11, 6): S9e.2's match
+    pairs entities one to one, so the body is rebuilt differently whatever
+    the chain. Matching modulo OCCT's seams needs a seam-aware match naming
+    one model face by several stored faces (the history's relations over
+    them) or an import merging the stored seams (changing the body's entity
+    counts against OCCT's): not a small generalization, and no DRAW case
+    reaches either body (`bcut_complex/E4` and `E9` give the adapter
+    compounds); not built. (iv b) `CTO904_pro12859a` (`bfuse_complex/L4`'s,
+    a compound the adapter does not take): a block less a cylinder of radius
+    725 with a rib between that cylinder and one of radius 150.25 tangent to
+    it inside (a cusp along the line of their tangency, `E4`, the faces at
+    zero angle there): the body's own tangency, which no chain may take;
+    the chains that leave the rib out mismatch and report it as no chain
+    matching. It stays refused (by design, as every body's own tangency).
+    *Flats with pockets of their own*: a draft (not committed) reading such
+    a component as the hull of its outer planes less its other faces'
+    pockets (S9e.4b.4c.2a's `pocket` on the material's side), the chain
+    common it, imports none of the 5 fuzz bodies (each refused as before: 2
+    a piece thinner than the resolution, 1 two faces within the resolution of
+    one plane, 1 an edge meeting an edge, 1 the body's own tangency, by S9's
+    rules in their other chains); not built. *A nested pocket holding a
+    primitive*: no body reaches it; not built. Decisions. (1) *Sub-step*:
+    **S9e.4b.4c.2b.2**: (ii) and (iv a), the inside-first order as a later
+    choice; (i), (iv b), the flats with pockets of their own and the nested
+    pocket holding a primitive not built (recorded above). (2)
+    *Representation*: every chain S9e.4b.4b.1 to S9e.4b.4b.2b.2b.3b reads,
+    in the same order, again after all of them, with its primitives inside
+    their quadrics first (widest first), then those outside (widest first),
+    and its prisms of one cap after the primitives; the Booleans' kinds as
+    before (a primitive outside its quadric cut, one inside in common where
+    it meets the earlier parts along convex edges alone, else fused; the
+    primitives meeting the leaves alone before them, the prisms of one cap
+    after them, fused); each Boolean S9e.4b.3c.3b's tree's, the root's given
+    model matched to the stored topology by S9e.2's match, its ids the
+    stored ones. A chain read the same as an earlier one (the order changing
+    nothing) is not built again (`same_chain`). Numbers: the engine's own, no
+    new field or degree. (3) *The chains*: after every chain of this
+    order's (the crossed chains last before); where the chain of the
+    primitives alone is refused as no chain matching, the later chains are
+    tried at once (`OCC14536-sh1` has no leaf). Every body that imports keeps
+    its chain; every refusal stays the one it was where no later chain
+    matches. (4) *Limits*: the earlier chains' (the later choices as many as
+    the earlier). (5) *Its other queries* are S9e.4b.4b.2b.1's. (6)
+    *Degenerate and refused.* S9's rules unchanged in every Boolean; any
+    refusal of a later chain is one the body is not. (7) *Fuzzing.* No
+    stage of its own: no fuzz body is refused as no chain matching, and none
+    reaches the later choices. (8) *Evidence first.* Bodies OCCT writes,
+    each about the world's `z` through its origin, its turned part OCCT's
+    revolution of its profile: `dimple` (a rod of radius 3 over `[0, 6]` less
+    a ball of radius 5 about its axis's point at height `-4`, through its
+    bottom rim exactly: `OCC14536-sh1`'s form), `cup` (the ball at `-9/2`: an
+    annulus about the dimple) and `flange` (a disc of radius 4 over `[0,
+    3/2]` with a recess between radii 2 and 3 up to `1/2` and a spigot of
+    radius 2 down to `-1/2`, fused with a lug of an arc of radius `5/2` and
+    two rays on its top: `cts21347a`'s form); cases against upright rods
+    and boxes, the dimple the tool, the flange and S9e.4a's cylinder, a
+    chain, and a declared `degenerate` ball resting on the lug's top; the
+    reference S9e.3a's chained reference on the constructions (the rod less
+    the ball, the disc less the recess's cylinder fused with the spigot's and
+    the lug), each body's closed form, S9e.4b.3c.3a's checks
+    (`generate_inside_first_boolean_fixtures.py --check`, a CI group
+    `inside-first`, `test_inside_first_boolean_reference.py`); a native
+    capture keyed on the kernel's new file (`compare_inside_first_boolean.py`,
+    `solid/imported/inside_first.rs` absent); then the kernel and its tests
+    (`tests/inside_first_booleans.rs`: every fixture within `1e-9`
+    enclosures, the consistency identities on each body with a partner, the
+    degenerate refused, histories over the stored ids, deterministic, moved
+    rigidly, the dataset's two bodies' forms and `bug28773_2`'s chain kept),
+    and a DRAW trial of the restore cases.
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces
