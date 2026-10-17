@@ -11,12 +11,19 @@
 //! results are consistent: fuse and common enclose `|A| + |B|` together,
 //! each cut and the common the cut body's own. The fixture's frames are
 //! the kernel's stored ones, bit for bit, and so is the rod's wall's origin
-//! (`o - 3 n`), which the reference integrates on.
+//! (`o - 3 n`), which the reference integrates on. The other procedural
+//! curves' shallow loops (a ball by a frustum's wall, two rods crossing,
+//! balls, a rod and a slab by a torus) evaluate consistently, and a lens on
+//! a spline wall, which the narrow tier does not reach, is a
+//! `ComputationLimit`.
 use num_bigint::BigInt;
 use num_rational::BigRational as R;
 use rusty_occt::identity::OperationId;
-use rusty_occt::topology::Surface;
-use rusty_occt::{Frame3, Point3, Solid, Tolerance, Vec3};
+use rusty_occt::topology::{SplineSpan, Surface};
+use rusty_occt::{
+    BSplineCurve2, Boundary, Error, Frame3, Point2, Point3, Profile, Segment, Solid, Tolerance,
+    Vec3,
+};
 use std::collections::BTreeMap;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
@@ -194,8 +201,8 @@ fn run(rod: &Solid, ball: &Solid) -> Result<Results, String> {
     Ok(out)
 }
 
-/// The cases on a few threads, in the fixture's order.
-fn each<T: Send>(cases: &[Case], f: impl Fn(&Case) -> T + Sync) -> Vec<T> {
+/// `f` over the cases on a few threads, in their order.
+fn each<C: Sync, T: Send>(cases: &[C], f: impl Fn(&C) -> T + Sync) -> Vec<T> {
     let next = AtomicUsize::new(0);
     let workers = std::thread::available_parallelism()
         .map_or(2, |n| n.get())
@@ -355,6 +362,271 @@ fn shallow_lenses_evaluate_within_their_references() {
         }
     }
     assert!(failures.is_empty(), "{}", failures.join("\n"));
+}
+
+fn turned() -> Frame3 {
+    construction("turned")
+}
+
+fn level() -> Frame3 {
+    construction("level")
+}
+
+fn world(f: &Frame3, u: f64, v: f64, w: f64) -> [f64; 3] {
+    f.point(Point2::new(u, v), w).to_array()
+}
+
+fn direction(f: &Frame3, u: f64, v: f64, w: f64) -> [f64; 3] {
+    let (a, b) = (world(f, u, v, w), world(f, 0.0, 0.0, 0.0));
+    [a[0] - b[0], a[1] - b[1], a[2] - b[2]]
+}
+
+fn ball_of(c: [f64; 3], r: f64) -> Solid {
+    let half = std::f64::consts::FRAC_PI_2;
+    let f = frame(c, [0.0, 0.0, 1.0], [1.0, 0.0, 0.0]);
+    Solid::sphere_with(OperationId(9), f, r, -half, half, tol())
+        .unwrap()
+        .0
+}
+
+fn torus(f: Frame3) -> Solid {
+    let turn = std::f64::consts::TAU;
+    Solid::torus_with(OperationId(1), f, 2.5, 1.0, 0.0, turn, turn, tol())
+        .unwrap()
+        .0
+}
+
+/// A shallow crossing of another procedural curve: its name and inputs.
+type Crossing = (&'static str, fn(f64) -> (Solid, Solid), f64);
+
+/// The other procedural curves' shallow loops (REVIEW_NOTES.md's "The
+/// shallow lens refined" measures them): a ball of radius 0.75 by a
+/// frustum's wall (a meeting over the cone's angle), a rod of radius 0.5
+/// crossing a rod's wall at right angles (two cylinders' meeting), balls
+/// at a torus's outer equator and its top, a rod of radius 0.5 by its
+/// outer wall (torus meetings) and a slab's face across its equator (a
+/// spiric section), by `1.5e-7` or `1e-6` of the smaller radius: every
+/// operation evaluates, the commons (refused before, as an undecided
+/// orientation or an unrepresentable mass) within `1e-9` and positive, and
+/// fuse and common, each cut and common, enclose the bodies' sums
+/// together.
+#[test]
+fn other_procedural_curves_shallow_loops_evaluate_consistently() {
+    let crossings: Vec<Crossing> = vec![
+        (
+            "ball by a frustum, level",
+            |d| frustum_ball(level(), d),
+            1.5e-7,
+        ),
+        (
+            "ball by a frustum, turned",
+            |d| frustum_ball(turned(), d),
+            1.5e-7,
+        ),
+        (
+            "rod across a rod, level",
+            |d| {
+                let f = level();
+                let off = 1.0 + 0.5 * (1.0 - d);
+                let g = frame(
+                    world(&f, off, -2.0, 0.25),
+                    direction(&f, 0.0, 1.0, 0.0),
+                    direction(&f, 1.0, 0.0, 0.0),
+                );
+                let small = Solid::cylinder_with(OperationId(2), g, 0.5, 0.0, 4.0, tol())
+                    .unwrap()
+                    .0;
+                (rod(f), small)
+            },
+            1.5e-7,
+        ),
+        (
+            "ball at a torus's equator, turned",
+            |d| {
+                let f = turned();
+                (
+                    torus(f),
+                    ball_of(world(&f, 3.5 + 0.75 * (1.0 - d), 0.0, 0.0), 0.75),
+                )
+            },
+            1.5e-7,
+        ),
+        (
+            "ball on a torus's top, turned",
+            |d| {
+                let f = turned();
+                let c = world(&f, 1.5, 2.0, 1.0 + 0.75 * (1.0 - d));
+                (torus(f), ball_of(c, 0.75))
+            },
+            1.5e-7,
+        ),
+        (
+            "rod by a torus, level",
+            |d| {
+                let f = level();
+                let g = frame(
+                    world(&f, 3.5 + 0.5 * (1.0 - d), 0.0, -2.0),
+                    direction(&f, 0.0, 0.0, 1.0),
+                    direction(&f, 1.0, 0.0, 0.0),
+                );
+                let rod = Solid::cylinder_with(OperationId(2), g, 0.5, 0.0, 4.0, tol())
+                    .unwrap()
+                    .0;
+                (torus(f), rod)
+            },
+            1e-6,
+        ),
+        (
+            "slab across a torus's equator, level",
+            |d| {
+                let f = level();
+                let g = frame(
+                    world(&f, 3.5 - d, 0.0, 0.0),
+                    direction(&f, 1.0, 0.0, 0.0),
+                    direction(&f, 0.0, 1.0, 0.0),
+                );
+                (torus(f), slab(g, 2.0, 0.0, 1.0))
+            },
+            1.5e-7,
+        ),
+    ];
+    let outcomes = each(&crossings, |(name, make, d)| {
+        let (a, b) = make(*d);
+        let volume = |s: &Solid| measures(s)[0].clone();
+        let one = |op: &str, r: Result<(Vec<Solid>, rusty_occt::history::History), Error>| {
+            let solids = r.map_err(|e| format!("{name} {op}: {e:?}"))?.0;
+            let mut total = [
+                R::from_integer(BigInt::from(0)),
+                R::from_integer(BigInt::from(0)),
+            ];
+            for s in &solids {
+                let v = volume(s);
+                total = [&total[0] + &v[0], &total[1] + &v[1]];
+            }
+            Ok::<_, String>((solids.len(), total))
+        };
+        let fuse = one("fuse", a.fuse(OperationId(3), &b))?;
+        let cut = one("cut", a.cut(OperationId(4), &b))?;
+        let back = one("cut back", b.cut(OperationId(4), &a))?;
+        let common = one("common", a.common(OperationId(5), &b))?;
+        Ok::<_, String>((volume(&a), volume(&b), fuse, cut, back, common))
+    });
+    let mut failures = Vec::new();
+    let zero = R::from_integer(BigInt::from(0));
+    for ((name, _, d), outcome) in crossings.iter().zip(outcomes) {
+        let (a, b, fuse, cut, back, common) = match outcome {
+            Ok(x) => x,
+            Err(e) => {
+                failures.push(e);
+                continue;
+            }
+        };
+        let sum = |x: &[R; 2], y: &[R; 2]| [&x[0] + &y[0], &x[1] + &y[1]];
+        let meet = |x: &[R; 2], y: &[R; 2]| x[0] <= y[1] && y[0] <= x[1];
+        if common.0 != 1 || common.1[0] <= zero || !narrow(&common.1) {
+            failures.push(format!(
+                "{name} {d:e}: common {} solids [{}, {}]",
+                common.0,
+                rat(&common.1[0]),
+                rat(&common.1[1])
+            ));
+        }
+        for (what, x, y) in [
+            (
+                "fuse + common = A + B",
+                sum(&fuse.1, &common.1),
+                sum(&a, &b),
+            ),
+            ("cut + common = A", sum(&cut.1, &common.1), a.clone()),
+            ("cut back + common = B", sum(&back.1, &common.1), b.clone()),
+        ] {
+            if !meet(&x, &y) {
+                failures.push(format!("{name} {d:e}: {what} apart"));
+            }
+        }
+    }
+    assert!(failures.is_empty(), "{}", failures.join("\n"));
+}
+
+fn frustum_ball(f: Frame3, d: f64) -> (Solid, Solid) {
+    // Radius 2 at 0 and 1 at 3: the ball by the wall's point at height 1.5,
+    // along `(3, 1) / sqrt(10)`.
+    let frustum = Solid::cone_with(OperationId(1), f, 2.0, 1.0, 3.0, tol())
+        .unwrap()
+        .0;
+    let k = 10f64.sqrt();
+    let s = 0.75 * (1.0 - d);
+    let c = world(&f, 1.5 + s * 3.0 / k, 0.0, 1.5 + s / k);
+    (frustum, ball_of(c, 0.75))
+}
+
+fn slab(f: Frame3, s: f64, lo: f64, hi: f64) -> Solid {
+    let square = Boundary::polygon(
+        [(-s, -s), (s, -s), (s, s), (-s, s)]
+            .map(|(x, y)| Point2::new(x, y))
+            .to_vec(),
+        tol(),
+    )
+    .unwrap();
+    Solid::extrude_with(
+        OperationId(2),
+        Profile::new(square, vec![], tol()).unwrap(),
+        f,
+        lo,
+        hi,
+    )
+    .unwrap()
+    .0
+}
+
+/// A lens on a spline wall stays refused, now a `ComputationLimit`: a rod
+/// of radius 0.5 along `x` crossing the ridge of a dome prism (the profile
+/// `y = x (4 - x) / 2` over `[0, 4]`, a quadratic spline, extruded along
+/// `z`) by `1.4e-7` of its radius. Its meeting runs on the spline wall
+/// (S9f.2b), whose fluxes the narrow tier does not narrow: the common's
+/// orientation stays undecided (`uncertified_shell_orientation` before),
+/// the fuse and both cuts evaluate.
+#[test]
+fn a_shallow_lens_on_a_spline_wall_is_a_computation_limit() {
+    let poles = [(4.0, 0.0), (2.0, 4.0), (0.0, 0.0)].map(|(x, y)| Point2::new(x, y));
+    let curve =
+        BSplineCurve2::new(2, poles.to_vec(), None, vec![0.0, 1.0], vec![3, 3]).expect("a spline");
+    let outer = Boundary::path(
+        vec![Point2::new(0.0, 0.0), Point2::new(4.0, 0.0)],
+        vec![Segment::Line, Segment::Spline(SplineSpan::whole(curve))],
+        tol(),
+    )
+    .expect("a dome");
+    let dome = Solid::extrude_with(
+        OperationId(1),
+        Profile::new(outer, vec![], tol()).expect("a profile"),
+        Frame3::xy(),
+        -2.0,
+        2.0,
+    )
+    .expect("a prism")
+    .0;
+    let r = 0.5;
+    let f = frame(
+        [0.5, 2.0 + r * (1.0 - 1.4e-7), 0.25],
+        [1.0, 0.0, 0.0],
+        [0.0, 1.0, 0.0],
+    );
+    let rod = Solid::cylinder_with(OperationId(2), f, r, 0.0, 3.0, tol())
+        .unwrap()
+        .0;
+    assert!(matches!(
+        dome.common(OperationId(5), &rod),
+        Err(Error::ComputationLimit(m))
+            if m == "a shell's orientation the validator's integrals leave undecided"
+    ));
+    for (op, out) in [
+        ("fuse", dome.fuse(OperationId(3), &rod)),
+        ("cut", dome.cut(OperationId(4), &rod)),
+        ("cut back", rod.cut(OperationId(4), &dome)),
+    ] {
+        assert_eq!(out.map(|x| x.0.len()).ok(), Some(1), "{op}");
+    }
 }
 
 /// A rational's twenty significant digits, for messages.

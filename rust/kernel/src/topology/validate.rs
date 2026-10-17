@@ -354,6 +354,20 @@ pub(super) fn chord_enclosure<T: Real>(
     Some(du.mul(&f(&a[0].union(&b[0]), &a[1].union(&b[1]))?).neg())
 }
 
+/// The narrower of two enclosures of one value (the narrow tier's chords:
+/// both hold it).
+pub(super) fn narrower<T: Real>(x: T, y: T) -> T {
+    let width = |t: &T| {
+        let (lo, hi) = t.bounds_f64();
+        hi - lo
+    };
+    if width(&y) < width(&x) {
+        y
+    } else {
+        x
+    }
+}
+
 /// Halvings of a spline pcurve's Bézier pieces when a flux or mass
 /// integral along it is enclosed (S4d).
 pub(super) const SPLINE_DEPTH: usize = 6;
@@ -730,15 +744,50 @@ fn tiered<X: PartialEq>(unknown: X, fast: impl FnOnce() -> X, exact: impl FnOnce
 
 /// `tiered` for a sign from integrals along projections (S8d.2): binary64
 /// intervals at the loose sign width first (`projection::LOOSE`), which
-/// decide every sign not within it of zero, then at the tight one, then
-/// exactly. Every tier's enclosure holds the value, so a sign any of them
-/// decides is the value's.
+/// decide every sign not within it of zero, then at the tight one, then in
+/// the narrow tier (`projection::with_narrow`: widths relative to the
+/// integrands' own scales, centred forms about a loop's own height; a
+/// shallow crossing's lens thinner than the tight widths), then exactly.
+/// Every tier's enclosure holds the value, so a sign any of them decides
+/// is the value's.
 fn tiered_integral<X: PartialEq>(unknown: X, fast: impl Fn() -> X, exact: impl FnOnce() -> X) -> X {
     let first = projection::with_sign_width(projection::LOOSE, &fast);
     if first != unknown {
         return first;
     }
-    tiered(unknown, fast, exact)
+    let second = fast();
+    if second != unknown {
+        return second;
+    }
+    let third = projection::with_narrow(&fast);
+    if third != unknown {
+        return third;
+    }
+    exact()
+}
+
+/// The narrow tier's height of a loop's own (`projection::with_narrow`):
+/// the binary64 middle of its first fin's start's `v`, where the loop does
+/// not wind and every fin is a line or a projection (or, `constant_u`, a
+/// spline of constant `u`, which adds nothing to `-∮ F du`), so that every
+/// term of its `-∮ F(u, v) du` takes `F`'s antiderivative in `v` from it
+/// (`∮ G(u) du = 0` around a loop that does not wind in `u`). `None`
+/// outside the narrow tier and for other loops.
+fn narrow_height<T: Real>(lp: &Lp, constant_u_splines: bool) -> Option<T> {
+    if !projection::narrow() || lp.winding != 0 || lp.winding_v != 0 {
+        return None;
+    }
+    let fits = lp.fins.iter().all(|u| match &u.pcurve {
+        Curve2::LineSegment { .. } | Curve2::Projection(_) => true,
+        Curve2::BSpline(spline) => constant_u_splines && constant_u(spline),
+        _ => false,
+    });
+    if !fits {
+        return None;
+    }
+    let (lo, hi) = pcurve_at::<T>(&lp.fins.first()?.pcurve, 0.0)[1].bounds_f64();
+    let m = 0.5 * lo + 0.5 * hi;
+    (lo <= m && m <= hi).then(|| c(m))
 }
 
 /// A(t) = a0 + a1 t + sum_w c_w cos(w t) + s_w sin(w t), frequencies exact.
@@ -2478,6 +2527,7 @@ fn cone_line_flux<T: Real>(
     radius: &T,
     h: &(T, T, T),
     poled: bool,
+    base: Option<&T>,
 ) -> Option<T> {
     let (ha, hb, hc) = h;
     let d = b[0].sub(&a[0]);
@@ -2504,6 +2554,11 @@ fn cone_line_flux<T: Real>(
         rho0.square().div(&sa.mul(&c(2.0)))?
     } else {
         radius.mul(&a[1]).add(&sa.mul(&a[1].square()).mul(&c(0.5)))
+    };
+    // F less a loop's `F(v0)` (the narrow tier's form, `face_flux`).
+    let at_start = match base {
+        Some(b) => at_start.sub(b),
+        None => at_start,
     };
     let first = at_start.mul(&k0);
     let second = rho0.mul(&m).mul(&k1);
@@ -2542,8 +2597,21 @@ fn face_flux<T: Real>(face: &Face, loops: &[Lp], origin: &V3<T>) -> Option<T> {
         );
         // A sound face with a pole winds once in total (pole_position).
         let poled = loops.iter().map(|lp| lp.winding).sum::<i32>().abs() == 1;
+        // F(v), the antiderivative from the apex or 0, and F'(v).
+        let big_f = |v: &T| -> Option<T> {
+            Some(if poled {
+                rad.add(&sa.mul(v)).square().div(&sa.mul(&c(2.0)))?
+            } else {
+                rad.mul(v).add(&sa.mul(&v.square()).mul(&c(0.5)))
+            })
+        };
         let mut total = c::<T>(0.0);
         for lp in loops {
+            // The narrow tier's `F(v) - F(v0)`, `v0` the loop's own height.
+            let base = match narrow_height::<T>(lp, false) {
+                Some(v0) => Some(big_f(&v0)?),
+                None => None,
+            };
             for u in &lp.fins {
                 let (start, end) = match &u.pcurve {
                     Curve2::LineSegment { start, end } => (start, end),
@@ -2564,12 +2632,12 @@ fn face_flux<T: Real>(face: &Face, loops: &[Lp], origin: &V3<T>) -> Option<T> {
                             total.add(&bernstein::green_integral(spline, SPLINE_DEPTH, &g)?.neg());
                         continue;
                     }
-                    // -∫ F(v) h(u) du along a projection (S8d.2).
+                    // -∫ F(v) h(u) du along a projection (S8d.2); in the
+                    // narrow tier `-∫ (F(v) - F(v0)) h(u) du` in centred
+                    // form.
                     Curve2::Projection(pr) => {
                         let (ha, hb, hc) = &h;
-                        let term = projection::integrate_along::<T>(pr, &|u, v, du, _| {
-                            let (co, si) = u.cos_sin();
-                            let hu = co.scale(ha).add(&si.scale(hb)).add_constant(hc);
+                        let jet_f = |v: &Jet<T>| -> Option<Jet<T>> {
                             let fv = if poled {
                                 v.scale(&sa)
                                     .add_constant(&rad)
@@ -2578,7 +2646,33 @@ fn face_flux<T: Real>(face: &Face, loops: &[Lp], origin: &V3<T>) -> Option<T> {
                             } else {
                                 v.scale(&rad).add(&v.square().scale(&sa.mul(&c(0.5))))
                             };
-                            Some(fv.mul(&hu).mul(du).neg())
+                            Some(match &base {
+                                Some(b) => fv.add_constant(&b.neg()),
+                                None => fv,
+                            })
+                        };
+                        let f = |u: &Jet<T>, v: &Jet<T>| {
+                            let (co, si) = u.cos_sin();
+                            let hu = co.scale(ha).add(&si.scale(hb)).add_constant(hc);
+                            Some(vec![jet_f(v)?.mul(&hu)])
+                        };
+                        let fu = |u: &Jet<T>, v: &Jet<T>| {
+                            let (co, si) = u.cos_sin();
+                            let hu = si.scale(&ha.neg()).add(&co.scale(hb));
+                            Some(vec![jet_f(v)?.mul(&hu)])
+                        };
+                        let fv = |u: &Jet<T>, v: &Jet<T>| {
+                            let (co, si) = u.cos_sin();
+                            let hu = co.scale(ha).add(&si.scale(hb)).add_constant(hc);
+                            Some(vec![v.scale(&sa).add_constant(&rad).mul(&hu)])
+                        };
+                        let term = projection::integrate_along::<T>(pr, &|u, v, du, _| {
+                            let g = if base.is_some() {
+                                projection::centred(u, v, &f, &fu, &fv)?
+                            } else {
+                                f(u, v)?
+                            };
+                            Some(g[0].mul(du).neg())
                         })?;
                         total = total.add(&term);
                         continue;
@@ -2594,21 +2688,21 @@ fn face_flux<T: Real>(face: &Face, loops: &[Lp], origin: &V3<T>) -> Option<T> {
                     &rad,
                     &h,
                     poled,
+                    base.as_ref(),
                 )?;
                 total = total.add(&term);
             }
             for (a, b) in chords::<T>(lp) {
-                let term = match cone_line_flux(&a, &b, &sa, &rad, &h, poled) {
+                let term = match cone_line_flux(&a, &b, &sa, &rad, &h, poled, base.as_ref()) {
                     Some(term) => term,
                     None => {
                         let (ha, hb, hc) = &h;
                         let g = |uu: &T, v: &T| -> Option<T> {
                             let (co, si) = T::cos_sin(uu);
                             let hu = ha.mul(&co).add(&hb.mul(&si)).add(hc);
-                            let fv = if poled {
-                                rad.add(&sa.mul(v)).square().div(&sa.mul(&c(2.0)))?
-                            } else {
-                                rad.mul(v).add(&sa.mul(&v.square()).mul(&c(0.5)))
+                            let fv = match &base {
+                                Some(b) => big_f(v)?.sub(b),
+                                None => big_f(v)?,
                             };
                             Some(fv.mul(&hu))
                         };
@@ -2652,7 +2746,13 @@ fn face_flux<T: Real>(face: &Face, loops: &[Lp], origin: &V3<T>) -> Option<T> {
             Some(u) if plane => pcurve_at::<T>(&u.pcurve, 0.0)[1].midpoint(),
             _ => R::from_integer(0.into()),
         };
-        let shift = T::from_r(&v0);
+        // On a cylinder `∮ f(u) du = 0` around a loop that does not wind,
+        // so the narrow tier takes `v` from the loop's own height too.
+        let shift = if plane {
+            T::from_r(&v0)
+        } else {
+            narrow_height::<T>(lp, true).unwrap_or_else(|| c(0.0))
+        };
         for u in &lp.fins {
             let term = match &u.pcurve {
                 Curve2::LineSegment { start, end } => line_flux(
@@ -2728,17 +2828,39 @@ fn face_flux<T: Real>(face: &Face, loops: &[Lp], origin: &V3<T>) -> Option<T> {
                     bernstein::green_integral(spline, SPLINE_DEPTH, &f)?.neg()
                 }
                 // -∫ (v - v0) f(u) du along a projection (S8d.2): `f` the
-                // plane's constant or the cylinder's `A sin u + B cos u + C`.
+                // plane's constant or the cylinder's `A sin u + B cos u + C`;
+                // a cylinder's in centred form in the narrow tier.
                 Curve2::Projection(pr) => projection::integrate_along::<T>(pr, &|u, v, du, _| {
-                    let f = if plane {
-                        Jet::constant(coeffs.2.clone(), u.order())
-                    } else {
+                    if plane {
+                        let f = Jet::constant(coeffs.2.clone(), u.order());
+                        return Some(v.add_constant(&shift.neg()).mul(&f).mul(du).neg());
+                    }
+                    let f = |u: &Jet<T>, v: &Jet<T>| {
                         let (co, si) = u.cos_sin();
-                        si.scale(&coeffs.0)
+                        let f = si
+                            .scale(&coeffs.0)
                             .add(&co.scale(&coeffs.1))
-                            .add_constant(&coeffs.2)
+                            .add_constant(&coeffs.2);
+                        Some(vec![v.add_constant(&shift.neg()).mul(&f)])
                     };
-                    Some(v.add_constant(&shift.neg()).mul(&f).mul(du).neg())
+                    let g = if projection::narrow() {
+                        let fu = |u: &Jet<T>, v: &Jet<T>| {
+                            let (co, si) = u.cos_sin();
+                            let f = co.scale(&coeffs.0).sub(&si.scale(&coeffs.1));
+                            Some(vec![v.add_constant(&shift.neg()).mul(&f)])
+                        };
+                        let fv = |u: &Jet<T>, _: &Jet<T>| {
+                            let (co, si) = u.cos_sin();
+                            Some(vec![si
+                                .scale(&coeffs.0)
+                                .add(&co.scale(&coeffs.1))
+                                .add_constant(&coeffs.2)])
+                        };
+                        projection::centred(u, v, &f, &fu, &fv)?
+                    } else {
+                        f(u, v)?
+                    };
+                    Some(g[0].mul(du).neg())
                 })?,
                 Curve2::CircularArc { .. }
                 | Curve2::EllipseArc { .. }

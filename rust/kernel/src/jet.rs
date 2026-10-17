@@ -75,6 +75,30 @@ impl<T: Real> Jet<T> {
         }
     }
 
+    /// A point jet inside this one, each coefficient its enclosure's
+    /// binary64 middle, and the deviation `self - point` (whose
+    /// coefficients hold zero): the centred forms' split. Binary64 tier
+    /// only; `None` for rational enclosures or unbounded coefficients.
+    pub(crate) fn centre(&self) -> Option<(Self, Self)> {
+        let mut point = Vec::with_capacity(self.c.len());
+        for x in &self.c {
+            let (lo, hi) = x.as_fast()?.bounds_f64();
+            let m = 0.5 * lo + 0.5 * hi;
+            if !(lo <= m && m <= hi) {
+                return None;
+            }
+            point.push(T::exact_f64(m));
+        }
+        let point = Self { c: point };
+        let deviation = self.sub(&point);
+        Some((point, deviation))
+    }
+
+    /// Whether every coefficient is exactly zero.
+    pub(crate) fn is_zero(&self) -> bool {
+        self.c.iter().all(|x| x.bounds_f64() == (0.0, 0.0))
+    }
+
     pub(crate) fn add_constant(&self, k: &T) -> Self {
         let mut out = self.clone();
         out.c[0] = out.c[0].add(k);
@@ -230,7 +254,7 @@ pub(crate) fn integrate<T: Real>(
     depth: usize,
 ) -> Option<T> {
     let many = |t: &Jet<T>| g(t).map(|j| vec![j]);
-    integrate_many(&many, 1, a, b, order, width, depth, false)?.pop()
+    integrate_many(&many, 1, a, b, order, width, depth, None)?.pop()
 }
 
 /// Integrands of one variable's jet, evaluated together.
@@ -238,9 +262,10 @@ pub(crate) type Integrands<'a, T> = &'a dyn Fn(&Jet<T>) -> Option<Vec<Jet<T>>>;
 
 /// [`integrate`] of `n` integrands at once from one evaluation per piece
 /// (the jets they share computed once): a piece is bisected until every
-/// integrand's remainder is within its share, of `width` itself or, when
-/// `relative`, of `width` times the integrand's scale (its largest value at
-/// eight points, at least one: mass moments, not signs). A bisected piece's
+/// integrand's remainder is within its share, of `width` itself or, with a
+/// `floor`, of `width` times the integrand's scale (its largest value at
+/// eight points, at least the floor: one for mass moments, not signs; the
+/// narrow tier's smaller floor for both). A bisected piece's
 /// next coefficients, enclosed over it, hold over its halves too: a half
 /// whose remainder they already bound within its share is integrated
 /// without jets over it of its own (S9f.3's loops: most of the last
@@ -254,7 +279,7 @@ pub(crate) fn integrate_many<T: Real>(
     order: usize,
     width: f64,
     depth: usize,
-    relative: bool,
+    floor: Option<f64>,
 ) -> Option<Vec<T>> {
     let mut totals = vec![zero::<T>(); n];
     // Each piece with its parent's next coefficients' magnitudes, if known.
@@ -266,9 +291,9 @@ pub(crate) fn integrate_many<T: Real>(
         T::exact_f64(xl.abs().max(xh.abs()))
     };
     // Each integrand's scale when the width asked for is relative to it: its
-    // largest value at eight points, at least one.
-    let mut scales = vec![1.0f64; n];
-    if relative {
+    // largest value at eight points, at least the floor.
+    let mut scales = vec![floor.unwrap_or(1.0); n];
+    if floor.is_some() {
         for k in 0..8 {
             let t = a + (b - a) * (f64::from(k) + 0.5) / 8.0;
             if let Some(at) = g(&Jet::variable(T::exact_f64(t), 0)) {

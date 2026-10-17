@@ -234,9 +234,11 @@ fn translated(profile: &Profile, du: f64, dv: f64) -> Result<Option<Profile>> {
 /// leave undecided (a cavity in a solid bounded by a sphere or torus face
 /// with loops, S9d.4b.1, or beside spline walls, which its rays do not
 /// decide), or among them a face's loop winding it leaves undecided (a
-/// torus face wound in both directions, a torus knot: S9d.4b.2a). One rule
-/// for every result validated (stacks, polyhedral and curved results,
-/// given and matched ones).
+/// torus face wound in both directions, a torus knot: S9d.4b.2a), or a
+/// shell's orientation its integrals leave undecided in every tier (a lens
+/// thinner than their enclosures: a shallow crossing on a spline wall,
+/// HANDOFF item 5 (d)). One rule for every result validated (stacks,
+/// polyhedral and curved results, given and matched ones).
 fn undecided(issues: &[crate::topology::Issue]) -> Option<Error> {
     use crate::topology::IssueKind as K;
     if issues.is_empty() {
@@ -257,6 +259,20 @@ fn undecided(issues: &[crate::topology::Issue]) -> Option<Error> {
     {
         return Some(Error::ComputationLimit(
             "a face's loop winding the validator leaves undecided",
+        ));
+    }
+    if issues
+        .iter()
+        .any(|i| i.kind == K::UncertifiedShellOrientation)
+        && issues.iter().all(|i| {
+            matches!(
+                i.kind,
+                K::UncertifiedShellOrientation | K::UncertifiedContainment
+            )
+        })
+    {
+        return Some(Error::ComputationLimit(
+            "a shell's orientation the validator's integrals leave undecided",
         ));
     }
     None

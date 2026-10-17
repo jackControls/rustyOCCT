@@ -212,6 +212,112 @@ fn sph_antiderivative_jets<T: Real>(
     Some(out)
 }
 
+/// The partials in `u` of `F`s on a sphere or torus, their antiderivatives
+/// in `v` kept: `cos^a u sin^b u`'s derivative `b cos^(a+1) sin^(b-1) - a
+/// cos^(a-1) sin^(b+1)` (the narrow tier's centred forms).
+fn sph_du<T: Real>(fs: &[Sph<T>]) -> Vec<Sph<T>> {
+    fs.iter()
+        .map(|f| {
+            let mut out = BTreeMap::new();
+            for ((a, b, cc, d), x) in f {
+                if *b > 0 {
+                    add_to(&mut out, (a + 1, b - 1, *cc, *d), x.mul(&c(f64::from(*b))));
+                }
+                if *a > 0 {
+                    add_to(&mut out, (a - 1, b + 1, *cc, *d), x.mul(&c(-f64::from(*a))));
+                }
+            }
+            out
+        })
+        .collect()
+}
+
+/// The integrands themselves, `F`'s partials in `v`: `sum c cos^a u sin^b u
+/// cos^c v sin^d v` at jets.
+fn sph_eval_jets<T: Real>(fs: &[Sph<T>], u: &Jet<T>, v: &Jet<T>) -> Vec<Jet<T>> {
+    let ((cu, su), (cv, sv)) = (u.cos_sin(), v.cos_sin());
+    let (mut pcu, mut psu) = (Powers::new(&cu), Powers::new(&su));
+    let (mut pcv, mut psv) = (Powers::new(&cv), Powers::new(&sv));
+    let n = u.order();
+    // The products in `u` and in `v`, each made once.
+    let mut uv: BTreeMap<(u8, u8), Jet<T>> = BTreeMap::new();
+    let mut vv: BTreeMap<(u8, u8), Jet<T>> = BTreeMap::new();
+    fs.iter()
+        .map(|f| {
+            // Grouped by the powers of `cos u` and `sin u`: one product each.
+            let mut groups: BTreeMap<(u8, u8), Jet<T>> = BTreeMap::new();
+            for ((a, b, cc, d), x) in f {
+                let along_v = vv
+                    .entry((*cc, *d))
+                    .or_insert_with(|| pcv.get(*cc).mul(&psv.get(*d)));
+                let entry = groups
+                    .entry((*a, *b))
+                    .or_insert_with(|| Jet::constant(c::<T>(0.0), n));
+                *entry = entry.add(&along_v.scale(x));
+            }
+            let mut total = Jet::constant(c::<T>(0.0), n);
+            for ((a, b), w) in groups {
+                let along_u = uv
+                    .entry((a, b))
+                    .or_insert_with(|| pcu.get(a).mul(&psu.get(b)));
+                total = total.add(&along_u.mul(&w));
+            }
+            total
+        })
+        .collect()
+}
+
+/// `sph_antiderivative_jets` in centred form (the narrow tier), `fs_u`
+/// their partials in `u` (`sph_du`).
+fn sph_antiderivative_centred<T: Real>(
+    fs: &[Sph<T>],
+    fs_u: &[Sph<T>],
+    u: &Jet<T>,
+    v: &Jet<T>,
+    lower: &T,
+) -> Option<Vec<Jet<T>>> {
+    projection::centred(
+        u,
+        v,
+        &|x, y| sph_antiderivative_jets(fs, x, y, lower),
+        &|x, y| sph_antiderivative_jets(fs_u, x, y, lower),
+        &|x, y| Some(sph_eval_jets(fs, x, y)),
+    )
+}
+
+/// The partials in `u` and `v` of `sum c v^k cos^a u sin^b u` (the narrow
+/// tier's centred forms).
+fn rev_du<T: Real>(fs: &[Rev<T>]) -> Vec<Rev<T>> {
+    fs.iter()
+        .map(|f| {
+            let mut out = BTreeMap::new();
+            for ((k, a, b), x) in f {
+                if *b > 0 {
+                    add_to(&mut out, (*k, a + 1, b - 1), x.mul(&c(f64::from(*b))));
+                }
+                if *a > 0 {
+                    add_to(&mut out, (*k, a - 1, b + 1), x.mul(&c(-f64::from(*a))));
+                }
+            }
+            out
+        })
+        .collect()
+}
+
+fn rev_dv<T: Real>(fs: &[Rev<T>]) -> Vec<Rev<T>> {
+    fs.iter()
+        .map(|f| {
+            let mut out = BTreeMap::new();
+            for ((k, a, b), x) in f {
+                if *k > 0 {
+                    add_to(&mut out, (k - 1, *a, *b), x.mul(&c(f64::from(*k))));
+                }
+            }
+            out
+        })
+        .collect()
+}
+
 /// A sphere's or torus's integrands' antiderivatives in the trigonometric
 /// basis of two angles `(x, y)`: every `F = sum c cos^a x sin^b x integral
 /// from lower to y of cos^c sin^d` is `sum C_ij A_i(x) B_j(y)`, `A` the
@@ -361,7 +467,7 @@ fn integrate_along_kept<T: Real>(
     if T::of_fast(crate::certified::Fast::exact_f64(0.0)).is_none() {
         return super::projection::integrate_along_many::<T>(pr, n, true, g);
     }
-    let key = format!("{pr:?}\n{}\n{n}", integrands());
+    let key = format!("{pr:?}\n{}\n{n}\n{}", integrands(), projection::narrow());
     if let Some(hit) = KEPT.with(|k| k.borrow().get(&key).cloned()) {
         return hit.map(|v| {
             v.into_iter()
@@ -414,6 +520,33 @@ fn trig_along<T: Real>(
                     .fold(c::<T>(0.0), |acc, (x, m)| acc.add(&x.mul(m)))
             })
             .collect(),
+    )
+}
+
+/// `trig_along` in the narrow tier: `integral of F dx` of every `F` of `fs`
+/// at once in centred form (`sph_antiderivative_centred`, `fs_x` their
+/// partials in `x`), not through the basis, whose integrals' widths add
+/// where their combinations cancel.
+fn trig_along_centred<T: Real>(
+    pr: &crate::topology::Projection,
+    fs: &[Sph<T>],
+    fs_x: &[Sph<T>],
+    lower: &T,
+    swapped: bool,
+) -> Option<Vec<T>> {
+    integrate_along_kept::<T>(
+        pr,
+        &|| format!("centred {fs:?} {lower:?} {swapped}"),
+        fs.len(),
+        &|u, v, du, dv| {
+            let (x, y, dx) = if swapped { (v, u, dv) } else { (u, v, du) };
+            Some(
+                sph_antiderivative_centred(fs, fs_x, x, y, lower)?
+                    .iter()
+                    .map(|j| j.mul(dx))
+                    .collect(),
+            )
+        },
     )
 }
 
@@ -1251,13 +1384,20 @@ fn trig_face<T: Real>(face: &Face, loops: &[Lp], fs: &[Sph<T>], mass: bool) -> O
             })
             .collect();
         let flip = |p: &V2<T>| -> V2<T> { [p[1].clone(), p[0].clone()] };
+        // The narrow tier's partials in the first angle (centred forms).
+        let narrow = projection::narrow();
+        let swapped_x = if narrow { sph_du(&swapped) } else { Vec::new() };
         for lp in loops {
             for u in &lp.fins {
                 // +∫ G(v, u) dv along a projection (S8d.3), `G` the swapped
                 // integrands' antiderivative in `u` from 0.
                 if let Curve2::Projection(pr) = &u.pcurve {
                     if mass {
-                        accumulate(trig_along(pr, &swapped, &c(0.0), true)?);
+                        accumulate(if narrow {
+                            trig_along_centred(pr, &swapped, &swapped_x, &c(0.0), true)?
+                        } else {
+                            trig_along(pr, &swapped, &c(0.0), true)?
+                        });
                         continue;
                     }
                     let values = super::projection::integrate_along_many::<T>(
@@ -1265,12 +1405,12 @@ fn trig_face<T: Real>(face: &Face, loops: &[Lp], fs: &[Sph<T>], mass: bool) -> O
                         swapped.len(),
                         mass,
                         &|uu, v, _, dv| {
-                            Some(
+                            let g = if narrow {
+                                sph_antiderivative_centred(&swapped, &swapped_x, v, uu, &c(0.0))?
+                            } else {
                                 sph_antiderivative_jets(&swapped, v, uu, &c(0.0))?
-                                    .iter()
-                                    .map(|j| j.mul(dv))
-                                    .collect(),
-                            )
+                            };
+                            Some(g.iter().map(|j| j.mul(dv)).collect())
                         },
                     )?;
                     accumulate(values);
@@ -1323,21 +1463,33 @@ fn trig_face<T: Real>(face: &Face, loops: &[Lp], fs: &[Sph<T>], mass: bool) -> O
             accumulate(whole.iter().map(|x| x.mul(&c(sign))).collect());
         }
     }
-    let lower = if torus {
+    let face_lower = if torus {
         c(0.0)
     } else if turns.abs() == 1 {
         pole_v::<T>(&face.surface, pole_north(turns, face.sense))?
     } else {
         half_pi::<T>().neg()
     };
+    // The narrow tier's partials in `u` (centred forms).
+    let narrow = projection::narrow();
+    let fs_u = if narrow { sph_du(fs) } else { Vec::new() };
     for lp in loops {
+        // The narrow tier takes a loop that does not wind from its own
+        // height (`narrow_height`): `F` small along it, where from the pole
+        // its terms are the sphere's size and cancel.
+        let lower = super::narrow_height::<T>(lp, false).unwrap_or_else(|| face_lower.clone());
         for u in &lp.fins {
             let (start, end) = match &u.pcurve {
                 Curve2::LineSegment { start, end } => (start, end),
-                // -∫ F(u, v) du along a projection (S8d.2), with jets.
+                // -∫ F(u, v) du along a projection (S8d.2), with jets; in
+                // centred form in the narrow tier.
                 Curve2::Projection(pr) => {
                     if mass {
-                        let values = trig_along(pr, fs, &lower, false)?;
+                        let values = if narrow {
+                            trig_along_centred(pr, fs, &fs_u, &lower, false)?
+                        } else {
+                            trig_along(pr, fs, &lower, false)?
+                        };
                         accumulate(values.iter().map(|x| x.neg()).collect());
                         continue;
                     }
@@ -1346,12 +1498,12 @@ fn trig_face<T: Real>(face: &Face, loops: &[Lp], fs: &[Sph<T>], mass: bool) -> O
                         fs.len(),
                         mass,
                         &|uu, v, du, _| {
-                            Some(
+                            let g = if narrow {
+                                sph_antiderivative_centred(fs, &fs_u, uu, v, &lower)?
+                            } else {
                                 sph_antiderivative_jets(fs, uu, v, &lower)?
-                                    .iter()
-                                    .map(|j| j.mul(du).neg())
-                                    .collect(),
-                            )
+                            };
+                            Some(g.iter().map(|j| j.mul(du).neg()).collect())
                         },
                     )?;
                     accumulate(values);
@@ -1599,27 +1751,41 @@ fn face_integrals<T: Real>(face: &Face, loops: &[Lp], reference: &V3<T>) -> Opti
             };
             let d = vsub(&fr.o, reference);
             let rad = c::<T>(*radius);
-            // rho(v) = R + v sin a, e(u) = x cos u + y sin u, h(v) = v cos a.
-            let rho: Rev<T> = [((0, 0, 0), rad.clone()), ((1, 0, 0), sth.clone())]
-                .into_iter()
-                .collect();
-            let e: [Rev<T>; 3] = std::array::from_fn(|i| {
-                [((0, 1, 0), fr.x[i].clone()), ((0, 0, 1), fr.y[i].clone())]
+            // The integrands in `v - v0` (`v0` zero but in the narrow tier,
+            // a loop's own height: about it the powers of `v` stay small,
+            // where about the frame's origin they are the face's height's
+            // and cancel).
+            let integrands_about = |v0: Option<&T>| -> [Rev<T>; TERMS] {
+                let (rad, d) = match v0 {
+                    Some(v0) => (
+                        rad.add(&v0.mul(&sth)),
+                        std::array::from_fn(|i| d[i].add(&v0.mul(&cth).mul(&fr.n[i]))),
+                    ),
+                    None => (rad.clone(), d.clone()),
+                };
+                // rho(v) = R + v sin a, e(u) = x cos u + y sin u, h(v) = v cos a.
+                let rho: Rev<T> = [((0, 0, 0), rad.clone()), ((1, 0, 0), sth.clone())]
                     .into_iter()
-                    .collect()
-            });
-            let p: [Rev<T>; 3] = std::array::from_fn(|i| {
-                let mut out = rev_mul(&rho, &e[i]);
-                add_to(&mut out, (0, 0, 0), d[i].clone());
-                add_to(&mut out, (1, 0, 0), cth.mul(&fr.n[i]));
-                out
-            });
-            // N = rho (e cos a - n sin a).
-            let n: [Rev<T>; 3] = std::array::from_fn(|i| {
-                let mut dir = scaled(&e[i], &cth);
-                add_to(&mut dir, (0, 0, 0), sth.mul(&fr.n[i]).neg());
-                rev_mul(&rho, &dir)
-            });
+                    .collect();
+                let e: [Rev<T>; 3] = std::array::from_fn(|i| {
+                    [((0, 1, 0), fr.x[i].clone()), ((0, 0, 1), fr.y[i].clone())]
+                        .into_iter()
+                        .collect()
+                });
+                let p: [Rev<T>; 3] = std::array::from_fn(|i| {
+                    let mut out = rev_mul(&rho, &e[i]);
+                    add_to(&mut out, (0, 0, 0), d[i].clone());
+                    add_to(&mut out, (1, 0, 0), cth.mul(&fr.n[i]));
+                    out
+                });
+                // N = rho (e cos a - n sin a).
+                let n: [Rev<T>; 3] = std::array::from_fn(|i| {
+                    let mut dir = scaled(&e[i], &cth);
+                    add_to(&mut dir, (0, 0, 0), sth.mul(&fr.n[i]).neg());
+                    rev_mul(&rho, &dir)
+                });
+                integrands(&p, &n, &rho, rev_mul)
+            };
             // The v-antiderivative from the apex on a face with a pole (zero
             // there), from 0 otherwise: any constant cancels over a band's
             // loops, and a far apex would cancel badly.
@@ -1630,29 +1796,47 @@ fn face_integrals<T: Real>(face: &Face, loops: &[Lp], reference: &V3<T>) -> Opti
             } else {
                 c(0.0)
             };
-            let anti: Vec<Rev<T>> = integrands(&p, &n, &rho, rev_mul)
-                .iter()
-                .map(|f| {
-                    let mut out: Rev<T> = BTreeMap::new();
-                    for ((k, a, b), x) in f {
-                        let scale = c::<T>(f64::from(*k) + 1.0);
-                        add_to(&mut out, (k + 1, *a, *b), x.div(&scale)?);
-                        let base = (0..=*k).fold(c::<T>(1.0), |acc, _| acc.mul(&lower));
-                        add_to(&mut out, (0, *a, *b), x.mul(&base).div(&scale)?.neg());
-                    }
-                    Some(out)
-                })
-                .collect::<Option<_>>()?;
+            let antiderivatives = |fs: &[Rev<T>], lower: &T| -> Option<Vec<Rev<T>>> {
+                fs.iter()
+                    .map(|f| {
+                        let mut out: Rev<T> = BTreeMap::new();
+                        for ((k, a, b), x) in f {
+                            let scale = c::<T>(f64::from(*k) + 1.0);
+                            add_to(&mut out, (k + 1, *a, *b), x.div(&scale)?);
+                            let base = (0..=*k).fold(c::<T>(1.0), |acc, _| acc.mul(lower));
+                            add_to(&mut out, (0, *a, *b), x.mul(&base).div(&scale)?.neg());
+                        }
+                        Some(out)
+                    })
+                    .collect()
+            };
+            let face_anti = antiderivatives(&integrands_about(None), &lower)?;
             for lp in loops {
+                // The narrow tier takes a loop that does not wind in `w = v
+                // - v0` from its own height `v0` (`narrow_height`): `F`
+                // from `w = 0`, small along the loop.
+                let height = super::narrow_height::<T>(lp, false);
+                let own = match &height {
+                    Some(v0) => Some(antiderivatives(&integrands_about(Some(v0)), &c(0.0))?),
+                    None => None,
+                };
+                let anti = own.as_ref().unwrap_or(&face_anti);
+                let partials = projection::narrow().then(|| (rev_du(anti), rev_dv(anti)));
+                let w = |v: &T| match &height {
+                    Some(v0) => v.sub(v0),
+                    None => v.clone(),
+                };
                 for u in &lp.fins {
                     let values = match &u.pcurve {
-                        Curve2::LineSegment { start, end } => {
-                            rev_lines(&anti, &[c(start.x), c(start.y)], &[c(end.x), c(end.y)])?
-                        }
+                        Curve2::LineSegment { start, end } => rev_lines(
+                            anti,
+                            &[c(start.x), w(&c(start.y))],
+                            &[c(end.x), w(&c(end.y))],
+                        )?,
                         // -∫ F(u, v) du along a spline: by the certified
                         // quadrature (F8), else enclosed (S4d).
                         Curve2::BSpline(spline) => {
-                            let along = Along::Revolution(&anti);
+                            let along = Along::Revolution(anti);
                             match along_spline(&along, anti.len(), spline, &zero_about()) {
                                 Some(values) => values,
                                 None => {
@@ -1671,20 +1855,30 @@ fn face_integrals<T: Real>(face: &Face, loops: &[Lp], reference: &V3<T>) -> Opti
                             }
                         }
                         Curve2::Sinusoid { start, sweep, a } => {
-                            rev_sinusoid(&anti, *start, *sweep, a)?
+                            rev_sinusoid(anti, *start, *sweep, a)?
                         }
-                        // -∫ F(u, v) du along a projection (S8d.2), with jets.
+                        // -∫ F(u, v) du along a projection (S8d.2), with jets;
+                        // in centred form in the narrow tier.
                         Curve2::Projection(pr) => integrate_along_kept::<T>(
                             pr,
-                            &|| format!("rev {anti:?}"),
+                            &|| format!("rev {anti:?} {height:?}"),
                             anti.len(),
                             &|uu, v, du, _| {
-                                Some(
-                                    rev_eval_jets(&anti, uu, v)
-                                        .iter()
-                                        .map(|j| j.mul(du).neg())
-                                        .collect(),
-                                )
+                                let v = &match &height {
+                                    Some(v0) => v.add_constant(&v0.neg()),
+                                    None => v.clone(),
+                                };
+                                let values = match &partials {
+                                    Some((fu, fv)) => projection::centred(
+                                        uu,
+                                        v,
+                                        &|x, y| Some(rev_eval_jets(anti, x, y)),
+                                        &|x, y| Some(rev_eval_jets(fu, x, y)),
+                                        &|x, y| Some(rev_eval_jets(fv, x, y)),
+                                    )?,
+                                    None => rev_eval_jets(anti, uu, v),
+                                };
+                                Some(values.iter().map(|j| j.mul(du).neg()).collect())
                             },
                         )?,
                         Curve2::CircularArc { .. } | Curve2::EllipseArc { .. } => return None,
@@ -1692,19 +1886,33 @@ fn face_integrals<T: Real>(face: &Face, loops: &[Lp], reference: &V3<T>) -> Opti
                     accumulate(values.try_into().ok()?);
                 }
                 for (a, b) in chords::<T>(lp) {
+                    let (a, b) = ([a[0].clone(), w(&a[1])], [b[0].clone(), w(&b[1])]);
                     // A closing chord whose `du` straddles zero (a loop that
                     // ends within rounding of its start a turn on) is
                     // enclosed over its box.
-                    let values = match rev_lines(&anti, &a, &b) {
-                        Some(values) => values,
-                        None => anti
-                            .iter()
+                    let boxed = || {
+                        anti.iter()
                             .map(|f| {
                                 super::chord_enclosure(&a, &b, &|u: &T, v: &T| {
                                     Some(rev_eval(f, u, v))
                                 })
                             })
-                            .collect::<Option<Vec<T>>>()?,
+                            .collect::<Option<Vec<T>>>()
+                    };
+                    let values = match rev_lines(anti, &a, &b) {
+                        // The narrow tier keeps the narrower of the closed
+                        // form and the box (a chord between two fins'
+                        // enclosed ends, its slope enclosed widely).
+                        Some(values) if projection::narrow() => match boxed() {
+                            Some(boxes) => values
+                                .into_iter()
+                                .zip(boxes)
+                                .map(|(x, y)| super::narrower(x, y))
+                                .collect(),
+                            None => values,
+                        },
+                        Some(values) => values,
+                        None => boxed()?,
                     };
                     accumulate(values.try_into().ok()?);
                 }
@@ -1827,7 +2035,65 @@ fn solve<T: Real>(view: &View, reference: [f64; 3]) -> Option<Enclosed> {
 /// intervals when those cannot bound a result.
 pub(crate) fn mass(view: &View, reference: [f64; 3]) -> Option<Enclosed> {
     super::bernstein::clear_memo();
-    solve::<Fast>(view, reference).or_else(|| solve::<I>(view, reference))
+    let fast = solve::<Fast>(view, reference);
+    // A body whose integrals run along projections and whose volume is
+    // enclosed more widely than `NARROW_TRIGGER` of itself, or not at all
+    // (a shallow crossing's lens), is integrated again in the narrow tier;
+    // both enclosures hold the values, so their meet does.
+    let wide = fast.as_ref().is_none_or(|e| {
+        e.volume[1] - e.volume[0] > NARROW_TRIGGER * e.volume[0].abs().max(e.volume[1].abs())
+    });
+    let along = || {
+        view.fins
+            .iter()
+            .any(|f| matches!(f.pcurve, Curve2::Projection(_)))
+    };
+    if wide && along() {
+        let narrow = projection::with_narrow(|| solve::<Fast>(view, reference));
+        match (fast, narrow) {
+            (Some(a), Some(b)) => return Some(a.meet(b)),
+            (a, b) => {
+                if let Some(e) = a.or(b) {
+                    return Some(e);
+                }
+            }
+        }
+    } else if fast.is_some() {
+        return fast;
+    }
+    solve::<I>(view, reference)
+}
+
+/// The relative width of a body's volume enclosure past which `mass` tries
+/// the narrow tier (`2^-30`).
+const NARROW_TRIGGER: f64 = 9.313_225_746_154_785e-10;
+
+impl Enclosed {
+    /// The meet of two enclosures of the same values, each bound the
+    /// tighter of the two's; `self` where they do not meet (never, since
+    /// both hold the values).
+    fn meet(self, o: Enclosed) -> Enclosed {
+        let both = |a: [f64; 2], b: [f64; 2]| [a[0].max(b[0]), a[1].min(b[1])];
+        let out = Enclosed {
+            volume: both(self.volume, o.volume),
+            area: both(self.area, o.area),
+            centroid: std::array::from_fn(|i| both(self.centroid[i], o.centroid[i])),
+            inertia: std::array::from_fn(|i| {
+                std::array::from_fn(|j| both(self.inertia[i][j], o.inertia[i][j]))
+            }),
+        };
+        let flat = [out.volume, out.area]
+            .into_iter()
+            .chain(out.centroid)
+            .chain(out.inertia.iter().flatten().copied());
+        let sound = flat.into_iter().all(|[lo, hi]| lo <= hi);
+        debug_assert!(sound, "two mass enclosures apart");
+        if sound {
+            out
+        } else {
+            self
+        }
+    }
 }
 
 /// A face's area and centre of gravity, certified.
@@ -2017,7 +2283,7 @@ fn spline_moments<T: Real>(
             }
             Some(out)
         };
-        let values = integrate_many(&integrand, 4, 0.0, 1.0, ORDER, WIDTH, DEPTH, true)?;
+        let values = integrate_many(&integrand, 4, 0.0, 1.0, ORDER, WIDTH, DEPTH, Some(1.0))?;
         length = length.add(&values[0]);
         for k in 0..3 {
             moment[k] = moment[k].add(&values[k + 1]);

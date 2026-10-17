@@ -23,10 +23,83 @@ pub(super) const DEPTH: usize = 40;
 /// halve many more times for `WIDTH` than for this.
 pub(super) const LOOSE: f64 = 1e-6;
 
+/// The narrow tier's width relative to an integrand's scale (`2^-30`) and
+/// the floor of that scale (`2^-80`, `with_narrow`): its integrals, signs
+/// and mass terms alike, are enclosed relative to their integrands' own
+/// sizes, where a shell thinner than its enclosures at the tight tier's
+/// absolute widths (a shallow crossing's lens, HANDOFF item 5 (d)) is
+/// decided; the floor keeps an integrand vanishing but for rounding from
+/// halving its pieces to the depth limit.
+pub(super) const NARROW_WIDTH: f64 = 9.313_225_746_154_785e-10;
+pub(super) const NARROW_FLOOR: f64 = 8.271_806_125_530_277e-25;
+
 thread_local! {
     /// The absolute width of the sign integrals along projections: `WIDTH`,
     /// or `LOOSE` within `with_sign_width`.
     static SIGN_WIDTH: std::cell::Cell<f64> = const { std::cell::Cell::new(WIDTH) };
+    /// Whether the narrow tier runs (`with_narrow`).
+    static NARROW: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
+}
+
+/// `f` in the narrow tier, restored after it: the integrals along
+/// projections relative to their integrands' scales down to
+/// `NARROW_FLOOR`, and the faces' integrands along them in centred forms
+/// about a loop's own height (`narrow`'s callers).
+pub(super) fn with_narrow<X>(f: impl FnOnce() -> X) -> X {
+    struct Restore(bool);
+    impl Drop for Restore {
+        fn drop(&mut self) {
+            NARROW.with(|w| w.set(self.0));
+        }
+    }
+    let _restore = Restore(NARROW.with(|w| w.replace(true)));
+    f()
+}
+
+/// Whether the narrow tier runs.
+pub(super) fn narrow() -> bool {
+    NARROW.with(|w| w.get())
+}
+
+/// Two-variable integrands' jets: `(u, v)` to each integrand's.
+pub(super) type Pair<'a, T> = &'a dyn Fn(&Jet<T>, &Jet<T>) -> Option<Vec<Jet<T>>>;
+
+/// `f` at the jets `(u, v)` in centred form (the narrow tier): `f` at point
+/// jets inside them plus its partials `fu` and `fv` over them times the
+/// deviations from the points, as the mean value theorem gives it in the
+/// algebra of truncated series (each partial over the segment between the
+/// point and any jet inside the enclosures lies in the partial over the
+/// enclosures). Where a pcurve's point is enclosed widely along its face
+/// (a shallow meeting's height from a small discriminant) and the
+/// integrand is a sum of large terms that cancel, the natural form's
+/// widths are the terms' times the point's; the centred form's are the
+/// integrand's rate of change times it. Natural where no point splits
+/// off (the rational tier); a partial is not taken against a deviation
+/// that is exactly zero (a carrier's own angle).
+pub(super) fn centred<T: Real>(
+    u: &Jet<T>,
+    v: &Jet<T>,
+    f: Pair<'_, T>,
+    fu: Pair<'_, T>,
+    fv: Pair<'_, T>,
+) -> Option<Vec<Jet<T>>> {
+    let (Some((um, du)), Some((vm, dv))) = (u.centre(), v.centre()) else {
+        return f(u, v);
+    };
+    let mut out = f(&um, &vm)?;
+    for (deviation, partial) in [(&du, fu), (&dv, fv)] {
+        if deviation.is_zero() {
+            continue;
+        }
+        let rates = partial(u, v)?;
+        if rates.len() != out.len() {
+            return None;
+        }
+        for (o, r) in out.iter_mut().zip(&rates) {
+            *o = o.add(&r.mul(deviation));
+        }
+    }
+    Some(out)
 }
 
 /// `f` with the sign integrals' width `width`, restored after it.
@@ -1513,12 +1586,14 @@ fn along<T: Real>(
         };
         g(&cut(&u), &cut(&v), &cut(&du), &cut(&dv))
     };
-    let width = if relative {
-        WIDTH
+    let (width, floor) = if narrow() {
+        (NARROW_WIDTH, Some(NARROW_FLOOR))
+    } else if relative {
+        (WIDTH, Some(1.0))
     } else {
-        SIGN_WIDTH.with(|w| w.get())
+        (SIGN_WIDTH.with(|w| w.get()), None)
     };
-    integrate_many(&integrand, n, 0.0, 1.0, ORDER, width, DEPTH, relative)
+    integrate_many(&integrand, n, 0.0, 1.0, ORDER, width, DEPTH, floor)
 }
 
 /// An integrand along a spline wall's meeting's piece on knot span `k`:
@@ -1578,7 +1653,16 @@ pub(super) fn wall_pieces<T: Real>(
         } else {
             SIGN_WIDTH.with(|w| w.get())
         };
-        let values = integrate_many(&integrand, n, 0.0, 1.0, ORDER, width, DEPTH, relative)?;
+        let values = integrate_many(
+            &integrand,
+            n,
+            0.0,
+            1.0,
+            ORDER,
+            width,
+            DEPTH,
+            relative.then_some(1.0),
+        )?;
         for (t, x) in totals.iter_mut().zip(values) {
             *t = t.add(&x);
         }
@@ -2241,6 +2325,93 @@ mod tests {
                 let (lo, hi) = j.c[0].bounds_f64();
                 assert!(lo - 1e-14 <= p[i] && p[i] <= hi + 1e-14, "{f} {i}");
             }
+        }
+    }
+
+    /// The narrow tier's centred form (the shallow lens, HANDOFF item 5
+    /// (d)): `F(u, v) = (u + 100)^2 - 200 u - 10^4 + v^2 cos u`, a sum of
+    /// terms of `10^4` cancelling to `u^2 + v^2 cos u`, at jets whose
+    /// coefficients are enclosed `2e-10` wide (a shallow meeting's point
+    /// along its face): the natural form is some `4e-8` wide, the centred
+    /// one below `1e-10` (the point's rounding), and every point jet inside
+    /// the enclosures (their coefficients' ends and middles) has its value
+    /// meeting the centred form's coefficient by coefficient, its exact
+    /// value inside it.
+    #[test]
+    fn centred_forms_hold_every_jet_inside_and_narrow_a_cancelling_sum() {
+        let f = |u: &Jet<Fast>, v: &Jet<Fast>| {
+            let (co, _) = u.cos_sin();
+            let big = u.add_constant(&Fast::exact_f64(100.0)).square();
+            let value = big
+                .sub(&u.scale(&Fast::exact_f64(200.0)))
+                .add_constant(&Fast::exact_f64(-1e4))
+                .add(&v.square().mul(&co));
+            Some(vec![value])
+        };
+        let fu = |u: &Jet<Fast>, v: &Jet<Fast>| {
+            let (_, si) = u.cos_sin();
+            let d = u
+                .add_constant(&Fast::exact_f64(100.0))
+                .scale(&Fast::exact_f64(2.0))
+                .add_constant(&Fast::exact_f64(-200.0))
+                .sub(&v.square().mul(&si));
+            Some(vec![d])
+        };
+        let fv = |u: &Jet<Fast>, v: &Jet<Fast>| {
+            let (co, _) = u.cos_sin();
+            Some(vec![v.scale(&Fast::exact_f64(2.0)).mul(&co)])
+        };
+        let wide = |centre: f64, slope: f64| {
+            let w = 1e-10;
+            let mut j = Jet::variable(Fast::exact_f64(centre), 4);
+            j.c[0] = Fast::exact_f64(centre - w).union(&Fast::exact_f64(centre + w));
+            j.c[1] = Fast::exact_f64(slope - w).union(&Fast::exact_f64(slope + w));
+            j.c[2] = Fast::exact_f64(-w).union(&Fast::exact_f64(w));
+            j
+        };
+        let (u, v) = (wide(1e-3, 0.5), wide(-2e-3, 0.25));
+        let natural = f(&u, &v).unwrap().remove(0);
+        let narrow = centred(&u, &v, &f, &fu, &fv).unwrap().remove(0);
+        let width = |j: &Jet<Fast>| {
+            let (lo, hi) = j.c[0].bounds_f64();
+            hi - lo
+        };
+        assert!(width(&natural) > 1e-8, "{}", width(&natural));
+        assert!(width(&narrow) < 1e-10, "{}", width(&narrow));
+        for pick in 0..27 {
+            let point = |j: &Jet<Fast>, k: usize| Jet {
+                c: j.c
+                    .iter()
+                    .enumerate()
+                    .map(|(i, x)| {
+                        let (lo, hi) = x.bounds_f64();
+                        let choice = if i < 3 {
+                            (pick / [1, 3, 9][i] + k) % 3
+                        } else {
+                            1
+                        };
+                        Fast::exact_f64([lo, 0.5 * lo + 0.5 * hi, hi][choice])
+                    })
+                    .collect(),
+            };
+            let (pu, pv) = (point(&u, 0), point(&v, 1));
+            let value = f(&pu, &pv).unwrap().remove(0);
+            for (x, y) in value.c.iter().zip(&narrow.c) {
+                let ((xl, xh), (yl, yh)) = (x.bounds_f64(), y.bounds_f64());
+                assert!(
+                    xl <= yh && yl <= xh,
+                    "{pick}: [{xl}, {xh}] apart from [{yl}, {yh}]"
+                );
+            }
+            // The value itself, `u^2 + v^2 cos u` without the cancelling
+            // terms, at the point (to within its binary64 rounding).
+            let (u0, v0) = (pu.c[0].bounds_f64().0, pv.c[0].bounds_f64().0);
+            let exact = u0 * u0 + v0 * v0 * u0.cos();
+            let (yl, yh) = narrow.c[0].bounds_f64();
+            assert!(
+                yl - 1e-18 <= exact && exact <= yh + 1e-18,
+                "{pick}: {exact}"
+            );
         }
     }
 }
