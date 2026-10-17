@@ -1190,6 +1190,25 @@ then for the near misses of faces with no rule of their own (branch
    `ef5d66fd`, branch `s9-draw-13`), nor a sphere within it of a cylinder
    or cone face, nor another curve within it of a sphere, and none reaches
    the rise jets (the survey at `f9e54f0d`, branch `s9-draw-14`).
+6. **A torus meeting's verification budget: done** (branch
+   `fix-torus-rod-hang`, REVIEW_NOTES.md's "A torus meeting's verification
+   budget"). A rod crossing a torus's inner equator by `1e-9` in the
+   tilted frame (found by `near-miss-faces`) ran for over half an hour in
+   `ToricCrv::verified`: coaxial only within rounding, its meeting two
+   closed curves by a double root, each piece's box verification failing
+   its cap of 60,000 boxes and its run split and verified again up to 48
+   times. All of a meeting's verifications now draw on one budget of
+   150,000 boxes (`VERIFY_BOXES`), beyond it `ComputationLimit("a torus
+   meeting's verification over its budget")` in about a second; the
+   largest meeting verified anywhere draws 49,142, the corpora's and the
+   release suite's others at most 8,519, and no outcome moves
+   (`tests/torus_hole_rod_booleans.rs`). Under glibc's `hypot` that
+   crossing stalls in the trace instead (the rod's frame rounded
+   otherwise). Open: the tilted rod crossing beyond the resolution (`5e-7`
+   to `1e-6` measured) evaluates, its pieces verified at once, but
+   validating its results takes minutes (100 to 274 s an operation at
+   `1e-6`, before as now: `periodic_area`'s integrals along the meeting's
+   projections, `toric_jet` by the double root); its test is ignored.
 
 Refused by design and staying refused (each documented): a tangency between
 the inputs, a cavity beside several solids, spline segments along one curve

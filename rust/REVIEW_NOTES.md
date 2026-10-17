@@ -15551,6 +15551,118 @@ Decisions for S9, recorded before its code (2026-09-28):
     7; the boolean corpus and its regressions (1,482 inputs) and the split
     corpus and its regressions (3,571) replayed with debug assertions, none
     failing and none over 30 s, at load 20 to 45.
+  * **A torus meeting's verification budget, done (2026-10-17; branch
+    `fix-torus-rod-hang` from `36cdd03b`).** *The finding* (branch
+    `near-miss-faces`, pre-existing at `5f50b30c`): in the boolean
+    target's tilted frame (origin `(1, -2, 0.5)`, normal `(0, 3, 4)`, `x`
+    along the world's `x`), a whole torus of radii 3 and 1 fused with a
+    rod of radius `2 + 1e-9` and height 3 about its axis (the rod's frame
+    the torus's moved `-1.5` along its normal and normalized again) does
+    not finish: here its fuse alone ran 33 minutes (21 CPU minutes) without
+    returning, sampled in `torus_quadric`, `torus_far`,
+    `ToricCrv::verified` and `Graded::clear` (the natural and mean-value
+    enclosures of `G` and `G_v` over each box of `boxes_clear`'s
+    subdivision). *The cause*: the rod's wall crosses the tube `1e-9`
+    inside its inner equator, so the meeting is two closed curves about `v
+    = pi`, `9e-5` apart in `v`: near a double root along a whole circle.
+    The rod's frame holds the torus's axis only within rounding (its
+    origin `o - 1.5 n` rounded), so `G` depends on `u` by rounding's size:
+    S9d.4b.2a's coaxial rings (`G` independent of `u`) do not apply, nor
+    could S7b.3a's circles, which are exact (the meeting is no circle), and
+    the traced components go to `pieces_of`. A piece's verification must
+    narrow `v` to about `sqrt(1e-9)` by the double root, and
+    `boxes_clear`, halving the longer side, narrows `u` as far: some
+    `10^5` boxes over a run's two radians, past its cap of 60,000 boxes a
+    call. The piece fails, its run is split and every piece of the
+    component is built and verified again, up to 48 rounds, each call
+    capped but not their total. The subdivision does narrow (every box
+    decided or halved, none under `1e-10`); the budget was per call, not
+    total. An instrumented run: one ring run per component, 49,155 boxes
+    for each piece verified and 60,001 for each failing, the 25th round
+    after two minutes, two components a meeting and a meeting for each
+    operand order. Crossings from `5e-10` to `2e-7` draw past the new
+    budget the same way here (`1e-8`, and below `5e-10`, stall in the trace
+    first); under glibc's `hypot` (the rod's normal rounded otherwise)
+    `1e-9` stalls in the trace and `5e-9` to `2e-7` draw past it. In the
+    level and turned frames the rod is coaxial exactly: S9d.4b.2a's rings,
+    whose one verification fails at its cap for crossings within the
+    resolution (`ComputationLimit("a torus's coaxial circle left
+    unverified")`, 0.3 s a meeting), `1e-6` evaluating (49,142 boxes).
+    *The fix* (`solid/boolean/curved/torus_curved.rs`): one budget for all
+    of a meeting's verifications, `VERIFY_BOXES` = 150,000 boxes
+    (`Boxes`), every box of `boxes_clear` drawn from it through
+    `pieces_of`, `build`, `coaxial` and `ToricCrv::verified` (now
+    `Result<bool>`); beyond it `ComputationLimit("a torus meeting's
+    verification over its budget")`, a count of boxes, not a clock (about
+    a second in release). The cap a call and the 48 rounds stay, so a
+    meeting within the budget is verified as before; `check_regular`'s one
+    call a critical value keeps its own cap. Its size: the largest meeting
+    verified anywhere draws 49,142 boxes (the rod's `1e-6` crossing, two
+    rings, in every frame), the release suite's 2,663 others at most 8,519
+    (`curve_field_near_miss_booleans`), the boolean corpus's 475 at most
+    480. Not taken: the tilted pair decided as circles (coaxial within
+    rounding only, so not exactly), and a subdivision splitting the angle
+    the enclosure depends on (it would verify the tilted rings at once;
+    the tilted `1e-6` crossing, whose pieces verify at once, then spends
+    minutes in its results' validation, below). The near miss within the
+    resolution (the rod's radius `2 - g`) never reaches the verification
+    (no meeting): it evaluates here, two solids, and `near-miss-faces`'
+    rule (S9d.4) refuses it after the meetings; nothing here depends on
+    that rule.
+    *Outcomes* (release, at load 15 to 25 on ten cores; every operation
+    alike, the cut and common reusing the fuse's meeting): level and
+    turned, `g = 0` `Degenerate("a tangency between the inputs (S9c)")`
+    at once, `1e-12`, `1e-9` and `5e-8` the coaxial circle unverified (0.3
+    to 0.6 s a meeting, as before), `1e-6` one solid each with the
+    reference's volumes (0.3 to 0.7 s an operation); tilted, `0` and
+    `1e-12` the trace stalling (0.03 s, as before), `1e-9`, `5e-8` and
+    `2e-7` over the budget (1.1 s a meeting at load 7; before, over half
+    an hour), `1e-6` one solid each with the reference's volumes, as before:
+    100, 72, 112 and 274 s for the fuse, cut, cut back and common, nearly
+    all in the results' validation (`topology::validate::check`'s
+    `periodic_area`, the integrals along the meeting's projections,
+    `toric_jet`'s interval jets by the double root), as at `5e-7` and
+    `8e-7` (some 200 s a fuse).
+    *Tests* (`tests/torus_hole_rod_booleans.rs`): the three frames at `g =
+    0`, `1e-12`, `1e-9`, `5e-8` and `1e-6`, all four operations, each
+    refusal's error (the tilted `1e-9` over the budget or the trace
+    stalling, by the platform's `hypot`) and the `1e-6` crossings' volumes
+    against an mpmath reference (the torus `6 pi^2`, the rod `3 pi rho^2`,
+    their common by Pappus over the tube's segment to `rho = 2 + 1e-6`,
+    `2.369537922945086e-8`) with the identities fuse + common = torus +
+    rod, cut + common = torus and cut back + common = rod (within `1e-12`
+    of the inputs' volumes): 17 s in release at load 26; the tilted `1e-6`
+    crossing ignored (`a_tilted_rod_crossing_beyond_the_resolution_evaluates`,
+    passing in 1,220 s). Under the emulated glibc `hypot` with debug
+    assertions and overflow checks it passes (12 s), with
+    `torus_curved_booleans`, `torus_parts_booleans` and
+    `curve_field_near_miss_booleans`.
+    *Reach* (instrumented scratch builds of `36cdd03b` and the branch, a
+    line per Boolean with its outcome and each solid's face, edge and
+    vertex counts, and the branch's boxes a meeting): the boolean corpus
+    (1,444 inputs) and its 38 regressions, 8,946 Booleans, 475 meetings
+    verified in 99 inputs, at most 480 boxes, none over the budget, every
+    outcome alike; the split corpus and its regressions (3,571 inputs,
+    5,662 Booleans) and the analytic_intersections corpus and its
+    regressions (1,506 inputs) reach no torus meeting's verification,
+    every outcome alike; the release suite (12,478 Booleans; the scratch
+    copy without the dataset's corpus files, whose readers' tests fail
+    there) 2,663 meetings, none over the budget. CPU (release, `wait4`,
+    one process an input): the 99 inputs reaching a meeting, the two
+    builds side by side three times in alternating order, 232.4 s against
+    232.4 s at the median; the corpora run once each, the branch's first,
+    within the load's noise (boolean 795 s against 813 s, split 453 s
+    against 468 s, analytic_intersections 34.8 s against 35.9 s).
+    *Checks*: fmt, clippy (release, all targets, `-D warnings`), the 1.85
+    check, the release suite (833 tests, 6 ignored); all 55 comparisons of
+    HANDOFF's table with their documented counts and 0 failures on the
+    pinned SDK, and `compare_analytic_intersections.py` 63 / 4,
+    `compare_procedural_intersections.py` 86 / 7, `compare_torus_curves.py`
+    28 / 10 and `compare_ruled_curves.py` 9 / 3; the boolean, split and
+    analytic_intersections corpora and their regressions replayed with
+    debug assertions, none failing (the slowest 6.6 s, 2.3 s and 1.3 s of
+    CPU). *Open* (HANDOFF, item 6): the tilted crossings beyond the
+    resolution evaluating in minutes in their results' validation.
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces

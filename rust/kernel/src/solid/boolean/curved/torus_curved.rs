@@ -13,8 +13,9 @@
 //! rational window. Each piece is verified exactly: no root of `G` on the
 //! window's ends over the range (Sturm counts), one root inside at one
 //! parameter (isolation), and no double root inside the rectangle (certified
-//! boxes, each clear of `G = 0` or of its derivative in the other angle).
-//! The meeting's components are found by tracing from the roots at a
+//! boxes, each clear of `G = 0` or of its derivative in the other angle; all
+//! of a meeting's verifications draw on one budget of boxes, beyond it a
+//! `ComputationLimit`). The meeting's components are found by tracing from the roots at a
 //! rational `u` in every interval between the critical values of `u` (the
 //! roots of the discriminant of `G` in `v`); every root there must lie on a
 //! verified piece, so no component is missed. At every critical value the
@@ -1181,8 +1182,9 @@ impl ToricCrv {
     /// Whether the piece is verified: no root of `G` on the window's ends
     /// over the range (exact Sturm counts), one root inside at a parameter
     /// of the range (exact isolation), and no double root inside (certified
-    /// boxes, each clear of `G` or of its derivative in the other angle).
-    fn verified(&self) -> bool {
+    /// boxes, each clear of `G` or of its derivative in the other angle),
+    /// the boxes drawn from the meeting's budget (`Boxes`).
+    fn verified(&self, budget: &mut Boxes) -> Result<bool> {
         // The window's ends.
         for w in &self.window {
             let form = self.m.g.at(!self.over_v, w);
@@ -1191,7 +1193,7 @@ impl ToricCrv {
                 Some([lo, hi]) => clear_over(&form, lo, hi),
             };
             if !clear {
-                return false;
+                return Ok(false);
             }
         }
         // One root at a parameter inside.
@@ -1199,11 +1201,11 @@ impl ToricCrv {
             None => [int(1), zero()],
             Some([lo, hi]) => match rational_within(lo, hi) {
                 Some(p) => p,
-                None => return false,
+                None => return Ok(false),
             },
         };
         if self.at(&probe).is_none() {
-            return false;
+            return Ok(false);
         }
         // No double root in the rectangle.
         let (p0, p1) = match &self.range {
@@ -1221,7 +1223,7 @@ impl ToricCrv {
         let g = &self.m.cert[0];
         let gs = &self.m.cert[if self.over_v { 1 } else { 2 }];
         let over_v = self.over_v;
-        boxes_clear([p0, p1], [w0 - 1e-12, w1 + 1e-12], |p, s| {
+        boxes_clear([p0, p1], [w0 - 1e-12, w1 + 1e-12], budget, |p, s| {
             let (u, v) = if over_v { (s, p) } else { (p, s) };
             g.clear(u, v) || gs.clear(u, v)
         })
@@ -1318,22 +1320,59 @@ fn rational_within(lo: &[Qd; 2], hi: &[Qd; 2]) -> Option<[R; 2]> {
     None
 }
 
+/// The boxes all of one meeting's verifications may subdivide together.
+/// `boxes_clear`'s own cap is per call: a run whose piece fails it is
+/// split and its component's pieces are verified again, up to 48 times, so
+/// a meeting near a double root along a whole circle (a rod crossing a
+/// torus's inner equator by `1e-9`, coaxial within rounding) ran for over
+/// half an hour. Beyond this total the meeting is a `ComputationLimit` (a
+/// count of boxes, not a clock: about a second in release). The largest
+/// meeting verified elsewhere draws 49,142 (that rod crossing by `1e-6`,
+/// two rings), the release suite's others at most 8,519 and the boolean
+/// corpus's 480.
+const VERIFY_BOXES: usize = 150_000;
+
+/// What is left of a meeting's verification budget (`VERIFY_BOXES`).
+struct Boxes(usize);
+
+impl Boxes {
+    fn new() -> Self {
+        Self(VERIFY_BOXES)
+    }
+
+    /// One more box, or the meeting over its budget.
+    fn take(&mut self) -> Result<()> {
+        self.0 = self
+            .0
+            .checked_sub(1)
+            .ok_or(limit("a torus meeting's verification over its budget"))?;
+        Ok(())
+    }
+}
+
 /// Whether every box of a subdivision of `[p] x [s]` is clear by `ok`
-/// (halving the longer side, at most 60,000 boxes, none under 1e-10).
-fn boxes_clear(p: [f64; 2], s: [f64; 2], ok: impl Fn([f64; 2], [f64; 2]) -> bool) -> bool {
+/// (halving the longer side, at most 60,000 boxes, none under 1e-10), each
+/// box drawn from `budget`.
+fn boxes_clear(
+    p: [f64; 2],
+    s: [f64; 2],
+    budget: &mut Boxes,
+    ok: impl Fn([f64; 2], [f64; 2]) -> bool,
+) -> Result<bool> {
     let mut stack = vec![(p, s)];
     let mut count = 0usize;
     while let Some((p, s)) = stack.pop() {
         count += 1;
         if count > 60_000 {
-            return false;
+            return Ok(false);
         }
+        budget.take()?;
         if ok(p, s) {
             continue;
         }
         let (wp, ws) = (p[1] - p[0], s[1] - s[0]);
         if wp.max(ws) < 1e-10 {
-            return false;
+            return Ok(false);
         }
         if wp >= ws {
             let m = 0.5 * p[0] + 0.5 * p[1];
@@ -1345,7 +1384,7 @@ fn boxes_clear(p: [f64; 2], s: [f64; 2], ok: impl Fn([f64; 2], [f64; 2]) -> bool
             stack.push((p, [m, s[1]]));
         }
     }
-    true
+    Ok(true)
 }
 
 // ------------------------------------------------------------ critical values
@@ -1537,9 +1576,10 @@ fn check_regular(m: &Meeting, chart: &Chart, crit: &mut [AlgebraicRoot]) -> Resu
         let a = angle_r(&chart.at(lo));
         let b = near(angle_r(&chart.at(hi)), a);
         let u = [a.min(b) - 1e-12, a.max(b) + 1e-12];
-        let ok = boxes_clear(u, [-PI, PI], |u, v| {
+        // One call a critical value, bounded by its own cap.
+        let ok = boxes_clear(u, [-PI, PI], &mut Boxes(usize::MAX), |u, v| {
             g.clear(u, v) || gv.clear(u, v) || gu.clear(u, v)
-        });
+        })?;
         if !ok {
             return Err(tangent());
         }
@@ -2061,7 +2101,13 @@ enum Built {
     Split(usize),
 }
 
-fn build(k: usize, m: &Arc<Meeting>, comp: &Comp, runs: &[Run]) -> Result<Built> {
+fn build(
+    k: usize,
+    m: &Arc<Meeting>,
+    comp: &Comp,
+    runs: &[Run],
+    budget: &mut Boxes,
+) -> Result<Built> {
     let mut windows = Vec::new();
     for (i, r) in runs.iter().enumerate() {
         match window(m, comp, r) {
@@ -2073,7 +2119,7 @@ fn build(k: usize, m: &Arc<Meeting>, comp: &Comp, runs: &[Run]) -> Result<Built>
     }
     if runs.len() == 1 && runs[0].ring {
         let piece = ToricCrv::new(k, m, runs[0].over_v, windows[0], None)?;
-        return Ok(if piece.verified() {
+        return Ok(if piece.verified(budget)? {
             Built::Done(vec![piece], Vec::new())
         } else {
             Built::Split(0)
@@ -2111,7 +2157,7 @@ fn build(k: usize, m: &Arc<Meeting>, comp: &Comp, runs: &[Run]) -> Result<Built>
             param_at(m, comp, run.over_v, run.b).0 > param_at(m, comp, run.over_v, run.a).0;
         let range = if rising { [a, b] } else { [b, a] };
         let piece = ToricCrv::new(k, m, run.over_v, windows[j], Some(range))?;
-        if !piece.holds_point(s0) || !piece.holds_point(s1) || !piece.verified() {
+        if !piece.holds_point(s0) || !piece.holds_point(s1) || !piece.verified(budget)? {
             return Ok(Built::Split(j));
         }
         pieces.push(piece);
@@ -2122,11 +2168,17 @@ fn build(k: usize, m: &Arc<Meeting>, comp: &Comp, runs: &[Run]) -> Result<Built>
     ))
 }
 
-/// A component's verified pieces, runs split where one fails.
-fn pieces_of(k: usize, m: &Arc<Meeting>, comp: &Comp) -> Result<(Vec<ToricCrv>, Vec<QV>)> {
+/// A component's verified pieces, runs split where one fails, every
+/// verification drawn from the meeting's `budget`.
+fn pieces_of(
+    k: usize,
+    m: &Arc<Meeting>,
+    comp: &Comp,
+    budget: &mut Boxes,
+) -> Result<(Vec<ToricCrv>, Vec<QV>)> {
     let mut runs = plan(m, comp);
     for _ in 0..48 {
-        match build(k, m, comp, &runs)? {
+        match build(k, m, comp, &runs, budget)? {
             Built::Done(p, s) => return Ok((p, s)),
             Built::Split(i) => {
                 let r = runs[i];
@@ -2206,8 +2258,10 @@ fn torus_far(k: usize, t: &Prism, other: &Far) -> Result<CylPair> {
             switches,
         }))
     };
+    // Every verification of the meeting's pieces, together.
+    let mut budget = Boxes::new();
     if !m.g.depends_on_u() {
-        let (pieces, touches) = coaxial(k, t, &m)?;
+        let (pieces, touches) = coaxial(k, t, &m, &mut budget)?;
         if touches.is_empty() {
             return Ok(mixed(pieces, Vec::new()));
         }
@@ -2242,7 +2296,7 @@ fn torus_far(k: usize, t: &Prism, other: &Far) -> Result<CylPair> {
                 continue;
             }
             let comp = trace(&m, &lines, &mut seen, li, ri)?;
-            let (p, s) = pieces_of(k, &m, &comp)?;
+            let (p, s) = pieces_of(k, &m, &comp, &mut budget)?;
             pieces.extend(p);
             switches.extend(s);
         }
@@ -2268,7 +2322,12 @@ fn torus_far(k: usize, t: &Prism, other: &Far) -> Result<CylPair> {
 /// S9e.4b.4d.2c.1a: a double root at a rational angle, where the other
 /// surface touches the torus along a circle, that circle (`TouchRing`, a
 /// whole torus's), each other root's window clear of it.
-fn coaxial(k: usize, t: &Prism, m: &Arc<Meeting>) -> Result<(Vec<ToricCrv>, Vec<TouchRing>)> {
+fn coaxial(
+    k: usize,
+    t: &Prism,
+    m: &Arc<Meeting>,
+    budget: &mut Boxes,
+) -> Result<(Vec<ToricCrv>, Vec<TouchRing>)> {
     let form = m.g.at(false, &[int(1), zero()]);
     let chart = clear_chart(&form)?;
     let poly = trim(form.poly(&chart));
@@ -2322,7 +2381,7 @@ fn coaxial(k: usize, t: &Prism, m: &Arc<Meeting>) -> Result<(Vec<ToricCrv>, Vec<
             [0.5 * (prev + v), 0.5 * (v + next)]
         };
         let piece = ToricCrv::new(k, m, false, window, None)?;
-        if !piece.verified() {
+        if !piece.verified(budget)? {
             return Err(limit("a torus's coaxial circle left unverified"));
         }
         out.push(piece);
