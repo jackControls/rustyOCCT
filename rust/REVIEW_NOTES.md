@@ -19767,6 +19767,25 @@ Decisions for S9, recorded before its code (2026-09-28):
   reaching the grid 1.2 %, the 510 others 0.4 %, the binaries' layout); of
   the 40 inputs that run put most above their base, each run five times
   again, none more than 8.7 % at the median (`74131278`, 0.13 s).
+  DRAW trial (UPSTREAM_TESTS.md, "Faces with no near-miss rule of their
+  own"): every status and reason as at `near-miss-curves`' trial over the
+  1,802, the 2,128 restore cases and the 40 `catch` forms but a load
+  timeout; 463 cases search a face pair, 126 decide at exact points, every
+  gap of rounding's size (at most `9.9e-14`); none moves and nothing is
+  registered; the full contract run holds for all 1,132 cases. Checks:
+  fmt, clippy (release, all targets, `-D warnings`), the 1.85 check, the
+  release suite (824 tests, 5 ignored); all 53 comparisons of HANDOFF's
+  table with their documented counts and 0 failures on the pinned SDK; the
+  boolean corpus (1,444 inputs) and its 38 regressions and the split corpus
+  (3,551) and its 20 regressions replayed with debug assertions without a
+  failure (the slowest 14.6 s and 3.3 s); the new tests, the five earlier
+  near-miss test files, `sphere_field_booleans` and `near.rs`'s unit tests
+  under the emulated glibc `hypot` with debug assertions and overflow
+  checks. Open (HANDOFF, item 5): beyond the resolution, a contact along a
+  cone's ruling, a torus's coaxial circle or two spline walls' generatrix
+  is a `ComputationLimit` (no corpus input or DRAW case reaches one); the
+  rod crossing a torus's inner equator that runs on in the torus meeting's
+  verification; the shallow crossing's common ((d)).
 
 * **CI budget (U6).** Per-push fuzz runs replay a bounded sample plus every
   regression and new seed; the daily schedule replays everything; the heavy
