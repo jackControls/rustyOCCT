@@ -19258,7 +19258,25 @@ Decisions for S9, recorded before its code (2026-09-28):
   reason as at `5a7acb4c` over the 1,802, the 2,128 restore cases and the
   40 `catch` forms; 25 cases reach the new searches, none a pair; nothing
   moves and nothing is registered; the full contract run holds for all
-  1,132 cases.
+  1,132 cases. Checks: fmt, clippy (release, all targets, `-D warnings`),
+  the 1.85 check, the release suite (808 tests, 5 ignored); all 53
+  comparisons of HANDOFF's table with their documented counts and 0
+  failures on the pinned SDK; the boolean corpus (1,444 inputs) and its 38
+  regressions and the split corpus (3,551) and its 20 regressions replayed
+  with debug assertions without a failure (none over 30 s on a host at
+  load 30 to 55); the new tests, the four earlier near-miss test files,
+  `sphere_field_booleans` and `near.rs`'s unit tests under the emulated
+  glibc `hypot` with debug assertions and overflow checks (the new file 95
+  s there). Open (HANDOFF, item 5): faces with no near-miss rule of their
+  own ((c): cylinders and cones against each other beyond S9c's node rule,
+  tori and spline walls against anything but a cone's apex, edges and
+  vertices against torus or spline faces), the shallow crossing's common
+  ((d)); of this note's rules, a torus's meeting with a quadric and a
+  turned frame's rise have no movement bound (`ComputationLimit` between
+  the resolution and twice it; no test reaches them: a corner by a torus
+  less a rod is refused first by S9e.3b's limits), and a missing pair of
+  two fields whose gap lies along a face's tangent plane is a
+  `ComputationLimit` (none reached).
 
 * **CI budget (U6).** Per-push fuzz runs replay a bounded sample plus every
   regression and new seed; the daily schedule replays everything; the heavy
