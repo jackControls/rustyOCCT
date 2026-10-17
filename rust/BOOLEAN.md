@@ -88,7 +88,10 @@ square with a square hole, a post standing in the pocket, or with a U-shaped
 hole, a U island whose notch is a pocket of its own: `solid/imported.rs`'s
 `nested_pocket`), and S9e.4b.4b.2b.2b.3b's leaves whose caps a leaf crossing
 them splits (a stadium plate with a stadium slab through it on crossing
-axes: `solid/imported/crossed.rs`).
+axes: `solid/imported/crossed.rs`), and S9e.4b.4c.2b.2's chains only in the
+inside-first order (a rod less a wider ball, its dimple through the rod's
+rim; a flange whose spigot stands in its recess:
+`solid/imported/inside_first.rs`).
 
 ## Contract
 
@@ -1566,7 +1569,17 @@ carrier one segment; each continuation unique, its joint and middles inside
 the lead at the leaf's bottom, middle and top; the pieces one loop), fused
 after the lead; the pieces apart as two inputs would leave the plate's line
 and arc walls tangent across the joint's line in different inputs, S9c's
-tangency. Any refusal of a crossed chain is one the body is not. A body's
+tangency. Any refusal of a crossed chain is one the body is not.
+S9e.4b.4c.2b.2: then every chain again in the inside-first order
+(`inside_first`): its primitives inside their quadrics first, widest first,
+then those outside, widest first (a ball wider than its rod cut from it
+after the rod, `OCC14536-sh1`'s dimple), and its prisms of one cap after the
+primitives (a spigot standing in a recess fused after the recess's cylinder
+is cut, `CTO904_cts21347a`'s); where the chain of the primitives alone is
+refused as no chain matching, the later chains are tried at once; a chain
+the order leaves the same is not built again (`same_chain`), and any refusal
+of a later chain is one the body is not, so every body that imported keeps
+its chain and every refusal its text. A body's
 own faces tangent along an edge other than a prism's walls' joints (two
 walls along one axis tangent along a line along it; two faces of one stored
 surface, a face OCCT split at its seam, none; S9e.4b.4d.1: nor two faces on
@@ -4699,6 +4712,40 @@ campaign of every target the steps touch.
   results'), a plate two slabs split refused as before.
   `compare_crossed_leaves_boolean.py`: 18 matches and 3 reviewed (the
   touching ball's fuse; OCCT's rod seam in the waist's chain).
+* **S9e.4b.4c.2b.2 evidence (chains in the inside-first order), before its
+  kernel code.** Three bodies OCCT wrote, each turned about the world's `z`
+  by its profile's revolution (a rod less a wider ball through its bottom
+  rim, `OCC14536-sh1`'s form; the ball inside the rim; a disc with an
+  underside recess and a spigot standing in it fused with a lug, not
+  turned, `CTO904_cts21347a`'s form), under
+  `rust/fixtures/imported/inside_*.brep`.
+  `generate_inside_first_boolean_fixtures.py --check` writes
+  `boolean-inside-first-cases.txt`, `-expected.tsv`, `-frames.tsv` and
+  `-bodies.txt`: 24 cases (8 groups; 21 solid, 3 degenerate: a ball resting
+  on the lug's top) against upright rods and boxes, the dimple the tool, the
+  flange and S9e.4a's imported cylinder and the cup's chain, from S9e.3a's
+  chained reference on the constructions (two families 1.1e-35, each body's
+  closed form 4.0e-37, Monte Carlo 2.7 standard errors), every stored vertex
+  on its construction. `compare_inside_first_boolean.py` reproduces
+  `occt-boolean-inside-first-preimplementation` (keyed on
+  `solid/imported/inside_first.rs`, absent before the step, the probe
+  refusing all 24 on import): every result valid, 21 match, 3 reviewed
+  (BRepGProp's default measure on a rod's meeting with the dimple's sphere,
+  within 1.2e-9 adaptively; the touching ball's fuse two solids).
+* **Kernel (S9e.4b.4c.2b.2).** `tests/inside_first_booleans.rs`: all 24
+  fixtures as the reference (21 within the kernel's enclosures, each at most
+  `1e-9` wide; the touching ball `Degenerate`), every history complete over
+  the imported bodies' stored ids, results deterministic and moved rigidly,
+  moved inputs keeping the reference's volumes, each solid group's six
+  Booleans consistent (every result valid at the larger inputs'
+  resolution), every body its chain (its closed-form volume, points in and
+  out), the kernel's own rod less a wider ball written, read back and
+  imported (its Booleans with a box turned off every axis the kernel's own
+  results'); the module's unit test: the earlier steps' bodies keep their
+  chains before the inside-first ones, the dimple and the flange take
+  inside-first ones. `compare_inside_first_boolean.py`: 19 matches and 5
+  reviewed (the captured measures and touching ball's fuse; OCCT's seams on
+  the rod, the dimple's sphere and the turned wall).
 * **Fuzzing.** The `boolean` target (`FUZZING.md`): the split target's line
   and arc profiles, the tool offset exactly in the axis-aligned frame or
   sharing the tilted one's origin, heights equal, spanning, overlapping,

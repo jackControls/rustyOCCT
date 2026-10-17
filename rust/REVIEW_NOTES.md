@@ -15351,6 +15351,65 @@ Decisions for S9, recorded before its code (2026-09-28):
     build of the oracle) and the touching ball's fuse, which OCCT keeps as
     two solids touching at a point, their totals the reference's within
     1e-15. S9e.4b.4c.2b.2's kernel next.
+  * **S9e.4b.4c.2b.2 implemented** (`solid/imported/inside_first.rs`'s
+    `order`, `sequence` and `split`; `imported.rs`'s `primitives_choices`'
+    later choices, `chain_piece_with`'s `late`, `imported_chains`' later
+    choices where the primitives alone are refused as no chain matching;
+    refined `e9b7670f`, evidence `86ab53bf`, capture `ede8163f`, kernel
+    `c0ac5f0b`; branch `import-tail` from `5a7acb4c`), as the refined
+    decisions describe: every chain again after all of them (the choices
+    from their count up to twice it), its primitives inside their quadrics
+    first, widest first, then those outside, widest first, its prisms of
+    one cap after the primitives (the first of them no root), the
+    primitives meeting the leaves alone right after the leaves; where the
+    chain of the primitives alone is refused as no chain matching the later
+    choices are tried at once and that refusal kept where none matches; a
+    later chain read the same as an earlier one not built again; any
+    refusal of a later chain one the body is not. All 24 fixtures as
+    declared (21 within the kernel's enclosures, each at most `1e-9` wide;
+    the touching ball `Degenerate("a tangency between the inputs (S9c)")`),
+    every history complete over the imported bodies' stored ids, results
+    deterministic and moved rigidly, both inputs translated and turned
+    keeping the reference's volumes, each body its chain (its closed-form
+    volume, points in the rod above its dimple, the spigot and the lug
+    inside, points in the dimple, the recess and beside the lug outside, its
+    stored vertices on its boundary); the consistency identities on each
+    solid group's partner at the larger inputs' resolution (as
+    S9e.4b.4b.2b.2b.3b's); the kernel's own rod less a wider ball about its
+    axis (the cup's form: the kernel refuses a ball through a rod's rim
+    exactly as a sphere within the resolution of tangency to an edge, and
+    its writer writes neither the dimple's meeting of the ball and the rod's
+    wall nor the spigot's ring on the recess's ceiling, a circle the kernel
+    stores as an ellipse) written, read back and imported, its volume and
+    its Booleans with a box turned off every axis the kernel's own; the
+    module's test: the earlier steps' fixtures (`chain_cup`, `chain_shaft`,
+    `leaf_boss`, `two_through`, `rim_well`, `flush_arms`, `stack_step`,
+    `nested_post`, `crossed_joint`) keep a choice below the later ones, the
+    dimple and the flange a later one (`tests/inside_first_booleans.rs`,
+    24.9 s in release, 20.6 s at `opt-level` 2 with debug assertions, both
+    at load 40 to 60, 163 s in release with debug assertions and
+    overflow checks under the emulated correctly rounded `hypot`).
+    `compare_inside_first_boolean.py` 19 matches and 5 reviewed (the
+    captured measures and touching ball's fuse and, with the kernel, entity
+    counts: `dimple_rod_common`, where OCCT splits the rod's meeting with
+    the dimple's sphere at the sphere's seam; `chain_cup_common`, the rod's
+    meeting with the cup's ball at the rod's seam; `rod_dimple_fuse`, the
+    turned wall's seam kept above and below the rod), the kernel within the
+    reference on all 21 solid cases, the 3 degenerate refused. *Reach after
+    the change*, measured as before the step: `OCC14536-sh1` (8,993,811.4197, native `vprops`
+    8.99381e+06) and `CTO904_cts21347a` (1,432.8135514, native 1432.81)
+    import and the three fixtures, nothing else moving (the fuzz bodies as
+    after S9e.4b.4b.2b.2b.3b; one dataset file timing out at the host's load
+    of 50, `bug28745_case7_cut`, refused as before when run alone). *DRAW trial*
+    (S9e.4b.4b.2b.2b.3b's 44 cases, among them every case
+    restoring either body: `bcut_complex/O1` and `P7`, `bugs/modalg_1/bug14536`,
+    `sewing/tol_100/E5`, both backends): none moved against `5a7acb4c` and
+    none evaluated on both (`O1` refused for its other input's spline
+    faces, S9f, before and after; `P7` and `bug14536` for other restored
+    files' constructs; OCCT's side of all three needing the viewer). *Corpus cost*: the debug-assertion replays of the boolean corpus
+    and its regressions 9.2035 T instructions against `5a7acb4c`'s 9.2150 T
+    (-0.12%), the split corpus's 4.7487 T against 4.7606 T (-0.25%), none
+    failing.
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces

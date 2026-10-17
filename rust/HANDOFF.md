@@ -905,12 +905,20 @@ then for the DRAW survey of the turned bodies (branch `s9-draw-19`, over
    unchanged: the measurement again moving no body, the DRAW trial no case)
    is implemented with its DRAW survey (`s9-draw-18` at `cc7af85c`: no
    case moving, none reaching a nested pocket, nothing registered;
-   campaigns clean at `677c3bad`; pending its capture's Linux record); next
-   **S9e.4b.4c.2b.2** (chains no model matches: the
-   inside-first order as a later choice, `OCC14536-sh1`'s dimpled rod; two
-   cylinders on parallel axes sharing a cap, a slotted flange and a block
-   after a diagnosis; turned profiles of cones and cylinders with S9e.4b.4d;
-   a flat with pockets of its own; a nested pocket holding a primitive) and
+   campaigns clean at `677c3bad`; pending its capture's Linux record);
+   **S9e.4b.4c.2b.2** ("S9e.4b.4c.2b.2 refined" and "implemented", branch
+   `import-tail`: chains no model matches) is implemented: every chain
+   tried again in the inside-first order after all of them
+   (`solid/imported/inside_first.rs`: the primitives inside their quadrics
+   first, the prisms of one cap after the primitives), `OCC14536-sh1`'s
+   dimpled rod and `CTO904_cts21347a`'s slotted flange importing with native
+   `vprops`'s volumes, nothing else moving; the two cylinders on parallel
+   axes sharing a cap (`CTO900_pro6066a`, `-part`: OCCT's seams on partial
+   faces, a one-to-one match's limit) and the block (`CTO904_pro12859a`: its
+   own tangency, a cusp) diagnosed and left refused; turned profiles done by
+   S9e.4b.4d; a flat with pockets of its own (5 fuzz bodies reach it, a
+   draft importing none) and a nested pocket holding a primitive (no body
+   reaching it) not built; and
    **S9e.4b.4d**, split in "S9e.4b.4d refined" (turned bodies of smooth
    joins and nearly degenerate surfaces: of the DRAW cases only
    `OCC485a`'s, `bug476_1` to `_8` and `bug485`, reach one; no fuzz result):
@@ -1283,6 +1291,7 @@ Each comparison takes `--occt-root target/spline-linear-preflight/pinned-sdk/ins
 | `compare_turned_crossings_boolean.py` | 11 / 16 (the kernel within the reference on all 24 solid cases, the 3 degenerate refused) |
 | `compare_turned_corners_boolean.py` | 11 / 16 (the kernel within the reference on all 24 solid cases, the 3 degenerate refused) |
 | `compare_crossed_leaves_boolean.py` | 18 / 3 (the kernel within the reference on all 18 solid cases, the 3 degenerate refused) |
+| `compare_inside_first_boolean.py` | 19 / 5 (the kernel within the reference on all 21 solid cases, the 3 degenerate refused) |
 
 `rust/tools/run_boolean_comparisons.py --shard 0 --shards 1` with the same
 two arguments runs all 55 in turn (CI's three shards: item 2).
