@@ -15085,7 +15085,16 @@ Decisions for S9, recorded before its code (2026-09-28):
     lower lobe's extreme `y = 1` (a meeting's sine 0.011) and the joint
     first stood about `(3, 9/2, 1/2)`, where `cyl` cut it in eight. The
     kernel's draft of the step's code on the two bodies: both import (their
-    volumes the closed forms within 1e-12).
+    volumes the closed forms within 1e-12). The capture
+    `occt-boolean-crossed-leaves-preimplementation`
+    (`compare_crossed_leaves_boolean.py`, keyed on the step's new file
+    `solid/imported/crossed.rs`, absent; the kernel's probe `unsupported` on
+    all 21 before the code, both bodies refused on import as no chain
+    matching): every result valid, 20 matching, 1 reviewed, in
+    `occt-boolean-crossed-leaves-divergences.json`: the touching ball's
+    fuse, which OCCT keeps as two solids touching at a point where the
+    reference's rays count one, their totals the reference's within 1e-16.
+    S9e.4b.4b.2b.2b.3b's kernel next.
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces

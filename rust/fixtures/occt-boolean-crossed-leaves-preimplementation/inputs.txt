@@ -1,0 +1,147 @@
+case joint_cyl_fuse
+brep imported/crossed_joint.brep
+boolean fuse
+brep imported/cyl.brep
+end
+case joint_cyl_cut
+brep imported/crossed_joint.brep
+boolean cut
+brep imported/cyl.brep
+end
+case joint_cyl_common
+brep imported/crossed_joint.brep
+boolean common
+brep imported/cyl.brep
+end
+case chain_waist_fuse
+brep imported/crossed_waist.brep
+boolean cut
+plane -2.0 1.0 -0.25 0.0 0.0 1.0 1.0 0.0 0.0
+wire C 1.375 1.875 -0.25 0.5
+prism 0.0 0.0 3.0
+then fuse
+plane -2.0 1.0 1.25 0.0 0.0 1.0 1.0 0.0 0.0
+wire P 4 0.75 0.75 1.25 4.25 0.75 1.25 4.25 2.25 1.25 0.75 2.25 1.25
+prism 0.0 0.0 1.0
+end
+case chain_waist_cut
+brep imported/crossed_waist.brep
+boolean cut
+plane -2.0 1.0 -0.25 0.0 0.0 1.0 1.0 0.0 0.0
+wire C 1.375 1.875 -0.25 0.5
+prism 0.0 0.0 3.0
+then cut
+plane -2.0 1.0 1.25 0.0 0.0 1.0 1.0 0.0 0.0
+wire P 4 0.75 0.75 1.25 4.25 0.75 1.25 4.25 2.25 1.25 0.75 2.25 1.25
+prism 0.0 0.0 1.0
+end
+case chain_waist_common
+brep imported/crossed_waist.brep
+boolean cut
+plane -2.0 1.0 -0.25 0.0 0.0 1.0 1.0 0.0 0.0
+wire C 1.375 1.875 -0.25 0.5
+prism 0.0 0.0 3.0
+then common
+plane -2.0 1.0 1.25 0.0 0.0 1.0 1.0 0.0 0.0
+wire P 4 0.75 0.75 1.25 4.25 0.75 1.25 4.25 2.25 1.25 0.75 2.25 1.25
+prism 0.0 0.0 1.0
+end
+case joint_rod_fuse
+brep imported/crossed_joint.brep
+boolean fuse
+plane 5.25 1.625 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire C 6.25 1.875 0.0 0.5
+prism 0.0 0.0 3.0
+end
+case joint_rod_cut
+brep imported/crossed_joint.brep
+boolean cut
+plane 5.25 1.625 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire C 6.25 1.875 0.0 0.5
+prism 0.0 0.0 3.0
+end
+case joint_rod_common
+brep imported/crossed_joint.brep
+boolean common
+plane 5.25 1.625 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire C 6.25 1.875 0.0 0.5
+prism 0.0 0.0 3.0
+end
+case joint_arc_fuse
+brep imported/crossed_joint.brep
+boolean fuse
+plane 5.25 1.625 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire C 4.625 2.5 0.0 0.5
+prism 0.0 0.0 3.0
+end
+case joint_arc_cut
+brep imported/crossed_joint.brep
+boolean cut
+plane 5.25 1.625 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire C 4.625 2.5 0.0 0.5
+prism 0.0 0.0 3.0
+end
+case joint_arc_common
+brep imported/crossed_joint.brep
+boolean common
+plane 5.25 1.625 0.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire C 4.625 2.5 0.0 0.5
+prism 0.0 0.0 3.0
+end
+case waist_rod_fuse
+brep imported/crossed_waist.brep
+boolean fuse
+plane -2.0 1.0 -0.25 0.0 0.0 1.0 1.0 0.0 0.0
+wire C 2.625 0.125 -0.25 0.75
+prism 0.0 0.0 3.0
+end
+case waist_rod_cut
+brep imported/crossed_waist.brep
+boolean cut
+plane -2.0 1.0 -0.25 0.0 0.0 1.0 1.0 0.0 0.0
+wire C 2.625 0.125 -0.25 0.75
+prism 0.0 0.0 3.0
+end
+case waist_rod_common
+brep imported/crossed_waist.brep
+boolean common
+plane -2.0 1.0 -0.25 0.0 0.0 1.0 1.0 0.0 0.0
+wire C 2.625 0.125 -0.25 0.75
+prism 0.0 0.0 3.0
+end
+case rod_joint_fuse
+plane 5.25 1.625 1.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire C 5.5 4.125 1.0 1.0
+prism 0.0 0.0 0.5
+boolean fuse
+brep imported/crossed_joint.brep
+end
+case rod_joint_cut
+plane 5.25 1.625 1.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire C 5.5 4.125 1.0 1.0
+prism 0.0 0.0 0.5
+boolean cut
+brep imported/crossed_joint.brep
+end
+case rod_joint_common
+plane 5.25 1.625 1.0 0.0 0.0 1.0 1.0 0.0 0.0
+wire C 5.5 4.125 1.0 1.0
+prism 0.0 0.0 0.5
+boolean common
+brep imported/crossed_joint.brep
+end
+case joint_touch_fuse
+brep imported/crossed_joint.brep
+boolean fuse
+sphere 7.75 1.625 3.0 0.0 0.0 1.0 1.0 0.0 0.0 1.0 -1.5707963267948966 1.5707963267948966
+end
+case joint_touch_cut
+brep imported/crossed_joint.brep
+boolean cut
+sphere 7.75 1.625 3.0 0.0 0.0 1.0 1.0 0.0 0.0 1.0 -1.5707963267948966 1.5707963267948966
+end
+case joint_touch_common
+brep imported/crossed_joint.brep
+boolean common
+sphere 7.75 1.625 3.0 0.0 0.0 1.0 1.0 0.0 0.0 1.0 -1.5707963267948966 1.5707963267948966
+end
