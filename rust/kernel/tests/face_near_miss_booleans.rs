@@ -360,6 +360,7 @@ fn check(what: &str, body: &Solid, placed: &Placed, why: &str, fused: usize, bey
 
 /// `check`, the faces' own meetings' refusals or limits `earlier` first
 /// where they hold.
+#[allow(clippy::too_many_arguments)]
 fn check_or(
     what: &str,
     body: &Solid,
@@ -383,9 +384,9 @@ fn check_or(
     evaluates(&format!("{what} 1e-6"), body, &placed(1e-6), fused);
 }
 
-/// Two rods crossing at right angles whose walls miss by `d` across their
-/// common perpendicular (S9c.2a's extents decided them apart before the
-/// node rule) and a rod across a cone's wall: `Degenerate`, the fuse two
+/// Two rods crossing whose walls miss by `d` across their common
+/// perpendicular (S9c's extents decided them apart before the node rule)
+/// and a rod across a cone's wall: `Degenerate`, the fuse two
 /// solids and the common empty before; their crossings refused; at `1e-6`
 /// every operation evaluates. Rods touching exactly are the faces'
 /// tangency, as before.
@@ -393,9 +394,17 @@ fn check_or(
 fn cylinders_and_cones_within_the_resolution_at_a_point_are_degenerate() {
     for (name, f) in frames() {
         let a = rod(f, 1.0, -2.0, 2.0, 1);
+        // Its axis leaning off the first's normal plane (no cap of one
+        // along the other's axis but for a frame's rounding).
+        let lean = unit([1.0, 0.0, 0.2]);
         let across = |d: f64| {
             rod(
-                local_frame(&f, [-3.0, 1.5 + d, 0.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0]),
+                local_frame(
+                    &f,
+                    add([0.0, 1.5 + d, 0.0], lean, -3.0),
+                    lean,
+                    [0.0, 1.0, 0.0],
+                ),
                 0.5,
                 0.0,
                 6.0,
@@ -413,14 +422,16 @@ fn cylinders_and_cones_within_the_resolution_at_a_point_are_degenerate() {
         not_near(&format!("{name} rods touching"), &a, &across(0.0));
         let c = cone(&f);
         let n = cone_n();
+        // Its axis normal to the cone's normal there, turned by 0.3 from
+        // the cone's circle toward its ruling.
+        let axis = add(
+            [0.0, 0.3f64.cos(), 0.0],
+            unit([1.0, 0.0, -1.0]),
+            0.3f64.sin(),
+        );
         let by_cone = |d: f64| {
             rod(
-                local_frame(
-                    &f,
-                    add(add(CONE_P, n, 0.25 + d), [0.0, 1.0, 0.0], -1.0),
-                    [0.0, 1.0, 0.0],
-                    [1.0, 0.0, 0.0],
-                ),
+                local_frame(&f, add(add(CONE_P, n, 0.25 + d), axis, -1.0), axis, n),
                 0.25,
                 0.0,
                 2.0,
