@@ -2570,6 +2570,54 @@ dataset's `bug23400_thinring` deciding two knots C1 by the rational test
 (refused still, `pcurve_off_edge`). No case crashes or panics on either
 backend.
 
+**Other curves, points of two fields and a cone's apex: a trial of the
+Boolean group, the restore cases and the `catch` forms.** Edges of other
+curves (a given result's meetings of two curved faces, a cone's or a
+torus's sections and meetings, a spline prism's cap edges) against the
+other input's vertices and edges, points of two quadratic fields (two
+sphere circles among them) and a cone's apex against a spline wall or a
+torus face are refused where each input's boundary leaves its point
+strictly away from the other's or heads strictly toward it (2026-10-17,
+branch `near-miss-curves` over `5a7acb4c`; REVIEW_NOTES.md's "Other
+curves, points of two fields and an apex against a spline or torus face,
+done", which has the counts). The debug worker at `5a7acb4c` and an
+instrumented build of this branch's (not committed: a line for each
+search of the new paths, each least and pair they take, each Boolean's
+outcome), on the Rust adapter, the public dataset, 120 seconds a case,
+three or four at once on a host at load 15 to 55: the 1,802 self-contained
+cases of the Boolean group, every case of every group that restores a
+shape and gives it to `bfuse`, `bcut`, `bcommon`, `btuc` or `bop` at a
+command's place (2,128 cases by this selection, the 1,814 among them) and
+the 40 cases that restore a data file and call such a command only inside
+`catch {...}` (the 30 among them). Every status, reason and error is the
+base's field for field: the 1,802 (987 evaluating, every one registered;
+815 refused or unsupported), the 2,128 (982 unsupported, 795 private data,
+276 `failed` by the reader's validator and `bug476_1` to `_8` failing only
+`checknbshapes` as at `5a7acb4c`, 59 evaluating, every one registered, the
+rest timing out at their first restores as before) and the 40 (25 private
+data, 15 unsupported); `bugs/modalg_4/bug779` timed out once at that load
+and ends unsupported at its restore as before in 55 seconds alone on both
+workers. Every registered case among them (1,081) has its manifest status.
+The new paths are reached in 25 cases, none of the self-contained ones:
+two sphere circles' leasts (288 candidates) in 13 restore cases
+(`bcommon_complex/B5`, `B6`, `B9`, `bcut_complex/D2` to `D5`, `E1`, `E2`,
+`bfuse_complex/B8`, `B9`, `C3`, `bugs/moddata_1/bug183_5`), the searches of
+other curves against edges in `bcut_complex/G9`, `bugs/modalg_2/bug417`,
+`bug476_1` to `_8` and `bug485` and against vertices in `bug476_1` to `_8`;
+no candidate reaches the pair rule (every least of rounding's size or
+none), so no case moves and none is registered (1,132 cases); the ledger
+holds. A first build's search of two curves (alternating golden-section
+searches over every node of the samples' grid) took `bug485` (`OCC485a`
+fused with itself, its coincident edges) from 13 to 283 seconds and timed
+out `bug476_1` to `_8`; the grid's coarse pass and Gauss-Newton steps
+brought it back to 13.6 seconds (13.0 to 19.5 on the base's worker at that
+load). No case crashes or panics. A full contract run of the manifest on
+both backends with the dataset (30 seconds a case, an absolute output
+directory, at load 30 to 55) holds for all 1,132 cases (Rust: 18 pass,
+1,050 viewer-skipped, 53 unsupported, 11 private data), the slowest Rust
+case 21.2 seconds (the derived `boolean_polyhedra`), the slowest original
+17.9 (`bfuse_complex/B6`); `--ledger` holds.
+
 Three more `intss` cases run on the Rust adapter but are not registered,
 because the contract admits no failing status: `bug23178`, `bug28222_2` and
 `bug28222_3` count the pieces IntPatch splits its walking lines into (6, 4
