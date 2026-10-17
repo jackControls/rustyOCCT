@@ -15095,6 +15095,69 @@ Decisions for S9, recorded before its code (2026-09-28):
     fuse, which OCCT keeps as two solids touching at a point where the
     reference's rays count one, their totals the reference's within 1e-16.
     S9e.4b.4b.2b.2b.3b's kernel next.
+  * **S9e.4b.4b.2b.2b.3b implemented** (`solid/imported/crossed.rs`'s
+    `chains`, `crossed_leaves` and `crossed_prism`; `imported.rs`'s `Leaf`'s
+    `pieces`, the crossed chains' choices, `chain_piece_with`'s crossed
+    leaf; refined `a8e7bcd0`, evidence `f5aa2c75`, capture `634d81a1`, kernel
+    `9e9f2c58`; branch `import-tail` from `5a7acb4c`), as the refined
+    decisions describe: after every earlier chain each leaf of `leaves`
+    (each face set once) leads the leaves whose caps it splits, each read off
+    the faces of its cap's plane at once, its pieces' runs along the lead
+    dropped and the walls at their ends continued through the lead to their
+    joints (a stadium's line-arc joint at the foot of its centre, a line
+    through the lead one segment), one prism on the bottom face's stored
+    frame, fused after the lead; any refusal of a crossed chain one the body
+    is not; the refusal's text unchanged. All 21 fixtures as declared (18
+    within the kernel's enclosures, each at most `1e-9` wide; the touching
+    ball `Degenerate("a tangency between the inputs (S9c)")`), every history
+    complete over the imported bodies' stored ids, results deterministic and
+    moved rigidly, both inputs translated and turned keeping the reference's
+    volumes, each body its plate and slab (its closed-form volume, points at
+    the hidden joints, in each piece and in the slab above the plate inside,
+    points beside them outside, its stored vertices on its boundary); the
+    consistency identities on each solid group's partner (the common and the
+    fuse in both orders, each cut and the common summing to its input, the
+    fuse to both less the common, every result valid at the larger of the
+    inputs' resolutions, the common the reference's: a Boolean whose object
+    is a construction and whose tool the imported body takes the
+    construction's resolution, `1e-7`, and keeps the body's stored entities,
+    valid only at the body's own, its file's tolerance `1.5e-7`: found
+    pre-existing, every imported body of several primitives alike, S9e.4b.4b.2b.2a's
+    `two_through`, S9e.4b.4b.2b.2b.3a's `stack_step` and S9e.4b.4c.2b.1's
+    `nested_post` among them, so `tests/support/turned_consistency.rs`'s
+    `consistent_at` validates at a given resolution); the `boolean` fuzz
+    target's measured body (the kernel's own fuse of the plate and the slab
+    on the world's axes) and the slab across the plate's straight middle
+    written by its writer, read back and imported, their volumes and their
+    Booleans with a box turned off every axis the kernel's own; a plate two
+    slabs split (three pieces, two leads) refused as before the step (the
+    body's own tangency) (`tests/crossed_leaf_booleans.rs`, 9.4 s in release,
+    10.7 s at `opt-level` 2 with debug assertions, both at load 30 to 45,
+    3,264 s in release with debug assertions and overflow checks under the
+    emulated correctly rounded `hypot` at load 40 to 60, where the stack
+    leaves' (925 s), nested leaves' (2,874 s) and two leaves' (325 s) test
+    files pass too).
+    `compare_crossed_leaves_boolean.py` 18 matches and 3 reviewed (the
+    captured touching ball's fuse and, with the kernel, entity counts:
+    `chain_waist`'s fuse and cut, where OCCT splits the rod's hole wall at
+    the rod cylinder's seam inside the slab, the kernel's wall one face), the
+    kernel within the reference on all 18 solid cases, the 3 degenerate
+    refused. *Reach after the change*, measured as before the step (the same
+    instrumented build's probes over the 3,281 fuzz bodies, the 840 dataset
+    files of the DRAW case list and the imported fixtures): the measured fuzz body (`1ada5dfa`) imports
+    (2,543 of the 3,281 fuzz bodies, 208 of the 224 of several primitives)
+    and both crossed fixtures, nothing else moving (three dataset files
+    timing out at the host's load of 50, `bug28745_case6_cut`,
+    `bug28745_case7_cut` and `cts40185_ailette`, refused as before when run
+    alone).
+    *DRAW trial* (the 44 cases restoring a data file whose Boolean calls are all
+    inside `catch {...}` or restoring `OCC14536-sh1` or `CTO904_cts21347a`,
+    both backends): none moved against `5a7acb4c`, none evaluated on both
+    (25 on private data, 13 needing the viewer, 3 known failures, 1
+    unverified, 1 private on OCCT's side, 1 `pload XSDRAW`). *Corpus cost*: the debug-assertion replays of the boolean corpus
+    and its regressions (1,482 inputs) 9.1923 T instructions against
+    `5a7acb4c`'s 9.2150 T (-0.25%), the split corpus and its regressions
+    (3,571) 4.7482 T against 4.7606 T (-0.26%), none failing.
   * **S9e.4b.4c.2b.2 refined, before its code (2026-10-17).** Why it is
     refused today: a body of several primitives is a chain of its prisms
     (leaves first, then prisms of one cap) and then its primitives widest

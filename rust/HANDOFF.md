@@ -873,10 +873,16 @@ then for the DRAW survey of the turned bodies (branch `s9-draw-19`, over
    record and its campaigns),
    with a fix of a wall's meeting stored over a cylinder turned against the
    model's axis (`vertex_off_curve` at `5b6a9220`, the kernel's own stack on
-   the world's axes imported and cut by a ball); next **S9e.4b.4b.2b.2b.3b**
-   (a leaf through another on crossing axes cutting both its caps in two,
-   the one measured body; the rest of S9e.4b.4b.2b's list, no measured body;
-   2 overlaps and 2 thin pieces stay refused by S9's rules), then
+   the world's axes imported and cut by a ball); **S9e.4b.4b.2b.2b.3b**
+   ("S9e.4b.4b.2b.2b.3b refined" and "implemented", branch `import-tail`:
+   reach measured again at `5a7acb4c`, the slab across a stadium plate
+   splitting both its caps the one measured body) is implemented: a leaf
+   whose caps a crossing leaf splits read off its cap's faces at once, its
+   pieces bridged through the lead into one prism (`solid/imported/crossed.rs`),
+   the fuzz body and the evidence's two importing, no other body moving; the
+   rest of S9e.4b.4b.2b's list (hulls across several parts, mixed pockets,
+   notches, three leaves) not built, no measured body importing by a draft;
+   2 overlaps and 2 thin pieces stay refused by S9's rules; then
    **S9e.4b.4c**, split in "S9e.4b.4c refined": **S9e.4b.4c.1** (an imported
    polyhedron against curved faces or with a cavity) is implemented with its
    DRAW survey (`s9-draw-12` at `44204e18`: no case moving, nothing
@@ -1276,9 +1282,10 @@ Each comparison takes `--occt-root target/spline-linear-preflight/pinned-sdk/ins
 | `compare_turned_cone_fillets_boolean.py` | 7 / 8 (the kernel within the reference on all 12 solid cases, the 3 degenerate refused) |
 | `compare_turned_crossings_boolean.py` | 11 / 16 (the kernel within the reference on all 24 solid cases, the 3 degenerate refused) |
 | `compare_turned_corners_boolean.py` | 11 / 16 (the kernel within the reference on all 24 solid cases, the 3 degenerate refused) |
+| `compare_crossed_leaves_boolean.py` | 18 / 3 (the kernel within the reference on all 18 solid cases, the 3 degenerate refused) |
 
 `rust/tools/run_boolean_comparisons.py --shard 0 --shards 1` with the same
-two arguments runs all 53 in turn (CI's three shards: item 2).
+two arguments runs all 55 in turn (CI's three shards: item 2).
 
 Every one must report 0 failures; since S9f.1 also `compare_split.py`
 (72 / 56) and `compare_brep.py --family spline` (10 / 3), which share its

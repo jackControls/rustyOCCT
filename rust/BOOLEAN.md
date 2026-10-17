@@ -86,7 +86,9 @@ its arc end, a holed square under a holed stadium hiding its top:
 S9e.4b.4c.2b.1's pockets holding pockets of their own (a stadium plate less a
 square with a square hole, a post standing in the pocket, or with a U-shaped
 hole, a U island whose notch is a pocket of its own: `solid/imported.rs`'s
-`nested_pocket`).
+`nested_pocket`), and S9e.4b.4b.2b.2b.3b's leaves whose caps a leaf crossing
+them splits (a stadium plate with a stadium slab through it on crossing
+axes: `solid/imported/crossed.rs`).
 
 ## Contract
 
@@ -1550,7 +1552,21 @@ one that chain gave before (the component's), so every body that imported
 keeps its chain and every refusal its text; once four chains of one body
 reading one so have had their models refused (`NESTED_CHAINS`: a body on a
 frame turned off the world's `z`, its pocket walls within rounding of its
-cylinders' direction), the later chains refuse such a component as before. A body's
+cylinders' direction), the later chains refuse such a component as before.
+S9e.4b.4b.2b.2b.3b: then each leaf (each face set once) leads the leaves
+whose caps it splits (`crossed::chains`): a crossed leaf read off the faces
+of its cap's plane at once (`crossed_leaves`: every face one loop, each edge
+across a lead face, a run, or a wall rising from it, the walls meeting one
+top), its prism one profile of its pieces' loops with each run dropped and
+the walls at its ends continued through the lead to their joints
+(`crossed_prism`: two lines at their common point, a line and a circle or
+two circles at their meeting ahead of both, a tangent pair at the foot of
+the centre, a stadium's line-arc joint hidden in the lead, two walls on one
+carrier one segment; each continuation unique, its joint and middles inside
+the lead at the leaf's bottom, middle and top; the pieces one loop), fused
+after the lead; the pieces apart as two inputs would leave the plate's line
+and arc walls tangent across the joint's line in different inputs, S9c's
+tangency. Any refusal of a crossed chain is one the body is not. A body's
 own faces tangent along an edge other than a prism's walls' joints (two
 walls along one axis tangent along a line along it; two faces of one stored
 surface, a face OCCT split at its seam, none; S9e.4b.4d.1: nor two faces on
@@ -4651,6 +4667,38 @@ campaign of every target the steps touch.
   and OCCT's seams). `OCC496b` imports (volume 15,824.5926094, native
   `vprops` 15,824.5915520: its model's distance from the stored body); no
   DRAW case moves (its partner `OCC496a` is private data).
+* **S9e.4b.4b.2b.2b.3b evidence (leaves split by a crossing leaf), before its
+  kernel code.** Two bodies OCCT wrote, each a stadium plate fused with a
+  stadium slab normal to the world's `x` on crossing axes, the slab across
+  the plate's line-arc joints (the measured fuzz body moved) or its straight
+  middle, both plate caps two faces each, under
+  `rust/fixtures/imported/crossed_*.brep`.
+  `generate_crossed_leaves_boolean_fixtures.py --check` writes
+  `boolean-crossed-leaves-cases.txt`, `-expected.tsv`, `-frames.tsv` and
+  `-bodies.txt`: 21 cases (7 groups; 18 solid, 3 degenerate: a ball resting
+  on the plate's top) against upright rods across a slab cap and a piece,
+  the body the tool, the joint and S9e.4a's imported cylinder and the
+  waist's chain, from S9e.3a's chained reference on the constructions OCCT
+  was given (two families 6.1e-34, each body's closed form 2.7e-37, Monte
+  Carlo 2.6 standard errors), every stored vertex on its construction.
+  `compare_crossed_leaves_boolean.py` reproduces
+  `occt-boolean-crossed-leaves-preimplementation` (keyed on
+  `solid/imported/crossed.rs`, absent before the step, the probe refusing
+  all 21 on import): every result valid, 20 match, 1 reviewed (the
+  touching ball's fuse two solids).
+* **Kernel (S9e.4b.4b.2b.2b.3b).** `tests/crossed_leaf_booleans.rs`: all 21
+  fixtures as the reference (18 within the kernel's enclosures, each at most
+  `1e-9` wide; the touching ball `Degenerate`), every history complete over
+  the imported bodies' stored ids, results deterministic and moved rigidly,
+  moved inputs keeping the reference's volumes, each solid group's six
+  Booleans consistent (both orders of the fuse and the common, each cut and
+  the common summing to its input; every result valid at the larger
+  inputs' resolution), every body its plate and slab, the fuzz target's
+  measured body and the slab across a plate's middle written, read back and
+  imported (their Booleans with a box turned off every axis the kernel's own
+  results'), a plate two slabs split refused as before.
+  `compare_crossed_leaves_boolean.py`: 18 matches and 3 reviewed (the
+  touching ball's fuse; OCCT's rod seam in the waist's chain).
 * **Fuzzing.** The `boolean` target (`FUZZING.md`): the split target's line
   and arc profiles, the tool offset exactly in the axis-aligned frame or
   sharing the tilted one's origin, heights equal, spanning, overlapping,

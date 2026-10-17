@@ -35,7 +35,8 @@ SHARDS = 3
 # Local wall seconds of each comparison, the kernel probe built (2026-10-14,
 # all 46 sets 378 s; the native probe's compilation included; the turned
 # profiles', flats', tilted bodies', fillets', cone fillets', crossings' and
-# corners' 2026-10-15).
+# corners' 2026-10-15; the crossed leaves' 2026-10-17, at a load of 40 on
+# ten cores, scaled).
 SECONDS = {
     'compare_boolean.py': 3,
     'compare_boolean.py --splines': 9,
@@ -45,7 +46,7 @@ SECONDS = {
     'compare_cone_boolean.py': 3,
     'compare_cones_boolean.py': 39,
     'compare_cones_loops_boolean.py': 7,
-    'compare_crossed_leaves_boolean.py': 7,
+    'compare_crossed_leaves_boolean.py': 11,
     'compare_curved_boolean.py': 3,
     'compare_deep_trees_boolean.py': 5,
     'compare_flush_leaves_boolean.py': 11,
