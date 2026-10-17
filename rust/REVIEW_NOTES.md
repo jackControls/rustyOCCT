@@ -14870,6 +14870,160 @@ Decisions for S9, recorded before its code (2026-09-28):
     clean, 1,079 runs. The capture's Linux record from run 38825939717 at
     `3ae2e597`: every case within rounding of the macOS capture (8.2e-15 at
     most). S9e.4b.4d.2 is complete.
+  * **S9e.4b.4b.2b.2b.3b refined, before its code (2026-10-16).** Why it
+    is refused today: after S9e.4b.4b.2b.2b.3a a body of several primitives
+    is a Boolean chain of its primitives, one or two prism leaves, leaves cut
+    at their rim, parts flush with a leaf's walls, stacks, prisms of one cap,
+    flats and pockets (nested at most three deep since S9e.4b.4c.2b.1). A
+    leaf whose caps another leaf crossing it splits is none of them: each
+    cap is stored as several faces on one plane, each a piece bounded by the
+    leaf's walls and by the crossing leaf's faces, and the walls' joints
+    inside the crossing leaf are not stored at all. `leaves_with` reads each
+    piece as a leaf of its own (its loop's edges along the crossing leaf's
+    caps count as walls), so the chains take the pieces apart: a pair of
+    pieces leaves the crossing leaf's joints the body's own tangency, and a
+    piece with the crossing leaf shares a face with it (no pair). *Reach,
+    measured again before choosing* (at `5a7acb4c`, an instrumented build,
+    not committed: every solid result of the `boolean` fuzz target's three
+    operations, its torus pairs' operation and its chained cut and common,
+    and the `split` target's pieces given to Booleans and those Booleans'
+    results, each written by the kernel's writer, read back and imported;
+    release builds, one process an input; the boolean corpus and its
+    regressions, 1,482 files, and the split corpus and its regressions,
+    3,571, every one exiting cleanly; and the dataset's files the DRAW case
+    list names (every case `tests/<group>/<grid>/<case>` whose script
+    restores a data file by `locate_data_file` and calls `bfuse`, `bcut`,
+    `bcommon`, `bop`, `bopfuse`, `bopcut`, `bopcommon`, `boptuc` or `bbop`,
+    `{` allowed before it, the `catch {...}` forms among them: 2,335 cases,
+    840 public files) with the 142 imported fixtures, each file in a process
+    of its own, 120 s a file, a trace of every chain tried): 3,281 distinct
+    fuzz bodies converted, 2,542 importing; 224 of several primitives (one
+    shell, sphere, cylinder, cone and plane faces, two curved surfaces or
+    more), 207 importing, the 17 refused those S9e.4b.4c.2b's measurement
+    left (5 as the body's own tangency, 3 with S9e.4b.4b.2b.2b.3b's text, 9
+    by S9's rules in a chain's Booleans: 4 an edge of one input on a face of
+    the other, 1 an edge meeting an edge, 1 two faces within the resolution
+    of one plane, 1 a vertex on a face, 2 a piece thinner than the
+    resolution). Of the dataset's and the fixtures' 982 files, 648 solids
+    convert and 587 import (3 files past 120 s); 150 are of several
+    primitives with no spline edge, 130 importing, 20 refused: 7 with
+    S9e.4b.4b.2b.2b.3b's text (`CTO900_cts20212-part`, `CTO900_ger60039b`,
+    `CTO901_cts20171_base`, `CTO901_cts20204_base`, `CTO901_cts20205-base`,
+    `bug27472_t`, `pro13555b`) and the fixture `leaf_notch`, 7 as no chain
+    matching (S9e.4b.4c.2b.2's: `CTO900_pro6066a`, `CTO900_pro6066-part`,
+    `OCC14536-sh1`, `CTO904_cts21347a`, `CTO904_pro12859a`,
+    `bug25966_Revolution` and the fixture `turned_split`), 4 as the body's
+    own tangency or a near-flat cone (`CTO900_pro15323c`, the fixtures
+    `chain_capsule`, `leaf_post`, `flat_rod`), 1 by S9's rules
+    (`CFE900_hkg60gcr`). *Classification*, read off the files and each
+    chain's trace (which refusal each chain tried gave): (e) the one
+    measured body of this step's first form, the `boolean` target's fuse of
+    corpus input `8400c1e8` (`1ada5dfa` in the measurement's keys): a
+    stadium plate (half discs of radius 2 about `(0, 0)` and `(4, 0)`) over
+    `[0, 3/2]` on the world's axes fused with a stadium slab normal to the
+    world's `x` over `[-1/4, 3/4]` (half discs of radius 2 about `(y, z) =
+    (-1, 3/4)` and `(3, 3/4)`), the slab through the plate across its width
+    and height: the plate's caps each two faces, its walls' line-arc joints
+    at `x = 0` inside the slab, the slab's caps holed and whole; every chain
+    refused as the body's own tangency (the slab's joints where the plate's
+    pieces lead, the plate's where the slab and one piece do). The rest of
+    S9e.4b.4b.2b's list: (h) *a hull of planes across several parts* (a flat
+    meeting two parts or more along convex edges), reached in some chain
+    by 4 dataset bodies (`CTO900_ger60039b`: a ring segment of two coaxial
+    cones and a bore cut by two planes off its axis; `bug27472_t`: a sector
+    of a cylinder and a countersink cone; `CTO901_cts20171_base`,
+    `pro13555b`) and 5 fuzz bodies (`18da950e`, `8107cbf2`, `e99eeb4e`,
+    `ff62fd20`, `a9ce2d28`); a draft (not committed) taking such a flat as a
+    hull the whole chain is common with imports none: `ger60039b` refused
+    `Degenerate("two meetings within rounding along an arc")` (its two
+    cones' ridge cut by the planes), `bug27472_t` `Degenerate("two faces
+    within the resolution of one plane")`, `cts20171_base` and `pro13555b`
+    as no chain matching (their other faces: a groove across an arm, a
+    wedge), the fuzz bodies as before (S9's rules in their other chains);
+    (m) *a pocket meeting a part along edges of both kinds*: 2 fuzz bodies
+    (`2e2180d8`, `66825016`, stacks whose other readings S9's rules refuse:
+    an edge meeting an edge), no other; (n) *a prism with both caps cut at
+    their rims* (S9e.4b.4b.2a's notch): the fixture `leaf_notch` alone, and
+    `12777623` (a stadium notched across its rim, its bottom whole) refused
+    by S9's rules (a vertex on a face) in the chain reading it; (t) *three
+    leaves or more*: none but (e), whose pieces are one leaf. Decisions.
+    (1) *Sub-step*: **S9e.4b.4b.2b.2b.3b**: (e), a leaf whose caps a leaf
+    crossing it splits, read off the faces of its cap's plane at once and
+    completed through the crossing leaf, in a chain led by the crossing
+    leaf; a draft (not committed) imports the measured body (volume
+    65.4198419927, the kernel's own fuse's) and moves no other of the 3,281
+    fuzz bodies or the 982 files. (h), (m), (n) and (t) are not built: no
+    measured body would import (the drafts' and the traces' outcomes above),
+    so they stay refused with S9e.4b.4b.2b.2b.3b's text, recorded here. (2)
+    *Finding them* (`crossed_leaves`, for a lead leaf of `leaves`): in face
+    order, each group of two plane faces or more on one plane facing one way
+    (`one_side`), none of the lead's and their normal not along its axis,
+    every face one loop each of whose edges' other face is a lead face (a
+    run, at least one a face) or a wall along the group's inward normal
+    rising from it (none of the lead's), the walls all meeting one group of
+    faces facing the other way (the top); its faces the groups, the walls
+    and every face on their surfaces, a leaf read off either cap once. (3)
+    *Representation: one prism of its pieces bridged through the lead*: on
+    the bottom face's stored frame (turned to the cap's inward normal, or
+    against it where its cylinder walls' stored axes point so, as a stack's
+    leaf), its profile the group's loops (each stored vertex and arc centre
+    rounded once into the frame) with each run dropped and the walls at its
+    ends continued through the lead until they meet the next piece's: two
+    lines at their common point, a line and a circle or two circles at
+    their meeting ahead of both (a tangent pair within the resolution at
+    the foot of the centre: a stadium's line-arc joint), two walls on one
+    line or circle one segment; each end's continuation unique, its joint
+    and both continuations' middles inside the lead at the leaf's bottom,
+    middle and top heights, and the pieces one closed loop, else no such
+    leaf; the joints in binary64 (they lie inside the lead, and no stored
+    vertex depends on them), the arcs' ends taken onto their circles by the
+    exact model (S9e.4b.1); its heights `0` and the top's, rounded once. The
+    chain the lead fused with the leaf, each Boolean S9e.4b.3c.3b's tree's,
+    the root's given model matched to the stored topology by S9e.2's match,
+    its ids the stored ones, read off the moved stored topology again by a
+    rigid motion. Not the flush parts' completion (S9e.4b.4b.2b.2b.2): each
+    piece completed through the lead as a prism of its own makes the pieces
+    two inputs of the chain's fuse, and the plate's line wall and arc wall,
+    tangent along the joint's line inside the lead, then belong to different
+    inputs, which S9c's rule refuses as a tangency between the inputs (a
+    draft found it so). Numbers: the engine's own and S9e.4a's prism's, no
+    new field or degree. (4) *The chain*: after every earlier chain (the
+    stack chains last before), each lead leaf (each face set once) with its
+    crossed leaves, alone; every body S9e.4b.4b.2b.2b.3a imports keeps its
+    chain. (5) *Limits*, deterministic: at most 16 pieces' runs a leaf, each
+    lead once. (6) *Its other queries* are S9e.4b.4b.2b.1's. (7)
+    *Degenerate and refused.* S9's rules unchanged in every Boolean; any
+    refusal of a crossed chain (its Booleans', its tangency, its mismatch)
+    is one the body is not, the body's refusal as before where none
+    matches; a piece with a hole or a ring, a continuation not unique or
+    leaving the lead, pieces not closing one loop: no crossed leaf. The
+    refusal's text unchanged (S9e.4b.4b.2b.2b.3b's, now naming the forms
+    left above). (8) *Fuzzing.* No stage of its own: the measured body is
+    the `boolean` target's own fuse, and the measurement's probes (every
+    result written, read back and imported) are its reach; the kernel's
+    tests take that input's body built by the kernel, written, read back
+    and imported. (9) *Evidence first.* Bodies OCCT writes in one fuse of a
+    stadium plate and a stadium slab on crossing axes, the plate on a frame
+    whose normal is `(0, 3, 4) / 5` and whose `x` is the world's, the slab's
+    normal the world's `x` (so the plate's walls are parallel to the slab's
+    axis exactly, and the partners standing along the plate's normal are
+    parallel to its walls exactly): `joint` (the measured form: the slab
+    across the plate's line-arc joints, every wall of the plate continued
+    through it to a tangent joint) and `waist` (the slab across the plate's
+    straight middle, its line walls one segment each through it); cases
+    against upright rods across a piece and the slab, the body the tool,
+    both imported, a chain, and a declared `degenerate` ball resting on the
+    plate's top; the reference S9e.3a's chained reference on the
+    constructions OCCT was given, each body's closed form, S9e.4b.3c.3a's
+    checks (`generate_crossed_leaves_boolean_fixtures.py --check`, a CI group
+    `crossed-leaves`, `test_crossed_leaves_boolean_reference.py`); a native
+    capture keyed on the kernel's new file (`compare_crossed_leaves_boolean.py`,
+    `solid/imported/crossed.rs` absent); then the kernel and its tests
+    (`tests/crossed_leaf_booleans.rs`: every fixture within `1e-9`
+    enclosures, the consistency identities on each body with a partner,
+    the degenerate refused, histories over the stored ids, deterministic,
+    moved rigidly, the fuzz input's body), and a DRAW trial of the restore
+    cases.
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces
