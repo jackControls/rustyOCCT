@@ -18597,6 +18597,92 @@ Decisions for S9, recorded before its code (2026-09-28):
   kernel's tests the other curves' commons, consistent with their fuses
   and cuts, and the dome's refusal.
 
+* **The shallow lens, done (2026-10-17; the refined note above, HANDOFF's
+  item 5 (d)).** Evidence (`9fd19b2e`..`dc84aaf7`, before the code):
+  `tools/shallow_lens_reference.py` (the lens in the wall's affine
+  coordinates on the stored axes and the wall's origin `o - 3 n`, the
+  inner integral in closed form written about the loop's end, `z` near
+  `-1` keeping every digit, the outer by tanh-sinh; the wall's part over
+  the same angles; the sphere's part `r^2` times the integral of `1 - cos
+  psi(phi)` by the periodic trapezoid rule; 60 digits, 30 kept), checked
+  by `test_shallow_lens_reference.py` (the inner integral against
+  quadrature to `1e-30`, the outer integrals over four pieces and the
+  sphere's part by two rules to `1e-32`, the level frame's sphere part as
+  two graphs over the axis's plane, the shallow lenses against their
+  paraboloids within `10 d`, the bodies' closed forms, the frames
+  `Frame3::new`'s; a first draft's closed form lost twenty digits where
+  `1 - z^2` was formed by cancellation); its generator under Python 3.9
+  and 3.12 alike, in CI's booleans group; `tests/shallow_lens_booleans.rs`
+  (twelve cases, the fixture's frames and the wall's origin the kernel's
+  bit for bit) failing at the base on the six commons `1e-6` and
+  shallower. Kernel (`7c86025a`), as decided: `projection::with_narrow`,
+  `NARROW_WIDTH` and `NARROW_FLOOR` in `along` (`integrate_many`'s
+  relative flag now a floor), `projection::centred` with `Jet::centre`,
+  `validate.rs`'s `tiered_integral` (the narrow tier third) and
+  `narrow_height`, the cylinder's and cone's flux in centred form about
+  the loop's height (`cone_line_flux`'s `base`), `mass.rs`'s `sph_du`,
+  `sph_eval_jets`, `sph_antiderivative_centred`, `trig_along_centred`,
+  `rev_du`, `rev_dv`, the revolution faces' integrands built about the
+  loop's height (`integrands_about`), `narrower` for chords, `mass`'s
+  narrow pass and `Enclosed::meet`; `solid/boolean.rs`'s `undecided`.
+  Measured (release, at load 30 to 40): every operation of the twelve
+  cases evaluates, the lens's commons in 0.7 to 2.6 s (refused in 0.07 s
+  before), their volumes enclosed `7.9e-9` of themselves at `1e-5` (1.4 %
+  before) and `2.7e-8`, `8.4e-8` and `8.5e-7` at `3e-6`, `1e-6` and
+  `1.4e-7` (`2.0e-6` turned), their areas `7e-15` to `3.1e-13`
+  absolutely (the meeting's points' `1.3e-10` along the faces, where the
+  area's density is one), their centres `1e-8` to `7e-6` (the moments over
+  volumes of `1e-10` to `2e-14`); the
+  other curves' commons evaluate (a ball by a frustum at `1.5e-7`, rods
+  crossing at `1.5e-7` level, balls at a torus's equator and top and a slab
+  across it at `1.5e-7`, a rod by it at `1e-6`) in 1 to 5 s; the level
+  ball on the torus's top, its lens about the ball's pole (a loop wound
+  about it: no own height), 25 % wide. A dome prism's ridge crossed by a
+  rod at `1.4e-7` (its meeting on the spline wall): the common
+  `ComputationLimit`, the others evaluating. Tests: `shallow_lens_booleans`
+  (4 tests, 4.2 s in release, 5.2 s with debug assertions and overflow
+  checks under the emulated glibc `hypot`, where the library's unit tests
+  and `near_miss_booleans`, `sphere_booleans`, `spheres_booleans`,
+  `cone_booleans`, `curved_booleans`, `torus_curved_booleans`,
+  `given_met_booleans`, `spline_crossing_booleans` and `brep_validation`
+  pass too) and `projection.rs`'s
+  `centred_forms_hold_every_jet_inside_and_narrow_a_cancelling_sum` (a
+  sum of terms of `10^4` cancelling: natural form `4e-8` wide, centred
+  `3.6e-11`, every point jet's value meeting it and its exact value inside
+  it). Reach and cost (release builds with debug assertions of `5a7acb4c`
+  and of the branch, the branch's instrumented, not committed: a line
+  each time a sign or a mass reaches the narrow tier or the new refusal,
+  every Boolean's outcome with its solids' volumes, areas and centres;
+  one process an input, CPU by `wait4`, the two builds side by side input
+  by input, at load 30 to 40): of the boolean corpus's 1,444 inputs and
+  38 regressions, 16 reach the narrow mass (34 bodies, every one enclosed
+  but wider than `2^-30`, none undecided), none the narrow sign or the
+  refusal; every outcome as before, the values moving within their old
+  enclosures (volumes `6.1e-8` of themselves at most, areas `4.5e-11`,
+  centres `1.6e-4` absolutely; a volume of 24.14 enclosed `1.5e-6` wide
+  before and `2e-10` now); 992.5 s against 995.9 s (0.34 % more; the 16
+  reaching 18.8 s against 21.2 s). Split (3,551 and 20 regressions): 7
+  reach the narrow mass (12 bodies), every outcome as before, 512.8 s
+  against 519.1 s (1.2 %, of which the 7 0.2 s). `brep_validation`
+  (3,107 and 1): none reaches it, 118.1 s against 121.9 s (0.04 s an
+  input; the binaries' and the load's noise). All three 1,623.4 s against
+  1,636.9 s, 0.83 % more. DRAW trial (UPSTREAM_TESTS.md, "The shallow
+  lens"): no case of the 1,802 and the 2,375 restoring a shape reaches the
+  tier or the refusal, every status, reason and Boolean outcome the base
+  worker's bit for bit, the 1,802's 987 evaluating as at `s9-draw-19`;
+  none newly evaluating, none registered, the ledger holding. Checks: fmt,
+  clippy (release, all targets), the 1.85 check, the fuzz crate's fmt and
+  check, the release suite (805 tests, 5 ignored); all 53 comparisons of
+  HANDOFF's table with its counts and 0 failures, `compare_brep.py
+  --family spline` 10 / 3, `compare_brep_io.py` 6,835 / 7,
+  `compare_split.py` 72 / 56; the boolean, split and `brep_validation`
+  corpora and their regressions replayed with debug assertions on the
+  branch's own build without a failure (the slowest input 6.2 s, 1.6 s and
+  1.8 s of CPU); the Python unit tests (490, 3 skipped). Open: the narrow tier's reach to a spline
+  wall's meetings (`wall_pieces`, the spline faces' fluxes) and to loops
+  wound about a sphere's pole; the torus meetings' stalled traces at
+  `1.5e-7`.
+
 * **Thin cones' rings near their points at infinity, a timeout at
   `dbf15607`, done (2026-10-12).** CI's scheduled run 38271718656 at
   `dbf15607` was green but for `analytic_intersections`' campaign, whose

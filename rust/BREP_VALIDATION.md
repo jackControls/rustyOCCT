@@ -341,6 +341,31 @@ enclosures; neither decides from an unverified float.
   outward to the grid. Rational trigonometry is
   memoized per exact angle.
 * A line-length decision below the rational grid compares exact rationals.
+* Integrals along projections (S8d.2: a meeting's pcurves, by Taylor jets
+  in the binary64 tier only; the rational tier takes none) decide a sign
+  (a loop's winding, a shell's orientation) at a loose absolute width
+  (`1e-6`), then a tight one (`1e-12`), then in a **narrow tier**
+  (`projection::with_narrow`, HANDOFF item 5 (d)): widths `2^-30` of each
+  integrand's own scale (its largest value at eight points, floored at
+  `2^-80`); on a sphere, torus, cylinder or cone face each loop that does
+  not wind, its fins lines or projections, takes `F`'s antiderivative in
+  `v` from its own height (`∮ G(u) du = 0` around it), a cylinder's or
+  cone's mass polynomials built in `v - v0`; the integrands in centred
+  forms (`F` at point jets inside the enclosures plus its exact partials
+  over them times the deviations: the mean value theorem in the algebra of
+  truncated series), a sphere's or torus's mass terms together rather than
+  through the trigonometric basis; a closing chord between enclosed ends
+  the narrower of its closed form and its box. A shallow crossing's lens
+  (a ball `1.05e-7` into a rod's wall, volume `2e-14`) had its flux
+  enclosed `5e-11` wide at the tight tier, a rounding floor: the sphere's
+  integrand from its pole, terms of its size, times the meeting's points'
+  `1.3e-10` along the ruling. Mass properties are integrated again in the
+  narrow tier where a body's integrals run along projections and its
+  volume is not enclosed or is enclosed more widely than `2^-30` of
+  itself, the two enclosures met (each holds the values). A Boolean whose
+  result leaves only shell orientations (and containments) undecided is a
+  `ComputationLimit`; the narrow tier does not reach a spline wall's
+  meeting (`wall_pieces`) or loops with sinusoid or spline pcurves.
 
 On the development machine, the 256-prism invariant suite took 101.9 seconds
 with rational intervals only. With the fast tier it takes 0.19 seconds, and no

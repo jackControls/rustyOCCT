@@ -611,6 +611,29 @@ validator decides a ray against a whole sphere (a cavity in a sphere); a
 result's bounds hold its spheres' boxes. A sphere against a cylinder or
 another sphere is S9d.2's.
 
+A crossing just beyond the resolution leaves a lens thinner than the
+validator's tight enclosures (HANDOFF item 5 (d), REVIEW_NOTES.md's "The
+shallow lens"): a ball of radius 0.75 crossing a rod's wall by `1.4e-7`
+of its radius has a common of volume `2e-14`, whose shell's flux the
+binary64 integrals along the meeting's projections enclosed `5e-11` wide
+(the sphere's Green integrand from its pole, terms of its size cancelling,
+times the meeting's points' `1.3e-10` along the ruling), so it was refused
+from `1e-6` down. The validator's narrow tier decides it
+(`projection::with_narrow`, after the loose and tight tiers): widths
+relative to each integrand's own scale, each loop that does not wind
+integrated from its own height, the integrands in centred forms; a
+body's mass is integrated again in it where its volume is not enclosed
+or is enclosed more widely than `2^-30` of itself, the two enclosures
+met.
+Every operation of the ball and the rod evaluates down to the resolution
+in both frames, each volume and area within the 30-digit reference
+(`tests/shallow_lens_booleans.rs`), and so do a ball by a frustum's wall,
+two rods crossing, balls, a rod and a slab by a torus. A shell whose
+orientation the narrow tier leaves undecided too (a lens on a spline
+wall, whose meeting's integrals it does not reach) is a
+`ComputationLimit` ("a shell's orientation the validator's integrals
+leave undecided"), as an undecided cavity or loop winding is.
+
 ### Spheres against cylinders and spheres (S9d.2a)
 
 Two spheres meet in their radical plane's section, a sphere's own circle

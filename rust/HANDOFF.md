@@ -1115,12 +1115,26 @@ then for the DRAW survey of the turned bodies (branch `s9-draw-19`, over
    beyond S9c's node rule (their edges' extrema hold a ruling tangent to
    a wall only where it ends on an edge), tori and spline walls against anything (their
    tangency rules only), and edges against torus or spline faces. (d)
-   Beyond the resolution a ball crossing a rod's wall now evaluates its
-   fuse and cuts in milliseconds, but its common (a lens thinner than the
-   validator's enclosures) stays refused (`uncertified_shell_orientation`
-   at `1e-6` of the radius) as before; the other procedural curves' jets
-   (meetings over the angle, torus curves) were not measured on shallow
-   loops. Points found in binary64 (a turned frame's quadric's nearest
+   The shallow lens is closed on branch `shallow-lens` (REVIEW_NOTES.md's
+   "The shallow lens"): beyond the resolution a ball crossing a rod's wall
+   evaluates every operation, its common too (refused from `1e-6` of the
+   radius before: the sphere's flux integrated from its pole, the
+   meeting's points `1.3e-10` wide along the ruling, a `5e-11` floor
+   against a flux of `6e-14`), by the validator's narrow tier of the
+   integrals along projections (widths relative to the integrands, a loop
+   integrated from its own height, centred forms; mass integrated again
+   where its volume is wider than `2^-30` of itself), each volume and area
+   within a 30-digit reference down to `1.4e-7`. The other procedural
+   curves' jets on shallow loops (meetings over the angle of cones and
+   cylinders, torus meetings, a spiric section) were measured: none slow,
+   their commons refused by the same floor, evaluating now. Still refused:
+   a lens on a spline wall (S9f.2b's meetings, which the tier does not
+   reach), now `ComputationLimit("a shell's orientation the validator's
+   integrals leave undecided")`; a ball or a rod crossing a torus's outer
+   equator by `1.5e-7` (`ComputationLimit("a torus meeting's trace
+   stalls")`, every operation: the meeting's trace, not the validator); a
+   lens about a sphere's pole evaluates with its volume 25 % wide. No corpus
+   input or DRAW case changes outcome. Points found in binary64 (a turned frame's quadric's nearest
    point, a conic's or another curve's extremum) hold to rounding: a gap
    below `2^-80` on another curve is an incidence, the incidences' rules. No DRAW case has a sphere missing a plane or another sphere within the
    resolution (the survey at `44204e18`, branch `s9-draw-12`), nor an edge
