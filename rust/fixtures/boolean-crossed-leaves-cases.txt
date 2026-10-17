@@ -1,0 +1,195 @@
+case joint_cyl_fuse 1e-07
+op 91
+brep imported/crossed_joint.brep
+boolean fuse 93
+op 92
+brep imported/cyl.brep
+end
+case joint_cyl_cut 1e-07
+op 91
+brep imported/crossed_joint.brep
+boolean cut 93
+op 92
+brep imported/cyl.brep
+end
+case joint_cyl_common 1e-07
+op 91
+brep imported/crossed_joint.brep
+boolean common 93
+op 92
+brep imported/cyl.brep
+end
+case chain_waist_fuse 1e-07
+op 91
+brep imported/crossed_waist.brep
+boolean cut 93
+op 92
+frame -2.0 1.0 0.25 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -0.5 2.5
+boundary C 3.375 0.875 0.5
+then fuse 95
+op 94
+frame -2.0 1.0 0.25 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 1.0 2.0
+boundary P 4 2.75 -0.25 6.25 -0.25 6.25 1.25 2.75 1.25
+end
+case chain_waist_cut 1e-07
+op 91
+brep imported/crossed_waist.brep
+boolean cut 93
+op 92
+frame -2.0 1.0 0.25 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -0.5 2.5
+boundary C 3.375 0.875 0.5
+then cut 95
+op 94
+frame -2.0 1.0 0.25 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 1.0 2.0
+boundary P 4 2.75 -0.25 6.25 -0.25 6.25 1.25 2.75 1.25
+end
+case chain_waist_common 1e-07
+op 91
+brep imported/crossed_waist.brep
+boolean cut 93
+op 92
+frame -2.0 1.0 0.25 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -0.5 2.5
+boundary C 3.375 0.875 0.5
+then common 95
+op 94
+frame -2.0 1.0 0.25 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 1.0 2.0
+boundary P 4 2.75 -0.25 6.25 -0.25 6.25 1.25 2.75 1.25
+end
+case joint_rod_fuse 1e-07
+op 91
+brep imported/crossed_joint.brep
+boolean fuse 93
+op 92
+frame 5.25 1.625 0.5 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -0.5 2.5
+boundary C 1.0 0.25 0.5
+end
+case joint_rod_cut 1e-07
+op 91
+brep imported/crossed_joint.brep
+boolean cut 93
+op 92
+frame 5.25 1.625 0.5 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -0.5 2.5
+boundary C 1.0 0.25 0.5
+end
+case joint_rod_common 1e-07
+op 91
+brep imported/crossed_joint.brep
+boolean common 93
+op 92
+frame 5.25 1.625 0.5 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -0.5 2.5
+boundary C 1.0 0.25 0.5
+end
+case joint_arc_fuse 1e-07
+op 91
+brep imported/crossed_joint.brep
+boolean fuse 93
+op 92
+frame 5.25 1.625 0.5 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -0.5 2.5
+boundary C -0.625 0.875 0.5
+end
+case joint_arc_cut 1e-07
+op 91
+brep imported/crossed_joint.brep
+boolean cut 93
+op 92
+frame 5.25 1.625 0.5 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -0.5 2.5
+boundary C -0.625 0.875 0.5
+end
+case joint_arc_common 1e-07
+op 91
+brep imported/crossed_joint.brep
+boolean common 93
+op 92
+frame 5.25 1.625 0.5 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -0.5 2.5
+boundary C -0.625 0.875 0.5
+end
+case waist_rod_fuse 1e-07
+op 91
+brep imported/crossed_waist.brep
+boolean fuse 93
+op 92
+frame -2.0 1.0 0.25 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -0.5 2.5
+boundary C 4.625 -0.875 0.75
+end
+case waist_rod_cut 1e-07
+op 91
+brep imported/crossed_waist.brep
+boolean cut 93
+op 92
+frame -2.0 1.0 0.25 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -0.5 2.5
+boundary C 4.625 -0.875 0.75
+end
+case waist_rod_common 1e-07
+op 91
+brep imported/crossed_waist.brep
+boolean common 93
+op 92
+frame -2.0 1.0 0.25 0.0 0.0 1.0 1.0 0.0 0.0
+offsets -0.5 2.5
+boundary C 4.625 -0.875 0.75
+end
+case rod_joint_fuse 1e-07
+op 91
+frame 5.25 1.625 0.5 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.5 1.0
+boundary C 0.25 2.5 1.0
+boolean fuse 93
+op 92
+brep imported/crossed_joint.brep
+end
+case rod_joint_cut 1e-07
+op 91
+frame 5.25 1.625 0.5 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.5 1.0
+boundary C 0.25 2.5 1.0
+boolean cut 93
+op 92
+brep imported/crossed_joint.brep
+end
+case rod_joint_common 1e-07
+op 91
+frame 5.25 1.625 0.5 0.0 0.0 1.0 1.0 0.0 0.0
+offsets 0.5 1.0
+boundary C 0.25 2.5 1.0
+boolean common 93
+op 92
+brep imported/crossed_joint.brep
+end
+case joint_touch_fuse 1e-07
+op 91
+brep imported/crossed_joint.brep
+boolean fuse 93
+op 92
+frame 7.75 1.625 3.0 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 1.0 -1.5707963267948966 1.5707963267948966
+end
+case joint_touch_cut 1e-07
+op 91
+brep imported/crossed_joint.brep
+boolean cut 93
+op 92
+frame 7.75 1.625 3.0 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 1.0 -1.5707963267948966 1.5707963267948966
+end
+case joint_touch_common 1e-07
+op 91
+brep imported/crossed_joint.brep
+boolean common 93
+op 92
+frame 7.75 1.625 3.0 0.0 0.0 1.0 1.0 0.0 0.0
+sphere 1.0 -1.5707963267948966 1.5707963267948966
+end

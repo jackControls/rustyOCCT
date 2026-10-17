@@ -15024,6 +15024,68 @@ Decisions for S9, recorded before its code (2026-09-28):
     the degenerate refused, histories over the stored ids, deterministic,
     moved rigidly, the fuzz input's body), and a DRAW trial of the restore
     cases.
+  * **S9e.4b.4b.2b.2b.3b evidence (2026-10-17).** Two bodies OCCT wrote
+    (`boolean-crossed-leaves-bodies.txt`, `write` blocks of the plate's rows,
+    a `boolean fuse` row and the slab's, written by
+    `compare_crossed_leaves_boolean.py --write-bodies` to
+    `rust/fixtures/imported/crossed_*.brep`), each one fuse of a stadium
+    plate and a stadium slab on crossing axes, every section a circle or a
+    line: `joint` (the plate of half discs of radius 2 about `(0, 0)` and
+    `(4, 0)` over `[0, 3/2]` on the world's axes about `(21/4, 13/8, 1/2)`,
+    the slab normal to the world's `x` over the plate's `x` in `[-1/4,
+    3/4]`, its half discs of radius 2 about the plate's `(y, z) = (-1, 3/4)`
+    and `(3, 3/4)`: the measured body moved, the plate's line-arc joints at
+    `x = 0` hidden in the slab, both plate caps two faces each) and `waist`
+    (the plate of length 8 about `(-2, 1, 1/4)`, the same slab over its `x`
+    in `[3, 4]`: its line walls each one line through the slab). Before the
+    step both import as no chain matching (each chain taking the plate's
+    pieces apart). `generate_crossed_leaves_boolean_fixtures.py --check`:
+    21 cases of 7 groups (18 solid, 3 `degenerate`; 15 of class `pieces`, 3
+    `both`, 3 `chain`): `joint_rod` (an upright rod across the slab's cap `x
+    = 3/4` and the plate's right piece), `joint_arc` (across the cap `x =
+    -1/4` and the arc piece), `waist_rod` (across the cap `x = 4`),
+    `rod_joint` (an upright rod less the joint, across both slab caps, the
+    plate's wall `y = 2` and its arc, between the plate's caps: the cut two
+    solids), `joint_cyl` (the joint and S9e.4a's imported cylinder `cyl`
+    across the plate's wall and the slab), `chain_waist` (the waist less an
+    upright rod across the cap `x = 3`, then with a box across the plate's
+    right piece and the rod's hole), and declared `degenerate` `joint_touch`
+    (a ball of radius 1 resting on the plate's top at its `(5/2, 0)`,
+    exactly: `Degenerate("a tangency between the inputs (S9c)")`). The
+    reference is S9e.3a's chained reference on the constructions OCCT was
+    given (each body its plate fused with its slab), with S9e.4b.3c.3a's
+    checks relative to the case's size: the two families within 6.1e-34,
+    each solid's closed form 4.6e-41, each body's closed form 2.7e-37 (the
+    joint `3/2 (16 + 4 pi) - 3/2 (3 + sqrt 63 / 16 + 4 asin(1/8)) + 16 + 4
+    pi`, the waist `3/2 (32 + 4 pi) - 6 + 16 + 4 pi`), the pair identities
+    5.7e-42 and the area identity 1.8e-40, Monte Carlo 2.6 standard errors
+    (100,000 points a group), quadrature estimates 1.6e-32, every meeting's
+    sine at least 0.48 and events at least 1.8e-4 of their range apart
+    outside the declared group, solid counts by rays at two resolutions; the
+    declared group's checks kept apart within 1.6e-36. Every file read
+    independently (`stored_records`): its curved faces cylinders, every
+    stored vertex on the constructions' surfaces (within 0 of the size at
+    the reference's precision). `test_crossed_leaves_boolean_reference.py`
+    checks each body's closed form against quadratures of its sections, the
+    chained reference on the waist against its closed form, every part's
+    place (the frames' axes, the slab's range along the plate's `x` and its
+    section covering the plate's by 1/4, the joint's slab across the joints
+    at `x = 0`), the partners' places, the declared ball, the case list and
+    its protocol rows and the files apart from every earlier set's. The
+    generator's check is a CI group of its own (`crossed-leaves`,
+    26.6 minutes on four workers locally under Python 3.9 at load 50 to 110,
+    beside the next step's check, 15.4 under 3.12); Python 3.9 and 3.12 write
+    the same files.
+    Corrections from the evidence, amending the refined decisions' plan
+    (9): (a) the plates stand on the world's axes, not on frames whose
+    normal is `(0, 3, 4) / 5`: there the slab's in-plane axes are rounded
+    and its stadium's joints lie a rounding apart from its arcs' extremes
+    along the reference's chords, each event counted twice, `1e-18` of
+    their range apart; (b) the joint's rod first stood across the slab's
+    lower lobe's extreme `y = 1` (a meeting's sine 0.011) and the joint
+    first stood about `(3, 9/2, 1/2)`, where `cyl` cut it in eight. The
+    kernel's draft of the step's code on the two bodies: both import (their
+    volumes the closed forms within 1e-12).
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces
