@@ -349,7 +349,10 @@ pub struct Policy {
 
 * **T1. One resolution per body.** `Tolerance` is fixed at construction and
   stored on the body. Operations on bodies with different resolutions are an
-  error until an explicit, documented combination rule exists.
+  error until an explicit, documented combination rule exists. The
+  Booleans' rule (2026-10-17, `BOOLEAN.md`'s contract): the inputs'
+  coarser resolution, whatever their order, for every decision and the
+  result.
 * **T2. Enclosures are data.** Each vertex carries a radius bound; each edge a
   bound on the distance between its curve and every use's pcurve image; each
   face a bound on its uses' closure gaps. They are computed with the certified

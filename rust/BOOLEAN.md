@@ -122,6 +122,22 @@ prism's exact queries; any other is a general body built through
   solid twice, or a result and an input whose entities it keeps), which
   the history could not tell apart.
 
+A Boolean works at one resolution, its inputs' coarser (the larger linear
+and the larger angular value, `Tolerance::coarser`), whatever their order:
+every decision within the resolution (S9a's arrangement, S9a.2's slabs,
+the polyhedral and curved engines' near misses and incidences, every
+model of the curved engine, a given result's leaves among them, once each
+model is built at its own input's), the result's validation and its
+stored resolution. An input returned whole (a cut missing its object, a
+fuse of disjoint inputs) is that body, at its own. A result's continued
+entities take their parents' enclosures where larger (an imported body's
+are its file's tolerance), each within its input's resolution and so
+within the result's (REVIEW_NOTES.md, "A Boolean's resolution": before
+the rule a result took its object's, and an imported tool's kept entities
+left it invalid at its own). OCCT's results likewise keep tolerances at
+least their inputs' (`BOPTools_AlgoTools::MakeNewVertex` takes the larger
+of two entities' tolerances).
+
 ### Prisms in one frame (S9a)
 
 Two prisms whose frames have bitwise-equal axes and whose origins differ by
@@ -4755,7 +4771,8 @@ campaign of every target the steps touch.
   moved inputs keeping the reference's volumes, each solid group's six
   Booleans consistent (both orders of the fuse and the common, each cut and
   the common summing to its input; every result valid at the larger
-  inputs' resolution), every body its plate and slab, the fuzz target's
+  inputs' resolution, since "A Boolean's resolution" its own), every body
+  its plate and slab, the fuzz target's
   measured body and the slab across a plate's middle written, read back and
   imported (their Booleans with a box turned off every axis the kernel's own
   results'), a plate two slabs split refused as before.

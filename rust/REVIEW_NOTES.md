@@ -15469,6 +15469,80 @@ Decisions for S9, recorded before its code (2026-09-28):
     determinism; then the reach (an instrumented build's outcomes before
     and after over the boolean and split corpora and their regressions,
     the fixtures, and the DRAW trial over the restore cases).
+  * **A Boolean's resolution, done (2026-10-17; branch
+    `fix-result-resolution` from `37949a87`).** *The defect and its
+    cause* as the decision above: the result took its object's resolution
+    and an imported tool's kept entities' enclosures were raised past it
+    after the result's validation. *The fix*, as decided:
+    `Tolerance::coarser` (the larger linear and angular values); S9a's
+    arrangement and result profiles (`profile::boolean::boolean`, the
+    fuse's shared arrangement in `solid/boolean.rs`), S9a.2's
+    `Stack::tolerance` and `Polyhedron::tolerance` at the inputs' coarser,
+    so every decision, the validation and the stored resolution of a stack,
+    polyhedral, curved or imported result follow; the curved engine's two
+    models take it once built (`Prism::set_resolution`, through a given
+    result's leaves, `Given::set_resolution`), each still built at its own
+    input's (its arcs snapped, a given result re-run, a piece's hull); a
+    debug assertion in `finish` that every raised enclosure stays within
+    the result's resolution. No history or id rule changes. *Tests*
+    (`tests/resolution_booleans.rs`): 18 imported bodies of several
+    primitives (resolutions `1e-7` to `3e-3`: the crossed, stack, nested,
+    rim and flush leaves, spheres' wedges and zones, a tilted skew box at
+    `1e-3`, two turned bodies at `3e-3`) against a box at `1e-7` over most
+    of each body's bounds, both orders and all three operations: each
+    result valid at its own resolution, the coarser one, the orders'
+    commons and fuses within each other's enclosures, every history
+    complete over the inputs' ids, results deterministic (history, ids and
+    vertex bits run twice), and each outcome's history and result ids
+    those the kernel gave before the rule
+    (`fixtures/boolean-resolution-histories.tsv`, written by `37949a87`'s
+    kernel; vertex bits left out of the pinned digests, which differ by an
+    ulp under glibc's `hypot` for `zone_wedge`); on `37949a87` the test
+    fails every tool order on the resolution, and 16 of the 18 bodies'
+    commons or fuses are invalid at it (all but the two turned bodies,
+    whose kept entities are their model's); kernel prisms at `1e-7` and `1e-5` on
+    each engine (one frame, a stack, turned, an arc) at `1e-5` both ways
+    and valid there, the orders alike, a cut missing its object returning
+    it at its own; a prism's top `4e-6` above another's in one frame
+    refused as a slab thinner than the resolution both ways (before: the
+    finer object first took it). `consistent_at` is gone:
+    `tests/support/turned_consistency.rs`'s `consistent` now checks each
+    of the six results at its own resolution and that resolution the
+    inputs' coarser (an input returned whole its own), which the crossed
+    and inside-first leaves' groups (and the turned partners) pass. Under
+    the emulated glibc `hypot` with debug assertions and overflow checks
+    the new file passes (217 s at load 20 to 45) and both groups' tests
+    (414 s and 35 s). *Reach*, measured by instrumented scratch builds of
+    `37949a87` and the branch (a line per Boolean: its inputs' body ids and
+    resolutions, its error or each result's resolution, validity at it
+    where the inputs' differ, and a digest of its history, result ids and
+    vertex bits): the boolean corpus and its regressions (1,482 inputs,
+    8,946 Booleans) and the split corpus and its regressions (3,571
+    inputs, 5,662 Booleans), replayed with debug assertions: no Boolean
+    with inputs of two resolutions, every outcome alike, none failing. The
+    release suite (all fixtures; the scratch copies without the dataset's
+    corpus files, whose three readers' tests fail there alike): 12,235
+    Booleans, 1,503 of two resolutions (imported bodies against
+    constructions, chained results); before, 105 results invalid at their
+    own resolution (101 commons and fuses in the tool's order, as the probe
+    found, and 4 Booleans on such a result given on, which kept its
+    imported entities past its object's resolution) and 85 refused;
+    after, every result valid at its own, the same 85 refused with the
+    same errors, every outcome's digest alike (6 chained Booleans see a
+    given result's coarser resolution, their outcomes alike). So no
+    documented count or comparison moves. The DRAW trial of the restore
+    cases (`UPSTREAM_TESTS.md`'s "A Boolean's resolution"): 2,378 cases,
+    every status, reason and error the base worker's, 13 cases with a
+    Boolean of two resolutions (9 refused alike, 4 evaluating alike),
+    nothing registered; the full contract run holds for all 1,132 cases.
+    *Checks*: fmt, clippy (release, all targets, `-D
+    warnings`), the 1.85 check, the release suite (832 tests, 5 ignored);
+    all 55 comparisons of HANDOFF's table with their documented counts and
+    0 failures on the pinned SDK, `compare_split.py` 72 / 56,
+    `compare_brep.py --family spline` 10 / 3, `compare_brep_io.py` 6,835 /
+    7; the boolean corpus and its regressions (1,482 inputs) and the split
+    corpus and its regressions (3,571) replayed with debug assertions, none
+    failing and none over 30 s, at load 20 to 45.
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces
