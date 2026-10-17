@@ -20585,6 +20585,12 @@ Decisions for S9, recorded before its code (2026-09-28):
   is a `ComputationLimit` (no corpus input or DRAW case reaches one); the
   rod crossing a torus's inner equator that runs on in the torus meeting's
   verification; the shallow crossing's common ((d)).
+  (The torus meeting's run fixed since: "A torus meeting's verification
+  budget, done"; the shallow crossing's common: "The shallow lens, done".)
+  Merged and verified at `75b925ae` (`rust-kernel`, with the shallow lens,
+  the import long tail and a Boolean's resolution); campaigns there (600 s
+  each, sampled replays, every switch on): `boolean` clean, 259 runs, the
+  slowest input 43 s on a loaded host; `split` clean, 1,513 runs.
 
 * **CI budget (U6).** Per-push fuzz runs replay a bounded sample plus every
   regression and new seed; the daily schedule replays everything; the heavy
