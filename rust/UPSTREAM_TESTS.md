@@ -2570,6 +2570,28 @@ dataset's `bug23400_thinring` deciding two knots C1 by the rational test
 (refused still, `pcurve_off_edge`). No case crashes or panics on either
 backend.
 
+**The shallow lens: a trial of the Boolean group and the restore cases.**
+The validator's narrow tier (REVIEW_NOTES.md's "The shallow lens": the
+integrals along projections relative to their integrands, a loop from its
+own height, centred forms; a body's mass integrated again where its
+volume is not enclosed or wider than `2^-30` of itself; an orientation
+undecided in every tier a `ComputationLimit`) can reach any Boolean's
+result, so the trial ran an instrumented debug worker (not committed: a
+line each time a sign or a mass reaches the narrow tier or the new
+refusal, and every Boolean's outcome with its solids' volumes, areas and
+centres) and the base's worker (`5a7acb4c`) with the same outcome lines,
+on the Rust adapter over the 1,802 self-contained cases and 2,375 cases
+restoring a shape (the 192 restore-only cases and every case restoring a
+shape that calls `bfuse`, `bcut`, `bcommon`, `btuc` or `bop` as a word, a
+superset of the 1,814), the public dataset, 120 seconds a case, four at
+once, on a host at load 30 to 40 (2026-10-17). No case reaches the narrow
+tier or the new refusal, and every case's status, reason and Boolean
+outcomes (each volume, area and centre bit for bit) are the base worker's:
+of the 1,802, 987 evaluating and 815 refused or unsupported, as at
+`s9-draw-19`; of the restore cases the four first-restore timeouts
+(`buc60531_1`, `_2`, `bug23849_1`, `_3`) as before. No case newly
+evaluates, so none is audited or registered, and the ledger holds.
+
 Three more `intss` cases run on the Rust adapter but are not registered,
 because the contract admits no failing status: `bug23178`, `bug28222_2` and
 `bug28222_3` count the pieces IntPatch splits its walking lines into (6, 4
