@@ -2640,6 +2640,45 @@ directory, at load 30 to 55) holds for all 1,132 cases (Rust: 18 pass,
 case 21.2 seconds (the derived `boolean_polyhedra`), the slowest original
 17.9 (`bfuse_complex/B6`); `--ledger` holds.
 
+**A Boolean's resolution: a trial of the restore cases.** A Boolean now
+works and returns its result at its inputs' coarser resolution whatever
+their order (REVIEW_NOTES.md's "A Boolean's resolution"), which moves
+only Booleans whose inputs' resolutions differ: an imported body (its
+file's tolerance) against an adapter-built one (`1e-7`). The base's
+worker (`37949a87`) and this branch's, both instrumented (not committed:
+a line per Boolean with its inputs' resolutions, its error or each
+result's resolution, its validity at that resolution where the inputs'
+differ and a digest of its history, result ids and vertex bits), on the
+Rust adapter, and native DRAW, over 2,378 cases (every case restoring a
+shape and naming `bfuse`, `bcut`, `bcommon`, `btuc`, `bop` or a `bop*`
+command anywhere, `catch` forms among them, and the restore-only cases),
+the public dataset, 120 seconds a case, four at once at load 20 to 45
+(2026-10-17). Every status, reason and error is the base worker's field
+for field (Rust: 1,067 unsupported, 927 private data, 310 failed by the
+reader's validator, 60 viewer-skipped, 2 pass, 3 unverified, 1 known
+failure, 8 timing out at their first restores on both workers, none
+reaching a Boolean; native: 736 unsupported, 952 private data, 631
+viewer-skipped, 23 known failures, 17 unverified, 15 pass, 4 failed), and
+the 62 registered cases among them keep their manifest statuses on both
+backends. 175 cases run a Boolean (178 Booleans); 13 cases give a Boolean
+inputs of two resolutions (`bcut_complex/F8`, `G9`, `I4`,
+`bfuse_complex/H9`, `K1`, `N9`, `bugs/modalg_2/bug417`, `bug4993_1`,
+`_2`, `modalg_6/bug21427`, `bug28773`, `modalg_7/bug27948`,
+`bug29807_b1`): 9 refused before and after with the same error, 4
+evaluating with the same history, ids and vertices, each valid at its
+own resolution before and after: `bfuse_complex/N9` and `bug21427` an
+imported object, at its resolution as before; `bcut_complex/G9` and
+`bug417` a cut by an imported tool at `5.89e-7` (whose entities a cut
+only touches), at `1e-7` before and at the tool's now. No
+case moves and none is registered (1,132 cases). Of the timeouts,
+`buc60532_1` and `_2` end unsupported at their restores in 101 to 106
+seconds alone (`_2` at 120 once on this branch's worker, its restore
+alone), `buc60532` and `bug23585` time out at their restores alone on
+both workers. A full contract run of the manifest on both backends with
+the dataset (30 seconds a case) holds for all 1,132 cases (Rust: 18
+pass, 1,050 viewer-skipped, 53 unsupported, 11 private data); `--ledger`
+holds.
+
 Three more `intss` cases run on the Rust adapter but are not registered,
 because the contract admits no failing status: `bug23178`, `bug28222_2` and
 `bug28222_3` count the pieces IntPatch splits its walking lines into (6, 4

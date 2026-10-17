@@ -604,6 +604,14 @@ impl Given {
         self.solid.map(|k| (self.solids.as_slice(), k))
     }
 
+    /// The Boolean's resolution on the first Boolean's inputs' models,
+    /// through every level (`Prism::set_resolution`).
+    pub(super) fn set_resolution(&mut self, tolerance: crate::Tolerance) {
+        for leaf in &mut self.leaves {
+            leaf.set_resolution(tolerance);
+        }
+    }
+
     /// A model face's primitive model and its face: its input's, down
     /// through every given level (S9e.3a).
     pub(super) fn view(&self, fi: usize) -> (&Prism, usize) {

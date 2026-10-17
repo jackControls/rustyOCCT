@@ -67,8 +67,9 @@ pub(crate) struct Stack {
 }
 
 impl Stack {
+    /// The stack's resolution: its profiles' coarser, whatever their order.
     pub(crate) fn tolerance(&self) -> Tolerance {
-        self.a.tolerance()
+        self.a.tolerance().coarser(self.b.tolerance())
     }
 
     /// The same component of the same stack in another frame, its ids

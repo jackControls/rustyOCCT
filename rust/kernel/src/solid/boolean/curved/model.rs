@@ -872,6 +872,16 @@ impl Prism {
         }
     }
 
+    /// The Boolean's resolution on the model and, through every given
+    /// level, on the models its faces are viewed on (`view`): set once the
+    /// model is built at its own input's.
+    pub(super) fn set_resolution(&mut self, tolerance: crate::Tolerance) {
+        self.tolerance = tolerance;
+        if let Some(g) = &mut self.given {
+            g.set_resolution(tolerance);
+        }
+    }
+
     /// Whether a face runs against its primitive model's face (`view`): a
     /// given result's face reversed through its levels (S9e.3a).
     pub(super) fn reversed(&self, fi: usize) -> bool {

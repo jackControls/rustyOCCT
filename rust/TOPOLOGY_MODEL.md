@@ -70,7 +70,10 @@ violates it without re-deriving the reasoning.
   orientation states.
 * **D7. One resolution per body, computed enclosures.** Contract 5 of the
   identity guide. Imported tolerant entities become enclosures with
-  provenance `Imported`. *Forbids:* a global session precision, growing a
+  provenance `Imported`. An operation of two bodies works and returns its
+  result at their coarser resolution, whatever their order (the Booleans:
+  `BOOLEAN.md`'s contract, decided 2026-10-17); an input it returns whole
+  keeps its own. *Forbids:* a global session precision, growing a
   tolerance to make a step succeed.
 * **D8. No instancing inside bodies.** A placed copy is a new body with its
   own ids related by `Modified`. Assemblies are a later layer. *Forbids:*

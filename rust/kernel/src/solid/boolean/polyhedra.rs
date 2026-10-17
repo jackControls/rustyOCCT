@@ -152,8 +152,10 @@ pub(super) struct Component {
 }
 
 impl Polyhedron {
+    /// The Boolean's resolution: its inputs' coarser, whatever their order
+    /// (the result's, its validation's and every decision's).
     pub(crate) fn tolerance(&self) -> Tolerance {
-        self.a.resolution()
+        self.a.resolution().coarser(self.b.resolution())
     }
 
     /// The same solid built again from its inputs.

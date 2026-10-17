@@ -705,10 +705,12 @@ pub(crate) struct Arranged {
 }
 
 /// The Boolean of two profiles in one frame: its result profiles with their
-/// provenance, in a deterministic order (by their first segment's origin).
+/// provenance, in a deterministic order (by their first segment's origin),
+/// at the profiles' coarser resolution.
 pub(crate) fn boolean(a: &Profile, b: &Profile, op: Op2) -> Result<Boolean2> {
-    let arranged = arrange(&[a], &[b], a.tolerance())?;
-    select_trace(&arranged, op, false, true, a.tolerance())
+    let tolerance = a.tolerance().coarser(b.tolerance());
+    let arranged = arrange(&[a], &[b], tolerance)?;
+    select_trace(&arranged, op, false, true, tolerance)
 }
 
 /// A piece's class against the other set (S9a.2).

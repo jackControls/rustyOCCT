@@ -419,7 +419,7 @@ impl Solid {
                     // boundary coming from one input alone is not: the
                     // other may fill that one's hole).
                     // One arrangement serves every selection.
-                    let tolerance = pa.tolerance();
+                    let tolerance = pa.tolerance().coarser(pb.tolerance());
                     let arranged = arrange(&[pa], &[&pb], tolerance)?;
                     let select =
                         |op: Op2, swap: bool| select_trace(&arranged, op, swap, true, tolerance);
@@ -995,6 +995,13 @@ impl Solid {
                     .filter_map(|p| inputs.iter().find_map(|s| s.topology.enclosure_bound(*p)))
                     .reduce(f64::max)
             });
+            // Validated before the raise; the raised bounds stay within the
+            // result's resolution, each parent's within its input's and no
+            // input's coarser than the result's (its inputs' coarser).
+            debug_assert!(
+                enclosures_within(&topology, solid.resolution().linear()),
+                "a Boolean's raised enclosure past its result's resolution"
+            );
             solid.topology = topology;
             solid.operation = operation;
         }
@@ -1079,6 +1086,15 @@ fn results_alias(
         }
     }
     out
+}
+
+/// Every vertex's, fin's and face's enclosure at most `resolution`
+/// (`enclosure_exceeds_resolution` of none).
+fn enclosures_within(t: &Topology, resolution: f64) -> bool {
+    let ok = |e: &Option<crate::topology::Enclosure>| e.is_none_or(|e| e.bound <= resolution);
+    t.vertices().iter().all(|v| ok(&v.enclosure))
+        && t.fins().iter().all(|f| ok(&f.enclosure))
+        && t.faces().iter().all(|f| ok(&f.enclosure))
 }
 
 fn debug_check(inputs: &[&Solid], outputs: &[&Solid], history: &History) {
