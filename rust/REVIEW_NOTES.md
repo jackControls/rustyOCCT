@@ -19636,6 +19636,138 @@ Decisions for S9, recorded before its code (2026-09-28):
     twice it: certified apart), U1's and Y5's box, and every earlier
     near-miss test file evaluating as before.
 
+* **Faces with no near-miss rule of their own, done (2026-10-17; the
+  refined note above, HANDOFF's item 5 (c)).** Evidence
+  (`tests/face_near_miss_booleans.rs`, before the code, `070bcb5d`): at
+  `5f50b30c`, of 216 misses within the resolution (`1e-12`, `1e-11` and
+  `1e-9` in a level frame, one turned about z and one tilted; `5e-8` and
+  `9e-8` for a rod and a plane by a torus beyond its node rule's band) 200
+  evaluated in every operation, each fused into two solids with an empty
+  common and cut to each input whole: two rods crossing, a rod across a
+  cone's wall, frusta by a cone's and a rod's walls, rods and a box's face
+  along a rod's ruling, balls by a torus's equator and on its top, a
+  frustum and a second torus by it, a ball and a rod in its hole, a rod
+  and a plane by it at `5e-8` and `9e-8` (level), rods across and along a
+  spline wall, a ball, frusta across and along it, a slab on its crest's
+  tangent plane (level), a second spline wall along it, and a box's edge
+  and a cube's corner by a torus and by a spline wall. The 16 others were
+  refused by the faces' own rules: in the tilted frame the box along the
+  rod and the frustum by the rod ("a plane within rounding of a cylinder's
+  direction": a face holding the other's axis but for rounding), the slab
+  ("a plane within rounding of a spline wall's axis") and the torus by the
+  torus at `1e-12` and `1e-11` ("a torus meeting's turning point not
+  covered"); in the turned and tilted frames the rod and the plane by the
+  torus at `5e-8` and `9e-8` (the near-node rule, "a tangency between the
+  inputs (S9c)"). The crossings that deep were refused by later rules,
+  `ComputationLimit`s of the validator's windings and orientations,
+  evaluated (the rods' common at `-1e-9` a solid of `2e-18`) or ran on:
+  a ball crossing the spline wall by `1e-12` in the tilted frame did not
+  finish its fuse within 10 minutes, in the validator's integrals along
+  the wall's meeting (`wall_meet`'s jets, as the shallow crossing's
+  before), and is refused now before them. Kernel (`curved/near.rs`, after
+  `edges_and_vertices` in `graph.rs`):
+  - **Face pairs** (`face_pairs`, `face_pair`): the pairs as refined, `P`
+    the face of higher rank; the overlap of the faces' boxes passed over
+    where `Q`'s distance over it, bounded in binary64 from the box's
+    corners (a plane's offsets, a sphere's centre's distances, the local
+    coordinates' box of a cylinder, a cone or a torus), lies beyond twice
+    the resolution (`box_apart`); else a grid over `P`'s parameters there
+    (`grid_of`: 32 cells an angle's turn, heights and runs in cells of the
+    angle's cells' length, at most 32), passed over where every node is
+    beyond twice the resolution by its cell's movement bound or outside the
+    box; seeds the nodes least or greatest among their neighbours, Newton's
+    method on forward jets (`J`, value, gradient and Hessian in two
+    parameters, over `f64` or binary64 intervals, `Iv`; a step halved until
+    the gradient shrinks) to critical points within twice the resolution,
+    at most eight a pair; `contact_of` their kind by the Hessian in `P`'s
+    tangent metric; `decide` at exact points (`patch_point`, `field_foot`
+    through `Quad`'s feet, `sphere_toward` on a sphere): a gap of rounding's
+    size, a point outside its face or on `Q` no contact, the side against
+    the kind, the gap's membership; a curve of contact walked for a point
+    in both faces (`along_curve`) and decided once.
+  - **Beyond the resolution** (`certified_apart`): Krawczyk's operator over
+    a box of about `1e-5` in length either way of the critical point, both
+    parameters for a point, the transverse one for a curve whose null
+    direction is a parameter's (its other parameter the grid's whole range
+    as an interval: parallel axes, a plane or a spline wall along a ruling),
+    the mean-value bound against `res / (1 - g)` (`frame_defect`). `Q`'s
+    distance is taken in `Q`'s coordinates composed exactly with `P`'s frame
+    (`Field`'s `y = t + a l`), so that a coordinate along `P`'s ruling enters
+    through its coefficient alone. A cone's ruling, a torus's coaxial circle
+    and a spline wall as `Q` are not reached by the bound (the interval
+    dependency over the whole curve): `ComputationLimit` there, as the
+    refined note left.
+  - **Edges and vertices against tori and spline walls**
+    (`curved_edges_and_vertices`): `Quad` holds a torus (its quartic, its
+    gradient, a rational point at the binary64 foot's half-angle tangents)
+    and a spline wall (its outward offset at a rational run parameter near
+    the binary64 nearest profile point, `near_run`, `profile_distance`;
+    the outward normal there) with signed distances as their binary64
+    functions; `edge_faces` and `vertex_faces` run again for those faces
+    only (`edge_faces_with`, `vertex_faces_with`; a line's extrema over its
+    edge, `line_extrema`; an apex left to `apex_face`), after the earlier
+    rules, so that no earlier reason moves.
+  Every miss of the evidence refused with the new reasons ("a cylinder's
+  or cone's wall within the resolution of tangency to the other input's
+  (S9c)", "a torus within the resolution of tangency to the other input's
+  surface (S9d.4)", "a spline wall within the resolution of tangency to the
+  other input's surface (S9f)", the edge and vertex rules' for edges and
+  corners) or, where the faces' own rule holds it, that rule's (the 16
+  above but the tilted box and frustum by the rod, whose wall pair is now
+  refused first, and the slab and torus pair as before); every crossing
+  that deep refused; at `1e-6` every operation evaluates; at `1.5e-7`
+  (beyond the resolution, within twice it) certified apart at a point and
+  along a cylinder's, a plane's or a spline wall's ruling, a
+  `ComputationLimit` along a cone's ruling, a torus's coaxial circle and two
+  spline walls' generatrix; the controls as before (a ball and rods
+  touching exactly, pairs `0.1` apart, U1's box and Y5's kind). Two
+  configurations of the base's tests lay within the resolution: the shallow
+  lens's rod of radius 0.5 across a rod (`7.5e-8` deep) and across a spline
+  wall (`7e-8`), whose lenses evaluated and were a `ComputationLimit`; a
+  crossing within the resolution is the rule's, so their depths are now
+  `1.5e-7` and `1.4e-7` (twice the fraction of the radius), beyond it as
+  the tests meant, and they pass as before. Unit tests:
+  `face_jets_hold_their_differences` (every patch against every field,
+  forward jets against central differences, interval jets holding them)
+  and `face_pairs_decide_about_the_resolution` (two rods `0.9`, `1.5` and
+  `1 + 1e-14` resolutions apart: `Degenerate`, apart, `ComputationLimit`).
+  The new tests take 20 to 32 s in release on a host at load 20 to 45 (the
+  longest test 19 s alone), 19 s with debug assertions and overflow checks
+  under the emulated glibc `hypot`, where they pass with the five earlier
+  near-miss test files, `sphere_field_booleans` and `near.rs`'s unit tests
+  (the rod across the rod and the rod across the cone's wall were turned
+  off their frames' axes for that: under glibc's `hypot` a cap held the
+  other's axis but for rounding, "a plane within rounding of a cylinder's
+  direction" at `1e-6`). Found on the way, pre-existing: a rod crossing a
+  torus's inner equator by `1e-9` in the tilted frame (a rod of radius `2 +
+  1e-9` about the torus's axis, its frame normalized again) does not finish
+  within 25 minutes at `5f50b30c`, in the torus meeting's verification
+  (`torus_quadric`, `torus_far`, `ToricCrv::verified`, `Graded::clear`'s
+  subdivision), before any near-miss rule; the evidence leaves that
+  crossing out (open).
+  Fuzz corpus (an instrumented release build, not committed, over the
+  boolean corpus's 1,444 inputs and the 38 regressions, each run with the
+  rules and with `NM_OFF`, their refusals logged and let go on, every
+  Boolean's outcome printed): 972 inputs reach a face pair's grid (18,270
+  pairs of a cylinder and a plane, 2,254 of a torus and a plane, 1,264 of a
+  cone and a plane, 1,044 of a torus and a cylinder, 849 each of a spline
+  wall and a plane and of two cylinders, and fewer of the others); 69
+  inputs (one regression, `ed5e02c5`, the kept tangency of a round wall on
+  a box's face) hold critical points within twice the resolution (805 of a
+  cylinder and a plane along a ruling, 28 of two cylinders, 16 of a spline
+  wall and a sphere), 151 decided at exact points, every gap of rounding's
+  size (`0` to `1.9e-16`, below `rho`), so none is a contact; 159 inputs
+  hold a vertex in a torus's or a spline wall's box, none within the
+  resolution, and one an edge's extremum on a spline wall exactly (an
+  incidence); no refusal, and every
+  Boolean's outcome alike with the rules and without; no kept regression
+  changes outcome. Cost (release, CPU by `wait4`, one process an input,
+  `5f50b30c`'s replay and this one side by side, four at once, at load 20
+  to 45): the 1,482 files 843.1 s against 834.3 s (1.1 % more; the 972
+  reaching the grid 1.2 %, the 510 others 0.4 %, the binaries' layout); of
+  the 40 inputs that run put most above their base, each run five times
+  again, none more than 8.7 % at the median (`74131278`, 0.13 s).
+
 * **CI budget (U6).** Per-push fuzz runs replay a bounded sample plus every
   regression and new seed; the daily schedule replays everything; the heavy
   exact targets run on schedule only; Windows runs a smoke subset per push
