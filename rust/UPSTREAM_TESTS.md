@@ -2723,6 +2723,103 @@ unsupported, 11 private data), the slowest case 9.1 seconds
 (`bcommon_complex/B4`), the derived `boolean_polyhedra` 9.0;
 `--ledger` holds.
 
+**The near misses, the shallow lens, the import tail and a Boolean's
+resolution: the Boolean group, the restore cases, the `catch` forms and
+the version-3 cases.** All were run again after S9e.4b.4d.2c.1b, 1c and
+2c.2 (turned bodies' fillets and rounds beside a cone and at corners,
+partners across smooth edges), S9e.4b.4d.2c.1a's consistency fix (every
+turned body stored as its model), the shallow lens (the validator's
+narrow tier), the near misses of other curves, of points of two fields
+and of a cone's apex, and of faces with no rule of their own,
+S9e.4b.4b.2b.2b.3b and S9e.4b.4c.2b.2 (crossed leaves, chains inside
+first), a Boolean's resolution (the inputs' coarser) and a torus
+meeting's verification budget were merged (2026-10-17, at `1bc0c327`,
+branch `s9-draw-20`; the public dataset, the debug worker, 120 seconds a
+case, four at once, on a host at load 14 to 35), on the Rust adapter
+against `712115c6`'s worker (the last survey's, `s9-draw-19`) rebuilt and
+run alongside, and on native DRAW. The 1,802 self-contained cases: every
+status, reason and error the base's field for field, 987 evaluating,
+every one registered, 592 refused against native `viewer_skipped`, 223
+unsupported on both; none fails or times out. The 1,814 restore cases
+(902 unsupported, 561 needing private data, 284 `failed`, 59 evaluating,
+8 timing out) and the 40 cases restoring a data file that call a Boolean
+only inside `catch {...}` (the 30 among them; 25 private data, 15
+unsupported against native's 10 `viewer_skipped`, 3 `known_failure` and 1
+`unverified`), with `bug497_3` (the validator's rejection at its restore)
+and `bug28626_1` (its `explode`): every status, reason and error the
+base worker's field for field; `bug476_1` to `_8` fail `checknbshapes`
+alone as before (UPSTREAM_TESTS' "Evaluating but not registered"),
+`bug485` refused as "a cone's apex on the other input's surface". Of the
+eight timeouts, the four first restores time out as before, and
+`bugs/modalg_1/buc60532`, `_1`, `_2` and `bugs/modalg_6/bug23585` (at
+the last survey `buc60532` ended within the limit) end unsupported at
+their restores on both workers alone with 300 seconds (146 to 206
+seconds at that load), before any Boolean. The 16 cases loading the
+dataset's version-3 texts: every field the last survey's on both
+backends (14 unsupported, `bug32601` and `bug33664_1` failed). No case
+newly evaluates, so none is registered (1,132 cases) and the ledger does
+not change. No case crashes or panics on either backend. The debug
+worker's CPU on the slowest face-pair cases (`bopcommon_simple/V2`, `U1`,
+`bopcut_simple/ZA4`) is the base's within 2 % (4.45 against 4.38
+seconds); their wall-clock times in the run (up to 19 seconds) are the
+host's load.
+
+The volume audit (`vprops` and `sprops` before each `checkprops`, both
+Rust workers and native DRAW, the 1,046 audited before and the eight
+`bug476` cases): every one of the 1,046's 5,230 values (volume, centre,
+area) is the base worker's bit for bit (the largest relative move 0),
+the statuses the same, and Rust and native disagree beyond native's
+printed digits and 1e-6 relative in the same 35 cases. The `bug476`
+cases' 40 values move, to S9e.4b.4d.2c.1a's consistency fix's recorded
+values (the fuse 67,721.904602 in both orders, the rib less the body
+49.1011760, the body less the rib 67,639.507473, the common 33.2959530,
+each centre's `y` within 1.2e-15 of 0), the largest relative move
+9.6e-7 in volume (the rib less the body, from 49.1011289), 1.5e-7 in
+area and 2.0e-6 in a centre (scaled by the cube root of the volume);
+the rib less the body (`bug476_3`, `_6`) now differs from native's
+printed 49.1011 and 99.5159 beyond them, as the fix's trial recorded
+against native's `-full` values.
+
+An instrumented build of the debug worker (not committed: a line for
+each near-miss rule's outcome, each pair candidate, face pair searched
+and exact decision, each narrow tier entered, each Boolean of two
+resolutions, each verification budget's boxes and each crossed or
+inside-first import), over the same 3,673 cases, its statuses and reasons
+those above field for field. The near-miss rules refuse 6 cases, each by
+an older rule and as before (a vertex within the resolution of a face:
+`bcommon_complex/B8`, `bcut_complex/D8`, `D9`, `bfuse_complex/C2`; an
+edge within it of tangency to a face: `bfuse_complex/C4`, `C5`); no case
+is refused by a new rule. The face pairs are searched in 463 cases (399
+self-contained, 62 restore, 2 `catch`): 447 by two walls, 25 by a torus,
+none by a spline wall; 726 critical points decided at exact points in
+126 cases, every gap of rounding's size (at most 9.9e-14,
+`bfuse_complex/H2`), none outside a face, beyond the resolution or
+refused. Other curves are searched in 11 cases (`bcut_complex/G9`,
+`bug417`, `bug476_1` to `_8`, `bug485`), with no least within twice the
+resolution; no pair of points of two fields reaches the mixed rule and
+no cone's apex meets a torus or spline face; the pair rule's 1,718
+candidates (two edges, a vertex and an edge, two vertices) are none of
+them a contact. No case reaches the validator's narrow tier (signs or
+masses). 13 cases give a Boolean inputs of two resolutions, the
+resolution trial's 13 (9 refused, 4 evaluating: `bcut_complex/G9`,
+`bfuse_complex/N9`, `bug417`, `bug21427`), their outcomes as at the base.
+No case imports a body by a crossed chain or inside-first (five restore
+cases try a body's chains: `bcut_complex/G9`, `bfuse_complex/E5`, `K1`,
+`bug417`, `bug28773`; the cases restoring `OCC14536-sh1` or
+`CTO904_cts21347a` stop before it). A torus meeting's verification draws
+from its budget in 25 cases (the 16 `ZL` cases and `OCC485a`'s nine), at
+most 62 boxes (`bopfuse_simple/ZL2`, `bug476_1`), none over the budget.
+Controls on the instrumented worker took each path: `crossed_joint` and
+`inside_dimple` fused with a far box (a crossed and an inside-first
+import), a ball crossing a rod's wall by `7.5e-7` (the narrow mass), two
+rods crossing `1e-10` apart (refused by the face rule). A full contract
+run of the manifest on both backends with the dataset (30 seconds a
+case, an absolute output directory, at load 14 to 25) holds for all
+1,132 cases (Rust: 18 pass, 1,050 viewer-skipped, 53 unsupported, 11
+private data), the slowest Rust case 23.2 seconds
+(`bcut_complex/C9`), the derived `boolean_polyhedra` 18.7; `--ledger`
+holds.
+
 Three more `intss` cases run on the Rust adapter but are not registered,
 because the contract admits no failing status: `bug23178`, `bug28222_2` and
 `bug28222_3` count the pieces IntPatch splits its walking lines into (6, 4

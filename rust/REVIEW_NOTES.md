@@ -15767,6 +15767,60 @@ Decisions for S9, recorded before its code (2026-09-28):
     7 and `compare_split.py` 72 / 56; the boolean, split and
     brep_validation corpora and their regressions replayed with debug
     assertions, none failing (the slowest 7.2 s, 2.1 s and 1.8 s of CPU).
+  * **DRAW survey after the near misses, the shallow lens, the import tail
+    and a Boolean's resolution (2026-10-17, `UPSTREAM_TESTS.md`).** At
+    `1bc0c327` (`rust-kernel`: S9e.4b.4d.2c.1b, 1c, 2c.2 and 2c.1a's
+    consistency fix, the near misses of other curves, of points of two
+    fields and of faces with no rule of their own, the shallow lens,
+    S9e.4b.4b.2b.2b.3b and S9e.4b.4c.2b.2, a Boolean's resolution and a
+    torus meeting's verification budget merged; branch `s9-draw-20`; the
+    public dataset, the debug worker, 120 s a case, four at once, at load
+    14 to 35), against `712115c6`'s worker (`s9-draw-19`'s) rebuilt and
+    run alongside. **No case moves; only `bug476`'s values move, as the
+    consistency fix recorded; nothing is registered; nothing disagrees or
+    crashes.** The 1,802 self-contained cases: every status, reason and
+    error the base's (987 evaluating, every one registered, 592 refused,
+    223 unsupported on both). The 1,814 restore cases, the 40 `catch
+    {...}` forms (the 30 among them), `bug497_3`, `bug28626_1` and the 16
+    version-3 cases: every field the base worker's; `bug476_1` to `_8`
+    failing `checknbshapes` alone, `bug485` refused at the apex rule;
+    `buc60532`, `_1`, `_2` and `bug23585` time out at load on both workers
+    and end unsupported at their restores alone with 300 s (146 to 206
+    s), the four first restores as before. *Audit*: the 1,046 cases'
+    5,230 values the base's bit for bit (largest relative move 0), the
+    same 35 Rust/native disagreements; `bug476`'s 40 values move to the
+    fix's recorded values (the fuse 67,721.904602 both orders, the rib
+    less the body 49.1011760, the common 33.2959530, centres' `y` within
+    1.2e-15 of 0), the largest relative move 9.6e-7 in volume, 1.5e-7 in
+    area, 2.0e-6 in a centre. *Reach* (an instrumented build, not
+    committed, over the 3,673 cases, statuses those of the runs): the
+    near-miss rules refuse 6 restore cases, each by an older rule as
+    before (the vertex rule's four, the edge rule's `bfuse_complex/C4`,
+    `C5`), none by a new one; face pairs searched in 463 cases (447 by two
+    walls, 25 by a torus, none by a spline wall), 726 critical points
+    decided exactly in 126 cases, every gap of rounding's size (at most
+    9.9e-14, `bfuse_complex/H2`); other curves searched in 11 cases
+    (`G9`, `bug417`, `OCC485a`'s nine) with no least within twice the
+    resolution; no pair of two fields at the mixed rule, no apex against a
+    torus or spline face; the pair rule's 1,718 candidates no contact;
+    the narrow tier never reached; 13 cases with a Boolean of two
+    resolutions (the resolution trial's: 9 refused, 4 evaluating), their
+    outcomes the base's; no crossed or inside-first import (five cases
+    try a body's chains; `OCC14536-sh1`'s and `CTO904_cts21347a`'s cases
+    stop before it); the torus budget drawn in 25 cases (the `ZL` grid
+    and `OCC485a`'s nine), at most 62 boxes, none over. Controls took
+    each path (a crossed and an inside-first fixture, a shallow lens, two
+    rods `1e-10` apart refused by the face rule). The debug worker's CPU
+    on the face-pair cases the base's within 2 % (the run's slower wall
+    clock the host's load). A full contract run (both backends, 30 s a
+    case, an absolute output directory, at load 14 to 25) holds for all
+    1,132 cases (Rust: 18 pass, 1,050 viewer-skipped, 53 unsupported, 11
+    private data), the slowest Rust case 23.2 s (`bcut_complex/C9`);
+    `--ledger` holds and the ledger does not change. No kernel change.
+    Campaigns at `1bc0c327` (600 s each, sampled replays, every switch on,
+    beside this survey's runs): `boolean` clean, 224 runs, the slowest
+    input 43 s; `split` clean, 632 runs; `analytic_intersections` clean,
+    2,789 runs.
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces
