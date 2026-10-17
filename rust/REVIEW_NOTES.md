@@ -19035,8 +19035,9 @@ Decisions for S9, recorded before its code (2026-09-28):
     m` of one strict sign). The material's tangent cone at the point is
     bounded by those planes, so `n` and `n'` lie in one open cell of them
     and have one membership. A cone's apex's membership is its rulings'
-    exactly (`n` strictly inside the cone: `s C > 0` and `C^2 > k^2 (A^2 +
-    B^2)`; on the cone undecided). Where `n` lies in a face's tangent
+    exactly (`n` strictly inside the cone: `s C > 0` and `A^2 + B^2 < k^2
+    C^2`; on the cone undecided; corrected in the done note below, this
+    note had the inequality the other way round). Where `n` lies in a face's tangent
     plane at its point (`n . m = 0`) or the check fails, the membership is
     undecided and the pair, a contact, is a `ComputationLimit` ("a near
     miss's gap along a face between points of two fields"). Reasons
@@ -19156,6 +19157,108 @@ Decisions for S9, recorded before its code (2026-09-28):
     before), and every earlier near-miss test (`near_miss_booleans`,
     `vertex_near_miss_booleans`, `edge_vertex_near_miss_booleans`,
     `conic_near_miss_booleans`), evaluating as before.
+
+* **Other curves, points of two fields and an apex against a spline or
+  torus face, done (2026-10-17; the refined note above, HANDOFF's item
+  5).** Evidence (`tests/curve_field_near_miss_booleans.rs`, before the
+  code): at `5a7acb4c` every miss within the resolution evaluated, 126
+  configurations (`1e-12`, `1e-11` and `1e-9` in a level frame, one turned
+  about z and one tilted): a cube's corner off a hole's rim, a dimple's
+  rim, a cone's and a torus's oblique sections and a spline cap edge, a
+  block's edge across the hole's rim and the cap edge, a small rod's rim
+  across the hole's and the dimple's rims and the cap edge (added with the
+  kernel: a conic against another curve), two zones' rims, two bitten
+  blocks' vertices of `Q(sqrt 0.87)` and `Q(sqrt 0.68)`, such a vertex by a
+  zone's rim and a cone's apex off a spline wall, each fused into two
+  solids and its common empty (the vertices' fuse refused as a result
+  thinner than the resolution, their cuts and common evaluating); the
+  crossings that deep were refused already (a piece or result thinner than
+  the resolution, the vertex rule against a face, S9d.1's rule at a
+  sphere, a spline wall's meeting with a cone turning back); a cone's apex
+  `1e-12` off a ball is S9d.1's ("a sphere within the resolution of a
+  vertex") and off a torus the torus's meeting refuses it ("a torus tangent
+  to the other input's surface", "a torus meeting's piece left
+  unverified"), before and after. Kernel (`curved/near.rs`):
+  - **Points of two fields**: `Mix` (a sum of products of the two points'
+    fields' numbers; `mixed_dot_sign` its sign, a binary64 enclosure
+    first), `pair_mixed` (the gap, `side_mixed`, `apex_side_mixed`,
+    `member_mixed` with its rational direction checked against every face's
+    tangent plane at the point), `rebased` (two surds of a rational square
+    ratio one field), `line_foot`, `lines_mixed` and `line_inside` (a line's
+    foot or two lines' closest points of `Mix`, placed exactly, directions
+    at a point of the line's own field), a circle's nearest point to a point
+    of another field bracketed (`nearest_to_point`, `Inner::nearest`), and
+    two `Crv::Circle`s in `conics_closest` (`sq_cmp`, `rounding_of`,
+    `contact_any`, `beyond_sign`).
+  - **Other curves**: `takes_edge` takes them; `run_nearest` (a vertex's or
+    a line's leasts along the run: passed over where every coarse sample
+    is beyond twice the resolution and twice the samples' spacing; a gap of
+    rounding's size shown in binary64 by the run's own enclosure at the
+    place, `Run::enclose`; else settled, `Run::bracket`, the exact
+    within or the bound `Run::movement` beyond); `run_pairs` with
+    `walk_leasts` (the grid of both curves' samples, each node at most its
+    neighbours within the movement-widened reach refined coarsely by
+    golden-section searches, then by Gauss-Newton steps on central
+    differences: alternating searches alone left an incidence's least
+    `2e-8` off in three corpus inputs, where the pair rule then saw it) and
+    `nested` (`Walk`: an arc's `bisect`, a run's bracket and movement); the
+    exact points of a least within 64 times the gap's rounding settled by
+    `nested`. The enclosures: `MeetCrv::enclose`, `ConeSec::enclose`,
+    `TorusSec::enclose`, `RiseCrv::enclose` (an exact frame's), the spline
+    arcs' (`wall_enclose`), `meet::trig_fast`; the angle's `(cos, sin)`
+    over a bracket the box of its exact points widened by the arc's sagitta
+    bound (a bracket across a quarter turn, where `unit_at` flips, is one).
+  - **The apex**: `apex_face`, from `vertex_faces` where a face has no
+    `Quad`.
+  The refined note's apex membership is corrected there (`A^2 + B^2 < k^2
+  C^2`). Every miss and crossing of the evidence refused with the new
+  reasons ("a vertex within the resolution of an edge of the other input
+  (S9d.2)", "two edges within the resolution of each other (S9d.2)", "a
+  vertex within the resolution of a vertex of the other input (S9d.2)", "a
+  cone's apex within the resolution of a face (S9d.3)") or an earlier
+  rule's for the crossings; at `1e-6` every operation evaluates; the
+  controls as before: incidences but for rounding (no near-miss reason),
+  pairs `0.1` apart, `1.5e-7` apart (beyond the resolution, within twice
+  it: certified apart by the movement bounds of `4e-15` and less, or the
+  nested brackets of two sphere circles), U1's box. Unit tests:
+  `numbers_of_two_fields_are_exact` (a squared gap of `Q(sqrt 2)` and
+  `Q(sqrt 3)` points told from rationals `1e-12` either side, signs of
+  directions, a rational square ratio rebased) and
+  `movement_bounds_hold_on_other_curves` (every exact point over brackets
+  of `1e-12` to `1e-3` of the runs of a hole's, a dimple's, a cone's and a
+  torus's section and a spline dome's edges, level and turned, within the
+  bound of the middle's). The new tests pass in release (79 to 139 s on a
+  host at load 30 to 55, most of it the Booleans of given results; the
+  slowest case two zones' rims `1.5e-7` apart, 8 s, the nested brackets of
+  two circles' points in two fields) and under the emulated glibc `hypot`
+  with debug assertions and overflow checks with the four earlier
+  near-miss test files, `sphere_field_booleans` and `near.rs`'s unit tests.
+  Fuzz corpus (an instrumented release build, not committed, over the
+  boolean corpus's 1,444 inputs and the 38 regressions, each run with the
+  rules and with `NM_OFF`, their refusals logged and let go on, every
+  Boolean's outcome printed): 289 inputs (13 regressions) reach a new
+  search (245 two curves, 116 a vertex or a line against another curve, 4
+  a cone's apex against a torus face, 14 of them, none within the
+  resolution); 3 inputs hold leasts of two curves within twice the
+  resolution, 6 in all, every exact gap of rounding's size (`0` to
+  `8.9e-16`, `rho` `3.6e-15` to `1.4e-14`), and the vertex and line
+  searches' candidates are all shown of rounding's size in binary64, so no
+  pair reaches the pair rule, none is refused and every input's Booleans
+  are alike with the rules on and off; no kept regression changes outcome.
+  Cost (release, CPU by `wait4`, one process an input, `5a7acb4c`'s replay
+  and this one side by side, four at once, at load 30 to 55): the 1,482
+  files 826.6 s against 830.5 s (0.5 % more; the 289 reaching the rules
+  0.7 %, the 1,193 others 0.4 %, the binaries' layout); of the 40 inputs
+  that run put most above their base, each run five times again, none
+  more than 4.5 % at the median. Two earlier measurements found the
+  vertex and line searches settling incidences exactly (`d435f6b4`,
+  `1e2fe030`, `c96a6b42`: 11 to 24 %), now shown of rounding's size in
+  binary64 first (0.2 to 0.6 %). DRAW trial (UPSTREAM_TESTS.md, "Other
+  curves, points of two fields and a cone's apex"): every status and
+  reason as at `5a7acb4c` over the 1,802, the 2,128 restore cases and the
+  40 `catch` forms; 25 cases reach the new searches, none a pair; nothing
+  moves and nothing is registered; the full contract run holds for all
+  1,132 cases.
 
 * **CI budget (U6).** Per-push fuzz runs replay a bounded sample plus every
   regression and new seed; the daily schedule replays everything; the heavy
