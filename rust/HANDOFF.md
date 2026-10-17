@@ -78,7 +78,10 @@ then for S9e.4b.4d.2's refined decisions and S9e.4b.4d.2a (branch
 then for S9e.4b.4d.2b and the moved turned bodies (branch `s9e4b4d2bc`,
 over `s9c2-kernel` at `7b43d0b4`),
 then for the DRAW survey of the turned bodies (branch `s9-draw-19`, over
-`rust-kernel` at `712115c6`).
+`rust-kernel` at `712115c6`),
+then for the near misses of other curves, of points of two fields and of
+a cone's apex against a spline or torus face (branch `near-miss-curves`,
+over `rust-kernel` at `5a7acb4c`).
 
 ## Where things stand
 
@@ -1095,14 +1098,24 @@ then for the DRAW survey of the turned bodies (branch `s9-draw-19`, over
    binary64 where it can be), contact by the residue's pair; no corpus
    input or DRAW case moves (57 cases hold leasts at rounding's gaps, most
    along two stacked rods' coincident rims), the corpus's CPU unchanged
-   within noise, as its trial records (UPSTREAM_TESTS.md). Open from the
-   second part: edges of other curves (meetings, cone, torus and spline
-   curves) against edges and vertices (their points, found at rational
-   parameters with no bound of the curve's movement, bound a gap from above
-   only, so every such pair between the resolution and twice it would be a
-   `ComputationLimit`; a rule of its own), points of two different surds
-   (two sphere circles' among them), an apex against a torus or spline
-   face. (b) An
+   within noise, as its trial records (UPSTREAM_TESTS.md). The rest of
+   the second part is closed on branch `near-miss-curves` (REVIEW_NOTES.md's
+   "Other curves, points of two fields and an apex against a spline or
+   torus face"): points of two quadratic fields (two sphere circles, a
+   given result's vertex of one field by another's or by a sphere circle, a
+   line through points of one field) by the same pair rule, every number a
+   sum of products of the two fields' numbers (`near::Mix`, exact over the
+   rationals and one algebraic base); edges of other curves (a given
+   result's meetings of two curved faces, a cone's or a torus's sections
+   and meetings, a spline prism's cap edges) against vertices and edges,
+   their exact points settled on the derivative's exact sign and, beyond
+   the resolution, bounded below by a certified enclosure of the curve's
+   own formula over the bracket (`Run::movement`; a torus's meeting with a
+   quadric and a turned frame's rise have none: `ComputationLimit` between
+   the resolution and twice it); and a cone's apex against a spline wall or
+   a torus face (`near::apex_face`; against a sphere S9d.1's vertex rule
+   holds it). No corpus input and no DRAW case moves (its trial in
+   UPSTREAM_TESTS.md). (b) An
    edge one of whose faces heads toward the other's surface at its near
    point is no contact and evaluates as before (S9f.2b.2's
    `lens_tilt_loop`, a rim on a plane but for rounding with its wall
@@ -1113,7 +1126,7 @@ then for the DRAW survey of the turned bodies (branch `s9-draw-19`, over
    DRAW's `bop*_simple` U1 and Y5, evaluating as before). (c) Faces with
    no near-miss rule of their own: cylinders and cones against each other
    beyond S9c's node rule (their edges' extrema hold a ruling tangent to
-   a wall only where it ends on an edge), tori and spline walls against anything (their
+   a wall only where it ends on an edge), tori and spline walls against anything but a cone's apex (their
    tangency rules only), and edges against torus or spline faces. (d)
    The shallow lens is closed on branch `shallow-lens` (REVIEW_NOTES.md's
    "The shallow lens"): beyond the resolution a ball crossing a rod's wall

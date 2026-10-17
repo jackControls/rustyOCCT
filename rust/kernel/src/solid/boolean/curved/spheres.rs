@@ -18,6 +18,7 @@ use super::num::*;
 use super::procedural::{other_of, other_sphere, MeetCrv, Other, Quartic, Ruled};
 use super::sphere::{plane_section, Circ};
 use super::turned::{middle, roots, square_sum, trim, Chart, Lin};
+use crate::certified::{Fast, Real};
 use crate::polynomial::real::IntPolynomial;
 use crate::solid::split::{q, rational_f64, zero};
 use crate::{Error, Result};
@@ -170,6 +171,36 @@ impl RiseCrv {
             ),
         );
         Ok(Some(p))
+    }
+
+    /// A binary64 interval enclosure of the piece's points over an enclosure
+    /// of the height (`at`'s formula on an exact frame, the angle from
+    /// `trig`'s root on its branch; REVIEW_NOTES.md, "Other curves, points
+    /// of two fields ..."): `None` on a turned frame (the root of `F` over a
+    /// half turn, `spheres_turned::rise_at`) or where the carrier's radius
+    /// or the root's discriminant is not certainly positive.
+    pub(super) fn enclose(&self, w: &Fast) -> Option<[Fast; 3]> {
+        if !self.exact {
+            return None;
+        }
+        let r = |x: &R| Fast::from_r(x);
+        let (a, b, g) = self.coefficients();
+        let rho = r(&self.r).add(&r(&self.k).mul(w));
+        if rho.sign() != Some(Ordering::Greater) {
+            return None;
+        }
+        let gw = r(&g[0])
+            .add(&r(&g[1]).mul(w))
+            .add(&r(&g[2]).mul(&w.square()))
+            .div(&rho)?;
+        let cs = super::meet::trig_fast(&r(&a), &r(&b), &gw, self.plus)?;
+        let (u, v) = (cs[0].mul(&rho), cs[1].mul(&rho));
+        Some([0, 1, 2].map(|j| {
+            r(&self.o[j])
+                .add(&r(&self.x[j]).mul(&u))
+                .add(&r(&self.y[j]).mul(&v))
+                .add(&r(&self.n[j]).mul(w))
+        }))
     }
 
     /// The carrier's circle centre at height 0.

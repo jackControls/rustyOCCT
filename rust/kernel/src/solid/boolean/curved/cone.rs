@@ -15,6 +15,7 @@ use super::graph::{between_ccw, rational_between};
 use super::meet::{line_point, quadratic, tangency, trig, EdgeMeet, Pos};
 use super::model::*;
 use super::num::*;
+use crate::certified::{Fast, Real};
 use crate::identity::Role;
 use crate::profile::boolean::Operand;
 use crate::solid::split::{q, rational_f64, zero};
@@ -231,6 +232,34 @@ impl ConeSec {
         }
         let w = (&rho - &self.b) / &self.k;
         Some(qv(&self.f.point(&(&rho * &cs[0]), &(&rho * &cs[1]), &w)))
+    }
+
+    /// A binary64 interval enclosure of the section's points over an
+    /// enclosure of the cone's `(cos, sin)` (`at`'s formula; REVIEW_NOTES.md,
+    /// "Other curves, points of two fields ..."): `None` where its ruling's
+    /// `rho` is not certainly positive.
+    pub(super) fn enclose(&self, cs: &[Fast; 2]) -> Option<[Fast; 3]> {
+        let r = |x: &R| Fast::from_r(x);
+        let d = r(&self.plane[2]).add(
+            &r(&self.k).mul(
+                &cs[0]
+                    .mul(&r(&self.plane[0]))
+                    .add(&cs[1].mul(&r(&self.plane[1]))),
+            ),
+        );
+        let rho = r(&self.g).div(&d)?;
+        if rho.sign() != Some(Ordering::Greater) {
+            return None;
+        }
+        let w = rho.sub(&r(&self.b)).div(&r(&self.k))?;
+        let (u, v) = (rho.mul(&cs[0]), rho.mul(&cs[1]));
+        let f = &self.f;
+        Some([0, 1, 2].map(|j| {
+            r(&f.o[j])
+                .add(&r(&f.x[j]).mul(&u))
+                .add(&r(&f.y[j]).mul(&v))
+                .add(&r(&f.n[j]).mul(&w))
+        }))
     }
 
     /// Where the section meets a plane `m . (x - p0) = 0` (S9e.3a: a given

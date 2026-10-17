@@ -579,7 +579,7 @@ movement over the bracket of the bracket's point's, a distance within
 that bound of the resolution `ComputationLimit`); two lines' closest points
 (skew; exact) and a line's and a conic's or circle's (bracketed alike),
 strictly inside both; two conics' or a conic's and a circle's (two sphere
-circles' points lie in fields of their own and are not combined) at each
+circles' too, their points in fields of their own) at each
 least of their distance found in binary64 (a grid of 64 angles of each,
 refined by Newton's method), the curves' exact points at its rational
 half-angle tangents deciding a gap within the resolution, and a gap beyond
@@ -604,9 +604,34 @@ other input is its face rule's). A cube's corner `1e-12` off a box's top
 edge or corner or a rod's rim, a box's edge `1e-12` across another's, a
 ball off a rod's rim at its seam, and two rods' rims, a rod's and a
 cone's or a rod's rim and a block's arc edge crossing `1e-12` apart were
-two solids. Edges of other curves (meetings of curved faces, cone, torus
-and spline curves) against edges and vertices have no such rule: their
-points, found at rational parameters, give no bound below a gap. The
+two solids. Points of two quadratic fields (two sphere circles, a given
+result's vertex of one field by another's or by a sphere circle, a line
+through points of one field) are taken by the same rule, every number of
+it a sum of products of the two fields' numbers (`near::Mix`, its sign
+`mixed_dot_sign`'s, exact over the rationals and one algebraic base), a
+line's foot of two fields placed by its parameter exactly and its
+directions taken at a point of the line's own field beside it, a missing
+pair's membership along a rational direction on the gap's side of every
+tangent plane of the point's faces (the gap along such a plane: a
+`ComputationLimit`, "a near miss's gap along a face between points of
+two fields"). Edges of other curves (a given result's meetings of two
+curved faces, a cone's or a torus's sections and meetings, a spline
+prism's cap edges) against vertices and edges are taken too: their
+leasts found in binary64 (a run's samples, a grid of both curves'
+samples refined), the curve's exact point settled by bisection on the
+derivative's exact sign, deciding a gap within the resolution, and beyond
+it a certified bound of the curve's movement over the bracket from a
+binary64 interval enclosure of its own formula (`Run::movement`: a
+meeting's ruling point, a cone's or a torus's section, an exact frame's
+rise, a spline arc), nested for two curves; a torus's meeting with a
+quadric and a turned frame's rise have none (`ComputationLimit` between
+the resolution and twice it). A cone's apex within the resolution of a
+spline wall or a torus face is refused by the vertex rule with its
+rulings (`near::apex_face`; against a sphere S9d.1's vertex rule holds
+it). A corner `1e-12` off a hole's or a dimple's rim, a cone's or a
+torus's oblique section or a spline cap edge, two balls' zones' rims, two
+given results' vertices of two fields and a cone's apex off a spline wall
+were two solids. The
 validator decides a ray against a whole sphere (a cavity in a sphere); a
 result's bounds hold its spheres' boxes. A sphere against a cylinder or
 another sphere is S9d.2's.
@@ -2093,9 +2118,10 @@ campaign of every target the steps touch.
   coaxial meetings, 2c.1a's fillets and rounds between planes and
   cylinders, 2c.1b's beside a cone, 2c.2's partners across smooth
   edges and 2c.1c's rounds at corners (`OCC496b`'s) done), the
-  near-miss rules not yet written (other curves' edges, two sphere
-  circles, an apex against a sphere, torus or spline face, item 5's (b)
-  to (d)), and the refusals by design listed there. U9 and U10 stayed open
+  near-miss rules not yet written (item 5's (c) and (d): faces with no
+  rule of their own; other curves' edges, points of two fields and a
+  cone's apex against a spline or torus face done since, branch
+  `near-miss-curves`), and the refusals by design listed there. U9 and U10 stayed open
   at acceptance (answered on 2026-10-14: U9 the certified mode only, U10
   (b)).
 
