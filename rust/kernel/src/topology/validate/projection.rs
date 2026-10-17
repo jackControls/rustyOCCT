@@ -229,22 +229,9 @@ pub(super) fn curve_jet<T: Real>(curve: &Curve3, fraction: &Jet<T>) -> Option<[J
     })
 }
 
-/// A jet vector's dot product with a constant axis.
-fn dot_axis<T: Real>(v: &[Jet<T>; 3], axis: [f64; 3]) -> Jet<T> {
-    v[0].scale(&c(axis[0]))
-        .add(&v[1].scale(&c(axis[1])))
-        .add(&v[2].scale(&c(axis[2])))
-}
-
 /// A torus meeting's point along its parameter's jet `t` as `P0 + C P1 + S
-/// P2` (`C` and `S` the other angle's cosine and sine), and the quadric's
-/// affine functionals there, each `L0 + C L1 + S L2` with its sign in `G =
-/// sum sign L^2`; for another torus (S9d.4b.2b) its local coordinates' and
-/// its constants `R2^2 - r2^2` and `4 R2^2`: `G = (L1^2 + L2^2 + L3^2 + k)^2
-/// - 4 R2^2 (L1^2 + L2^2)`.
-type ToricParts<T> = ([[Jet<T>; 3]; 3], Vec<([Jet<T>; 3], bool)>, Option<(T, T)>);
-
-fn toric_parts<T: Real>(m: &Toric, t: &Jet<T>) -> Option<ToricParts<T>> {
+/// P2` (`C` and `S` the other angle's cosine and sine).
+fn toric_point_parts<T: Real>(m: &Toric, t: &Jet<T>) -> [[Jet<T>; 3]; 3] {
     let n = t.order();
     let (big, small) = (c::<T>(m.major), c::<T>(m.minor));
     let (ct, st) = t.cos_sin();
@@ -254,8 +241,7 @@ fn toric_parts<T: Real>(m: &Toric, t: &Jet<T>) -> Option<ToricParts<T>> {
         m.frame.y().to_array(),
         m.frame.normal().to_array(),
     );
-    let konst = |v: f64| Jet::constant(c::<T>(v), n);
-    let p: [[Jet<T>; 3]; 3] = if m.over_v {
+    if m.over_v {
         // t = v: P = o + r sv n + cu (R + r cv) x + su (R + r cv) y.
         let rho = ct.scale(&small).add_constant(&big);
         let z = st.scale(&small);
@@ -270,219 +256,246 @@ fn toric_parts<T: Real>(m: &Toric, t: &Jet<T>) -> Option<ToricParts<T>> {
         [
             std::array::from_fn(|k| e[k].scale(&big).add_constant(&c(o[k]))),
             std::array::from_fn(|k| e[k].scale(&small)),
-            std::array::from_fn(|k| konst(nn[k]).scale(&small)),
+            std::array::from_fn(|k| Jet::constant(c::<T>(nn[k]), n).scale(&small)),
         ]
-    };
-    // The origin's offset first (its cancellation exact for the constant
-    // part): `f . (P0 - o2)`.
-    let o2 = m.other.origin().to_array();
-    let rel: [Jet<T>; 3] = std::array::from_fn(|k| p[0][k].add_constant(&c::<T>(-o2[k])));
-    let lin = |f: [f64; 3]| -> [Jet<T>; 3] {
-        [dot_axis(&rel, f), dot_axis(&p[1], f), dot_axis(&p[2], f)]
-    };
-    let zero = || Jet::constant(c::<T>(0.0), n);
-    let mut out = Vec::new();
-    if m.other_minor > 0.0 {
-        for f in [m.other.x(), m.other.y(), m.other.normal()] {
-            out.push((lin(f.to_array()), true));
-        }
-        let (big, small) = (c::<T>(m.other_radius), c::<T>(m.other_minor));
-        let big2 = big.square();
-        let torus = (big2.sub(&small.square()), big2.mul(&T::exact_f64(4.0)));
-        return Some((p, out, Some(torus)));
     }
-    if m.other_sphere {
-        for f in [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]] {
-            out.push((lin(f), true));
-        }
-        out.push(([konst(m.other_radius), zero(), zero()], false));
-    } else {
-        out.push((lin(m.other.x().to_array()), true));
-        out.push((lin(m.other.y().to_array()), true));
-        let r = c::<T>(m.other_radius);
-        let rad = if m.other_half_angle == 0.0 {
-            [Jet::constant(r, n), zero(), zero()]
-        } else {
-            let (ca, sa) = T::cos_sin(&c(m.other_half_angle));
-            let tan = sa.div(&ca)?;
-            let l = lin(m.other.normal().to_array());
+}
+
+/// An angle's harmonics `[1, cos a, sin a, cos 2a, sin 2a]`, enclosed.
+type Harmonics<T> = [T; 5];
+
+fn harmonics<T: Real>(a: &T) -> Harmonics<T> {
+    let (co, si) = T::cos_sin(a);
+    let (co2, si2) = T::cos_sin(&a.mul(&T::exact_f64(2.0)));
+    [T::exact_f64(1.0), co, si, co2, si2]
+}
+
+/// The harmonics' derivatives in the angle: `[0, -sin a, cos a, -2 sin 2a,
+/// 2 cos 2a]`.
+fn harmonics_rate<T: Real>(h: &Harmonics<T>) -> Harmonics<T> {
+    let two = T::exact_f64(2.0);
+    [
+        T::exact_f64(0.0),
+        h[2].neg(),
+        h[1].clone(),
+        h[4].mul(&two).neg(),
+        h[3].mul(&two),
+    ]
+}
+
+/// A torus meeting's `G` (S9d.4b.2) as trigonometric polynomials of degree
+/// two in each of the torus's angles, `sum w[a][b] D_a(s) D_b(t)` over the
+/// harmonics `D` of the other angle `s` (`a`) and of the parameter `t`
+/// (`b`): a quadric's `G` itself, or another torus's (S9d.4b.2b) `Q = |w|^2`
+/// and `P = (w . x2)^2 + (w . y2)^2` with its constants `k = R2^2 - r2^2`
+/// and `4 R2^2`, `G = (Q + k)^2 - 4 R2^2 P`. Each of the other surface's
+/// affine functionals of the torus's point is `alpha + beta z + rho (xi cos
+/// u + eta sin u)` (`rho = R + r cos v`, `z = r sin v`), and its square's
+/// constants are summed over the functionals before any jet: a pair coaxial
+/// within rounding has its terms in `u` of rounding's size, so its jets
+/// along a meeting near a double root do not carry the functionals' own
+/// terms in `u` (of the torus's size, cancelling in their squares' sum only
+/// exactly) through every order's division by the small slope there.
+struct Harmonic<T> {
+    /// Each form's `w[a][b]`.
+    forms: Vec<[[T; 5]; 5]>,
+    /// Another torus's `R2^2 - r2^2` and `4 R2^2`.
+    torus: Option<(T, T)>,
+}
+
+impl<T: Real> Harmonic<T> {
+    fn new(m: &Toric) -> Option<Self> {
+        let zero = || T::exact_f64(0.0);
+        let two = T::exact_f64(2.0);
+        let (o, x, y, nn) = (
+            m.frame.origin().to_array(),
+            m.frame.x().to_array(),
+            m.frame.y().to_array(),
+            m.frame.normal().to_array(),
+        );
+        let o2 = m.other.origin().to_array();
+        // The origins' offset first (exact where their coordinates are
+        // close).
+        let d: [T; 3] = std::array::from_fn(|k| c::<T>(o[k]).sub(&c(o2[k])));
+        let dot =
+            |a: &[T; 3], f: &[f64; 3]| (0..3).fold(zero(), |acc, k| acc.add(&a[k].mul(&c(f[k]))));
+        let (xs, ys, ns) = (x.map(c::<T>), y.map(c::<T>), nn.map(c::<T>));
+        // The functional `a + k (w . f)` as `[alpha, beta, xi, eta]`.
+        let functional = |f: [f64; 3], k: &T, a: &T| -> [T; 4] {
             [
-                l[0].scale(&tan).add_constant(&r),
-                l[1].scale(&tan),
-                l[2].scale(&tan),
+                a.add(&dot(&d, &f).mul(k)),
+                dot(&ns, &f).mul(k),
+                dot(&xs, &f).mul(k),
+                dot(&ys, &f).mul(k),
             ]
         };
-        out.push((rad, false));
-    }
-    Some((p, out, None))
-}
-
-/// Another torus's `G = S^2 - 4 R2^2 P` and its derivative from the
-/// functionals' values `v` and derivatives `d` (`S = |v|^2 + k`, `P = v1^2
-/// + v2^2`).
-fn torus_g<T: Real>(v: &[T], d: &[T], (k, four): &(T, T)) -> (T, T) {
-    let two = T::exact_f64(2.0);
-    let p = v[0].square().add(&v[1].square());
-    let dp = v[0].mul(&d[0]).add(&v[1].mul(&d[1])).mul(&two);
-    let s = p.add(&v[2].square()).add(k);
-    let ds = dp.add(&v[2].mul(&d[2]).mul(&two));
-    (
-        s.square().sub(&four.mul(&p)),
-        s.mul(&ds).mul(&two).sub(&four.mul(&dp)),
-    )
-}
-
-/// `G` and its derivative in `s` at scalars: the functionals' constant
-/// terms and the other angle's enclosed cosine and sine.
-fn toric_g<T: Real>(fs: &[([Jet<T>; 3], bool)], torus: Option<&(T, T)>, cs: &(T, T)) -> (T, T) {
-    let (co, si) = cs;
-    if let Some(t) = torus {
-        let v: Vec<T> = fs
-            .iter()
-            .map(|(l, _)| l[0].c[0].add(&l[1].c[0].mul(co)).add(&l[2].c[0].mul(si)))
-            .collect();
-        let d: Vec<T> = fs
-            .iter()
-            .map(|(l, _)| l[2].c[0].mul(co).sub(&l[1].c[0].mul(si)))
-            .collect();
-        return torus_g(&v, &d, t);
-    }
-    let mut g = T::exact_f64(0.0);
-    let mut d = T::exact_f64(0.0);
-    for (l, plus) in fs {
-        let v = l[0].c[0].add(&l[1].c[0].mul(co)).add(&l[2].c[0].mul(si));
-        let dv = l[2].c[0].mul(co).sub(&l[1].c[0].mul(si));
-        let (gv, dd) = (v.square(), v.mul(&dv).mul(&T::exact_f64(2.0)));
-        if *plus {
-            g = g.add(&gv);
-            d = d.add(&dd);
-        } else {
-            g = g.sub(&gv);
-            d = d.sub(&dd);
-        }
-    }
-    (g, d)
-}
-
-/// `G_ss` and `G_sf` over a box: the functionals' values and first
-/// derivatives in `f` (`fs`, jets of order one or more over the base) at
-/// the other angle's enclosed cosine and sine, each functional `v = L0 + C
-/// L1 + S L2` with `v_s = C L2 - S L1`, `v_ss = -(C L1 + S L2)`, `v_f` and
-/// `v_sf` from the jets' first coefficients.
-fn toric_second<T: Real>(
-    fs: &[([Jet<T>; 3], bool)],
-    torus: Option<&(T, T)>,
-    cs: &(T, T),
-) -> (T, T) {
-    let (co, si) = cs;
-    let two = T::exact_f64(2.0);
-    let parts: Vec<[T; 5]> = fs
-        .iter()
-        .map(|(l, _)| {
-            let v = l[0].c[0].add(&l[1].c[0].mul(co)).add(&l[2].c[0].mul(si));
-            let vs = l[2].c[0].mul(co).sub(&l[1].c[0].mul(si));
-            let vss = l[1].c[0].mul(co).add(&l[2].c[0].mul(si)).neg();
-            let vf = l[0].c[1].add(&l[1].c[1].mul(co)).add(&l[2].c[1].mul(si));
-            let vsf = l[2].c[1].mul(co).sub(&l[1].c[1].mul(si));
-            [v, vs, vss, vf, vsf]
-        })
-        .collect();
-    // Per functional: (v^2)_s, (v^2)_ss, (v^2)_f, (v^2)_sf, halved.
-    let square = |[v, vs, vss, vf, vsf]: &[T; 5]| {
-        [
-            v.mul(vs),
-            vs.square().add(&v.mul(vss)),
-            v.mul(vf),
-            vf.mul(vs).add(&v.mul(vsf)),
-        ]
-    };
-    if let Some((k, four)) = torus {
-        let [a, b, e] = [square(&parts[0]), square(&parts[1]), square(&parts[2])];
-        let sum = |i: usize, with_normal: bool| {
-            let p = a[i].add(&b[i]).mul(&two);
-            if with_normal {
-                p.add(&e[i].mul(&two))
+        let small = c::<T>(m.minor);
+        let rho = [c::<T>(m.major), small.clone(), zero()];
+        let rho2 = trig_product(&rho, &rho);
+        // `sum sign L^2` as `g[i][j] D_i(u) D_j(v)`: `L = A(v) + rho(v)
+        // E(u)`, `A = alpha + beta r sin v`, `E = xi cos u + eta sin u`, so
+        // `L^2 = A^2 + 2 A rho E + rho^2 E^2`, the `E^2` summed first.
+        let form = |fs: &[([T; 4], bool)]| -> [[T; 5]; 5] {
+            let mut g: [[T; 5]; 5] = std::array::from_fn(|_| std::array::from_fn(|_| zero()));
+            let mut e2: [T; 5] = std::array::from_fn(|_| zero());
+            for ([alpha, beta, xi, eta], plus) in fs {
+                let acc = |x: &T, y: &T| if *plus { x.add(y) } else { x.sub(y) };
+                let a = [alpha.clone(), zero(), beta.mul(&small)];
+                let e = [zero(), xi.clone(), eta.clone()];
+                let (a2, ar, ee) = (
+                    trig_product(&a, &a),
+                    trig_product(&a, &rho),
+                    trig_product(&e, &e),
+                );
+                for j in 0..5 {
+                    g[0][j] = acc(&g[0][j], &a2[j]);
+                    e2[j] = acc(&e2[j], &ee[j]);
+                    g[1][j] = acc(&g[1][j], &xi.mul(&ar[j]).mul(&two));
+                    g[2][j] = acc(&g[2][j], &eta.mul(&ar[j]).mul(&two));
+                }
+            }
+            for (row, e) in g.iter_mut().zip(&e2) {
+                for (x, r) in row.iter_mut().zip(&rho2) {
+                    *x = x.add(&e.mul(r));
+                }
+            }
+            // `[a][b]`: the other angle's harmonics first.
+            if m.over_v {
+                g
             } else {
-                p
+                std::array::from_fn(|a| std::array::from_fn(|b| g[b][a].clone()))
             }
         };
-        let (pss, psf) = (sum(1, false), sum(3, false));
-        let (qs, qss, qf, qsf) = (sum(0, true), sum(1, true), sum(2, true), sum(3, true));
-        let q = parts[0][0]
-            .square()
-            .add(&parts[1][0].square())
-            .add(&parts[2][0].square())
-            .add(k);
-        let gss = qs.square().add(&q.mul(&qss)).mul(&two).sub(&four.mul(&pss));
-        let gsf = qf.mul(&qs).add(&q.mul(&qsf)).mul(&two).sub(&four.mul(&psf));
-        return (gss, gsf);
-    }
-    let (mut gss, mut gsf) = (T::exact_f64(0.0), T::exact_f64(0.0));
-    for (part, (_, plus)) in parts.iter().zip(fs) {
-        let [_, ss, _, sf] = square(part);
-        let (ss, sf) = (ss.mul(&two), sf.mul(&two));
-        if *plus {
-            gss = gss.add(&ss);
-            gsf = gsf.add(&sf);
-        } else {
-            gss = gss.sub(&ss);
-            gsf = gsf.sub(&sf);
+        let one = T::exact_f64(1.0);
+        let axes = [m.other.x(), m.other.y(), m.other.normal()].map(|f| f.to_array());
+        if m.other_minor > 0.0 {
+            let fs = axes.map(|f| (functional(f, &one, &zero()), true));
+            let big2 = c::<T>(m.other_radius).square();
+            let small2 = c::<T>(m.other_minor).square();
+            return Some(Self {
+                forms: vec![form(&fs), form(&fs[..2])],
+                torus: Some((big2.sub(&small2), big2.mul(&T::exact_f64(4.0)))),
+            });
         }
-    }
-    (gss, gsf)
-}
-
-/// `G_f` and `G_ff` at the functionals' jets (`G_ff` from their second
-/// coefficients when they have them, else zero is not claimed: `None`).
-fn toric_ff<T: Real>(
-    fs: &[([Jet<T>; 3], bool)],
-    torus: Option<&(T, T)>,
-    cs: &(T, T),
-) -> (T, Option<T>) {
-    let (co, si) = cs;
-    let two = T::exact_f64(2.0);
-    let second = fs.iter().all(|(l, _)| l.iter().all(|j| j.order() >= 2));
-    let at = |l: &[Jet<T>; 3], k: usize| l[0].c[k].add(&l[1].c[k].mul(co)).add(&l[2].c[k].mul(si));
-    // Per functional: v, v_f, v_ff (twice the second coefficient).
-    let parts: Vec<[T; 3]> = fs
-        .iter()
-        .map(|(l, _)| {
-            let vff = if second {
-                at(l, 2).mul(&two)
+        let r = c::<T>(m.other_radius);
+        let constant = |a: T| ([a, zero(), zero(), zero()], false);
+        let fs = if m.other_sphere {
+            let mut fs: Vec<([T; 4], bool)> = [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]]
+                .iter()
+                .map(|f| (functional(*f, &one, &zero()), true))
+                .collect();
+            fs.push(constant(r));
+            fs
+        } else {
+            let mut fs = vec![
+                (functional(axes[0], &one, &zero()), true),
+                (functional(axes[1], &one, &zero()), true),
+            ];
+            if m.other_half_angle == 0.0 {
+                fs.push(constant(r));
             } else {
-                T::exact_f64(0.0)
-            };
-            [at(l, 0), at(l, 1), vff]
+                // The other's radius along its axis: `r2 + t2 (w . n2)`.
+                let (ca, sa) = T::cos_sin(&c(m.other_half_angle));
+                fs.push((functional(axes[2], &sa.div(&ca)?, &r), false));
+            }
+            fs
+        };
+        Some(Self {
+            forms: vec![form(&fs)],
+            torus: None,
         })
-        .collect();
-    // (v^2)_f and (v^2)_ff, halved.
-    let square = |[v, vf, vff]: &[T; 3]| [v.mul(vf), vf.square().add(&v.mul(vff))];
-    if let Some((k, four)) = torus {
-        let [a, b, e] = [square(&parts[0]), square(&parts[1]), square(&parts[2])];
-        let (pf, pff) = (a[0].add(&b[0]).mul(&two), a[1].add(&b[1]).mul(&two));
-        let (qf, qff) = (pf.add(&e[0].mul(&two)), pff.add(&e[1].mul(&two)));
-        let q = parts[0][0]
-            .square()
-            .add(&parts[1][0].square())
-            .add(&parts[2][0].square())
-            .add(k);
-        let gf = q.mul(&qf).mul(&two).sub(&four.mul(&pf));
-        let gff = qf.square().add(&q.mul(&qff)).mul(&two).sub(&four.mul(&pff));
-        return (gf, second.then_some(gff));
     }
-    let (mut gf, mut gff) = (T::exact_f64(0.0), T::exact_f64(0.0));
-    for (part, (_, plus)) in parts.iter().zip(fs) {
-        let [f, ff] = square(part);
-        let (f, ff) = (f.mul(&two), ff.mul(&two));
-        if *plus {
-            gf = gf.add(&f);
-            gff = gff.add(&ff);
-        } else {
-            gf = gf.sub(&f);
-            gff = gff.sub(&ff);
+
+    /// Each form's coefficients of the other angle's harmonics at the
+    /// parameter's: `kappa[a] = sum_b w[a][b] D_b(t)`.
+    fn kappa(&self, dt: &Harmonics<T>) -> Vec<Harmonics<T>> {
+        self.forms
+            .iter()
+            .map(|w| {
+                std::array::from_fn(|a| {
+                    (1..5).fold(w[a][0].clone(), |acc, b| acc.add(&w[a][b].mul(&dt[b])))
+                })
+            })
+            .collect()
+    }
+
+    /// Each form's value at the other angle's harmonics (or their rates).
+    fn values(kappa: &[Harmonics<T>], ds: &Harmonics<T>) -> Vec<T> {
+        kappa
+            .iter()
+            .map(|k| (1..5).fold(k[0].mul(&ds[0]), |acc, a| acc.add(&k[a].mul(&ds[a]))))
+            .collect()
+    }
+
+    /// `G` from its forms' values.
+    fn g(&self, v: &[T]) -> T {
+        match &self.torus {
+            Some((k, four)) => v[0].add(k).square().sub(&four.mul(&v[1])),
+            None => v[0].clone(),
         }
     }
-    (gf, second.then_some(gff))
+
+    /// `G`'s derivative from its forms' values and derivatives.
+    fn rate(&self, v: &[T], d: &[T]) -> T {
+        match &self.torus {
+            Some((k, four)) => v[0]
+                .add(k)
+                .mul(&d[0])
+                .mul(&T::exact_f64(2.0))
+                .sub(&four.mul(&d[1])),
+            None => d[0].clone(),
+        }
+    }
+
+    /// `G` and its partials at enclosed angles `s` and `t`: `[G, G_s, G_t,
+    /// G_ss, G_st, G_tt]` (the mean-value forms over a wide base).
+    fn partials(&self, s: &T, t: &T) -> [T; 6] {
+        let (ds, dt) = (harmonics(s), harmonics(t));
+        let (ds1, dt1) = (harmonics_rate(&ds), harmonics_rate(&dt));
+        let (ds2, dt2) = (harmonics_rate(&ds1), harmonics_rate(&dt1));
+        let at = |w: &[[T; 5]; 5], a: &Harmonics<T>, b: &Harmonics<T>| {
+            (0..5).fold(T::exact_f64(0.0), |acc, i| {
+                let row = (1..5).fold(w[i][0].mul(&b[0]), |r, j| r.add(&w[i][j].mul(&b[j])));
+                acc.add(&row.mul(&a[i]))
+            })
+        };
+        let f: Vec<[T; 6]> = self
+            .forms
+            .iter()
+            .map(|w| {
+                [
+                    at(w, &ds, &dt),
+                    at(w, &ds1, &dt),
+                    at(w, &ds, &dt1),
+                    at(w, &ds2, &dt),
+                    at(w, &ds1, &dt1),
+                    at(w, &ds, &dt2),
+                ]
+            })
+            .collect();
+        let Some((k, four)) = &self.torus else {
+            return f[0].clone();
+        };
+        // `(Q + k)^2 - 4 R2^2 P` and its partials.
+        let two = T::exact_f64(2.0);
+        let (q, p) = (&f[0], &f[1]);
+        let qk = q[0].add(k);
+        let first = |i: usize| qk.mul(&q[i]).mul(&two).sub(&four.mul(&p[i]));
+        let second = |i: usize, a: usize, b: usize| {
+            q[a].mul(&q[b])
+                .add(&qk.mul(&q[i]))
+                .mul(&two)
+                .sub(&four.mul(&p[i]))
+        };
+        [
+            qk.square().sub(&four.mul(&p[0])),
+            first(1),
+            first(2),
+            second(3, 1, 1),
+            second(4, 1, 2),
+            second(5, 2, 2),
+        ]
+    }
 }
 
 /// The narrower of two enclosures of one value.
@@ -615,52 +628,39 @@ fn toric_jet<T: Real>(m: &Toric, fraction: &Jet<T>) -> Option<ToricJet<T>> {
     Some(out)
 }
 
-/// The jets of a torus's meeting with a quadric (S9d.4b.2) in the fraction:
-/// the other angle `s` enclosed over the base by interval Newton inside the
-/// window (a unique root of `G` there), then its coefficients by the implicit
-/// function theorem, term by term: the `k`-th coefficient of `G` is linear in
-/// `s_k` with the slope `G_s` at the base, so `s_k` is minus the rest of that
-/// coefficient (with `s_k` zero, `cos s`, `sin s` and the functionals
-/// continued by their recurrences) over the slope, each an enclosure at every
-/// point of the base (inclusion isotone).
+/// The jets of a torus's meeting with a quadric or another torus (S9d.4b.2)
+/// in the fraction, from `G`'s harmonic forms (`Harmonic`): the other angle
+/// `s` enclosed over the base by interval Newton inside the window (a unique
+/// root of `G` there), then its coefficients by the implicit function
+/// theorem, term by term: the `k`-th coefficient of `G` along the meeting is
+/// its terms without the other angle's `k`-th harmonics' coefficients
+/// (`z`), plus those, which are linear in `C_k` and `S_k` (the cosine's and
+/// sine's) with `G`'s partials at the base; and `C_k = C P - S q`, `S_k = S
+/// P + C q` with `P = C C_k + S S_k` from the lower orders (`C^2 + S^2 =
+/// 1`) and `q = C S_k - S C_k`, so `q = -(z + K P) / G_s` (`K = C G_C + S
+/// G_S`, `G_s = C G_S - S G_C`) and `s_k = q - (C S_k' - S C_k')` (`C_k'`,
+/// `S_k'` continued with `s_k` zero): each term taken once, an enclosure at
+/// every point of the base (inclusion isotone). Over a wide base, `G` at
+/// `s*`, `G_s` and the first coefficient are also taken in mean-value forms
+/// about the base's middle, the narrower of two enclosures of one value.
 fn toric_jet_of<T: Real>(m: &Toric, fraction: &Jet<T>) -> Option<ToricJet<T>> {
     let n = fraction.order();
     let t = fraction.scale(&c(m.sweep)).add_constant(&c(m.start));
-    let (p, fs, torus) = toric_parts(m, &t)?;
-    let torus = torus.as_ref();
-    let (lo, hi) = t.c[0].bounds_f64();
-    let star = m.root_at(0.5 * lo + 0.5 * hi);
-    if !star.is_finite() {
-        return None;
-    }
-    let s0 = c::<T>(star);
-    // Interval Newton in its mean-value form over the base: `G` at the
-    // base's middle and at `s*`, plus `G_f` over the base times its
-    // half-width, over `G_s` (the natural extension of `G` over a wide
-    // base cancels badly).
-    let (flo, fhi) = fraction.c[0].bounds_f64();
-    let fmid = 0.5 * flo + 0.5 * fhi;
-    let point = flo == fhi;
-    let at_mid = |f: f64| {
-        Jet::variable(c::<T>(f), 0)
-            .scale(&c(m.sweep))
-            .add_constant(&c(m.start))
-    };
-    let (_, fs_mid, _) = toric_parts(m, &at_mid(fmid))?;
-    // The functionals over the base to order two (their first and second
-    // derivatives for the mean-value forms), and to order one at its middle.
-    let (_, fs_one, _) = if point {
-        (p.clone(), fs.clone(), None)
-    } else {
-        toric_parts(
-            m,
-            &Jet::variable(fraction.c[0].clone(), 2)
-                .scale(&c(m.sweep))
-                .add_constant(&c(m.start)),
-        )?
-    };
-    let spread = fraction.c[0].sub(&c(fmid));
-    let (g0, d0) = toric_g(&fs_mid, torus, &T::cos_sin(&s0));
+    let h = Harmonic::<T>::new(m)?;
+    let two = T::exact_f64(2.0);
+    let zero = || T::exact_f64(0.0);
+    // The parameter's harmonics' jets (the first, `1`, constant).
+    let (ct, st) = t.cos_sin();
+    let (ct2, st2) = t.scale(&two).cos_sin();
+    let tj = [ct, st, ct2, st2];
+    let dt: Harmonics<T> = [
+        T::exact_f64(1.0),
+        tj[0].c[0].clone(),
+        tj[1].c[0].clone(),
+        tj[2].c[0].clone(),
+        tj[3].c[0].clone(),
+    ];
+    let kappa = h.kappa(&dt);
     let size = |x: &T| {
         let (a, b) = x.bounds_f64();
         a.abs().max(b.abs())
@@ -675,62 +675,57 @@ fn toric_jet_of<T: Real>(m: &Toric, fraction: &Jet<T>) -> Option<ToricJet<T>> {
             0.0
         }
     };
-    let slope0 = least(&d0);
+    let (lo, hi) = t.c[0].bounds_f64();
+    let star = m.root_at(0.5 * lo + 0.5 * hi);
+    if !star.is_finite() {
+        return None;
+    }
+    let s0 = c::<T>(star);
+    // Interval Newton over the base: `G` at `s*` over all of it, and `G_s`
+    // over the base and the box; over a wide base each also in its
+    // mean-value form about `(t_mid, s*)` (another torus's `(Q + k)^2 - 4
+    // R2^2 P` cancels over it), the narrower holding it.
+    let point = lo == hi;
+    let mid = c::<T>(0.5 * lo + 0.5 * hi);
+    let spread = t.c[0].sub(&mid);
+    let at_mid = h.partials(&s0, &mid);
+    let g_star = {
+        let d = harmonics(&s0);
+        let natural = h.g(&Harmonic::values(&kappa, &d));
+        if point {
+            natural
+        } else {
+            let over = h.partials(&s0, &t.c[0]);
+            narrower(natural, at_mid[0].add(&over[2].mul(&spread)))
+        }
+    };
+    let slope0 = least(&at_mid[1]);
     if slope0 <= 0.0 || slope0.is_nan() {
         return None;
     }
-    // G's change over the base at s*: G_f times the spread.
-    let drift = |cs: &(T, T)| -> T {
-        let (co, si) = cs;
-        if let Some(t) = torus {
-            // G_f of another torus: its values and their derivatives in f.
-            let (v, vf): (Vec<T>, Vec<T>) = fs_one
-                .iter()
-                .map(|(l, _)| {
-                    let v = l[0].c[0].add(&l[1].c[0].mul(co)).add(&l[2].c[0].mul(si));
-                    let vf = if point {
-                        T::exact_f64(0.0)
-                    } else {
-                        l[0].c[1].add(&l[1].c[1].mul(co)).add(&l[2].c[1].mul(si))
-                    };
-                    (v, vf)
-                })
-                .unzip();
-            return torus_g(&v, &vf, t).1.mul(&spread);
+    // `G_s` over the base at angles `v` about `s*`: natural, or with its
+    // mean-value form.
+    let rate_over = |v: &T| {
+        let d = harmonics(v);
+        let values = Harmonic::values(&kappa, &d);
+        let natural = h.rate(&values, &Harmonic::values(&kappa, &harmonics_rate(&d)));
+        if point {
+            return (natural, None);
         }
-        let mut out = T::exact_f64(0.0);
-        for (l, plus) in &fs_one {
-            let v = l[0].c[0].add(&l[1].c[0].mul(co)).add(&l[2].c[0].mul(si));
-            let vf = if point {
-                T::exact_f64(0.0)
-            } else {
-                l[0].c[1].add(&l[1].c[1].mul(co)).add(&l[2].c[1].mul(si))
-            };
-            let x = v.mul(&vf).mul(&T::exact_f64(2.0));
-            out = if *plus { out.add(&x) } else { out.sub(&x) };
-        }
-        out.mul(&spread)
+        let b = h.partials(v, &t.c[0]);
+        let form = at_mid[1]
+            .add(&b[3].mul(&v.sub(&s0)))
+            .add(&b[4].mul(&spread));
+        (narrower(natural, form), Some(b))
     };
-    let mut delta =
-        4.0 * (size(&g0) + size(&drift(&T::cos_sin(&s0)))) / slope0 + 1e-15 * (1.0 + star.abs());
+    let mut delta = 4.0 * size(&g_star) / slope0 + 1e-15 * (1.0 + star.abs());
     let mut root = None;
     for _ in 0..12 {
         if !delta.is_finite() || delta > 0.5 {
             return None;
         }
-        let v = c::<T>(star - delta).union(&c(star + delta));
-        let cs = T::cos_sin(&v);
-        let (_, d) = toric_g(&fs_one, torus, &cs);
-        // G_s over the box also in its mean-value form about `(fmid, s*)`
-        // (the natural extension cancels badly); the narrower holds it.
-        let d = if point {
-            d
-        } else {
-            let (gss, gsf) = toric_second(&fs_one, torus, &cs);
-            let spread_s = v.sub(&s0);
-            narrower(d, d0.add(&gss.mul(&spread_s)).add(&gsf.mul(&spread)))
-        };
-        if let Some(q) = g0.add(&drift(&cs)).div(&d) {
+        let (rate, _) = rate_over(&c::<T>(star - delta).union(&c(star + delta)));
+        if let Some(q) = g_star.div(&rate) {
             let next = s0.sub(&q);
             let (nlo, nhi) = next.bounds_f64();
             if nlo > star - delta && nhi < star + delta {
@@ -746,84 +741,80 @@ fn toric_jet_of<T: Real>(m: &Toric, fraction: &Jet<T>) -> Option<ToricJet<T>> {
     if !(slo > m.window[0] && shi < m.window[1]) {
         return None;
     }
-    let (c0, si0) = T::cos_sin(&s_base);
-    let (_, slope) = toric_g(&fs, torus, &(c0.clone(), si0.clone()));
-    // Over a wide base, `G_s` and `G_f` along the meeting (the slope and
-    // the first coefficient's rest) also in their mean-value forms about
-    // `(fmid, s*)`, over the box from there to every point of the meeting
-    // over the base (`s*` is binary64's root, not quite the meeting's);
-    // the narrower of each holds it.
-    let (slope, first) = if point {
-        (slope, None)
-    } else {
-        let hull = s_base.union(&s0);
-        let cs_hull = T::cos_sin(&hull);
-        let (gss, gsf) = toric_second(&fs_one, torus, &cs_hull);
-        let spread_s = s_base.sub(&s0);
-        let slope = narrower(slope, d0.add(&gss.mul(&spread_s)).add(&gsf.mul(&spread)));
-        let (_, fs_mid1, _) = toric_parts(
-            m,
-            &Jet::variable(c::<T>(fmid), 1)
-                .scale(&c(m.sweep))
-                .add_constant(&c(m.start)),
-        )?;
-        let (gf0, _) = toric_ff(&fs_mid1, torus, &T::cos_sin(&s0));
-        let first = toric_ff(&fs_one, torus, &cs_hull)
-            .1
-            .map(|gff| gf0.add(&gff.mul(&spread)).add(&gsf.mul(&spread_s)));
-        (slope, first)
+    let ds = harmonics(&s_base);
+    let [_, c0, si0, c20, s20] = ds.clone();
+    // Each form's `G_C` and `G_S` combined: `K` and `G_s` per form, then
+    // `G`'s through another torus's `(Q + k)^2 - 4 R2^2 P`.
+    let per_form = |k: &Harmonics<T>| {
+        let kk = k[1]
+            .mul(&c0)
+            .add(&k[2].mul(&si0))
+            .add(&k[3].mul(&c20).mul(&two))
+            .add(&k[4].mul(&s20).mul(&two));
+        let gs = k[2]
+            .mul(&c0)
+            .sub(&k[1].mul(&si0))
+            .sub(&k[3].mul(&s20).mul(&two))
+            .add(&k[4].mul(&c20).mul(&two));
+        (kk, gs)
     };
-    let zero = || T::exact_f64(0.0);
-    let cauchy = |x: &[T], y: &[T], k: usize| T::convolve(x, y, k);
-    let mut s = vec![s_base];
-    let (mut co, mut sn) = (vec![c0.clone()], vec![si0.clone()]);
-    // Each functional's series along the meeting: `L0 + C L1 + S L2`.
-    let mut ls: Vec<Vec<T>> = fs
-        .iter()
-        .map(|(l, _)| vec![l[0].c[0].add(&l[1].c[0].mul(&c0)).add(&l[2].c[0].mul(&si0))])
+    let parts: Vec<(T, T)> = kappa.iter().map(per_form).collect();
+    // The forms' values along the meeting (another torus's `Q` series).
+    let mut values: Vec<Vec<T>> = Harmonic::values(&kappa, &ds)
+        .into_iter()
+        .map(|v| vec![v])
         .collect();
-    // Another torus's `S = |L|^2 + k` (and `P = L1^2 + L2^2`) along it.
-    let sums = |ls: &[Vec<T>], k: usize| -> (T, T) {
-        let p = cauchy(&ls[0], &ls[0], k).add(&cauchy(&ls[1], &ls[1], k));
-        (p.add(&cauchy(&ls[2], &ls[2], k)), p)
+    // `G`'s rate in each form's value (`2 (Q + k)` and `-4 R2^2`).
+    let weights: Vec<T> = match &h.torus {
+        Some((k, four)) => vec![values[0][0].add(k).mul(&two), four.neg()],
+        None => vec![T::exact_f64(1.0)],
     };
-    let mut ss = Vec::new();
-    if let Some((kc, _)) = torus {
-        ss.push(sums(&ls, 0).0.add(kc));
-    }
-    // The order-zero quantities every step's linear part takes: each
-    // functional's `v_s = C L2 - S L1` (`e`) and `G`'s derivative in it
-    // (`w`: `+-2 v` against a quadric, `v (4 S - 2 four)` against another
-    // torus, `four` only on the first two), `alpha = sum w L1`, `beta =
-    // sum w L2` and `K = alpha C + beta S`; then `G_s = beta C - alpha S`.
-    let two = T::exact_f64(2.0);
-    let e: Vec<T> = fs
+    let combine = |xs: &[T]| {
+        xs.iter()
+            .zip(&weights)
+            .fold(zero(), |acc, (x, w)| acc.add(&w.mul(x)))
+    };
+    let kk = combine(&parts.iter().map(|p| p.0.clone()).collect::<Vec<_>>());
+    let slope = combine(&parts.iter().map(|p| p.1.clone()).collect::<Vec<_>>());
+    // Over a wide base, `G_s` along the meeting and its first coefficient's
+    // rest (`G_t t'`) also in their mean-value forms about `(t_mid, s*)`,
+    // over the box from there to every point of the meeting over the base
+    // (`s*` is binary64's root, not quite the meeting's).
+    let (slope, first) = match rate_over(&s_base.union(&s0)) {
+        (_, Some(b)) => {
+            let spread_s = s_base.sub(&s0);
+            let slope = narrower(
+                slope,
+                at_mid[1].add(&b[3].mul(&spread_s)).add(&b[4].mul(&spread)),
+            );
+            let first = t.c.get(1).map(|rate| {
+                at_mid[2]
+                    .add(&b[5].mul(&spread))
+                    .add(&b[4].mul(&spread_s))
+                    .mul(rate)
+            });
+            (slope, first)
+        }
+        _ => (slope, None),
+    };
+    let ks = kk.div(&slope)?;
+    // Each form's `K_b = sum_a w[a][b] D_a(s)` along the meeting, for the
+    // parameter's harmonics `b` past the first.
+    let mut kb: Vec<[Vec<T>; 4]> = h
+        .forms
         .iter()
-        .map(|(l, _)| l[2].c[0].mul(&c0).sub(&l[1].c[0].mul(&si0)))
-        .collect();
-    let w: Vec<T> = fs
-        .iter()
-        .zip(&ls)
-        .enumerate()
-        .map(|(j, ((_, plus), x))| match torus {
-            Some((_, four)) => {
-                let f = ss[0].mul(&T::exact_f64(4.0));
-                x[0].mul(&if j < 2 { f.sub(&four.mul(&two)) } else { f })
-            }
-            None if *plus => x[0].mul(&two),
-            None => x[0].mul(&two).neg(),
+        .map(|w| {
+            std::array::from_fn(|b| {
+                vec![(1..5).fold(w[0][b + 1].clone(), |acc, a| {
+                    acc.add(&w[a][b + 1].mul(&ds[a]))
+                })]
+            })
         })
         .collect();
-    let (alpha, beta) = fs
-        .iter()
-        .zip(&w)
-        .fold((zero(), zero()), |(a, b), ((l, _), wj)| {
-            (a.add(&wj.mul(&l[1].c[0])), b.add(&wj.mul(&l[2].c[0])))
-        });
-    let ks = alpha.mul(&c0).add(&beta.mul(&si0)).div(&slope)?;
-    let (cks, sks) = (c0.add(&si0.mul(&ks)), si0.sub(&c0.mul(&ks)));
+    let mut s = vec![s_base];
+    let (mut co, mut sn) = (vec![c0.clone()], vec![si0.clone()]);
     for k in 1..=n {
-        let kk = T::exact_f64(k as f64);
+        let order = T::exact_f64(k as f64);
         // cos and sin continued with s_k = 0: k S_k = sum C_i d_{k-1-i},
         // k C_k = -sum S_i d_{k-1-i}, d_j = (j + 1) s_{j+1} (i = 0 holds
         // s_k).
@@ -833,102 +824,68 @@ fn toric_jet_of<T: Real>(m: &Toric, fraction: &Jet<T>) -> Option<ToricJet<T>> {
             a_s = a_s.add(&co[i].mul(&d));
             a_c = a_c.add(&sn[i].mul(&d));
         }
-        let (ca, sb) = (a_c.neg().div(&kk)?, a_s.div(&kk)?);
-        // Each functional's series without its terms in `C_k` and `S_k`
-        // (`Y`), and `G`'s terms of order `k` without the series' (`H`):
-        // `G_k = H + sum w Y + alpha C_k' + beta S_k'` for the provisional
-        // `C_k'`, `S_k'` above, and the step's every output a linear form
-        // in `Y`, `H`, `C_k'` and `S_k'`, each taken once (the same values;
-        // the provisional ones corrected after `s_k`, as the plain
-        // recurrence does, count them twice, and that interval widening
-        // compounded order by order, to a thousand pieces a meeting).
-        let ys: Vec<T> = fs
+        let (ca, sb) = (a_c.neg().div(&order)?, a_s.div(&order)?);
+        let qq = c0.mul(&sb).sub(&si0.mul(&ca));
+        // The lower orders' parts of `C^2 + S^2`, `C^2 - S^2` and `2 C S`.
+        let (mut pp, mut m2c, mut m2s) = (zero(), zero(), zero());
+        for i in 1..k {
+            let (cc, ss) = (co[i].mul(&co[k - i]), sn[i].mul(&sn[k - i]));
+            pp = pp.add(&cc).add(&ss);
+            m2c = m2c.add(&cc).sub(&ss);
+            m2s = m2s.add(&co[i].mul(&sn[k - i]));
+        }
+        let pp = pp.mul(&T::exact_f64(-0.5));
+        let m2s = m2s.mul(&two);
+        // Each form's `k`-th coefficient without the other angle's `k`-th
+        // harmonics' (`z`), and with their lower orders' parts (`z2`).
+        let zs: Vec<T> = kb
             .iter()
-            .map(|(l, _)| {
-                (1..=k).fold(l[0].c[k].clone(), |y, i| {
-                    y.add(&l[1].c[i].mul(&co[k - i]))
-                        .add(&l[2].c[i].mul(&sn[k - i]))
-                })
+            .map(|ks| {
+                let mut z = zero();
+                for (b, series) in ks.iter().enumerate() {
+                    for (i, x) in series.iter().enumerate() {
+                        z = z.add(&tj[b].c[k - i].mul(x));
+                    }
+                }
+                z
             })
             .collect();
-        let low = |x: &[T]| (1..k).fold(zero(), |acc, i| acc.add(&x[i].mul(&x[k - i])));
-        let h = match torus {
-            Some((_, four)) => {
-                let lows: Vec<T> = ls.iter().map(|x| low(x)).collect();
-                let p_low = lows[0].add(&lows[1]);
-                let s_low = p_low.add(&lows[2]);
-                let mid = (1..k).fold(zero(), |acc, i| acc.add(&ss[i].mul(&ss[k - i])));
-                ss[0].mul(&s_low).mul(&two).add(&mid).sub(&four.mul(&p_low))
-            }
-            None => fs.iter().zip(&ls).fold(zero(), |acc, ((_, plus), x)| {
-                if *plus {
-                    acc.add(&low(x))
-                } else {
-                    acc.sub(&low(x))
-                }
-            }),
-        };
-        let z = ys
+        let z2s: Vec<T> = zs
             .iter()
-            .zip(&w)
-            .fold(h.clone(), |acc, (y, wj)| acc.add(&wj.mul(y)));
-        // The first coefficient's rest is `G_f` along the meeting times
-        // the base variable's own first coefficient (`-1` reversed); `C_1'`
-        // and `S_1'` are zero.
-        let z = match (&first, k) {
-            (Some(mv), 1) => narrower(z, mv.mul(&fraction.c[1])),
-            _ => z,
-        };
-        let zs = z.div(&slope)?;
-        // `P = C C_k + S S_k`, the same before and after `s_k` (also
-        // `-1/2 sum (C_i C_{k-i} + S_i S_{k-i})`: `C^2 + S^2 = 1`), and
-        // `s_k = -(G_k' / G_s)`, `C_k = C P - S (Q + s_k)`, `S_k = S P + C
-        // (Q + s_k)` with `Q = C S_k' - S C_k'`.
-        let pp = narrower(
-            c0.mul(&ca).add(&si0.mul(&sb)),
-            (1..k)
-                .fold(zero(), |acc, i| {
-                    acc.add(&co[i].mul(&co[k - i])).add(&sn[i].mul(&sn[k - i]))
-                })
-                .mul(&T::exact_f64(-0.5)),
-        );
-        let sk = narrower(
-            ca.mul(&sks).sub(&sb.mul(&cks)).sub(&zs),
-            c0.mul(&sb)
-                .sub(&si0.mul(&ca))
-                .neg()
-                .sub(&zs)
-                .sub(&ks.mul(&pp)),
-        );
-        let cok = narrower(pp.mul(&cks).add(&si0.mul(&zs)), ca.sub(&si0.mul(&sk)));
-        let snk = narrower(pp.mul(&sks).sub(&c0.mul(&zs)), sb.add(&c0.mul(&sk)));
-        // Each functional's series: `Y + L1 C_k + L2 S_k`, and as the form
-        // `Y (1 - w e / G_s) - (e / G_s) (H + sum_{i != j} w_i Y_i) + P m`.
-        for (j, ((l, _), series)) in fs.iter().zip(ls.iter_mut()).enumerate() {
-            let direct = ys[j].add(&l[1].c[0].mul(&cok)).add(&l[2].c[0].mul(&snk));
-            let es = e[j].div(&slope)?;
-            let rest = ys
-                .iter()
-                .zip(&w)
-                .enumerate()
-                .filter(|(i, _)| *i != j)
-                .fold(h.clone(), |acc, (_, (y, wi))| acc.add(&wi.mul(y)));
-            let m = l[1].c[0].mul(&cks).add(&l[2].c[0].mul(&sks));
-            let form = ys[j]
-                .mul(&c::<T>(1.0).sub(&w[j].mul(&es)))
-                .sub(&es.mul(&rest))
-                .add(&pp.mul(&m));
-            series.push(narrower(direct, form));
+            .zip(&kappa)
+            .map(|(z, kp)| z.add(&kp[3].mul(&m2c)).add(&kp[4].mul(&m2s)))
+            .collect();
+        let mut z = combine(&z2s);
+        if let (Some(form), 1) = (&first, k) {
+            z = narrower(z, form.clone());
         }
-        co.push(cok);
+        if h.torus.is_some() {
+            // `Q`'s own lower orders in `(Q + k)^2`.
+            let q = &values[0];
+            for i in 1..k {
+                z = z.add(&q[i].mul(&q[k - i]));
+            }
+        }
+        let q = z.div(&slope)?.add(&ks.mul(&pp)).neg();
+        let ck = c0.mul(&pp).sub(&si0.mul(&q));
+        let snk = si0.mul(&pp).add(&c0.mul(&q));
+        let c2k = c20.mul(&pp).sub(&s20.mul(&q)).mul(&two).add(&m2c);
+        let s2k = s20.mul(&pp).add(&c20.mul(&q)).mul(&two).add(&m2s);
+        let dk = [zero(), ck.clone(), snk.clone(), c2k, s2k];
+        for (f, w) in h.forms.iter().enumerate() {
+            for (b, series) in kb[f].iter_mut().enumerate() {
+                series.push((1..5).fold(zero(), |acc, a| acc.add(&w[a][b + 1].mul(&dk[a]))));
+            }
+            let own = (1..5).fold(zs[f].clone(), |acc, a| acc.add(&kappa[f][a].mul(&dk[a])));
+            values[f].push(own);
+        }
+        s.push(q.sub(&qq));
+        co.push(ck);
         sn.push(snk);
-        if torus.is_some() {
-            ss.push(sums(&ls, k).0);
-        }
-        s.push(sk);
     }
     let s = Jet { c: s };
     let (cj, sj) = (Jet { c: co }, Jet { c: sn });
+    let p = toric_point_parts(m, &t);
     let point: [Jet<T>; 3] =
         std::array::from_fn(|k| p[0][k].add(&cj.mul(&p[1][k])).add(&sj.mul(&p[2][k])));
     let (u, v) = if m.over_v { (s, t) } else { (t, s) };
@@ -2174,6 +2131,63 @@ mod tests {
                 let (lo, hi) = j.c[0].bounds_f64();
                 assert!(lo - 1e-14 <= p[i] && p[i] <= hi + 1e-14, "{f} {i}");
             }
+        }
+    }
+
+    /// A rod of radius `2 + 1e-6` about a tilted torus's axis (radii 3 and
+    /// 1; its frame built in the torus's, coaxial within rounding): its
+    /// meeting's ring above `v = pi`, `1.4e-3` from the double root. The
+    /// functionals' squares' jets, whose terms in `u` cancel only exactly,
+    /// widened a hundredfold an order there (`16` at order 12 at a point,
+    /// none over a piece of `1e-3`, some 65,000 pieces an integral); the
+    /// harmonic forms' stay within `1e-7` to order 13 at points and over a
+    /// sixty-fourth of the turn (`2e-8` at order 12: the frames' rounding in
+    /// `cos 2u`'s coefficient, `1e-16`, over the slope `6e-3`, times `(4
+    /// pi)^k / k!`), and enclose the binary64 points.
+    #[test]
+    fn a_meeting_near_a_double_root_coaxial_within_rounding_stays_narrow() {
+        let torus = frame([1.0, -2.0, 0.5], [0.0, 3.0, 4.0], [1.0, 0.0, 0.0]);
+        let base = torus.point(crate::Point2::new(0.0, 0.0), -1.5).to_array();
+        let rod = frame(base, torus.normal().to_array(), torus.x().to_array());
+        let m = Toric {
+            frame: torus,
+            major: 3.0,
+            minor: 1.0,
+            other: rod,
+            other_radius: 2.0 + 1e-6,
+            other_sphere: false,
+            other_half_angle: 0.0,
+            other_minor: 0.0,
+            over_v: false,
+            window: [std::f64::consts::PI + 1e-9, 6.0],
+            start: 0.0,
+            sweep: std::f64::consts::TAU,
+        };
+        let width = |x: &Fast| {
+            let (lo, hi) = x.bounds_f64();
+            hi - lo
+        };
+        let near = |jet: &[Jet<Fast>; 3], f: f64| {
+            let p = m.point(f).to_array();
+            for (i, j) in jet.iter().enumerate() {
+                let (lo, hi) = j.c[0].bounds_f64();
+                assert!(lo - 1e-14 <= p[i] && p[i] <= hi + 1e-14, "{f} {i}");
+            }
+        };
+        for f in [0.25, 0.5, 0.75] {
+            let ([_, v], point) = toric_jet(&m, &Jet::variable(Fast::exact_f64(f), 13)).unwrap();
+            let (_, at) = m.angles(f);
+            let (lo, hi) = v.c[0].bounds_f64();
+            assert!(lo <= at && at <= hi, "{f} {lo} {hi} {at}");
+            assert!((at - std::f64::consts::PI - 1.414e-3).abs() < 1e-5, "{at}");
+            assert!(v.c.iter().all(|x| width(x) < 1e-7), "{f}");
+            near(&point, f);
+        }
+        let base = Fast::exact_f64(0.5).union(&Fast::exact_f64(0.5 + 1.0 / 64.0));
+        let ([_, v], point) = toric_jet(&m, &Jet::variable(base, 13)).unwrap();
+        assert!(v.c.iter().all(|x| width(x) < 1e-7));
+        for f in [0.5, 0.505, 0.5 + 1.0 / 64.0] {
+            near(&point, f);
         }
     }
 

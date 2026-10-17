@@ -1204,11 +1204,16 @@ then for the near misses of faces with no rule of their own (branch
    release suite's others at most 8,519, and no outcome moves
    (`tests/torus_hole_rod_booleans.rs`). Under glibc's `hypot` that
    crossing stalls in the trace instead (the rod's frame rounded
-   otherwise). Open: the tilted rod crossing beyond the resolution (`5e-7`
-   to `1e-6` measured) evaluates, its pieces verified at once, but
-   validating its results takes minutes (100 to 274 s an operation at
-   `1e-6`, before as now: `periodic_area`'s integrals along the meeting's
-   projections, `toric_jet` by the double root); its test is ignored.
+   otherwise). The tilted rod crossing beyond the resolution, whose results'
+   validation took minutes (100 to 274 s an operation at `1e-6`), is done
+   too (branch `torus-validation-speed`, REVIEW_NOTES.md's "A tilted torus
+   meeting's validation"): the meeting's jets in the validator's integrals
+   (`toric_jet`) widened a hundredfold an order by the double root, from
+   the other surface's functionals' squares, whose terms in the torus's
+   angle cancel only exactly; they come from `G`'s harmonic forms in the
+   torus's two angles now, and the crossings of `5e-7`, `8e-7` and `1e-6`
+   evaluate in about a second an operation in every frame, tested against
+   mpmath volumes with their certified enclosures (no test ignored).
 
 Refused by design and staying refused (each documented): a tangency between
 the inputs, a cavity beside several solids, spline segments along one curve

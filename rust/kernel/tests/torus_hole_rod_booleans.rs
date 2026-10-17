@@ -7,7 +7,12 @@
 //! the torus meeting's verification (`ToricCrv::verified`), its runs split
 //! and their pieces verified again up to 48 times, each verification capped
 //! but not their total; the meeting's verifications now draw on one budget
-//! (REVIEW_NOTES.md, "A torus meeting's verification budget").
+//! (REVIEW_NOTES.md, "A torus meeting's verification budget"). Its
+//! crossings beyond the resolution took minutes an operation there in
+//! their results' validation (the meeting's jets in the validator's
+//! integrals, widening a hundredfold an order by the double root); they
+//! take about a second now (REVIEW_NOTES.md, "A tilted torus meeting's
+//! validation").
 use rusty_occt::identity::OperationId;
 use rusty_occt::{Error, Frame3, Point2, Point3, Solid, Tolerance, Vec3};
 
@@ -106,49 +111,77 @@ fn refused(what: &str, t: &Solid, r: &Solid, why: &[Error]) {
     }
 }
 
-/// The crossing of `1e-6` (beyond the resolution): each operation one
-/// solid, of the reference's volumes (mpmath, 25 digits: the torus
-/// `6 pi^2`, the rod `3 pi rho^2` at `rho = 2 + 1e-6` in binary64, their
-/// common by Pappus over the tube's segment, `2 pi` times the integral of
-/// `2 x sqrt(1 - (x - 3)^2)` over `[2, rho]`), the fuse and the common
-/// together the inputs, the cut and the common the torus.
-fn evaluates(what: &str, t: &Solid, r: &Solid) {
-    const TORUS: f64 = 59.217_626_406_536_15;
-    const ROD: f64 = 37.699_149_542_198_79;
-    const COMMON: f64 = 2.369_537_922_945_086e-8;
+/// The crossings beyond the resolution, `1e-6`, `8e-7` and `5e-7`, and
+/// their reference volumes (mpmath, 25 digits, rounded once): the rod's
+/// `3 pi rho^2` at `rho = 2 + g` in binary64, and its common with the torus
+/// by Pappus over the tube's segment, `2 pi` times the integral of `2 x
+/// sqrt(1 - (x - 3)^2)` over `[2, rho]` (also in closed form).
+const BEYOND: [(f64, f64, f64); 3] = [
+    (1e-6, 37.699_149_542_198_79, 2.369_537_922_945_086e-8),
+    (8e-7, 37.699_142_002_373_02, 1.695_503_267_562_629_4e-8),
+    (5e-7, 37.699_130_692_635_8, 8.377_581_039_647_674e-9),
+];
+
+/// The torus's volume, `6 pi^2`.
+const TORUS: f64 = 59.217_626_406_536_15;
+
+/// One solid's certified volume, at most `1e-9` wide (relative to its size,
+/// at least one), holding the reference within `slack` (its rounding).
+fn certified(what: &str, s: &Solid, reference: f64, slack: f64) {
+    let [lo, hi] = s
+        .topology()
+        .mass_enclosure()
+        .unwrap_or_else(|| panic!("{what}: its mass undecided"))
+        .volume;
+    let size = lo.abs().max(hi.abs()).max(1.0);
+    assert!(hi - lo <= 1e-9 * size, "{what}: wide [{lo}, {hi}]");
+    assert!(
+        lo - slack <= reference && reference <= hi + slack,
+        "{what}: [{lo}, {hi}] against {reference}"
+    );
+}
+
+/// A crossing beyond the resolution (`BEYOND`'s `(g, rod, common)`): each
+/// operation one solid, its certified volume holding the reference's (the
+/// sums' within their rounding), the fuse and the common together the
+/// inputs, the cut and the common the torus, the cut back and the common
+/// the rod.
+fn evaluates(what: &str, t: &Solid, r: &Solid, (_, rod, common): (f64, f64, f64)) {
     let (vt, vr) = (t.mass_properties().volume, r.mass_properties().volume);
-    let close = |x: f64, y: f64| (x - y).abs() <= 1e-12 * (TORUS + ROD);
-    assert!(close(vt, TORUS) && close(vr, ROD), "{what}: {vt} {vr}");
-    let [fuse, cut, back, common] = outcomes(t, r).map(|out| out.expect(what));
-    for (op, s) in [
-        ("fuse", &fuse),
-        ("cut", &cut),
-        ("cut back", &back),
-        ("common", &common),
+    let close = |x: f64, y: f64| (x - y).abs() <= 1e-12 * (TORUS + rod);
+    assert!(close(vt, TORUS) && close(vr, rod), "{what}: {vt} {vr}");
+    let rounding = |x: f64| x.abs().max(1.0) * f64::EPSILON;
+    certified(&format!("{what} torus"), t, TORUS, rounding(TORUS));
+    certified(&format!("{what} rod"), r, rod, rounding(rod));
+    let [fuse, cut, back, both] = outcomes(t, r).map(|out| out.expect(what));
+    let sums = 4.0 * rounding(TORUS + rod);
+    for (op, s, reference, slack) in [
+        ("fuse", &fuse, TORUS + rod - common, sums),
+        ("cut", &cut, TORUS - common, sums),
+        ("cut back", &back, rod - common, sums),
+        ("common", &both, common, rounding(common)),
     ] {
         assert_eq!(s.len(), 1, "{what} {op}");
+        assert!(close(volume(s), reference), "{what} {op} {}", volume(s));
+        certified(&format!("{what} {op}"), &s[0], reference, slack);
     }
-    let [vf, vc, vb, vm] = [&fuse, &cut, &back, &common].map(|s| volume(s));
-    assert!(close(vm, COMMON), "{what} common {vm}");
-    assert!(close(vf, TORUS + ROD - COMMON), "{what} fuse {vf}");
-    assert!(close(vc, TORUS - COMMON), "{what} cut {vc}");
-    assert!(close(vb, ROD - COMMON), "{what} cut back {vb}");
+    let [vf, vc, vb, vm] = [&fuse, &cut, &back, &both].map(|s| volume(s));
     assert!(close(vf + vm, vt + vr), "{what} fuse and common");
     assert!(close(vc + vm, vt), "{what} cut and common");
     assert!(close(vb + vm, vr), "{what} cut back and common");
 }
 
 /// The rod tangent along the inner equator (`g = 0`) and crossing it by
-/// `1e-12`, `1e-9`, `5e-8` and `1e-6`. Coaxial exactly (level, turned): the
+/// `1e-12`, `1e-9` and `5e-8`. Coaxial exactly (level, turned): the
 /// tangency `Degenerate`, the crossings within the resolution circles the
-/// box verification leaves unverified (`ComputationLimit`), and `1e-6`
-/// evaluating. Coaxial within rounding (tilted), each a `ComputationLimit`:
-/// the tangency and `1e-12` a stalled trace; `1e-9` the meeting over its
-/// verification budget where the platform's `hypot` is macOS's (about a
-/// second a meeting in release; over half an hour before), a stalled trace
-/// under glibc's correctly rounded one (the rod's frame normalized
-/// again); `5e-8` over the budget under both; its `1e-6` is
-/// `a_tilted_rod_crossing_beyond_the_resolution_evaluates`.
+/// box verification leaves unverified (`ComputationLimit`). Coaxial within
+/// rounding (tilted), each a `ComputationLimit`: the tangency and `1e-12` a
+/// stalled trace; `1e-9` the meeting over its verification budget where
+/// the platform's `hypot` is macOS's (about a second a meeting in release;
+/// over half an hour before), a stalled trace under glibc's correctly
+/// rounded one (the rod's frame normalized again); `5e-8` over the budget
+/// under both. The crossings beyond the resolution are
+/// `rod_crossings_beyond_the_resolution_evaluate_*`.
 #[test]
 fn a_rod_crossing_a_torus_inner_equator_is_decided_quickly() {
     let limit = |why: &'static str| Error::ComputationLimit(why);
@@ -174,19 +207,39 @@ fn a_rod_crossing_a_torus_inner_equator_is_decided_quickly() {
         for (g, why) in within {
             refused(&at(g), &t, &rod(&f, g), &why);
         }
-        if coaxial {
-            evaluates(&at(1e-6), &t, &rod(&f, 1e-6));
-        }
     }
 }
 
-/// The tilted frame's crossing of `1e-6`: it evaluates as the others do,
-/// its meeting's pieces verified at once, but validating its results'
-/// faces (their projections' integrals along the meeting near a double
-/// root) takes minutes in release (HANDOFF.md).
+/// The crossings beyond the resolution in one frame: each operation one
+/// solid of the reference's volumes.
+fn beyond(frame: usize) {
+    let (name, f) = frames()[frame];
+    let t = torus(f);
+    for case in BEYOND {
+        evaluates(&format!("{name} {:e}", case.0), &t, &rod(&f, case.0), case);
+    }
+}
+
 #[test]
-#[ignore]
-fn a_tilted_rod_crossing_beyond_the_resolution_evaluates() {
-    let (_, f) = frames()[2];
-    evaluates("tilted 1e-6", &torus(f), &rod(&f, 1e-6));
+fn rod_crossings_beyond_the_resolution_evaluate_level() {
+    beyond(0);
+}
+
+#[test]
+fn rod_crossings_beyond_the_resolution_evaluate_turned() {
+    beyond(1);
+}
+
+/// The tilted frame's: coaxial within rounding, its meeting traced and
+/// verified in pieces, two closed curves near a double root. Validating its
+/// results' faces took minutes an operation (100 to 274 s at `1e-6`, some
+/// 200 s a fuse at `5e-7` and `8e-7`): the meeting's jets in the
+/// validator's integrals, from the other surface's functionals' squares
+/// whose terms in the torus's angle cancel only exactly, widened a
+/// hundredfold an order by the division by the small slope there, so each
+/// integral took some 65,000 pieces; from `G`'s harmonic forms, about a
+/// second (REVIEW_NOTES.md, "A tilted torus meeting's validation").
+#[test]
+fn rod_crossings_beyond_the_resolution_evaluate_tilted() {
+    beyond(2);
 }
