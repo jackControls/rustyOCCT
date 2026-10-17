@@ -18973,6 +18973,190 @@ Decisions for S9, recorded before its code (2026-09-28):
   the table's counts, the records inert where the capture is the
   platform's own. Next: the next scheduled run, green with all 46 strict.
 
+* **Other curves, points of two fields and an apex against a spline or
+  torus face refined, before their code (2026-10-16; HANDOFF's item 5,
+  the open part of "Two conic edges within the resolution of each
+  other").** Why they are evaluated today: `edges_and_vertices` takes
+  vertices, a cone's apex and edges of lines, conics and circles only, and
+  combines two points only where their numbers lie in one field
+  (`one_field`); `vertex_faces` takes plane, cylinder and cone faces only.
+  So a cube's corner `1e-12` or `1e-9` diagonally off a rod's hole's rim
+  (a meeting of two cylinders), a dimple's rim (a cylinder's meeting with
+  a sphere), a cone's oblique section, a torus's oblique section or a
+  spline prism's cap edge is fused with it into two solids and their
+  common is empty; so are two balls' zones whose rims pass that near each
+  other (two sphere circles: points of two quadratic fields), and a cone
+  whose apex stands that far off a spline prism's wall. The user's
+  decision holds ("contact only"): within the resolution of contact,
+  without a decided contact, the pair is refused as a near miss with a
+  named reason. Taken here in full, in three parts, the first before the
+  others (they need it):
+  - **(1) Points of two fields.** Every pair of the residue and the conic
+    rule (vertex and vertex, vertex and edge, edge and edge of lines,
+    conics and circles) whose points' numbers lie in two fields: a sphere
+    circle's point (`Circ::at`, in a `Q(sqrt E)` of its own) against a
+    point of `Q(sqrt D)`, a given result's vertex or a line through such
+    points against another field's. Where `D / E` is a rational square
+    the two are one field (`sqrt E = r sqrt D`) and the existing rules take
+    the pair. Otherwise every number of the pair rule is a sum `sum a_i
+    b_i`, each `a_i` of the first point's field and each `b_i` of the
+    second's (a type `Mix`; sums and products of such sums are such sums):
+    the squared gap `|y - x|^2` against `res^2`, each direction's sign `n
+    . w` and the band `(n . w)^2 <= (10^-24 |n|^2 + rho^2) |w|^2`, an
+    apex's rulings' test (`apex_side`, its squares). Its sign is
+    `mixed_dot_sign`'s: exact over the rationals and over one algebraic
+    base (`tower_sign` in `Q(sqrt D)(sqrt E)`), by enclosures over two
+    different algebraic bases (S9c.2b.2's convention for two such fields:
+    values within `1e-40` of each other's magnitude equal). The points: a
+    vertex; a line's foot, or two lines' closest points, where the line's
+    point lies in another field than the other's: points of `Mix` (their
+    parameter a `Mix`), strictly inside the edge by `Mix` comparisons of
+    the line's parameter; a line edge lies on its faces' rulings (planes,
+    cylinders, cones, spline walls), whose directions are the same all
+    along it, so they are taken at a point of the line's own field next to
+    the foot. A circle's point nearest a point of another field
+    (`circle_nearest` takes a rational point, as before): bracketed on the
+    circle as on a conic (`bisect`, its slope `(x - p) . t` a `Mix`,
+    `speed`'s bound), within the resolution where the bracket's point is
+    (the least at most its gap), apart where its gap less the bound
+    exceeds it, between `ComputationLimit` ("a near miss's least distance
+    within rounding of the resolution") where the pair is a contact. Two
+    sphere circles: the conic rule (`conic_leasts`, the exact points at the
+    leasts' rational half angles' tangents, each in a field of its own;
+    beyond the resolution `conics_bracketed`, the inner circle's nearest
+    point bracketed on it where the outer point is not rational).
+  - **(1), contact.** `pair`'s test unchanged at each point (its
+    directions there, of its own field, against the gap `n`, a `Mix`
+    vector). A missing pair evaluates where the gap lies inside both
+    inputs; `member` takes a direction of the point's own field, so it is
+    given a rational direction `n'` within `2^-90 |n|` of `n` (from
+    enclosures), checked to lie on the side of `n` of every tangent plane
+    of the point's faces (each face's normal `m` there: `n . m` and `n' .
+    m` of one strict sign). The material's tangent cone at the point is
+    bounded by those planes, so `n` and `n'` lie in one open cell of them
+    and have one membership. A cone's apex's membership is its rulings'
+    exactly (`n` strictly inside the cone: `s C > 0` and `C^2 > k^2 (A^2 +
+    B^2)`; on the cone undecided). Where `n` lies in a face's tangent
+    plane at its point (`n . m = 0`) or the check fails, the membership is
+    undecided and the pair, a contact, is a `ComputationLimit` ("a near
+    miss's gap along a face between points of two fields"). Reasons
+    otherwise as for one field: "a vertex within the resolution of a
+    vertex of the other input (S9d.2)", "a vertex within the resolution of
+    an edge of the other input (S9d.2)", "two edges within the resolution
+    of each other (S9d.2)".
+  - **(2) Edges of other curves** against the other input's vertices (a
+    cone's apex among them) and edges (lines, conics, circles and other
+    curves): input edges (with an input's id, not between faces on one
+    surface) on a meeting of two curved faces (`Crv::Meet`, `Crv::Rise`),
+    a cone's plane section (`Crv::Cone`), a torus's section or meeting
+    (`Crv::Torus`, `Crv::Toric`) or a spline prism's cap edge
+    (`Crv::Spline`), their boxes meeting once widened by twice the
+    resolution, their points strictly inside the edge or at an end it runs
+    on through smoothly (`inside_edge`). A spline wall's meeting
+    (`Crv::WallMeet`) is never an input's edge: a result with spline walls
+    is refused as an input ("a Boolean's result with spline walls given to
+    another Boolean (S9f)").
+    - **Leasts in binary64** along the curve's samples (`Run::extrema`'s
+      32 samples narrowed): of the distance to the vertex, to the line, to
+      the conic's or circle's nearest point (its 64 angles and Newton's
+      method), or to the other curve's nearest sample narrowed; each only
+      where binary64 puts it within twice the resolution.
+    - **The exact point**: settled by bisection on the exact sign of the
+      distance's derivative along the curve (`(x - y) . t`, `y` the
+      other's point nearest `x`: the vertex, the line's exact foot, a
+      conic's or circle's point exactly where it is a circle and `x`
+      rational, else bracketed on it, another curve's settled) to a
+      bracket between two exact points of opposite signs, and its middle's
+      exact point (none found: the binary64 place's). Its gap `U` bounds
+      the least from above: within the resolution where `U <= res`, the
+      pair decided by `pair` at those points (they lie off the least's by
+      the parameters' rounding, far below the gap's own rounding `rho`, so
+      an incidence settles to a gap of rounding's size: no contact).
+    - **Beyond it, a certified bound of the curve's movement** over the
+      bracket: the largest distance from the middle's point to a binary64
+      interval enclosure (`Fast`, outward rounded) of the curve's points
+      over the bracket's exact parameters, evaluated from the curve's own
+      formula: a meeting's point `base + w dir` on its carrier's ruling,
+      `w = (-B + s sqrt(B^2 - A C)) / A` (or `C / (-B - s sqrt(...))`), the
+      discriminant certainly positive over it; a cone's section's `rho = G
+      / D` on its ruling; a torus section's other angle from `trig`'s
+      roots; a rise's angle from `trig` at its height on an exact frame; a
+      spline cap edge's Bézier arc by Horner's scheme. The least over the
+      bracket is then at least `U` less that bound (`Bracket::Within`, as a
+      conic's speed bound gives): apart beyond the resolution, between
+      `ComputationLimit` (the residue's text) where a contact. A torus's
+      meeting with a quadric (its other angle a root of a quartic in a
+      window) and a turned frame's rise (a root over a half turn) have no
+      such enclosure here: their pairs beyond the resolution, within twice
+      it in binary64 and a contact, are `ComputationLimit`, as is any
+      bracket not found.
+    - **Two curves** (a conic or circle and another curve, or two other
+      curves): nested as the conic rule's (`conics_bracketed`): the outer
+      curve bracketed on the sign of `(x - y) . t_A`, `y` the inner
+      curve's nearest point bracketed with its bound `r_B`, the sign taken
+      as zero within `|t_A| r_B`; the bound the outer's movement plus
+      `r_B`.
+    - **Contact and reasons**: `pair`'s (the other curve's point's
+      directions its edge's faces' into them across its running tangent,
+      `edge_dirs`), "a vertex within the resolution of an edge of the
+      other input (S9d.2)" and "two edges within the resolution of each
+      other (S9d.2)"; points of two fields as in (1).
+  - **(3) A cone's apex against a spline wall or a torus face** (a cone's
+    apex against a sphere is held already: `graph::edge_near_misses`'
+    vertex loop takes the apex since the residue, "a sphere within the
+    resolution of a vertex (S9d.1)"). The surface's point near the apex's
+    foot: a torus's exact point at the rational half-angle tangents of the
+    binary64 foot's angles (`o + (R + r cos v) (cos u x + sin u y) + r sin
+    v n`, rational), a spline wall's exact point at a rational run
+    parameter near the binary64 nearest profile point, at the apex's
+    height; within the resolution where their squared gap is at most
+    `res^2`, the point in the face (`in_face`). The surface's function
+    and its gradient at the apex: the torus's quartic (`Ring::value`,
+    `Ring::gradient` on the frame); a spline wall's offset along its
+    outward normal `m` at that point (`(a - s) . m`), the apex on the wall
+    exactly (its profile point on the segment, `SplineSeg::locate`) an
+    incidence. Then `vertex_face`'s rule with the apex's rulings
+    (`apex_side`): all of one strict sign, least or greatest there;
+    crossing refused, missing refused unless the gap lies inside both
+    inputs, "a cone's apex within the resolution of a face (S9d.3)";
+    rulings along the tangent plane or of both signs no contact. Run with
+    `vertex_faces`, after the faces' meetings: a cone's apex within the
+    resolution of a torus is refused there already wherever the probes
+    reach it (its other nappe's small loop on the torus: "a torus tangent
+    to the other input's surface (S9d.4b.2)", "a torus meeting's piece left
+    unverified"); this rule holds the rest.
+  - **No contact, evaluating as before**: a gap of zero (an incidence or
+    an exact crossing) and a gap of rounding's size (`|n| <= rho`, every
+    direction then along the gap's plane: rims crossing but for rounding,
+    a given result's edge on the other input's edge); directions along the
+    gap's plane, of both signs or undecided (a reflex sector); a gap inside
+    both inputs; a closest point at an edge's end where it does not run on
+    smoothly (the vertex pairs'). Beyond the resolution nothing changes
+    (beyond twice it in binary64, or apart by the bound).
+  - **Cost** (CI's scheduled replays failed on time limits after rules
+    were added): every search only for pairs whose boxes meet, widened;
+    binary64 first, exact points only where binary64 puts a least within
+    twice the resolution, brackets and enclosures only beyond the
+    resolution where the pair is a contact; points of two fields only
+    where one field fails. Measured as the corpus's CPU in release, before
+    and after: no more than about 2 % in all and no input more than 10 %.
+  - **Evidence**: `tests/curve_field_near_miss_booleans.rs`, in a level
+    frame, one turned about the world's z and one tilted off it, at
+    `1e-12`, `1e-11` and `1e-9`: a cube on its corner diagonally off a
+    rod's hole's rim (a meeting of two cylinders), a dimple's rim (a
+    cylinder's and a sphere's), a cone's oblique section, a torus's
+    oblique section and a spline prism's top cap edge; a block standing on
+    its edge across the hole's rim; two balls' zones whose rims cross off
+    each other; a given result's vertex of one quadratic field off
+    another's of another field, and off a zone's rim; a cone's apex off a
+    spline prism's wall; each crossing within the resolution too, and
+    `1e-6` evaluating. Positive controls: incidences (a corner on such a
+    rim), pairs `0.1` apart, rims crossing but for rounding, U1's box on a
+    rod's tangent plane, a cone's apex off a ball and a torus (refused as
+    before), and every earlier near-miss test (`near_miss_booleans`,
+    `vertex_near_miss_booleans`, `edge_vertex_near_miss_booleans`,
+    `conic_near_miss_booleans`), evaluating as before.
+
 * **CI budget (U6).** Per-push fuzz runs replay a bounded sample plus every
   regression and new seed; the daily schedule replays everything; the heavy
   exact targets run on schedule only; Windows runs a smoke subset per push
