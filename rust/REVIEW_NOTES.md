@@ -19467,6 +19467,175 @@ Decisions for S9, recorded before its code (2026-09-28):
   two fields whose gap lies along a face's tangent plane is a
   `ComputationLimit` (none reached).
 
+* **Faces with no near-miss rule of their own refined, before their code
+  (2026-10-17; HANDOFF's item 5 (c)).** Why they are evaluated today: the
+  near-miss rules hold a sphere against a plane, a sphere, a cylinder or a
+  cone face, edges, vertices and a cone's apex against plane, cylinder and
+  cone faces (and the apex against a torus or a spline wall), and the
+  inputs' edges and vertices against each other; two faces of other
+  surfaces have none, and edges and vertices against a torus or a spline
+  wall none. The faces' own meeting rules decide a pair exactly where it
+  touches (a tangency between the inputs) and refuse some near it (S9c's
+  node rule on the discriminant of a ruling's quadratic, the torus's
+  near-node rule, the rules for axes or planes within rounding of
+  parallel), but a pair that misses by less than the resolution is taken
+  as apart where they do not reach it. Measured at `5f50b30c` (release,
+  fuse, both cuts and common, gaps of `1e-12` and `1e-9` in a level frame,
+  one turned about z and one tilted off it): two rods crossing at right
+  angles whose walls miss by the gap (S9c.2a's extents across the common
+  perpendicular decide them apart before the node rule), a rod or a
+  frustum across a cone's wall, a frustum by another's wall, a rod and a
+  frustum along a rod in another frame (parallel axes: a contact along a
+  ruling), a box's face along a rod's ruling, a ball by a torus's outer
+  equator or top, a frustum by a torus, a torus by a torus, a ball and a
+  rod in a torus's hole (coaxial: a contact along a circle), a rod across
+  and along a spline wall, a ball, a frustum across and along, a slab on
+  and a second spline wall along a spline wall, and a box's edge and a
+  cube's corner by a torus or a spline wall: each fused into two solids
+  and its common empty, or a body cut as if the other lay apart. A rod by
+  a torus's equator and a plane by a torus at a point are refused at
+  `1e-12` by the torus's near-node rule but evaluate at `5e-8` and `9e-8`,
+  within the resolution (that rule's band is not the resolution).
+  Refused already and staying so: a rod along a cone's ruling (S9d.3c, at
+  any gap), a frustum along a rod's ruling ("a ruling within rounding of
+  the other's direction"), a box's face along a cone's ruling (the edge
+  rule), a torus on a slab and a rod lying on a torus (the torus's
+  near-node rule). The crossings that deep are refused by later rules or
+  evaluated (the rods' common at `-1e-9` a solid of `2e-18`). The user's
+  decision holds ("contact only"): within the resolution of contact,
+  without a decided contact, the pair is refused as a near miss with a
+  named reason. Decisions, in full:
+  - **Where.** The curved engine, after `edges_and_vertices` (every
+    earlier rule's reason first: the faces' meetings, the sphere's, the
+    edge's, the vertex's and the residue's rules), before the pierces:
+    first the edges and vertices against torus and spline faces, then the
+    face pairs. The polyhedral engine and S9a's prisms of one frame have
+    neither surface and never reach them.
+  - **Face pairs.** A face of one input and a face of the other whose
+    boxes meet once one is widened by twice the resolution, of surfaces:
+    a cylinder or a cone against a cylinder or a cone; a torus against a
+    plane, a cylinder, a cone, a sphere or a torus; a spline wall against
+    a plane, a cylinder, a cone, a sphere or a spline wall; a plane
+    against a cylinder or a cone (they touch only along a ruling). Not
+    taken: a sphere against a plane, a sphere, a cylinder or a cone (S9d.1
+    and S9d.2's rules), two planes (the coplanar rules), faces on one
+    surface. Unreachable, so skipped: a spline wall against a torus (no
+    engine takes the pair: "a spline prism against a torus (refused,
+    S9f)") and two spline walls on crossing axes (refused by design); two
+    spline walls on exactly parallel axes (S9f.2a) are taken, their only
+    contacts along a generatrix.
+  - **Within the resolution, how found.** In binary64 first, for
+    candidates only: one face `P` is sampled in its parameters (a
+    cylinder's or a cone's angle and height, a torus's two angles, a
+    spline wall's run parameter and height) and the other `Q` is held by
+    its signed distance `phi` (a plane's, a sphere's, a cylinder's, a
+    cone's to its nappe's generatrix and a torus's in closed form, a
+    spline wall's to its profile's nearest point), positive where `Q`'s
+    function grows (`Quad::value`'s sign). `Q` is a plane, else a sphere,
+    else a cylinder, a cone, a torus, a spline wall, in that order. A grid
+    over `P`'s parameters within `P`'s face's box (32 cells an angle's
+    turn, heights and runs in cells of about the same length); the pair is
+    passed over where every node's `|phi|` exceeds twice the resolution by
+    more than the cell's movement bound (`P`'s speed in each parameter,
+    from its radii or its control polygon, times the cell, with a rounding
+    allowance): no point of `P` comes within twice the resolution of `Q`.
+    Otherwise the critical points of `phi` over `P` by Newton's method on
+    its gradient (exact first and second derivatives by forward jets in
+    binary64) from each interior node that is a least or a greatest of
+    `phi` among its eight neighbours, kept where `|phi| <= 2 res`, at most
+    eight a pair, one per place.
+  - **The kind of the extremum** (binary64, at the critical point): the
+    Hessian of `phi` in `P`'s tangent metric (its eigenvalues are the
+    differences of the faces' curvatures across the gap). Both of one sign
+    beyond `10^-9` of the larger: a point least (positive) or greatest
+    (negative). Of both signs: a saddle, the surfaces crossing near a node
+    (the faces' node rules' business), no contact. One within `10^-6` of
+    the larger: a contact along a curve (rulings parallel along a line,
+    coaxial circles), whose transverse eigenvalue gives the kind; it is
+    decided at a point of that curve inside both faces, found by Newton's
+    method again from steps along the null direction (at most seven, the
+    middle of the faces' boxes' overlap first).
+  - **Exact points.** `a` on `P` at rational parameters (half-angle
+    tangents of the binary64 angles, `unit_at`; rational heights and run
+    parameters): exactly on `P`. `s` on `Q` near `a`'s foot: a plane's
+    foot exactly, a rational point of a cylinder, cone, sphere or torus
+    toward the binary64 foot, a spline wall's at a rational run parameter
+    near the binary64 nearest profile point at `a`'s height (as the vertex
+    rule's and `apex_face`'s feet). Their gap `U = |s - a|` is exact and
+    bounds the least from above.
+  - **Within**: `U <= res`, certified. **A gap of rounding's size**, `U <=
+    rho` (`rho = 2^(e - 48)` of the points' size, the residue's): the
+    faces tangent or incident but for rounding, their own rules'
+    business, no contact (U1's and Y5's box on a rod's tangent plane,
+    `1.1e-16` off it; rods stacked on one radius; coincident walls). `a`
+    or `s` outside its face: no contact (the edges' and vertices'
+    business).
+  - **Beyond it, certified.** Where `U > res`, binary64 puts `|phi|`
+    within twice the resolution and the pair would be a contact (the test
+    below): Krawczyk's operator on `phi`'s gradient over a box `N` of
+    parameters about the critical point, with forward jets over binary64
+    intervals (`Fast`, every datum of `P` and `Q` enclosed from its exact
+    rationals): `K(N)` inside `N` proves one critical point in `N`; `phi`
+    over `N` by the mean-value form (its gradient enclosed over `N`); and
+    `|phi|` beyond `res / (1 - g)` over `N` (`g` the Frobenius norm of
+    `M^T M - I` for `Q`'s frame's axes `M`, exact: its local distance
+    against the world's) is apart. Otherwise (`N` not contracted, the
+    bound within rounding of the resolution, a contact along a curve, a
+    spline wall as `Q`): `ComputationLimit` ("a near miss's least distance
+    within rounding of the resolution").
+  - **The contact test.** At the exact points: `Q`'s function's exact sign
+    at `a` (`Quad::value` on a plane, cylinder or cone; `|a - c|^2 - r^2`
+    on a sphere; the torus's quartic; `(a - s) . m` on a spline wall, `m`
+    its outward normal at `s`). A least below `Q` or a greatest above it:
+    the faces cross within the resolution (a lens no thicker than it),
+    refused. Otherwise missing (each face's boundary there is its tangent
+    plane, the gap along both normals): refused unless the gap lies
+    inside both inputs (each one's membership at its point pushed across
+    the gap), as every near-miss rule.
+  - **Reasons**: "a cylinder's or cone's wall within the resolution of
+    tangency to the other input's (S9c)" for two cylinders or cones and a
+    plane against one; "a torus within the resolution of tangency to the
+    other input's surface (S9d.4)" for a pair with a torus; "a spline wall
+    within the resolution of tangency to the other input's surface (S9f)"
+    for a pair with a spline wall. `ComputationLimit` as above.
+  - **Edges and vertices against a torus or a spline wall**: the edge rule
+    (`edge_faces`) and the vertex rule (`vertex_faces`) with the torus's and
+    the spline wall's signed distances as the surface's function in
+    binary64 (its searches), their extrema along a line over its edge's
+    range and along a conic or a circle over its 64 samples, other curves
+    by `Run` as before; the surface's exact point near the foot as above;
+    the side by the torus's quartic or `(a - s) . m`; the gradient for
+    `leaves_away` and the corner's directions the quartic's or `m`.
+    Within: the exact gap at most the resolution; contact and reasons
+    those rules' ("an edge within the resolution of tangency to a face
+    (S9d.2)", "a vertex within the resolution of a face (S9d.2)"). A
+    cone's apex keeps `apex_face`.
+  - **No contact, evaluating as before**: a gap of rounding's size; feet
+    outside a face; a saddle; a gap inside both inputs; faces of one
+    surface; beyond the resolution (by the bound). Every configuration
+    whose boundaries meet along a surface or tangentially, exactly or
+    within rounding, stays the faces' own rules'.
+  - **Cost** (CI's time limits): the boxes widened by twice the
+    resolution and the grid's movement bound pass over pairs in binary64
+    with proved bounds; exact points only for candidates within twice the
+    resolution in binary64; Krawczyk only beyond the resolution. Measured
+    as the corpus's CPU in release, one process an input, before and
+    after: no more than about 2 % in all and no input more than 10 %.
+  - **Evidence**: `tests/face_near_miss_booleans.rs`, in a level frame,
+    one turned about z and one tilted off it, at `1e-12`, `1e-11` and
+    `1e-9`: two rods crossing at right angles, a rod across a cone's wall,
+    a frustum by a cone's and by a rod's wall, rods along each other in two
+    frames, a box's face along a rod, a ball by a torus's equator and top,
+    a rod and a plane by a torus at a point, a frustum by a torus, a torus
+    by a torus, a ball and a rod in a torus's hole, a rod across and along
+    a spline wall, a ball and a frustum by it, a slab and a second spline
+    wall along it, a box's edge and a cube's corner by a torus and by a
+    spline wall; each crossing that deep refused, and `1e-6` evaluating.
+    Positive controls: exact tangencies and incidences (the faces' rules),
+    pairs `0.1` apart and `1.5e-7` apart (beyond the resolution, within
+    twice it: certified apart), U1's and Y5's box, and every earlier
+    near-miss test file evaluating as before.
+
 * **CI budget (U6).** Per-push fuzz runs replay a bounded sample plus every
   regression and new seed; the daily schedule replays everything; the heavy
   exact targets run on schedule only; Windows runs a smoke subset per push
