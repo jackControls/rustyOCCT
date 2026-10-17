@@ -15275,7 +15275,19 @@ Decisions for S9, recorded before its code (2026-09-28):
     `rod_dimple` first stood a unit high across the wall, its cut's solid
     count by rays unstable (2 at 48, 1 at 71). The kernel's draft of the
     step's code on the three bodies: all import (their volumes the closed
-    forms within 1e-12).
+    forms within 1e-12). The capture
+    `occt-boolean-inside-first-preimplementation`
+    (`compare_inside_first_boolean.py`, keyed on the step's new file
+    `solid/imported/inside_first.rs`, absent; the kernel's probe
+    `unsupported` on all 24 before the code, every body refused on import as
+    no chain matching): every result valid, 21 matching, 3 reviewed, in
+    `occt-boolean-inside-first-divergences.json`: `dimple_rod`'s fuse and
+    common (BRepGProp's default measure on the rod's meeting with the
+    dimple's sphere, 1.4e-8 and 1.9e-7 of the volume, 7.6e-11 and 1.2e-9
+    with an adaptive accuracy of 1e-10, unchanged at 1e-12, a diagnostic
+    build of the oracle) and the touching ball's fuse, which OCCT keeps as
+    two solids touching at a point, their totals the reference's within
+    1e-15. S9e.4b.4c.2b.2's kernel next.
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces
