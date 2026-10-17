@@ -325,13 +325,10 @@ const GROUPS: [&str; 6] = [
 ];
 
 /// Each group's six Booleans (the common and the fuse both ways, both cuts)
-/// valid at the larger of the inputs' resolutions and consistent within
-/// their enclosures: each cut and the common summing to its input, the fuse
-/// to both inputs less the common, both orders equal; the common the
-/// reference's. (A Boolean whose object is a construction and whose tool the
-/// imported body takes the construction's smaller resolution and keeps the
-/// body's stored entities, valid at the body's: every imported body of
-/// several primitives alike, the earlier steps' leaves among them.)
+/// valid at its own resolution, the inputs' coarser in either order, and
+/// consistent within their enclosures: each cut and the common summing to
+/// its input, the fuse to both inputs less the common, both orders equal;
+/// the common the reference's.
 #[test]
 fn each_group_is_consistent() {
     let expect = expected();
@@ -348,12 +345,7 @@ fn each_group_is_consistent() {
                 scope.spawn(move || {
                     let (a, b, _, _) = protocol::run_first(case).unwrap();
                     let (_, [v, _]) = expect[&case.name].2.unwrap();
-                    let at = if a.resolution().linear() >= b.resolution().linear() {
-                        a.resolution()
-                    } else {
-                        b.resolution()
-                    };
-                    match consistency::consistent_at(&a, &b, false, Some(at)) {
+                    match consistency::consistent(&a, &b, false) {
                         Ok(c) if consistency::meet(c, [v, v], 1e-9 * v) => None,
                         Ok(c) => Some(format!("{group}: the common {c:?} for {v}")),
                         Err(e) => Some(format!("{group}: {e}")),

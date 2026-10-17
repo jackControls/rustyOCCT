@@ -36,6 +36,16 @@ impl Tolerance {
     pub fn angular(self) -> f64 {
         self.angular
     }
+    /// The coarser of two resolutions: the larger linear and the larger
+    /// angular value, whatever their order. A Boolean of two bodies works
+    /// and returns its result at its inputs' coarser resolution
+    /// (`BOOLEAN.md`'s contract).
+    pub fn coarser(self, other: Self) -> Self {
+        Self {
+            linear: self.linear.max(other.linear),
+            angular: self.angular.max(other.angular),
+        }
+    }
 
     pub(crate) fn resolve(self, coordinates: &[f64]) -> Result<()> {
         for value in coordinates {

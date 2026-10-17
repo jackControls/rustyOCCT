@@ -318,8 +318,12 @@ fn shared(poly: &Polyhedron, seam_a: &R, seam_b: &R) -> Result<graph::Arr> {
     }
     let arr = (|| {
         let one = pieces::on_one_sphere(&poly.a, &poly.b);
-        let a = model_of(&poly.a, Operand::A, seam_a, one)?;
-        let b = model_of(&poly.b, Operand::B, seam_b, one)?;
+        let mut a = model_of(&poly.a, Operand::A, seam_a, one)?;
+        let mut b = model_of(&poly.b, Operand::B, seam_b, one)?;
+        // Every decision of the Boolean at its resolution, the inputs'
+        // coarser; each model was built at its own input's.
+        a.set_resolution(poly.tolerance());
+        b.set_resolution(poly.tolerance());
         let mut arr = graph::arrange_shared([a, b])?;
         // S9e.2: a given solid of several kept alone.
         matched::keep_solid(&mut arr)?;
