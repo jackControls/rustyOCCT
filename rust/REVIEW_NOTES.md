@@ -15211,6 +15211,71 @@ Decisions for S9, recorded before its code (2026-09-28):
     degenerate refused, histories over the stored ids, deterministic, moved
     rigidly, the dataset's two bodies' forms and `bug28773_2`'s chain kept),
     and a DRAW trial of the restore cases.
+  * **S9e.4b.4c.2b.2 evidence (2026-10-17).** Three bodies OCCT wrote
+    (`boolean-inside-first-bodies.txt`, `write` blocks of a turned profile's
+    `plane`, `wire` and `revolve` rows, the flange's with a `boolean fuse`
+    row and its lug's, written by `compare_inside_first_boolean.py
+    --write-bodies` to `rust/fixtures/imported/inside_*.brep`), each about
+    the world's `z` through its origin: `dimple` (about `(1, 2, 1/2)`, a rod
+    of radius 3 over `[0, 6]` less a ball of radius 5 about its axis's point
+    at height `-4`, through the rod's bottom rim exactly: `OCC14536-sh1`'s
+    form), `cup` (about `(-1, 1/2, 1)`, the ball at `-9/2`: an annulus of
+    inner radius `sqrt 19 / 2` about the dimple) and `flange` (about `(3, 3,
+    1/2)`, a disc of radius 4 over `[0, 3/2]`, a recess between radii 2 and
+    3 up to `1/2`, a spigot of radius 2 down to `-1/2`, fused with a lug over
+    `[3/2, 5/2]` of the outline from `(1, -3/4)` along the ray `(4, -3)` to
+    `(2, -3/2)`, the arc of radius `5/2` about the axis to `(2, 3/2)` and
+    back along the ray `(4, 3)`: `CTO904_cts21347a`'s form, not turned and
+    no leaf). Before the step all three are refused as no chain matching. A
+    rod less a ball through OCCT's `BRepAlgoAPI_Cut` stores a meeting the
+    reader's validator refuses (`PcurveOffEdge`), so the dimpled bodies are
+    OCCT's revolutions of their profiles. `generate_inside_first_boolean_fixtures.py
+    --check`: 24 cases of 8 groups (21 solid, 3 `degenerate`; 18 of class
+    `pieces`, 3 `both`, 3 `chain`): `dimple_rod` (an upright rod across the
+    dimple's wall and its dimple), `cup_box` (a box across the cup's wall,
+    its annulus and its dimple), `flange_rod` (an upright rod across the
+    spigot's wall, the recess's and the lug's arc), `flange_box` (a box
+    across the lug and the disc's rim), `rod_dimple` (an upright rod less the
+    dimple, across its wall), `flange_cyl` (the flange and S9e.4a's imported
+    cylinder `cyl` across the disc, the recess and the lug), `chain_cup` (the
+    cup less an upright rod across its wall, then with a box across the
+    rod's hole and the dimple), and declared `degenerate` `flange_touch` (a
+    ball of radius 1 resting on the lug's top at its `(7/4, 0)`, exactly:
+    `Degenerate("a tangency between the inputs (S9c)")`). The reference is
+    S9e.3a's chained reference on the constructions (a rod less its ball,
+    the dimple's rod from 1 below its rim, inside the ball there, so that
+    no plane meets the rim: the same set; the disc less the recess's
+    cylinder of radius 3 over `[-1, 1/2]`, fused with the spigot's of radius
+    2 over `[-1/2, 1]` and with the lug), with S9e.4b.3c.3a's checks
+    relative to the case's size: the two families within 1.1e-35, each
+    solid's closed form 2.4e-35, each body's closed form 4.0e-37 (`148 pi /
+    3`, `54 pi - 29 pi / 24`, `47 pi / 2 + 25 atan(3/4) / 4 - 3/4`), the pair
+    identities 5.7e-42 and the area identity 9.2e-41, Monte Carlo 2.7
+    standard errors, quadrature estimates 1.0e-32, every meeting's sine at
+    least 0.44 and events at least 4.9e-5 of their range apart outside the
+    declared group, solid counts by rays at two resolutions; the declared
+    group's checks kept apart within 9.0e-36. Every file read
+    independently: its curved faces cylinders and spheres, every stored
+    vertex on the constructions' surfaces (within 0 of the size).
+    `test_inside_first_boolean_reference.py` checks each body's closed form
+    against quadratures of its sections by heights, the chained reference on
+    the dimple against its closed form, every part's place (each ball wider
+    than its rod about its axis, the dimple's through the rim exactly; the
+    flange's radii and heights, the lug inside the disc's rim), the
+    partners' places, the declared ball, the native rows, the case list and
+    its protocol rows and the files apart from the earlier sets'. The
+    generator's check is a CI group of its own (`inside-first`, 32.4 minutes
+    on four workers locally under Python 3.9 at load 50 to 110 beside
+    S9e.4b.4b.2b.2b.3b's check, 18.9 under 3.12); Python 3.9 and 3.12 write
+    the same files. Corrections from
+    the evidence: (a) the bodies are OCCT's revolutions (above); (b) the
+    flange's lug is no box (a box on the disc is a leaf, whose chain imports
+    the flange before the step) and its outline's points dyadic (the
+    reference asserts an arc's ends on its circle); (c) the tool's rod
+    `rod_dimple` first stood a unit high across the wall, its cut's solid
+    count by rays unstable (2 at 48, 1 at 71). The kernel's draft of the
+    step's code on the three bodies: all import (their volumes the closed
+    forms within 1e-12).
   * **S9f.2b.2 refined, before its code (2026-10-03).** Why it is refused
     today: `spline_crossing::section` refuses a turning point of a spline
     wall's meeting with a crossing cylinder inside both faces

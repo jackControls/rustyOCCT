@@ -54,6 +54,7 @@ SECONDS = {
     'compare_given_met_boolean.py': 14,
     'compare_imported_arcs_boolean.py': 5,
     'compare_imported_boolean.py': 5,
+    'compare_inside_first_boolean.py': 7,
     'compare_imported_joints_boolean.py': 7,
     'compare_imported_pieces_boolean.py': 12,
     'compare_imported_polyhedra_boolean.py': 6,

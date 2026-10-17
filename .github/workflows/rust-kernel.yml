@@ -117,7 +117,7 @@ jobs:
                 piece-forms, piece-trees, imported-joints, primitive-chains, prism-leaves, plane-parts,
                 polyhedra-curved, deep-trees, two-leaves, rim-leaves, flush-leaves, stack-leaves,
                 nested-leaves, turned-profiles, turned-flats, turned-tilted, turned-fillets,
-                turned-cone-fillets, turned-crossings, turned-corners, crossed-leaves]
+                turned-cone-fillets, turned-crossings, turned-corners, crossed-leaves, inside-first]
     steps:
       - uses: actions/checkout@v4.2.2
       - run: rustup toolchain install stable --profile minimal
@@ -310,6 +310,9 @@ jobs:
       - name: Verify the imported bodies' leaves split by a crossing leaf independent reference (S9e.4b.4b.2b.2b.3b)
         if: matrix.group == 'crossed-leaves'
         run: target/math-oracle-venv/bin/python rust/tools/generate_crossed_leaves_boolean_fixtures.py --check --workers 4
+      - name: Verify the imported bodies' chains in the inside-first order independent reference (S9e.4b.4c.2b.2)
+        if: matrix.group == 'inside-first'
+        run: target/math-oracle-venv/bin/python rust/tools/generate_inside_first_boolean_fixtures.py --check --workers 4
 
   pinned-degree-oracle:
     name: Degree elevation / source-pinned OCCT
