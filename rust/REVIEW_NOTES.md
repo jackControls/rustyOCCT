@@ -19222,6 +19222,12 @@ Decisions for S9, recorded before its code (2026-09-28):
   wall's meetings (`wall_pieces`, the spline faces' fluxes) and to loops
   wound about a sphere's pole; the torus meetings' stalled traces at
   `1.5e-7`.
+  Merged and verified at `6e3423f9` (`rust-kernel`; the brep_validation
+  corpus replayed with debug assertions too, 3,108 files, no failure).
+  Campaigns there (600 s each, every switch on; on a host at load 30 to
+  80): `boolean` clean, 293 runs, the slowest input 35 s; `split` clean,
+  1,497 runs; `brep_validation` clean (full replay), 4,855 runs, the
+  slowest input 17 s.
 
 * **Thin cones' rings near their points at infinity, a timeout at
   `dbf15607`, done (2026-10-12).** CI's scheduled run 38271718656 at
