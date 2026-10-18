@@ -20,9 +20,10 @@ jobs:
     name: Original OCCT tests / Rust and native
     runs-on: ubuntu-24.04
     # The fixture generators' checks run in their own job (fixture-generators
-    # below); the bridge tests (10 minutes), the upstream runs on both
-    # kernels (28 minutes with S9's registered Booleans) and the native
-    # comparisons remain.
+    # below), and the rust/tools unit tests in theirs (tool-tests, 31
+    # minutes here at 73a266de); the upstream runs on both kernels (28
+    # minutes with S9's registered Booleans) and the native comparisons
+    # remain.
     timeout-minutes: 60
     env:
       CSF_OCCTResourcePath: /usr/share/opencascade/resources
@@ -41,10 +42,6 @@ jobs:
         run: |
           python3 -m venv target/math-oracle-venv
           target/math-oracle-venv/bin/python -m pip install --disable-pip-version-check --no-cache-dir --require-hashes -r rust/tools/math-oracle-requirements.txt
-      - name: Test the bridge, including deliberate failures
-        env:
-          RUSTY_TEST_DRAW_EXE: /usr/bin/occt-draw
-        run: target/math-oracle-venv/bin/python -m unittest discover -s rust/tools -p 'test_*.py' -v
       - name: Run unchanged upstream tests on both kernels
         run: python3 rust/tools/run_upstream_tests.py --backend both --draw-exe /usr/bin/occt-draw
       - name: Compare line and plane intersections with native OCCT
@@ -100,6 +97,41 @@ jobs:
             target/spline-plane-oracle/
             target/spline-quadric-oracle/
           if-no-files-found: warn
+
+  tool-tests:
+    name: Bridge and reference unit tests / shard ${{ matrix.shard }}
+    runs-on: ubuntu-24.04
+    # The rust/tools unit tests, `unittest discover -s rust/tools -p
+    # 'test_*.py'`, which took 31 of the upstream job's 45 minutes, split by
+    # module across run_tool_tests.py's SHARDS: each shard discovers the
+    # whole suite and runs the modules its plan gives it, so every test runs
+    # once, in the upstream job's environment (FUZZING.md).
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2, 3]
+    env:
+      CSF_OCCTResourcePath: /usr/share/opencascade/resources
+      DRAWHOME: /usr/share/opencascade/resources/DrawResources
+      CSF_DrawPluginDefaults: /usr/share/opencascade/resources/DrawResources
+      DRAWDEFAULT: /usr/share/opencascade/resources/DrawResources/DrawDefault
+    steps:
+      - uses: actions/checkout@v4.2.2
+      - run: rustup toolchain install stable --profile minimal
+      - name: Install test interpreters
+        run: |
+          sudo apt-get update
+          # DRAW loads plugins by unversioned .so names supplied by the dev package.
+          sudo apt-get install --no-install-recommends -y tcl occt-draw occt-misc libocct-draw-dev libocct-modeling-data-dev libocct-modeling-algorithms-dev python3-venv
+      - name: Install independent polynomial oracle
+        run: |
+          python3 -m venv target/math-oracle-venv
+          target/math-oracle-venv/bin/python -m pip install --disable-pip-version-check --no-cache-dir --require-hashes -r rust/tools/math-oracle-requirements.txt
+      - name: Test the bridge, including deliberate failures
+        env:
+          RUSTY_TEST_DRAW_EXE: /usr/bin/occt-draw
+        run: target/math-oracle-venv/bin/python rust/tools/run_tool_tests.py --shard ${{ matrix.shard }}
 
   fixture-generators:
     name: Fixture generators / ${{ matrix.group }}

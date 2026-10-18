@@ -497,6 +497,24 @@ group but those reading a changed fixture, and `algebra` and
 the 600 to 700 generator job-minutes on such a push, a group's skip
 taking a checkout and a check of about a minute.
 
+**The rust/tools unit tests in shards.** The upstream job's `unittest
+discover -s rust/tools -p 'test_*.py'` took 1,862 s of its 45 minutes at
+`73a266de` (502 tests in 76 modules; `test_brep_oracle` alone 302 s), so it
+runs in its own job, `Bridge and reference unit tests`, in four shards
+with the upstream job's environment (its OCCT packages and variables,
+`RUSTY_TEST_DRAW_EXE`, the oracle's venv). Each shard runs
+`run_tool_tests.py --shard K`, which discovers the whole suite exactly as
+`unittest discover` does and runs the modules its plan gives it: the
+modules heaviest first, by their seconds measured on CI, each on the least
+loaded shard, about 486 s each. Every test therefore runs once, in exactly
+one shard, and a module the table does not know counts as 30 s.
+`run_tool_tests.py --list [--shard K]` prints the ids; at this revision
+the discovered suite and the four shards' union are the same 515 tests,
+each once: the 502 of the CI run at `73a266de` and 13 added since (in
+`test_fuzz_runner`, `test_generator_groups` and `test_run_tool_tests`).
+The upstream job keeps its upstream runs and native comparisons, about 14
+minutes.
+
 These are harness limits, not kernel production performance guarantees.
 
 B-rep validation inputs use at most 256 bytes and the standard 20-second/2 GiB
