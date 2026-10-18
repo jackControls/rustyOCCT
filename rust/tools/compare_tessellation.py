@@ -181,9 +181,10 @@ def capture(family, executable, env, sdk_manifest, text):
 
 def drifted_inputs(captured, current):
     """The same tokens, numbers within `NUMBER_DRIFT` relative to their size
-    (at least 1): the kernel writes them with the platform's libm, whose
-    rounding moves a value by an ulp or two of its own magnitude (one Linux
-    coordinate -9.999999999999998 for macOS's -10)."""
+    (at least 1): the capture's texts were written with macOS's libm, whose
+    rounding differs by an ulp or two of a value's magnitude from the
+    kernel's correctly rounded constructions (R13), the same on every host
+    since (77 numbers of T-a's texts, at most 4.4e-16 relative)."""
     old, new = captured.split(), current.split()
     if len(old) != len(new):
         raise ValueError('current native corpus differs structurally from the pre-implementation inputs')
@@ -209,9 +210,10 @@ def captured(family, observed, text):
             raise ValueError('tessellation evidence changed: '+name)
     if (CAPTURE/'oracle.cpp').read_text() != SOURCE_FILE.read_text():
         raise ValueError('the native probe differs from the captured one')
-    # The kernel writes the .brep texts with the platform's trigonometry
-    # (frames, rotations): structure exact, numbers within compare_brep's
-    # NUMBER_DRIFT (VALIDATION.md's allowances).
+    # The capture's .brep texts were written with macOS's trigonometry
+    # before R13 (frames, rotations): structure exact, numbers within
+    # compare_brep's NUMBER_DRIFT (VALIDATION.md's captures written before
+    # R13).
     if (CAPTURE/'inputs.txt').read_text() != text:
         try:
             drifted_inputs((CAPTURE/'inputs.txt').read_text(), text)
