@@ -136,7 +136,8 @@ class FuzzRunnerTests(unittest.TestCase):
             directory=Path(directory)
             corpus=directory/'corpus'/'boolean'; corpus.mkdir(parents=True)
             for k in range(40): (corpus/f'input{k}').write_bytes(bytes([k,1]))
-            plan=run_fuzz.shard_names(corpus,4)
+            n=run_fuzz.REPLAY_SHARDS['boolean']
+            plan=run_fuzz.shard_names(corpus,n)
             seen={}
             def replay(command,log,timeout,env):
                 run_corpus=Path(command[5])
@@ -156,7 +157,7 @@ class FuzzRunnerTests(unittest.TestCase):
             self.assertIn('malloc_context_size=5',seen['env']['ASAN_OPTIONS'])
             self.assertEqual(seen['timeout'],run_fuzz.startup_budget(len(plan[2]),60))
             self.assertEqual(report['budget_seconds'],seen['timeout'])
-            self.assertEqual((report['shard'],report['shards'],report['corpus_files']),(2,4,40))
+            self.assertEqual((report['shard'],report['shards'],report['corpus_files']),(2,n,40))
             self.assertTrue(report['passed'])
             # A replay killed before INITED, or with an input over its limit, fails.
             for change in [{'initial_executions':None},{'initial_executions':len(plan[2])},
@@ -168,9 +169,10 @@ class FuzzRunnerTests(unittest.TestCase):
             directory=Path(directory)
             corpus=directory/'corpus'/'boolean'; corpus.mkdir(parents=True)
             for k in range(60): (corpus/f'input{k}').write_bytes(bytes([k,7]))
-            plan=run_fuzz.shard_names(corpus,4)
+            n=run_fuzz.REPLAY_SHARDS['boolean']
+            plan=run_fuzz.shard_names(corpus,n)
             digest=run_fuzz.listing_digest(p.name for p in corpus.iterdir())
-            reports=[{'target':'boolean','shard':k,'shards':4,'corpus_digest':digest,'names':part,'passed':True,
+            reports=[{'target':'boolean','shard':k,'shards':n,'corpus_digest':digest,'names':part,'passed':True,
                       'elapsed_seconds':100.+k,'slowest_input_seconds':k,'peak_rss_mb':500+k} for k,part in enumerate(plan)]
             with patch('run_fuzz.FUZZ',directory):
                 def check(changed):
@@ -180,12 +182,12 @@ class FuzzRunnerTests(unittest.TestCase):
                     return result
                 result=check(reports)
                 self.assertTrue(result['passed'])
-                self.assertEqual((result['replayed_files'],result['slowest_input_seconds'],result['peak_rss_mb']),(60,3,503))
+                self.assertEqual((result['replayed_files'],result['slowest_input_seconds'],result['peak_rss_mb']),(60,n-1,500+n-1))
                 self.assertEqual(run_fuzz.manifest_path('boolean').read_text().split(),sorted(p.name for p in corpus.iterdir()))
-                missing=check(reports[:3])
+                missing=check(reports[:-1])
                 self.assertFalse(missing['passed'])
-                self.assertEqual(missing['unreplayed'],plan[3])
-                self.assertIn('shard 3 did not report',missing['problems'])
+                self.assertEqual(missing['unreplayed'],plan[-1])
+                self.assertIn(f'shard {n-1} did not report',missing['problems'])
                 self.assertFalse(check(reports+[reports[0]])['passed'])
                 failed=check([{**r,'passed':k!=1} for k,r in enumerate(reports)])
                 self.assertTrue(failed['complete'])
@@ -197,7 +199,7 @@ class FuzzRunnerTests(unittest.TestCase):
                 moved[1]['names']=sorted(moved[1]['names']+[moved[0]['names'][0]])
                 self.assertEqual(check(moved)['duplicated'],[plan[0][0]])
                 self.assertFalse(check([{**r,'corpus_digest':'other'} for r in reports])['passed'])
-                self.assertFalse(check([{**r,'shards':3} for r in reports])['passed'])
+                self.assertFalse(check([{**r,'shards':n-1} for r in reports])['passed'])
                 # An input added after the snapshot was given to the shards.
                 (corpus/'late').write_bytes(b'late')
                 late=check(reports)
@@ -240,6 +242,175 @@ class FuzzRunnerTests(unittest.TestCase):
         self.assertLessEqual({t for t,_ in excluded},set(run_fuzz.REPLAY_SHARDS))
         self.assertEqual(len(listed),max(run_fuzz.REPLAY_SHARDS.values()))
         self.assertLessEqual(set(run_fuzz.REPLAY_SHARDS),set(run_fuzz.TARGETS))
+
+    def test_workflow_minimize_jobs_match_minimize_shards(self):
+        import re
+        text=(run_fuzz.ROOT/'.github/workflows/rust-fuzz.yml').read_text()
+        jobs=text[text.index('\n  minimize-snapshot:'):text.index('\n  replay-snapshot:')]
+        targets=[tuple(t.strip() for t in m.split(',')) for m in re.findall(r'\n\s+target: \[([^\]]*)\]',jobs)]
+        self.assertEqual(len(targets),3)
+        self.assertEqual(set(targets),{tuple(sorted(run_fuzz.MINIMIZE_SHARDS))})
+        shards=re.findall(r'\n\s+shard: \[([^\]]*)\]',jobs)
+        self.assertEqual(len(shards),1)
+        listed=[int(k) for k in shards[0].split(',')]
+        self.assertEqual(listed,list(range(max(run_fuzz.MINIMIZE_SHARDS.values()))))
+        excluded=re.findall(r'\n\s+- \{target: (\w+), shard: (\d+)\}',jobs)
+        self.assertEqual(len(excluded),len(set(excluded)))
+        jobs_of={t:[k for k in listed if (t,str(k)) not in excluded] for t in run_fuzz.MINIMIZE_SHARDS}
+        self.assertEqual(jobs_of,{t:list(range(n)) for t,n in run_fuzz.MINIMIZE_SHARDS.items()})
+        self.assertLessEqual({t for t,_ in excluded},set(run_fuzz.MINIMIZE_SHARDS))
+        self.assertLessEqual(set(run_fuzz.MINIMIZE_SHARDS),set(run_fuzz.TARGETS))
+        # The campaign job leaves these targets to the minimize jobs on a
+        # minimisation run, and keeps its cache key free for their combine.
+        fuzz=text[text.index('\n  fuzz:'):text.index('\n  minimize-snapshot:')]
+        left=re.search(r"SHARD_MINIMIZED: \$\{\{ contains\(fromJSON\('\[([^\]]*)\]'\)",fuzz)
+        self.assertEqual(sorted(t.strip().strip('"') for t in left.group(1).split(',')),sorted(run_fuzz.MINIMIZE_SHARDS))
+
+    @staticmethod
+    def fake_merge(features_of, crash=()):
+        """A stand-in for the set-cover merge: it lists the run corpus's
+        nonempty files smallest first, as libFuzzer does, and records each
+        one's complete features (none for an input in `crash`)."""
+        def merge(command,log,timeout,env):
+            control=Path(next(a for a in command if a.startswith('-merge_control_file=')).split('=',1)[1])
+            run_corpus=Path(command[-1])
+            files=sorted((p for p in run_corpus.iterdir() if p.stat().st_size),key=lambda p:(p.stat().st_size,str(p)))
+            lines=[str(len(files)),'0',*map(str,files)]
+            for i,path in enumerate(files):
+                lines.append(f'STARTED {i} {path.stat().st_size}')
+                if path.name in crash: continue
+                lines.append('FT '+' '.join([str(i)]+[str(f) for f in sorted(features_of(path.read_bytes()))]))
+                lines.append(f'COV {i} {i}')
+            control.write_text('\n'.join(lines)+'\n')
+            return 0
+        return merge
+
+    def test_control_file_records_complete_crashed_and_unrun_inputs(self):
+        text=('4\n0\n/a/x\n/a/y\n/b/z\n/a/w\nSTARTED 0 3\nFT 0 9 4 7\nCOV 0 1 2\n'
+              'STARTED 1 5\nSTARTED 2 6\nFT 2\nCOV 2\n')
+        inputs=run_fuzz.parse_control_file(text)
+        self.assertEqual({**inputs['x'],'features':list(inputs['x']['features'])},
+                         {'size':3,'features':[9,4,7],'coverage':[1,2]})
+        self.assertIsNone(inputs['y']['features'])
+        self.assertEqual(list(inputs['z']['features']),[])
+        self.assertEqual(inputs['w'],{})
+        self.assertEqual(run_fuzz.parse_control_file('0\n0\n'),{})
+        with self.assertRaises(ValueError):
+            run_fuzz.parse_control_file('1\n0\n/a/x\nDONE 0\n')
+
+    def test_set_cover_keeps_every_feature_whatever_the_listing_order(self):
+        import random
+        rng=random.Random(5)
+        inputs={f'{k:03}':{'size':rng.randrange(1,9),'features':rng.sample(range(60),rng.randrange(0,12)),'coverage':[]}
+                for k in range(120)}
+        chosen=run_fuzz.set_cover(inputs)
+        every={f for e in inputs.values() for f in e['features']}
+        self.assertEqual({f for n in chosen for f in inputs[n]['features']},every)
+        self.assertLess(len(chosen),len([n for n,e in inputs.items() if e['features']]))
+        shuffled=list(inputs.items()); rng.shuffle(shuffled)
+        self.assertEqual(run_fuzz.set_cover(dict(shuffled)),chosen)
+        # The lazy evaluation chooses what recomputing every gain would.
+        covered,eager=set(),[]
+        while True:
+            gain,size,name=min((-len(set(e['features'])-covered),e['size'],n) for n,e in inputs.items())
+            if not gain: break
+            covered.update(inputs[name]['features']); eager.append(name)
+        self.assertEqual(sorted(eager),chosen)
+        # An input with no feature of its own is dropped; of two with the same, the smaller stays.
+        self.assertEqual(run_fuzz.set_cover({'a':{'size':4,'features':[1,2]},'b':{'size':3,'features':[2,1]},
+                                             'c':{'size':1,'features':[]}}),['b'])
+
+    def test_minimization_shard_runs_its_inputs_through_the_set_cover_merge(self):
+        with tempfile.TemporaryDirectory() as directory:
+            directory=Path(directory)
+            corpus=directory/'corpus'/'boolean'; corpus.mkdir(parents=True)
+            for k in range(40): (corpus/f'input{k}').write_bytes(bytes([k,1,k%3]))
+            (corpus/'empty').write_bytes(b'')
+            binary=directory/'boolean'; binary.write_bytes(b'binary')
+            plan=run_fuzz.shard_names(corpus,8)
+            seen={}
+            merge=self.fake_merge(set)
+            def run(command,log,timeout,env):
+                seen.update(command=command,timeout=timeout,env=env,files=sorted(p.name for p in Path(command[-1]).iterdir()))
+                return merge(command,log,timeout,env)
+            with patch('run_fuzz.FUZZ',directory), patch('run_fuzz.run_process',side_effect=run):
+                report=run_fuzz.minimize_shard('boolean',corpus,3,directory,{},binary)
+            self.assertEqual(seen['files'],plan[3])
+            self.assertEqual(seen['command'][0],str(binary))
+            for flag in ['-set_cover_merge=1','-timeout=60','-rss_limit_mb=2048','-max_len=256']:
+                self.assertIn(flag,seen['command'])
+            self.assertIn('malloc_context_size=5',seen['env']['ASAN_OPTIONS'])
+            self.assertTrue(seen['env']['ASAN_OPTIONS'].endswith('detect_odr_violation=0'))
+            self.assertEqual(seen['timeout'],run_fuzz.startup_budget(len(plan[3]),60))
+            self.assertEqual((report['shard'],report['shards'],report['corpus_files']),(3,8,41))
+            self.assertEqual(report['listed_names'],sorted(n for n in plan[3] if n != 'empty'))
+            self.assertTrue(report['passed'])
+            self.assertEqual(sorted(p.name for p in corpus.parent.iterdir()),['boolean'])
+            self.assertEqual(len(list(corpus.iterdir())),41)
+            # An input that crashed, timed out or ran out of memory, or a merge
+            # stopped at its deadline, fails the shard.
+            victim=plan[3][0]
+            with patch('run_fuzz.FUZZ',directory), patch('run_fuzz.run_process',side_effect=self.fake_merge(set,{victim})):
+                crashed=run_fuzz.minimize_shard('boolean',corpus,3,directory,{},binary)
+            self.assertEqual(crashed['failed_inputs'],[victim])
+            self.assertFalse(crashed['passed'])
+            for change in [{'exit_code':124},{'listed_names':report['listed_names'][1:]},{'unrun_inputs':['x']}]:
+                self.assertFalse(run_fuzz.minimize_shard_passed({**report,**change}),change)
+
+    def test_combined_minimization_keeps_every_feature_or_replaces_nothing(self):
+        def features(data): return {data[0]%23,(data[0]*7+data[1])%31+100}
+        with tempfile.TemporaryDirectory() as directory:
+            directory=Path(directory)
+            corpus=directory/'corpus'/'boolean'; corpus.mkdir(parents=True)
+            for k in range(90): (corpus/f'input{k:02}').write_bytes(bytes([k,k%5,1+k%4])[:1+k%3])
+            (corpus/'pad').write_bytes(b'\x05\x05')
+            binary=directory/'boolean'; binary.write_bytes(b'binary')
+            shards=run_fuzz.MINIMIZE_SHARDS['boolean']
+            reports=[]
+            with patch('run_fuzz.FUZZ',directory), patch('run_fuzz.run_process',side_effect=self.fake_merge(lambda d:features(d+b'\0'))):
+                for k in range(shards):
+                    out=directory/f'shard-{k}'; out.mkdir()
+                    report=run_fuzz.minimize_shard('boolean',corpus,k,out,{},binary)
+                    reports.append(dict(report,control_path=str(out/report['control_file'])))
+            before=sorted(p.name for p in corpus.iterdir())
+            every={f for n in before for f in features((corpus/n).read_bytes()+b'\0')}
+            with patch('run_fuzz.FUZZ',directory):
+                def refused(changed):
+                    listing=sorted(p.name for p in corpus.iterdir())
+                    result=run_fuzz.combine_minimized('boolean',corpus,changed)
+                    self.assertFalse(result['passed'])
+                    self.assertFalse(result['replaced'])
+                    self.assertEqual(sorted(p.name for p in corpus.iterdir()),listing)
+                    self.assertFalse(run_fuzz.manifest_path('boolean').exists())
+                    return result
+                self.assertIn('shard 2 did not report',refused(reports[:2]+reports[3:])['problems'])
+                self.assertEqual(refused([{**r,'passed':k!=4} for k,r in enumerate(reports)])['failed_shards'],[4])
+                refused(reports+[reports[0]])
+                refused([{**r,'corpus_digest':'other'} for r in reports])
+                refused([{**r,'binary_sha256':'other' if k==1 else r['binary_sha256']} for k,r in enumerate(reports)])
+                refused([{**r,'control_path':str(directory/'missing')} if k==0 else r for k,r in enumerate(reports)])
+                # A control file that lost an input's features.
+                lost=directory/'lost.control'
+                lines=Path(reports[5]['control_path']).read_text().splitlines()
+                lost.write_text('\n'.join(l for l in lines if not l.startswith('FT 0 '))+'\n')
+                refused([{**r,'control_path':str(lost)} if k==5 else r for k,r in enumerate(reports)])
+                # An input added after the snapshot was given to the shards.
+                (corpus/'late').write_bytes(b'\x63\x01')
+                refused(reports)
+                (corpus/'late').unlink()
+                result=run_fuzz.combine_minimized('boolean',corpus,reports)
+                self.assertTrue(result['passed'],result['problems'])
+                after=sorted(p.name for p in corpus.iterdir())
+                self.assertEqual(result['corpus_files_after'],len(after))
+                self.assertLess(len(after),len(before))
+                self.assertEqual({f for n in after for f in features((corpus/n).read_bytes()+b'\0')},every)
+                self.assertEqual((result['features'],result['features_kept']),(len(every),len(every)))
+                self.assertEqual(run_fuzz.manifest_path('boolean').read_text().split(),after)
+                self.assertEqual(sorted(p.name for p in corpus.parent.iterdir()),['boolean','boolean.replayed'])
+            # The choice depends on the features only, not on how the shards fell.
+            inputs={}
+            for r in reports: inputs.update(run_fuzz.parse_control_file(Path(r['control_path']).read_text()))
+            self.assertEqual(after,run_fuzz.set_cover(inputs))
 
     def test_requires_completed_mutation_after_corpus_replay(self):
         text = '#99\tINITED cov: 12 ft: 50\n#102\tDONE cov: 14\nstat::number_of_executed_units: 102\n'

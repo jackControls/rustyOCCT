@@ -47,6 +47,9 @@ jobs:
       REQUESTED_SECONDS: ${{ inputs.seconds }}
       SCHEDULE: ${{ github.event.schedule }}
       MINIMIZE: ${{ inputs.minimize }}
+      # run_fuzz.py's MINIMIZE_SHARDS targets: on a minimisation run the
+      # minimize jobs below minimise them and retain their corpora.
+      SHARD_MINIMIZED: ${{ contains(fromJSON('["boolean", "knot_editing", "modeling", "split", "split_merge", "surface_editing", "surface_knots"]'), matrix.target) && (github.event.schedule == '41 2 * * 0' || inputs.minimize == true) }}
     steps:
       - uses: actions/checkout@v4.2.2
       - name: Install pinned fuzz toolchain
@@ -78,6 +81,10 @@ jobs:
       - name: Run sanitizer and mathematical oracle campaign
         run: |
           if [ "$SCHEDULE" = '41 2 * * 0' ] || [ "$MINIMIZE" = true ]; then
+            if [ "$SHARD_MINIMIZED" = true ]; then
+              echo "The minimize jobs minimise $FUZZ_TARGET (run_fuzz.py's MINIMIZE_SHARDS)."
+              exit
+            fi
             python3 rust/tools/run_fuzz.py --target "$FUZZ_TARGET" --toolchain "$NIGHTLY" --minimize
             exit
           fi
@@ -108,7 +115,7 @@ jobs:
           retention-days: 30
           if-no-files-found: warn
       - name: Retain corpus for the next campaign
-        if: always() && github.event_name != 'pull_request'
+        if: always() && github.event_name != 'pull_request' && env.SHARD_MINIMIZED != 'true'
         uses: actions/cache/save@v4.2.3
         with:
           path: rust/fuzz/corpus/${{ matrix.target }}
@@ -120,6 +127,172 @@ jobs:
           always() && github.event_name != 'pull_request' &&
           hashFiles(format('rust/fuzz/corpus/{0}.replayed', matrix.target)) != '' &&
           hashFiles(format('rust/fuzz/corpus/{0}.replayed', matrix.target)) != steps.restored.outputs.manifest
+        uses: actions/cache/save@v4.2.3
+        with:
+          path: rust/fuzz/corpus/${{ matrix.target }}.replayed
+          key: replayed-v1-${{ matrix.target }}-${{ github.run_id }}-${{ github.run_attempt }}
+
+  # The weekly minimisation of run_fuzz.py's MINIMIZE_SHARDS targets (R17 of
+  # the review of 18 October 2026): one seeded corpus snapshot and one
+  # sanitizer build; the snapshot split by each input's contents hash across
+  # the shard jobs, each running its inputs through libFuzzer's set-cover
+  # merge under the target's own limits and an hour of its own, recording
+  # every input's coverage features; then the combine job chooses the inputs
+  # covering every feature of every shard and retains them as the corpus,
+  # only if every shard ran every one of its inputs (FUZZING.md).
+  minimize-snapshot:
+    name: Minimize snapshot / ${{ matrix.target }}
+    if: >-
+      (github.event_name == 'schedule' && github.event.schedule == '41 2 * * 0') ||
+      (github.event_name == 'workflow_dispatch' && inputs.minimize)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [boolean, knot_editing, modeling, split, split_merge, surface_editing, surface_knots]
+    env:
+      NIGHTLY: nightly-2026-09-22
+    steps:
+      - uses: actions/checkout@v4.2.2
+      - name: Install pinned fuzz toolchain
+        run: rustup toolchain install "$NIGHTLY" --profile minimal
+      - name: Cache fuzz runner
+        id: runner
+        uses: actions/cache@v4.2.3
+        with:
+          path: ~/.cargo/bin/cargo-fuzz
+          key: cargo-fuzz-0.13.1-${{ runner.os }}-${{ runner.arch }}
+      - if: steps.runner.outputs.cache-hit != 'true'
+        run: cargo install cargo-fuzz --version 0.13.1 --locked
+      - name: Restore evolving corpus
+        uses: actions/cache/restore@v4.2.3
+        with:
+          path: rust/fuzz/corpus/${{ matrix.target }}
+          key: corpus-v1-${{ matrix.target }}-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: corpus-v1-${{ matrix.target }}-
+      - name: Seed the corpus and build the binary every shard runs
+        run: |
+          python3 rust/tools/run_fuzz.py --target "${{ matrix.target }}" --seed-only
+          python3 rust/tools/run_fuzz.py --target "${{ matrix.target }}" --toolchain "$NIGHTLY" --build-only
+      - name: Publish the snapshot every shard minimises
+        uses: actions/upload-artifact@v4.6.2
+        with:
+          name: minimize-snapshot-${{ matrix.target }}-${{ github.run_id }}
+          path: rust/fuzz/corpus/${{ matrix.target }}/
+          retention-days: 30
+          if-no-files-found: error
+          overwrite: true
+      - name: Publish the binary every shard runs
+        uses: actions/upload-artifact@v4.6.2
+        with:
+          name: minimize-binary-${{ matrix.target }}-${{ github.run_id }}
+          path: target/fuzz-binaries/${{ matrix.target }}
+          retention-days: 7
+          if-no-files-found: error
+          overwrite: true
+
+  minimize:
+    name: Minimize / ${{ matrix.target }} shard ${{ matrix.shard }}
+    needs: minimize-snapshot
+    if: ${{ !cancelled() && needs.minimize-snapshot.result != 'skipped' }}
+    runs-on: ubuntu-24.04
+    # The shard's hour; it runs the snapshot job's binary, so builds nothing.
+    timeout-minutes: 70
+    strategy:
+      fail-fast: false
+      # Each target's shards are run_fuzz.py's MINIMIZE_SHARDS[target]: eight
+      # for boolean and surface_knots, four for the others.
+      matrix:
+        target: [boolean, knot_editing, modeling, split, split_merge, surface_editing, surface_knots]
+        shard: [0, 1, 2, 3, 4, 5, 6, 7]
+        exclude:
+          - {target: knot_editing, shard: 4}
+          - {target: knot_editing, shard: 5}
+          - {target: knot_editing, shard: 6}
+          - {target: knot_editing, shard: 7}
+          - {target: modeling, shard: 4}
+          - {target: modeling, shard: 5}
+          - {target: modeling, shard: 6}
+          - {target: modeling, shard: 7}
+          - {target: split, shard: 4}
+          - {target: split, shard: 5}
+          - {target: split, shard: 6}
+          - {target: split, shard: 7}
+          - {target: split_merge, shard: 4}
+          - {target: split_merge, shard: 5}
+          - {target: split_merge, shard: 6}
+          - {target: split_merge, shard: 7}
+          - {target: surface_editing, shard: 4}
+          - {target: surface_editing, shard: 5}
+          - {target: surface_editing, shard: 6}
+          - {target: surface_editing, shard: 7}
+    steps:
+      - uses: actions/checkout@v4.2.2
+      - uses: actions/download-artifact@v4.3.0
+        with:
+          name: minimize-snapshot-${{ matrix.target }}-${{ github.run_id }}
+          path: rust/fuzz/corpus/${{ matrix.target }}
+      - uses: actions/download-artifact@v4.3.0
+        with:
+          name: minimize-binary-${{ matrix.target }}-${{ github.run_id }}
+          path: target/fuzz-binaries
+      - name: Record the shard's coverage features under the sanitizer
+        run: |
+          python3 rust/tools/run_fuzz.py --target "${{ matrix.target }}" --minimize-shard "${{ matrix.shard }}" \
+            --report-dir "target/minimize-shards/${{ matrix.target }}-${{ matrix.shard }}"
+      - name: Preserve the shard's features, evidence and reproducer inputs
+        if: always()
+        uses: actions/upload-artifact@v4.6.2
+        with:
+          name: minimize-${{ matrix.target }}-shard-${{ matrix.shard }}-${{ github.run_id }}
+          path: |
+            target/minimize-shards/
+            rust/fuzz/artifacts/${{ matrix.target }}/
+          retention-days: 30
+          if-no-files-found: warn
+          overwrite: true
+
+  minimize-combine:
+    name: Minimized / ${{ matrix.target }}
+    needs: [minimize-snapshot, minimize]
+    if: ${{ !cancelled() && needs.minimize-snapshot.result != 'skipped' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [boolean, knot_editing, modeling, split, split_merge, surface_editing, surface_knots]
+    steps:
+      - uses: actions/checkout@v4.2.2
+      - uses: actions/download-artifact@v4.3.0
+        with:
+          name: minimize-snapshot-${{ matrix.target }}-${{ github.run_id }}
+          path: rust/fuzz/corpus/${{ matrix.target }}
+      - uses: actions/download-artifact@v4.3.0
+        with:
+          pattern: minimize-${{ matrix.target }}-shard-*-${{ github.run_id }}
+          path: target/minimize-downloads
+      - name: Keep the inputs covering every feature, only if every shard ran all its inputs
+        run: |
+          python3 rust/tools/run_fuzz.py --target "${{ matrix.target }}" \
+            --combine-minimized target/minimize-downloads
+      - name: Preserve the combine's evidence
+        if: always()
+        uses: actions/upload-artifact@v4.6.2
+        with:
+          name: minimized-${{ matrix.target }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: target/fuzz-reports/
+          retention-days: 30
+          if-no-files-found: warn
+      # Only after a complete combine: a failed one retains nothing, and the
+      # next run restores the last corpus.
+      - name: Retain the minimised corpus
+        uses: actions/cache/save@v4.2.3
+        with:
+          path: rust/fuzz/corpus/${{ matrix.target }}
+          key: corpus-v1-${{ matrix.target }}-${{ github.run_id }}-${{ github.run_attempt }}
+      - name: Retain the full replay's manifest
         uses: actions/cache/save@v4.2.3
         with:
           path: rust/fuzz/corpus/${{ matrix.target }}.replayed
@@ -143,7 +316,8 @@ jobs:
       # check after its manifest was saved fails acceptance on its own).
       fail-fast: false
       matrix:
-        target: [analytic_intersections, boolean, degree_elevation, split, tessellation]
+        target: [analytic_intersections, boolean, brep_validation, degree_elevation, knot_editing, split,
+                 split_merge, surface_knots, tessellation]
     steps:
       - uses: actions/checkout@v4.2.2
       - name: Restore evolving corpus
@@ -170,17 +344,13 @@ jobs:
     timeout-minutes: 75
     strategy:
       fail-fast: false
-      # Each target's shards are run_fuzz.py's REPLAY_SHARDS[target]: four
-      # for analytic_intersections, boolean, degree_elevation and
-      # tessellation, eight for split.
+      # Each target's shards are run_fuzz.py's REPLAY_SHARDS[target]: eight
+      # for boolean and split, four for the others.
       matrix:
-        target: [analytic_intersections, boolean, degree_elevation, split, tessellation]
+        target: [analytic_intersections, boolean, brep_validation, degree_elevation, knot_editing, split,
+                 split_merge, surface_knots, tessellation]
         shard: [0, 1, 2, 3, 4, 5, 6, 7]
         exclude:
-          - {target: boolean, shard: 4}
-          - {target: boolean, shard: 5}
-          - {target: boolean, shard: 6}
-          - {target: boolean, shard: 7}
           - {target: degree_elevation, shard: 4}
           - {target: degree_elevation, shard: 5}
           - {target: degree_elevation, shard: 6}
@@ -193,6 +363,22 @@ jobs:
           - {target: tessellation, shard: 5}
           - {target: tessellation, shard: 6}
           - {target: tessellation, shard: 7}
+          - {target: brep_validation, shard: 4}
+          - {target: brep_validation, shard: 5}
+          - {target: brep_validation, shard: 6}
+          - {target: brep_validation, shard: 7}
+          - {target: knot_editing, shard: 4}
+          - {target: knot_editing, shard: 5}
+          - {target: knot_editing, shard: 6}
+          - {target: knot_editing, shard: 7}
+          - {target: split_merge, shard: 4}
+          - {target: split_merge, shard: 5}
+          - {target: split_merge, shard: 6}
+          - {target: split_merge, shard: 7}
+          - {target: surface_knots, shard: 4}
+          - {target: surface_knots, shard: 5}
+          - {target: surface_knots, shard: 6}
+          - {target: surface_knots, shard: 7}
     env:
       NIGHTLY: nightly-2026-09-22
     steps:
@@ -238,7 +424,8 @@ jobs:
       # check after its manifest was saved fails acceptance on its own).
       fail-fast: false
       matrix:
-        target: [analytic_intersections, boolean, degree_elevation, split, tessellation]
+        target: [analytic_intersections, boolean, brep_validation, degree_elevation, knot_editing, split,
+                 split_merge, surface_knots, tessellation]
     steps:
       - uses: actions/checkout@v4.2.2
       - uses: actions/download-artifact@v4.3.0
