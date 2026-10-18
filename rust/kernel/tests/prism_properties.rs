@@ -1,5 +1,9 @@
 //! Mass properties, bounds and classification of every prism fixture are
-//! bitwise equal to the baseline recorded before the cell-complex migration.
+//! bitwise those of `fixtures/prism-properties.tsv`, on every host (R14 of
+//! the review of 18 October 2026). The kernel's constructions are
+//! correctly rounded (R13), so one committed fixture serves every host; it
+//! replaces the pre-migration baseline that each host regenerated at
+//! `26fc457f` (T1's requirement, met at `e4adb869`).
 #[path = "support/identity_protocol.rs"]
 #[allow(dead_code)]
 mod identity_protocol;
@@ -13,7 +17,7 @@ use rusty_occt::identity::OperationId;
 pub fn rows() -> Vec<String> {
     let mut out = Vec::new();
     for spec in cases(include_str!("../../fixtures/identity-cases.txt")) {
-        // The baseline predates cones (S3); it covers the prisms.
+        // The prisms (the fixture predates cones, S3).
         if spec.cone.is_some() || spec.sphere.is_some() || spec.torus.is_some() {
             continue;
         }
@@ -30,34 +34,20 @@ pub fn rows() -> Vec<String> {
     out
 }
 
-/// The committed baseline was recorded on this host before the migration
-/// (at 26fc457f). Frames and rotations use the platform's trigonometry, so
-/// other hosts differ in the last bits; CI regenerates the baseline on each
-/// such host from that revision and passes it in `RUSTY_PROPERTY_BASELINE`.
-const RECORDED_ON: (&str, &str) = ("macos", "aarch64");
-
+/// `RUSTY_WRITE_PRISM_PROPERTIES=1` writes the rows instead.
 #[test]
-fn every_prism_property_is_bitwise_unchanged() {
+fn every_prism_property_is_bitwise_the_fixtures() {
     let got = rows();
-    if std::env::var_os("RUSTY_WRITE_PROPERTY_BASELINE").is_some() {
+    if std::env::var_os("RUSTY_WRITE_PRISM_PROPERTIES").is_some() {
         let path = concat!(
             env!("CARGO_MANIFEST_DIR"),
-            "/../fixtures/prism-properties-baseline.tsv"
+            "/../fixtures/prism-properties.tsv"
         );
         std::fs::write(path, got.join("\n") + "\n").unwrap();
     }
-    let host = (std::env::consts::OS, std::env::consts::ARCH);
-    let text = match std::env::var_os("RUSTY_PROPERTY_BASELINE") {
-        Some(path) => std::fs::read_to_string(path).unwrap(),
-        None if host == RECORDED_ON => {
-            include_str!("../../fixtures/prism-properties-baseline.tsv").to_string()
-        }
-        None => {
-            eprintln!("no property baseline recorded on {host:?}; set RUSTY_PROPERTY_BASELINE");
-            return;
-        }
-    };
-    let want: Vec<&str> = text.lines().collect();
+    let want: Vec<&str> = include_str!("../../fixtures/prism-properties.tsv")
+        .lines()
+        .collect();
     assert_eq!(got.len(), want.len());
     for (g, w) in got.iter().zip(&want) {
         assert_eq!(g, w);

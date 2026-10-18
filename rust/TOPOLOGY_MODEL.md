@@ -425,11 +425,15 @@ reason:
   every step's operation, kind and level (H8 in `IDENTITY_AND_HISTORY.md`).
 * **Bitwise properties per host.** `prism-properties-baseline.tsv` was
   recorded on macOS/aarch64 at `26fc457f`, before any T1 code. Frames and
-  rotations use the platform's trigonometry, so Linux and Windows differ from
-  it in the last bits for rotated copies. There, CI checks out `26fc457f`,
-  writes that host's rows with the pre-migration code and requires the
-  migrated kernel to reproduce them bitwise; the requirement is unchanged
-  properties on the same host, not equal libm across hosts.
+  rotations used the platform's trigonometry, so Linux and Windows differed
+  from it in the last bits for rotated copies. There, CI checked out
+  `26fc457f`, wrote that host's rows with the pre-migration code and
+  required the migrated kernel to reproduce them bitwise; the requirement
+  was unchanged properties on the same host, met at `e4adb869`. Since R13
+  and R14 of the review of 18 October 2026 the kernel's constructions are
+  correctly rounded (`cr.rs`) and one fixture, `prism-properties.tsv`, is
+  reproduced bitwise on every host (`tests/prism_properties.rs`); CI no
+  longer regenerates a baseline.
 * **Radial order law.** "Swap two fins around an edge" cannot be detected on a
   manifold edge: a cyclic order of two is unchanged, and the fuzz target
   requires exactly that reversal to stay valid. The detectable form, fins

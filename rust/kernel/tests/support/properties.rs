@@ -1,7 +1,6 @@
 //! Bitwise mass properties, bounds and point classification of every prism
-//! fixture, for fixtures/prism-properties-baseline.tsv. The baseline was
-//! recorded before the cell-complex migration (T1 of TOPOLOGY_MODEL.md), which
-//! must leave every value bitwise unchanged.
+//! fixture, for fixtures/prism-properties.tsv: one fixture for every host
+//! (R14 of the review of 18 October 2026).
 use rusty_occt::{Location, Point3, Solid};
 
 fn bits(values: &[f64]) -> String {

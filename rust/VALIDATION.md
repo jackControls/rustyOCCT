@@ -1122,7 +1122,14 @@ only numbers carry an allowance.
 | `occt-procedural-*-preimplementation`, `occt-torus-curve-preimplementation`, `occt-torus-pair-preimplementation`, `occt-ruled-curve-preimplementation` (`compare_procedural_intersections.py`, `compare_torus_curves.py`, `compare_ruled_curves.py`) | the native lines' counts, points and samples on each run | `1e-9` relative per number on the capture's platform; another platform reproduces its own reviewed record (`platform-<name>/`) exactly in counts | IntPatch walks and approximates lines with platform arithmetic; near degeneracies its pieces differ |
 | `occt-step-preimplementation/native.txt` (`compare_step.py`) | OCCT's bodies of the 22 STEP fixtures on each run | `1e-9` relative per volume, area and centre coordinate; statuses, classes, counts and verdicts exact; no platform record | `STEPControl_Reader` and `BRepGProp` evaluate with platform trigonometry; the macOS capture agrees with the closed forms within `7.6e-15` |
 | `occt-step-b-preimplementation/native.txt` (`compare_step.py`) | OCCT's bodies of STEP-b's seven fixtures on each run | as for STEP-a's: `1e-9` relative per measure; statuses, classes, counts and verdicts exact; no platform record | the same evaluation of splines and ellipses; `BRepGProp`'s fixed-order integration errs by up to `2.0e-3` against the reference (reviewed), but repeats its own arithmetic |
-| `prism-properties-baseline.tsv` (T1) | kernel mass properties, bounds and classifications before and after the migration | none: each host regenerates its own rows at `26fc457f` and must reproduce them bitwise | frames and rotations use the platform's trigonometry, so rows differ across hosts in the last bits |
+
+Kernel constructions carry no allowance (R13 and R14 of the review of 18
+October 2026): every binary64 the kernel constructs through a
+transcendental function or `hypot` is correctly rounded (`cr.rs`), so its
+fixtures are the same bits on every host. `correctly-rounded.tsv`,
+`construction-bits.tsv`, `prism-properties.tsv` and every other kernel
+fixture are compared bitwise on macOS, Linux and Windows; the allowances
+above are for native OCCT observations and for captures written before R13.
 
 Native bridges that compare against reviewed differences use no numeric
 allowance. A review fingerprints the exact native output, so a platform whose
