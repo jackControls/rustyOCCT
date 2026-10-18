@@ -21,6 +21,7 @@
 //! on the others (a cut's tool, which faces the other way, and an input's
 //! wall or cap an entity runs inside).
 use super::{At, What};
+use crate::cr::Rn as _;
 use crate::identity::OperationId;
 use crate::identity::{EntityKind, Role};
 use crate::profile::boolean::{
@@ -333,13 +334,19 @@ fn sample(v: &PieceView, arranged: &Arranged) -> Point2 {
             radius,
             ccw,
         } => {
-            let a0 = (v.p.y - center.y).atan2(v.p.x - center.x);
+            let a0 = (v.p.y - center.y).atan2_rn(v.p.x - center.x);
             let a = a0 + crate::profile::arc_sweep(center, v.p, v.e, ccw) * f;
-            Point2::new(center.x + radius * a.cos(), center.y + radius * a.sin())
+            Point2::new(
+                center.x + radius * a.cos_rn(),
+                center.y + radius * a.sin_rn(),
+            )
         }
         Curve::Circle { center, radius } => {
             let a = TAU * f;
-            Point2::new(center.x + radius * a.cos(), center.y + radius * a.sin())
+            Point2::new(
+                center.x + radius * a.cos_rn(),
+                center.y + radius * a.sin_rn(),
+            )
         }
         Curve::Spline { index, range } => arranged
             .spline(index)
@@ -709,7 +716,7 @@ pub(super) fn build(stack: &Stack, frame: Frame3) -> Result<Vec<Component>> {
                         Curve3::CircularArc {
                             frame: ring_frame,
                             radius,
-                            start_angle: (p.y - center.y).atan2(p.x - center.x),
+                            start_angle: (p.y - center.y).atan2_rn(p.x - center.x),
                             sweep_angle: sweep,
                         }
                     }
@@ -914,7 +921,7 @@ pub(super) fn build(stack: &Stack, frame: Frame3) -> Result<Vec<Component>> {
                 }
                 (_, Some((center, base))) => {
                     // In the cover: u continues along the loop.
-                    let angle = |p: Point2| (p.y - center.y).atan2(p.x - center.x);
+                    let angle = |p: Point2| (p.y - center.y).atan2_rn(p.x - center.x);
                     let first = cycle[0];
                     let mut u = match fin_ends(first.0, first.1).0 {
                         Some(v) => {

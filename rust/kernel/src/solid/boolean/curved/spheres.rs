@@ -19,6 +19,7 @@ use super::procedural::{other_of, other_sphere, MeetCrv, Other, Quartic, Ruled};
 use super::sphere::{plane_section, Circ};
 use super::turned::{middle, roots, square_sum, trim, Chart, Lin};
 use crate::certified::{Fast, Real};
+use crate::cr::Rn as _;
 use crate::polynomial::real::IntPolynomial;
 use crate::solid::split::{q, rational_f64, zero};
 use crate::{Error, Result};
@@ -279,9 +280,9 @@ impl RiseCrv {
             .map(|i| {
                 let w = w0 + (w1 - w0) * i as f64 / n as f64;
                 let rho = r + k * w;
-                let q = ((g[0] + g[1] * w + g[2] * w * w) / (rho * a.hypot(b))).clamp(-1.0, 1.0);
-                let u = b.atan2(a) + sign * q.acos();
-                [0, 1, 2].map(|j| o[j] + rho * (u.cos() * x[j] + u.sin() * y[j]) + w * nn[j])
+                let q = ((g[0] + g[1] * w + g[2] * w * w) / (rho * a.hypot_rn(b))).clamp(-1.0, 1.0);
+                let u = b.atan2_rn(a) + sign * q.acos_rn();
+                [0, 1, 2].map(|j| o[j] + rho * (u.cos_rn() * x[j] + u.sin_rn() * y[j]) + w * nn[j])
             })
             .collect()
     }
@@ -377,7 +378,7 @@ pub(super) fn loops(
     // Turning points of the height graph (g = +-rho: u = phi or phi + pi):
     // their chart t and the angle graph's branch there, binary64 views.
     let (af, bf) = (rational_f64(&alpha), rational_f64(&beta));
-    let phi = bf.atan2(af);
+    let phi = bf.atan2_rn(af);
     let fl = |v: &V| v.clone().map(|y| rational_f64(&y));
     let (of, xf, yf, nf, cf) = (fl(&o), fl(&f.x), fl(&f.y), fl(&f.n), fl(c));
     let (rf, kf) = (rational_f64(r), rational_f64(slope));
@@ -394,17 +395,18 @@ pub(super) fn loops(
             phi + std::f64::consts::PI
         };
         let p: [f64; 3] =
-            [0, 1, 2].map(|j| of[j] + rf * (u.cos() * xf[j] + u.sin() * yf[j]) + w * nf[j]);
+            [0, 1, 2].map(|j| of[j] + rf * (u.cos_rn() * xf[j] + u.sin_rn() * yf[j]) + w * nf[j]);
         // The branch: the sphere's gradient along the ruling there (a cone's
         // leaning out, S9d.3c; the axis for a cylinder).
-        let dir: [f64; 3] = [0, 1, 2].map(|j| nf[j] + kf * (u.cos() * xf[j] + u.sin() * yf[j]));
+        let dir: [f64; 3] =
+            [0, 1, 2].map(|j| nf[j] + kf * (u.cos_rn() * xf[j] + u.sin_rn() * yf[j]));
         let up = (0..3).map(|j| (p[j] - cf[j]) * dir[j]).sum::<f64>();
         if up.abs() < 1e-12 * (1.0 + rf.abs()) {
             return Err(Error::ComputationLimit("a turning point of both graphs"));
         }
         // The chart's t of (cos u, sin u): rotated back by the base.
         let (c0, s0) = (rational_f64(&chart.c0), rational_f64(&chart.s0));
-        let (cu, su) = (u.cos(), u.sin());
+        let (cu, su) = (u.cos_rn(), u.sin_rn());
         let (cr, sr) = (c0 * cu + s0 * su, c0 * su - s0 * cu);
         w_turns.push((sr / (1.0 + cr), up > 0.0));
     }

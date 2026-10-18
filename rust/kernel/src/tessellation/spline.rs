@@ -1573,6 +1573,7 @@ fn surface_cell(lengths: [Fast; 2], net: &[H], p: usize, q: usize) -> SurfaceCel
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::cr::Rn as _;
     use crate::curve::{DerivativeOrder, KnotSide};
 
     fn contains(x: &Fast, y: f64, slack: f64) -> bool {
@@ -1598,7 +1599,7 @@ mod tests {
                     poles.push(crate::Point3::new(
                         x + 0.1 * y,
                         y,
-                        (x * 1.7 + y * 0.9).sin(),
+                        (x * 1.7 + y * 0.9).sin_rn(),
                     ));
                     weights.push(if rational {
                         1.0 + 0.25 * ((i + 2 * j) % 3) as f64
@@ -1762,7 +1763,7 @@ mod tests {
                     let mut widest = 0.0f64;
                     for x in &normals {
                         for y in &normals {
-                            widest = widest.max(x.cross(*y).length().atan2(x.dot(*y)));
+                            widest = widest.max(x.cross(*y).length().atan2_rn(x.dot(*y)));
                         }
                     }
                     assert!(

@@ -1,3 +1,4 @@
+use crate::cr::Rn as _;
 use crate::decide;
 use crate::history::{self, History, Relation};
 use crate::identity::{AlgorithmLevel, EntityId, OperationId, OperationKind};
@@ -280,7 +281,7 @@ impl Solid {
         for (radius, z) in [(bottom, 0.0), (top, height)] {
             let centre = frame.point(Point2::default(), z).to_array();
             for i in 0..3 {
-                let extent = radius * x[i].hypot(y[i]);
+                let extent = radius * x[i].hypot_rn(y[i]);
                 min[i] = min[i].min(centre[i] - extent);
                 max[i] = max[i].max(centre[i] + extent);
             }
@@ -454,7 +455,7 @@ impl Solid {
         for z in [-minor, minor] {
             let centre = frame.point(Point2::default(), z).to_array();
             for i in 0..3 {
-                let extent = (major + minor) * x[i].hypot(y[i]);
+                let extent = (major + minor) * x[i].hypot_rn(y[i]);
                 min[i] = min[i].min(centre[i] - extent);
                 max[i] = max[i].max(centre[i] + extent);
             }
@@ -604,7 +605,7 @@ impl Solid {
         for z in [start, end] {
             let centre = frame.point(Point2::default(), z).to_array();
             for i in 0..3 {
-                let extent = widest * x[i].hypot(y[i]);
+                let extent = widest * x[i].hypot_rn(y[i]);
                 min[i] = min[i].min(centre[i] - extent);
                 max[i] = max[i].max(centre[i] + extent);
             }
@@ -1271,7 +1272,7 @@ fn bounds(profile: &Profile, frame: Frame3, low: f64, high: f64) -> Bounds3 {
                     for height in [low, high] {
                         let c = frame.point(*center, height).to_array();
                         for i in 0..3 {
-                            let extent = radius * x[i].hypot(y[i]);
+                            let extent = radius * x[i].hypot_rn(y[i]);
                             min[i] = min[i].min(c[i] - extent);
                             max[i] = max[i].max(c[i] + extent);
                         }
@@ -1284,7 +1285,7 @@ fn bounds(profile: &Profile, frame: Frame3, low: f64, high: f64) -> Bounds3 {
             let top = frame.point(*center, high).to_array();
             let (x, y) = (frame.x().to_array(), frame.y().to_array());
             for i in 0..3 {
-                let extent = radius * x[i].hypot(y[i]);
+                let extent = radius * x[i].hypot_rn(y[i]);
                 min[i] = bottom[i].min(top[i]) - extent;
                 max[i] = bottom[i].max(top[i]) + extent;
             }

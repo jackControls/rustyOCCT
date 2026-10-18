@@ -23,6 +23,7 @@
 //! edges and faces are `Generated` from the input entities they cut.
 use super::{piece_ordinal, q, rational_f64, zero, PointId, Section, SectionPiece, SegOrigin};
 use crate::certified::Interval as I;
+use crate::cr::Rn as _;
 use crate::identity::{
     Derivation, EntityId, EntityKind, OperationId, OperationKind, Parent, ProfileElement, Role,
 };
@@ -137,7 +138,7 @@ impl Setup<'_> {
     }
     /// The prism's axes bit for bit at a level (`Frame3::at`), as its
     /// walls' (`Topology`'s prism): normalized again, they could turn by an
-    /// ulp with the platform's `hypot`.
+    /// ulp in `hypot`'s rounding.
     fn level_frame(&self, center: Point2, w: f64) -> Result<Frame3> {
         Ok(self.frame.at(self.frame.point(center, w)))
     }
@@ -208,7 +209,7 @@ fn pseg(profile: &Profile, b: usize, j: usize) -> PSeg {
                     center,
                     radius,
                     start: s,
-                    a0: (s.y - center.y).atan2(s.x - center.x),
+                    a0: (s.y - center.y).atan2_rn(s.x - center.x),
                     sweep: arc_sweep(center, s, e, ccw),
                 },
             }
@@ -225,7 +226,7 @@ fn turn(center: Point2, a: Point2, b: Point2, sign: f64) -> f64 {
     );
     let cross = u.x * v.y - u.y * v.x;
     let dot = u.x * v.x + u.y * v.y;
-    let mut t = (sign * cross).atan2(dot);
+    let mut t = (sign * cross).atan2_rn(dot);
     if t <= 0.0 {
         t += TAU;
     }
@@ -351,7 +352,7 @@ pub(super) fn pieces(
         tolerance,
         cut,
         stretch,
-        alpha: bf.atan2(af),
+        alpha: bf.atan2_rn(af),
     };
     for w in [low, high] {
         if tangent_inside(profile, &setup.line(w))? {
@@ -547,7 +548,7 @@ fn build_piece(
             rational_f64(&(q(center.x) - &fc * &a / &ab2)),
             rational_f64(&(q(center.y) - &fc * &bb / &ab2)),
         );
-        let angle = (foot.y - center.y).atan2(foot.x - center.x);
+        let angle = (foot.y - center.y).atan2_rn(foot.x - center.x);
         touch.insert(
             (qb, qj),
             (foot, if angle < 0.0 { angle + TAU } else { angle }),
@@ -699,7 +700,7 @@ fn build_piece(
                 let mut out: Vec<f64> = Vec::new();
                 for (k, (_, p)) in points.iter().enumerate() {
                     let u = if k == 0 {
-                        let a = (p.y - center.y).atan2(p.x - center.x);
+                        let a = (p.y - center.y).atan2_rn(p.x - center.x);
                         if a < 0.0 {
                             a + TAU
                         } else {
@@ -1955,7 +1956,7 @@ pub(crate) fn edge_bounds(t: &Topology) -> crate::Bounds3 {
                 let at = match axes {
                     Some((major, minor)) => {
                         let r = -minor * y[i] / (major * x[i]);
-                        (r.abs() < 1.0).then(|| r.atanh())
+                        (r.abs() < 1.0).then(|| r.atanh_rn())
                     }
                     None => (x[i] != 0.0).then(|| -2.0 * focal * y[i] / x[i]),
                 };
@@ -1987,7 +1988,7 @@ pub(crate) fn edge_bounds(t: &Topology) -> crate::Bounds3 {
         let (x, y) = (frame.x().to_array(), frame.y().to_array());
         for i in 0..3 {
             // Extremes of rx cos t x_i + ry sin t y_i at t = atan2(ry y_i, rx x_i) (+ pi).
-            let t0 = (ry * y[i]).atan2(rx * x[i]);
+            let t0 = (ry * y[i]).atan2_rn(rx * x[i]);
             for t in [t0, t0 + std::f64::consts::PI] {
                 let mut f = (t - start) / sweep;
                 f -= f.floor();

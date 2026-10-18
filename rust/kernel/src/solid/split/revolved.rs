@@ -22,6 +22,7 @@
 //! whole sphere's new poles are `Generated` from it with the role `Pole`.
 use super::{q, rational_f64, zero, Side};
 use crate::certified::{Interval as I, Real};
+use crate::cr::Rn as _;
 use crate::history::{History, Relation};
 use crate::identity::{
     Derivation, EntityId, EntityKind, OperationKind, Parent, ProfileElement, Role,
@@ -198,7 +199,7 @@ impl Solid {
                     )
                 }
                 (_, Some((radius, low, high))) => {
-                    let latitude = (height / radius).asin();
+                    let latitude = (height / radius).asin_rn();
                     if !(low < latitude && latitude < high) {
                         return Err(Error::Degenerate("a split within binary64 of a cap"));
                     }
@@ -257,7 +258,7 @@ impl Solid {
             if radius - height.abs() <= tol {
                 return Err(Error::Degenerate("a cap thinner than the resolution"));
             }
-            let latitude = (height / radius).asin();
+            let latitude = (height / radius).asin_rn();
             // The frame's normal is the plane's: the cap under the latitude
             // lies below it.
             pieces.push((

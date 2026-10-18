@@ -17,6 +17,7 @@
 //! procedural curve keeps that edge's stored curve (`stored`).
 use super::graph::{Arr, CurveRef};
 use super::model::{Crv, Prism};
+use crate::cr::Rn as _;
 use crate::solid::{Construction, Solid};
 use crate::topology::Curve3;
 use crate::{Error, Point3, Result};
@@ -212,7 +213,7 @@ pub(super) fn piece(c: &Curve3, a: Point3, sweep: f64) -> Option<Curve3> {
     match &mut c {
         Curve3::Meet(m) => {
             let [x, y, _] = m.frame.coordinates(a);
-            (m.start, m.sweep) = (y.atan2(x), sweep);
+            (m.start, m.sweep) = (y.atan2_rn(x), sweep);
         }
         Curve3::Rise(r) => {
             (r.start, r.sweep) = (r.frame.coordinates(a)[2], sweep);
@@ -220,9 +221,9 @@ pub(super) fn piece(c: &Curve3, a: Point3, sweep: f64) -> Option<Curve3> {
         Curve3::Toric(t) => {
             let [x, y, z] = t.frame.coordinates(a);
             let start = if t.over_v {
-                z.atan2(x.hypot(y) - t.major)
+                z.atan2_rn(x.hypot_rn(y) - t.major)
             } else {
-                y.atan2(x)
+                y.atan2_rn(x)
             };
             (t.start, t.sweep) = (start, sweep);
         }

@@ -20,6 +20,7 @@
 //! face from the wall and the discs.
 use super::{q, rational_f64, zero, Side};
 use crate::certified::{Interval as I, Real};
+use crate::cr::Rn as _;
 use crate::history::{History, Relation};
 use crate::identity::{
     Derivation, EntityId, EntityKind, OperationId, OperationKind, Parent, ProfileElement, Role,
@@ -112,7 +113,7 @@ pub(super) fn ends(primitive: &Primitive) -> [EndSpec; 2] {
             EndSpec {
                 w: height,
                 radius: top,
-                v: height.hypot(top - bottom),
+                v: height.hypot_rn(top - bottom),
             },
         ],
         Primitive::Zone { radius, low, high } => {
@@ -194,7 +195,7 @@ fn halves(
         Ok::<f64, Error>(0.5 * lo + 0.5 * hi)
     };
     let t = [unit(&-b.clone())?, unit(a)?];
-    let angle = t[1].atan2(t[0]);
+    let angle = t[1].atan2_rn(t[0]);
     // The lower side (F < 0) turns counter-clockwise from t to -t: its
     // angles are `angle` to `angle + pi`; the upper's from -t back to t.
     let mut out = Vec::new();
@@ -217,7 +218,7 @@ fn half(
     let [bottom, top] = ends(primitive);
     let (n, x) = (frame.normal(), frame.x());
     let dir = |u: f64| {
-        let (s, c) = u.sin_cos();
+        let (s, c) = u.sin_cos_rn();
         Point2::new(c, s)
     };
     let at = |u: f64, e: &EndSpec| {
@@ -407,7 +408,7 @@ fn half(
         } => Surface::Cone {
             frame,
             radius: r1,
-            half_angle: (r2 - r1).atan2(height),
+            half_angle: (r2 - r1).atan2_rn(height),
         },
         Primitive::Zone { radius, .. } => Surface::Sphere { frame, radius },
         Primitive::Torus { .. } => unreachable!("a torus's pieces are bands or wedges"),

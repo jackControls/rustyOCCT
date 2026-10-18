@@ -14,6 +14,7 @@ use super::meet::Pos;
 use super::model::*;
 use super::num::*;
 use super::spline_walls::{SplineSeg, WallCrv};
+use crate::cr::Rn as _;
 use crate::identity::{EntityId, EntityKind, Role};
 use crate::profile::boolean::{Op2, Operand};
 use crate::solid::split::rational_f64;
@@ -1357,7 +1358,7 @@ fn angle_of(pos: &Pos) -> f64 {
     let Pos::Ang(cs) = pos else {
         unreachable!("a conic's place")
     };
-    cs[1].to_f64().atan2(cs[0].to_f64())
+    cs[1].to_f64().atan2_rn(cs[0].to_f64())
 }
 
 /// A result edge's curve, rounded once.
@@ -1382,7 +1383,7 @@ fn curve3(arr: &Arr, e: &REdge, points: &BTreeMap<usize, Point3>) -> Result<Curv
             };
             let angle = |p: Point3| {
                 let [x, y, _] = frame.coordinates(p);
-                y.atan2(x)
+                y.atan2_rn(x)
             };
             let (t0, t1) = (angle(points[&s]), angle(points[&t]));
             let with = first.with == d0;
@@ -1677,7 +1678,7 @@ fn curve3(arr: &Arr, e: &REdge, points: &BTreeMap<usize, Point3>) -> Result<Curv
                     frame.x(),
                     cm.tolerance,
                 )?;
-                let radius = lu.hypot(lv);
+                let radius = lu.hypot_rn(lv);
                 return Ok(if e.ends.is_none() {
                     Curve3::Circle {
                         frame: circle,
@@ -1855,7 +1856,7 @@ fn curve3(arr: &Arr, e: &REdge, points: &BTreeMap<usize, Point3>) -> Result<Curv
             let base = frame
                 .x()
                 .dot(cm.frame.y())
-                .atan2(frame.x().dot(cm.frame.x()));
+                .atan2_rn(frame.x().dot(cm.frame.x()));
             // A stored frame against the model's axis (an imported leaf read
             // off its cap facing against its walls' stored axes): its angle
             // `base - t` of the model's `t`, its rulings' heights the other
@@ -1981,8 +1982,8 @@ fn curve3(arr: &Arr, e: &REdge, points: &BTreeMap<usize, Point3>) -> Result<Curv
             let (cf, af, bf) = (fl(c), fl(a), fl(b));
             let d = |x: &[f64; 3], y: &[f64; 3]| x[0] * y[0] + x[1] * y[1] + x[2] * y[2];
             let (aa, ab, bb) = (d(&af, &af), d(&af, &bf), d(&bf, &bf));
-            let phi = 0.5 * (2.0 * ab).atan2(aa - bb);
-            let (cp, sp) = (phi.cos(), phi.sin());
+            let phi = 0.5 * (2.0 * ab).atan2_rn(aa - bb);
+            let (cp, sp) = (phi.cos_rn(), phi.sin_rn());
             let mut major = [0, 1, 2].map(|k| af[k] * cp + bf[k] * sp);
             let mut minor = [0, 1, 2].map(|k| -af[k] * sp + bf[k] * cp);
             let mut shift = phi;
@@ -2053,7 +2054,7 @@ fn given_arc(
             };
             let angle = |p: Point3| {
                 let [x, y, _] = frame.coordinates(p);
-                y.atan2(x)
+                y.atan2_rn(x)
             };
             let (t0, t1) = (angle(points[&s]), angle(points[&t]));
             Some(Curve3::CircularArc {
@@ -2080,7 +2081,7 @@ fn given_arc(
             };
             let angle = |p: Point3| {
                 let [x, y, _] = frame.coordinates(p);
-                (y / minor).atan2(x / major)
+                (y / minor).atan2_rn(x / major)
             };
             let (t0, t1) = (angle(points[&s]), angle(points[&t]));
             Some(Curve3::EllipseArc {
@@ -2254,7 +2255,10 @@ fn cylinder_pcurve(
     let tol = 1e-9 * (1.0 + radius + o.to_array().iter().fold(0.0f64, |m, v| m.max(v.abs())));
     for f in [0.0, 0.25, 0.5, 0.75, 1.0] {
         let q = pc.point(f);
-        let s = frame.point(Point2::new(radius * q.x.cos(), radius * q.x.sin()), q.y);
+        let s = frame.point(
+            Point2::new(radius * q.x.cos_rn(), radius * q.x.sin_rn()),
+            q.y,
+        );
         if (s - at(f)).length() > tol {
             return None;
         }
@@ -2298,10 +2302,10 @@ fn sphere_pcurve(
             let q = pc.point(f);
             let s = frame.point(
                 Point2::new(
-                    radius * q.y.cos() * q.x.cos(),
-                    radius * q.y.cos() * q.x.sin(),
+                    radius * q.y.cos_rn() * q.x.cos_rn(),
+                    radius * q.y.cos_rn() * q.x.sin_rn(),
                 ),
-                radius * q.y.sin(),
+                radius * q.y.sin_rn(),
             );
             (s - at(f)).length() <= tol
         })
@@ -2322,7 +2326,7 @@ fn sphere_pcurve(
         }
     }
     // A parallel: v equal throughout, u turning with the curve.
-    if uv.iter().all(|p| (p.y - uv[0].y).abs() < 1e-9) && uv[0].y.cos() > 1e-6 {
+    if uv.iter().all(|p| (p.y - uv[0].y).abs() < 1e-9) && uv[0].y.cos_rn() > 1e-6 {
         let mut u = prev.map_or(uv[0].x, |p| near(uv[0].x, p));
         let u0 = u;
         for w in uv.windows(2) {
@@ -2410,7 +2414,7 @@ fn cone_curve3(
         let radius = rational_f64(&rho);
         let angle = |p: Point3| {
             let [x, y, _] = frame.coordinates(p);
-            y.atan2(x)
+            y.atan2_rn(x)
         };
         let turn =
             (angle(p1) - angle(p0) + std::f64::consts::PI).rem_euclid(TAU) - std::f64::consts::PI;

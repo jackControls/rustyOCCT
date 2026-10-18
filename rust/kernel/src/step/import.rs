@@ -21,6 +21,7 @@
 use super::part21::{Exchange, Instance, Parameter};
 use super::spline;
 use super::StepError;
+use crate::cr::Rn as _;
 use crate::occt_brep::read::{self as brep, Data, Document, EdgeRep, Kind, Orient, Shape, Sub};
 use crate::occt_brep::{self, Rejected};
 use crate::topology::Topology;
@@ -213,10 +214,10 @@ impl Axes {
     }
     fn angle(&self, p: [f64; 3]) -> f64 {
         let [a, b, _] = self.local(p);
-        b.atan2(a)
+        b.atan2_rn(a)
     }
     fn circle(&self, r: f64, t: f64) -> [f64; 3] {
-        let (s, c) = t.sin_cos();
+        let (s, c) = t.sin_cos_rn();
         std::array::from_fn(|i| self.o[i] + r * (c * self.x[i] + s * self.y[i]))
     }
 }
@@ -402,17 +403,17 @@ impl Carrier {
         let [a, b, h] = self.axes().local(p);
         match *self {
             Self::Plane(_) => [a, b],
-            Self::Cylinder(..) => [b.atan2(a), h],
+            Self::Cylinder(..) => [b.atan2_rn(a), h],
             Self::Cone(_, r, angle) => {
-                let v = h / angle.cos();
-                if r + v * angle.sin() < 0.0 {
-                    [(-b).atan2(-a), v]
+                let v = h / angle.cos_rn();
+                if r + v * angle.sin_rn() < 0.0 {
+                    [(-b).atan2_rn(-a), v]
                 } else {
-                    [b.atan2(a), v]
+                    [b.atan2_rn(a), v]
                 }
             }
-            Self::Sphere(..) => [b.atan2(a), h.atan2(a.hypot(b))],
-            Self::Torus(_, major, _) => [b.atan2(a), h.atan2(a.hypot(b) - major)],
+            Self::Sphere(..) => [b.atan2_rn(a), h.atan2_rn(a.hypot_rn(b))],
+            Self::Torus(_, major, _) => [b.atan2_rn(a), h.atan2_rn(a.hypot_rn(b) - major)],
         }
     }
     /// The `v` of a pole at `p`: a sphere's poles and a cone's apex, where
@@ -420,10 +421,10 @@ impl Carrier {
     fn pole(&self, p: [f64; 3], tol: f64) -> Option<f64> {
         let [a, b, h] = self.axes().local(p);
         match *self {
-            Self::Sphere(..) if a.hypot(b) <= tol => Some(FRAC_PI_2.copysign(h)),
+            Self::Sphere(..) if a.hypot_rn(b) <= tol => Some(FRAC_PI_2.copysign(h)),
             Self::Cone(_, r, angle) => {
-                let v = h / angle.cos();
-                ((r + v * angle.sin()).abs() <= tol).then(|| -r / angle.sin())
+                let v = h / angle.cos_rn();
+                ((r + v * angle.sin_rn()).abs() <= tol).then(|| -r / angle.sin_rn())
             }
             _ => None,
         }
@@ -802,7 +803,7 @@ impl<'a> Build<'a> {
             Curve::Ellipse { axes, a1, a2 } => {
                 let angle = |q: [f64; 3]| {
                     let [x, y, _] = axes.local(q);
-                    (y / a2).atan2(x / a1)
+                    (y / a2).atan2_rn(x / a1)
                 };
                 let f = angle(pa);
                 let sweep = if start == end {
@@ -892,7 +893,7 @@ impl<'a> Build<'a> {
                 let um = carrier.uv(pm)[0];
                 let radius = |q: [f64; 3]| {
                     let [a, b, _] = axis.local(q);
-                    a.hypot(b)
+                    a.hypot_rn(b)
                 };
                 for q in [p0, p1] {
                     if carrier.pole(q, tol).is_none() && !same(carrier.uv(q)[0], um, radius(q)) {
@@ -913,13 +914,13 @@ impl<'a> Build<'a> {
                 let (p0, p1) = (axes.circle(r, f), axes.circle(r, l));
                 let centre = axis.local(axes.o);
                 let parallel = norm(cross(axes.z, axis.z)) <= angle_tol
-                    && centre[0].hypot(centre[1]) <= 10.0 * tol;
+                    && centre[0].hypot_rn(centre[1]) <= 10.0 * tol;
                 let meridian = dot(axes.z, axis.z).abs() <= angle_tol
                     && match *carrier {
                         Carrier::Sphere(..) => norm(centre) <= 10.0 * tol,
                         Carrier::Torus(_, major, _) => {
                             centre[2].abs() <= 10.0 * tol
-                                && (centre[0].hypot(centre[1]) - major).abs() <= 10.0 * tol
+                                && (centre[0].hypot_rn(centre[1]) - major).abs() <= 10.0 * tol
                         }
                         _ => false,
                     };
@@ -938,13 +939,13 @@ impl<'a> Build<'a> {
                     // torus, the arc's middle on a sphere (an arc across a
                     // pole changes longitude and is not derived).
                     let um = match *carrier {
-                        Carrier::Torus(..) => centre[1].atan2(centre[0]),
+                        Carrier::Torus(..) => centre[1].atan2_rn(centre[0]),
                         _ => carrier.uv(axes.circle(r, 0.5 * (f + l)))[0],
                     };
                     let e = [
-                        um.cos() * axis.x[0] + um.sin() * axis.y[0],
-                        um.cos() * axis.x[1] + um.sin() * axis.y[1],
-                        um.cos() * axis.x[2] + um.sin() * axis.y[2],
+                        um.cos_rn() * axis.x[0] + um.sin_rn() * axis.y[0],
+                        um.cos_rn() * axis.x[1] + um.sin_rn() * axis.y[1],
+                        um.cos_rn() * axis.x[2] + um.sin_rn() * axis.y[2],
                     ];
                     let slope = dot(axes.z, cross(e, axis.z)).signum();
                     let v0 = carrier.uv(p0)[1];
@@ -988,9 +989,9 @@ impl<'a> Build<'a> {
                 ];
                 let near = |x: f64, y: f64| (x - y).abs() <= 10.0 * tol;
                 if n[2].abs() <= angle_tol
-                    || !near(c[0].hypot(c[1]), 0.0)
-                    || !near(px[0].hypot(px[1]), r)
-                    || !near(py[0].hypot(py[1]), r)
+                    || !near(c[0].hypot_rn(c[1]), 0.0)
+                    || !near(px[0].hypot_rn(px[1]), r)
+                    || !near(py[0].hypot_rn(py[1]), r)
                     || !near((px[0] * py[0] + px[1] * py[1]) / r, 0.0)
                 {
                     return Err("PCurveNotDerived");
@@ -1000,8 +1001,8 @@ impl<'a> Build<'a> {
                     -r * n[0] / n[2],
                     -r * n[1] / n[2],
                 ];
-                let v = |u: f64| a[0] + a[1] * u.cos() + a[2] * u.sin();
-                let (sine, cosine) = f.sin_cos();
+                let v = |u: f64| a[0] + a[1] * u.cos_rn() + a[2] * u.sin_rn();
+                let (sine, cosine) = f.sin_cos_rn();
                 let p0 = std::array::from_fn(|k| {
                     axes.o[k] + a1 * cosine * axes.x[k] + a2 * sine * axes.y[k]
                 });

@@ -385,6 +385,7 @@ pub(crate) fn integrate_many<T: Real>(
 mod tests {
     use super::*;
     use crate::certified::Fast;
+    use crate::cr::Rn as _;
 
     fn contains(x: &Fast, v: f64) -> bool {
         let (lo, hi) = x.bounds_f64();
@@ -399,8 +400,20 @@ mod tests {
         // d^k/dt^k sin at 0.3 over k!.
         let fact = [1.0, 1.0, 2.0, 6.0, 24.0, 120.0, 720.0];
         for k in 0..=6 {
-            let ds = [0.3f64.sin(), 0.3f64.cos(), -0.3f64.sin(), -0.3f64.cos()][k % 4] / fact[k];
-            let dc = [0.3f64.cos(), -0.3f64.sin(), -0.3f64.cos(), 0.3f64.sin()][k % 4] / fact[k];
+            let ds = [
+                0.3f64.sin_rn(),
+                0.3f64.cos_rn(),
+                -0.3f64.sin_rn(),
+                -0.3f64.cos_rn(),
+            ][k % 4]
+                / fact[k];
+            let dc = [
+                0.3f64.cos_rn(),
+                -0.3f64.sin_rn(),
+                -0.3f64.cos_rn(),
+                0.3f64.sin_rn(),
+            ][k % 4]
+                / fact[k];
             assert!((s.c[k].bounds_f64().0 - ds).abs() < 1e-14, "sin {k}");
             assert!((c.c[k].bounds_f64().0 - dc).abs() < 1e-14, "cos {k}");
         }
@@ -434,10 +447,10 @@ mod tests {
             let e = Fast::exp(&Fast::exact_f64(x));
             let (lo, hi) = e.bounds_f64();
             assert!(
-                lo <= x.exp() * (1.0 + 1e-15) && x.exp() * (1.0 - 1e-15) <= hi,
+                lo <= x.exp_rn() * (1.0 + 1e-15) && x.exp_rn() * (1.0 - 1e-15) <= hi,
                 "{x}"
             );
-            assert!(hi - lo <= 1e-12 * x.exp().max(1.0), "{x}: {lo} {hi}");
+            assert!(hi - lo <= 1e-12 * x.exp_rn().max(1.0), "{x}: {lo} {hi}");
         }
         let t = Jet::variable(Fast::exact_f64(0.6), 5);
         let (c, s) = t.cosh_sinh();

@@ -13,6 +13,7 @@
 use super::meet::{line_point, quadratic, tangency, EdgeMeet, Pos};
 use super::model::*;
 use super::num::*;
+use crate::cr::Rn as _;
 use crate::identity::Role;
 use crate::profile::boolean::Operand;
 use crate::solid::split::{q, rational_f64, zero};
@@ -80,7 +81,7 @@ impl Circ {
     pub(super) fn angle(&self, pos: &[Qd; 2]) -> f64 {
         let (xx, yy) = self.norms();
         let (lx, ly) = (rational_f64(&xx).sqrt(), rational_f64(&yy).sqrt());
-        (pos[1].to_f64() * ly).atan2(pos[0].to_f64() * lx)
+        (pos[1].to_f64() * ly).atan2_rn(pos[0].to_f64() * lx)
     }
 
     /// Binary64 points from the angle `t0` turning `sweep`.
@@ -95,7 +96,7 @@ impl Circ {
         (0..=n)
             .map(|i| {
                 let t = t0 + sweep * i as f64 / n as f64;
-                [0, 1, 2].map(|k| c[k] + rho * (t.cos() * x[k] / lx + t.sin() * y[k] / ly))
+                [0, 1, 2].map(|k| c[k] + rho * (t.cos_rn() * x[k] / lx + t.sin_rn() * y[k] / ly))
             })
             .collect()
     }

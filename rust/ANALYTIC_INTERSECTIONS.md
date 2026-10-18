@@ -197,7 +197,8 @@ matches and 3 reviewed differences (tangent points `GeomInt_IntSS` misses),
 the kernel inside the reference on all 58. The fixture's stored normals are
 checked bit for bit (`procedural-intersection-frames.tsv`): a near-Villarceau
 case is sensitive to one unit in the last place of the normal, and the
-platform's `hypot` can round a non-Pythagorean normal differently.
+platform's `hypot` could round a non-Pythagorean normal differently (before
+R13; the kernel's `hypot` is correctly rounded on every host since).
 
 ## A torus with a cylinder, a cone or another torus (S7b.3b)
 
@@ -457,7 +458,8 @@ on all 13.
   near case of every degeneracy class, and each surface's stored normal
   (`-frames.tsv`): inputs are chosen so that `Frame3::new` stores the same
   bits as the reference's normalisation (a normal `(0, 3, 4)`, not
-  `(0, 0.6, 0.8)`, whose normalisation depends on the platform's `hypot`).
+  `(0, 0.6, 0.8)`, whose normalisation depended on the platform's `hypot`
+  before R13).
 * **Kernel tests.** `analytic_intersections.rs` requires the stored normals
   to match, every reference number to lie inside the kernel's enclosures
   (up to `1e-25` relative, the reference's printing), results symmetric in

@@ -50,6 +50,7 @@ use super::turned::{
     changes, padd, pmul, pscale, roots, square_sum, sturm, trim, Chart, Form, Poly,
 };
 use crate::certified::{Fast, Real};
+use crate::cr::Rn as _;
 use crate::polynomial::real::{isolate, AlgebraicRoot, Budget, IntPolynomial};
 use crate::polynomial::RootIsolationOptions;
 use crate::solid::split::{q, rational_f64, zero};
@@ -544,8 +545,8 @@ impl Meeting {
 
     /// `G`, `G_u` and `G_v` in binary64.
     fn eval(&self, u: f64, v: f64) -> [f64; 3] {
-        let (su, cu) = u.sin_cos();
-        let (sv, cv) = v.sin_cos();
+        let (su, cu) = u.sin_cos_rn();
+        let (sv, cv) = v.sin_cos_rn();
         let c = [cu, su, cv, sv];
         [
             self.num[0].eval(&c),
@@ -565,8 +566,8 @@ impl Meeting {
     fn point_f64(&self, u: f64, v: f64) -> [f64; 3] {
         let [o, x, y, n] = self.frame;
         let (big, small) = (rational_f64(&self.big), rational_f64(&self.small));
-        let rho = big + small * v.cos();
-        let l = [rho * u.cos(), rho * u.sin(), small * v.sin()];
+        let rho = big + small * v.cos_rn();
+        let l = [rho * u.cos_rn(), rho * u.sin_rn(), small * v.sin_rn()];
         [0, 1, 2].map(|j| o[j] + l[0] * x[j] + l[1] * y[j] + l[2] * n[j])
     }
 
@@ -686,23 +687,23 @@ fn clear_chart(form: &Form) -> Result<Chart> {
 fn dir_near(angle: f64) -> [R; 2] {
     let half = angle / 2.0;
     let one = int(1);
-    if half.cos().abs() >= 0.5 {
-        let s = q(half.tan());
+    if half.cos_rn().abs() >= 0.5 {
+        let s = q(half.tan_rn());
         let den = &one + &s * &s;
         [(&one - &s * &s) / &den, int(2) * &s / &den]
     } else {
-        let c = q(half.cos() / half.sin());
+        let c = q(half.cos_rn() / half.sin_rn());
         let den = &c * &c + &one;
         [(&c * &c - &one) / &den, int(2) * &c / &den]
     }
 }
 
 fn angle_r(d: &[R; 2]) -> f64 {
-    rational_f64(&d[1]).atan2(rational_f64(&d[0]))
+    rational_f64(&d[1]).atan2_rn(rational_f64(&d[0]))
 }
 
 fn angle_q(d: &[Qd; 2]) -> f64 {
-    d[1].to_f64().atan2(d[0].to_f64())
+    d[1].to_f64().atan2_rn(d[0].to_f64())
 }
 
 fn qdir(d: &[R; 2]) -> [Qd; 2] {
@@ -920,7 +921,7 @@ impl ToricCrv {
             .into_iter()
             .map(|(c, s)| [int(c), int(s)])
             .find(|cs| {
-                let a = rational_f64(&cs[1]).atan2(rational_f64(&cs[0]));
+                let a = rational_f64(&cs[1]).atan2_rn(rational_f64(&cs[0]));
                 (near(v, a) - a).abs() <= 1e-6 && form.value(cs) == zero()
             });
         if quarter.is_some() {
@@ -931,7 +932,7 @@ impl ToricCrv {
         // tube's point on a cone, its piece's cone through the tube's centre
         // along it): the nearest such, checked exactly.
         let grid = 2f64.powi(-40);
-        let s = (0.5 * v).tan();
+        let s = (0.5 * v).tan_rn();
         if !s.is_finite() || s.abs() > 4096.0 {
             return None;
         }
@@ -957,7 +958,7 @@ impl ToricCrv {
         let v = self.root_f64(0.0);
         let form = self.m.g.at(false, &[int(1), zero()]);
         let p = form.in_cos()?;
-        let near = v.cos();
+        let near = v.cos_rn();
         let c = match p.len() {
             2 => -(&p[0] / &p[1]),
             3 => {
@@ -978,7 +979,7 @@ impl ToricCrv {
         if value != zero() || d <= zero() || (rational_f64(&c) - near).abs() > 1e-6 {
             return None;
         }
-        let sign = if v.sin() < 0.0 { int(-1) } else { int(1) };
+        let sign = if v.sin_rn() < 0.0 { int(-1) } else { int(1) };
         let s = match rational_sqrt(&d) {
             Some(r) => Qd::rat(r * sign),
             None => Qd::new(zero(), sign, d),
@@ -1016,11 +1017,11 @@ impl ToricCrv {
         let d = [p[0] - o[0], p[1] - o[1], p[2] - o[2]];
         let l = super::graph::solve3(&xa, &ya, &na, &d);
         let (big, small) = (rational_f64(&self.m.big), rational_f64(&self.m.small));
-        let rho = l[0].hypot(l[1]);
-        if ((rho - big).hypot(l[2]) - small).abs() > 1e-7 * (1.0 + big) {
+        let rho = l[0].hypot_rn(l[1]);
+        if ((rho - big).hypot_rn(l[2]) - small).abs() > 1e-7 * (1.0 + big) {
             return false;
         }
-        let (u, v) = (l[1].atan2(l[0]), l[2].atan2(rho - big));
+        let (u, v) = (l[1].atan2_rn(l[0]), l[2].atan2_rn(rho - big));
         let (t, s) = if self.over_v { (v, u) } else { (u, v) };
         let margin = 1e-7;
         let [w0, w1] = self.window_f;
@@ -1832,7 +1833,7 @@ fn trace(
     let start = [lines[li].pf, lines[li].v[ri]];
     let dir_at = |p: [f64; 2]| -> Option<[f64; 2]> {
         let [_, gu, gv] = m.eval(p[0], p[1]);
-        let n = gu.hypot(gv);
+        let n = gu.hypot_rn(gv);
         (n > 0.0 && n.is_finite()).then(|| [gv / n, -gu / n])
     };
     let mut p = start;
@@ -1856,7 +1857,7 @@ fn trace(
                 break;
             }
         }
-        let moved = (q[0] - pred[0]).hypot(q[1] - pred[1]);
+        let moved = (q[0] - pred[0]).hypot_rn(q[1] - pred[1]);
         let dn = dir_at(q);
         let good =
             converged && moved <= 0.1 * h && dn.is_some_and(|e| e[0] * d[0] + e[1] * d[1] > 0.995);

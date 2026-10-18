@@ -16,6 +16,7 @@ use super::meet::{line_point, quadratic, tangency, trig, EdgeMeet, Pos};
 use super::model::*;
 use super::num::*;
 use crate::certified::{Fast, Real};
+use crate::cr::Rn as _;
 use crate::identity::Role;
 use crate::profile::boolean::Operand;
 use crate::solid::split::{q, rational_f64, zero};
@@ -473,7 +474,7 @@ impl ConeSec {
         (0..=n)
             .map(|i| {
                 let t = t0 + sweep * i as f64 / n as f64;
-                let (s, c) = t.sin_cos();
+                let (s, c) = t.sin_cos_rn();
                 let rho = g / (m + k * (a * c + b * s));
                 let w = (rho - b0) / k;
                 [0, 1, 2].map(|j| o[j] + rho * (c * x[j] + s * y[j]) + w * nn[j])

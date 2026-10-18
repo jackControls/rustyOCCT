@@ -32,6 +32,7 @@ use super::model::*;
 use super::num::*;
 use super::torus::{discriminants, line_quartic, loc_of, verify, Ring, TorusSec};
 use super::turned::{near_node_within, roots_repeated, trim, Chart};
+use crate::cr::Rn as _;
 use crate::identity::Role;
 use crate::profile::boolean::Operand;
 use crate::solid::split::{q, rational_f64, zero};
@@ -132,12 +133,12 @@ fn rat2(d: &P2) -> [Qd; 2] {
 fn rational_dir(angle: f64) -> P2 {
     let half = angle / 2.0;
     let one = int(1);
-    if half.cos().abs() >= 0.5 {
-        let s = q(half.tan());
+    if half.cos_rn().abs() >= 0.5 {
+        let s = q(half.tan_rn());
         let den = &one + &s * &s;
         [(&one - &s * &s) / &den, int(2) * &s / &den]
     } else {
-        let c = q(half.cos() / half.sin());
+        let c = q(half.cos_rn() / half.sin_rn());
         let den = &c * &c + &one;
         [(&c * &c - &one) / &den, int(2) * &c / &den]
     }
@@ -658,7 +659,7 @@ pub(super) fn model(solid: &Solid, op: Operand, seam: &R) -> Result<Prism> {
         }));
         (span, e, [one.clone(), zero()])
     } else {
-        let end = [q(angle.cos()), q(angle.sin())];
+        let end = [q(angle.cos_rn()), q(angle.sin_rn())];
         let n2 = &end[0] * &end[0] + &end[1] * &end[1];
         let unit = [
             Qd::new(zero(), &end[0] / &n2, n2.clone()),

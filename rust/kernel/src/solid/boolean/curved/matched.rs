@@ -15,6 +15,7 @@
 //! the other solids' faces are dropped, and the other input's pieces inside
 //! another solid are outside the given one.
 use super::graph::Arr;
+use crate::cr::Rn as _;
 use crate::topology::{Curve3, Loop, Topology, TopologyParts, VertexId};
 use crate::{Error, Point3, Result};
 use std::collections::{BTreeMap, BTreeSet};
@@ -40,7 +41,7 @@ fn ring_distance(curve: &Curve3, p: Point3) -> Option<f64> {
     match curve {
         Curve3::Circle { frame, radius } | Curve3::CircularArc { frame, radius, .. } => {
             let [x, y, z] = frame.coordinates(p);
-            Some(((x.hypot(y) - radius).powi(2) + z * z).sqrt())
+            Some(((x.hypot_rn(y) - radius).powi(2) + z * z).sqrt())
         }
         Curve3::EllipseArc {
             frame,
@@ -49,8 +50,8 @@ fn ring_distance(curve: &Curve3, p: Point3) -> Option<f64> {
             ..
         } => {
             let [x, y, z] = frame.coordinates(p);
-            let t = (y / minor).atan2(x / major);
-            let (s, c) = t.sin_cos();
+            let t = (y / minor).atan2_rn(x / major);
+            let (s, c) = t.sin_cos_rn();
             Some(((x - major * c).powi(2) + (y - minor * s).powi(2) + z * z).sqrt())
         }
         _ => None,

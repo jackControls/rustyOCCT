@@ -663,7 +663,7 @@ fn a_spline_wall_and_a_cylinder_within_rounding_of_parallel_are_degenerate_unles
 }
 
 /// A frame at `at` whose normal is `base`'s normalized again, an ulp off it
-/// (or, where this platform's `hypot` keeps it, turned by an ulp first).
+/// (or, where normalizing keeps it, turned by an ulp first).
 fn ulp_off(base: Frame3, at: Point3, hint: Vec3) -> Frame3 {
     let n = base.normal();
     let up = |x: f64, k: i64| f64::from_bits(x.to_bits().wrapping_add_signed(k));

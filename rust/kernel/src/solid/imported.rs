@@ -99,6 +99,7 @@
 //! primitive; the piece a slant box of cones normal to it). Every other body
 //! is S9e.4b's.
 use super::{replayable, Construction, Context, Solid};
+use crate::cr::Rn as _;
 use crate::history::{History, Relation};
 use crate::identity::{
     AlgorithmLevel, Derivation, EntityId, EntityKind, InputLabel, OperationId, OperationKind,
@@ -1473,14 +1474,14 @@ fn ring_offset(
 ) -> Result<Vec<Point2>> {
     let delta = 2.0 * radius * std::f64::consts::SQRT_2 / 64.0;
     let r = if hole { radius - delta } else { radius + delta };
-    let step = 2.0 * (1.0 - delta / (4.0 * r)).acos();
+    let step = 2.0 * (1.0 - delta / (4.0 * r)).acos_rn();
     let count = (std::f64::consts::TAU / step).ceil().max(8.0) as usize;
     if count > COMPLETION_ARC {
         return Err(not_their_chain());
     }
     let at = |k: f64| {
         let th = std::f64::consts::TAU * k / count as f64;
-        Point2::new(center.x + r * th.cos(), center.y + r * th.sin())
+        Point2::new(center.x + r * th.cos_rn(), center.y + r * th.sin_rn())
     };
     let points: Vec<Point2> = (0..count).map(|k| at(k as f64)).collect();
     let middles = (0..count).map(|k| {
@@ -1539,7 +1540,10 @@ fn complete_loop(
     let tau = std::f64::consts::TAU;
     // An arc's sweep from `a` to `b` about `c` (signed by its turn).
     let sweep = |c: V2, a: V2, b: V2, ccw: bool| -> f64 {
-        let (ta, tb) = ((a.1 - c.1).atan2(a.0 - c.0), (b.1 - c.1).atan2(b.0 - c.0));
+        let (ta, tb) = (
+            (a.1 - c.1).atan2_rn(a.0 - c.0),
+            (b.1 - c.1).atan2_rn(b.0 - c.0),
+        );
         let mut s = if ccw {
             (tb - ta).rem_euclid(tau)
         } else {
@@ -1588,10 +1592,10 @@ fn complete_loop(
         let (a, b) = (at(j), at(j + 1));
         samples.push(a);
         if let Some((c, r, ccw)) = arc_of(j) {
-            let (s, ta) = (sweep(c, a, b, ccw), (a.1 - c.1).atan2(a.0 - c.0));
+            let (s, ta) = (sweep(c, a, b, ccw), (a.1 - c.1).atan2_rn(a.0 - c.0));
             for k in 1..8 {
                 let th = ta + s * f64::from(k) / 8.0;
-                samples.push((c.0 + r * th.cos(), c.1 + r * th.sin()));
+                samples.push((c.0 + r * th.cos_rn(), c.1 + r * th.sin_rn()));
             }
         }
     }
@@ -1646,17 +1650,17 @@ fn complete_loop(
             return Err(refuse());
         }
         let s = sweep(c, a, b, ccw);
-        let step = 2.0 * (1.0 - delta / (4.0 * r2)).acos();
+        let step = 2.0 * (1.0 - delta / (4.0 * r2)).acos_rn();
         let count = (s.abs() / step).ceil().max(1.0);
         if count > COMPLETION_ARC as f64 {
             return Err(refuse());
         }
-        let ta = (a.1 - c.1).atan2(a.0 - c.0);
+        let ta = (a.1 - c.1).atan2_rn(a.0 - c.0);
         let count = count as usize;
         Ok((1..count)
             .map(|i| {
                 let th = ta + s * i as f64 / count as f64;
-                (c.0 + r2 * th.cos(), c.1 + r2 * th.sin())
+                (c.0 + r2 * th.cos_rn(), c.1 + r2 * th.sin_rn())
             })
             .collect())
     };
@@ -1679,8 +1683,8 @@ fn complete_loop(
                     return Err(refuse());
                 }
                 let turn = if ccw != back { phi } else { -phi };
-                let th = (x.1 - c.1).atan2(x.0 - c.0) + turn;
-                (c.0 + r * th.cos(), c.1 + r * th.sin())
+                let th = (x.1 - c.1).atan2_rn(x.0 - c.0) + turn;
+                (c.0 + r * th.cos_rn(), c.1 + r * th.sin_rn())
             }
         })
     };
@@ -1745,11 +1749,11 @@ fn complete_loop(
                     .collect(),
                 Some((c, r, ccw)) => {
                     let s = sweep(c, x_in, x_out, ccw);
-                    let ta = (x_in.1 - c.1).atan2(x_in.0 - c.0);
+                    let ta = (x_in.1 - c.1).atan2_rn(x_in.0 - c.0);
                     (1..16)
                         .map(|k| {
                             let th = ta + s * f64::from(k) / 16.0;
-                            (c.0 + r * th.cos(), c.1 + r * th.sin())
+                            (c.0 + r * th.cos_rn(), c.1 + r * th.sin_rn())
                         })
                         .collect()
                 }
@@ -1892,7 +1896,7 @@ fn sphere(t: &Topology, tolerance: Tolerance, op: OperationId) -> Result<Solid> 
     let (discs, _) = ends(t, k, &local, frame.normal())?;
     let (mut low, mut high) = (None, None);
     for (h, _, up) in discs {
-        let latitude = (rational_f64(&h) / radius).clamp(-1.0, 1.0).asin();
+        let latitude = (rational_f64(&h) / radius).clamp(-1.0, 1.0).asin_rn();
         let slot = if up { &mut high } else { &mut low };
         if slot.replace(latitude).is_some() {
             return Err(general());
@@ -2187,7 +2191,7 @@ fn primitive_of(
             half_angle,
         } => {
             // The radius `radius + w tan a`, not past the apex.
-            let slope = half_angle.tan();
+            let slope = half_angle.tan_rn();
             let ((mut lo, mut hi), capped) = range(frame, radius.abs())?;
             let apex = -radius / slope;
             let (mut r_lo, mut r_hi) = (radius + lo * slope, radius + hi * slope);
@@ -2246,8 +2250,8 @@ fn oriented_normal(t: &Topology, fi: usize, p: Point3) -> Option<Vec3> {
         | Surface::Cylinder { frame, .. }
         | Surface::Cone { frame, .. }) => {
             let c = frame.coordinates(p);
-            let u = c[1].atan2(c[0]);
-            let v = c[2].atan2(c[0].hypot(c[1]));
+            let u = c[1].atan2_rn(c[0]);
+            let v = c[2].atan2_rn(c[0].hypot_rn(c[1]));
             s.normal(Point2::new(u, v))
         }
         _ => return None,
@@ -2387,14 +2391,14 @@ pub(crate) fn flat_kind(t: &Topology, fi: usize, tol: f64) -> Option<Flat> {
     let (mut r0, mut r1, mut z0, mut z1) = (f64::MAX, f64::MIN, f64::MAX, f64::MIN);
     for p in face_points(t, fi) {
         let c = frame.coordinates(p);
-        let r = c[0].hypot(c[1]);
+        let r = c[0].hypot_rn(c[1]);
         (r0, r1, z0, z1) = (r0.min(r), r1.max(r), z0.min(c[2]), z1.max(c[2]));
     }
     if r0 > r1 {
         return None;
     }
-    let height = (r1 - r0) * (a.cos() / a.sin());
-    let spread = (z1 - z0) * a.tan();
+    let height = (r1 - r0) * (a.cos_rn() / a.sin_rn());
+    let spread = (z1 - z0) * a.tan_rn();
     if flat < a {
         (height <= tol).then_some(Flat::Plane)
     } else {
@@ -2408,7 +2412,7 @@ fn distance(surface: &Surface, p: Point3) -> Option<f64> {
         Surface::Plane(frame) => frame.coordinates(p)[2].abs(),
         Surface::Cylinder { frame, radius } => {
             let c = frame.coordinates(p);
-            (c[0].hypot(c[1]) - radius).abs()
+            (c[0].hypot_rn(c[1]) - radius).abs()
         }
         Surface::Sphere { frame, radius } => ((p - frame.origin()).length() - radius).abs(),
         Surface::Cone {
@@ -2419,8 +2423,8 @@ fn distance(surface: &Surface, p: Point3) -> Option<f64> {
             // Its generatrix in the half-plane through the axis and the
             // point: `(radius + v sin a, v cos a)`.
             let c = frame.coordinates(p);
-            let (sin, cos) = half_angle.sin_cos();
-            ((c[0].hypot(c[1]) - radius) * cos - c[2] * sin).abs()
+            let (sin, cos) = half_angle.sin_cos_rn();
+            ((c[0].hypot_rn(c[1]) - radius) * cos - c[2] * sin).abs()
         }
         Surface::Torus {
             frame,
@@ -2428,7 +2432,7 @@ fn distance(surface: &Surface, p: Point3) -> Option<f64> {
             minor,
         } => {
             let c = frame.coordinates(p);
-            ((c[0].hypot(c[1]) - major).hypot(c[2]) - minor).abs()
+            ((c[0].hypot_rn(c[1]) - major).hypot_rn(c[2]) - minor).abs()
         }
         Surface::BSpline(_) => return None,
     })
@@ -2466,7 +2470,7 @@ fn smooth_torus(t: &Topology, tol: f64) -> bool {
                 return false;
             };
             let c = frame.coordinates(m);
-            let r = c[0].hypot(c[1]);
+            let r = c[0].hypot_rn(c[1]);
             if r == 0.0 {
                 return false;
             }
@@ -2996,7 +3000,7 @@ fn axis_of(t: &Topology, k: usize) -> Option<Frame3> {
 /// within `ALIGN`, its origin within `tol` of the frame's axis line.
 fn coaxial(reference: &Frame3, axis: &Frame3, tol: f64) -> bool {
     let c = reference.coordinates(axis.origin());
-    parallel(reference.normal(), axis.normal()) && c[0].hypot(c[1]) <= tol
+    parallel(reference.normal(), axis.normal()) && c[0].hypot_rn(c[1]) <= tol
 }
 
 /// A primitive's heights `(lo, hi)`, its faces' axial range and its caps'
@@ -3098,7 +3102,7 @@ fn primitive_over(
                 Some(r) => rational_f64(&Local::new(r)?.of(stored.origin())[2]),
                 None => 0.0,
             };
-            let slope = along * half_angle.tan();
+            let slope = along * half_angle.tan_rn();
             let at = |w: f64| radius + (w - c) * slope;
             let ((mut lo, mut hi), (w0, w1), capped) = range(frame, radius.abs())?;
             let reach = at(w0).abs().max(at(w1).abs());

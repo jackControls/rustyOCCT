@@ -24,6 +24,7 @@ use super::meet::Pos;
 use super::model::*;
 use super::num::*;
 use crate::certified::{Fast, Interval as I, Real};
+use crate::cr::Rn as _;
 use crate::solid::split::{q, rational_f64, zero};
 use crate::{Error, Result};
 use num_bigint::BigInt;
@@ -106,8 +107,8 @@ struct Quad<'a> {
 /// `unit_at`'s half angle's tangent at `t` and whether it is taken about
 /// the opposite direction.
 fn unit_param(t: f64) -> (R, bool) {
-    let flip = t.cos() < 0.0;
-    (q((if flip { t - PI } else { t } / 2.0).tan()), flip)
+    let flip = t.cos_rn() < 0.0;
+    (q((if flip { t - PI } else { t } / 2.0).tan_rn()), flip)
 }
 
 /// A rational point of the unit circle at about the angle `t` (its half
@@ -293,9 +294,9 @@ impl<'a> Quad<'a> {
             Kind::Torus { .. } => {
                 let l = self.local64(x);
                 let [big, small, _] = self.data;
-                let rho = l[0].hypot(l[1]);
+                let rho = l[0].hypot_rn(l[1]);
                 let (e, z) = (rho - big, l[2]);
-                let d = e.hypot(z);
+                let d = e.hypot_rn(z);
                 let lg = [e / d * l[0] / rho, e / d * l[1] / rho, z / d];
                 let g =
                     [0, 1, 2].map(|j| lg[0] * rows[0][j] + lg[1] * rows[1][j] + lg[2] * rows[2][j]);
@@ -340,7 +341,7 @@ impl<'a> Quad<'a> {
             }
             Kind::Cyl { f, c, r } => {
                 let l = self.local64(qv_f64(x));
-                let t = (l[1] - self.data[1]).atan2(l[0] - self.data[0]);
+                let t = (l[1] - self.data[1]).atan2_rn(l[0] - self.data[0]);
                 let [cs, sn] = unit_at(t);
                 let loc = [
                     Qd::rat(&c[0] + *r * &cs),
@@ -352,13 +353,13 @@ impl<'a> Quad<'a> {
             Kind::Cone { f, b, k } => {
                 let l = self.local64(qv_f64(x));
                 let [bf, kf, _] = self.data;
-                let rho = l[0].hypot(l[1]);
+                let rho = l[0].hypot_rn(l[1]);
                 let h = q((l[2] + kf * (rho - bf)) / (1.0 + kf * kf));
                 let rad = *b + *k * &h;
                 if sign(&rad) != Ordering::Greater {
                     return None;
                 }
-                let [cs, sn] = unit_at(l[1].atan2(l[0]));
+                let [cs, sn] = unit_at(l[1].atan2_rn(l[0]));
                 let loc = [Qd::rat(&rad * &cs), Qd::rat(&rad * &sn), Qd::rat(h)];
                 Some(world(f, &loc))
             }
@@ -366,8 +367,8 @@ impl<'a> Quad<'a> {
             // the binary64 foot's angles (as `apex_face`'s).
             Kind::Torus { f, ring } => {
                 let l = self.local64(qv_f64(x));
-                let rho = l[0].hypot(l[1]);
-                let (u, v) = (l[1].atan2(l[0]), l[2].atan2(rho - self.data[0]));
+                let rho = l[0].hypot_rn(l[1]);
+                let (u, v) = (l[1].atan2_rn(l[0]), l[2].atan2_rn(rho - self.data[0]));
                 if !(u.is_finite() && v.is_finite() && rho > 0.0) {
                     return None;
                 }
@@ -950,7 +951,7 @@ fn extrema(crv: &Crv, quad: &Quad) -> Vec<(QV, Ordering)> {
             let g = |v: &V| v.clone().map(|x| rational_f64(&x));
             let (fc, fa, fb) = (g(c), g(a), g(b));
             let at = |t: f64| {
-                let (cs, sn) = (t.cos(), t.sin());
+                let (cs, sn) = (t.cos_rn(), t.sin_rn());
                 (
                     [0, 1, 2].map(|k| fc[k] + fa[k] * cs + fb[k] * sn),
                     [0, 1, 2].map(|k| -fa[k] * sn + fb[k] * cs),
@@ -972,8 +973,8 @@ fn extrema(crv: &Crv, quad: &Quad) -> Vec<(QV, Ordering)> {
             let (lx, ly) = (rational_f64(&xx).sqrt(), rational_f64(&yy).sqrt());
             let rad = rational_f64(&circ.r2).sqrt();
             let at = |t: f64| {
-                let (cs, sn) = (t.cos() * rad / lx, t.sin() * rad / ly);
-                let (dc, ds) = (-t.sin() * rad / lx, t.cos() * rad / ly);
+                let (cs, sn) = (t.cos_rn() * rad / lx, t.sin_rn() * rad / ly);
+                let (dc, ds) = (-t.sin_rn() * rad / lx, t.cos_rn() * rad / ly);
                 (
                     [0, 1, 2].map(|k| fc[k] + fx[k] * cs + fy[k] * sn),
                     [0, 1, 2].map(|k| fx[k] * dc + fy[k] * ds),
@@ -982,7 +983,7 @@ fn extrema(crv: &Crv, quad: &Quad) -> Vec<(QV, Ordering)> {
             search(&at, quad)
                 .into_iter()
                 .map(|(t, kind)| {
-                    let x = circ.at(&[q(t.cos() / lx), q(t.sin() / ly)]);
+                    let x = circ.at(&[q(t.cos_rn() / lx), q(t.sin_rn() / ly)]);
                     (x, kind)
                 })
                 .collect()
@@ -1224,8 +1225,8 @@ fn apex_face(vm: &Prism, a: &QV, qm: &Prism, fq: usize, res: f64) -> Result<()> 
                 return Ok(());
             };
             let (big, small) = (rational_f64(&ring.big), rational_f64(&ring.small));
-            let u = l64[1].atan2(l64[0]);
-            let v = l64[2].atan2(l64[0].hypot(l64[1]) - big);
+            let u = l64[1].atan2_rn(l64[0]);
+            let v = l64[2].atan2_rn(l64[0].hypot_rn(l64[1]) - big);
             if !(u.is_finite() && v.is_finite() && small > 0.0) {
                 return Ok(());
             }
@@ -1572,7 +1573,7 @@ fn gap_rounding(a: &QV, b: &QV) -> R {
         .chain(qv_f64(b).iter())
         .fold(1.0f64, |m, x| m.max(x.abs()));
     let e = if size.is_finite() {
-        size.log2().ceil() as i32
+        size.log2_rn().ceil() as i32
     } else {
         0
     };
@@ -1937,7 +1938,7 @@ fn mixed_rounding(a: &MixV, b: &MixV) -> R {
         .chain(view(b).iter())
         .fold(1.0f64, |m, x| m.max(x.abs()));
     let e = if size.is_finite() {
-        size.log2().ceil() as i32
+        size.log2_rn().ceil() as i32
     } else {
         0
     };
@@ -2526,9 +2527,9 @@ fn curve64(crv: &Crv) -> Option<impl Fn(f64) -> [f64; 3]> {
         _ => return None,
     };
     Some(move |t: f64| match r {
-        None => [0, 1, 2].map(|k| fc[k] + fa[k] * t.cos() + fb[k] * t.sin()),
+        None => [0, 1, 2].map(|k| fc[k] + fa[k] * t.cos_rn() + fb[k] * t.sin_rn()),
         Some(r) => {
-            let dir = [0, 1, 2].map(|k| fa[k] * t.cos() + fb[k] * t.sin());
+            let dir = [0, 1, 2].map(|k| fa[k] * t.cos_rn() + fb[k] * t.sin_rn());
             let len = dir.iter().map(|x| x * x).sum::<f64>().sqrt();
             [0, 1, 2].map(|k| fc[k] + r * dir[k] / len)
         }
@@ -2640,8 +2641,8 @@ fn bracketed(
         let Some(speed) = &speed_of else {
             return Vec::new();
         };
-        let flip = t.cos() < 0.0;
-        let s = (if flip { t - PI } else { t } / 2.0).tan();
+        let flip = t.cos_rn() < 0.0;
+        let s = (if flip { t - PI } else { t } / 2.0).tan_rn();
         if let Some(found) = bisect(crv, s, flip, slope, speed) {
             out.push(found);
         } else if let Some((x, _)) = curve_at(crv, &q(s), flip) {
@@ -2744,7 +2745,7 @@ impl Conic64 {
 
     /// The point and its first and second derivatives at the angle `t`.
     fn jet(&self, t: f64) -> [[f64; 3]; 3] {
-        let (cs, sn) = (t.cos(), t.sin());
+        let (cs, sn) = (t.cos_rn(), t.sin_rn());
         let p = [0, 1, 2].map(|k| self.a[k] * cs + self.b[k] * sn);
         [
             [0, 1, 2].map(|k| self.c[k] + p[k]),
@@ -2762,11 +2763,11 @@ impl Conic64 {
     fn param(&self, t: f64) -> (f64, bool) {
         let t = match self.basis {
             None => t,
-            Some((lx, ly)) => (t.sin() / ly).atan2(t.cos() / lx),
+            Some((lx, ly)) => (t.sin_rn() / ly).atan2_rn(t.cos_rn() / lx),
         };
-        let flip = t.cos() < 0.0;
+        let flip = t.cos_rn() < 0.0;
         let u = if flip { t - PI } else { t };
-        ((u.sin().atan2(u.cos()) / 2.0).tan(), flip)
+        ((u.sin_rn().atan2_rn(u.cos_rn()) / 2.0).tan_rn(), flip)
     }
 
     /// The angle of the curve's point nearest `p`, from `s` by Newton's
@@ -3023,7 +3024,7 @@ fn rounding_gap(fa: &Conic64, pa: (f64, bool), fb: &Conic64, pb: (f64, bool)) ->
     if !(gap.is_finite() && low.is_finite()) {
         return false;
     }
-    let rho = 2f64.powi(low.log2().ceil() as i32 - 48);
+    let rho = 2f64.powi(low.log2_rn().ceil() as i32 - 48);
     gap <= rho
 }
 
@@ -3186,7 +3187,7 @@ impl<'a> Run<'a> {
                 Pos::Ang(a),
                 Pos::Ang(b),
             ) => {
-                let angle = |p: &[Qd; 2]| p[1].to_f64().atan2(p[0].to_f64());
+                let angle = |p: &[Qd; 2]| p[1].to_f64().atan2_rn(p[0].to_f64());
                 let (t0, t1) = (angle(a), angle(b));
                 let mut sweep = if with { t1 - t0 } else { t0 - t1 };
                 sweep = sweep.rem_euclid(TAU);
@@ -3590,7 +3591,7 @@ fn run_nearest(
                         }
                     })
                     .fold(1.0f64, f64::max);
-                let rho = 2f64.powi(size.log2().ceil() as i32 - 48);
+                let rho = 2f64.powi(size.log2_rn().ceil() as i32 - 48);
                 if d2.bounds_f64().1 <= rho * rho {
                     continue;
                 }
@@ -4123,7 +4124,7 @@ impl Num for f64 {
         f64::sqrt(*self)
     }
     fn cos_sin(&self) -> (Self, Self) {
-        (self.cos(), self.sin())
+        (self.cos_rn(), self.sin_rn())
     }
     fn mid(&self) -> f64 {
         *self
@@ -4449,7 +4450,7 @@ fn profile_distance(arcs: &[PArc<f64>], hole: bool, p: [f64; 2]) -> (f64, [f64; 
         return (f64::NAN, [0.0; 2]);
     };
     let [c, d1, _] = profile_jet(arcs, &tau);
-    let len = d1[0].hypot(d1[1]);
+    let len = d1[0].hypot_rn(d1[1]);
     let s = if hole { -1.0 } else { 1.0 };
     let m = [s * d1[1] / len, -s * d1[0] / len];
     let d = (p[0] - c[0]) * m[0] + (p[1] - c[1]) * m[1];
@@ -4882,12 +4883,12 @@ fn box_apart(m: &Prism, fi: usize, b: &([f64; 3], [f64; 3]), reach: f64) -> bool
     let radial = |lo: [f64; 2], hi: [f64; 2]| {
         let near = [0, 1].map(|k| 0.0f64.clamp(lo[k], hi[k]));
         let far = [0, 1].map(|k| lo[k].abs().max(hi[k].abs()));
-        (near[0].hypot(near[1]), far[0].hypot(far[1]))
+        (near[0].hypot_rn(near[1]), far[0].hypot_rn(far[1]))
     };
     match &vm.faces[vi].surf {
         Surf::Plane { p, m } => {
             let (p, m) = (g(p), g(m));
-            let len = m[0].hypot(m[1]).hypot(m[2]);
+            let len = m[0].hypot_rn(m[1]).hypot_rn(m[2]);
             let ds: Vec<f64> = corners
                 .iter()
                 .map(|c| (0..3).map(|k| m[k] * (c[k] - p[k])).sum::<f64>() / len)
@@ -5040,7 +5041,7 @@ fn grid_of(m: &Prism, fi: usize, b: &([f64; 3], [f64; 3])) -> Option<Grid> {
                 for w in a.cps.windows(2) {
                     let du = rational_f64(&(&w[1][0] - &w[0][0]));
                     let dv = rational_f64(&(&w[1][1] - &w[0][1]));
-                    speed = speed.max(deg * du.hypot(dv) / len);
+                    speed = speed.max(deg * du.hypot_rn(dv) / len);
                 }
             }
             let (first, last) = (rational_f64(&seg.first), rational_f64(&seg.last));
@@ -5145,7 +5146,7 @@ fn newton(pp: &Patch<J<f64>>, qf: &Field<J<f64>>, grid: &Grid, p: [f64; 2]) -> O
 fn sym_eigen(h: [f64; 3]) -> ([f64; 2], [[f64; 2]; 2]) {
     let (a, b, c) = (h[0], h[1], h[2]);
     let m = 0.5 * (a + c);
-    let r = (0.5 * (a - c)).hypot(b);
+    let r = (0.5 * (a - c)).hypot_rn(b);
     let vals = [m - r, m + r];
     let vec = |l: f64| -> [f64; 2] {
         let (x, y) = if (a - l).abs() + b.abs() >= (c - l).abs() + b.abs() {
@@ -5153,7 +5154,7 @@ fn sym_eigen(h: [f64; 3]) -> ([f64; 2], [[f64; 2]; 2]) {
         } else {
             (c - l, -b)
         };
-        let n = x.hypot(y);
+        let n = x.hypot_rn(y);
         if n > 0.0 {
             [x / n, y / n]
         } else {
@@ -5219,7 +5220,7 @@ fn contact_of(c: &Crit, size: f64) -> Option<Contact> {
         } else {
             [-d, cc]
         };
-        let n = v[0].hypot(v[1]);
+        let n = v[0].hypot_rn(v[1]);
         if !above(n, 0.0) {
             return None;
         }
@@ -5952,7 +5953,11 @@ mod tests {
         for i in 0..400 {
             let c = [0, 1, 2].map(|_| 6.0 * next() - 3.0);
             let (th, ph, ps) = (TAU * next(), PI * next(), TAU * next());
-            let n = [ph.sin() * th.cos(), ph.sin() * th.sin(), ph.cos()];
+            let n = [
+                ph.sin_rn() * th.cos_rn(),
+                ph.sin_rn() * th.sin_rn(),
+                ph.cos_rn(),
+            ];
             let e1 = {
                 let h = if n[0].abs() < 0.9 {
                     [1.0, 0.0, 0.0]
@@ -5970,8 +5975,8 @@ mod tests {
                 n[0] * e1[1] - n[1] * e1[0],
             ];
             let (ra, rb) = (0.5 + 1.5 * next(), 0.5 + 1.5 * next());
-            let a = [0, 1, 2].map(|k| ra * (ps.cos() * e1[k] + ps.sin() * e2[k]));
-            let b = [0, 1, 2].map(|k| rb * (ps.cos() * e2[k] - ps.sin() * e1[k]));
+            let a = [0, 1, 2].map(|k| ra * (ps.cos_rn() * e1[k] + ps.sin_rn() * e2[k]));
+            let b = [0, 1, 2].map(|k| rb * (ps.cos_rn() * e2[k] - ps.sin_rn() * e1[k]));
             let k = if i % 4 == 0 { 0.0 } else { 2.0 * next() };
             let dir = [0, 1, 2].map(|_| next() - 0.5);
             let shift = 2f64.powi(-48) * 4.0 * k / dot64(&dir, &dir).sqrt();

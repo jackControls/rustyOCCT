@@ -25,6 +25,7 @@
 //! elsewhere lies on the faces meeting there; a vertex at an input vertex
 //! continues it, one elsewhere lies on what it is on.
 use super::{At, SlotPlan, What};
+use crate::cr::Rn as _;
 use crate::identity::{EntityId, EntityKind, OperationId, Role};
 use crate::profile::boolean::{Op2, Operand};
 use crate::solid::split::{q, rational_f64, zero};
@@ -377,7 +378,7 @@ fn face_box(t: &crate::topology::Topology, f: &crate::topology::Face) -> Option<
         } => {
             // Heights along the axis: v cos a; the radius r + v sin a there.
             let (lo, hi) = heights(frame)?;
-            let (s, c) = half_angle.sin_cos();
+            let (s, c) = half_angle.sin_cos_rn();
             let rad = |h: f64| (radius + h / c * s).abs();
             let r = rad(lo).max(rad(hi));
             let mid = frame.point(crate::Point2::new(0.0, 0.0), 0.5 * lo + 0.5 * hi);
@@ -1175,7 +1176,7 @@ fn interior(poly: &[V], plane: &Plane) -> V {
     let size = centre
         .iter()
         .fold(1.0f64, |m, x| m.max(x.abs()))
-        .log2()
+        .log2_rn()
         .ceil() as i32;
     for bits in [20i32, 36, 52] {
         let steps = R::from_integer(2.into()).pow(bits - size);
@@ -1493,7 +1494,7 @@ fn near_pair(
         .chain(approx3(b).iter())
         .fold(1.0f64, |m, x| m.max(x.abs()));
     let e = if size.is_finite() {
-        size.log2().ceil() as i32
+        size.log2_rn().ceil() as i32
     } else {
         0
     };

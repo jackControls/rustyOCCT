@@ -17,6 +17,7 @@
 use super::bernstein::{c, derivative, pcurve_arcs, piece_of, r, ratio, span_arcs, Bern};
 use super::Lp;
 use crate::certified::{Fast, Interval as I, Real};
+use crate::cr::Rn as _;
 use crate::surface::ExactBezierSurface3;
 use crate::topology::Curve2;
 use crate::BSplineSurface3;
@@ -494,7 +495,7 @@ fn exact_rule() -> ExactRule {
     let mut weights = Vec::with_capacity(n);
     for i in 0..n {
         // Newton's iteration in binary64 from the classical guess.
-        let mut x = (std::f64::consts::PI * (i as f64 + 0.75) / (n as f64 + 0.5)).cos();
+        let mut x = (std::f64::consts::PI * (i as f64 + 0.75) / (n as f64 + 0.5)).cos_rn();
         for _ in 0..100 {
             let (p, q) = legendre_f64(n, x);
             let step = p / (n as f64 * (q - x * p) / (1.0 - x * x));

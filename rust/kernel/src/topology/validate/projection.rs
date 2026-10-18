@@ -9,6 +9,7 @@
 //! integrate` over the fraction.
 use super::{c, V2, V3};
 use crate::certified::{Fast, Real};
+use crate::cr::Rn as _;
 use crate::jet::{integrate_many, Jet};
 use crate::topology::{Curve3, Meet, Projection, Rise, Spiric, Surface, Toric};
 use crate::Frame3;
@@ -919,7 +920,7 @@ fn section_angles<T: Real>(s: &Spiric, fraction: &Jet<T>) -> Option<[Jet<T>; 2]>
         let x = q.scale(&c::<T>(1.0).div(&ab)?);
         // The angle of (a, b) turned back by its binary64 value, so the
         // branch cut stays opposite (b = 0 with a < 0 lies on it).
-        let reference = s.plane[1].atan2(s.plane[0]);
+        let reference = s.plane[1].atan2_rn(s.plane[0]);
         let (co, si) = T::cos_sin(&c(reference));
         let (ar, br) = (a.mul(&co).add(&b.mul(&si)), b.mul(&co).sub(&a.mul(&si)));
         let phi = T::atan2(&br, &ar)?.add(&c(reference));
@@ -932,10 +933,10 @@ fn section_angles<T: Real>(s: &Spiric, fraction: &Jet<T>) -> Option<[Jet<T>; 2]>
         let w = x.square().add(&y.square()).sqrt()?;
         let ratio = alpha.scale(&big).add_constant(&d).neg().div(&w)?;
         let (ab, cf) = (
-            s.plane[0] * base.cos() + s.plane[1] * base.sin(),
+            s.plane[0] * base.cos_rn() + s.plane[1] * base.sin_rn(),
             s.plane[2],
         );
-        let psi = angle_near(&y, &x, (s.minor * cf).atan2(s.minor * ab))?;
+        let psi = angle_near(&y, &x, (s.minor * cf).atan2_rn(s.minor * ab))?;
         [t, psi.add(&acos_jet(&ratio)?.scale(&sign))]
     })
 }
@@ -1205,7 +1206,7 @@ fn rise_jet<T: Real>(m: &Rise, fraction: &Jet<T>) -> Option<[Jet<T>; 3]> {
         _ => return None,
     };
     // `phi` is the curve's binary64 constant (its definition's `atan2`).
-    let phi = c::<T>(b.atan2(a));
+    let phi = c::<T>(b.atan2_rn(a));
     let u = angle_near(&y, &x, std::f64::consts::FRAC_PI_2)?
         .scale(&c(m.sign))
         .add_constant(&phi);
@@ -1941,9 +1942,9 @@ mod tests {
                 let f = k as f64 / 16.0;
                 let p = m.point(f);
                 let [x, y, _] = thick.coordinates(p);
-                assert!((x.hypot(y) - 2.0).abs() < 1e-14, "{p:?}");
+                assert!((x.hypot_rn(y) - 2.0).abs() < 1e-14, "{p:?}");
                 let [_, b, c] = [p.x, p.y - 0.5, p.z];
-                assert!((b.hypot(c) - 1.0).abs() < 1e-14);
+                assert!((b.hypot_rn(c) - 1.0).abs() < 1e-14);
                 assert_eq!(p.x.signum(), sign);
                 let (_, jet) = meet_jet(&m, &Jet::variable(Fast::exact_f64(f), 2)).unwrap();
                 let h = 1e-6;
@@ -1980,7 +1981,7 @@ mod tests {
             for k in 0..=8 {
                 let f = k as f64 / 8.0;
                 let p = m.point(f);
-                assert!((p.x.hypot(p.y) - 1.0).abs() < 1e-14);
+                assert!((p.x.hypot_rn(p.y) - 1.0).abs() < 1e-14);
                 assert!(((p - Point3::new(1.0, 0.0, 0.0)).length() - 1.5).abs() < 1e-14);
                 let jet = rise_jet(&m, &Jet::variable(Fast::exact_f64(f), 1)).unwrap();
                 let h = 1e-6;
@@ -2056,9 +2057,9 @@ mod tests {
         for k in 0..=8 {
             let f = k as f64 / 8.0;
             let p = m.point(f);
-            assert!((p.y.hypot(p.z) - 0.5).abs() < 1e-14, "{p:?}");
-            let rho = p.x.hypot(p.y);
-            assert!(((rho - 2.5).hypot(p.z) - 1.0).abs() < 1e-14, "{p:?}");
+            assert!((p.y.hypot_rn(p.z) - 0.5).abs() < 1e-14, "{p:?}");
+            let rho = p.x.hypot_rn(p.y);
+            assert!(((rho - 2.5).hypot_rn(p.z) - 1.0).abs() < 1e-14, "{p:?}");
             let (_, jet) = toric_jet(&m, &Jet::variable(Fast::exact_f64(f), 2)).unwrap();
             let h = 1e-6;
             let (q0, q1) = (m.point(f - h), m.point(f + h));
@@ -2264,11 +2265,11 @@ mod tests {
         let m = Meet {
             frame: axis,
             radius: 1.0,
-            half_angle: (-0.5f64).atan(),
+            half_angle: (-0.5f64).atan_rn(),
             other: below,
             other_radius: 0.0,
             other_sphere: false,
-            other_half_angle: 0.8f64.atan(),
+            other_half_angle: 0.8f64.atan_rn(),
             sign: -1.0,
             start: 0.0,
             sweep: std::f64::consts::TAU,
@@ -2315,10 +2316,10 @@ mod tests {
         for k in 0..=8 {
             let f = k as f64 / 8.0;
             let p = m.point(f);
-            let rho = p.x.hypot(p.y);
-            assert!(((rho - 2.5).hypot(p.z) - 1.0).abs() < 1e-14, "{p:?}");
-            let core = (p.y - 2.5).hypot(p.z);
-            assert!(((core - 1.25).hypot(p.x) - 0.5).abs() < 1e-14, "{p:?}");
+            let rho = p.x.hypot_rn(p.y);
+            assert!(((rho - 2.5).hypot_rn(p.z) - 1.0).abs() < 1e-14, "{p:?}");
+            let core = (p.y - 2.5).hypot_rn(p.z);
+            assert!(((core - 1.25).hypot_rn(p.x) - 0.5).abs() < 1e-14, "{p:?}");
             let (_, jet) = toric_jet(&m, &Jet::variable(Fast::exact_f64(f), 2)).unwrap();
             let h = 1e-6;
             let (q0, q1) = (m.point(f - h), m.point(f + h));
@@ -2420,7 +2421,7 @@ mod tests {
             // The value itself, `u^2 + v^2 cos u` without the cancelling
             // terms, at the point (to within its binary64 rounding).
             let (u0, v0) = (pu.c[0].bounds_f64().0, pv.c[0].bounds_f64().0);
-            let exact = u0 * u0 + v0 * v0 * u0.cos();
+            let exact = u0 * u0 + v0 * v0 * u0.cos_rn();
             let (yl, yh) = narrow.c[0].bounds_f64();
             assert!(
                 yl - 1e-18 <= exact && exact <= yh + 1e-18,

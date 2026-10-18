@@ -1,4 +1,5 @@
 //! Small geometric values; precision is explicit at modeling boundaries.
+use crate::cr::Rn as _;
 use crate::{Error, Result};
 use std::ops::{Add, Div, Mul, Neg, Sub};
 
@@ -69,7 +70,7 @@ impl Point2 {
         Self { x, y }
     }
     pub fn distance(self, other: Self) -> f64 {
-        (self.x - other.x).hypot(self.y - other.y)
+        (self.x - other.x).hypot_rn(self.y - other.y)
     }
     pub(crate) fn checked(self, tolerance: Tolerance) -> Result<Self> {
         tolerance.resolve(&[self.x, self.y])?;
@@ -126,7 +127,7 @@ impl Vec3 {
         )
     }
     pub fn length(self) -> f64 {
-        self.x.hypot(self.y).hypot(self.z)
+        self.x.hypot_rn(self.y).hypot_rn(self.z)
     }
     pub fn to_array(self) -> [f64; 3] {
         [self.x, self.y, self.z]
@@ -239,8 +240,8 @@ impl Frame3 {
             ..self
         }
     }
-    /// Axes taken bit for bit (tests reproducing the frames `new` builds
-    /// with another platform's `hypot`).
+    /// Axes taken bit for bit (tests reproducing frames an ulp apart, as
+    /// another platform's `hypot` built them before R13).
     #[cfg(test)]
     pub(crate) fn from_axes(origin: Point3, x: Vec3, y: Vec3, normal: Vec3) -> Self {
         Self {
@@ -312,7 +313,7 @@ impl RigidTransform {
         }
         finite(angle, "rotation angle")?;
         let axis = axis.normalized()?;
-        let (sine, cosine) = angle.sin_cos();
+        let (sine, cosine) = angle.sin_cos_rn();
         let rotate =
             |v: Vec3| v * cosine + axis.cross(v) * sine + axis * (axis.dot(v) * (1.0 - cosine));
         let mut result = Self {
@@ -461,19 +462,18 @@ pub(crate) fn sum(values: impl Iterator<Item = f64>) -> f64 {
     total + correction
 }
 
-/// `radius sin(angle)`, out of line: a caller taking the cosine of the same
-/// angle could otherwise get both from one fused `sincos`, which may differ
-/// from `sin` in the last place, and every builder of a revolved solid's
-/// rings must agree bit for bit (a zone's split rims are its rims).
-#[inline(never)]
+/// `radius sin(angle)`: every builder of a revolved solid's rings must
+/// agree bit for bit (a zone's split rims are its rims). It was out of
+/// line so that no caller got the platform's fused `sincos`, which could
+/// differ from its `sin` in the last place; the correctly rounded `sin`
+/// has one value however it is called (R13).
 pub(crate) fn scaled_sin(radius: f64, angle: f64) -> f64 {
-    radius * angle.sin()
+    radius * angle.sin_rn()
 }
 
-/// `radius cos(angle)`, out of line as [`scaled_sin`].
-#[inline(never)]
+/// `radius cos(angle)`, as [`scaled_sin`].
 pub(crate) fn scaled_cos(radius: f64, angle: f64) -> f64 {
-    radius * angle.cos()
+    radius * angle.cos_rn()
 }
 
 #[cfg(test)]

@@ -30,6 +30,7 @@
 use super::meridian::{ends, Built, EndSpec, Plan, Primitive};
 use super::{q, zero, Side};
 use crate::certified::{Interval as I, Real};
+use crate::cr::Rn as _;
 use crate::identity::Role;
 use crate::topology::{
     plane_pcurve, Curve2, Curve3, Edge, EdgeId, Face, FaceId, Fin, FinId, Loop, LoopId,
@@ -93,16 +94,16 @@ impl Section {
                 minor,
             } => {
                 let [x, y, _] = frame.coordinates(p);
-                (y / minor).atan2(x / major)
+                (y / minor).atan2_rn(x / major)
             }
             Self::Hyperbola { frame, minor, .. } => {
                 let [_, y, _] = frame.coordinates(p);
-                (y / minor).asinh()
+                (y / minor).asinh_rn()
             }
             Self::Parabola { frame, .. } => frame.coordinates(p)[1],
             Self::Circle { frame, .. } => {
                 let [x, y, _] = frame.coordinates(p);
-                y.atan2(x)
+                y.atan2_rn(x)
             }
             Self::Rulings => 0.0,
         }
@@ -405,7 +406,7 @@ fn setup(
     let world = |p: [f64; 3]| frame.point(Point2::new(p[0], p[1]), p[2]);
     let wvec = |v: [f64; 3]| frame.x() * v[0] + frame.y() * v[1] + frame.normal() * v[2];
     let n_world = wvec([na, nb, nc]);
-    let ab = na.hypot(nb);
+    let ab = na.hypot_rn(nb);
     // The pieces' thickness: F's extremes over the end circles and, on a
     // sphere, its extreme points between the ends.
     let (mut fmax, mut fmin) = (f64::NEG_INFINITY, f64::INFINITY);
@@ -432,7 +433,7 @@ fn setup(
         return Err(Error::Degenerate("a piece thinner than the resolution"));
     }
     // The rims' crossings, by angle about the axis.
-    let phi = nb.atan2(na);
+    let phi = nb.atan2_rn(na);
     let mut crossings: Vec<Crossing> = Vec::new();
     let mut per_end: [Vec<usize>; 2] = [Vec::new(), Vec::new()];
     for (e, end) in ends.iter().enumerate() {
@@ -448,10 +449,10 @@ fn setup(
             let ratio = I::exact(-k)
                 .div(&I::exact(q(end.radius) * q(end.radius) * &ab2).sqrt())
                 .ok_or(Error::Degenerate("a rim's radius"))?;
-            let delta = mid(&ratio).clamp(-1.0, 1.0).acos();
+            let delta = mid(&ratio).clamp(-1.0, 1.0).acos_rn();
             // The smaller segment's sagitta: the rim's reach past the chord.
-            let sagitta = end.radius * (1.0 - delta.cos().abs());
-            if 2.0 * end.radius * delta.sin() <= tol || sagitta <= tol {
+            let sagitta = end.radius * (1.0 - delta.cos_rn().abs());
+            if 2.0 * end.radius * delta.sin_rn() <= tol || sagitta <= tol {
                 return Err(Error::Degenerate(
                     "a plane within the resolution of a rim's tangent",
                 ));
@@ -460,7 +461,7 @@ fn setup(
         };
         for delta in deltas {
             let angle = phi + delta;
-            let (s, co) = angle.sin_cos();
+            let (s, co) = angle.sin_cos_rn();
             per_end[e].push(crossings.len());
             crossings.push(Crossing {
                 end: e,
@@ -488,7 +489,7 @@ fn setup(
             let wall = Surface::Cone {
                 frame,
                 radius: bottom,
-                half_angle: (top - bottom).atan2(height),
+                half_angle: (top - bottom).atan2_rn(height),
             };
             (section, wall, foot)
         }
@@ -633,7 +634,7 @@ fn setup(
                 top,
                 height,
             } => {
-                let r = x.hypot(y);
+                let r = x.hypot_rn(y);
                 wvec([x / r, y / r, -(top - bottom) / height])
             }
             _ => wvec([x, y, z]),
@@ -701,7 +702,7 @@ fn setup(
                     .map(|(x, y)| {
                         let start = crossings[x].angle;
                         let sweep = (crossings[y].angle - start).rem_euclid(TAU);
-                        let (s, co) = (start + 0.5 * sweep).sin_cos();
+                        let (s, co) = (start + 0.5 * sweep).sin_cos_rn();
                         (
                             x,
                             y,

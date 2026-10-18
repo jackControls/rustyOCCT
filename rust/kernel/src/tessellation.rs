@@ -22,6 +22,7 @@
 //! the curve. Reference: OCCT `BRepMesh_IncrementalMesh` and its
 //! `IMeshTools_Parameters` (`Deflection`, `Angle`), which measure deflection
 //! by sampling and mesh seams; see `SOURCE_MAP.md`.
+use crate::cr::Rn as _;
 use crate::predicates::{orient2d_finite, Orientation2};
 use crate::topology::validate::continuity;
 use crate::topology::{
@@ -415,7 +416,7 @@ fn poles(surface: &Surface) -> Vec<f64> {
         Surface::Sphere { .. } => vec![-FRAC_PI_2, FRAC_PI_2],
         Surface::Cone {
             radius, half_angle, ..
-        } => vec![-radius / half_angle.sin()],
+        } => vec![-radius / half_angle.sin_rn()],
         _ => Vec::new(),
     }
 }
@@ -446,7 +447,7 @@ fn v_range(topology: &Topology, face: &Face) -> (f64, f64) {
                             add(center.y + minor.abs());
                         }
                         Curve2::Sinusoid { a, .. } => {
-                            let amplitude = a[1].hypot(a[2]) * (1.0 + 1e-12);
+                            let amplitude = a[1].hypot_rn(a[2]) * (1.0 + 1e-12);
                             add(a[0] - amplitude);
                             add(a[0] + amplitude);
                         }
@@ -525,7 +526,7 @@ fn segment_count(
             let reach = start.abs().max((start + sweep).abs());
             Some((
                 frame,
-                major.abs().max(minor.abs()) * reach.cosh(),
+                major.abs().max(minor.abs()) * reach.cosh_rn(),
                 major.abs() / minor.abs() * (1.0 + 1e-12),
                 *sweep,
             ))
@@ -628,7 +629,7 @@ fn segment_count(
             }
             Curve2::Sinusoid { sweep, a, .. } => (
                 sweep.abs(),
-                (a[1].hypot(a[2]) * sweep).abs() * (1.0 + 1e-12),
+                (a[1].hypot_rn(a[2]) * sweep).abs() * (1.0 + 1e-12),
             ),
             Curve2::Projection(p) => match crate::topology::projection_range(p, 64) {
                 Some([ul, uh, vl, vh]) => (uh - ul, vh - vl),
@@ -730,9 +731,9 @@ fn metric(surface: &Surface, v: f64) -> (f64, f64) {
         Surface::Cylinder { radius, .. } => (radius.abs(), v),
         Surface::Cone {
             radius, half_angle, ..
-        } => ((radius + v * half_angle.sin()).abs(), v),
-        Surface::Sphere { radius, .. } => ((radius * v.cos()).max(0.0), radius * v),
-        Surface::Torus { major, minor, .. } => (major + minor * v.cos(), minor * v),
+        } => ((radius + v * half_angle.sin_rn()).abs(), v),
+        Surface::Sphere { radius, .. } => ((radius * v.cos_rn()).max(0.0), radius * v),
+        Surface::Torus { major, minor, .. } => (major + minor * v.cos_rn(), minor * v),
         _ => (1.0, v),
     }
 }
@@ -803,14 +804,14 @@ impl Chart {
                 let s = metric(surface, uv.y).1;
                 let rho = match axis {
                     Some((sp, _)) => (s - sp).abs(),
-                    None => (k * (s - sref) / gref).exp(),
+                    None => (k * (s - sref) / gref).exp_rn(),
                 };
-                let (sin, cos) = uv.x.sin_cos();
+                let (sin, cos) = uv.x.sin_cos_rn();
                 Point2::new(rho * cos, rho * sin)
             }
             Chart::RingV { k, uref, scale } => {
-                let rho = (k * (uv.x - uref) * scale).exp();
-                let (sin, cos) = uv.y.sin_cos();
+                let rho = (k * (uv.x - uref) * scale).exp_rn();
+                let (sin, cos) = uv.y.sin_cos_rn();
                 Point2::new(rho * cos, rho * sin)
             }
             Chart::Affine { cu, cv, gu, gv } => Point2::new((uv.x - cu) * gu, (uv.y - cv) * gv),
@@ -831,16 +832,16 @@ impl Chart {
                 gref,
                 pole,
             } => {
-                let rho = p.x.hypot(p.y);
+                let rho = p.x.hypot_rn(p.y);
                 let s = match pole {
                     Some((sp, side)) => sp + side * rho,
-                    None => sref + gref * rho.ln() / k,
+                    None => sref + gref * rho.ln_rn() / k,
                 };
-                Point2::new(p.y.atan2(p.x), arc_length_inverse(surface, s))
+                Point2::new(p.y.atan2_rn(p.x), arc_length_inverse(surface, s))
             }
             Chart::RingV { k, uref, scale } => {
-                let rho = p.x.hypot(p.y);
-                Point2::new(uref + rho.ln() / (k * scale), p.y.atan2(p.x))
+                let rho = p.x.hypot_rn(p.y);
+                Point2::new(uref + rho.ln_rn() / (k * scale), p.y.atan2_rn(p.x))
             }
             Chart::Affine { cu, cv, gu, gv } => Point2::new(p.x / gu + cu, p.y / gv + cv),
         }
@@ -1288,7 +1289,7 @@ impl FaceMesher<'_> {
         match self.surface() {
             Surface::Cone {
                 radius, half_angle, ..
-            } if radius + uv.y * half_angle.sin() < 0.0 => n * -1.0,
+            } if radius + uv.y * half_angle.sin_rn() < 0.0 => n * -1.0,
             _ => n,
         }
     }

@@ -11,6 +11,7 @@
 //! each analytic surface times `sigma`, a bound on the stored frame's
 //! spectral norm (Gershgorin on its Gram matrix).
 use crate::certified::{Fast, Real};
+use crate::cr::Rn as _;
 use crate::topology::{Curve3, Surface};
 use crate::{Frame3, Point2, Point3, Vec3};
 
@@ -413,7 +414,7 @@ pub(super) fn segment_bound(curve: &Curve3, dt: f64) -> (f64, f64) {
             sweep,
         } => {
             let reach = start.abs().max((start + sweep).abs());
-            let big = major.abs().max(minor.abs()) * reach.cosh() * (1.0 + 1e-12);
+            let big = major.abs().max(minor.abs()) * reach.cosh_rn() * (1.0 + 1e-12);
             let step = c(sweep.abs()).mul(&c(dt));
             let deviation = c(frame_norm(frame))
                 .mul(&c(big))

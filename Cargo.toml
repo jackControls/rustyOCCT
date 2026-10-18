@@ -14,4 +14,7 @@ unsafe_code = "forbid"
 missing_debug_implementations = "warn"
 
 [workspace.lints.clippy]
-all = "warn"
+all = { level = "warn", priority = -1 }
+# R13: the library denies the platform's libm (rust/kernel/clippy.toml and
+# lib.rs); tests and examples may call it.
+disallowed_methods = "allow"

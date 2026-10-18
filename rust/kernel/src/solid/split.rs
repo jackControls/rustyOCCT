@@ -11,6 +11,7 @@
 use super::attrs::{debug_check_attributes, propagate};
 use super::{replayable, Construction, Context, Solid};
 use crate::certified::{Interval as I, Real};
+use crate::cr::Rn as _;
 use crate::history::{History, Relation};
 use crate::identity::{
     Derivation, EntityId, EntityKind, OperationKind, Parent, ProfileElement, Role,
@@ -1366,7 +1367,7 @@ fn arc_side(
     ccw: bool,
     line: &[R; 3],
 ) -> Result<i8> {
-    let angle = |p: Point2| (p.y - center.y).atan2(p.x - center.x);
+    let angle = |p: Point2| (p.y - center.y).atan2_rn(p.x - center.x);
     let (a0, a1) = (angle(s), angle(e));
     let mut sweep = if ccw { a1 - a0 } else { a0 - a1 };
     if sweep <= 0.0 {
@@ -1377,7 +1378,7 @@ fn arc_side(
     } else {
         a0 - sweep / 2.0
     };
-    let (sn, cs) = mid.sin_cos();
+    let (sn, cs) = mid.sin_cos_rn();
     let m = Point2::new(center.x + radius * cs, center.y + radius * sn);
     let [a, b, d] = line;
     let v = a * q(m.x) + b * q(m.y) + d;
@@ -1449,14 +1450,14 @@ fn trace(
                     break;
                 }
                 let incoming = tangent(&set[current], positions, false);
-                let back = incoming.1.atan2(incoming.0) + std::f64::consts::PI;
+                let back = incoming.1.atan2_rn(incoming.0) + std::f64::consts::PI;
                 let mut best: Option<(f64, usize)> = None;
                 for (i, e) in set.iter().enumerate() {
                     if e.from != at || used[i] {
                         continue;
                     }
                     let d = tangent(e, positions, true);
-                    let mut cw = back - d.1.atan2(d.0);
+                    let mut cw = back - d.1.atan2_rn(d.0);
                     while cw <= 1e-12 {
                         cw += std::f64::consts::TAU;
                     }
@@ -1590,14 +1591,14 @@ fn signed_area(cycle: &[Edge2], positions: &BTreeMap<PointId, Point2>) -> f64 {
             ccw,
         } = e.kind
         {
-            let a0 = (p.y - center.y).atan2(p.x - center.x);
-            let a1 = (r.y - center.y).atan2(r.x - center.x);
+            let a0 = (p.y - center.y).atan2_rn(p.x - center.x);
+            let a1 = (r.y - center.y).atan2_rn(r.x - center.x);
             let mut phi = if ccw { a1 - a0 } else { a0 - a1 };
             if phi <= 0.0 {
                 phi += std::f64::consts::TAU;
             }
             let phi = if ccw { phi } else { -phi };
-            twice += radius * radius * (phi - phi.sin());
+            twice += radius * radius * (phi - phi.sin_rn());
         }
     }
     twice / 2.0

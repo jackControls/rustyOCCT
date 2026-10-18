@@ -90,9 +90,9 @@ fn fnv(text: &str) -> u64 {
 }
 
 /// A Boolean's outcome as a digest: its history and each result's ids by
-/// slot, with `points` its vertices' bits too (which differ by an ulp
-/// between macOS's `hypot` and glibc's, so the pinned digests leave them
-/// out); or its error.
+/// slot, with `points` its vertices' bits too (the pinned digests, written
+/// before R13 when macOS's `hypot` and glibc's differed by an ulp, leave
+/// them out; `construction_bits.rs` pins the bodies' bits); or its error.
 fn digest(r: &Result<(Vec<Solid>, History), Error>, points: bool) -> String {
     match r {
         Err(e) => format!("error {e}"),

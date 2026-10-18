@@ -16,6 +16,7 @@
 //! (see `identity.rs`); shells, loops, fins and the infinite void are
 //! structure.
 use crate::attributes::{Attribute, AttributeMap};
+use crate::cr::Rn as _;
 use crate::history::{EntityInfo, EntitySet, Geometry};
 use crate::identity::{
     Derivation, EntityId, EntityKind, InputLabel, OperationId, OperationKind, Parent,
@@ -252,23 +253,26 @@ impl Spiric {
         let (big, small) = (self.major, self.minor);
         let t = self.start + self.sweep * fraction;
         if self.over_v {
-            let q = -(c * small * t.sin() + d) / (big + small * t.cos());
-            let u = b.atan2(a) + self.sign * (q / a.hypot(b)).clamp(-1.0, 1.0).acos();
+            let q = -(c * small * t.sin_rn() + d) / (big + small * t.cos_rn());
+            let u = b.atan2_rn(a) + self.sign * (q / a.hypot_rn(b)).clamp(-1.0, 1.0).acos_rn();
             (u, t)
         } else {
-            let alpha = a * t.cos() + b * t.sin();
+            let alpha = a * t.cos_rn() + b * t.sin_rn();
             let (x, y) = (small * alpha, small * c);
-            let ratio = -(big * alpha + d) / x.hypot(y);
-            (t, y.atan2(x) + self.sign * ratio.clamp(-1.0, 1.0).acos())
+            let ratio = -(big * alpha + d) / x.hypot_rn(y);
+            (
+                t,
+                y.atan2_rn(x) + self.sign * ratio.clamp(-1.0, 1.0).acos_rn(),
+            )
         }
     }
 
     pub fn point(&self, fraction: f64) -> Point3 {
         let (u, v) = self.angles(fraction);
-        let rho = self.major + self.minor * v.cos();
+        let rho = self.major + self.minor * v.cos_rn();
         self.frame.point(
-            Point2::new(rho * u.cos(), rho * u.sin()),
-            self.minor * v.sin(),
+            Point2::new(rho * u.cos_rn(), rho * u.sin_rn()),
+            self.minor * v.sin_rn(),
         )
     }
 }
@@ -305,13 +309,13 @@ impl Meet {
     /// The carrier's angle and the ruling's height at a fraction.
     pub fn parameters(&self, fraction: f64) -> (f64, f64) {
         let u = self.start + self.sweep * fraction;
-        let (s, c) = u.sin_cos();
+        let (s, c) = u.sin_cos_rn();
         let foot = self
             .frame
             .point(Point2::new(self.radius * c, self.radius * s), 0.0);
         let w = foot - self.other.origin();
         // The ruling's direction: along the axis, leaning out on a cone.
-        let t = self.half_angle.tan();
+        let t = self.half_angle.tan_rn();
         let n = self.frame.normal() + (self.frame.x() * c + self.frame.y() * s) * t;
         let (a, b, cc) = if self.other_sphere {
             (
@@ -321,7 +325,7 @@ impl Meet {
             )
         } else {
             let (x2, y2, n2) = (self.other.x(), self.other.y(), self.other.normal());
-            let t2 = self.other_half_angle.tan();
+            let t2 = self.other_half_angle.tan_rn();
             let (wx, wy, nx, ny) = (w.dot(x2), w.dot(y2), n.dot(x2), n.dot(y2));
             let (r0, rd) = (self.other_radius + t2 * w.dot(n2), t2 * n.dot(n2));
             (
@@ -341,8 +345,8 @@ impl Meet {
 
     pub fn point(&self, fraction: f64) -> Point3 {
         let (u, v) = self.parameters(fraction);
-        let (s, c) = u.sin_cos();
-        let rho = self.radius + v * self.half_angle.tan();
+        let (s, c) = u.sin_cos_rn();
+        let rho = self.radius + v * self.half_angle.tan_rn();
         self.frame.point(Point2::new(rho * c, rho * s), v)
     }
 }
@@ -375,7 +379,7 @@ impl Rise {
     pub fn coefficients(&self) -> ([f64; 2], [f64; 3]) {
         let d = self.frame.origin() - self.centre;
         let (x, y, n) = (self.frame.x(), self.frame.y(), self.frame.normal());
-        let (r, t) = (self.radius, self.half_angle.tan());
+        let (r, t) = (self.radius, self.half_angle.tan_rn());
         let g0 = self.sphere_radius * self.sphere_radius - d.dot(d) - r * r;
         (
             [2.0 * x.dot(d), 2.0 * y.dot(d)],
@@ -385,21 +389,21 @@ impl Rise {
 
     /// The carrier's radius at a height.
     pub fn rho(&self, w: f64) -> f64 {
-        self.radius + w * self.half_angle.tan()
+        self.radius + w * self.half_angle.tan_rn()
     }
 
     /// The carrier's angle and height at a fraction.
     pub fn parameters(&self, fraction: f64) -> (f64, f64) {
         let w = self.start + self.sweep * fraction;
         let ([a, b], g) = self.coefficients();
-        let rho = a.hypot(b) * self.rho(w);
+        let rho = a.hypot_rn(b) * self.rho(w);
         let q = (g[0] + g[1] * w + g[2] * w * w) / rho;
-        (b.atan2(a) + self.sign * q.clamp(-1.0, 1.0).acos(), w)
+        (b.atan2_rn(a) + self.sign * q.clamp(-1.0, 1.0).acos_rn(), w)
     }
 
     pub fn point(&self, fraction: f64) -> Point3 {
         let (u, w) = self.parameters(fraction);
-        let (s, c) = u.sin_cos();
+        let (s, c) = u.sin_cos_rn();
         let rho = self.rho(w);
         self.frame.point(Point2::new(rho * c, rho * s), w)
     }
@@ -445,8 +449,8 @@ pub struct Toric {
 impl Toric {
     /// The torus's point at its angles.
     pub fn torus_point(&self, u: f64, v: f64) -> Point3 {
-        let (su, cu) = u.sin_cos();
-        let (sv, cv) = v.sin_cos();
+        let (su, cu) = u.sin_cos_rn();
+        let (sv, cv) = v.sin_cos_rn();
         let rho = self.major + self.minor * cv;
         self.frame
             .point(Point2::new(rho * cu, rho * su), self.minor * sv)
@@ -468,7 +472,7 @@ impl Toric {
             let s = x * x + y * y + n * n + (big * big - small * small);
             return s * s - 4.0 * big * big * (x * x + y * y);
         }
-        let r = self.other_radius + n * self.other_half_angle.tan();
+        let r = self.other_radius + n * self.other_half_angle.tan_rn();
         x * x + y * y - r * r
     }
 
@@ -677,7 +681,8 @@ impl WallMeet {
     /// A cone's radius row (S9f.3b): its axis and its half angle's
     /// tangent; none for a cylinder or a sphere.
     pub fn radius_row(&self) -> Option<(crate::Vec3, f64)> {
-        (self.other_half_angle != 0.0).then(|| (self.other.normal(), self.other_half_angle.tan()))
+        (self.other_half_angle != 0.0)
+            .then(|| (self.other.normal(), self.other_half_angle.tan_rn()))
     }
 
     /// The other surface's function along the ruling at `u`, `t` from its
@@ -858,10 +863,12 @@ impl Projection {
         let [x, y, z] = frame.coordinates(p);
         Some(match surface {
             Surface::Plane(_) => Point2::new(x, y),
-            Surface::Cylinder { .. } => Point2::new(y.atan2(x), z),
-            Surface::Cone { half_angle, .. } => Point2::new(y.atan2(x), z / half_angle.cos()),
-            Surface::Sphere { .. } => Point2::new(y.atan2(x), z.atan2(x.hypot(y))),
-            Surface::Torus { major, .. } => Point2::new(y.atan2(x), z.atan2(x.hypot(y) - major)),
+            Surface::Cylinder { .. } => Point2::new(y.atan2_rn(x), z),
+            Surface::Cone { half_angle, .. } => Point2::new(y.atan2_rn(x), z / half_angle.cos_rn()),
+            Surface::Sphere { .. } => Point2::new(y.atan2_rn(x), z.atan2_rn(x.hypot_rn(y))),
+            Surface::Torus { major, .. } => {
+                Point2::new(y.atan2_rn(x), z.atan2_rn(x.hypot_rn(y) - major))
+            }
             Surface::BSpline(_) => unreachable!("returned above"),
         })
     }
@@ -1148,7 +1155,7 @@ impl Curve3 {
         match self {
             Self::LineSegment { start, end } => *start + (*end - *start) * fraction,
             Self::Circle { frame, radius } => {
-                let (sine, cosine) = (fraction * TAU).sin_cos();
+                let (sine, cosine) = (fraction * TAU).sin_cos_rn();
                 frame.point(Point2::new(radius * cosine, radius * sine), 0.0)
             }
             Self::CircularArc {
@@ -1157,7 +1164,7 @@ impl Curve3 {
                 start_angle,
                 sweep_angle,
             } => {
-                let (sine, cosine) = (start_angle + sweep_angle * fraction).sin_cos();
+                let (sine, cosine) = (start_angle + sweep_angle * fraction).sin_cos_rn();
                 frame.point(Point2::new(radius * cosine, radius * sine), 0.0)
             }
             Self::BSpline(span) => span
@@ -1171,7 +1178,7 @@ impl Curve3 {
                 start_angle,
                 sweep_angle,
             } => {
-                let (sine, cosine) = (start_angle + sweep_angle * fraction).sin_cos();
+                let (sine, cosine) = (start_angle + sweep_angle * fraction).sin_cos_rn();
                 frame.point(Point2::new(major * cosine, minor * sine), 0.0)
             }
             Self::HyperbolaArc {
@@ -1182,7 +1189,7 @@ impl Curve3 {
                 sweep,
             } => {
                 let t = start + sweep * fraction;
-                frame.point(Point2::new(major * t.cosh(), minor * t.sinh()), 0.0)
+                frame.point(Point2::new(major * t.cosh_rn(), minor * t.sinh_rn()), 0.0)
             }
             Self::ParabolaArc {
                 frame,
@@ -1251,7 +1258,7 @@ impl Curve2 {
                 start_angle,
                 sweep_angle,
             } => {
-                let (sine, cosine) = (start_angle + sweep_angle * fraction).sin_cos();
+                let (sine, cosine) = (start_angle + sweep_angle * fraction).sin_cos_rn();
                 Point2::new(center.x + radius * cosine, center.y + radius * sine)
             }
             Self::BSpline(span) => span
@@ -1265,12 +1272,12 @@ impl Curve2 {
                 start_angle,
                 sweep_angle,
             } => {
-                let (sine, cosine) = (start_angle + sweep_angle * fraction).sin_cos();
+                let (sine, cosine) = (start_angle + sweep_angle * fraction).sin_cos_rn();
                 Point2::new(center.x + major * cosine, center.y + minor * sine)
             }
             Self::Sinusoid { start, sweep, a } => {
                 let u = start + sweep * fraction;
-                let (sine, cosine) = u.sin_cos();
+                let (sine, cosine) = u.sin_cos_rn();
                 Point2::new(u, a[0] + a[1] * cosine + a[2] * sine)
             }
             Self::Projection(p) => p.point(fraction),
@@ -1319,25 +1326,26 @@ impl Surface {
     pub fn point(&self, uv: Point2) -> Point3 {
         match self {
             Self::Plane(frame) => frame.point(uv, 0.0),
-            Self::Cylinder { frame, radius } => {
-                frame.point(Point2::new(radius * uv.x.cos(), radius * uv.x.sin()), uv.y)
-            }
+            Self::Cylinder { frame, radius } => frame.point(
+                Point2::new(radius * uv.x.cos_rn(), radius * uv.x.sin_rn()),
+                uv.y,
+            ),
             Self::Cone {
                 frame,
                 radius,
                 half_angle,
             } => {
-                let rho = radius + uv.y * half_angle.sin();
+                let rho = radius + uv.y * half_angle.sin_rn();
                 frame.point(
-                    Point2::new(rho * uv.x.cos(), rho * uv.x.sin()),
-                    uv.y * half_angle.cos(),
+                    Point2::new(rho * uv.x.cos_rn(), rho * uv.x.sin_rn()),
+                    uv.y * half_angle.cos_rn(),
                 )
             }
             Self::Sphere { frame, radius } => {
-                let rho = radius * uv.y.cos();
+                let rho = radius * uv.y.cos_rn();
                 frame.point(
-                    Point2::new(rho * uv.x.cos(), rho * uv.x.sin()),
-                    radius * uv.y.sin(),
+                    Point2::new(rho * uv.x.cos_rn(), rho * uv.x.sin_rn()),
+                    radius * uv.y.sin_rn(),
                 )
             }
             Self::Torus {
@@ -1345,10 +1353,10 @@ impl Surface {
                 major,
                 minor,
             } => {
-                let rho = major + minor * uv.y.cos();
+                let rho = major + minor * uv.y.cos_rn();
                 frame.point(
-                    Point2::new(rho * uv.x.cos(), rho * uv.x.sin()),
-                    minor * uv.y.sin(),
+                    Point2::new(rho * uv.x.cos_rn(), rho * uv.x.sin_rn()),
+                    minor * uv.y.sin_rn(),
                 )
             }
             Self::BSpline(surface) => surface
@@ -1361,17 +1369,17 @@ impl Surface {
     pub fn normal(&self, uv: Point2) -> Vec3 {
         match self {
             Self::Plane(frame) => frame.normal(),
-            Self::Cylinder { frame, .. } => frame.x() * uv.x.cos() + frame.y() * uv.x.sin(),
+            Self::Cylinder { frame, .. } => frame.x() * uv.x.cos_rn() + frame.y() * uv.x.sin_rn(),
             Self::Cone {
                 frame, half_angle, ..
             } => {
-                let radial = frame.x() * uv.x.cos() + frame.y() * uv.x.sin();
-                radial * half_angle.cos() - frame.normal() * half_angle.sin()
+                let radial = frame.x() * uv.x.cos_rn() + frame.y() * uv.x.sin_rn();
+                radial * half_angle.cos_rn() - frame.normal() * half_angle.sin_rn()
             }
             // Outward, away from the poles, or from the tube's core circle.
             Self::Sphere { frame, .. } | Self::Torus { frame, .. } => {
-                let radial = frame.x() * uv.x.cos() + frame.y() * uv.x.sin();
-                radial * uv.y.cos() + frame.normal() * uv.y.sin()
+                let radial = frame.x() * uv.x.cos_rn() + frame.y() * uv.x.sin_rn();
+                radial * uv.y.cos_rn() + frame.normal() * uv.y.sin_rn()
             }
             Self::BSpline(surface) => {
                 use crate::curve::KnotSide;
@@ -2473,7 +2481,7 @@ impl Topology {
             }
             Surface::Cone {
                 radius, half_angle, ..
-            } => vec![-radius / half_angle.sin()],
+            } => vec![-radius / half_angle.sin_rn()],
             _ => return 0,
         };
         let mut passes = 0;
@@ -2737,7 +2745,7 @@ impl Topology {
         // bottom turned over exactly), as its walls do: normalized again,
         // a cap's normal could lie an ulp off the walls' axis, and once
         // written and imported its cap and cylinders, each normalized
-        // once more, an ulp apart with the platform's `hypot`.
+        // once more, an ulp apart by `hypot`'s rounding.
         let bottom_frame = frame.at(frame.point(Point2::default(), low)).flipped();
         let top_frame = frame.at(frame.point(Point2::default(), high));
         // One solid region bounded by shell 0 (every front side) inside the
@@ -2904,11 +2912,11 @@ impl Topology {
                             };
                             // The prism's axes bit for bit (`Frame3::at`):
                             // normalized again, its normal could turn by an
-                            // ulp with the platform's `hypot`, off an
+                            // ulp in `hypot`'s rounding, off an
                             // imported wall's stored axis (S9e.4b.1).
                             let arc_frame = frame.at(frame.point(center, height));
                             let a = points[i];
-                            let start = (a.y - center.y).atan2(a.x - center.x);
+                            let start = (a.y - center.y).atan2_rn(a.x - center.x);
                             let sweep =
                                 crate::profile::arc_sweep(center, a, points[(i + 1) % count], ccw);
                             Ok(Some((arc_frame, radius, start, sweep)))
@@ -3402,7 +3410,7 @@ impl Topology {
                         Curve3::CircularArc {
                             frame: arc_frame,
                             radius: *radius,
-                            start_angle: (p.y - center.y).atan2(p.x - center.x),
+                            start_angle: (p.y - center.y).atan2_rn(p.x - center.x),
                             sweep_angle: crate::profile::arc_sweep(*center, p, q, *ccw),
                         },
                     )
@@ -3580,7 +3588,7 @@ impl Topology {
                             Curve3::CircularArc {
                                 frame: arc_frame,
                                 radius,
-                                start_angle: (a.y - center.y).atan2(a.x - center.x),
+                                start_angle: (a.y - center.y).atan2_rn(a.x - center.x),
                                 sweep_angle: crate::profile::arc_sweep(center, a, points[j], ccw),
                             },
                         )
@@ -3682,8 +3690,8 @@ impl Topology {
             boundary: 0,
             element,
         };
-        let half_angle = (top - bottom).atan2(height);
-        let slant = height.hypot(top - bottom);
+        let half_angle = (top - bottom).atan2_rn(height);
+        let slant = height.hypot_rn(top - bottom);
         let mut topology = Self {
             vertices: Vec::new(),
             edges: Vec::new(),
@@ -4164,10 +4172,10 @@ impl Topology {
             // wall's normal points out) exactly when its signed area is
             // positive; its boundary must be simple, the arc's lower end
             // below its upper one in that direction.
-            let area = minor * major * (high.sin() - low.sin())
+            let area = minor * major * (high.sin_rn() - low.sin_rn())
                 + minor
                     * minor
-                    * ((high - low) / 2.0 + ((2.0 * high).sin() - (2.0 * low).sin()) / 4.0);
+                    * ((high - low) / 2.0 + ((2.0 * high).sin_rn() - (2.0 * low).sin_rn()) / 4.0);
             let (z_low, z_high) = (
                 crate::math::scaled_sin(minor, low),
                 crate::math::scaled_sin(minor, high),
@@ -4252,7 +4260,7 @@ impl Topology {
         } else if !turn {
             // A wedge: the tube's circles at u = 0 and u = angle, each
             // bounding a disc in its meridian half-plane.
-            let e = |u: f64| frame.x() * u.cos() + frame.normal().cross(frame.x()) * u.sin();
+            let e = |u: f64| frame.x() * u.cos_rn() + frame.normal().cross(frame.x()) * u.sin_rn();
             let ends = [
                 (0.0, Role::StartCap, Role::BottomEdge, false),
                 (angle, Role::EndCap, Role::TopEdge, true),
@@ -4743,7 +4751,7 @@ pub(crate) fn plane_pcurve(curve: &Curve3, sense: Orientation, frame: Frame3) ->
             Curve2::CircularArc {
                 center: Point2::new(x, y),
                 radius: *radius,
-                start_angle: (start.y - y).atan2(start.x - x),
+                start_angle: (start.y - y).atan2_rn(start.x - x),
                 sweep_angle: TAU * sense.sign() * circle.normal().dot(frame.normal()).signum(),
             }
         }
@@ -4766,7 +4774,7 @@ pub(crate) fn plane_pcurve(curve: &Curve3, sense: Orientation, frame: Frame3) ->
             Curve2::CircularArc {
                 center: Point2::new(x, y),
                 radius: *radius,
-                start_angle: (from.y - y).atan2(from.x - x),
+                start_angle: (from.y - y).atan2_rn(from.x - x),
                 sweep_angle: sweep,
             }
         }

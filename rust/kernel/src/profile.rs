@@ -1,3 +1,4 @@
+use crate::cr::Rn as _;
 use crate::decide;
 use crate::identity::InputLabel;
 use crate::math::{finite, sum};
@@ -153,7 +154,7 @@ pub(crate) fn arc_sweep(center: Point2, a: Point2, b: Point2, ccw: bool) -> f64 
         Point2::new(a.x - center.x, a.y - center.y),
         Point2::new(b.x - center.x, b.y - center.y),
     );
-    let mut turn = cross(u, v).atan2(u.x * v.x + u.y * v.y);
+    let mut turn = cross(u, v).atan2_rn(u.x * v.x + u.y * v.y);
     if turn <= 0.0 {
         turn += 2.0 * PI;
     }
@@ -167,12 +168,12 @@ pub(crate) fn arc_sweep(center: Point2, a: Point2, b: Point2, ccw: bool) -> f64 
 /// `∫ cos^m t sin^n t dt` over `[a, b]` for `m + n <= 4`, by the reduction
 /// formulas.
 fn trig_integral(m: u32, n: u32, a: f64, b: f64) -> f64 {
-    let at = |t: f64, m: i32, n: i32| t.cos().powi(m) * t.sin().powi(n);
+    let at = |t: f64, m: i32, n: i32| t.cos_rn().powi(m) * t.sin_rn().powi(n);
     match (m, n) {
         (0, 0) => b - a,
-        (1, 0) => b.sin() - a.sin(),
-        (0, 1) => a.cos() - b.cos(),
-        (1, 1) => 0.5 * (b.sin().powi(2) - a.sin().powi(2)),
+        (1, 0) => b.sin_rn() - a.sin_rn(),
+        (0, 1) => a.cos_rn() - b.cos_rn(),
+        (1, 1) => 0.5 * (b.sin_rn().powi(2) - a.sin_rn().powi(2)),
         (m, n) if n >= 2 => {
             let k = f64::from(m + n);
             -(at(b, m as i32 + 1, n as i32 - 1) - at(a, m as i32 + 1, n as i32 - 1)) / k
@@ -1060,7 +1061,7 @@ fn path_moments(points: &[Point2], segments: &[Segment]) -> Result<(AreaMoments,
                 ccw,
             } => {
                 let c = local(*center);
-                let start = (a.y - c.y).atan2(a.x - c.x);
+                let start = (a.y - c.y).atan2_rn(a.x - c.x);
                 let sweep = arc_sweep(*center, points[i], points[(i + 1) % n], *ccw);
                 arc_moments(c.x, c.y, *radius, start, sweep)
             }

@@ -25,10 +25,15 @@
 //! # Ok::<(), rusty_occt::Error>(())
 //! ```
 
+// R13: no kernel construction calls the platform's libm (clippy.toml lists
+// the functions; `cr` has their correctly rounded counterparts).
+#![deny(clippy::disallowed_methods)]
+
 mod algebraic;
 pub mod attributes;
 mod body;
 pub(crate) mod certified;
+pub mod cr;
 pub mod curve;
 mod decide;
 mod error;

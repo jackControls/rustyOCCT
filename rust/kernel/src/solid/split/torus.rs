@@ -21,6 +21,7 @@
 use super::meridian::{Half, Primitive};
 use super::{q, rational_f64, zero, Side};
 use crate::certified::{Interval as I, Real};
+use crate::cr::Rn as _;
 use crate::history::{History, Relation};
 use crate::identity::{Derivation, EntityId, EntityKind, OperationId, OperationKind, Parent, Role};
 use crate::solid::{Construction, Context, Solid};
@@ -55,8 +56,8 @@ pub(super) fn bands(
     below_is_lower: bool,
     tolerance: Tolerance,
 ) -> Result<Vec<Band>> {
-    let v1 = (h / minor).asin();
-    let (outer, inner) = (major + minor * v1.cos(), major - minor * v1.cos());
+    let v1 = (h / minor).asin_rn();
+    let (outer, inner) = (major + minor * v1.cos_rn(), major - minor * v1.cos_rn());
     let (n, x) = (frame.normal(), frame.x());
     let centre = frame.point(Point2::default(), h);
     let ring_frame = Frame3::new(centre, n, x, tolerance)?;

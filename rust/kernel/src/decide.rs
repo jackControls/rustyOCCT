@@ -12,6 +12,7 @@ pub(crate) mod arcs;
 pub(crate) mod splines;
 
 use crate::certified::{pi, Fast, Interval, Real};
+use crate::cr::Rn as _;
 use crate::Point2;
 use num_rational::BigRational as R;
 use std::cmp::Ordering;
@@ -476,7 +477,7 @@ pub(crate) fn torus_part_location(
         }
         (inside, near)
     } else {
-        let (ce, se) = (q(angle.cos()), q(angle.sin()));
+        let (ce, se) = (q(angle.cos_rn()), q(angle.sin_rn()));
         let s0 = y.cmp(&zero());
         let s1 = (&x * &se - &y * &ce).cmp(&zero());
         let convex = se > zero() || (se == zero() && ce < zero());

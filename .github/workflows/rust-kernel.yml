@@ -148,6 +148,7 @@ jobs:
           target/math-oracle-venv/bin/python rust/tools/generate_spline_plane_fixtures.py --check
           target/math-oracle-venv/bin/python rust/tools/generate_spline_quadric_fixtures.py --check
           target/math-oracle-venv/bin/python rust/tools/generate_closed_clip_fixtures.py --check
+          target/math-oracle-venv/bin/python rust/tools/generate_correctly_rounded_fixtures.py --check
           target/math-oracle-venv/bin/python rust/tools/generate_affine_parameter_fixtures.py --check
           target/math-oracle-venv/bin/python rust/tools/generate_spline_linear_fixtures.py --check
       - name: Verify the independent exact arithmetic oracle - B-rep, history, intersections, splits and Booleans

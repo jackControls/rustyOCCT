@@ -27,6 +27,7 @@ use super::num::*;
 use super::torus_segment::Span;
 use super::turned::{middle, near_node, negative_chart, roots, square_sum, Chart, Form};
 use crate::certified::{Fast, Real};
+use crate::cr::Rn as _;
 use crate::identity::Role;
 use crate::profile::boolean::Operand;
 use crate::solid::split::{q, rational_f64, zero};
@@ -234,8 +235,8 @@ impl Ring {
             Span::Wedge(w) => (None, Some(w.mid)),
         };
         let about = |a: f64, b: f64, mid: f64| {
-            let (c0, s0) = (mid.cos(), mid.sin());
-            mid + (b * c0 - a * s0).atan2(a * c0 + b * s0)
+            let (c0, s0) = (mid.cos_rn(), mid.sin_rn());
+            mid + (b * c0 - a * s0).atan2_rn(a * c0 + b * s0)
         };
         move |p, kind| {
             let FaceKind::Patch(upper, plus) = kind else {
@@ -243,10 +244,10 @@ impl Ring {
             };
             let d = [p[0] - o[0], p[1] - o[1], p[2] - o[2]];
             let l = super::graph::solve3(&x, &y, &n, &d);
-            let rho = l[0].hypot(l[1]);
+            let rho = l[0].hypot_rn(l[1]);
             let angle = |a: f64, b: f64, base: &[f64; 2], first: bool| {
                 let (c0, s0) = (base[0], base[1]);
-                let rel = (b * c0 - a * s0).atan2(a * c0 + b * s0);
+                let rel = (b * c0 - a * s0).atan2_rn(a * c0 + b * s0);
                 // Within the half's turn: a point on a seam may round across.
                 if first {
                     if rel < -std::f64::consts::FRAC_PI_2 {
@@ -547,17 +548,17 @@ impl TorusSec {
             .map(|i| {
                 let t = t0 + sweep * i as f64 / n as f64;
                 let (u, v) = if self.over_v {
-                    let q = -(m * small * t.sin() + k) / (big + small * t.cos());
-                    let u = b.atan2(a) + sign * (q / a.hypot(b)).clamp(-1.0, 1.0).acos();
+                    let q = -(m * small * t.sin_rn() + k) / (big + small * t.cos_rn());
+                    let u = b.atan2_rn(a) + sign * (q / a.hypot_rn(b)).clamp(-1.0, 1.0).acos_rn();
                     (u, t)
                 } else {
-                    let aa = a * t.cos() + b * t.sin();
+                    let aa = a * t.cos_rn() + b * t.sin_rn();
                     let (px, py) = (small * aa, small * m);
-                    let ratio = -(big * aa + k) / px.hypot(py);
-                    (t, py.atan2(px) + sign * ratio.clamp(-1.0, 1.0).acos())
+                    let ratio = -(big * aa + k) / px.hypot_rn(py);
+                    (t, py.atan2_rn(px) + sign * ratio.clamp(-1.0, 1.0).acos_rn())
                 };
-                let rho = big + small * v.cos();
-                let l = [rho * u.cos(), rho * u.sin(), small * v.sin()];
+                let rho = big + small * v.cos_rn();
+                let l = [rho * u.cos_rn(), rho * u.sin_rn(), small * v.sin_rn()];
                 [0, 1, 2].map(|j| o[j] + l[0] * x[j] + l[1] * y[j] + l[2] * nn[j])
             })
             .collect()
@@ -776,9 +777,9 @@ fn plane_torus_whole(
     let (big, small) = (rational_f64(&ring.big), rational_f64(&ring.small));
     let (cu0, su0) = (rational_f64(&chart_u.c0), rational_f64(&chart_u.s0));
     let (cv0, sv0) = (rational_f64(&chart_v.c0), rational_f64(&chart_v.s0));
-    let chart_angle = |c0: f64, s0: f64, t: f64| s0.atan2(c0) + 2.0 * t.atan();
+    let chart_angle = |c0: f64, s0: f64, t: f64| s0.atan2_rn(c0) + 2.0 * t.atan_rn();
     let to_chart = |c0: f64, s0: f64, ang: f64| {
-        let (c, s) = (ang.cos(), ang.sin());
+        let (c, s) = (ang.cos_rn(), ang.sin_rn());
         let (cr, sr) = (c0 * c + s0 * s, c0 * s - s0 * c);
         sr / (1.0 + cr)
     };
@@ -786,11 +787,11 @@ fn plane_torus_whole(
     let mut v_turns: Vec<(f64, bool)> = Vec::new();
     for root in &rv {
         let v = chart_angle(cv0, sv0, rational_f64(&middle(root)));
-        let g = -(mu * small * v.sin() + kappa) / (big + small * v.cos());
-        let u = b.atan2(a) + if g > 0.0 { 0.0 } else { std::f64::consts::PI };
+        let g = -(mu * small * v.sin_rn() + kappa) / (big + small * v.cos_rn());
+        let u = b.atan2_rn(a) + if g > 0.0 { 0.0 } else { std::f64::consts::PI };
         // The u graph's branch: sign of (alpha l_u + beta l_v) l_w - mu rho (rho - R).
-        let rho = big + small * v.cos();
-        let (lu, lv, lw) = (rho * u.cos(), rho * u.sin(), small * v.sin());
+        let rho = big + small * v.cos_rn();
+        let (lu, lv, lw) = (rho * u.cos_rn(), rho * u.sin_rn(), small * v.sin_rn());
         let br = (a * lu + b * lv) * lw - mu * rho * (rho - big);
         if br.abs() < 1e-12 * (1.0 + big * big) {
             return Err(Error::ComputationLimit("a turning point of both graphs"));

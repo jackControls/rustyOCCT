@@ -1,0 +1,1977 @@
+# Correctly rounded elementary functions: mpmath at 2400 bits, rounded once.
+# function label argument_bits... result_bits
+# cases: 1974; generator: rust/tools/generate_correctly_rounded_fixtures.py
+hypot	x1_octant_tilt_sphere_bounds	3fdc71c71c71c71d	bfbc71c71c71c71e	3fdd51e27daa88f1
+tan	x1_consistency_ribbed_cone_slope	bfe921fb54442d16	bfeffffffffffffb
+sin	sample	3f1c7ec25457da22	3f1c7ec25366d6a0
+cos	sample	c02f3cb080986de3	bfefdf4385b4fafa
+tan	sample	bec3886bd53c68db	bec3886bd53c8fac
+atan	sample	3eb45cbf9e1165c6	3eb45cbf9e115ac8
+atan2	sample	c05d9cf7fb5fdd8e	bec8a284bb4e152c	bff921fb5aebe21a
+asin	sample	be6dd5603d550f38	be6dd5603d550f3c
+acos	sample	3e9a3e85e5c9f106	3ff921faeb4a1581
+hypot	sample	be0c9e9c96b11aef	bf3c0b2e9b5de5e8	3f3c0b2e9b5e2052
+exp	sample	bda8c292e02e3377	3feffffffffe73d7
+ln	sample	097bc248e166ae45	c082defcaaddb058
+log2	sample	0dce7d2bae7f4d8a	c089108eebb91ac9
+sinh	sample	403d23f50016b6ec	428075783da680b4
+cosh	sample	bea2bc49b0608fcf	3ff00000000002be
+asinh	sample	bef953eca0228df8	bef953eca017fa02
+atanh	sample	3e5d2996916ec3ea	3e5d2996916ec3ec
+sin	sample	bfaf5d148c35e468	bfaf580f4e5bbb27
+cos	sample	3ec4b5ffe6fc1c13	3fefffffffff94c4
+tan	sample	c091440a0ed3160d	3ff185d43781eb6a
+atan	sample	c1e3a74e849cd165	bff921fb542a1ff7
+atan2	sample	c107db72793a9253	416f5410de60a8a9	bf885e158cb75811
+asin	sample	bf507aa732960410	bf507aa7613396ad
+acos	sample	bfb7f203f28a0759	3ffaa1ab292db2e3
+hypot	sample	bf0bba1b3290ded0	3d98614d223f1451	3f0bba1b3290defb
+exp	sample	3e0e570667904403	3ff00000003cae0d
+ln	sample	0640204fe4fc8fdf	c083fe22cb9c0089
+log2	sample	315b419e5fb657dd	c06d27684ac45479
+sinh	sample	400c595c343add0e	4031481f3eebdbb3
+cosh	sample	3e8e7d959f392545	3ff0000000000074
+asinh	sample	bf7818b3304a45e5	bf7818aa146d58ba
+atanh	sample	be6f6ea2860ab6cb	be6f6ea2860ab6d5
+sin	sample	3fbaff2b91a843ad	3fbaf25e12c4e7f7
+cos	sample	3ff66455827077bd	3fc5d1c51ce7534a
+tan	sample	40b721f274981878	3fa70649a0842dc9
+atan	sample	404614e3a6eb96b0	3ff8c5402d677a9c
+atan2	sample	41651fb3cd6744ef	3e2e89f33b1428d4	3ff921fb54442d17
+asin	sample	be6e7ab4837c3e29	be6e7ab4837c3e2e
+acos	sample	3f6b9ff252137a29	3ff9142b5963f147
+hypot	sample	3f962105fe7ddf9e	416893d5c55cdbc2	416893d5c55cdbc2
+exp	sample	3ef6840fc0590236	3ff00016841f9817
+ln	sample	4203bec8d165b85f	4037158ce7863b9c
+log2	sample	66e1b59f5909342e	4083792bed35e960
+sinh	sample	40027a5d395c2836	4013f1f8c901937d
+cosh	sample	3ea33def6d2eb12f	3ff00000000002e5
+asinh	sample	bf9f998dc827158b	bf9f98453c4ef10e
+atanh	sample	be5e14d9d16eef7b	be5e14d9d16eef7d
+sin	sample	c0a9a0410c6f43de	bfd32d56a9a3b685
+cos	sample	bfe46d262a4e7fb3	3fe9b2f591c7c83a
+tan	sample	c14406289c2ca67a	3fb8ded9e6bb56d7
+atan	sample	41461f0047942145	3ff921faf7af5d0e
+atan2	sample	c11f80e28e65a116	3f9339f5bfdef4ec	bff921fb4a806847
+asin	sample	bf7906cc2d19110d	bf7906d6619d76df
+acos	sample	bf89f8d35109be0c	3ff955ed5626e8fe
+hypot	sample	bfcae6f80a075e9e	c1aba98452363701	41aba98452363701
+exp	sample	bd074b73fd2e4911	3fefffffffffffa3
+ln	sample	73533fabd4583f2d	4081cf9d5d42d36e
+log2	sample	1c420498d5b8aaa8	c081d6a10c272fe4
+sinh	sample	bf2e88c8b72b5c96	bf2e88c8bbcd8c7d
+cosh	sample	3fa6523ca4a257a2	3ff003e4a2166cb9
+asinh	sample	3f741f25e8170e71	3f741f209a49e871
+atanh	sample	3ee72e124e1f8ef2	3ee72e124e239cd9
+sin	sample	3f58aa5c8d218295	3f58aa5bf0d13158
+cos	sample	bf3ba14125757992	3fefffffd0496afd
+tan	sample	c059f38cd46ae493	bfc11d1f50116cb2
+atan	sample	beb08a18f311d788	beb08a18f311d1a4
+atan2	sample	405164b1b5f7bd93	c0b9a82fc05c3e7c	40090c4a079bb0db
+asin	sample	bfc45b7bc2d056ae	bfc471b51e4d6486
+acos	sample	3ed18b84219659fe	3ff921f6f16324b3
+hypot	sample	c23668ba651236ce	bedbd6c0f0f127b4	423668ba651236ce
+exp	sample	bd6f528d370d1e44	3fefffffffffe0ad
+ln	sample	335d8838bbf1aca3	c0616ce412820d7a
+log2	sample	642c74672f7959f0	40821ea50f02df73
+sinh	sample	3ec9baedf4644ca7	3ec9baedf4647903
+cosh	sample	be51ac077216397d	3ff0000000000001
+asinh	sample	4221f0290a68decf	40391150bc66728d
+atanh	sample	3f42c5d1f1f335b0	3f42c5d214684893
+sin	sample	bfb96d13f6cd8a4a	bfb96261b6d8f24e
+cos	sample	bf83b45cbf3209b7	3fefff9eeefb56b7
+tan	sample	bec5ebc28201adc7	bec5ebc28201e4a4
+atan	sample	3f070cb1a77154a8	3f070cb1a7318cd7
+atan2	sample	c1aeb102041991a2	c00935acb82fc570	bff921fb578d47ca
+asin	sample	3ebc1f6eafcaf7f9	3ebc1f6eafcb0674
+acos	sample	3ed9eb26197af630	3ff921f4d97aa6b9
+hypot	sample	bfca8b3052b6ec1a	4260ecc2d68feb5d	4260ecc2d68feb5d
+exp	sample	bd81882f017c1b73	3fefffffffffb9df
+ln	sample	6d89dbfe62c5bbb9	407f9c8cd01c80dd
+log2	sample	79eb77d9b40469b4	408cfe3ccd68efa7
+sinh	sample	3e644a0029f30ecb	3e644a0029f30ecc
+cosh	sample	c00b4f36182fc1e9	402e68dfe4e034f0
+asinh	sample	3fbf955b3bbd64c9	3fbf80fc10a44436
+atanh	sample	be7856e7052bdee1	be7856e7052bdef4
+sin	sample	3fcca816c83b44f3	3fcc6af5825af650
+cos	sample	3e507abfbe65ab42	3fefffffffffffff
+tan	sample	c01d55730737ceef	bffbe8f1cf51512d
+atan	sample	41ca578aa8e198da	3ff921fb53f66df2
+atan2	sample	3ea89dbdbc168e1e	3f728a46d28b6115	3f253e5a90e31717
+asin	sample	bfe28c6c040ec7ca	bfe3c904f1eab2af
+acos	sample	bee739000a037984	3ff92206f0c4321b
+hypot	sample	bfa0fb9c6235b697	407f35654e2fd127	407f35654f578c63
+exp	sample	3e74ef87f61101c6	3ff0000014ef8804
+ln	sample	3dadf04e9dc9d805	c0390517044e2517
+log2	sample	01cd0e55b92cb89d	c08f111d27c623b7
+sinh	sample	bf626a50ed711c75	bf626a51f1a709ef
+cosh	sample	bf456bebd050cf8d	3ff00000395c4607
+asinh	sample	bf668a7f34020624	bf668a7d56ccf909
+atanh	sample	bfc8851ca01c7db2	bfc8d3a13c06fab6
+sin	sample	bf3f3199614a7756	bf3f31994d879f09
+cos	sample	c09266f4a34de9c7	bfedf7a4e6288db2
+tan	sample	c0112433359b4d44	c00194b3b7330e06
+atan	sample	c239f96ac138d754	bff921fb54438f67
+atan2	sample	3f939a3d9c449dc5	3fb257a0490e2b35	3fd0b5812cb033e7
+asin	sample	3f5c87f02fcfda9e	3f5c87f121bca703
+acos	sample	3f3cc7a753ab1d2b	3ff9202ed9cdfa17
+hypot	sample	3fd0a7c63c7d3234	40be2ddfdc99508a	40be2ddfdce2d95b
+exp	sample	3fe64f61211d8c07	40001097a597d985
+ln	sample	1955bd6c44f48ddb	c07ac0ef301d207c
+log2	sample	42a872a4f80a954c	4045ce4a0a054637
+sinh	sample	3e4de3947fa5bff6	3e4de3947fa5bff6
+cosh	sample	3f13eab625343d96	3ff0000000c6571e
+asinh	sample	be5c1fd1d7f7cb86	be5c1fd1d7f7cb85
+atanh	sample	3fede0eaa59c6683	3ffafc15e1a857e4
+sin	sample	beb81be35fbdde3c	beb81be35fbdd51c
+cos	sample	be650c0f2f621408	3feffffffffffff9
+tan	sample	3fa525cf88f42d7b	3fa528e438c07e86
+atan	sample	c1602b25069a488a	bff921fb349990e4
+atan2	sample	4181ceb700dbbedc	be2225ad128ca1db	3ff921fb54442d19
+asin	sample	bedbaa19676dbba9	bedbaa19676e9834
+acos	sample	befaba8eeb9151e5	3ff922160ed318b6
+hypot	sample	c063e283fde769dd	c0f4e58cfb096d11	40f4e58f588a0ace
+exp	sample	c0628765c3566a89	3291b950788a48c8
+ln	sample	446027d631bee6e4	40489c8f7a3bbc54
+log2	sample	58fdb63f33c72cd7	40790e4999ea8413
+sinh	sample	4007fc63941c745e	40240012406ea425
+cosh	sample	3f84f35e81bbc1bc	3ff00036dde375d5
+asinh	sample	c24b983ac3d9a7c0	c03ae276d857fe46
+atanh	sample	3fadfc4bba784c9b	3fae05171c00a19b
+sin	sample	c097d80936ffaaab	3fe7113829a4a888
+cos	sample	40c23b0c9ecbcf23	bfed210fd303aa24
+tan	sample	3ef029ae012702d9	3ef029ae012c8249
+atan	sample	40314f8bdba94dc8	3ff835a0ceb47a84
+atan2	sample	bf65d117057ba241	be385dc6df7cd1ea	bff921fd90198ffe
+asin	sample	bf912df1d20fee44	bf912e26a4710b82
+acos	sample	3f8299a55a02208e	3ff8fcc7e80bc8ef
+hypot	sample	c0f71856271817ba	3e1c7aab1739d2d1	40f71856271817ba
+exp	sample	3cdd14c3c610a476	3ff0000000000007
+ln	sample	6d13867bfc770b8d	407f4a6c160a7129
+log2	sample	760dd9f007f1d3fa	408b0f32a1d98007
+sinh	sample	3f145bb37689be64	3f145bb376e1a2a4
+cosh	sample	3f80a3b5527ffe99	3ff000229bf7d10b
+asinh	sample	bf03f5001b840ca3	bf03f5001b6f599a
+atanh	sample	bf0e7968c1287270	bf0e7968c1bbd8e3
+sin	sample	c11447fa78e95ebd	bfd6bb48890b0468
+cos	sample	c0fbbad1d0df64b9	3feffcf25989d6a7
+tan	sample	40e74b93e12ca1ad	3fdab2862d7e467a
+atan	sample	bf5ac7567ac9b00a	bf5ac754eaba6abf
+atan2	sample	c070277c5fc4293d	be74d5af9902cb4c	bff921fb5458cfdb
+asin	sample	bfcd65059a4896a2	bfcda8c8aace98cb
+acos	sample	3f71dc46d05e8578	3ff9101f09be3aef
+hypot	sample	3eccca5239aab2eb	3eab8fda32c58bcd	3ecd9a78325cb36c
+exp	sample	be4748184ad878b8	3feffffffa2df9ee
+ln	sample	57d9a9b74b29c080	407094132e27e4fe
+log2	sample	1ab7c5ccd3b606e8	c0829b6e1e51d17c
+sinh	sample	c008fb4d139e6ecf	c026a9e80aa938d8
+cosh	sample	3fddbff2ca8229e5	3ff1c28d186ddf9a
+asinh	sample	3e514d46b28f9e8f	3e514d46b28f9e8f
+atanh	sample	bf28238054035c4f	bf28238058977218
+sin	sample	c0201dccad67b449	bfef55c3d4ee68bb
+cos	sample	beaec850a78e2622	3feffffffffff132
+tan	sample	be8f587a15103765	be8f587a15103805
+atan	sample	bf4410d4cc325e46	bf4410d4a21e299e
+atan2	sample	4126c19335c00a21	3feb1d9561799f2e	3ff921fa233968fc
+asin	sample	3ec9edf28f2c4197	3ec9edf28f2c6efd
+acos	sample	bf8969738878058f	3ff954ce90ced26f
+hypot	sample	be42fe6fb1f0af0c	3f7ad60a61f2151f	3f7ad60a61f23002
+exp	sample	3e3b1e58b76582db	3ff0000001b1e58c
+ln	sample	2fea30cccc678da4	c06634ac22a04547
+log2	sample	1873558f51f48e49	c083bdd0b91047a4
+sinh	sample	be6a5955cdb09fe3	be6a5955cdb09fe6
+cosh	sample	3e6162dae0dd6ab8	3ff0000000000002
+asinh	sample	bea466fd275a256f	bea466fd275a240d
+atanh	sample	be5fdd1c5c3682f7	be5fdd1c5c3682fa
+sin	sample	bfc6bbe203886a83	bfc69d554c042989
+cos	sample	40a5bf16d9b862c9	3fefdc302ce6b7b7
+tan	sample	3fed2be100a7da82	3ff4a678d2232ad5
+atan	sample	c262c633b0923336	bff921fb544411d3
+atan2	sample	404c94ce38057115	3f4794c4c5f0134b	3ff921ee20d71179
+asin	sample	3f3ed15a9aedce03	3f3ed15aadfbeed9
+acos	sample	3fbb71e37d6a6791	3ff76a04a7d85036
+hypot	sample	c0697501c052cb6e	3fd2a4069b700967	40697503751b9e03
+exp	sample	c07af294d1a856f5	190f3f70cdadd23f
+ln	sample	30302dd01d4465c3	c065d52ed4f8ae86
+log2	sample	284353020e81f28d	c077aba47e426d53
+sinh	sample	bffe17578da6b7fa	c0099f5626df7d1e
+cosh	sample	3fe441a26ed825ec	3ff35069ee8822b0
+asinh	sample	3fae1d0f277ac0c2	3fae189f1a6e6706
+atanh	sample	3e7632fdf96cb3ca	3e7632fdf96cb3d8
+sin	sample	409140d73ce81311	bfeff17156332fd3
+cos	sample	bf8c3a58fbccb896	3fefff38cc9dcbca
+tan	sample	3ea2d7fbf677971e	3ea2d7fbf677994c
+atan	sample	be69dda64adeba2e	be69dda64adeba28
+atan2	sample	3f1db9b58cd13df3	3ff10fd87e290aff	3f1be018baf72f19
+asin	sample	bf8cfbffa96821df	bf8cfc3f13ed7955
+acos	sample	bfe4adf0e0da077a	40022ffe4938d677
+hypot	sample	c1f76d8dbbf579f6	c2210c1e0fc6cfd2	42214c0aefb2abba
+exp	sample	c066edd13c5c1333	2f649702ea916082
+ln	sample	16d91a8f65c4a6ec	c07c7a3f25219a1f
+log2	sample	70eb8fc0cf6fecd7	40887e46d42c5d73
+sinh	sample	becd3bda56d04b6e	becd3bda56d08c7e
+cosh	sample	be665738eff20978	3ff0000000000004
+asinh	sample	3e9121d2021e0ed7	3e9121d2021e0ea3
+atanh	sample	3f3cb9fc75f5824a	3f3cb9fc94d3551d
+sin	sample	c03e4113735b5aed	3fed5c14001d4cda
+cos	sample	c0e9f478ccdcfe5e	3feffcf20a81db45
+tan	sample	4044632c381d4933	bfb0e63d448c7353
+atan	sample	3f058db39b3033d2	3f058db39afc0d72
+atan2	sample	becdd3a719f55956	410206f8bdf18465	bdba78fe60cbde62
+asin	sample	3f9671b870c287a9	3f96722e3ceebbbf
+acos	sample	bfdaaf3c133fe095	400001cc9393b5b1
+hypot	sample	bff735473f327425	3f0066d3aac126a1	3ff735473f49a2f2
+exp	sample	3fe4a665d6d8bbd1	3ffe815c5f3feb27
+ln	sample	6486e25a5448914f	40795d955536ec3f
+log2	sample	2db2a82325fa19cd	c0723c7435932599
+sinh	sample	3f4bbf35f1b5a99f	3f4bbf362957124c
+cosh	sample	3fb70e4a24531314	3ff0109f71030808
+asinh	sample	c191f6de7449bb7d	c032d4ad907d8204
+atanh	sample	3e984213f546b436	3e984213f546b55f
+sin	sample	3eac35200385434b	3eac352003853fa4
+cos	sample	bfc1f87dd6d71252	3fefaf6572c4392e
+tan	sample	3ea4e82edc86851e	3ea4e82edc868818
+atan	sample	c1f02f52ffa1cd4c	bff921fb54345be1
+atan2	sample	4071e3f932badf06	4112f4b5a16475dd	3f4e339589a23aaa
+asin	sample	bfba80e13fee754c	bfba8d0f1f62fb88
+acos	sample	3f924e9ba1c885fa	3ff8d8bfe60d6368
+hypot	sample	c149f81dfbe8a116	3d8cf090eb32d953	4149f81dfbe8a116
+exp	sample	3d234d9ad900e023	3ff000000000009a
+ln	sample	6ccd38c88a7f00fa	407f196bf3500dce
+log2	sample	1daaf8310b2cec56	c08121f954823052
+sinh	sample	3f96572ed02d0a1a	3f9657a2f6b57625
+cosh	sample	40253941f1d3d69c	40d3d490150ed1f7
+asinh	sample	c262c565b597551c	c03be2b7bbe963e1
+atanh	sample	3ede362a5a31844d	3ede362a5a33c2c9
+sin	sample	404d762cf0e97fc2	3fe635272b361e4f
+cos	sample	bf12ac093abe9c5e	3feffffffea35b17
+tan	sample	3febac084f1cfc65	3ff2c3b18b3bb911
+atan	sample	c262088366c9118b	bff921fb544410b4
+atan2	sample	c00d7df7ea1635d3	3ef640548a1d6409	bff921f54b154740
+asin	sample	3eb6155388726b32	3eb6155388727235
+acos	sample	be9698433deb2a05	3ff921fbaea53a10
+hypot	sample	bde7160b0e6ae8a9	c02690dd2b0fbc66	402690dd2b0fbc66
+exp	sample	3e7aa196241ee676	3ff000001aa1963a
+ln	sample	1d2a3ad89a08532e	c078196b30c2bd1e
+log2	sample	19f07a6c17fbd25f	c082ffa8fc28f85b
+sinh	sample	be51d5490a4b227f	be51d5490a4b227f
+cosh	sample	beb9737f9d5a113f	3ff000000000143e
+asinh	sample	c198c84b68a2733f	c033270b7a9357e4
+atanh	sample	3f236bc61320d123	3f236bc615833e29
+sin	sample	c0810d0281c69091	3feb1d2798a5f7e3
+cos	sample	3f6f875c69017525	3feffff077c17191
+tan	sample	bfe7e6ff89b3b394	bfeda111fe5369cd
+atan	sample	bf9c7c0d44a81ac4	bf9c7a2c002cba38
+atan2	sample	bff6aa46924e80d1	c0c7d479c3bc2c61	c00921be7523c578
+asin	sample	bed430c84b71c305	bed430c84b7218c2
+acos	sample	3ef60a78742693ca	3ff921e549cbb8eb
+hypot	sample	bfcd4ac036b6ac3d	3f7dacd40330573a	3fcd4e81ff0f5656
+exp	sample	3d6c0fea1f8d8c1d	3ff0000000000e08
+ln	sample	142488bdafa3ab5f	c07e5a58c603415b
+log2	sample	7d1fd76f90753314	408e97f1554d83f3
+sinh	sample	3e7ad05106f5a185	3e7ad05106f5a192
+cosh	sample	beec31b6d712b80b	3ff00000000635d3
+asinh	sample	408abcd1cdd0aff3	401dc7a1da2f7269
+atanh	sample	3e8848e9b834592e	3e8848e9b8345979
+sin	sample	3efe213003ea44ed	3efe213003d87656
+cos	sample	bfeaed5748bf48a0	3fe552de52182db4
+tan	sample	bfe0e346a099ca68	bfe2a7090465499c
+atan	sample	c1b43f549610aa70	bff921fb5379e0e0
+atan2	sample	3f768bbc89ec3693	3e45c5c2d0730ec4	3ff921f965d40ebf
+asin	sample	3e994a93851004ed	3e994a9385100596
+acos	sample	bf2d27122adc769d	3ff922e48cd5a43f
+hypot	sample	3dd881735d926511	bffe36dc5b73e031	3ffe36dc5b73e031
+exp	sample	3f94d13389064047	3ff0541ef5730f92
+ln	sample	32b2b0e5f41ce769	c062595600c0308d
+log2	sample	0765281cdd296b44	c08c44c691e2ce08
+sinh	sample	3fdaf03f4c665c5c	3fdbbdb0fd635e0a
+cosh	sample	c037faccdd466034	42082c83f5cbcfe8
+asinh	sample	3e98002500c9facf	3e98002500c9fa3f
+atanh	sample	3e6e76f633fe75b2	3e6e76f633fe75bb
+sin	sample	c039aa066f114f3a	bfe0375b959309f9
+cos	sample	c0fa2dd4e553ef50	3fec98376d5f542f
+tan	sample	bf52ba2460596637	bf52ba24e92d1c62
+atan	sample	bf63387ca8281286	bf63387a586ddc26
+atan2	sample	c1ba0fea60b1f6f8	be54442793985149	bff921fb54442d18
+asin	sample	bea107525dd3dfe6	bea107525dd3e0b4
+acos	sample	bf066f8dd7b22991	3ff92228335fdcb7
+hypot	sample	c09a34cf675cce70	bf821caac5ecf01d	409a34cf675e5f01
+exp	sample	3dac462909bf716b	3ff000000000e231
+ln	sample	1a3dfbfccb9d6329	c07a208664d35f8e
+log2	sample	0f2207bb1b9188a6	c088669f0a6cb760
+sinh	sample	3f903f0dd1fed643	3f903f3a7d0b0319
+cosh	sample	3f0629e92e26e4f9	3ff00000003d675e
+asinh	sample	c238b6b2d2bfc54d	c03a14ca65a3a758
+atanh	sample	3e589629ce29883f	3e589629ce298840
+sin	sample	be68728d5c18a3ce	be68728d5c18a3cc
+cos	sample	40f7c6f573ad71d3	bfd8c9433ba1686e
+tan	sample	3f86ba3d28cb3a5b	3f86ba7a4e6ad9db
+atan	sample	405f1be833811e4b	3ff90110e283afaa
+atan2	sample	413a764d173debde	3e5aef8cd2d8db4f	3ff921fb54442cd7
+asin	sample	3ed36ba47ff23ef0	3ed36ba47ff28b3c
+acos	sample	3eda9111d4c0bd52	3ff921f4afffb7e8
+hypot	sample	bde746ffc906ba46	bd90d45722ac8fcc	3de7488519b37904
+exp	sample	bd3233e089553ae4	3feffffffffffdba
+ln	sample	7078ea02fad23ebb	4080d299b7cf45ab
+log2	sample	28b334a89a78890b	c0773bc8db942a2d
+sinh	sample	be8d3f1166f5a017	be8d3f1166f5a058
+cosh	sample	3f22784a05034af6	3ff0000002aa45dc
+asinh	sample	4182dd35f3028b58	40322fbe638ae26f
+atanh	sample	3ea83d348e4b171f	3ea83d348e4b1bc2
+sin	sample	3ef6413698f86f9d	3ef6413698f14295
+cos	sample	be767923e8ecb05d	3fefffffffffffe0
+tan	sample	bef872ac0070fadc	bef872ac008401b7
+atan	sample	c0e621dbf1a0cd3e	bff921e4320d521c
+atan2	sample	402898e509c2cc45	c115e6ac02ae8dbd	400921e95c04b7f9
+asin	sample	bedfec1d2700241d	bedfec1d270176f8
+acos	sample	3fc3eee3287d61ce	3ff6a1839f272cc5
+hypot	sample	c008541808cb3a62	c014fa12ea75d153	40183fa7b52be8ba
+exp	sample	4022aefc8a0b24da	40c6464a7a7c5e88
+ln	sample	26efbe6f16761b82	c0715445416c3aae
+log2	sample	7e598934798b7302	408f35654a59d961
+sinh	sample	bf482bc4f125fa93	bf482bc515ec58ef
+cosh	sample	be59c40cdc334665	3ff0000000000001
+asinh	sample	c1563474d2a925de	c0304525e9bceb30
+atanh	sample	3ebbbcf518949a4a	3ebbbcf51894b614
+sin	sample	40e160aaff4aa2f2	3fef6e904e2d8c84
+cos	sample	beb3d713b6006660	3fefffffffffe766
+tan	sample	c0110430e8cafb0f	c00037646b8125d0
+atan	sample	420f9304d73989f7	3ff921fb54401f4a
+atan2	sample	bf4b7bf66255c832	3f5ac0028c3f6766	bfde5f490dd94216
+asin	sample	3fcb53a10bb74a2a	3fcb89e3f54dddb7
+acos	sample	bf82e1dca0160cfa	3ff947bf30951400
+hypot	sample	4242ee7ac04fe025	41984c3429db99d6	4242ee7afeae7d0d
+exp	sample	bf9194c5528708bb	3fef748d2b2a692a
+ln	sample	5b409a47eef71441	4072ef13a0e50b32
+log2	sample	3b04de47a16a1451	c053a778ffab32a5
+sinh	sample	3f6d8ba740f6fac1	3f6d8bab739b7252
+cosh	sample	c03914b9697f599f	42222db7e7c30755
+asinh	sample	bfad2113a714abea	bfad1d0f4c4f7a74
+atanh	sample	bf12b3df1a900ea3	bf12b3df1b185910
+sin	sample	402b48647a6aed02	3fec25af2ae6b4e9
+cos	sample	3f79ce2d92137c55	3fefffd66159c72d
+tan	sample	bf140ea0ccc55ab6	bf140ea0cd6d7420
+atan	sample	415c48e6291205fa	3ff921fb3010259e
+atan2	sample	3e4924ea720c6393	c0e8aa4728e93dbf	400921fb54442b0e
+asin	sample	be6d15149437b304	be6d15149437b308
+acos	sample	be83b2d02fd08eeb	3ff921fb7ba9cd78
+hypot	sample	3df5fb5aeab4f296	423a80480d74adb1	423a80480d74adb1
+exp	sample	bfd4966f77b320b9	3fe7329ddcb973e2
+ln	sample	652601ac4ad13839	4079cbdc75b0b51e
+log2	sample	2f68ee2e8274bc4a	c07085c33d76922e
+sinh	sample	3ef75f04540d5a7b	3ef75f045415aa14
+cosh	sample	bf9b4d1b8a6ddd4d	3ff00174b32b2e77
+asinh	sample	4216d0189c2f68da	40389d69479619c9
+atanh	sample	3f8eac4ff3b9c01f	3f8eace646d20607
+sin	sample	bef13d72f8d91c41	bef13d72f8d5c63e
+cos	sample	40a0d3f200e7313e	3fd990529796c8ce
+tan	sample	beebc13199ffb95f	beebc1319a06af0a
+atan	sample	41bfacdc768faadd	3ff921fb53c2dd21
+atan2	sample	c19a97fdeb547f0c	41b31ad467971906	bfd56ed68032d60d
+asin	sample	3fa9f76cd97a530b	3fa9fa4733a94c38
+acos	sample	3e858612dc85d69f	3ff921fb2938075f
+hypot	sample	3eedf658474031a4	40116bb3175592cc	40116bb31755f9dd
+exp	sample	bd33510e590a71e4	3feffffffffffd96
+ln	sample	69c212bd30bf1115	407cfd659a268c99
+log2	sample	28f57932d54b37d9	c076f935538a237c
+sinh	sample	bf93aa998813c477	bf93aae8c3fceb9e
+cosh	sample	c00134032b27dbda	401168cec0025805
+asinh	sample	3f9baa2aeff63b5e	3f9ba94e75a459af
+atanh	sample	bf6d1027ce67831c	bf6d102fcc223924
+sin	sample	3f18e5917110d72f	3f18e591707016a3
+cos	sample	3e96243146bde1e5	3feffffffffffe16
+tan	sample	40d92a16864c9841	3ff96b404f5f95f3
+atan	sample	bf98c6ab1c4f8242	bf98c56e5ef864e5
+atan2	sample	400f163cfb6fb4a8	3e2c5f23a03b91ba	3ff921fb5409c421
+asin	sample	bf8b6da9d5517bce	bf8b6ddf92f52e89
+acos	sample	bead65d07ac6c8f5	3ff921fc3f72b0ee
+hypot	sample	c046246eb75af36f	bf7de4e64d5309ed	4046246ebc6676fa
+exp	sample	3e5ebbe182a0dfcf	3ff0000007aef863
+ln	sample	14e3c6eff1cbd247	c07dd5dd1134f6d8
+log2	sample	1ebe0e44b3ce62a9	c08098b9342f3253
+sinh	sample	bf10d92cc38bf88d	bf10d92cc3bdca5d
+cosh	sample	bf1df11b6db4e753	3ff0000001c041a6
+asinh	sample	4123bffca56cb67d	402c25a28d010532
+atanh	sample	3efb78a62224d281	3efb78a6223fd11a
+sin	sample	4127bbf159a340fa	3fe11c0c07390dea
+cos	sample	41297d9a1f36db3c	bfef8b4d447387a7
+tan	sample	3ed23efc7a413853	3ed23efc7a41b6e0
+atan	sample	423f9e5d12a35f62	3ff921fb5443ab8d
+atan2	sample	3e1f2b61122bcb81	3ef9de42440d1e19	3f134767f99df7e4
+asin	sample	be723109550bb543	be723109550bb547
+acos	sample	bfd458e0321e4611	3ffe4f333e54d275
+hypot	sample	3efa35f1a6450cb2	3e6bb2a30914869c	3efa35f54ee2829e
+exp	sample	bfb895a5d77013f3	3fed11e36948c12b
+ln	sample	363fd09f9632b783	c05adc6428007e60
+log2	sample	483aa0dee0276f85	40609784402dafa5
+sinh	sample	3f8469817356252c	3f846997993e74c9
+cosh	sample	3ebead059522c5c0	3ff0000000001d68
+asinh	sample	4069049e061532d8	4017f8012c82f309
+atanh	sample	3e74d79d8f4034b7	3e74d79d8f4034c3
+sin	sample	bf2e9a2fc21349c0	bf2e9a2fbd692930
+cos	sample	bfc8b100356a2098	3fef680e3d22ac45
+tan	sample	c0d7ddd63e6e1a93	bff417b63ec6c26d
+atan	sample	41c5065027a500af	3ff921fb53e2c448
+atan2	sample	3f2e3f1ae4afb196	3e896db6abef403a	3ff91e9e70f8f40a
+asin	sample	bea09f428494ba44	bea09f428494bb03
+acos	sample	3f3afcf54b128ee9	3ff9204b84eeaf2d
+hypot	sample	411d8cf2011ef679	3e29e61a1669b639	411d8cf2011ef679
+exp	sample	3d8deb72fc93e88d	3ff0000000003bd7
+ln	sample	5677c60c24396780	406f3dba257f4c70
+log2	sample	519e3298c23d95c8	4071aea96d5d090d
+sinh	sample	be4b93ff071914c7	be4b93ff071914c7
+cosh	sample	3f9022bccc7be204	3ff000822ed8a8a8
+asinh	sample	c078b50413f469ee	c01ab0f9cb607e5d
+atanh	sample	3f8d669df3b518ff	3f8d672255bdb0f8
+sin	sample	408393b07cb556a2	bfeeb1f2a89fe0cb
+cos	sample	405a8a39d617862f	3fe963ca51f63ecf
+tan	sample	402198ffd63c8c66	bfe722416e138e71
+atan	sample	3f7f585cc1de78a8	3f7f5834a87c4705
+atan2	sample	c036226a1fe2f748	40b7606dd0df9016	bf6e4ca3a278a153
+asin	sample	3ebd3c45b485fd5a	3ebd3c45b4860d9f
+acos	sample	3fe45070adff8bb5	3fec41b691609960
+hypot	sample	407f4ab9dbf6f25d	bf69a0cd37d6d04a	407f4ab9dbf99207
+exp	sample	3ec75419c7a94906	3ff00002ea837cfc
+ln	sample	5253a2eae5b36c57	40697faea15fbfa4
+log2	sample	0f8dae72f8aeb8eb	c08830de3adfab1e
+sinh	sample	be60e0077997513d	be60e0077997513e
+cosh	sample	bf7e27b056c391ac	3ff0001c6aa445a0
+asinh	sample	c0f4975dff966104	c0281251e10c3009
+atanh	sample	3f67905263a0e565	3f679056a5f32ad7
+sin	sample	4009588499fb4396	bf9b43cfaa43e1fa
+cos	sample	4054ebbc0b188c79	bfdabf166323b29f
+tan	sample	3feba1b567b7de51	3ff2b77330d73f94
+atan	sample	c0648a9c792027fa	bff9090e8dbad547
+atan2	sample	412f5b7acef6f1c8	c0d1d61535341660	3ff96ac804cbbb71
+asin	sample	3f4a12f20f43816d	3f4a12f23d6d2efa
+acos	sample	3ea14102adf00b64	3ff921faca3c17a9
+hypot	sample	bf5305a7d89c71de	41f933a77eeb391c	41f933a77eeb391c
+exp	sample	c000cf840f5c0946	3fbf4eab4da196df
+ln	sample	0938bb8f60fee67f	c082f61755f1d986
+log2	sample	0d0de49b81a2efc6	c08970c93ecdaad6
+sinh	sample	c0034a3a907ae9cd	c0161dc23db8805f
+cosh	sample	3fa52a12f656efef	3ff0037ffcb5ce96
+asinh	sample	c0a9b99a6866b507	c02195d51232ff48
+atanh	sample	3ee430b679758f94	3ee430b679783d74
+sin	sample	be795f6932782936	be795f693278292b
+cos	sample	bfe22a7bd146e15b	3feafb1052b27b75
+tan	sample	3e70a6c1c1bc8ba6	3e70a6c1c1bc8bac
+atan	sample	403d519e4af50f9f	3ff8965495f8316d
+atan2	sample	3fa18dae10fc6e27	4089cb15d847859e	3f05c700fbe48591
+asin	sample	3fc81a9b8a5cb271	3fc83fac00464386
+acos	sample	3ebe2017eab685d6	3ff921f97242ae6d
+hypot	sample	c0d1d9ab81a5ccff	c0d98a5ec71dab7a	40df28fa37aeac25
+exp	sample	3e728e5427bc87c4	3ff00000128e5432
+ln	sample	3b2cda1b811de174	c04a6430eb96f988
+log2	sample	1717f0ba0f13696c	c0846b5959ce3b5c
+sinh	sample	bf1097fc2a65e7fa	bf1097fc2a958033
+cosh	sample	40389b9d73ebcdfc	4216a7435a688cae
+asinh	sample	bfde62f4e2f6531c	bfdd58e337a4ac6c
+atanh	sample	3e6fd529a6b0f887	3e6fd529a6b0f892
+sin	sample	40bedf7b38bd0280	bfe62de1d6fea83d
+cos	sample	c05e88ad27e7c970	bfeda3921a2f8903
+tan	sample	3f43e4ca6ae64018	3f43e4ca93e7c337
+atan	sample	c01ce1bfab79ec2f	bff6ee4a5de7c894
+atan2	sample	c156e0fd2b297647	3f6eeb5a9d1f9458	bff921fb5418ee1f
+asin	sample	bfc4abdc26f6e409	bfc4c322fac485df
+acos	sample	bf8edcaeedf08043	3ff95fb54b3d72cd
+hypot	sample	c0a0cbb07c40b272	c219562381d19b31	4219562381d19b47
+exp	sample	bf576074f19f63b2	3feff451e7be08a3
+ln	sample	29cf1c805172b04f	c06eacdf5c3dbfd2
+log2	sample	06b4785a1a264bc8	c08c9d280ae17eed
+sinh	sample	4003b2e2a3fc52c9	40174b4d1911fac2
+cosh	sample	bec5ecc3d2062399	3ff0000000003c16
+asinh	sample	c02b8d281002029e	c00a89f82a8b0362
+atanh	sample	be59cdedc4559a3f	be59cdedc4559a40
+sin	sample	3e87957a1f7281b3	3e87957a1f728191
+cos	sample	be8c6c0e971a1534	3fefffffffffff36
+tan	sample	3ee670ec2ee388fa	3ee670ec2ee736c3
+atan	sample	c13515e7072a85ee	bff921fa920296ff
+atan2	sample	3f24af44e422be99	3f41d539886b6719	3fd2102e77b70495
+asin	sample	3fe7cfc795c3d2ca	3feadac91109c16e
+acos	sample	bef542bdf08d1bb4	3ff9221097021dac
+hypot	sample	c0b341bda4631c4f	bd8e13a17b95e6dc	40b341bda4631c4f
+exp	sample	c01c3089e870b41b	3f4c7f49fb9b0fc2
+ln	sample	59c469b0d32a25c3	4071e836bab982c4
+log2	sample	1c178f94bd23989d	c081eb888f432b4d
+sinh	sample	3f879b456336d9e2	3f879b67a5620c81
+cosh	sample	bf1d497f0f1a4ada	3ff0000001acddf2
+asinh	sample	bf1bc9c2da5af77b	bf1bc9c2d97b73a3
+atanh	sample	bf120e01253a198e	bf120e0125b4b602
+sin	sample	3ebab849d7679515	3ebab849d76788aa
+cos	sample	412df8c9147a2d1a	bfd2ff89fa857178
+tan	sample	bfb06ad5f70570fa	bfb0709b6018ac91
+atan	sample	3ede00d5c3e933b4	3ede00d5c3e70105
+atan2	sample	c1416a2ac358a93e	404404172ac16ff3	bff921e8f070b912
+asin	sample	bf3d1d7b94760cda	bf3d1d7ba4878111
+acos	sample	3fa02a7eea8517ac	3ff8a0a1dc08ad96
+hypot	sample	4136a3767d2a7d51	3e92ae023201c418	4136a3767d2a7d51
+exp	sample	4065d5f1ec938b0e	4fb034519bf40c62
+ln	sample	5c49f1cb2b7bcff9	4073a7aa29ff61cb
+log2	sample	173821255050bee9	c0845b4219931a58
+sinh	sample	3e5b6a9c38537d1f	3e5b6a9c38537d20
+cosh	sample	3ff99b3541fddf72	4004a08ec1e0eecc
+asinh	sample	c1a90a1c83efa06f	c033db21f3b46b20
+atanh	sample	3f31e69680ece9a8	3f31e6968864ed7b
+sin	sample	c02e4af0d97f26d1	bfe10a89e40c89b9
+cos	sample	410f6a8a3caf56c8	bfdb2e9e0582e4f6
+tan	sample	3f9040ae76efc723	3f904107e9e8f634
+atan	sample	c228bc6b3e160fd1	bff921fb5442e1eb
+atan2	sample	413326dd75b3d62c	c0976c1e503845f6	3ff926dfa9a6763e
+asin	sample	3fa2039686affeaf	3fa2048a3adfb88f
+acos	sample	3f7694e81357f389	3ff90b6664b19f39
+hypot	sample	c0942a0f48efd276	c04f9fc5c1857a64	409430416e2ebf67
+exp	sample	3d0558aca1c8d65d	3ff000000000002b
+ln	sample	7e0868e022142dda	408585bd861a9617
+log2	sample	0febfcc316f8dc61	c088018bdf416584
+sinh	sample	bf4c048729301280	bf4c048762767da6
+cosh	sample	beca61ee5c03ea73	3ff0000000005701
+asinh	sample	411eb4c66fa06ab9	402ba4b207bd7cf6
+atanh	sample	3e87d92a871aeabf	3e87d92a871aeb06
+sin	sample	c0ac46df5f876e96	bfd439c8a49b35e4
+cos	sample	40a45edec264d7ad	3fefe12413ae8971
+tan	sample	3ff9658430dec70b	c04e528b7df02a8c
+atan	sample	bffff56f844f58c4	bff1b4c41e64407d
+atan2	sample	3e59f61fb4bfe572	412b1f3dc5d1ab93	3d1ea171fcb33630
+asin	sample	3f6006ab66411f0a	3f6006ac11c1a2dc
+acos	sample	3f9355101153864d	3ff8d4a5e6e5dd44
+hypot	sample	c22caebfcab8331b	bdd4997501184524	422caebfcab8331b
+exp	sample	c0001609af08e05c	3fc12333d4947cfd
+ln	sample	17ec592ca6ee990d	c07bbbc40c11755a
+log2	sample	313f7fdc8227e284	c06d60ba53787928
+sinh	sample	bf8515a110a43dc8	bf8515b9797e7e35
+cosh	sample	403ea0a8b45231cd	42a2346fcf10e647
+asinh	sample	40f056f554089e75	40279be8b9051871
+atanh	sample	bf67b5eb9240a158	bf67b5efe916ac19
+sin	sample	befebf8bc1b64f3a	befebf8bc1a3620f
+cos	sample	c1171e40ae477a22	3fdd9e08f1e3d7b3
+tan	sample	be5dd482c792e020	be5dd482c792e022
+atan	sample	bf68c998b9c0a7a4	bf68c993c49995ef
+atan2	sample	3ff6fdb25732744f	3e4146f237bf4e63	3ff921fb52c36bf0
+asin	sample	3edab8c9da9f721f	3edab8c9daa038e1
+acos	sample	bec3c297f8fcf49c	3ff921fdcc972c38
+hypot	sample	bdb46736d49b94a7	3d8e9306f7cbc7ae	3db4c20e53054af5
+exp	sample	bf49e4e4e670c2ce	3feff9876e5b6e13
+ln	sample	595d060cb2ecbe43	4071a03661e55fc6
+log2	sample	1cf098a58a184351	c0817f93e412621c
+sinh	sample	bec86a7920607fac	bec86a792060a593
+cosh	sample	3f57c3de14c34f37	3ff000011a63e526
+asinh	sample	3f02ba17d5769ca0	3f02ba17d565824c
+atanh	sample	3f79eae48639fc7a	3f79eafb3178fd2e
+sin	sample	be5e1507204bb157	be5e1507204bb156
+cos	sample	3f2caea2728b9960	3feffffff3255558
+tan	sample	3e6a9e8d0e59c26f	3e6a9e8d0e59c275
+atan	sample	4239093805da6334	3ff921fb5443897e
+atan2	sample	3f6203666806d7cc	40eb899da027e2a6	3e64eeac6acc21f2
+asin	sample	bef66c17cdb30377	bef66c17cdba5a49
+acos	sample	bf08c059102fd554	3ff9222cd4f64dc7
+hypot	sample	42234c2c72a956b3	c0d88a062c0f8016	42234c2c72a95a9a
+exp	sample	be6a028b91194cb7	3fefffffe5fd7479
+ln	sample	2337007feb02d9a3	c073e7c1621b90fe
+log2	sample	59264bfe2aeff2c9	407937a9086f8501
+sinh	sample	3e9ae6fd00ed24d8	3e9ae6fd00ed25a3
+cosh	sample	bf30a04d193ccda9	3ff0000008a3701e
+asinh	sample	be94e74754e8adf5	be94e74754e8ad96
+atanh	sample	3fc793a896114601	3fc7d9572b0debbf
+sin	sample	c08072caff72713e	3fefb85b3c0e6e61
+cos	sample	4018715f056f904e	3fef8675f2317e2d
+tan	sample	bf70f821978711de	bf70f827f456a16a
+atan	sample	be7a0149c484c63e	be7a0149c484c627
+atan2	sample	bed6ab74245a8ccf	3e64bc43cea78d51	bff904b673b4dd72
+asin	sample	be5b1cfdcf9a850d	be5b1cfdcf9a850e
+acos	sample	be9034b33ff76754	3ff921fb9516fa18
+hypot	sample	41f3a27efea99531	413ec4fc6b44d5cd	41f3a27f16c59116
+exp	sample	be901557f67bb280	3fefffff7f55414f
+ln	sample	48e7e2f20b2f4688	4058e154532f922c
+log2	sample	637f62e3f7b8ae27	4081c7c6c8c7ff31
+sinh	sample	be8b859642d233ba	be8b859642d233f0
+cosh	sample	3f55afc74c8f553f	3ff00000eb27b493
+asinh	sample	403e8d940c6d254e	401073969328b8be
+atanh	sample	bf2fa255e93816b8	bf2fa255f386286f
+sin	sample	4066a5449ff19f15	bfebb8baa018737c
+cos	sample	3e67179ca60bcbbf	3feffffffffffff8
+tan	sample	406181f6d1ab968f	c00e02f7fb76cbd0
+atan	sample	bfee2036956c6689	bfe82aed25f6fc29
+atan2	sample	bedb78b6982978a3	41cc4a205ec02f16	bcff131ecb3910a0
+asin	sample	3f6f0d1e7de4d93b	3f6f0d235d5c1e96
+acos	sample	3e85dce4980b45d4	3ff921fb288a63e8
+hypot	sample	bf907347c3e27968	4045b0641cbc4fed	4045b06435b08220
+exp	sample	3ea8cb56074a5f40	3ff00000c65ab508
+ln	sample	1d8b100113e26720	c077d66066dcd06a
+log2	sample	357f9d2a23dd9ee8	c064e08f74db3273
+sinh	sample	3ebe9ab481d6d112	3ebe9ab481d6e3bb
+cosh	sample	3f0f87df217e4f96	3ff00000007c4605
+asinh	sample	bea5c26fadf19f53	bea5c26fadf19da6
+atanh	sample	3f413cc7465438a5	3f413cc76101313e
+sin	sample	401e9f9255fd497e	3fef5fb3dcca40b5
+cos	sample	4038caeca94190d3	3fee2adc92ed1e6f
+tan	sample	c13d3ea22deedbdc	3fea1c188c35334c
+atan	sample	3fdf10520ca4958f	3fdceb8a04ea7987
+atan2	sample	c05d577404c6f23a	c0e2b675e05487c4	c0091bb5b3256a96
+asin	sample	3ee3ea1e5c7345c5	3ee3ea1e5c748ed9
+acos	sample	bfae9b11ce823f93	3ffa16f9465de644
+hypot	sample	be38544136c9f18c	3d994fb82d181405	3e3854420974a01d
+exp	sample	bee42bb0fc408577	3fefffebd4555f2b
+ln	sample	6d95df6091310356	407fa4f61d0d9f4b
+log2	sample	113f046d3702aabb	c087585c28897a83
+sinh	sample	3e776f5f30e51f02	3e776f5f30e51f0a
+cosh	sample	be83f63e4599acf3	3ff0000000000032
+asinh	sample	c1879065b5301579	c03268b19f4a2c56
+atanh	sample	3f88877b33732480	3f8887c8138f60ca
+sin	sample	3f40d0dab9e35454	3f40d0daad814b07
+cos	sample	c0f0f27099e15834	bf9774eca312bbf3
+tan	sample	c10854832e074f64	bfd6431533cf7dec
+atan	sample	bfb2aeae21e0210f	bfb2a6377c3f6a42
+atan2	sample	412e939de4f55960	bebfc848f2957d2e	3ff921fb54444e5b
+asin	sample	3f15d83de3e24dfe	3f15d83de44ee38d
+acos	sample	befdaf9908cd4abd	3ff9221903dd35f7
+hypot	sample	c25df0b159fa5c12	c0dddee28baaadf8	425df0b159fa5c21
+exp	sample	3d2cb8e27e79fb59	3ff00000000000e6
+ln	sample	1eeeb7daf6964f52	c076e05c89de2181
+log2	sample	3c1bf3e769e5d1cf	c04e98f86fd43809
+sinh	sample	c02c7e4d3c4cb223	c1277bf4f123c4be
+cosh	sample	bf3ef0d7f292aa6b	3ff000001deaa99d
+asinh	sample	bec8707ca3bc7a51	bec8707ca3bc544d
+atanh	sample	3e5244e7c260638e	3e5244e7c260638e
+sin	sample	4142da8c2b7315d5	3fc31b3212eac82f
+cos	sample	bf4d43cebadf5d0a	3fefffff29e44de2
+tan	sample	412c2429c1cfe7de	3fa2b08d24256975
+atan	sample	3e6ba2c686700bcc	3e6ba2c686700bc5
+atan2	sample	4149b0618ed02acd	419766036943f412	3fa18f32a7931f38
+asin	sample	3f86b0b790cf6395	3f86b0d5fd4de8de
+acos	sample	bf542eeb76b60834	3ff927070f3743e9
+hypot	sample	c00d94faa1cdf5e8	3ecac2369fcc4cfe	400d94faa1ce0202
+exp	sample	bfbaba4c0c729d83	3fecd3d8d215da75
+ln	sample	1a656867fb2971f0	c07a04a5042d3a74
+log2	sample	68ab471597501b50	40845e283d9175e1
+sinh	sample	beb36d5ffc42d96a	beb36d5ffc42de30
+cosh	sample	be7bc2ab5d918788	3ff0000000000018
+asinh	sample	3ec9ed9ec853ff46	3ec9ed9ec853d1e1
+atanh	sample	3efc095db9a7b7af	3efc095db9c469bd
+sin	sample	411e3bbf53110b6d	3fdf185f3bbb67b0
+cos	sample	bf43ac2354b6cb95	3fefffff9f3fc0ac
+tan	sample	3e7515a18b6e9821	3e7515a18b6e982d
+atan	sample	beef424b145af20b	beef424b145100b9
+atan2	sample	41c869f5c3ff4d5e	3ef2aac0d22051b1	3ff921fb54442cb6
+asin	sample	3e959c27c5cca520	3e959c27c5cca589
+acos	sample	befb5a526d7fa3b6	3ff92216ae969aa5
+hypot	sample	bd9debabec9d14e7	3f06675694f2910b	3f06675694f2915b
+exp	sample	c0727d00b86f0ece	2542cc54236e93bf
+ln	sample	57528e924df77f08	4070362a2fe16e65
+log2	sample	646342bf0a6b6b79	40823a2406617116
+sinh	sample	3f68b98d4c322f7e	3f68b98fc1f98815
+cosh	sample	c03be883c2e8b895	426333744e2480c2
+asinh	sample	be718eb2aff08b72	be718eb2aff08b6e
+atanh	sample	3ecf9e9ce1da1909	3ecf9e9ce1dabdb0
+sin	sample	c0577f7348992f81	3fd03a7a3d36ba0f
+cos	sample	40a4c021c2189c04	bfc335ff93534409
+tan	sample	bf18353575aed058	bf18353576d65c80
+atan	sample	bfea6846f5cfe7a7	bfe613f573de7dab
+atan2	sample	bea85d538ee605b2	3f85678dd42aecac	bf12367080928eee
+asin	sample	bfc131e807143e65	bfc13f412903bdef
+acos	sample	3fc925e0a64d8d76	3ff5f7fa583a3f92
+hypot	sample	41d33d29806d5cec	be3d4b770009f210	41d33d29806d5cec
+exp	sample	40793c5679b3286f	6456ebb509a5049f
+ln	sample	580213e48f8c6d54	4070afbd762c5710
+log2	sample	7dc8f88890ba10a2	408eed232b1f1018
+sinh	sample	3e44d232b8c6b1a3	3e44d232b8c6b1a3
+cosh	sample	3f9f22bf42a22e54	3ff001e4c11439c2
+asinh	sample	3f478f74352c54d8	3f478f74131d91f1
+atanh	sample	bedfb5ed7b70ccde	bedfb5ed7b73652f
+sin	sample	bed1f049133e096c	bed1f049133dcd4b
+cos	sample	bec4260ef532e511	3fefffffffff9a82
+tan	sample	40a78ad7c22de8f3	3fe787daffb1fb1c
+atan	sample	be6ccbcf07ad8033	be6ccbcf07ad802b
+atan2	sample	bf513a0f1a4a7f6e	409de8ba50049a84	bea26e5c55504038
+asin	sample	bfa44b836b462ad8	bfa44cdff756949f
+acos	sample	3fe9bdbd00b975ea	3fe45b0829c237dd
+hypot	sample	3e19a361b061ab0d	3db7c6768f2cfcec	3e19a4120f9b07a8
+exp	sample	3ea823a0d91196a7	3ff00000c11d0b56
+ln	sample	60187dc9b0902e52	40764b410df19de4
+log2	sample	248876eff90b0eeb	c07b6632b1727083
+sinh	sample	3e8b76a7ecab4cc1	3e8b76a7ecab4cf7
+cosh	sample	c03a9f2e8795800a	42453788ee6ff3b6
+asinh	sample	40ce2a192e223d6a	4024ad2021ebf188
+atanh	sample	bf98e6dfc07178c6	bf98e821916035b1
+sin	sample	400c3ce2d9d1ebd8	bfd838c36e1aa0e3
+cos	sample	bfbe20683b0c776b	3fefc756f7eccfcc
+tan	sample	3ea7027cbe299bed	3ea7027cbe299fe4
+atan	sample	3f2216d052d44b93	3f2216d050e70a7f
+atan2	sample	3e62206720d2c40d	4167a4bd84b5e6cc	3ce8887da8427d7e
+asin	sample	3ece87c16f35d506	3ece87c16f361f22
+acos	sample	beca87df9c7f949f	3ff921fea54020a8
+hypot	sample	c0769bc33ccb4cc3	c2492ea3f44d1c8d	42492ea3f44d1c8d
+exp	sample	bffce5e678e1bc31	3fc5076c4e8d1d27
+ln	sample	62a3a23eafb15c7f	40780e6beb5627c9
+log2	sample	6826ebcbb95ad2a6	40841c26194da9ff
+sinh	sample	be87c975333097dc	be87c975333097ff
+cosh	sample	bfca79ab9e19640d	3ff057ee2abceea6
+asinh	sample	3f6aa41017bcb760	3f6aa40d03e88226
+atanh	sample	bfd65283b43f61f5	bfd74cc7a40facdf
+sin	sample	be9f7889c490d1b1	be9f7889c490d06c
+cos	sample	3f2d77e915520631	3feffffff26e741c
+tan	sample	c0cf6ac6e53175dc	bfe5de3bdfca79dc
+atan	sample	c2605d82c9720950	bff921fb54440dcf
+atan2	sample	c1538c83ef1b60c6	c0810f548d0f70a7	bff9226b082d7deb
+asin	sample	3f60b5242d3eb866	3f60b524ef92204d
+acos	sample	bee1b089238038f1	3ff922042c88bed9
+hypot	sample	be2f1c6a28995585	c2347dc5b1662ed6	42347dc5b1662ed6
+exp	sample	3d675e24991f6909	3ff0000000000baf
+ln	sample	61bea38e8fa097da	40776f2fc160f20e
+log2	sample	45dff8149748a5c4	4057bfe9234df771
+sinh	sample	403019eb4ab1e846	4152c13b0635b7e4
+cosh	sample	bed96e69f2ecbc50	3ff0000000014360
+asinh	sample	be9f5cd07847a9ee	be9f5cd07847a8ad
+atanh	sample	3f59a796fa503781	3f59a7985a151443
+sin	sample	be922a106c01cc21	be922a106c01cbe3
+cos	sample	401f69855eb72927	3f4e9953774b2baf
+tan	sample	40f1d01fc0c6d625	c02e4481c1253515
+atan	sample	3fa75b25d2757e16	3fa7570168cc4c98
+atan2	sample	4113df68ff788daf	3ebf7738fd901a87	3ff921fb5443c7c2
+asin	sample	be5cff2a778810c9	be5cff2a778810ca
+acos	sample	bfad21fa627577a0	3ffa0b2b652cf033
+hypot	sample	bffa522336280041	bd7ee766a643e36f	3ffa522336280041
+exp	sample	3f2af4a715094ea2	3ff000d7aae5f94a
+ln	sample	7348ced925efd9ea	4081cc196bd9438c
+log2	sample	4d1ea45aa76e718f	406a5dff7ff79684
+sinh	sample	c002782a190cb3af	c013ec61a0108da5
+cosh	sample	bfe2f44caa66edb4	3ff2e3c919e176cf
+asinh	sample	3e5e0e89783ec2f4	3e5e0e89783ec2f3
+atanh	sample	3f36345540369aaf	3f3634554e77cd59
+sin	sample	beb1ead659763a46	beb1ead659763687
+cos	sample	bfdf89d538186a64	3fec314b97d3a5a6
+tan	sample	404da686b3c22a95	bfda40d5dd5571f5
+atan	sample	41a1f90e96b80a2d	3ff921fb527c60d7
+atan2	sample	3e394f3c25a7696c	406e35dee89b25d7	3dbacf0b2ed262ab
+asin	sample	bf9eb0a4a4bcac19	bf9eb1d1df24d478
+acos	sample	bf4f0e0efbc74b4b	3ff925dd162d65cf
+hypot	sample	3ff1613e377ece8b	bf8e5594334c6d2a	3ff161a819dd67ee
+exp	sample	c07eda3fe3d40a1c	136c6310a2a49487
+ln	sample	139b0be85d53e0b2	c07eb9c0a1409caf
+log2	sample	6137d663f489f683	4080a499ecd81cea
+sinh	sample	3eac7cb7decb18dd	3eac7cb7decb1ca0
+cosh	sample	3f7e84311ab267fd	3ff0001d1a06f9dd
+asinh	sample	3f93213313c0a6c8	3f9320ea2aec34e3
+atanh	sample	3e7421068c25df6f	3e7421068c25df7a
+sin	sample	be7a884b4249bb5c	be7a884b4249bb50
+cos	sample	c0e65c1d51daf273	3fdf310965a9ecb8
+tan	sample	bed624a4fb609b55	bed624a4fb617d86
+atan	sample	421362c81e768871	3ff921fb5440dff1
+atan2	sample	c02722626b778db3	c0c90bc30a86d6e3	c0092022685d0b00
+asin	sample	bfbc32c643f1073f	bfbc4173c8c8dffc
+acos	sample	3fda86a30e360253	3ff24b864e3049e7
+hypot	sample	c01f82c182adfed8	c0535ef015636534	405378805a812570
+exp	sample	3dc69981d44d5d4a	3ff000000002d330
+ln	sample	69b27c4fdbb10df3	407cf2aae229f1ad
+log2	sample	778137c7537aac2b	408bc8d8c0923b62
+sinh	sample	3e4e3f045eeebc0d	3e4e3f045eeebc0d
+cosh	sample	402e018f6b734535	413904492bf030fe
+asinh	sample	bfe968a0d453c42a	bfe74bb8d880aa11
+atanh	sample	3fd2b18506aa86c2	3fd34107d64351c0
+sin	sample	c0fa1f0d9d7f1f9b	bfd72580602935c9
+cos	sample	c0c31a1430d07dbb	bfedb83361502b9c
+tan	sample	bf2dc2a364bbccaf	bf2dc2a36d504c52
+atan	sample	3e6cb8f85d23205f	3e6cb8f85d232057
+atan2	sample	c083b2801337f4b2	c0934b0aae26fa21	c0055b57f4ba86bf
+asin	sample	3f6bca4235534d00	3f6bca45b393e2c9
+acos	sample	be894f3ee9f21dd7	3ff921fb86e2aaec
+hypot	sample	414165519f39fe3b	c00daa2df441c0e8	414165519f3a1786
+exp	sample	3ebcdda2085897d4	3ff00001cdda3a8f
+ln	sample	70c49fd846354497	4080ecd08e423aee
+log2	sample	35b782bba9ffffbb	c0646e3b70b01ee8
+sinh	sample	beac11c2b94591d6	beac11c2b945956f
+cosh	sample	3f0e7b8cfefb5084	3ff0000000742616
+asinh	sample	40d03436716fc96a	4024d1db0e096983
+atanh	sample	bf91fb93f6c7fe13	bf91fc0d230fbbda
+sin	sample	c0d98104a77a5875	3f8a9bc022088713
+cos	sample	bf8d664e973a5694	3fefff27eb46f162
+tan	sample	bf7ddfcf3eb98c0c	bf7ddff1f637d15f
+atan	sample	c1e849e9c754723e	bff921fb542f18ae
+atan2	sample	c131826390087b6f	c09b2128ca52a096	bff9282df267d13c
+asin	sample	bf9d8408683a495b	bf9d85145b46a759
+acos	sample	be61306a04b89759	3ff921fb5cdc621b
+hypot	sample	4255e2af444ced81	40718bee51de246e	4255e2af444ced81
+exp	sample	3f1dedd274c26bce	3ff00077b909b6b6
+ln	sample	4a7031c1bd50855f	405d1d7dc2a1d790
+log2	sample	22db602efc6137a4	c07d139a5143ed63
+sinh	sample	3f6c45515ef4d34b	3f6c45550c6ab0a4
+cosh	sample	3fe3965fecd5b6ae	3ff317979426a276
+asinh	sample	3fcd4fb1ff8799e0	3fcd0f9da0482fbf
+atanh	sample	3f6442cde22a2ddd	3f6442d0974576aa
+sin	sample	40e213d587f751f0	3feade218329cc2e
+cos	sample	4118261a45d80aef	bfe75dd08985bd0d
+tan	sample	3ec1a3d73ae5df13	3ec1a3d73ae5fbaa
+atan	sample	3edb05b1b4dd1e6b	3edb05b1b4db8357
+atan2	sample	bf777719a52e072a	3fed356b86bbab1b	bf79b51522860ec4
+asin	sample	bf21d6578728afef	bf21d657881527fd
+acos	sample	bf00c812a30c3167	3ff9221ce4697349
+hypot	sample	c261427ca1cb8c49	3dbd5fbbbec4f629	4261427ca1cb8c49
+exp	sample	bced3f5c5263ac6d	3fefffffffffffe3
+ln	sample	2b2bf7e72790ca76	c06cc84e089b313d
+log2	sample	6de4c8668e73b95d	4086fb04bfe91a64
+sinh	sample	3f2cd989e66bc384	3f2cd989ea544283
+cosh	sample	3e934eb059f5f7e1	3ff00000000000ba
+asinh	sample	c0c7e156248c8cbd	c0243583f3a77348
+atanh	sample	3f6bd13a702937fb	3f6bd14171ee2856
+sin	sample	c10f45dbd92de935	3f99848ef4199fa0
+cos	sample	413de10c7a38c751	bfca235764c5d8dc
+tan	sample	c14bda6df95f05b6	bfff5a3a61a62eb6
+atan	sample	3f293ef8c2c9bf57	3f293ef8bd8cd98d
+atan2	sample	3ffa382989877e27	3f6ab507c854c7a6	3ff919d53b8054ce
+asin	sample	3e868b089e715db1	3e868b089e715dcf
+acos	sample	3ed5be233898df96	3ff921f5e4bb5ef2
+hypot	sample	c0f8e7eb35f92b16	3e1a4fb082fe566b	40f8e7eb35f92b16
+exp	sample	c02b45475608aa64	3eb4170a9b572af0
+ln	sample	5f5c9033f96ec07c	4075c8a17523966b
+log2	sample	227177d603b0c549	c07d7df93c36143c
+sinh	sample	be620265ab7d5d8d	be620265ab7d5d8e
+cosh	sample	bfbe5144c6c48179	3ff01cc1c876ffb1
+asinh	sample	bec7cd589fab633b	bec7cd589fab401d
+atanh	sample	bfbdd6bf7ed14e81	bfbdf9a02451e230
+sin	sample	4057cfce07187af0	3feae9a7d9f4084c
+cos	sample	be55d7dcfce83ee9	3feffffffffffffe
+tan	sample	3fd2fa4f1e120c80	3fd38de59f9956a1
+atan	sample	408d445355d55735	3ff91d9bb3ee15df
+atan2	sample	41971803cd3bbcea	c11909a905046d68	3ff9335415a054df
+asin	sample	3ee96a5fc01f0876	3ee96a5fc021b482
+acos	sample	3f7f47b7b9549a65	3ff902b3889db6db
+hypot	sample	c0d02749862af765	c00bd9c34dd8f06b	40d027498c2b8b45
+exp	sample	3e05923e126f14af	3ff00000002b247c
+ln	sample	33fefe05a1628bcb	c0608d8a1cda3ce1
+log2	sample	42ce0774324e5c71	4046f442d9e91558
+sinh	sample	3e43b6e21366d05d	3e43b6e21366d05d
+cosh	sample	3f866a977393a7a8	3ff0003ecff64d36
+asinh	sample	c098679ba1718829	c02017f7119e7a38
+atanh	sample	3e41509d09b68510	3e41509d09b68510
+sin	sample	beca161fc967ed84	beca161fc967bf49
+cos	sample	be7aa0c62b10db85	3fefffffffffffd4
+tan	sample	be6f075affe2096f	be6f075affe20979
+atan	sample	4104ea4994adb658	3ff921f5358ec830
+atan2	sample	3fc5f04f70babc03	c0f173839b43c004	400921fa126ff5f7
+asin	sample	3f62e07ef4ef416e	3f62e0800d35a906
+acos	sample	3edc1a49e6240877	3ff921f44db1b38f
+hypot	sample	bdfb732a51f4c140	3dea9c4e03b7966e	3dfe812814e7ba88
+exp	sample	3ebf6458da3f7186	3ff00001f645ac70
+ln	sample	3625d8b1b1867e72	c05b20cf5fc68019
+log2	sample	4245a3957b20f355	4042b7c07e0c5167
+sinh	sample	be8b44096c7b11d0	be8b44096c7b1205
+cosh	sample	3fbfc2d96aaa51b0	3ff01f9083173b41
+asinh	sample	3f81645e7c9774c4	3f816450c97db18d
+atanh	sample	3e66282b50253038	3e66282b5025303c
+sin	sample	bfd11da7619f1125	bfd0e99c245eb8f4
+cos	sample	4021dbbae64245ad	bfec264c7869d275
+tan	sample	3e6c2e7869d0e16f	3e6c2e7869d0e176
+atan	sample	c00354e20405e755	bff2dad32676e1ed
+atan2	sample	400e004cc951e92b	411ffa62cacd0384	3ede05912536b2ed
+asin	sample	bf2826b8e33de0b7	bf2826b8e588d653
+acos	sample	be7c0ea38dda5b44	3ff921fb7052d0a6
+hypot	sample	c073657d6f42f7ae	c0a1b357a8f4195e	40a1dda78ddab31e
+exp	sample	3e12bb7a734f20ef	3ff00000004aedea
+ln	sample	3b34a0218f14e794	c04a366e735b9e9a
+log2	sample	48248874ec1c181f	40606b8418687b7b
+sinh	sample	3fc74a98cd78f6d7	3fc76b8e4f5216ee
+cosh	sample	3edb17afcf95425a	3ff0000000016f01
+asinh	sample	41cda4e48cbd3646	4035693d3595c799
+atanh	sample	bfc41c37e4361226	bfc447376318ce29
+sin	sample	bfe5cdcb54894ea4	bfe427cd954cd039
+cos	sample	c11846196fdcf337	bfd2608859fb4aae
+tan	sample	be53224c4845bd5a	be53224c4845bd5b
+atan	sample	3f1fa1b722808b00	3f1fa1b71fed2d5e
+atan2	sample	3e874d71cfe8163c	c0c20d8c0b69c275	400921fb544387e0
+asin	sample	bf39c7d27d4bd92f	bf39c7d28873a24b
+acos	sample	3f6a2f4e051257cb	3ff914e3abcb9bf4
+hypot	sample	40e680f6601f3992	41132f8f490ead6a	41136411f277f55a
+exp	sample	3d8f42f2d3251b71	3ff0000000003e86
+ln	sample	04313d09ce7fdaa0	c084b497dd0d59a7
+log2	sample	15bdaf57212a687f	c08518dde228feff
+sinh	sample	bfdc71c2c755b0c2	bfdd63de092d7ac7
+cosh	sample	3fb4d5fbc9091eb4	3ff00d92fc8eab00
+asinh	sample	4139d96c6558b916	402e12528a772744
+atanh	sample	bfc7cdd62c2100dd	bfc81595097d76b0
+sin	sample	40dd23a59090d6de	bfd07532cc75ee82
+cos	sample	3eebec425c026c1f	3feffffffff3d140
+tan	sample	4001adf7c8e8fd90	bff5872402c08648
+atan	sample	410afa3aa98f5ad7	3ff921f6959f60fd
+atan2	sample	3f1d9f67b7fa9f67	c0e4414fb6701007	400921fb53e693da
+asin	sample	3ef85d061e807c2e	3ef85d061e89e66d
+acos	sample	bed56a6e59fbc8c4	3ff92200aedfc397
+hypot	sample	400670eb39f7b39e	c16f9ea7017e49a5	416f9ea7017e4a24
+exp	sample	3fc2e70c199ef405	3ff28bd387ebeddb
+ln	sample	5228746e106025a1	40694429835b09bd
+log2	sample	2207b8d28b5d06fe	c07de6e8da008633
+sinh	sample	401bf01429969f34	4080dedaad8898c2
+cosh	sample	3e8ca96a8599fa75	3ff0000000000067
+asinh	sample	41e38621d9162a77	4036613828d7994e
+atanh	sample	bfb0d85bdc485e6f	bfb0de9955a15fbc
+sin	sample	bfbaaa6274688fbd	bfba9e0c1108487a
+cos	sample	c0c89045b3740156	bfe76ec2126f8fc8
+tan	sample	3ea8ce0d2a3e078a	3ea8ce0d2a3e0c82
+atan	sample	3f03230bea34b2d5	3f03230bea103263
+atan2	sample	41aac12a9765a721	be40254b8e9dc99b	3ff921fb54442d18
+asin	sample	becc1065661a6a6a	becc1065661aa3f9
+acos	sample	3fac4bd0737d82e5	3ff83f7f464797b8
+hypot	sample	be7ba820d0f21821	3f666fed79417344	3f666fed7985a199
+exp	sample	3f0822e5480469d5	3ff000304613624a
+ln	sample	3dc63f3c0f9a9ca2	c037ee375f52198a
+log2	sample	235fb6ab426a8a04	c07c903522a4b5fc
+sinh	sample	bf6aa281c6bac902	bf6aa284da060dd9
+cosh	sample	be7cfb8b56ded810	3ff000000000001a
+asinh	sample	425fdb2a9cc7665b	403bb8ac6985b722
+atanh	sample	bf66142eea37d4af	bf6614326b211a16
+sin	sample	c09785d90e28aade	3fe3163953f07ba3
+cos	sample	c01d724b56bf25c1	3fde40eaf5f1fa08
+tan	sample	4066ef97846fb4a0	400a3d7a53883bce
+atan	sample	c1d0f3bb712b4d39	bff921fb5407c545
+atan2	sample	c0d1a2321c9c3f00	40339ef6d997581e	bff91d87ebab5f82
+asin	sample	3f0d8648a4195d7e	3f0d8648a45c632b
+acos	sample	3efe1d741e81229a	3ff921dd36d00e85
+hypot	sample	40d30477e64b0ca1	c1fe35513c2b50c5	41fe35513c2bb08c
+exp	sample	3dd8e7342b1dd41e	3ff00000000639cd
+ln	sample	4b8a5b8a8bfaec2f	4060176797edc4ab
+log2	sample	72c64eb459ac34ff	40896bd5eb76ab9a
+sinh	sample	3fcd3a7671264115	3fcd7ba861147812
+cosh	sample	3f2a68656ffeee61	3ff000000572be5b
+asinh	sample	40ffdb843f235a0e	4028f1c2550b8e01
+atanh	sample	beede3925b956964	beede3925b9e1a7f
+sin	sample	3f4c6e9c95e02863	3f4c6e9c5a057c9f
+cos	sample	c0b7d0b64a281797	bfdbecf626a88b4a
+tan	sample	bf31e07c358c056f	bf31e07c3cfc6853
+atan	sample	40467de2350b0b10	3ff8c6f0ea0acd1b
+atan2	sample	4004b12eb32dbbe3	40ea4c0657139006	3f092dfbb13c25e2
+asin	sample	3f2f9501d81b2429	3f2f9501dd3bac83
+acos	sample	befab3030731b042	3ff9221607473456
+hypot	sample	bf9f937ac56b2826	420ab83ab66e9f34	420ab83ab66e9f34
+exp	sample	bffe328c6f034582	3fc363806c5f7f55
+ln	sample	46c0bf9779a7a430	4052e65208da2628
+log2	sample	01dcc52978e94f07	c08f093a5d661ea8
+sinh	sample	bfbee0817c990b6b	bfbef3af5830acd4
+cosh	sample	3fdb042383df46dd	3ff1726352fbc685
+asinh	sample	c058a65c384d2fce	c015230f3f8ad924
+atanh	sample	3eef07d1f3e29214	3eef07d1f3ec4c02
+sin	sample	c0f04c1403c12b07	bfe45fdbf8f03e83
+cos	sample	bf847cf8574f7e5e	3fefff970f459105
+tan	sample	bf6a9de29a1380f8	bf6a9de8bd786596
+atan	sample	bfc9164286d64a8c	bfc8c5df50c892fc
+atan2	sample	c1500049022c9c00	3ec5d86ecb9fe2ae	bff921fb5444222c
+asin	sample	3fc5984a44a8433c	3fc5b2db6f9e9596
+acos	sample	bea74a4b7e802c69	3ff921fc0e96890c
+hypot	sample	3f2aa0c886435dac	c22e777365097f38	422e777365097f38
+exp	sample	bfa7094acc5a2e26	3fee97968764adaa
+ln	sample	46382e5c956b45f8	40516e92a5de50f6
+log2	sample	647b2a1fbd0de705	4082461bf6245b98
+sinh	sample	3e52720937e642ab	3e52720937e642ab
+cosh	sample	bf863fa7d37be8f5	3ff0003de03d6db3
+asinh	sample	3fc5c0818c7e8eb2	3fc5a60bef1ba12f
+atanh	sample	3ec68013346596f5	3ec680133465d249
+sin	sample	bf0508df0e64a605	bf0508df0e4c6968
+cos	sample	be6fccd255bae3b8	3feffffffffffff0
+tan	sample	bf327b6fcab97fa8	bf327b6fd2f1f20d
+atan	sample	bee2916e8cc407d9	bee2916e8cc1f25d
+atan2	sample	4091ac1ec670b377	403132af4325a474	3ff8e3b455885273
+asin	sample	3e5574c018e79ed5	3e5574c018e79ed5
+acos	sample	3ecd0bbe3f7c730a	3ff921f7b2cc6529
+hypot	sample	415ef43b66c6c1f8	41a7ea19824e7b5b	41a7ef1b1757ab5f
+exp	sample	bf04bec0f6f8e6bd	3fefffad0567bad2
+ln	sample	79395089e7f4407e	4083db0d899e866f
+log2	sample	28f4971bf39f0809	c076fa2d80c6c2a8
+sinh	sample	beaad02f51aeeca0	beaad02f51aeefc3
+cosh	sample	3f01e106b97b5bbb	3ff000000027f516
+asinh	sample	40f581cd29fdd35e	402828992918b725
+atanh	sample	bf06e8cec02c27c8	bf06e8cec06ac781
+sin	sample	3f0ea14e87ab818f	3f0ea14e8760ab62
+cos	sample	3f69c3d593977d0e	3feffff5a0aa77e0
+tan	sample	4012522b7ce68db3	401e17e85cc3c1a0
+atan	sample	c04d7968629f9912	bff8dc81088135b1
+atan2	sample	be21ab0246450eab	beec288718b9319a	c00921ab03e6fcd4
+asin	sample	bfe7dd2560a21427	bfeaeed218724b93
+acos	sample	bec3dad00b4570cc	3ff921fdcf9e2e81
+hypot	sample	be4dafa261fd57ff	3f26d0f7a30d0946	3f26d0f7a44207d8
+exp	sample	beffd799edf7e2c3	3fefffc0510b82b4
+ln	sample	411fef3feaba49ed	402a55e347379360
+log2	sample	716d483840729a9f	4088bef9bfa00ede
+sinh	sample	4006aafe3c09f95e	4020f22953225ef4
+cosh	sample	be84d10bd1ac5c2f	3ff0000000000036
+asinh	sample	c1e9566f58d1ebf5	c036a3f209b4cc4e
+atanh	sample	bf02d6a8892d0960	bf02d6a8894fdb7e
+sin	sample	bee83b2699d7eb27	bee83b2699d59a5b
+cos	sample	3ff8cfa31125d6fa	3f9495b5e762806f
+tan	sample	41357125a0cc5b7e	bfc9e00bbde9307f
+atan	sample	bf1cfe1888fc441d	bf1cfe1887008d82
+atan2	sample	c070b23155c8afc7	bea84a4f75c0fa70	bff921fb54fe65a1
+asin	sample	3f5ddc0b96548358	3f5ddc0caba61e74
+acos	sample	3fdc501796192d84	3ff1ccf2bcd25b96
+hypot	sample	be93e8d76e9c710c	3e7698a35479b00f	3e94b208dd46d47b
+exp	sample	3e55cf319b2738f8	3ff000000573cc68
+ln	sample	3793470aac958322	c0572c80f965a73c
+log2	sample	55d1eb0da704647e	4075e29d16f3414c
+sinh	sample	bf44718adf7b4fd4	bf44718af5bb646b
+cosh	sample	3e588242bd4c297e	3ff0000000000001
+asinh	sample	c10e0c00c0d9ff58	c02a36b10e16173d
+atanh	sample	bf07df97bf87e23c	bf07df97bfcec01b
+sin	sample	3f22832d8b3fb981	3f22832d8a376020
+cos	sample	bfe61a3e3ec746d3	3fe8aa60990c5c5c
+tan	sample	40a37d585fb8ce1d	3fd0354dd0ad7ea0
+atan	sample	c06a097cf79046b0	bff90e5150299122
+atan2	sample	40f65537d7cd57b1	3f462742dfe8043a	3ff921fb52484ab2
+asin	sample	3f7cb43d3dc14b18	3f7cb44ca37f83b8
+acos	sample	beefc89e87d10cc3	3ff9220b38937103
+hypot	sample	be5859f2b4dc82bf	c01918a47d79733b	401918a47d79733b
+exp	sample	3f03efadda505bc6	3ff00027df8d6351
+ln	sample	561f8fafb98dff70	406ec1b5d0633629
+log2	sample	420100051c76e98a	40408b323302beda
+sinh	sample	be6e81967f2c2bbb	be6e81967f2c2bc0
+cosh	sample	c013fe63623683ea	405285f7b5f937fe
+asinh	sample	3fa45713ee60382d	3fa455b58c5ed9f8
+atanh	sample	3e6226a79ad21116	3e6226a79ad21118
+sin	sample	3e62d2cc959fd5d0	3e62d2cc959fd5cf
+cos	sample	3f5141fed2058748	3feffffed62b2685
+tan	sample	40315c205e7218ff	c0289a9ea7c0759d
+atan	sample	bf71f6d75e322f04	bf71f6cfd1c96c83
+atan2	sample	be99d80c4545d702	3eb4bb443ad7a3b1	bfd355c829f9b648
+asin	sample	be708e42147e5f95	be708e42147e5f98
+acos	sample	3eb508652f12adc7	3ff921fa03bdda27
+hypot	sample	bfae19215652877b	42658f1717565190	42658f1717565190
+exp	sample	3f0ba6ec811912cb	3ff000374e3896f8
+ln	sample	25a59d1de1bf5024	c072383a4185c925
+log2	sample	1100440232463558	c08777cf5851b2e9
+sinh	sample	3ff6072e33499863	3ffdad4cfae4f5a2
+cosh	sample	beda71061ba40af9	3ff0000000015d94
+asinh	sample	40310cd2f8a8ed89	400c3dc575153803
+atanh	sample	3ed6c3355e6fe3ee	3ed6c3355e70d9a3
+sin	sample	3eb2b818850bb97e	3eb2b818850bb539
+cos	sample	40577a14280e9a9f	3fee2a3a62291978
+tan	sample	bea5cf5c880c516c	bea5cf5c880c54cd
+atan	sample	3fb5853d85326ca0	3fb5785145f9ea11
+atan2	sample	3f30b7f9bedcf876	be32b25d5fd93464	3ff9220d38e36480
+asin	sample	bf81b28b9ca0855f	bf81b29a0bf89da6
+acos	sample	bf2143cad43d6d48	3ff92285729ad5b7
+hypot	sample	41bd5923f7f3876b	c2185fd3ea2e25a7	421860ee961530e8
+exp	sample	bd1ac890c4f56dbd	3fefffffffffff2a
+ln	sample	6c84587a46f63942	407ee744787c2a59
+log2	sample	303043c4b816b48c	c06f7f3e0fc53796
+sinh	sample	beed686fe84dc7a6	beed686fe851eb59
+cosh	sample	bf27d07263bd49fc	3ff00000046e3c90
+asinh	sample	c244e70f17e58359	c03a9b5c414dcacb
+atanh	sample	3f0371ceb34bfda2	3f0371ceb372480c
+sin	sample	bea08e954f202aff	bea08e954f202a42
+cos	sample	c0e758850db2fe07	bfeeee14e787df0e
+tan	sample	c0b6b30a82a491bd	3ff462bd7d07f6a0
+atan	sample	3f97a13f6c79323b	3f97a02ca1b1af46
+atan2	sample	3ec9f842eeb12ce5	bf958b1f4222acf5	400921ae2e00b6ef
+asin	sample	3f98a99eeda5c09f	3f98aa3b3a5577fc
+acos	sample	3f62085feeb452bf	3ff918f723d2a8f8
+hypot	sample	3f7729a99b133426	417d9c8c8d727d91	417d9c8c8d727d91
+exp	sample	bd0169a5c61f5dcb	3fefffffffffffba
+ln	sample	3ed8c96de2cde288	c02813ee074d3655
+log2	sample	2f2785672ad735db	c070c71b196b5e70
+sinh	sample	3fe998d20ec73113	3fec6a525ed11744
+cosh	sample	40342620d443832b	41b0c7fc66a34f23
+asinh	sample	c2435580652258b1	c03a8763f2e077fc
+atanh	sample	3f1f44e4ad88b1d4	3f1f44e4b005a517
+sin	sample	bf9e609ea27395bc	bf9e5f7aa5fb68c7
+cos	sample	bf3d9fc16a10b830	3fefffffc926a7d2
+tan	sample	3ed5dda47e167963	3ed5dda47e17532f
+atan	sample	bfb91593e92b8f8f	bfb90124d244d720
+atan2	sample	414df6093951b28d	40874339c53d918c	3ff9213490532814
+asin	sample	bea77396529d27ed	bea77396529d2a06
+acos	sample	bf9fdd1318be3c93	3ff9a174e52f80a7
+hypot	sample	c228252a66925784	bdc33db82f330583	4228252a66925784
+exp	sample	bed6efd77b5bc442	3feffff48816506c
+ln	sample	36a8dc79eb960cb9	c059b5a536b9b1aa
+log2	sample	1cb2bd2aed8a9124	c0819e2d1f8e61a3
+sinh	sample	3e7bd0508007dc93	3e7bd0508007dca1
+cosh	sample	bf77497d95b715fa	3ff00010f2504bf2
+asinh	sample	41aaea6dd0e2f1a3	4033eda15de0d9be
+atanh	sample	bf398f471b6546fd	bf398f4731234cc0
+sin	sample	c03f5264cc52beec	3fb80c45ec1a433f
+cos	sample	c02b70ad78f23807	3fd9ed3cabb2cfd2
+tan	sample	c1409cb775b59190	bfc6ab793c7e020e
+atan	sample	c19073703077e9fb	bff921fb50603ea2
+atan2	sample	bf5243ce31b59f23	40ab9466923da079	be953137477cf247
+asin	sample	3fb00fbd6ee82e16	3fb0127139ed0bc4
+acos	sample	bf76eda87797b8f0	3ff938e90494bd0f
+hypot	sample	c012385523e51423	413c38a6375ca1ec	413c38a6375d0007
+exp	sample	3f45832507fe400b	3ff002b09e7d25d1
+ln	sample	7a1e1033be0d3cce	40842a0f8d729d79
+log2	sample	14ec527e12892bc2	c0858168ba5f2332
+sinh	sample	be8eabb4b8e830cc	be8eabb4b8e83117
+cosh	sample	be9baa2509452394	3ff000000000017f
+asinh	sample	bf75158133c63204	bf75157b19b22f52
+atanh	sample	3f2712fcef55b326	3f2712fcf3557518
+sin	sample	c075ae0b98e8cbcd	bfeedb39a4e867a6
+cos	sample	be56de46eda98ed5	3feffffffffffffe
+tan	sample	c06eff0dddfb4379	3fcc00a8832cdfe1
+atan	sample	c14e62d51e4b96eb	bff921fb10ddf36f
+atan2	sample	c17a3bcec62bd871	41c7feb2ed5d09e8	bfa17c6987f8f755
+asin	sample	bfeb5b9c1a8d919a	bff0682036f1e3bb
+acos	sample	3e6231e2d4dbc66b	3ff921fb4b2b3bae
+hypot	sample	bda769d5ff3e05ef	3d99cfda0b20b45d	3daabc1f0817909c
+exp	sample	bd8bdd457dda3791	3fefffffffff908b
+ln	sample	4e695ee49a33c434	4064127f023b648b
+log2	sample	7bc651f1879ecc69	408debd7985911a8
+sinh	sample	c01dd241dc749451	c08b043614b9fcaf
+cosh	sample	403ecc7b89e1ef4d	42a59a97bc8eb995
+asinh	sample	be551855103249f7	be551855103249f7
+atanh	sample	3efc5e2d93fa7774	3efc5e2d94183103
+sin	sample	4109b41b78f78dd7	3fef0fd385f69660
+cos	sample	c07f6ae2e30604de	3feffd529329ae30
+tan	sample	4087d67565f0848b	bfe5e0bd3d0f67e3
+atan	sample	be6c5527ce1fd7b7	be6c5527ce1fd7b0
+atan2	sample	418a9d7f3ee14ff0	3e8ad3cfe4a91547	3ff921fb54442d08
+asin	sample	bed5a18f36d4c5df	bed5a18f36d52f4d
+acos	sample	3f0e8cbb7ff2785c	3ff921be3acd2c9f
+hypot	sample	40498aa1a5cd1633	c0d9bcc9e1ad9ea0	40d9bccd0cc8d1d2
+exp	sample	bf00d0b7b4773ee3	3fefffbcbd67de3a
+ln	sample	55c857314a219859	406e4a7e58154896
+log2	sample	3a8a593850dea109	c05591f1420cf011
+sinh	sample	bf8b14ba9c9c953e	bf8b14ee5523c1c7
+cosh	sample	bedc6e779e6f978f	3ff000000001942d
+asinh	sample	40dccb9891087bdc	4025f83bc693509c
+atanh	sample	3ed424e83ec6244c	3ed424e83ec6ce98
+sin	sample	be531ecd4d7a5dee	be531ecd4d7a5dee
+cos	sample	3f5057a05be831e0	3feffffef4edf794
+tan	sample	c0d49d0dd74635e6	3fc2a96ae44b1739
+atan	sample	413c716158ba70d0	3ff921fac44229e2
+atan2	sample	3ef7e28765855938	3f69d2ecb3251441	3f7d98c100b8e623
+asin	sample	be72ae5440834b09	be72ae5440834b0d
+acos	sample	bee481973ce6d3cc	3ff92205950fcb8c
+hypot	sample	3ed48281de67ade5	3f2335efece0830b	3f2338ac6d227036
+exp	sample	bee9a5d6205b945a	3fefffe65a3426df
+ln	sample	0d209763bef5f91e	c0819bf05c95e3a1
+log2	sample	2a99b99c49b39527	c0755509d309ec10
+sinh	sample	beee3e0e1e71908a	beee3e0e1e761108
+cosh	sample	3f06020fb32b297f	3ff00000003c8b57
+asinh	sample	bfd3f152fc44a2e6	bfd3a21e993996fb
+atanh	sample	3fc320a5415cd45d	3fc345970362a27a
+sin	sample	bef1d73c907b9a12	bef1d73c9077e7a3
+cos	sample	4063d27229f4d00a	3fb2ecc7d3170221
+tan	sample	3eb8f739d16839cb	3eb8f739d1684e0e
+atan	sample	3f04dfd893c5a488	3f04dfd8939644c5
+atan2	sample	bf45f441fc6ef0a1	c0dd8bf51020ec0d	c00921fb514b4fdf
+asin	sample	3f73a5cfbf4148fa	3f73a5d4af602390
+acos	sample	bec35f04738968db	3ff921fdc024bb89
+hypot	sample	be76301a71ea953f	bfbaac4bc1bc19bc	3fbaac4bc1bc22f6
+exp	sample	3eb410abc4a32d1c	3ff00001410ac8df
+ln	sample	1adeb87c34809470	c079b13bb741930a
+log2	sample	0789b5e4e5ef35a4	c08c3286947b4b8f
+sinh	sample	3f11f57592fc1648	3f11f57593386bcd
+cosh	sample	3fbbe731b3c4594c	3ff0185ad57513f1
+asinh	sample	40cceee45e717268	402497c9adfab08f
+atanh	sample	be7b1580842c9587	be7b1580842c95a1
+sin	sample	3e89162c81a6f512	3e89162c81a6f4e9
+cos	sample	c02f4c18c63273c4	bfeff19534236a3a
+tan	sample	bfd538adc6ee34d1	bfd608f2957aaed3
+atan	sample	4211759eb85c7106	3ff921fb544082b1
+atan2	sample	c029d3624d7e034f	4151d3cfd3979916	bec72dafc1f84482
+asin	sample	bfb5507bf3299e88	bfb556cedf14d9dd
+acos	sample	3ea324f96a6eb463	3ff921fabb1c61c5
+hypot	sample	c2103f1d99b00332	3e7943802ddd7b2f	42103f1d99b00332
+exp	sample	bf5e2f0a1d64aa3e	3feff0ec0971289a
+ln	sample	6993f09fa53a5ffe	407cddb2d2d20e2e
+log2	sample	5b2b17f88322e185	407b3c287a21daab
+sinh	sample	bf560822280d25c7	bf56082297730339
+cosh	sample	402017a1d1b71fc7	4098638c0cd4ef89
+asinh	sample	3ef72d36f09af064	3ef72d36f092d57b
+atanh	sample	bf1b932fea3ab1f2	bf1b932febef83fb
+sin	sample	3ef2d5f17790cc88	3ef2d5f1778c72c3
+cos	sample	bfa4fbfd739047ea	3feff91ee0896329
+tan	sample	bf2d0958b7919df2	bf2d0958bf89b836
+atan	sample	be9eb52506fb9d7f	be9eb52506fb9b24
+atan2	sample	bf1ec7baff8a4b68	40f8b27b75704a42	be13f0dbb8c82c76
+asin	sample	3f3ee1b82f3f3c4e	3f3ee1b8426bc8c0
+acos	sample	bf83a0d2bbedbb3d	3ff9493d211f404b
+hypot	sample	c042db9e93a4547e	c1ac06788879cc69	41ac06788879cccf
+exp	sample	3e5ce189f3b8ddd7	3ff000000738627f
+ln	sample	044d8946a8c466c4	c084aabd7f827eb6
+log2	sample	513c2244ebcaa31c	40714d071c21e71c
+sinh	sample	3e9cf4dc8ef149ab	3e9cf4dc8ef14aa8
+cosh	sample	3f3002da4d2e363e	3ff000000802da8f
+asinh	sample	405cc98a3910dabc	4015c1f05f53c74c
+atanh	sample	be998c7fc4b091d9	be998c7fc4b09334
+sin	sample	bfb9220c13aafda5	bfb917b766eb578e
+cos	sample	bea9772ad95ecc7b	3feffffffffff5de
+tan	sample	c0e961d61398a896	4007952cb6cf73ba
+atan	sample	bfe198feeb11b351	bfe016d3e25a98cb
+atan2	sample	3e3fc28ddbf38abc	417dfb198f21a33b	3cb0f3106527356c
+asin	sample	3e928d3cfe61d415	3e928d3cfe61d458
+acos	sample	befd52062db028a4	3ff92218a64a5ad9
+hypot	sample	bdfd5c2b752590a7	bd83ad3ddf1ad56f	3dfd5c45d4e4398f
+exp	sample	3d5d3e6be26018ce	3ff0000000000750
+ln	sample	6d703c1f473f25dc	407f8a02f1f5844c
+log2	sample	5879358935e8a1a2	40788a7e75e02db8
+sinh	sample	3f42fd02bd47e701	3f42fd02cf1c24be
+cosh	sample	bf818ac426512bf2	3ff0002677380e63
+asinh	sample	c020605ec4ca35eb	c006657b96553ca1
+atanh	sample	3e7f9b5c5b07a0ac	3e7f9b5c5b07a0d5
+sin	sample	be6c16b744facc1f	be6c16b744facc1b
+cos	sample	c0d25c7e1cd657aa	bfeca6eb6b08f4ce
+tan	sample	40adcd22819df243	3fe98e7e4ab8d895
+atan	sample	3edb36a9221e792a	3edb36a9221cd54c
+atan2	sample	406d3020b367d4a8	3e6f83ff236c2235	3ff921fb5432e675
+asin	sample	3f47dcc85b9c218b	3f47dcc87efe8fd0
+acos	sample	3e8d6a06ca08a197	3ff921fb19701f84
+hypot	sample	3e6f431345e87277	bdc771a43be1b5e6	3e6f4313d28e4d6c
+exp	sample	be925e88e0acaac5	3fefffff6d0bba4c
+ln	sample	34e914ab83a193c4	c05e8f33d85bac25
+log2	sample	297f65143a21d5e3	c0767070d273150b
+sinh	sample	3f3b5da51d8ee2f0	3f3b5da52ae68914
+cosh	sample	3ee2cd0406924de9	3ff000000002c2f2
+asinh	sample	c1592398f091f9eb	c03064eb8853c6c0
+atanh	sample	bef2dae3d3c1d2b9	bef2dae3d3ca8d20
+sin	sample	3fc28d7b60aae680	3fc27cde9ce09879
+cos	sample	be900d3ece7450a8	3feffffffffffefe
+tan	sample	410cac907534fb00	40031eb9bc178807
+atan	sample	c13a9f148600bfd4	bff921faba67b977
+atan2	sample	3fbcace295289d18	40e4a62eda7cff40	3ec6381618fca35a
+asin	sample	bf99f3ea982b72da	bf99f4a0bc2ddccc
+acos	sample	3f442e09e34a2002	3ff91f7593051704
+hypot	sample	4132e6c4e827c121	415747b2bf007f51	4157c13ae1bc35ba
+exp	sample	3da4409577481eca	3ff000000000a205
+ln	sample	5d0a88f763a03993	40742d1beae00891
+log2	sample	27487e859907bccc	c078a62b8a92309f
+sinh	sample	3ec622cb335a33a8	3ec622cb335a4fe7
+cosh	sample	3fe789caffbfe4cf	3ff486f8a8a65701
+asinh	sample	c114d1d7607d8d38	c02addc033ace3f6
+atanh	sample	bf5bd946c0051e9f	bf5bd94881fb6d43
+sin	sample	be72bcd646aadb55	be72bcd646aadb51
+cos	sample	410b28e351670551	3fbc438979be676a
+tan	sample	c14f817a115da6d1	c000ad05bef2dfdc
+atan	sample	404235d7ef82a1b5	3ff8b18bdce75897
+atan2	sample	40ec3fde7ad3eca7	3fc3b94206fd5361	3ff921f889506f08
+asin	sample	3e83e8657f94a4d2	3e83e8657f94a4e7
+acos	sample	3fc0b99b14ed6824	3ff7093f0c740dd0
+hypot	sample	3f23c5c695a44a07	40fdbc8524901390	40fdbc8524901390
+exp	sample	40611cd48d1d874c	4c46ba08ddae82b3
+ln	sample	7a8a2277a41cb69a	40844fc1b3b276c5
+log2	sample	023db12d519277d9	c08ed8dd2b5f297f
+sinh	sample	3f5bd850dbed2848	3f5bd851bcd0f18f
+cosh	sample	3eac39e006568f93	3ff0000000000639
+asinh	sample	41bc6fc3a76b255e	4034ad25a7daf5fb
+atanh	sample	3f38f988cf0054e6	3f38f988e348e56f
+sin	sample	40de9e29c41fd23c	bfdb6184c86086d6
+cos	sample	bf0cc4cafdd867b3	3fefffffff311714
+tan	sample	bfe952b1ba2b8350	bff0310124cb5d1e
+atan	sample	bef750f49c78d3b8	bef750f49c685274
+atan2	sample	c0ad32553dce4041	3f9b6c7f9730e7e9	bff921f3d09e7532
+asin	sample	be66e3a8498f0ac7	be66e3a8498f0ac9
+acos	sample	3f71a8c45a661890	3ff910528c53eef1
+hypot	sample	40761370534a8eee	c0f3b1dbd144f906	40f3b1e8309d2d6b
+exp	sample	bd9fc58e097660bf	3fefffffffff01d4
+ln	sample	498f72eb094903c4	405aae8bfb9ab034
+log2	sample	57f6d2a2a459b5a8	40780832ce0ab6db
+sinh	sample	3fc2adf216767bad	3fc2beefd8c157f5
+cosh	sample	bf7e878a40d5dd9e	3ff0001d206a28b0
+asinh	sample	bfae4005ebe6d925	bfae3b865bee9f4e
+atanh	sample	bf6c9394c9025d8a	bf6c939c61b0e312
+sin	sample	4062aaa3ddf2133c	bfefd1475f3677a1
+cos	sample	bfb8b2caae5ef719	3fefd9e7638adea0
+tan	sample	3e9beaed9981ff9b	3e9beaed99820160
+atan	sample	3eb4daf34fca70ac	3eb4daf34fca64dc
+atan2	sample	bf5eb61fb71bb68c	c17844e3b7272622	c00921fb5441a52f
+asin	sample	be66daf4f46e71ff	be66daf4f46e7201
+acos	sample	3f0a0e5ce26a5b80	3ff921c7378a67e7
+hypot	sample	3eae867ad399d8f4	c0536c43837e5195	40536c43837e5195
+exp	sample	be315384e5c2ce53	3feffffffdd58f63
+ln	sample	5f1f75f317a7dd19	40759dd0ae772993
+log2	sample	07d9a866af2fe815	c08c0a8ca4af1dbd
+sinh	sample	c0255d53350f9bb1	c0d54713005894e8
+cosh	sample	bfc72e4e505558fb	3ff0435a5aaf8ebf
+asinh	sample	3fcc2c75f5212139	3fcbf3753a5e9efd
+atanh	sample	3e9459248cefc2fe	3e9459248cefc3ae
+sin	sample	bf559e9695f4c9b6	bf559e962cb223ec
+cos	sample	408d292fe03c4bb9	bfefdac834eaffb8
+tan	sample	c0b358e2aaa49fbf	401814efaad624f2
+atan	sample	c260e644e57c112b	bff921fb54440ecc
+atan2	sample	418de152cb69969b	3fae15f1146bb1f7	3ff921fb5403bc64
+asin	sample	3f68e697a574a19c	3f68e69a28c6e19b
+acos	sample	3f3ee3b0d8c4fe9f	3ff9200d19356dc5
+hypot	sample	c0929d405b68b52f	bfc32179abb1a62d	40929d405ddde0f6
+exp	sample	3fef34f618f8a58e	400536c209bcced6
+ln	sample	5a8a1ecb66cd95f5	4072713e28a172a5
+log2	sample	0422ebed2952ab75	c08de61076a116e5
+sinh	sample	c00816271a07a985	c0244135ae5c27ff
+cosh	sample	3ecb192381a73cdb	3ff0000000005bca
+asinh	sample	bffce976e5511d29	bff5a94e28be3333
+atanh	sample	bf1ef6172b4b002a	bf1ef6172db5530d
+sin	sample	405797ded6194f1f	3fbff77199900118
+cos	sample	40b4f23473eb778c	bfec2d802ddadb92
+tan	sample	3e58956a102770a1	3e58956a102770a2
+atan	sample	c0e33a8971290f48	bff921e0b3c64a8d
+atan2	sample	413e51dd1bf3af2c	bf58f52044192e76	3ff921fb5478db79
+asin	sample	bfc94a791db7e067	bfc9755ba79a692b
+acos	sample	bf6b709fd8628efd	3ff92fb3a5dece72
+hypot	sample	4037990311bbafe4	be7de75b5deec044	4037990311bbafe4
+exp	sample	bd4a8c43548b8706	3feffffffffff95d
+ln	sample	64ad06c06aa046d3	40797791741a86d9
+log2	sample	38ced4bbd815204d	c05c836faad29534
+sinh	sample	4020c10e830f83a4	40a0fa3a8e10e767
+cosh	sample	beb2272dd6a6abe6	3ff0000000000a4c
+asinh	sample	c05265abbeddb222	c013f77be5ab2d21
+atanh	sample	3e9222fff354010c	3e9222fff3540188
+sin	sample	3fd6a86cf23c2ed0	3fd63003b7014bc0
+cos	sample	bfc2867eac41212a	3fefaa5a31ca63ab
+tan	sample	be740ffaf7a99518	be740ffaf7a99523
+atan	sample	be9e26ac25eb2a1a	be9e26ac25eb27df
+atan2	sample	41b37051abb0c97f	4172c98106f47187	3ff82add146c6376
+asin	sample	3fa7c505cd61df6c	3fa7c735eac2598d
+acos	sample	be9d00202391502c	3ff921fbc844ada7
+hypot	sample	bf98f080c840ca76	3dc710c5b69a860a	3f98f080c840ca76
+exp	sample	c01d2be7d31bc7e7	3f464b5772e7c796
+ln	sample	6b14cfed109070e8	407de88d55e6897b
+log2	sample	79a4dd2bd92d4f50	408cdb10431313eb
+sinh	sample	be6fcb1d2ca2a715	be6fcb1d2ca2a71a
+cosh	sample	bf4b5f42fc3cf6a7	3ff000005da772db
+asinh	sample	c1ae0ce248acdbcd	c03409d4f823494e
+atanh	sample	3fcc68ef31f515f5	3fcce405a4010547
+sin	sample	3e8c30077fec105a	3e8c30077fec1020
+cos	sample	3edc764ddb8efa6a	3feffffffffcd5e8
+tan	sample	be9f47cc0ea09498	be9f47cc0ea09716
+atan	sample	3f1913c0159ff049	3f1913c014576512
+atan2	sample	406cd213680a699e	c09e42af38895dc7	40082f4e1ee8a8cd
+asin	sample	3f192154122bfbad	3f19215412d14caf
+acos	sample	bee09b022667ca36	3ff92203a1c5404d
+hypot	sample	bf7119e8e3277527	c21da06a6aa4da33	421da06a6aa4da33
+exp	sample	3f7a0265193f3067	3ff01a179476de7a
+ln	sample	7afc6e3d9faed6a0	4084773f1cd80cfc
+log2	sample	3b846131f4f93680	c051a9a905c67320
+sinh	sample	3f46529c3e21b485	3f46529c5b1958b7
+cosh	sample	bf9de446e65473b1	3ff001bec9ee6aa6
+asinh	sample	41e71629cba560f7	40368c209815a8fa
+atanh	sample	be40c52414ed44b8	be40c52414ed44b8
+sin	sample	41280ce9410f8c9b	bfd909ba3f0b16d4
+cos	sample	4143bdba09a52f37	bfd397a6bc61082c
+tan	sample	bebbee8cee7a56a8	bebbee8cee7a7308
+atan	sample	402bec05eb213978	3ff7fd17c6eee1b7
+atan2	sample	beac98eff6ccbc60	406a19796ae31edc	be318803f08f734d
+asin	sample	3e67bd7b2d8b88af	3e67bd7b2d8b88b1
+acos	sample	3f20d368124435aa	3ff92174b90394c3
+hypot	sample	40abc55496c4f17e	c20b89a583bf5ec6	420b89a583bf5fa6
+exp	sample	3dab710f38b2465a	3ff000000000db88
+ln	sample	0b7e38e6dc582db6	c0822cdc7301fcdd
+log2	sample	5e88890729181717	407e99de59ecff99
+sinh	sample	400bcad02593e58c	40301e256d369ac4
+cosh	sample	3ee7714b08cf70c0	3ff0000000044b1b
+asinh	sample	3f86f7929c9b1436	3f86f77310821326
+atanh	sample	bf162c790614de78	bf162c7906f7ffc1
+sin	sample	3eb90ef3e7e37200	3eb90ef3e7e367c2
+cos	sample	bf334b018db93bdb	3fefffffe8bc7cb4
+tan	sample	c06cb11fd868d2de	bfc9cbfc97454319
+atan	sample	3e47bdde1495a5e1	3e47bdde1495a5e1
+atan2	sample	c02b12e10a6113be	4130fa36e94cd2cf	bee983dd1a87cd29
+asin	sample	3f351e9c8d8cc309	3f351e9c93aec768
+acos	sample	3e71b18e41499da6	3ff921fb42929ed7
+hypot	sample	c06e19ccfbf6053c	3ddb9c0eb20a0730	406e19ccfbf6053c
+exp	sample	bda091708ad9a944	3feffffffffef6e9
+ln	sample	42f4158af49bff6d	4040bfcbccae519d
+log2	sample	48d4e89dca005d4e	4061cc5a5885e293
+sinh	sample	3fa41255ec2c942d	3fa413a6e0345184
+cosh	sample	4039474848ff5f74	422625d475d91926
+asinh	sample	be93faf52da5164a	be93faf52da515f7
+atanh	sample	3facfa75308b210c	3fad0264f6e7418a
+sin	sample	bf45070d92af16a2	bf45070d7a78c1bd
+cos	sample	c1177226591000b4	bfe961eed7a9f893
+tan	sample	403d599c52346835	3ffda1fe7474ccce
+atan	sample	40b85b1065e478dd	3ff9215327b57525
+atan2	sample	c028f8f17e73da29	c047fad461228c9f	c007185e048a9d82
+asin	sample	be79f5e629c4fe64	be79f5e629c4fe6f
+acos	sample	3fecc2afc901c3eb	3fdd0be44254fbc2
+hypot	sample	417a97d6f5f89907	3eaf911b41fad671	417a97d6f5f89907
+exp	sample	bea84c725421ffa4	3feffffe7b38e3f8
+ln	sample	09e96c84cf0600ad	c082b8dfa9950a6c
+log2	sample	56e0a123faf06913	4076f0e4052ee4aa
+sinh	sample	bf9f39a075174a1b	bf9f3add9abbd706
+cosh	sample	be9bc7a03467a1d3	3ff0000000000182
+asinh	sample	c1ada7f76f999abb	c03406738fa5f016
+atanh	sample	3e8634603fdcf2c8	3e8634603fdcf301
+sin	sample	3e7761525c3627ff	3e7761525c3627f7
+cos	sample	c0eb82d4a231a273	3fcf7ff5efce6d01
+tan	sample	40249d99a883831f	3ff37984de5f0d66
+atan	sample	3f2f592610a02e94	3f2f59260698fdcc
+atan2	sample	c0bc9802dfc80c83	bead1e1f1cb9223b	bff921fb544c529e
+asin	sample	3f56d7dd1ba78c6f	3f56d7dd97d1eb4c
+acos	sample	3e69596aa4de4a0b	3ff921fb479777c6
+hypot	sample	bf3bc62b3647e474	c23e525387d7c7b9	423e525387d7c7b9
+exp	sample	bda9b415741dca89	3feffffffffe64bf
+ln	sample	722bb371827546fa	4081692b239abb57
+log2	sample	621c8afbbe5d2944	408116ae340c079f
+sinh	sample	3f931edb0abe5d90	3f931f23dc09c743
+cosh	sample	3ffd0be065466c76	400939a78a470732
+asinh	sample	41c64d32c402abdb	4035206132f8a36b
+atanh	sample	3f42b7ebe5b20613	3f42b7ec07dac932
+sin	sample	c08fd6942404b61c	bfe9f5e497e24ac0
+cos	sample	c057fec1777ae498	bfc4a4a7fec6906b
+tan	sample	bf74264ec4b91b36	bf7426596bb88a02
+atan	sample	bf14916dc23acfd2	bf14916dc1858930
+atan2	sample	410383015347d31e	3ee0b996e472ebf8	3ff921fb5440bf59
+asin	sample	bf488c7092c42478	bf488c70b94aadfc
+acos	sample	3e7fa612a8f660bb	3ff921fb349e1a6f
+hypot	sample	3f9bd0848f86c5e3	4207c02478c52fb2	4207c02478c52fb2
+exp	sample	be9ca30c8672b3b5	3fefffff1ae79f00
+ln	sample	422245e5c2cde800	4038649af0849cd6
+log2	sample	41a4ffa2e991c2f6	403b646884f133d6
+sinh	sample	bf165cdeb55c6e96	bf165cdeb5d0ed33
+cosh	sample	3e8dbe3c4dda3530	3ff000000000006f
+asinh	sample	402dce14e485888c	400b2a994880c006
+atanh	sample	3e47b09ad998ddc5	3e47b09ad998ddc5
+sin	sample	bf1850316dd87295	bf1850316d42bc2f
+cos	sample	3e57b89aa0a9bf9e	3feffffffffffffe
+tan	sample	c01e635ff892b939	c00e72aed5c2ef63
+atan	sample	c15514a5ae4d5598	bff921fb23b0e346
+atan2	sample	c0052be7052c8f9e	c02e447c092efb0c	c007bf6ef65aed75
+asin	sample	3f2e54cbff1188b1	3f2e54cc039c3610
+acos	sample	3f6730f27e211bc1	3ff91662da0141d3
+hypot	sample	bfb7156baecb04ca	41b6951bdf915f93	41b6951bdf915f93
+exp	sample	3fade64ab83f2a04	3ff0f6519f7b5174
+ln	sample	41f6feab6759be82	40368b1b8f6b6662
+log2	sample	0834a86d82e03547	c08bdd0d0f4c4ab4
+sinh	sample	c03466e668f206b0	c1b59ccf81fb7570
+cosh	sample	3f7dc04a55832c23	3ff0001ba9122fed
+asinh	sample	40db4b33f1de3889	4025dcd05b8135bb
+atanh	sample	3f3f04d19f23cfe9	3f3f04d1c6003f4c
+sin	sample	40e292808aa3e458	bfe5ebe5971c8f31
+cos	sample	3ff3d5c8fe6be709	3fd4ce359be6d19f
+tan	sample	c0904ba496d9e569	3fb92d1b27dc96cb
+atan	sample	c1ba179dbfdb62af	bff921fb53a731d6
+atan2	sample	3e9f318626adb1a7	41a8af8c2b49fbf7	3ce437cc7cc58745
+asin	sample	bf8664feaa92e654	bf86651bea6b42f7
+acos	sample	3f94a32223feed41	3ff8cf6d5d6a6769
+hypot	sample	bef7bbde30b1a5a1	4113f1d40acf633b	4113f1d40acf633b
+exp	sample	be8eace6fc812b99	3fefffff854c64f9
+ln	sample	46c884d0be043b14	4052feb6979a1820
+log2	sample	1c60da7e8f90ba2b	c081c7667318d34c
+sinh	sample	bffbdb10684d6444	c0061c41fb3aa1e7
+cosh	sample	3e8199957b5b1990	3ff0000000000027
+asinh	sample	bf349dbcc7df3677	bf349dbcc22acfc4
+atanh	sample	3ed691833d07b1aa	3ed691833d08a124
+sin	sample	c0b8170e0ec98d8f	3fbbbaefe1311558
+cos	sample	c0dfb319520646af	3fbc3883957a2ffe
+tan	sample	3f1c60d5ce2dec99	3f1c60d5d00a0b3f
+atan	sample	c0bb12b91eb747d9	bff92164090874fd
+atan2	sample	4093f085965e6a77	c1777dccf79219cf	400921e02ae2d43c
+asin	sample	3eeced9e7493077e	3eeced9e7496f82c
+acos	sample	3e95d572c4ede452	3ff921fafcee6205
+hypot	sample	c0d9b67a828fa9fd	3f2900ff77472284	40d9b67a828fa9fd
+exp	sample	bd9ec794cee93e6a	3fefffffffff09c3
+ln	sample	2ed34581245cf0a8	c067b78fad7dac41
+log2	sample	37fa1edd0c030bb9	c05fd2bea5274689
+sinh	sample	bfab57c53f2e7fc7	bfab5b19225b25af
+cosh	sample	bec72f3756e29b62	3ff0000000004331
+asinh	sample	410aacd9c8299070	4029f9c03bcd3874
+atanh	sample	3f57acce7bcccc8c	3f57accf90424b84
+sin	sample	bf7c8a90ebf7f087	bf7c8a81c900f906
+cos	sample	bf1751b9ebc2ef6a	3feffffffde03680
+tan	sample	3fd823109530a97c	3fd959b5b5dc9113
+atan	sample	c027811c0fa46b65	bff7c649af4859ad
+atan2	sample	c10f2b72fe725abe	be9fb215c8173eeb	bff921fb54444da2
+asin	sample	bfb579364430c7fe	bfb57fadc9d435d7
+acos	sample	3e52a9496c652ca6	3ff921fb4f99dabd
+hypot	sample	408fbce302241ab0	c265521a63341f87	4265521a63341f87
+exp	sample	bff3c8e356834690	3fd295ae4750362e
+ln	sample	5fc6e8ced7e166d1	407612bbe61f7353
+log2	sample	6a5d8b1021d7e846	40853713fa63c873
+sinh	sample	3fe4757342936eb5	3fe5e19dec1bd1e2
+cosh	sample	c01bb7d1f67ae8a2	407feff7c589ec10
+asinh	sample	bee3706b2795e646	bee3706b2794b434
+atanh	sample	3f46e95b7e2e4b57	3f46e95bbcd28778
+sin	sample	bf7fa6dd97a77ed2	bf7fa6c8f2ac4246
+cos	sample	4040eb6f894f67ef	bfe8189ff74b89ad
+tan	sample	bed0760514227411	bed076051422d0fe
+atan	sample	40481f6a44a76362	3ff8cd183ccb9aa7
+atan2	sample	bf8b59206de44aa4	c020c3e4783f7f6e	c0091eb821f24c38
+asin	sample	3e5c08a58493aaf9	3e5c08a58493aafa
+acos	sample	bedab0e83fe99eac	3ff92202007e3d13
+hypot	sample	3d7cccc04e51b0f8	c0024ee10a5b13ee	40024ee10a5b13ee
+exp	sample	3e904584a0f6ce65	3ff0000041161308
+ln	sample	442e1fefe05366d4	4047896c5df77425
+log2	sample	21f4baaa27a33c33	c07dfa05c6d64400
+sinh	sample	bfc86b47d2c27166	bfc89144be8b2816
+cosh	sample	be4533a78f12b213	3ff0000000000000
+asinh	sample	be54b15f37fbf55a	be54b15f37fbf55a
+atanh	sample	bf39c1ea9c9adbcb	bf39c1eab2db1c5c
+sin	sample	3ef480f7e31c7bf3	3ef480f7e316df4d
+cos	sample	3f2976fd190070f9	3feffffff5de2d0c
+tan	sample	3e8abed12ccc7860	3e8abed12ccc78c4
+atan	sample	bffd870748b6b51e	bff12ffeaa8377a8
+atan2	sample	bf755978b7d41a3b	c18b6263fb4901e7	c00921fb54410ec2
+asin	sample	3fe53351c9f6003f	3fe72c68511d3ed7
+acos	sample	befd475b7d2d155e	3ff922189b9faa56
+hypot	sample	3ff2f28fbc30c788	be52db819281c7d5	3ff2f28fbc30c789
+exp	sample	402c896b00a7af2b	4137ffe99e75676f
+ln	sample	16502cdf162cd480	c07cda00850c32a4
+log2	sample	3dcf91a479687ce4	c04102812d730410
+sinh	sample	40183aa9810039a3	406ab366c2019a26
+cosh	sample	bf9c7de51bf007b7	3ff00195eab7fcbf
+asinh	sample	bfa8da951cbdfdd7	bfa8d81619aabf66
+atanh	sample	3e6f45700f330c1b	3e6f45700f330c25
+sin	sample	40b178bb76c90c5a	bfe8fad71e400867
+cos	sample	3f2741ac7f864351	3feffffff78c88a1
+tan	sample	3fa3969de6715b57	3fa399109c24652b
+atan	sample	3f259c39c4f7c16a	3f259c39c1aec02b
+atan2	sample	bedcd8f187dd782c	bf598cf424323c95	c00918f31660bec2
+asin	sample	bee3bec9b2c1da60	bee3bec9b2c31b22
+acos	sample	bf0125c9845eae71	3ff9221d9fd735f0
+hypot	sample	413b1870169d2982	402b41691a057fe4	413b187016a096d6
+exp	sample	c05940089243178a	36d385b1032387b1
+ln	sample	37327d5ed783c4f2	c0583957b6ce97ee
+log2	sample	2656444efd2159bc	c079985eed7c5b04
+sinh	sample	bf21d0318242fac6	bf21d031832e7ea0
+cosh	sample	bf2800f90f08a7b5	3ff0000004805d68
+asinh	sample	beeffb5bc23883d8	beeffb5bc23330d4
+atanh	sample	3f180def799a2541	3f180def7abc1c12
+sin	sample	c0423ab174a58533	3fee4561a3bf80ff
+cos	sample	403dbb631b2a07d0	bfbce788db6c96a7
+tan	sample	c011301b819700f4	c002232d6a110fa7
+atan	sample	403783a75f6b1c9a	3ff873e502fa340d
+atan2	sample	be6bbf90c5efaa33	c027af5e1175791e	c00921fb53ae3799
+asin	sample	3f965ff02413c4d8	3f966064d915b26f
+acos	sample	3f5fe16cbb299c40	3ff91a02f8c10103
+hypot	sample	bfd7aabb96998d3b	3f1402448b185ca9	3fd7aabb9f0ed33d
+exp	sample	3d6da19c3a224c47	3ff0000000000ed1
+ln	sample	49296fb71b017f14	405996cc6eaa0142
+log2	sample	34eb3f92a995251a	c066076bc1f30fd4
+sinh	sample	bf71a98559d4df52	bf71a988f020c0c5
+cosh	sample	3fd7433b8ae4795f	3ff111912824ed7d
+asinh	sample	3f4b304e76ecbd52	3f4b304e4295b221
+atanh	sample	bf1930732db9a1db	bf1930732f069a21
+sin	sample	bf632defdae6a562	bf632deeb4ef7507
+cos	sample	bf43b3f4ac1a9a1a	3fefffff9ef2cbc9
+tan	sample	3f137f5ea430d99d	3f137f5ea4cb44a3
+atan	sample	c18f5c5b062ea784	bff921fb502f4dbc
+atan2	sample	3f6850b192a21250	c07bfc1cf3dd67c7	400921f7da8aba39
+asin	sample	be818e5075b37770	be818e5075b3777e
+acos	sample	3ee294a72a78e92c	3ff921f209f097db
+hypot	sample	bfe7b6dbbd30d12b	3f880cba20732597	3fe7b79ed889bedd
+exp	sample	bee1337c695a713c	3fefffeecc883628
+ln	sample	706176c62ddb7418	4080ca368240b481
+log2	sample	4ffbae67ab58a029	40700ca745f3e204
+sinh	sample	3fb97dd987ec4533	3fb988a3bb8796bf
+cosh	sample	3e6a6fc1b3b54dca	3ff0000000000005
+asinh	sample	bf7aaab7d72e46ec	bf7aaaab7eacfe0d
+atanh	sample	bfe6a390babdb0ef	bfec3a1bce977c05
+sin	sample	3f9b18676e9bf91f	3f9b17983a8bf3b1
+cos	sample	411e6766c83592dc	3fec5dccbbe370f7
+tan	sample	40db42c5828731cd	bfffed2da2cd159c
+atan	sample	be6ab1d58293b8f0	be6ab1d58293b8ea
+atan2	sample	3e17e5f8a7c573e9	413d93196f6e1940	3cc9dbb3b13d95a1
+asin	sample	bf664e0c20dddfc9	bf664e0def3c8a04
+acos	sample	bf791b592aa1cc2e	3ff93b16b7bc8be5
+hypot	sample	bebb9779cdb6b67b	c16b0a9e77dda343	416b0a9e77dda343
+exp	sample	bea6bfd870ff7e0f	3feffffe94028106
+ln	sample	02cf531e7ebcd15c	c0852f5aab515cfa
+log2	sample	25539a7a694f6907	c07a9b4fbb585472
+sinh	sample	3f0b8e36b12efd47	3f0b8e36b1657a02
+cosh	sample	be83d926a57a8f12	3ff0000000000031
+asinh	sample	3ee9313af48d8f44	3ee9313af48af516
+atanh	sample	3f28907018c74126	3f2890701d9a6d00
+sin	sample	3f0e39787da71edf	3f0e39787d5f37c0
+cos	sample	403e96b1e155590a	3fe5a9092f61ee2d
+tan	sample	bff407f05f9f90a2	c0083bc18da798a4
+atan	sample	404247158c26b4aa	3ff8b1f5ddc05202
+atan2	sample	40f838a7ceb32576	c0599d4053e04ac1	3ff9263637e75667
+asin	sample	bea6828a156b216a	bea6828a156b2345
+acos	sample	bed587ffb20b8aa7	3ff92200b644199b
+hypot	sample	425f77828b748a60	bf7efc7330652c65	425f77828b748a60
+exp	sample	402c935538af8c1c	4138780ca332fb19
+ln	sample	25d540d2db569144	c0721739c2eb24d5
+log2	sample	0d652cd6c7f053a4	c08944c3fe216899
+sinh	sample	3f4986088fef73da	3f498608bb3c61b0
+cosh	sample	c037fc84de1a323c	4208563455fb650a
+asinh	sample	4113439388a2ddc4	402ab5fcc8ce4d77
+atanh	sample	3fb3d0fd8707f1ca	3fb3db28c78a0390
+sin	sample	3f0a10af3e1cca78	3f0a10af3deeaccd
+cos	sample	bf92a7b0757b7328	3feffea3ffce8f93
+tan	sample	c00b962b445199ba	bfd4454580e2e756
+atan	sample	c0924193519bdb54	bff91e79e0eb74b2
+atan2	sample	bf57d410d930f1e0	c0977df5b9dc21c2	c00921fad26f03b3
+asin	sample	3e6ef822128b6bfe	3e6ef822128b6c03
+acos	sample	bfc0d64f4a5d3a95	3ffb3e5621fccbf3
+hypot	sample	4122d32e0c98850d	c070de1f5e97141e	4122d32e2ad2d753
+exp	sample	402c8e0a9825deea	413837a4d699dba0
+ln	sample	0cc8c525ac149cfd	c081ba0101fd24a9
+log2	sample	7622d4f4dfd4d55d	408b19e17e0da900
+sinh	sample	bea9dcd518fae601	bea9dcd518fae8d2
+cosh	sample	3ebc5b8d8add4725	3ff0000000001921
+asinh	sample	417f8ab244132dac	403201e538ae24ff
+atanh	sample	bf3f2f4bce4fc128	bf3f2f4bf5ccb1d3
+sin	sample	be7075b794784973	be7075b794784970
+cos	sample	4136bd9d325496c7	3fe94be4c73dce61
+tan	sample	40effa83201b5b8b	bfea1c1c7c045e04
+atan	sample	bfcfb38c906e2abf	bfcf1377b5e59a93
+atan2	sample	419505c7de045509	40499deaea467274	3ff921fab84b0abc
+asin	sample	be78290241ca0cdb	be78290241ca0ce4
+acos	sample	3fd82032074956ea	3ff2f2ce6e854fa3
+hypot	sample	3fe7fec3a6d003ff	3eaa27eca1ddfa13	3fe7fec3a6d01240
+exp	sample	bd969e90f91247f1	3fefffffffff4b0b
+ln	sample	639b8b30cee1e964	4078ba31793f6bfa
+log2	sample	31937be4fea1f371	c06cb6e7b571bfe9
+sinh	sample	3f0eb3c3f412359f	3f0eb3c3f45d936a
+cosh	sample	4001c4bd735755a1	4012a6b90dd6c04a
+asinh	sample	40e85107df29e8e8	4027049179808c28
+atanh	sample	bea1004339e1406a	bea1004339e14203
+sin	sample	40399f5e65f12295	3fde1bbda91cd68f
+cos	sample	3ffb665a0fdae33f	bfc21370afa045a3
+tan	sample	40b8915a6533812e	bfbdaba95fd15012
+atan	sample	407dc9fb5d32cac6	3ff919635337db4d
+atan2	sample	3f88c402df418613	3e74be342fca10d2	3ff921f4a0ec38bd
+asin	sample	bf3d4b378fb4a6b5	bf3d4b37a0124a6f
+acos	sample	3fc50cfc41bb1656	3ff67d48d3281465
+hypot	sample	3f5337e0efed2bd8	be279c2a49e01dd1	3f5337e0efed65db
+exp	sample	3fcd20c141fe6918	3ff416ac4b774800
+ln	sample	5cd74c89025bea3c	407409c1d029e5d8
+log2	sample	704d8c0bc21fdca1	40882f145caf773b
+sinh	sample	3ec4828629f73556	3ec4828629f74bce
+cosh	sample	bf5fd6f05547bfc5	3ff00001fae16020
+asinh	sample	c022257ded667d47	c0073644ab2788b5
+atanh	sample	be98bc99e65d48f9	be98bc99e65d4a34
+sin	sample	3f82f9f547226a6c	3f82f9e37b81942f
+cos	sample	be6a5c5f4505e405	3feffffffffffff5
+tan	sample	be8cb70a975342bc	be8cb70a97534337
+atan	sample	3ea74285f64aee7f	3ea74285f64aea66
+atan2	sample	c16fa84998a60a85	3e7c77f03b827c28	bff921fb54442cfb
+asin	sample	bf0a4d2f9a4b361d	bf0a4d2f9a7a97d5
+acos	sample	3f451645cf8dce3a	3ff91f588b872dfd
+hypot	sample	41c3a681dcc441ee	413c3ed6e7f2381f	41c3a686eff68acd
+exp	sample	bead03fd0715f9de	3feffffe2fc03cb6
+ln	sample	507abcc90b5d8418	4066f0237c9a99bd
+log2	sample	0c879706122d406f	c089b384ea7d24e4
+sinh	sample	4007d940c38aed5c	4023a88a8b0c8106
+cosh	sample	3eafe1f82bd0efac	3ff00000000007f1
+asinh	sample	c055a589c586e1b0	c0149e07540f1f4d
+atanh	sample	becbebc28b5d1604	becbebc28b5d8762
+sin	sample	3fc29e47d2f18176	3fc28d7dce5d2635
+cos	sample	40bff69b89fea6e6	bfd4b57efbbef250
+tan	sample	bf91bc2479f61d4b	bf91bc98b38d7504
+atan	sample	3f0aa879f5dbe708	3f0aa879f5793b69
+atan2	sample	3f4944da6b3ac7c6	3ef72aa278cf0841	3ff8aca9e48b2f84
+asin	sample	3f9ab619d9aa8601	3f9ab6e06fa83499
+acos	sample	bf4cdb30b907c3eb	3ff92596ba632067
+hypot	sample	bff17b568cd26780	c19fc424689a0d62	419fc424689a0d62
+exp	sample	3e36679f12a2d5c4	3ff00000016679f1
+ln	sample	0e05f1bf50f0dfea	c0814c11c575485e
+log2	sample	2673f7be614261f1	c0797ae2eb57a3be
+sinh	sample	400df993a70e9044	40352ea2a55b0d54
+cosh	sample	3f70d07791adf25f	3ff00008d5c675fa
+asinh	sample	41a64a3e6df4508a	4033bd5b16ca50f2
+atanh	sample	bf89405308e6dbec	bf8940a6e6b217e6
+sin	sample	bf01542aed0145f5	bf01542aecf3b8e4
+cos	sample	3ee10126495ee054	3feffffffffb7b64
+tan	sample	408c27b6dd3d7e8f	bfe97f98aaaaf3e7
+atan	sample	422f8b301f64635e	3ff921fb54432964
+atan2	sample	bf9430885157440f	41b6b212636aa361	bdcc7773a668ee7b
+asin	sample	3f6039b2d509ce16	3f6039b38705097c
+acos	sample	bf31e836f3dfc90f	3ff92319d7b3a6e5
+hypot	sample	3f5d875ae4d5e204	bd80a88ff6c29c06	3f5d875ae4d5e204
+exp	sample	3eed2ccf583f118d	3ff0000e966e527f
+ln	sample	76b43f558f9bfb74	4082fb757d405a02
+log2	sample	51e62ce543f27761	4071f788c044cbd9
+sinh	sample	bed19a8bead2e929	bed19a8bead321fc
+cosh	sample	3f6c8aa59f26d045	3ff000065d3f0f99
+asinh	sample	424efea5eefc7688	403b0035cde6dea0
+atanh	sample	3e5b556c1aa7aee0	3e5b556c1aa7aee2
+sin	sample	3fc295a5addad444	3fc284f2f54a364d
+cos	sample	bf09022cf2a318b6	3fefffffff63a4cd
+tan	sample	410c751e0ce2b1f0	c0099f5681729c76
+atan	sample	be7e592bc2fd28f8	be7e592bc2fd28d4
+atan2	sample	bf54657b4b5f79a5	3ee61a766285fa4d	bff8ff4df5e957a8
+asin	sample	3e8c40347b65a591	3e8c40347b65a5cc
+acos	sample	bea66a2622b9c764	3ff921fc07955e2e
+hypot	sample	40d0efb77d3aadb7	3dedf9c41dba1015	40d0efb77d3aadb7
+exp	sample	bd3cea9d0c1113e6	3feffffffffffc63
+ln	sample	64052a5f5511e971	4079039c7fbfe459
+log2	sample	23459fb2ae14e441	c07ca90c15ceac88
+sinh	sample	bf879915b56fe37c	bf879937ee174a7e
+cosh	sample	403d31108c84f251	428152d31a4bf451
+asinh	sample	4136b20833a8c6a6	402dcfb373d96e6c
+atanh	sample	3ed343a86ba016ca	3ed343a86ba0abbb
+sin	sample	c11347a713d58806	bfe949d3160615f1
+cos	sample	bfa9e82704ee21c1	3feff583ea0875b7
+tan	sample	402e0286f3208815	bfeb1e87d11947ac
+atan	sample	3ee2bdbc00a20c5e	3ee2bdbc009fe7d4
+atan2	sample	bfb8708a3bba2aeb	bfc19b556c2729ee	c004476e0dfeee57
+asin	sample	3f4ed27b64707e8b	3f4ed27bb0b1626f
+acos	sample	beac367cc669b68e	3ff921fc35f8134c
+hypot	sample	bd9a71a807ed521b	be50d56279866d76	3e50d5628e4bb044
+exp	sample	be933794375a5ff8	3fefffff66435fb6
+ln	sample	7caeaceeb5ead43e	40850d9305d406da
+log2	sample	4b2db3c2a54f138b	40667c8f5697612a
+sinh	sample	bf4b718144c7b4c4	bf4b71817a9ad394
+cosh	sample	bedf3cc0b4a8d980	3ff000000001e7e3
+asinh	sample	c139d58db30fd662	c02e1205dde5bc78
+atanh	sample	be4d34ab8751dd1a	be4d34ab8751dd1b
+sin	sample	41195ff6b950e09b	3feaa05e06bff41e
+cos	sample	403665885f7d7e79	bfed67ca2c98158e
+tan	sample	3edef860c196f486	3edef860c1995f62
+atan	sample	4039ba2aecb5e837	3ff882da60b9aba2
+atan2	sample	4156e32d6569c160	c1240f68204d2ee3	3ffae0f3f205d341
+asin	sample	3f7a2bb22da30f5f	3f7a2bbdd918dd70
+acos	sample	be8c396fffd1a4bf	3ff921fb8cb70d18
+hypot	sample	be72fa56f3b8ab3d	c0882d2ca5fe5fd1	40882d2ca5fe5fd1
+exp	sample	3d66e83b1b04a652	3ff0000000000b74
+ln	sample	02367caaa71d11fb	c08563e99bcb8e11
+log2	sample	242bb7ded1f39998	c07bc350d6c16c06
+sinh	sample	3fbebbe0fb0eb899	3fbececade97f5fb
+cosh	sample	3fbe85846ddd2dd5	3ff01d255a658bc9
+asinh	sample	c213f2a3b89edd3b	c0387b0df9a6dd0e
+atanh	sample	bfb240300c4b27e9	bfb248209fda5206
+sin	sample	412c0810ea2c34f4	bfe58d22f4bc4216
+cos	sample	c091c2b7f550f317	3fead236b605ef29
+tan	sample	bf0442644bf9f610	bf0442644c254515
+atan	sample	c193d1622d36c6bc	bff921fb510972f0
+atan2	sample	3f3d3da505a23926	bfc09953829a3350	40091aef73456099
+asin	sample	bfc94d5325178ab6	bfc978445f213aa3
+acos	sample	3fe8a9887bde31c8	3fe61b9170259612
+hypot	sample	4240d14a5f10e0d9	c043a8d371c729a8	4240d14a5f10e0d9
+exp	sample	3d5f42f66c2ce178	3ff00000000007d1
+ln	sample	3be8c9fa751360ec	c0464ef1df30d809
+log2	sample	2c44dd63000fd375	c073a9df3cd58915
+sinh	sample	3f7e01d6a4f9fe99	3f7e01e83c389743
+cosh	sample	be5c4af110c30221	3ff0000000000002
+asinh	sample	c00a41744e1ab87c	bffe76e74bd9512b
+atanh	sample	3fa7f5ddeee88b3e	3fa7fa59c05c12cb
+sin	sample	3e80bec50f0b3798	3e80bec50f0b378c
+cos	sample	c07425475ed0282e	bfd3ee2808c7b6c8
+tan	sample	3f82ee98254920f3	3f82eebb7d19aa38
+atan	sample	c11636dd2ec7103f	bff921f872b94a86
+atan2	sample	3e531cb9d2b0679b	4150256d52346c09	3cf2f06c70babec6
+asin	sample	bf7e2812ca1c3aea	bf7e2824a5080f4c
+acos	sample	bfef3d3d7bc5be4f	4007628305ee041c
+hypot	sample	405ee2ef99d6fbd7	3ec34208d08c01bd	405ee2ef99d6fbd9
+exp	sample	bf73b93913d3ef36	3fefd8a5d42599f9
+ln	sample	1d8575b5fb6f4aec	c077da168ac037d2
+log2	sample	594061a44b30cd75	4079508b36e93215
+sinh	sample	bea485fdec4b72d9	bea485fdec4b7441
+cosh	sample	3eae0fe9f379d916	3ff000000000070f
+asinh	sample	c205e61b3eedd50c	c037e17f5d7da3e4
+atanh	sample	3e736bdc872e327a	3e736bdc872e3284
+sin	sample	41322cd17c38881c	bfe705adcb81174a
+cos	sample	41237236602c89da	bfd7afb4c6396e6b
+tan	sample	4134c68d925f52af	bff7aada2e21df54
+atan	sample	bee46546b0936759	bee46546b090a455
+atan2	sample	410e908756dea1ce	be609d9dcf83b231	3ff921fb54442f45
+asin	sample	bfad93c7983251d7	bfad97ff537432bd
+acos	sample	3ea608b3ca1632dc	3ff921faa3fe8ec8
+hypot	sample	bf282dcd48e7f864	3da782d8f29dc190	3f282dcd48e7f86f
+exp	sample	3f0108df726f8bb7	3ff0002211e32ab8
+ln	sample	655fae954ed941e4	4079f2f677d34a5f
+log2	sample	13717c3c84a5a892	c0863ef9b62a8150
+sinh	sample	3e96ef9c1ff85d89	3e96ef9c1ff85e07
+cosh	sample	bfbebec379912e01	3ff01d9337bce762
+asinh	sample	c24faea24bf4235a	c03b05d3780d78dc
+atanh	sample	3e4630fafec22867	3e4630fafec22867
+sin	sample	40cc6cf9f0030b66	3febb2175005ebb3
+cos	sample	c0631565ce02ecfb	bfd3003cd9723f6c
+tan	sample	bf8e6f88d2a0e1c3	bf8e701bad4a9fa3
+atan	sample	bf61741266db729e	bf617410abcd3d8e
+atan2	sample	bef4be334ed1f3a7	be3e435a543d6e1b	bff92370d273fbd6
+asin	sample	3ea5615f359720a0	3ea5615f35972237
+acos	sample	bf53faff4df028b1	3ff926fa142c6eda
+hypot	sample	c00a2e9e7cb17ae3	bdac9ffcc648ae58	400a2e9e7cb17ae3
+exp	sample	3df9f7f7a9257aee	3ff000000019f7f8
+ln	sample	02c87f331953e1c8	c0853152313f6787
+log2	sample	3aa5192b5a64a008	c0552675dd89d0f8
+sinh	sample	3f477219920d57fb	3f477219b39d6d79
+cosh	sample	bee12486d1eef738	3ff0000000024bbe
+asinh	sample	bede0f38b9610ba0	bede0f38b95ff0b3
+atanh	sample	be4e034867e5377f	be4e034867e53780
+sin	sample	4122eac8a391b2aa	3fe5daaf95cd6878
+cos	sample	befb44b2a00c3a8d	3fefffffffd186fe
+tan	sample	c04af62dc10b8e3f	bfe22923dd374bb5
+atan	sample	40479c903a8d6fd7	3ff8cb41f20a16d1
+atan2	sample	bfa3c893f766fd4b	bf0f474cf2bf7aa5	bff9284e5018b0c3
+asin	sample	3fc97579679018e0	3fc9a13ad8d32807
+acos	sample	bf94ac6ea599da16	3ff974ae7f146f56
+hypot	sample	c0fdf8ca80ee4c84	3faf273b04b080db	40fdf8ca80ee5090
+exp	sample	bda0ace12529795c	3feffffffffef532
+ln	sample	647506495e28d633	407951230b784c5b
+log2	sample	29a5411f42aa734e	c0764971ea7b2bc7
+sinh	sample	be9a2147343cad43	be9a2147343cadfd
+cosh	sample	c037b92b1d101aad	4202b4ff10b45a37
+asinh	sample	be8e105f34f1f12c	be8e105f34f1f0e5
+atanh	sample	3febb66ca8533518	3ff51225f1b9cbab
+sin	sample	3eac9a7e377b97f4	3eac9a7e377b9425
+cos	sample	bee1643d2223d5f6	3feffffffffb4623
+tan	sample	c10489644783b9e5	bffff75df45e416b
+atan	sample	c0c93c493b9dc06d	bff921aa2c72c2a2
+atan2	sample	3f911fd5b07eff84	bf3b580f501be2a1	3ff98827b24ab05d
+asin	sample	bfe2da4ae70038c4	bfe428fbb1b2ccd7
+acos	sample	3f7da3267dd19698	3ff904581cd38093
+hypot	sample	3e5ef1d66ca1893b	c200321c64f99b3f	4200321c64f99b3f
+exp	sample	3e33e28371f63713	3ff00000013e2837
+ln	sample	13aa9f4de56ae816	c07eaeea414fa255
+log2	sample	7203eb0e10db20f4	40890a87326fb3b4
+sinh	sample	3f77f54673d27c3d	3f77f54f67c822f0
+cosh	sample	3e75e94b7708cdb6	3ff000000000000f
+asinh	sample	3e7cc94c4e903a66	3e7cc94c4e903a56
+atanh	sample	bfd20759a249c2b5	bfd28798a8f3b402
+sin	near_half_pi	3ff921fb54442d16	3ff0000000000000
+cos	near_half_pi	3ff921fb54442d16	3cc234c4c6628b81
+tan	near_half_pi	3ff921fb54442d16	431c1f559a01adcc
+sin	near_half_pi	3ff921fb54442d17	3ff0000000000000
+cos	near_half_pi	3ff921fb54442d17	3cb469898cc51702
+tan	near_half_pi	3ff921fb54442d17	4329153d9443ed0b
+sin	near_half_pi	3ff921fb54442d18	3ff0000000000000
+cos	near_half_pi	3ff921fb54442d18	3c91a62633145c07
+tan	near_half_pi	3ff921fb54442d18	434d02967c31cdb5
+sin	near_half_pi	3ff921fb54442d19	3ff0000000000000
+cos	near_half_pi	3ff921fb54442d19	bca72cece675d1fd
+tan	near_half_pi	3ff921fb54442d19	c33617a15494767a
+sin	near_half_pi	3ff921fb54442d1a	3ff0000000000000
+cos	near_half_pi	3ff921fb54442d1a	bcbb9676733ae8fe
+tan	near_half_pi	3ff921fb54442d1a	c3228f1859543aff
+sin	near_half_pi	400921fb54442d16	3cd234c4c6628b81
+cos	near_half_pi	400921fb54442d16	bff0000000000000
+tan	near_half_pi	400921fb54442d16	bcd234c4c6628b81
+sin	near_half_pi	400921fb54442d17	3cc469898cc51702
+cos	near_half_pi	400921fb54442d17	bff0000000000000
+tan	near_half_pi	400921fb54442d17	bcc469898cc51702
+sin	near_half_pi	400921fb54442d18	3ca1a62633145c07
+cos	near_half_pi	400921fb54442d18	bff0000000000000
+tan	near_half_pi	400921fb54442d18	bca1a62633145c07
+sin	near_half_pi	400921fb54442d19	bcb72cece675d1fd
+cos	near_half_pi	400921fb54442d19	bff0000000000000
+tan	near_half_pi	400921fb54442d19	3cb72cece675d1fd
+sin	near_half_pi	400921fb54442d1a	bccb9676733ae8fe
+cos	near_half_pi	400921fb54442d1a	bff0000000000000
+tan	near_half_pi	400921fb54442d1a	3ccb9676733ae8fe
+sin	near_half_pi	4012d97c7f3321d0	bff0000000000000
+cos	near_half_pi	4012d97c7f3321d0	bce1a79394c9e8a1
+tan	near_half_pi	4012d97c7f3321d0	42fd003e169f4652
+sin	near_half_pi	4012d97c7f3321d1	bff0000000000000
+cos	near_half_pi	4012d97c7f3321d1	bcd34f272993d141
+tan	near_half_pi	4012d97c7f3321d1	430a8410087262e4
+sin	near_half_pi	4012d97c7f3321d2	bff0000000000000
+cos	near_half_pi	4012d97c7f3321d2	bcaa79394c9e8a0a
+tan	near_half_pi	4012d97c7f3321d2	4333570efd768923
+sin	near_half_pi	4012d97c7f3321d3	bff0000000000000
+cos	near_half_pi	4012d97c7f3321d3	3cc961b1acd85d7d
+tan	near_half_pi	4012d97c7f3321d3	c3142c0d64d5de51
+sin	near_half_pi	4012d97c7f3321d4	bff0000000000000
+cos	near_half_pi	4012d97c7f3321d4	3cdcb0d8d66c2ebf
+tan	near_half_pi	4012d97c7f3321d4	c301d86e84316984
+sin	near_half_pi	401921fb54442d16	bce234c4c6628b81
+cos	near_half_pi	401921fb54442d16	3ff0000000000000
+tan	near_half_pi	401921fb54442d16	bce234c4c6628b81
+sin	near_half_pi	401921fb54442d17	bcd469898cc51702
+cos	near_half_pi	401921fb54442d17	3ff0000000000000
+tan	near_half_pi	401921fb54442d17	bcd469898cc51702
+sin	near_half_pi	401921fb54442d18	bcb1a62633145c07
+cos	near_half_pi	401921fb54442d18	3ff0000000000000
+tan	near_half_pi	401921fb54442d18	bcb1a62633145c07
+sin	near_half_pi	401921fb54442d19	3cc72cece675d1fd
+cos	near_half_pi	401921fb54442d19	3ff0000000000000
+tan	near_half_pi	401921fb54442d19	3cc72cece675d1fd
+sin	near_half_pi	401921fb54442d1a	3cdb9676733ae8fe
+cos	near_half_pi	401921fb54442d1a	3ff0000000000000
+tan	near_half_pi	401921fb54442d1a	3cdb9676733ae8fe
+sin	near_half_pi	4025fdbbe9bba773	bff0000000000000
+cos	near_half_pi	4025fdbbe9bba773	bcf1ee2c2d963a11
+tan	near_half_pi	4025fdbbe9bba773	42ec8e0f162e0f13
+sin	near_half_pi	4025fdbbe9bba774	bff0000000000000
+cos	near_half_pi	4025fdbbe9bba774	bce3dc585b2c7422
+tan	near_half_pi	4025fdbbe9bba774	42f9c78eea78baa7
+sin	near_half_pi	4025fdbbe9bba775	bff0000000000000
+cos	near_half_pi	4025fdbbe9bba775	bcbee2c2d963a10c
+tan	near_half_pi	4025fdbbe9bba775	432093c3b4aebeb1
+sin	near_half_pi	4025fdbbe9bba776	bff0000000000000
+cos	near_half_pi	4025fdbbe9bba776	3cd8474f49a717bd
+tan	near_half_pi	4025fdbbe9bba776	c30516ac96142185
+sin	near_half_pi	4025fdbbe9bba777	bff0000000000000
+cos	near_half_pi	4025fdbbe9bba777	3cec23a7a4d38bde
+tan	near_half_pi	4025fdbbe9bba777	c2f231f92a3ca841
+sin	near_half_pi	4063a28c59d54339	bd2f727375f9f9f9
+cos	near_half_pi	4063a28c59d54339	3ff0000000000000
+tan	near_half_pi	4063a28c59d54339	bd2f727375f9f9f9
+sin	near_half_pi	4063a28c59d5433a	bd1ee4e6ebf3f3f3
+cos	near_half_pi	4063a28c59d5433a	3ff0000000000000
+tan	near_half_pi	4063a28c59d5433a	bd1ee4e6ebf3f3f3
+sin	near_half_pi	4063a28c59d5433b	3cd1b19140c0c0d5
+cos	near_half_pi	4063a28c59d5433b	3ff0000000000000
+tan	near_half_pi	4063a28c59d5433b	3cd1b19140c0c0d5
+sin	near_half_pi	4063a28c59d5433c	3d208d8c8a060607
+cos	near_half_pi	4063a28c59d5433c	3ff0000000000000
+tan	near_half_pi	4063a28c59d5433c	3d208d8c8a060607
+sin	near_half_pi	4063a28c59d5433d	3d3046c645030303
+cos	near_half_pi	4063a28c59d5433d	3ff0000000000000
+tan	near_half_pi	4063a28c59d5433d	3d3046c645030303
+sin	near_half_pi	40816d0fc2ed4542	bff0000000000000
+cos	near_half_pi	40816d0fc2ed4542	bd52a7966f8d53ba
+tan	near_half_pi	40816d0fc2ed4542	428b723dd21cccbf
+sin	near_half_pi	40816d0fc2ed4543	bff0000000000000
+cos	near_half_pi	40816d0fc2ed4543	bd454f2cdf1aa774
+tan	near_half_pi	40816d0fc2ed4543	429806ef85871be9
+sin	near_half_pi	40816d0fc2ed4544	bff0000000000000
+cos	near_half_pi	40816d0fc2ed4544	bd253cb37c6a9dcf
+tan	near_half_pi	40816d0fc2ed4544	42b81bd6383707de
+sin	near_half_pi	40816d0fc2ed4545	bff0000000000000
+cos	near_half_pi	40816d0fc2ed4545	3d3561a641cab119
+tan	near_half_pi	40816d0fc2ed4545	c2a7f22cf1250687
+sin	near_half_pi	40816d0fc2ed4546	bff0000000000000
+cos	near_half_pi	40816d0fc2ed4546	3d4ab0d320e5588c
+tan	near_half_pi	40816d0fc2ed4546	c2932ec52ba20ecd
+sin	near_half_pi	4137f7f10a07f45c	bff0000000000000
+cos	near_half_pi	4137f7f10a07f45c	be02193f62a6b805
+tan	near_half_pi	4137f7f10a07f45c	41dc4a1905f8761d
+sin	near_half_pi	4137f7f10a07f45d	bff0000000000000
+cos	near_half_pi	4137f7f10a07f45d	bdf4327ec54d700a
+tan	near_half_pi	4137f7f10a07f45d	41e95998ecbe6d93
+sin	near_half_pi	4137f7f10a07f45e	bff0000000000000
+cos	near_half_pi	4137f7f10a07f45e	bdd0c9fb1535c027
+tan	near_half_pi	4137f7f10a07f45e	420e7f05b71cd2d1
+sin	near_half_pi	4137f7f10a07f45f	bff0000000000000
+cos	near_half_pi	4137f7f10a07f45f	3de79b0275651fec
+tan	near_half_pi	4137f7f10a07f45f	c1f5b09a5098a75d
+sin	near_half_pi	4137f7f10a07f460	bff0000000000000
+cos	near_half_pi	4137f7f10a07f460	3dfbcd813ab28ff6
+tan	near_half_pi	4137f7f10a07f460	c1e26a5a6f8faa27
+sin	near_half_pi	41d921fb54442d16	bea234c4c6628a85
+cos	near_half_pi	41d921fb54442d16	3feffffffffffad2
+tan	near_half_pi	41d921fb54442d16	bea234c4c6628d78
+sin	near_half_pi	41d921fb54442d17	be9469898cc516a9
+cos	near_half_pi	41d921fb54442d17	3feffffffffffe5f
+tan	near_half_pi	41d921fb54442d17	be9469898cc517b3
+sin	near_half_pi	41d921fb54442d18	be71a62633145c03
+cos	near_half_pi	41d921fb54442d18	3fefffffffffffed
+tan	near_half_pi	41d921fb54442d18	be71a62633145c0e
+sin	near_half_pi	41d921fb54442d19	3e872cece675d1dc
+cos	near_half_pi	41d921fb54442d19	3fefffffffffff7a
+tan	near_half_pi	41d921fb54442d19	3e872cece675d23d
+sin	near_half_pi	41d921fb54442d1a	3e9b9676733ae824
+cos	near_half_pi	41d921fb54442d1a	3feffffffffffd07
+tan	near_half_pi	41d921fb54442d1a	3e9b9676733aeab4
+sin	huge	4480f0cf064dd592	bfeb453ab76bf397
+cos	huge	4480f0cf064dd592	3fe0be2cef01c8f4
+sin	huge	c480f0cf064dd592	3feb453ab76bf397
+cos	huge	c480f0cf064dd592	3fe0be2cef01c8f4
+sin	huge	7e37e43c8800759c	bfea2c16b010e385
+cos	huge	7e37e43c8800759c	bfe2699022adc4c1
+sin	huge	7fe0000000000000	3fe205248cbdb760
+cos	huge	7fe0000000000000	bfea719f26c232bf
+sin	huge	7506ac5b262ca1ff	3ff0000000000000
+cos	huge	7506ac5b262ca1ff	bc214ae72e6ba22f
+asin	near_one	3fefffffffffffff	3ff921fb50442d18
+acos	near_one	3fefffffffffffff	3e50000000000000
+acos	near_one	bfefffffffffffff	400921fb52442d18
+atanh	near_one	3fefffffffffffff	4032b708872320e2
+asin	near_one	3feffffffffffffe	3ff921fb4e9c057f
+acos	near_one	3feffffffffffffe	3e56a09e667f3bcd
+acos	near_one	bfeffffffffffffe	400921fb5170194b
+atanh	near_one	3feffffffffffffe	40325e4f7b2737fa
+asin	near_one	3feffffffffffffd	3ff921fb4d568e5e
+acos	near_one	3feffffffffffffd	3e5bb67ae8584cab
+acos	near_one	bfeffffffffffffd	400921fb50cd5dbb
+atanh	near_one	3feffffffffffffd	40322a69334db8c9
+asin	near_one	3feffffffffffffc	3ff921fb4c442d18
+acos	near_one	3feffffffffffffc	3e60000000000000
+acos	near_one	bfeffffffffffffc	400921fb50442d18
+atanh	near_one	3feffffffffffffc	403205966f2b4f12
+asin	near_one	3feffffffffffffb	3ff921fb4b52714a
+acos	near_one	3feffffffffffffb	3e61e3779b97f4a8
+acos	near_one	bfeffffffffffffb	400921fb4fcb4f31
+atanh	near_one	3feffffffffffffb	4031e9067763b478
+hypot	exact	4008000000000000	4010000000000000	4014000000000000
+hypot	exact	c014000000000000	4028000000000000	402a000000000000
+hypot	exact	7e88000000000000	7e90000000000000	7e94000000000000
+log2	exact	4090000000000000	4024000000000000
+log2	exact	0000000000000001	c090c80000000000
+atan2	exact	3ff0000000000000	3ff0000000000000	3fe921fb54442d18
+atan2	exact	bff0000000000000	bff0000000000000	c002d97c7f3321d2

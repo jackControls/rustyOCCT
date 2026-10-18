@@ -302,7 +302,7 @@ fn atanh_series(y: &Interval) -> Interval {
 
 /// ln 2 = 2 atanh(1/3), certified (1/3 is inside the series' reach after
 /// one halving of its remainder bound: its terms shrink ninefold).
-fn ln2() -> &'static Interval {
+pub(crate) fn ln2() -> &'static Interval {
     static LN2: OnceLock<Interval> = OnceLock::new();
     LN2.get_or_init(|| {
         let y = Interval::exact(R::new(1.into(), 3.into()));
@@ -426,6 +426,7 @@ fn taylor_cos_sin(r: &Interval) -> (Interval, Interval) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::cr::Rn as _;
 
     /// The rational product from the ends' signs is the four corners'
     /// least and greatest, rounded alike, for every pair of signs (zero
@@ -543,11 +544,11 @@ mod tests {
             let r = R::from_float(x).unwrap();
             let l = ln(&Interval::exact(r.clone())).unwrap();
             assert!(width(&l) < 1e-40, "{x}");
-            assert!(contains(&l, x.ln()), "ln {x}");
+            assert!(contains(&l, x.ln_rn()), "ln {x}");
             for v in [x, -x] {
                 let a = asinh(&Interval::exact(R::from_float(v).unwrap()));
                 assert!(width(&a) < 1e-40, "{v}");
-                assert!(contains(&a, v.asinh()), "asinh {v}");
+                assert!(contains(&a, v.asinh_rn()), "asinh {v}");
             }
         }
         assert!(ln(&Interval::exact(zero())).is_none());
@@ -586,7 +587,7 @@ mod tests {
         ] {
             let (c, s) = cos_sin(&R::from_float(x).unwrap());
             assert!(width(&c) < 1e-45 && width(&s) < 1e-45, "{x}");
-            assert!(contains(&c, x.cos()) && contains(&s, x.sin()), "{x}");
+            assert!(contains(&c, x.cos_rn()) && contains(&s, x.sin_rn()), "{x}");
             let one = c.square().add(&s.square());
             assert_eq!(
                 one.cmp_exact(&R::from_integer(2.into())),
@@ -643,7 +644,7 @@ mod tests {
         ] {
             let a = atan2(&Interval::from_f64(y), &Interval::from_f64(x)).unwrap();
             assert!(width(&a) < 1e-40, "{y} {x}");
-            assert!(contains(&a, f64::atan2(y, x)), "{y} {x}");
+            assert!(contains(&a, y.atan2_rn(x)), "{y} {x}");
         }
         assert!(atan2(&Interval::from_f64(0.0), &Interval::from_f64(-1.0)).is_none());
     }
@@ -1420,6 +1421,7 @@ fn fast_cos_sin(x: &Fast) -> (Fast, Fast) {
 #[cfg(test)]
 mod tier_tests {
     use super::*;
+    use crate::cr::Rn as _;
 
     #[test]
     fn binary64_half_pi_interval_contains_pi_over_two() {
@@ -1501,7 +1503,7 @@ mod tier_tests {
     fn fast_trig_encloses_the_rational_enclosure() {
         // Angles through +-150 radians, off any multiple of pi/2.
         for i in -50..=50 {
-            let x = i as f64 * 2.97 + 0.001 * (i as f64).sin();
+            let x = i as f64 * 2.97 + 0.001 * (i as f64).sin_rn();
             let (c, s) = fast_cos_sin(&Fast::exact_f64(x));
             let (ce, se) = cos_sin(&R::from_float(x).unwrap());
             for (fast, exact) in [(c, ce), (s, se)] {

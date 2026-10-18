@@ -7,6 +7,7 @@
 //! [`History::then`] composes histories and [`History::resolve`] answers
 //! "what became of this id" without ever choosing a survivor.
 use crate::attributes::AttributeOutcome;
+use crate::cr::Rn as _;
 use crate::identity::{
     encode_parents, role_code, AlgorithmLevel, EntityId, EntityKind, OperationId, OperationKind,
     Parent, Role,
@@ -961,7 +962,7 @@ fn same_surface(piece: &EntityInfo, whole: &Geometry, tol: f64, edges: &Entities
             let d = fa.origin() - fb.origin();
             let along = d.dot(nb);
             let off = (d - nb * along).length();
-            let radius = rb + along * hb.tan();
+            let radius = rb + along * hb.tan_rn();
             Some(
                 na.cross(nb).length() <= 1e-12
                     && na.dot(nb) > 0.0

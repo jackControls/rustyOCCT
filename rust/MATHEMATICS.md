@@ -3197,3 +3197,57 @@ analytic surface enters T-a's condition with the extents `H max |u'|` and
 `H max |v'|` (`H` its parameter length, `D1` per coordinate over its
 cells) and its `v` range from its control hull (a rational curve with
 positive weights lies in the convex hull of its poles).
+
+## Correctly rounded elementary functions (R13)
+
+Every binary64 the kernel constructs through a transcendental function or
+`hypot` (frames normalized by `Vec3::length`, rotations, arc and circle
+points, imported models' slopes and bounds, the mass engine's angles,
+tessellation parameters) is the exact value rounded once to the nearest
+binary64 (`cr.rs`, the `_rn` methods of `cr::Rn`). Platform libms are not
+correctly rounded: macOS's `hypot` and `tan` were an ulp off in the two
+constructions behind F11 (the review of 18 October 2026, X1), and glibc
+2.39's `hypot` differs from the correctly rounded value in about one
+sample in 400 of moderate arguments. With one rounding the bits depend on
+the inputs alone, so every host builds the same solids, the same exact
+decisions follow and the same fixtures hold. `sqrt` and the four
+operations are correctly rounded by IEEE 754 and stay as they are; the
+library denies `f64`'s libm methods (`clippy.toml`).
+
+* **Fast tier.** A double-double evaluation with an explicit relative error
+  bound, error-free products by the fused multiply-add instruction or
+  Dekker's product (the same exact errors; no libm `fma`). Sine and cosine
+  reduce by `pi/2` in four parts (Cody and Waite, `|k| < 2^20`), then by
+  tables of `j/256`: first with only the leading terms exact (within
+  `2^-66`, budget `2^-62`), then in double-double with a short series
+  (within `2^-70`, budget `2^-64`), then by series alone; the arctangent
+  from tables of `atan(j/256)` likewise; `asin` and `acos` through
+  `sqrt((1 - x)(1 + x))` in double-double; `exp`, `ln`, `log2`, `sinh`,
+  `cosh`, `asinh` and `atanh` by series in double-double (within `2^-95`,
+  budget `2^-88`). The value decides when the bound keeps it off both
+  rounding boundaries (half an ulp each side, a quarter towards zero at a
+  power of two); the quick pass fails about one argument in 250, the
+  tables about one in a thousand, the series about one in `2^30`, each
+  falling to the next. A thread keeps its last sine and cosine pair, so
+  the many callers taking both of one angle pay once.
+* **Rational tier.** `certified.rs`'s enclosures (Machin's `pi`, Taylor
+  sine and cosine, `atan`, `ln`, the integer square root on a `2^-200`
+  grid; an exponential series with its remainder) rounded once where the
+  enclosure lies in one rounding cell. Arguments past `2^20 pi/2`, or a
+  sine's too near a multiple of `pi/2`, are reduced again with 1344 bits of
+  `pi/2` first. `hypot` decides exactly on the squares: in 128-bit integers
+  for the ties and near ties of Pythagorean data, in big integers
+  elsewhere.
+* **Domain.** Correctly rounded for every argument whose result is in the
+  normal range, but for `atan2` of a quotient below `2^-900` (the IEEE
+  quotient) and values within `2^-120` of a rounding boundary that the
+  rational tier's enclosure cannot separate, beyond the hardest cases known
+  for binary64; there, and for subnormal results of `exp`, `sinh` and
+  `cosh`, the result is the enclosure's nearest, still the same on every
+  host.
+* **Evidence.** `fixtures/correctly-rounded.tsv` (1,974 rows, mpmath at
+  2400 bits, `generate_correctly_rounded_fixtures.py`) bit for bit; every
+  Fast decision the rational tier's on seeded samples, the evaluations'
+  errors measured under their budgets, the tables against the rational
+  tier (`cr/tests.rs`); `fixtures/construction-bits.tsv` pins every family
+  of constructions on every host.

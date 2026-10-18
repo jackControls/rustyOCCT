@@ -11,6 +11,7 @@ use super::meet::{tangency, CylPair};
 use super::model::*;
 use super::num::*;
 use crate::certified::{Fast, Real};
+use crate::cr::Rn as _;
 use crate::solid::split::{rational_f64, zero};
 use crate::{Error, Result};
 use num_rational::BigRational as R;
@@ -478,7 +479,7 @@ impl MeetCrv {
         (0..=n)
             .map(|i| {
                 let t = t0 + sweep * i as f64 / n as f64;
-                let radial = [0, 1, 2].map(|j| t.cos() * x[j] + t.sin() * y[j]);
+                let radial = [0, 1, 2].map(|j| t.cos_rn() * x[j] + t.sin_rn() * y[j]);
                 let base = [0, 1, 2].map(|j| o[j] + r * radial[j]);
                 let dir = [0, 1, 2].map(|j| nn[j] + slope * radial[j]);
                 let gn: Vec<f64> = g.iter().map(|gi| d3(gi, &dir)).collect();

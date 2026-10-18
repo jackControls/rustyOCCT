@@ -411,6 +411,13 @@ Minimization is an explicit triage step, not a claim that CI automatically
 understands or repairs failures. No lifetime reliability guarantee follows
 from any finite campaign.
 
+Replays recorded above "natively and under the emulated correctly rounded
+`hypot`" ran the corpus a second time with a local, uncommitted patch that
+made `Vec3::length` correctly rounded, so that a macOS host also saw the
+Linux hosts' frames. Since R13 (the review of 18 October 2026) every kernel
+construction is correctly rounded on every host (`cr.rs`), so a native
+replay is that replay and the emulation is no longer needed.
+
 Slow-unit diagnostics also receive triage even when a campaign passes. The
 checked-in [regression notes](fuzz/regressions/README.md) link saved inputs to
 their originating run and ordinary exact fixtures. A release replay example

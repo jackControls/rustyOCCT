@@ -180,7 +180,8 @@ fn a_frustum_on_a_top_within_rounding_is_degenerate() {
 }
 
 /// The same frustum with its normal turned by an ulp: a frame normalized
-/// again by another platform's `hypot` (Linux's and Windows's CI) turns it
+/// again by another rounding of `hypot` (Linux's and Windows's CI before
+/// R13) turns it
 /// so, and the planes are no longer parallel, yet one plane within the
 /// resolution over the base (`Degenerate`).
 #[test]

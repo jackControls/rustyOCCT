@@ -24,6 +24,7 @@
 use super::torus::Band;
 use super::{q, zero, Side};
 use crate::certified::{Interval as I, Real};
+use crate::cr::Rn as _;
 use crate::identity::Role;
 use crate::topology::{
     plane_pcurve, Curve2, Curve3, Edge, EdgeId, Face, FaceId, Fin, FinId, Loop, LoopId,
@@ -195,32 +196,32 @@ impl Geometry {
     /// `v` on branch `sign` of the graph over `u`.
     fn v_of(&self, u: f64, sign: f64) -> f64 {
         let [a, b, c, d] = self.plane;
-        let alpha = a * u.cos() + b * u.sin();
+        let alpha = a * u.cos_rn() + b * u.sin_rn();
         let (x, y) = (self.minor * alpha, self.minor * c);
-        let ratio = -(self.major * alpha + d) / x.hypot(y);
-        y.atan2(x) + sign * ratio.clamp(-1.0, 1.0).acos()
+        let ratio = -(self.major * alpha + d) / x.hypot_rn(y);
+        y.atan2_rn(x) + sign * ratio.clamp(-1.0, 1.0).acos_rn()
     }
 
     /// `dv / du` of the section at `(u, v)`.
     fn slope(&self, u: f64, v: f64) -> f64 {
         let [a, b, c, _] = self.plane;
-        let alpha = a * u.cos() + b * u.sin();
-        let fu = (self.major + self.minor * v.cos()) * (-a * u.sin() + b * u.cos());
-        let fv = self.minor * (-alpha * v.sin() + c * v.cos());
+        let alpha = a * u.cos_rn() + b * u.sin_rn();
+        let fu = (self.major + self.minor * v.cos_rn()) * (-a * u.sin_rn() + b * u.cos_rn());
+        let fv = self.minor * (-alpha * v.sin_rn() + c * v.cos_rn());
         -fu / fv
     }
 
     fn point(&self, u: f64, v: f64) -> Point3 {
-        let rho = self.major + self.minor * v.cos();
+        let rho = self.major + self.minor * v.cos_rn();
         self.frame.point(
-            Point2::new(rho * u.cos(), rho * u.sin()),
-            self.minor * v.sin(),
+            Point2::new(rho * u.cos_rn(), rho * u.sin_rn()),
+            self.minor * v.sin_rn(),
         )
     }
 
     /// The torus's outward normal at `(u, v)`, in world coordinates.
     fn outward(&self, u: f64, v: f64) -> Vec3 {
-        let ((su, cu), (sv, cv)) = (u.sin_cos(), v.sin_cos());
+        let ((su, cu), (sv, cv)) = (u.sin_cos_rn(), v.sin_cos_rn());
         let f = self.frame;
         f.x() * (cv * cu) + f.y() * (cv * su) + f.normal() * sv
     }
@@ -244,9 +245,9 @@ struct SectionEdge {
 fn left_of(g: &Geometry, curve: &Curve3) -> Side {
     let (p0, p1) = (curve.point(0.5 - 1e-6), curve.point(0.5 + 1e-6));
     let [x, y, z] = g.frame.coordinates(curve.point(0.5));
-    let rho = x.hypot(y);
-    let u = y.atan2(x);
-    let v = z.atan2(rho - g.major);
+    let rho = x.hypot_rn(y);
+    let u = y.atan2_rn(x);
+    let v = z.atan2_rn(rho - g.major);
     let left = g.outward(u, v).cross(p1 - p0);
     if left.dot(g.n_world()) > 0.0 {
         Side::Above
@@ -258,16 +259,16 @@ fn left_of(g: &Geometry, curve: &Curve3) -> Side {
 /// `acos(q / |(a, b)|)` of the graph over `v` at `v`.
 fn canonical_acos_v(g: &Geometry, v: f64) -> f64 {
     let [a, b, c, d] = g.plane;
-    let q = -(c * g.minor * v.sin() + d) / (g.major + g.minor * v.cos());
-    (q / a.hypot(b)).clamp(-1.0, 1.0).acos()
+    let q = -(c * g.minor * v.sin_rn() + d) / (g.major + g.minor * v.cos_rn());
+    (q / a.hypot_rn(b)).clamp(-1.0, 1.0).acos_rn()
 }
 
 /// A cap's four edges: the branches over `u` between their switch points and
 /// the graphs over `v` round the turning points.
 fn cap_edges(g: &Geometry, about_max: bool, tol: f64) -> Result<Vec<SectionEdge>> {
     let [a, b, c, d] = g.plane;
-    let rho = a.hypot(b);
-    let phi = b.atan2(a);
+    let rho = a.hypot_rn(b);
+    let phi = b.atan2_rn(a);
     let (big, small) = (g.major, g.minor);
     // The root of D inside (-rho, rho), rounded.
     let delta = big * big - small * small;
@@ -279,9 +280,9 @@ fn cap_edges(g: &Geometry, about_max: bool, tol: f64) -> Result<Vec<SectionEdge>
     };
     let ratio = (alpha_e / rho).clamp(-1.0, 1.0);
     let (centre, half) = if about_max {
-        (phi, ratio.acos())
+        (phi, ratio.acos_rn())
     } else {
-        (phi + PI, (-ratio).acos())
+        (phi + PI, (-ratio).acos_rn())
     };
     if half * (big + small) <= tol {
         return Err(Error::Degenerate("a cap within the resolution of a point"));
@@ -437,7 +438,7 @@ pub(super) fn pieces(
         plane: unit_plane(plane)?,
     };
     let [a, b, _, d] = g.plane;
-    let rho = a.hypot(b);
+    let rho = a.hypot_rn(b);
     // The pieces' thickness: F's extremes over the solid torus.
     let reach = major * rho + minor;
     if d + reach <= tol || d - reach >= -tol {
@@ -593,7 +594,7 @@ pub(super) fn pieces(
                             0.0
                         };
                         if sec.over_v {
-                            let u = b.atan2(a) + sec.sign * canonical_acos_v(&g, uv.y);
+                            let u = b.atan2_rn(a) + sec.sign * canonical_acos_v(&g, uv.y);
                             uv.x = u + lift;
                         } else {
                             uv.y = g.v_of(uv.x, sec.sign) + lift;

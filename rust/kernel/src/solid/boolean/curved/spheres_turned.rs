@@ -21,6 +21,7 @@ use super::procedural::Other;
 use super::sphere::Circ;
 use super::spheres::RiseCrv;
 use super::turned::{padd, pmul, pscale, roots, roots_repeated, trim, Chart, Form, Poly};
+use crate::cr::Rn as _;
 use crate::polynomial::real::{AlgebraicRoot, IntPolynomial};
 use crate::solid::split::{q, zero};
 use crate::{Error, Result};
@@ -139,7 +140,7 @@ pub(super) fn circ_ellipse(circ: &Circ, o: &Other, res: f64) -> Result<EdgeMeet>
             return Err(limit("a sphere's circle on a degenerate basis"));
         }
         let reach = (f(&circ.r2) / least).sqrt();
-        rho += q(f(&rad[1]).hypot(f(&rad[2])) * reach);
+        rho += q(f(&rad[1]).hypot_rn(f(&rad[2])) * reach);
     }
     add_sq(rad, &int(-1));
     // The band of the quadric's function about zero a displacement of the

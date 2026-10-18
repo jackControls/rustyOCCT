@@ -16,6 +16,7 @@
 use super::meet::*;
 use super::model::*;
 use super::num::*;
+use crate::cr::Rn as _;
 use crate::profile::boolean::Op2;
 use crate::solid::split::{q, rational_f64, zero};
 use crate::{Error, Result};
@@ -361,7 +362,7 @@ fn conic_nearest(o: &V, a: &V, b: &V, c: &V) -> Vec<QV> {
     let f = |v: &V| v.clone().map(|x| rational_f64(&x));
     let (fo, fa, fb, fc) = (f(o), f(a), f(b), f(c));
     let d2 = |t: f64| {
-        let (cs, sn) = (t.cos(), t.sin());
+        let (cs, sn) = (t.cos_rn(), t.sin_rn());
         (0..3)
             .map(|k| (fo[k] + fa[k] * cs + fb[k] * sn - fc[k]).powi(2))
             .sum::<f64>()
@@ -389,8 +390,8 @@ fn conic_nearest(o: &V, a: &V, b: &V, c: &V) -> Vec<QV> {
         let t = (lo + hi) / 2.0;
         // The rational point at the half angle's tangent `s` (about the
         // opposite direction near a half turn).
-        let flip = t.cos() < 0.0;
-        let s = q((if flip { t - std::f64::consts::PI } else { t } / 2.0).tan());
+        let flip = t.cos_rn() < 0.0;
+        let s = q((if flip { t - std::f64::consts::PI } else { t } / 2.0).tan_rn());
         let den = int(1) + &s * &s;
         let (cs, sn) = ((int(1) - &s * &s) / &den, int(2) * &s / &den);
         let (cs, sn) = if flip { (-cs, -sn) } else { (cs, sn) };
@@ -627,7 +628,7 @@ fn between_run(a: &[Qd; 2], x: &[Qd; 2], b: &[Qd; 2], ccw: bool) -> bool {
 
 /// The binary64 angle of a `(cos, sin)`.
 fn angle_f64(cs: &[Qd; 2]) -> f64 {
-    cs[1].to_f64().atan2(cs[0].to_f64())
+    cs[1].to_f64().atan2_rn(cs[0].to_f64())
 }
 
 /// A rational `(cos, sin)` strictly between `a` and `b` running with the
@@ -647,13 +648,13 @@ pub(super) fn rational_between(a: &[Qd; 2], b: &[Qd; 2], ccw: bool) -> Result<[R
         };
         let half = t / 2.0;
         // The chart whose parameter stays small.
-        let cs = if half.cos().abs() >= 0.5 {
-            let s = q(half.tan());
+        let cs = if half.cos_rn().abs() >= 0.5 {
+            let s = q(half.tan_rn());
             let one = int(1);
             let den = &one + &s * &s;
             [(&one - &s * &s) / &den, int(2) * &s / &den]
         } else {
-            let c = q(half.cos() / half.sin());
+            let c = q(half.cos_rn() / half.sin_rn());
             let one = int(1);
             let den = &c * &c + &one;
             [(&c * &c - &one) / &den, int(2) * &c / &den]
@@ -971,8 +972,9 @@ pub(super) fn arrange_touching(models: [Prism; 2], touch: bool) -> Result<Arr> {
     // Coincident planes; planes within the resolution of each other over
     // their faces' boxes' overlap are one plane within it (a sliver between
     // them), parallel or not: a frame normalized again turns its normal by
-    // the platform's `hypot`, so a plane rounded parallel to another on one
-    // host is off parallel by an ulp on another.
+    // an ulp in `hypot`'s rounding (by another host's libm before R13), so a
+    // plane rounded parallel to another in one frame is off parallel by an
+    // ulp in another.
     let tol = q(res);
     for (fa, a) in models[0].faces.iter().enumerate() {
         let Surf::Plane { p: pa, m: ma } = &a.surf else {
@@ -2954,7 +2956,7 @@ impl Arr {
                 let mut pts: Vec<[f64; 3]> = (0..=n)
                     .map(|i| {
                         let t = t0 + sweep * i as f64 / n as f64;
-                        [0, 1, 2].map(|k| cf[k] + af[k] * t.cos() + bf[k] * t.sin())
+                        [0, 1, 2].map(|k| cf[k] + af[k] * t.cos_rn() + bf[k] * t.sin_rn())
                     })
                     .collect();
                 if !h.1 {
@@ -3026,7 +3028,7 @@ impl Arr {
                         crate::solid::split::rational_f64(&c[1]),
                     );
                     let rf = crate::solid::split::rational_f64(r);
-                    let theta = (l[1] - cv).atan2(l[0] - cu);
+                    let theta = (l[1] - cv).atan2_rn(l[0] - cu);
                     let FaceKind::Wall(b, j) = kind else {
                         unreachable!("a wall")
                     };
@@ -3050,7 +3052,7 @@ impl Arr {
                     .abs();
                     let a0 = (crate::solid::split::rational_f64(&ap[1])
                         - crate::solid::split::rational_f64(&ac[1]))
-                    .atan2(
+                    .atan2_rn(
                         crate::solid::split::rational_f64(&ap[0])
                             - crate::solid::split::rational_f64(&ac[0]),
                     );
@@ -3201,7 +3203,7 @@ impl Arr {
         let side = |p: &[[f64; 2]]| {
             (0..p.len()).fold(0.0f64, |m, k| {
                 let (a, b) = (p[k], p[(k + 1) % p.len()]);
-                m.max((b[0] - a[0]).hypot(b[1] - a[1]))
+                m.max((b[0] - a[0]).hypot_rn(b[1] - a[1]))
             })
         };
         // Finer polygons where a hole's point lies near an outer loop's

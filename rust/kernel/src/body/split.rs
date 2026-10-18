@@ -8,6 +8,7 @@
 //! runs of its boundary's pieces on one side (an edge along the trace joins
 //! the run it continues in stored order), each an open wire.
 use super::{Body, Construction};
+use crate::cr::Rn as _;
 use crate::history::{self, History, Relation};
 use crate::identity::{
     Derivation, EntityId, EntityKind, OperationId, OperationKind, Parent, ProfileElement, Role,
@@ -173,7 +174,7 @@ fn segment_of(kind: &Kind) -> Segment {
 fn reach(boundaries: &[&Boundary]) -> f64 {
     use crate::profile::BoundaryKind;
     let mut out = 0.0f64;
-    let mut at = |p: Point2, r: f64| out = out.max(p.x.hypot(p.y) + r);
+    let mut at = |p: Point2, r: f64| out = out.max(p.x.hypot_rn(p.y) + r);
     for boundary in boundaries {
         match &boundary.kind {
             BoundaryKind::Polygon(points) => points.iter().for_each(|p| at(*p, 0.0)),
@@ -251,7 +252,7 @@ impl Body {
         // vertex within the resolution of the plane (`Degenerate` where it
         // would split the body; a body on one side is returned as before).
         let (tilt, offset) = (
-            rational_f64(&a).hypot(rational_f64(&b)),
+            rational_f64(&a).hypot_rn(rational_f64(&b)),
             rational_f64(&d).abs(),
         );
         let flat = |boundaries: Vec<&Boundary>, tolerance: Tolerance| {

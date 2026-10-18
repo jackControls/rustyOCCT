@@ -17,6 +17,7 @@
 //! `Degenerate`), counter-clockwise cycles are outer boundaries and
 //! clockwise ones holes, each result validated as a profile.
 use super::{boundaries_touch, Boundary, BoundaryKind, Location, Profile, Segment};
+use crate::cr::Rn as _;
 mod splines;
 
 use crate::certified::{Interval as I, Real};
@@ -671,23 +672,29 @@ impl Piece {
                 radius,
                 ccw,
             } => {
-                let a0 = (self.p.y - center.y).atan2(self.p.x - center.x);
+                let a0 = (self.p.y - center.y).atan2_rn(self.p.x - center.x);
                 let sweep = super::arc_sweep(center, self.p, self.e, ccw);
                 let a = a0 + sweep * f;
-                Point2::new(center.x + radius * a.cos(), center.y + radius * a.sin())
+                Point2::new(
+                    center.x + radius * a.cos_rn(),
+                    center.y + radius * a.sin_rn(),
+                )
             }
             Shape::Circle { center, radius } => {
                 if self.from.is_none() {
                     let a = std::f64::consts::TAU * f;
                     return Ok(Point2::new(
-                        center.x + radius * a.cos(),
-                        center.y + radius * a.sin(),
+                        center.x + radius * a.cos_rn(),
+                        center.y + radius * a.sin_rn(),
                     ));
                 }
-                let a0 = (self.p.y - center.y).atan2(self.p.x - center.x);
+                let a0 = (self.p.y - center.y).atan2_rn(self.p.x - center.x);
                 let sweep = super::arc_sweep(center, self.p, self.e, true);
                 let a = a0 + sweep * f;
-                Point2::new(center.x + radius * a.cos(), center.y + radius * a.sin())
+                Point2::new(
+                    center.x + radius * a.cos_rn(),
+                    center.y + radius * a.sin_rn(),
+                )
             }
         })
     }
@@ -1529,7 +1536,7 @@ fn signed_area(cycle: &[&Edge], splines: &[Span]) -> f64 {
             } => {
                 twice += e.p.x * e.e.y - e.e.x * e.p.y;
                 let phi = super::arc_sweep(center, e.p, e.e, ccw);
-                twice += radius * radius * (phi - phi.sin());
+                twice += radius * radius * (phi - phi.sin_rn());
             }
         }
     }

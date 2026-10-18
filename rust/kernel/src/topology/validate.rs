@@ -16,6 +16,7 @@ use super::{
     ShellId, Side, Surface, Vertex,
 };
 use crate::certified::{pi, Fast, Interval as I, Real};
+use crate::cr::Rn as _;
 use crate::jet::Jet;
 use crate::{Frame3, Tolerance};
 use num_bigint::{BigInt, Sign};
@@ -1252,7 +1253,7 @@ fn curve_valid(curve: &Curve3, tol: &R, fast_tol2: &Fast, exact_tol2: &I) -> boo
                 && (s.sign == 1.0 || s.sign == -1.0)
                 && s.sweep != 0.0
                 && s.sweep.abs() <= TAU
-                && (s.plane[0].hypot(s.plane[1]).hypot(s.plane[2]) - 1.0).abs() <= 1e-12
+                && (s.plane[0].hypot_rn(s.plane[1]).hypot_rn(s.plane[2]) - 1.0).abs() <= 1e-12
         }
         // Two cylinders' meeting (S9c.2): positive radii, axes not parallel,
         // a range within a turn.
@@ -1276,7 +1277,7 @@ fn curve_valid(curve: &Curve3, tol: &R, fast_tol2: &Fast, exact_tol2: &I) -> boo
                 && (m.sign == 1.0 || m.sign == -1.0)
                 && m.sweep != 0.0
                 && m.sweep.abs() <= TAU
-                && (m.other_sphere || cone || n.dot(x2).hypot(n.dot(y2)) > 1e-6)
+                && (m.other_sphere || cone || n.dot(x2).hypot_rn(n.dot(y2)) > 1e-6)
         }
         // A cylinder's and a sphere's meeting over the height (S9d.2b):
         // positive radii, a sign, a nonempty height range, the sphere's
@@ -1296,7 +1297,7 @@ fn curve_valid(curve: &Curve3, tol: &R, fast_tol2: &Fast, exact_tol2: &I) -> boo
                 && r(m.sphere_radius) > *tol
                 && (m.sign == 1.0 || m.sign == -1.0)
                 && m.sweep != 0.0
-                && a.hypot(b) > 1e-12
+                && a.hypot_rn(b) > 1e-12
         }
         // A spline wall's meeting with a cylinder (S9f.2b), a sphere
         // (S9f.3a) or a cone (S9f.3b): a nonrational wall of degree one in
@@ -1318,7 +1319,7 @@ fn curve_valid(curve: &Curve3, tol: &R, fast_tol2: &Fast, exact_tol2: &I) -> boo
             let crossing = |u: f64| {
                 let (_, dir) = m.ruling(u);
                 let (x2, y2) = (m.other.x(), m.other.y());
-                m.other_sphere || cone || dir.dot(x2).hypot(dir.dot(y2)) > 1e-6 * dir.length()
+                m.other_sphere || cone || dir.dot(x2).hypot_rn(dir.dot(y2)) > 1e-6 * dir.length()
             };
             let radius = if cone {
                 m.other_radius >= 0.0

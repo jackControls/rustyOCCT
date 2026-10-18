@@ -10,6 +10,7 @@
 //! never a moved edge.
 use super::import::{list, real, reference, Build, Named};
 use super::part21::{Instance, Parameter};
+use crate::cr::Rn as _;
 use crate::occt_brep::read::{BSplineRecord, BSplineSurfaceRecord, Curve2 as Record2};
 use crate::{BSplineCurve2, BSplineCurve3, BSplineSurface3, Error, KnotVector, Point2, Point3};
 
@@ -353,7 +354,7 @@ pub(super) fn pcurve(b: &Build, n: u64) -> Named<(u64, Pcurve)> {
             return Err("MalformedEntity");
         };
         let (x, y) = (real(x)?, real(y)?);
-        let norm = x.hypot(y);
+        let norm = x.hypot_rn(y);
         if !(norm > 0.0 && norm.is_finite()) {
             return Err("DegenerateDirection");
         }
@@ -760,7 +761,7 @@ mod tests {
             (0..6)
                 .map(|k| {
                     let a = k as f64;
-                    Point3::new(a.cos(), a.sin(), 0.25 * a)
+                    Point3::new(a.cos_rn(), a.sin_rn(), 0.25 * a)
                 })
                 .collect(),
             Some(vec![1.0, 2.0, 0.5, 1.0, 3.0, 1.5]),
@@ -796,7 +797,7 @@ mod tests {
         let poles: Vec<Point3> = (0..20)
             .map(|k| {
                 let (i, j) = ((k / 5) as f64, (k % 5) as f64);
-                Point3::new(3.0 * i, 2.0 * j, (i * j).sin())
+                Point3::new(3.0 * i, 2.0 * j, (i * j).sin_rn())
             })
             .collect();
         let weights = (0..20).map(|k| 1.0 + 0.125 * (k % 3) as f64).collect();

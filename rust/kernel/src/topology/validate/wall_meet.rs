@@ -1055,6 +1055,7 @@ fn zero() -> R {
 mod tests {
     use super::*;
     use crate::certified::Fast;
+    use crate::cr::Rn as _;
     use crate::topology::{Curve3, Projection, Surface};
     use crate::{Frame3, KnotVector, Point3, Tolerance, Vec3};
 
@@ -1109,7 +1110,7 @@ mod tests {
             for k in 0..=16 {
                 let f = k as f64 / 16.0;
                 let p = m.point(f);
-                assert!((p.y.hypot(p.z - 1.0) - 1.5).abs() < 1e-14, "{p:?}");
+                assert!((p.y.hypot_rn(p.z - 1.0) - 1.5).abs() < 1e-14, "{p:?}");
                 assert_eq!((p.z - 1.0).signum(), sign);
                 let (u, v) = m.parameters(f);
                 let q = m.wall.point(u, v).unwrap();
@@ -1252,7 +1253,10 @@ mod tests {
         for k in 0..=16 {
             let f = k as f64 / 16.0;
             let p = m.point(f);
-            assert!(((p.y - 0.3).hypot(p.z - 1.0) - 0.2).abs() < 1e-14, "{p:?}");
+            assert!(
+                ((p.y - 0.3).hypot_rn(p.z - 1.0) - 0.2).abs() < 1e-14,
+                "{p:?}"
+            );
             let (u, v) = m.parameters(f);
             assert!(u > turn - 0.01 && u < turn + 0.015);
             let q = m.wall.point(u, v).unwrap();
@@ -1373,7 +1377,7 @@ mod tests {
         let base = wall_meet(1.0, 0.0, 1.0);
         let reach = |u: f64| {
             let p = base.wall.point(u, 0.0).unwrap();
-            p.x.hypot(p.y - 0.4)
+            p.x.hypot_rn(p.y - 0.4)
         };
         // The turning point on the first span: the profile 0.2 from (0, 0.4).
         let (mut a, mut b) = (0.0, 0.5);
@@ -1422,8 +1426,8 @@ mod tests {
     fn cone_meetings_lie_on_the_wall_and_the_cone() {
         let gap = |m: &WallMeet, p: Point3| {
             let w = p - m.other.origin();
-            let r = m.other_radius + w.dot(m.other.normal()) * m.other_half_angle.tan();
-            (w.dot(m.other.x()).hypot(w.dot(m.other.y())) - r, r)
+            let r = m.other_radius + w.dot(m.other.normal()) * m.other_half_angle.tan_rn();
+            (w.dot(m.other.x()).hypot_rn(w.dot(m.other.y())) - r, r)
         };
         let across = Frame3::new(
             Point3::new(-2.0, 0.3, 1.0),
@@ -1436,7 +1440,7 @@ mod tests {
             let m = WallMeet {
                 other: across,
                 other_radius: 0.8,
-                other_half_angle: 0.1f64.atan(),
+                other_half_angle: 0.1f64.atan_rn(),
                 ..wall_meet(sign, 0.0, 1.0)
             };
             for k in 0..=16 {
@@ -1464,7 +1468,7 @@ mod tests {
             let m = WallMeet {
                 other: along,
                 other_radius: 0.1,
-                other_half_angle: 0.5f64.atan(),
+                other_half_angle: 0.5f64.atan_rn(),
                 ..wall_meet(sign, 0.0, 1.0)
             };
             let (_, r) = gap(&m, m.point(0.5));

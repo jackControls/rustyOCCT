@@ -11,6 +11,7 @@
 //! solid region (S6) is written as its closed shells, its face or open
 //! shell, its edge or wire, or its vertex.
 use super::BrepError;
+use crate::cr::Rn as _;
 use crate::topology::{
     BodyClass, Curve2, Curve3, EdgeId, FaceId, Loop, Orientation, RegionKind, Side, Surface,
     Topology,
@@ -279,7 +280,7 @@ fn curve_at(c: &Curve3, t: f64) -> Point3 {
             *start + d * (t / d.length())
         }
         Curve3::Circle { frame, radius } => {
-            frame.point(Point2::new(radius * t.cos(), radius * t.sin()), 0.0)
+            frame.point(Point2::new(radius * t.cos_rn(), radius * t.sin_rn()), 0.0)
         }
         Curve3::CircularArc {
             frame,
@@ -288,7 +289,7 @@ fn curve_at(c: &Curve3, t: f64) -> Point3 {
             ..
         } => {
             let a = if *sweep_angle < 0.0 { -t } else { t };
-            frame.point(Point2::new(radius * a.cos(), radius * a.sin()), 0.0)
+            frame.point(Point2::new(radius * a.cos_rn(), radius * a.sin_rn()), 0.0)
         }
         Curve3::EllipseArc {
             frame,
@@ -303,7 +304,7 @@ fn curve_at(c: &Curve3, t: f64) -> Point3 {
             } else {
                 a
             };
-            frame.point(Point2::new(major * a.cos(), minor * a.sin()), 0.0)
+            frame.point(Point2::new(major * a.cos_rn(), minor * a.sin_rn()), 0.0)
         }
         Curve3::HyperbolaArc {
             frame,
@@ -313,7 +314,7 @@ fn curve_at(c: &Curve3, t: f64) -> Point3 {
             ..
         } => {
             let a = if *sweep < 0.0 { -t } else { t };
-            frame.point(Point2::new(major * a.cosh(), minor * a.sinh()), 0.0)
+            frame.point(Point2::new(major * a.cosh_rn(), minor * a.sinh_rn()), 0.0)
         }
         Curve3::ParabolaArc {
             frame,
@@ -376,7 +377,7 @@ fn pcurve_record(
                     (du.signum(), 0.0)
                 }
                 _ => {
-                    let l = du.hypot(dv);
+                    let l = du.hypot_rn(dv);
                     // A pcurve whose length is not its edge's parameter span
                     // (on a spline surface, whose parameters are no lengths:
                     // a STEP file's, STEP-b) runs over the span as the fin's
@@ -411,8 +412,8 @@ fn pcurve_record(
             let sigma = sweep.signum();
             let alpha = start - sigma * t0;
             let (x, y) = (
-                (alpha.cos(), alpha.sin()),
-                (-sigma * alpha.sin(), sigma * alpha.cos()),
+                (alpha.cos_rn(), alpha.sin_rn()),
+                (-sigma * alpha.sin_rn(), sigma * alpha.cos_rn()),
             );
             format!(
                 "2 {} {} {} {}",
@@ -501,7 +502,7 @@ fn pole_pass(surface: &Surface, a: Point2, b: Point2) -> bool {
         Surface::Sphere { .. } => vec![std::f64::consts::FRAC_PI_2, -std::f64::consts::FRAC_PI_2],
         Surface::Cone {
             radius, half_angle, ..
-        } => vec![-radius / half_angle.sin()],
+        } => vec![-radius / half_angle.sin_rn()],
         _ => return false,
     };
     let at_pole = poles
@@ -548,8 +549,8 @@ impl Revolved {
             } => Some(Self::Ruled {
                 frame: *frame,
                 radius: *radius,
-                sin: half_angle.sin(),
-                cos: half_angle.cos(),
+                sin: half_angle.sin_rn(),
+                cos: half_angle.cos_rn(),
             }),
             Surface::Sphere { frame, radius } => Some(Self::Sphere {
                 frame: *frame,
@@ -580,14 +581,14 @@ impl Revolved {
             Self::Ruled {
                 radius, sin, cos, ..
             } => (radius + v * sin, v * cos),
-            Self::Sphere { radius, .. } => (radius * v.cos(), radius * v.sin()),
-            Self::Torus { major, minor, .. } => (major + minor * v.cos(), minor * v.sin()),
+            Self::Sphere { radius, .. } => (radius * v.cos_rn(), radius * v.sin_rn()),
+            Self::Torus { major, minor, .. } => (major + minor * v.cos_rn(), minor * v.sin_rn()),
         }
     }
     fn point(&self, u: f64, v: f64) -> Point3 {
         let (rho, height) = self.meridian(v);
         self.frame()
-            .point(Point2::new(rho * u.cos(), rho * u.sin()), height)
+            .point(Point2::new(rho * u.cos_rn(), rho * u.sin_rn()), height)
     }
     /// `v` of the pole a band closes: a cone's apex, a sphere's north pole
     /// when the band winds `+u` in the unoriented face, else its south pole.
@@ -839,9 +840,9 @@ pub fn write(topology: &Topology, tolerance: f64) -> Result<String, BrepError> {
                 if (cr - rho(height)).abs() > tolerance {
                     return Err(unwritable("a ring edge off its wall's radius"));
                 }
-                let dir = frame.x() * u0.cos() + frame.normal().cross(frame.x()) * u0.sin();
+                let dir = frame.x() * u0.cos_rn() + frame.normal().cross(frame.x()) * u0.sin_rn();
                 let ny = cf.normal().cross(cf.x());
-                let mut angle = dir.dot(ny).atan2(dir.dot(cf.x()));
+                let mut angle = dir.dot(ny).atan2_rn(dir.dot(cf.x()));
                 if let Curve3::CircularArc { sweep_angle, .. } = &t.edges()[e].curve {
                     if *sweep_angle < 0.0 {
                         angle = -angle;
@@ -933,7 +934,7 @@ pub fn write(topology: &Topology, tolerance: f64) -> Result<String, BrepError> {
             }
             let dir = face.surface.point(Point2::new(at.x, v0)) - cf.origin();
             let ny = cf.normal().cross(cf.x());
-            let mut angle = dir.dot(ny).atan2(dir.dot(cf.x()));
+            let mut angle = dir.dot(ny).atan2_rn(dir.dot(cf.x()));
             if let Curve3::CircularArc { sweep_angle, .. } = &t.edges()[e].curve {
                 if *sweep_angle < 0.0 {
                     angle = -angle;
@@ -1146,7 +1147,7 @@ pub fn write(topology: &Topology, tolerance: f64) -> Result<String, BrepError> {
                 if high <= low {
                     return Err(unwritable("a seam running down"));
                 }
-                let e = frame.x() * u0.cos() + frame.normal().cross(frame.x()) * u0.sin();
+                let e = frame.x() * u0.cos_rn() + frame.normal().cross(frame.x()) * u0.sin_rn();
                 let n = frame.normal();
                 // The meridian circle: the sphere's, or the tube's about
                 // O + major e(u0); its parameter is v.
@@ -1182,14 +1183,14 @@ pub fn write(topology: &Topology, tolerance: f64) -> Result<String, BrepError> {
     }
     // Seams in v and whole tori.
     let latitude = |frame: crate::Frame3, major: f64, minor: f64, v: f64| {
-        let centre = frame.origin() + frame.normal() * (minor * v.sin());
+        let centre = frame.origin() + frame.normal() * (minor * v.sin_rn());
         format!(
             "2 {} {} {} {} {}",
             nums(&centre.to_array()),
             nums(&frame.normal().to_array()),
             nums(&frame.x().to_array()),
             nums(&frame.normal().cross(frame.x()).to_array()),
-            num(major + minor * v.cos())
+            num(major + minor * v.cos_rn())
         )
     };
     let mut vseam_of: BTreeMap<usize, usize> = BTreeMap::new();

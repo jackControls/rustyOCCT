@@ -17,6 +17,7 @@
 //! turning through less than a half-turn).
 use super::arcs::Arc2;
 use crate::certified::{Fast, Real};
+use crate::cr::Rn as _;
 use crate::Point2;
 use num_rational::BigRational as R;
 
@@ -332,7 +333,7 @@ fn boxes_apart(a: &Bx, b: &Bx, t: f64) -> bool {
 }
 
 fn diagonal(b: &Bx) -> f64 {
-    (b[1] - b[0]).hypot(b[3] - b[2])
+    (b[1] - b[0]).hypot_rn(b[3] - b[2])
 }
 
 /// A segment's parts: a line, an arc (its start angle and signed sweep from
@@ -354,7 +355,7 @@ pub(crate) fn circle(center: Point2, radius: f64) -> Vec<Part> {
 }
 
 pub(crate) fn arc(arc: &Arc2) -> Vec<Part> {
-    let start = (arc.start.y - arc.center.y).atan2(arc.start.x - arc.center.x);
+    let start = (arc.start.y - arc.center.y).atan2_rn(arc.start.x - arc.center.x);
     let sweep = crate::profile::arc_sweep(arc.center, arc.start, arc.end, arc.ccw);
     let (lo, hi, ends) = if sweep > 0.0 {
         (
@@ -929,7 +930,7 @@ pub(crate) fn length(parts: &[Part]) -> f64 {
             let (a, b) = (k as f64 / pieces as f64, (k + 1) as f64 / pieces as f64);
             for (node, w) in NODES {
                 let t = 0.5 * (a + b) + 0.5 * (b - a) * node;
-                total += 0.5 * (b - a) * w * eval(&dx, t).hypot(eval(&dy, t));
+                total += 0.5 * (b - a) * w * eval(&dx, t).hypot_rn(eval(&dy, t));
             }
         }
     }

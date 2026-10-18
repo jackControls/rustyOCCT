@@ -64,6 +64,7 @@ use super::spline_walls::{
     combine, derivative, peval, peval_r, qpoint, trim, BArc, Roots, SplineSeg, WallCrv,
 };
 use super::turned::roots_repeated;
+use crate::cr::Rn as _;
 use crate::polynomial::real::{isolate, AlgebraicRoot, Budget, IntPolynomial};
 use crate::polynomial::RootIsolationOptions;
 use crate::solid::split::{rational_f64, zero};
@@ -1073,7 +1074,7 @@ fn outside(pr: &Prism, fi: usize, x: &QV) -> f64 {
     let height = (l[2].to_f64() - w.to_f64()).abs();
     let across = if pr.in_face(fi, &qpoint(&pr.f, &l[0], &l[1], &w)) == Loc::Out {
         let at = [l[0].to_f64(), l[1].to_f64()];
-        let gap = |e: &P2| (at[0] - rational_f64(&e[0])).hypot(at[1] - rational_f64(&e[1]));
+        let gap = |e: &P2| (at[0] - rational_f64(&e[0])).hypot_rn(at[1] - rational_f64(&e[1]));
         let seg = &pr.bounds[b].segs[j];
         if matches!(seg, Seg::Spline(_)) {
             0.0
@@ -1083,7 +1084,7 @@ fn outside(pr: &Prism, fi: usize, x: &QV) -> f64 {
     } else {
         0.0
     };
-    height.hypot(across)
+    height.hypot_rn(across)
 }
 
 // ------------------------------------------------------------ the vertices

@@ -88,7 +88,7 @@ fn norm(a: (f64, f64)) -> f64 {
 /// `(-pi, pi]`.
 fn turn(c: Point2, ccw: bool, a: Point2, b: Point2) -> f64 {
     let (u, v) = (sub(a, c), sub(b, c));
-    let t = cross(u, v).atan2(dot(u, v));
+    let t = cross(u, v).atan2_rn(dot(u, v));
     if ccw {
         t
     } else {
@@ -188,9 +188,9 @@ fn middle(k: Carrier, a: Point2, b: Point2) -> Point2 {
     match k {
         Carrier::Line { .. } => Point2::new(0.5 * (a.x + b.x), 0.5 * (a.y + b.y)),
         Carrier::Circle { c, r, ccw } => {
-            let t0 = (a.y - c.y).atan2(a.x - c.x);
+            let t0 = (a.y - c.y).atan2_rn(a.x - c.x);
             let t = t0 + 0.5 * if ccw { 1.0 } else { -1.0 } * turn(c, ccw, a, b);
-            Point2::new(c.x + r * t.cos(), c.y + r * t.sin())
+            Point2::new(c.x + r * t.cos_rn(), c.y + r * t.sin_rn())
         }
     }
 }

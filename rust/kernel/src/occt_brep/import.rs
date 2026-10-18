@@ -13,6 +13,7 @@
 //! twin. The result must pass `Topology::from_parts`.
 use super::read::{self, Data, Document, EdgeRep, Kind, Orient, Sub};
 use super::Transform;
+use crate::cr::Rn as _;
 use crate::topology::{
     Curve2, Curve3, Edge, EdgeId, Enclosure, Face, FaceId, Fin, FinId, Issue, Loop, LoopId,
     Orientation, Region, RegionId, RegionKind, Shell, ShellId, Side, Surface, Topology,
@@ -407,7 +408,7 @@ impl Walk<'_> {
                 end: Point2::new(p[0] + l * d[0], p[1] + l * d[1]),
             },
             read::Curve2::Circle { c, x, y, r } => {
-                let base = x[1].atan2(x[0]);
+                let base = x[1].atan2_rn(x[0]);
                 let turn = if x[0] * y[1] - x[1] * y[0] > 0.0 {
                     1.0
                 } else {
@@ -747,7 +748,7 @@ fn on_plane(plane: &Frame3, curve: &Curve3) -> Curve2 {
             } else {
                 -1.0
             };
-            let base = b.atan2(a);
+            let base = b.atan2_rn(a);
             Curve2::CircularArc {
                 center: uv(frame.origin()),
                 radius: *radius,
@@ -990,9 +991,9 @@ fn u_scale(surface: &Surface, v: f64) -> Option<f64> {
         Surface::Cylinder { radius, .. } => Some(*radius),
         Surface::Cone {
             radius, half_angle, ..
-        } => Some((radius + v * half_angle.sin()).abs()),
-        Surface::Sphere { radius, .. } => Some((radius * v.cos()).abs()),
-        Surface::Torus { major, minor, .. } => Some(major + minor * v.cos()),
+        } => Some((radius + v * half_angle.sin_rn()).abs()),
+        Surface::Sphere { radius, .. } => Some((radius * v.cos_rn()).abs()),
+        Surface::Torus { major, minor, .. } => Some(major + minor * v.cos_rn()),
         Surface::Plane(_) => None,
     }
 }

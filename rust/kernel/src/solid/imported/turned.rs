@@ -267,7 +267,7 @@ fn meridian(t: &Topology, tol: f64) -> Option<Meridian> {
     let n = axis.normal();
     let on_axis_line = |frame: &Frame3| {
         let c = axis.coordinates(frame.origin());
-        along(n, frame.normal(), size, tol) && c[0].hypot(c[1]) <= tol
+        along(n, frame.normal(), size, tol) && c[0].hypot_rn(c[1]) <= tol
     };
     let mut kinds = Vec::new();
     // S9e.4b.4d.2b: each cone within the resolution of a plane, taken as the
@@ -328,7 +328,7 @@ fn meridian(t: &Topology, tol: f64) -> Option<Meridian> {
                 } else {
                     1.0
                 };
-                let k = q(sense * half_angle.tan());
+                let k = q(sense * half_angle.tan_rn());
                 let c = local.of(frame.origin())[2].clone();
                 Kind::Curved(Line {
                     r0: q(*radius) - &k * &c,
@@ -394,7 +394,7 @@ fn meridian(t: &Topology, tol: f64) -> Option<Meridian> {
                     Kind::Curved(_) => ends[i].push(End::Apex(v.index())),
                     Kind::Plane(h) => {
                         let c = local.of(t.vertices()[v.index()].position);
-                        let off = rational_f64(&c[0]).hypot(rational_f64(&c[1]));
+                        let off = rational_f64(&c[0]).hypot_rn(rational_f64(&c[1]));
                         if off > tol || rational_f64(&(&c[2] - h)).abs() > tol {
                             return None;
                         }
@@ -439,7 +439,7 @@ fn meridian(t: &Topology, tol: f64) -> Option<Meridian> {
     // piece's box are binary64 numbers exactly; its centre where the two
     // lines offset by the tube toward its stored centre meet, within the
     // resolution of that. S9e.4b.4d.2c.1b: beside a cone, `cone_corner`.
-    let grid = 2f64.powi(size.log2().ceil() as i32 - 40);
+    let grid = 2f64.powi(size.log2_rn().ceil() as i32 - 40);
     let mut corners = Vec::new();
     let mut exact = vec![false; faces.len()];
     for (s, &i) in path.iter().enumerate() {
@@ -496,7 +496,7 @@ fn meridian(t: &Topology, tol: f64) -> Option<Meridian> {
             &h + sign(&tube.centre[1] - &h)? * &t,
         ];
         let moved = rational_f64(&(&centre[0] - &tube.centre[0]))
-            .hypot(rational_f64(&(&centre[1] - &tube.centre[1])));
+            .hypot_rn(rational_f64(&(&centre[1] - &tube.centre[1])));
         if t <= zero() || moved > tol || centre[0] <= zero() {
             return None;
         }
@@ -657,7 +657,7 @@ fn meridian(t: &Topology, tol: f64) -> Option<Meridian> {
         } else {
             top.max(far[1].clone())
         };
-        let g = 2f64.powi(rational_f64(&c.radius).log2().ceil() as i32 - 24);
+        let g = 2f64.powi(rational_f64(&c.radius).log2_rn().ceil() as i32 - 24);
         let h = on_grid(&((&corner[1] + &limit) / int(2)), g);
         let d = &h - &c.centre[1];
         let past = (if up { d > zero() } else { d < zero() }) && &d * &d > x.rise;
@@ -714,7 +714,7 @@ fn reentrant_corner(
     let centre = [&rx - &t, on_grid(&tube.centre[1], grid)];
     let off = &ry - &centre[0];
     let moved = rational_f64(&(&centre[0] - &tube.centre[0]))
-        .hypot(rational_f64(&(&centre[1] - &tube.centre[1])));
+        .hypot_rn(rational_f64(&(&centre[1] - &tube.centre[1])));
     if off <= zero() || off >= t || moved > tol || centre[0] <= zero() {
         return None;
     }
@@ -823,7 +823,7 @@ fn cone_corner(
         k: slope,
     };
     let moved = rational_f64(&(&centre[0] - &tube.centre[0]))
-        .hypot(rational_f64(&(&centre[1] - &tube.centre[1])));
+        .hypot_rn(rational_f64(&(&centre[1] - &tube.centre[1])));
     if t <= zero() || moved > tol || centre[0] <= zero() {
         return None;
     }
@@ -943,7 +943,7 @@ pub(super) fn modelled(t: &Topology, tolerance: Tolerance) -> Option<Topology> {
                 Surface::Cone {
                     frame: on_axis(&w, down(frame)),
                     radius,
-                    half_angle: (sense * rational_f64(&line.k)).atan(),
+                    half_angle: (sense * rational_f64(&line.k)).atan_rn(),
                 }
             }
             (Kind::Arc(_), Surface::Torus { frame, .. }) => {
@@ -974,7 +974,7 @@ pub(super) fn modelled(t: &Topology, tolerance: Tolerance) -> Option<Topology> {
                 Curve3::CircularArc {
                     frame: at,
                     radius,
-                    start_angle: c[1].atan2(c[0]),
+                    start_angle: c[1].atan2_rn(c[0]),
                     sweep_angle: *sweep_angle,
                 }
             }
@@ -1058,7 +1058,7 @@ fn plane_arc(p: &Frame3, curve: &Curve3, sense: Orientation) -> Option<Curve2> {
     Some(Curve2::CircularArc {
         center: Point2::new(c[0], c[1]),
         radius,
-        start_angle: xy.atan2(xx) + turn * start,
+        start_angle: xy.atan2_rn(xx) + turn * start,
         sweep_angle: turn * sweep,
     })
 }
@@ -1697,7 +1697,7 @@ fn slant_box(
     if corner[0] <= zero() || corner[1] <= zero() {
         return None;
     }
-    let g = q(2f64.powi(rational_f64(&c.radius).log2().ceil() as i32 - 24));
+    let g = q(2f64.powi(rational_f64(&c.radius).log2_rn().ceil() as i32 - 24));
     // The coordinate the far side along `ef` fixes (a plane's height beside
     // a cylinder, a cylinder's radius beside a plane), and the other.
     let k = if ef[1] == zero() { 1 } else { 0 };
