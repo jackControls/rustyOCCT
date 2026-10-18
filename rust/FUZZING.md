@@ -400,6 +400,103 @@ in 1,284 to 1,320 job-minutes (91 to 119 minutes); the Sunday
 minimisations 31 jobs in 792 and 886 job-minutes (115 and 125 minutes,
 `surface_knots`' 101 and 106 minute job the longest).
 
+**The kernel workflow's fixture generators: skipped on identical inputs.**
+A push ran the kernel workflow's 56 to 58 jobs in 910 to 1,045
+job-minutes, 561 to 713 of them the 45 `Fixture generators` groups:
+Python checks of the committed fixtures against their independent
+references, which give the same result on the same inputs. Each group's
+commands are `rust/tools/generator_groups.py`'s `GROUPS[group]`, run by
+`generator_groups.py run` with `generator_audit/sitecustomize.py` loaded in
+every Python process of the group, its multiprocessing workers included.
+That hook records each file opened for reading, each directory listed
+(`os.listdir`, `os.scandir`, so `glob`, `iterdir` and `walk`), each path
+whose existence or kind was asked (`os.stat`, so `Path.exists`), and each
+program started. After a pass the group's marker keeps, for every recorded
+path inside the checkout (outside `target/`, which holds only what the job
+makes, and `.git/`), the file's hash, the directory's listing or the
+path's absence; the workflow file, `generator_groups.py`, the hook and the
+oracle's pinned requirements whatever was read; whole trees for the roots
+its modules name in path constants besides the fixtures (`rust/kernel`,
+`data`, `rust/fuzz/regressions`, below); the runner image and the Python
+version; and the run it passed in. The marker is saved in the Actions
+cache under the group's own key prefix (`generator-pass-v1-<group>--`).
+
+On a push or pull request, `generator_groups.py check` restores the
+group's latest marker and recomputes every one of those inputs from the
+checkout. Only if all are identical, the group's commands too, and the
+group started no program other than Python, is the group skipped. **Under
+R15 a skipped group counts as green: it passed on identical inputs, in the
+run its marker names, which the job's log and summary print.** Anything
+else runs the group and records a new marker; the schedule and manual
+runs run every group and record fresh markers, so a change outside the
+record (the runner's Python packages, say) is caught there.
+
+What each group reads, from a static scan of its scripts' `rust/tools`
+import closure (`generator_groups.py audit`): the roots its modules name
+in path constants, the trees keyed whole because of them, and the modules
+that can start a program. A unit test holds every named root to the
+record or a keyed tree. The runtime record is what a skip relies on; on
+the development Mac it held 19 inputs for `chained`, 40 for
+`turned-fillets` (no kernel or data file read, both keyed anyway) and 82
+for `algebra` (six `surface_editing` regressions among them), each group
+starting no program, and `check` then skipped each.
+
+| Group | Commands | rust/tools modules | Roots its modules name | Keyed as whole trees | Modules that import subprocess |
+|---|---|---|---|---|---|
+| `algebra` | 22 | 42 | fixtures, fuzz regressions, kernel, target | `rust/fuzz/regressions`, `rust/kernel` | `compare_bezier_editing`, `compare_knot_editing`, `compare_linear_sets`, `compare_occt`, `compare_spline_plane`, `compare_splines`, `compare_surface_editing`, `compare_surface_knots`, `compare_surfaces` |
+| `brep` | 19 | 39 | data, fixtures | `data` | — |
+| `booleans` | 10 | 28 | fixtures | — | — |
+| `cones` | 1 | 20 | fixtures | — | — |
+| `cones-loops` | 1 | 21 | fixtures | — | — |
+| `tori` | 1 | 23 | fixtures | — | — |
+| `torus-parts` | 1 | 25 | fixtures | — | — |
+| `chained` | 1 | 14 | fixtures | — | — |
+| `spline-any` | 1 | 13 | fixtures | — | — |
+| `given` | 1 | 14 | fixtures | — | — |
+| `given-curved` | 1 | 18 | fixtures | — | — |
+| `given-met` | 1 | 20 | fixtures | — | — |
+| `spline-parallel` | 1 | 14 | fixtures | — | — |
+| `spline-crossing` | 1 | 15 | fixtures | — | — |
+| `imported` | 1 | 21 | fixtures | — | — |
+| `imported-arcs` | 1 | 22 | fixtures | — | — |
+| `spline-sphere` | 1 | 15 | fixtures | — | — |
+| `imported-polyhedra` | 1 | 23 | fixtures | — | — |
+| `spline-cone` | 1 | 17 | fixtures | — | — |
+| `imported-pieces` | 1 | 22 | fixtures | — | — |
+| `split-pieces` | 1 | 23 | fixtures | — | — |
+| `one-sphere` | 1 | 23 | fixtures | — | — |
+| `one-sphere-incidence` | 1 | 22 | fixtures | — | — |
+| `piece-forms` | 1 | 24 | fixtures | — | — |
+| `piece-trees` | 1 | 25 | fixtures | — | — |
+| `imported-joints` | 1 | 23 | fixtures | — | — |
+| `primitive-chains` | 1 | 25 | fixtures | — | — |
+| `prism-leaves` | 1 | 26 | fixtures | — | — |
+| `plane-parts` | 1 | 28 | fixtures | — | — |
+| `polyhedra-curved` | 1 | 29 | fixtures | — | — |
+| `deep-trees` | 1 | 27 | fixtures | — | — |
+| `two-leaves` | 1 | 29 | fixtures | — | — |
+| `rim-leaves` | 1 | 31 | fixtures | — | — |
+| `flush-leaves` | 1 | 32 | fixtures | — | — |
+| `stack-leaves` | 1 | 32 | fixtures | — | — |
+| `nested-leaves` | 1 | 32 | fixtures | — | — |
+| `turned-profiles` | 1 | 25 | fixtures | — | — |
+| `turned-flats` | 1 | 26 | fixtures | — | — |
+| `turned-tilted` | 1 | 26 | fixtures | — | — |
+| `turned-fillets` | 2 | 51 | data, fixtures, kernel, target | `data`, `rust/kernel` | `build_pinned_occt`, `compare_boolean`, `compare_brep`, `compare_brep_io`, `compare_curve_surface`, `compare_degree_elevation`, `compare_occt`, `compare_splines`, `compare_surfaces` |
+| `turned-cone-fillets` | 1 | 27 | fixtures | — | — |
+| `turned-crossings` | 1 | 28 | fixtures | — | — |
+| `turned-corners` | 1 | 28 | fixtures | — | — |
+| `crossed-leaves` | 1 | 30 | fixtures | — | — |
+| `inside-first` | 1 | 32 | fixtures | — | — |
+
+Of the 13 pushes from 15 to 17 October, four changed the workflow file and
+added `rust/tools` scripts, so every group would have run; the other nine
+changed only kernel sources, fixtures or nothing a group reads, so every
+group but those reading a changed fixture, and `algebra` and
+`turned-fillets` on a kernel change, would have been skipped: some 550 of
+the 600 to 700 generator job-minutes on such a push, a group's skip
+taking a checkout and a check of about a minute.
+
 These are harness limits, not kernel production performance guarantees.
 
 B-rep validation inputs use at most 256 bytes and the standard 20-second/2 GiB
