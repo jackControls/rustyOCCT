@@ -195,7 +195,7 @@ replay. `boolean` is heading there: CI's 356 inputs took 1,242 s of startup
 at `85104dc3` and 2,108 s at `2efa1ec7` (a 275 s build, the slowest input
 42 s), the same inputs growing slower with each curved family, and the
 local corpus of 1,421 inputs exceeds the hour under AddressSanitizer. For
-the targets in `run_fuzz.py`'s `REPLAY_SHARDS` (`boolean` and `degree_elevation`, four shards each; the latter's full replay reached 256 of its 485 inputs in the hour on the first scheduled run after the split; `split`, eight shards, and `analytic_intersections` and `tessellation`, four each, below) the
+the targets in `run_fuzz.py`'s `REPLAY_SHARDS` (`boolean`, four shards and eight since R17 below, and `degree_elevation`, four; the latter's full replay reached 256 of its 485 inputs in the hour on the first scheduled run after the split; `split`, eight shards, and `analytic_intersections`, `tessellation`, `surface_knots`, `brep_validation`, `knot_editing` and `split_merge`, four each, below) the
 schedule and manual campaigns split the full replay across jobs of the run:
 
 1. `Replay snapshot` restores the corpus, seeds it and publishes it as an
@@ -233,7 +233,7 @@ matrix less its exclusions equal to `REPLAY_SHARDS`. Locally, the same
 shards and check run over `rust/fuzz/corpus/boolean`:
 
 ```sh
-for k in 0 1 2 3; do python3 rust/tools/run_fuzz.py --target boolean --replay-shard $k --report-dir target/replay-shards/$k; done
+for k in 0 1 2 3 4 5 6 7; do python3 rust/tools/run_fuzz.py --target boolean --replay-shard $k --report-dir target/replay-shards/$k; done
 python3 rust/tools/run_fuzz.py --target boolean --check-replay-shards target/replay-shards
 ```
 
@@ -272,6 +272,21 @@ input). A shard of them takes about 650 to 900 s on CI after the build.
 not finish its startup in the hour at `391ace72` (exit 124, no failing
 input).
 
+`surface_knots`, `brep_validation`, `knot_editing` and `split_merge`
+joined under R17 of the review of 18 October 2026 (any replay or
+minimisation over 45 minutes is sharded), four shards each. On the
+schedule runs of 16 to 18 October their full replays took 3,087 to 5,696 s
+of startup (`surface_knots`, 871 to 952 inputs, a 97 to 106 minute job),
+2,530 to 2,923 s (`brep_validation`, 1,880 to 2,048 inputs), 1,988 to
+2,734 s (`knot_editing`, 1,014 to 1,099) and 2,029 to 2,548 s
+(`split_merge`, 1,061 to 1,152, a 53 minute job). `boolean` went from
+four shards to eight: its four shards of CI's 728 inputs took up to
+2,210 s each on those runs, a 44 minute job. A shard's startup budget
+is capped at the hour whatever the target's own cap (`surface_knots`'
+two hours apply to its whole corpus in one process), inside the shard
+job's 75 minutes. As for the others, their scheduled campaign then
+replays regressions and a sample, and its new inputs are not retained.
+
 Retained corpora are minimised weekly (R12 of `REVIEW_NOTES.md`): on Sundays
 the fuzzing workflow runs `run_fuzz.py --minimize` instead of a campaign. It
 seeds each corpus as usual, merges it into a fresh directory with libFuzzer's
@@ -280,6 +295,225 @@ and replaces the corpus only when the merge completes; the cache then keeps
 the smaller corpus. Inputs that add no coverage are dropped; retained
 regressions are re-seeded on every run. Locally the `brep_io` corpus went
 from 1,872 inputs to 1,108 in 190 s.
+
+**Sharded minimisation (`MINIMIZE_SHARDS`).** The merge runs every input
+once in one process under one budget, so a corpus that runs slower than
+the hour can never be minimised, and is never replaced: on 18 October
+`boolean`'s 728 inputs stopped at the hour (exit 124) where its 377 had
+taken 1,682 s a week before. Under R17 of the review of 18 October 2026
+(any replay or minimisation over 45 minutes is sharded) the targets of
+`run_fuzz.py`'s `MINIMIZE_SHARDS` are minimised across jobs of the run:
+`boolean` and `surface_knots` (6,336 and 6,026 s on the last two Sundays,
+under its two-hour cap) in eight shards, and in four `split` (2,905 and
+3,363 s), `split_merge` (3,256 and 2,822 s), `knot_editing` (2,575 and
+2,847 s), `surface_editing` (3,027 and 2,179 s) and `modeling` (2,811 and
+1,612 s). Their campaign jobs do nothing on a minimisation run and save no
+corpus; instead:
+
+1. `Minimize snapshot` restores and seeds the corpus, builds the target's
+   sanitizer binary once (`--build-only`, to `target/fuzz-binaries`) and
+   publishes both. Coverage features are indices into one build's
+   counters, so every shard must run the same binary.
+2. Each `Minimize` job, `run_fuzz.py --target boolean --minimize-shard K`,
+   runs the inputs whose contents hash to shard `K` (as the replay shards
+   split them) through that binary's `-set_cover_merge=1` with a
+   `-merge_control_file`, under the target's own limits and a budget of
+   its own, `min(3600, 600 + input limit × (inputs + 1))` seconds, as
+   `cargo fuzz run` would (with its `detect_odr_violation=0`). The
+   set-cover merge records each input's complete feature set in the
+   control file, where a plain `-merge=1` records only the features new to
+   its process, which no other shard could use. The shard passes only if
+   libFuzzer listed exactly its nonempty inputs (it skips empty files) and
+   every one finished: an input that crashed, timed out or ran out of
+   memory has a `STARTED` line without features, which the merge itself
+   would silently skip. A shard replaces nothing.
+3. `Minimized`, `--combine-minimized`, recomputes the shards from the
+   snapshot and requires every shard's report once, of this snapshot,
+   with exactly its own inputs, from one binary, passed, and with a
+   control file recording every one of its nonempty inputs' features. It
+   then chooses the corpus from all the shards' features at once: greedy
+   set cover, the input adding the most features not yet covered first,
+   the smaller then the lesser name on a tie, so the choice depends on the
+   features only, not on how the inputs fell into shards or the order
+   libFuzzer listed them. It checks that the chosen inputs' features are
+   every input's, replaces the corpus, and writes the manifest (every kept
+   input ran under the sanitizer in its shard); only then are the corpus
+   and manifest saved under the run's keys. A missing or failed shard, an
+   input added after the snapshot or a lost feature fails the job and
+   retains nothing: the next run restores the last corpus.
+
+Locally, with the same commands the jobs run:
+
+```sh
+python3 rust/tools/run_fuzz.py --target boolean --build-only
+for k in 0 1 2 3 4 5 6 7; do
+  python3 rust/tools/run_fuzz.py --target boolean --minimize-shard $k --report-dir target/minimize-shards/$k &
+done; wait
+python3 rust/tools/run_fuzz.py --target boolean --combine-minimized target/minimize-shards
+```
+
+On the development Mac, a shared host at load 13 to 36 throughout, the
+local corpus's 1,444 `boolean` inputs split 165 to 200 a shard, and the
+eight shards, run at once after one 394 s build, took 1,159 to 1,322 s
+each. The first time, a 16-byte input of shard 5 passed the 60 s limit
+(57 s alone at load 20, 29 s at load 15): the shard failed naming it, its
+timeout artifact kept, and the combine refused, replacing nothing. Rerun,
+the shard passed in 821 s, and the combine took 22 s: 387,683 features
+(82,485 edges) over the 1,444 inputs, all kept by 1,126 inputs, where
+keeping each shard's own choice would have kept 1,375. The same snapshot
+merged in one process with the same binary and limits could not finish:
+past its 405 smallest inputs the process reached the 2 GiB limit every 8
+to 256 inputs, and each time libFuzzer's crash-resistant merge skipped the
+input at hand and carried on, so 11 of the first 576 inputs (each complete
+in its shard) were dropped before it was stopped at 44 minutes, a third of
+the way through. Features are not exactly reproducible between processes
+(an input run first in its process also records one-time initialisation,
+and the timed allocator purge varies), so any merge keeps the coverage it
+recorded: on the 565 inputs both runs completed, the combine's choice
+missed 21 of the single process's 327,390 features, and the single
+process's own choice missed 295 of the shards' 326,585.
+
+**CI wall times (R17).** The fuzz workflow's targets over or near 45
+minutes, from the ten pushes of 15 to 17 October, the eight daily schedule
+runs of 11 to 18 October (full replays: the last three) and the Sunday
+minimisations of 11 and 18 October. Job times include the build and
+toolchain (about five minutes); replay and merge times are
+`run_fuzz.py`'s. Every other target's daily job took at most 43 minutes
+(`spline_linear`; `tessellation`'s 61 was before its replay was sharded)
+and its minimisation at most 2,459 s.
+
+| Target | Push job (min) | Daily job (min) | Daily full replay (s) | Minimisation, 11 / 18 Oct (s) | Shards now |
+|---|---|---|---|---|---|
+| `surface_knots` | 7–9 | 63–106 | 3,087–5,696 | 6,336 / 6,026 | replay 4, minimisation 8 |
+| `boolean` | 17–30 | 24–37 | 1,125–2,210 a shard of four (jobs 19–44) | 1,682 / over 3,600 | replay 8, minimisation 8 |
+| `split` | 10–14 | 17–22 | 505–1,067 a shard of eight | 2,905 / 3,363 | minimisation 4 |
+| `split_merge` | 8–11 | 42–54 | 2,030–2,548 | 3,256 / 2,822 | replay 4, minimisation 4 |
+| `knot_editing` | 7–12 | 35–56 | 1,988–2,734 | 2,575 / 2,847 | replay 4, minimisation 4 |
+| `brep_validation` | 7–10 | 41–60 | 2,530–2,923 | 1,435 / 1,774 | replay 4 |
+| `surface_editing` | 6–8 | 29–44 | 1,078–2,007 | 3,027 / 2,179 | minimisation 4 |
+| `modeling` | 6–9 | 27–39 | 961–1,724 | 2,811 / 1,612 | minimisation 4 |
+| `exact_spline_intersections` | 9 | 36–45 | 1,604–2,012 | 2,602 / 2,004 | not yet |
+
+A push ran the fuzz workflow's 31 jobs in 250 to 274 job-minutes (39 to
+79 minutes of wall time beside the kernel workflow); a daily run 65 jobs
+in 1,284 to 1,320 job-minutes (91 to 119 minutes); the Sunday
+minimisations 31 jobs in 792 and 886 job-minutes (115 and 125 minutes,
+`surface_knots`' 101 and 106 minute job the longest).
+
+**The kernel workflow's fixture generators: skipped on identical inputs.**
+A push ran the kernel workflow's 56 to 58 jobs in 910 to 1,045
+job-minutes, 561 to 713 of them the 45 `Fixture generators` groups:
+Python checks of the committed fixtures against their independent
+references, which give the same result on the same inputs. Each group's
+commands are `rust/tools/generator_groups.py`'s `GROUPS[group]`, run by
+`generator_groups.py run` with `generator_audit/sitecustomize.py` loaded in
+every Python process of the group, its multiprocessing workers included.
+That hook records each file opened for reading, each directory listed
+(`os.listdir`, `os.scandir`, so `glob`, `iterdir` and `walk`), each path
+whose existence or kind was asked (`os.stat`, so `Path.exists`), and each
+program started. After a pass the group's marker keeps, for every recorded
+path inside the checkout (outside `target/`, which holds only what the job
+makes, and `.git/`), the file's hash, the directory's listing or the
+path's absence; the workflow file, `generator_groups.py`, the hook and the
+oracle's pinned requirements whatever was read; whole trees for the roots
+its modules name in path constants besides the fixtures (`rust/kernel`,
+`data`, `rust/fuzz/regressions`, below); the runner image and the Python
+version; and the run it passed in. The marker is saved in the Actions
+cache under the group's own key prefix (`generator-pass-v1-<group>--`).
+
+On a push or pull request, `generator_groups.py check` restores the
+group's latest marker and recomputes every one of those inputs from the
+checkout. Only if all are identical, the group's commands too, and the
+group started no program other than Python, is the group skipped. **Under
+R15 a skipped group counts as green: it passed on identical inputs, in the
+run its marker names, which the job's log and summary print.** Anything
+else runs the group and records a new marker; the schedule and manual
+runs run every group and record fresh markers, so a change outside the
+record (the runner's Python packages, say) is caught there.
+
+What each group reads, from a static scan of its scripts' `rust/tools`
+import closure (`generator_groups.py audit`): the roots its modules name
+in path constants, the trees keyed whole because of them, and the modules
+that can start a program. A unit test holds every named root to the
+record or a keyed tree. The runtime record is what a skip relies on; on
+the development Mac it held 19 inputs for `chained`, 40 for
+`turned-fillets` (no kernel or data file read, both keyed anyway) and 82
+for `algebra` (six `surface_editing` regressions among them), each group
+starting no program, and `check` then skipped each.
+
+| Group | Commands | rust/tools modules | Roots its modules name | Keyed as whole trees | Modules that import subprocess |
+|---|---|---|---|---|---|
+| `algebra` | 22 | 42 | fixtures, fuzz regressions, kernel, target | `rust/fuzz/regressions`, `rust/kernel` | `compare_bezier_editing`, `compare_knot_editing`, `compare_linear_sets`, `compare_occt`, `compare_spline_plane`, `compare_splines`, `compare_surface_editing`, `compare_surface_knots`, `compare_surfaces` |
+| `brep` | 19 | 39 | data, fixtures | `data` | — |
+| `booleans` | 10 | 28 | fixtures | — | — |
+| `cones` | 1 | 20 | fixtures | — | — |
+| `cones-loops` | 1 | 21 | fixtures | — | — |
+| `tori` | 1 | 23 | fixtures | — | — |
+| `torus-parts` | 1 | 25 | fixtures | — | — |
+| `chained` | 1 | 14 | fixtures | — | — |
+| `spline-any` | 1 | 13 | fixtures | — | — |
+| `given` | 1 | 14 | fixtures | — | — |
+| `given-curved` | 1 | 18 | fixtures | — | — |
+| `given-met` | 1 | 20 | fixtures | — | — |
+| `spline-parallel` | 1 | 14 | fixtures | — | — |
+| `spline-crossing` | 1 | 15 | fixtures | — | — |
+| `imported` | 1 | 21 | fixtures | — | — |
+| `imported-arcs` | 1 | 22 | fixtures | — | — |
+| `spline-sphere` | 1 | 15 | fixtures | — | — |
+| `imported-polyhedra` | 1 | 23 | fixtures | — | — |
+| `spline-cone` | 1 | 17 | fixtures | — | — |
+| `imported-pieces` | 1 | 22 | fixtures | — | — |
+| `split-pieces` | 1 | 23 | fixtures | — | — |
+| `one-sphere` | 1 | 23 | fixtures | — | — |
+| `one-sphere-incidence` | 1 | 22 | fixtures | — | — |
+| `piece-forms` | 1 | 24 | fixtures | — | — |
+| `piece-trees` | 1 | 25 | fixtures | — | — |
+| `imported-joints` | 1 | 23 | fixtures | — | — |
+| `primitive-chains` | 1 | 25 | fixtures | — | — |
+| `prism-leaves` | 1 | 26 | fixtures | — | — |
+| `plane-parts` | 1 | 28 | fixtures | — | — |
+| `polyhedra-curved` | 1 | 29 | fixtures | — | — |
+| `deep-trees` | 1 | 27 | fixtures | — | — |
+| `two-leaves` | 1 | 29 | fixtures | — | — |
+| `rim-leaves` | 1 | 31 | fixtures | — | — |
+| `flush-leaves` | 1 | 32 | fixtures | — | — |
+| `stack-leaves` | 1 | 32 | fixtures | — | — |
+| `nested-leaves` | 1 | 32 | fixtures | — | — |
+| `turned-profiles` | 1 | 25 | fixtures | — | — |
+| `turned-flats` | 1 | 26 | fixtures | — | — |
+| `turned-tilted` | 1 | 26 | fixtures | — | — |
+| `turned-fillets` | 2 | 51 | data, fixtures, kernel, target | `data`, `rust/kernel` | `build_pinned_occt`, `compare_boolean`, `compare_brep`, `compare_brep_io`, `compare_curve_surface`, `compare_degree_elevation`, `compare_occt`, `compare_splines`, `compare_surfaces` |
+| `turned-cone-fillets` | 1 | 27 | fixtures | — | — |
+| `turned-crossings` | 1 | 28 | fixtures | — | — |
+| `turned-corners` | 1 | 28 | fixtures | — | — |
+| `crossed-leaves` | 1 | 30 | fixtures | — | — |
+| `inside-first` | 1 | 32 | fixtures | — | — |
+
+Of the 13 pushes from 15 to 17 October, four changed the workflow file and
+added `rust/tools` scripts, so every group would have run; the other nine
+changed only kernel sources, fixtures or nothing a group reads, so every
+group but those reading a changed fixture, and `algebra` and
+`turned-fillets` on a kernel change, would have been skipped: some 550 of
+the 600 to 700 generator job-minutes on such a push, a group's skip
+taking a checkout and a check of about a minute.
+
+**The rust/tools unit tests in shards.** The upstream job's `unittest
+discover -s rust/tools -p 'test_*.py'` took 1,862 s of its 45 minutes at
+`73a266de` (502 tests in 76 modules; `test_brep_oracle` alone 302 s), so it
+runs in its own job, `Bridge and reference unit tests`, in four shards
+with the upstream job's environment (its OCCT packages and variables,
+`RUSTY_TEST_DRAW_EXE`, the oracle's venv). Each shard runs
+`run_tool_tests.py --shard K`, which discovers the whole suite exactly as
+`unittest discover` does and runs the modules its plan gives it: the
+modules heaviest first, by their seconds measured on CI, each on the least
+loaded shard, about 486 s each. Every test therefore runs once, in exactly
+one shard, and a module the table does not know counts as 30 s.
+`run_tool_tests.py --list [--shard K]` prints the ids; at this revision
+the discovered suite and the four shards' union are the same 515 tests,
+each once: the 502 of the CI run at `73a266de` and 13 added since (in
+`test_fuzz_runner`, `test_generator_groups` and `test_run_tool_tests`).
+The upstream job keeps its upstream runs and native comparisons, about 14
+minutes.
 
 These are harness limits, not kernel production performance guarantees.
 

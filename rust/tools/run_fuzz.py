@@ -562,7 +562,29 @@ SCHEDULE_ONLY_TARGETS = {'surface_knots', 'degree_elevation', 'surface_editing'}
 # c3ce4d42, and 1,602 overran the hour at 47e086c5.
 # tessellation: CI's 1,574 and 1,647 inputs took 2,170 and 2,200 s of startup
 # at bbfdee16 and dbf15607, and overran the hour at 391ace72.
-REPLAY_SHARDS = {'boolean': 4, 'degree_elevation': 4, 'split': 8, 'analytic_intersections': 4, 'tessellation': 4}
+# R17 of REVIEW_2026-10-18 (any replay over 45 minutes is sharded), from the
+# schedule runs of 2026-10-16 to 18: surface_knots' 871 to 952 inputs took
+# 3,087 to 5,696 s of startup, brep_validation's 1,880 to 2,048 took 2,530
+# to 2,923 s, knot_editing's 1,014 to 1,099 took 1,988 to 2,734 s and
+# split_merge's 1,061 to 1,152 took 2,029 to 2,548 s (its job 53 minutes);
+# and boolean went to eight shards, its four of CI's 728 inputs having
+# taken up to 2,210 s each (a 44 minute job).
+REPLAY_SHARDS = {'boolean': 8, 'degree_elevation': 4, 'split': 8, 'analytic_intersections': 4, 'tessellation': 4,
+                 'surface_knots': 4, 'brep_validation': 4, 'knot_editing': 4, 'split_merge': 4}
+# Targets whose weekly minimisation is split across this many jobs (R17):
+# one sanitizer build, then each shard runs the inputs whose contents hash to
+# it through libFuzzer's set-cover merge, which records every input's
+# complete coverage features in its control file; the combine job chooses
+# the minimised corpus from all the shards' features at once, in Python,
+# and replaces the corpus only if every shard ran every one of its inputs
+# (FUZZING.md). The rust-fuzz.yml minimize jobs' matrices must list the
+# same shards (test_fuzz_runner.py). From the minimisations of 2026-10-11
+# and 2026-10-18: boolean's 728 inputs overran the hour (377 took 1,682 s
+# a week before); surface_knots took 6,336 and 6,026 s, split 2,905 and
+# 3,363 s, split_merge 3,256 and 2,822 s, knot_editing 2,575 and 2,847 s,
+# surface_editing 3,027 and 2,179 s and modeling 2,811 and 1,612 s.
+MINIMIZE_SHARDS = {'boolean': 8, 'surface_knots': 8, 'split': 4, 'split_merge': 4, 'knot_editing': 4,
+                   'surface_editing': 4, 'modeling': 4}
 
 
 def manifest_path(target):
@@ -650,7 +672,8 @@ def replay_shard(target, toolchain, corpus, shard, output, env, shards=None):
     run_corpus.mkdir()
     for name in names:
         shutil.copy2(corpus/name,run_corpus/name)
-    budget = startup_budget(len(names),input_seconds,TARGET_MAX_STARTUP_SECONDS.get(target,MAX_STARTUP_SECONDS))
+    # A shard has its own hour, whatever the whole corpus's cap.
+    budget = startup_budget(len(names),input_seconds)
     command = ['cargo',f'+{toolchain}','fuzz','run',target,str(run_corpus),'--fuzz-dir',str(FUZZ),
                *sanitizer_build_args(target),'--','-runs=0',f'-timeout={input_seconds}','-rss_limit_mb=2048',
                f'-max_len={max_len(target)}',f'-artifact_prefix={artifacts}/','-print_final_stats=1']
@@ -858,6 +881,230 @@ def minimize(target, toolchain, corpus, output, env):
             'replaced':replaced,'artifacts':[p.name for p in sorted(artifacts.iterdir())],'command':command}
 
 
+# The sharded minimisation (MINIMIZE_SHARDS). Feature numbers are indices
+# into one binary's coverage counters, so every shard runs the same build:
+# the snapshot job builds it once (--build-only) and the shards run it
+# directly, as cargo fuzz run would.
+
+def binary_path(target):
+    return ROOT/'target/fuzz-binaries'/target
+
+
+def build_binary(target, toolchain, output, env):
+    """Build the target as cargo fuzz run does and copy it to binary_path."""
+    command=['cargo',f'+{toolchain}','fuzz','build',target,'--fuzz-dir',str(FUZZ),*sanitizer_build_args(target)]
+    with (output/f'{target}-build.log').open('w') as log:
+        code=run_process(command,log,MAX_STARTUP_SECONDS,env)
+    if code != 0:
+        return code,None
+    host=re.search(r'^host: (\S+)$',version(['rustup','run',toolchain,'rustc','-vV']),re.M).group(1)
+    destination=binary_path(target)
+    destination.parent.mkdir(parents=True,exist_ok=True)
+    shutil.copy2(FUZZ/'target'/host/'release'/target,destination)
+    return 0,destination
+
+
+def direct_environment(target, base):
+    # cargo fuzz run appends this to ASAN_OPTIONS for an address-sanitized target.
+    env=campaign_environment(target,base)
+    options=env.get('ASAN_OPTIONS','')
+    env['ASAN_OPTIONS']=options+(':' if options else '')+'detect_odr_violation=0'
+    return env
+
+
+def minimize_shard_command(target, binary, fresh, run_corpus, control, artifacts):
+    # -set_cover_merge=1 writes every input's complete feature set to the
+    # control file (a plain -merge=1 writes only the features new to its
+    # process); each input keeps the target's own limits.
+    input_seconds=TARGET_INPUT_SECONDS.get(target,INPUT_SECONDS)
+    return [str(binary),'-set_cover_merge=1',f'-merge_control_file={control}',f'-timeout={input_seconds}',
+            '-rss_limit_mb=2048',f'-max_len={max_len(target)}',f'-artifact_prefix={artifacts}/',
+            '-print_final_stats=1',str(fresh),str(run_corpus)]
+
+
+def parse_control_file(text):
+    """libFuzzer's merge control file: {name: {'size','features','coverage'}}
+    for every input it listed, 'features' None for one that started and did
+    not finish (a crash, timeout or OOM) and the entry missing 'size' for
+    one never started. FuzzerMerge.cpp documents the format. Features are
+    kept as arrays: some 17,000 an input for boolean."""
+    from array import array
+    lines=text.splitlines()
+    count=int(lines[0])
+    names=[Path(line).name for line in lines[2:2+count]]
+    inputs={name:{} for name in names}
+    if len(inputs) != count:
+        raise ValueError('an input is listed twice')
+    for line in lines[2+count:]:
+        words=line.split()
+        marker,index=words[0],int(words[1])
+        entry=inputs[names[index]]
+        if marker == 'STARTED':
+            entry.update(size=int(words[2]),features=None,coverage=[])
+        elif marker == 'FT':
+            entry['features']=array('Q',map(int,words[2:]))
+        elif marker == 'COV':
+            entry['coverage']=[int(w) for w in words[2:]]
+        else:
+            raise ValueError(f'unknown control file line {line!r}')
+    return inputs
+
+
+def minimize_shard_passed(report):
+    return (report['exit_code'] == 0 and report['listed_names'] == report['expected_names']
+            and not report['failed_inputs'] and not report['unrun_inputs'] and report['binary_sha256'] is not None)
+
+
+def minimize_shard(target, corpus, shard, output, env, binary, shards=None):
+    """Run shard K of the snapshot through the set-cover merge, recording
+    every input's features in the shard's control file. It replaces nothing."""
+    shards = shards or MINIMIZE_SHARDS[target]
+    plan = shard_names(corpus, shards)
+    names = plan[shard]
+    input_seconds = TARGET_INPUT_SECONDS.get(target,INPUT_SECONDS)
+    artifacts = FUZZ/'artifacts'/target
+    artifacts.mkdir(parents=True,exist_ok=True)
+    binary = Path(binary)
+    binary.chmod(0o755)  # artifacts lose their modes
+    run_corpus = corpus.parent/f'.{target}-minimize-shard-{shard}'
+    fresh = corpus.parent/f'.{target}-minimize-shard-{shard}-merged'
+    for directory in (run_corpus,fresh):
+        if directory.exists(): shutil.rmtree(directory)
+        directory.mkdir()
+    for name in names:
+        shutil.copy2(corpus/name,run_corpus/name)
+    control = output/f'{target}-minimize-shard-{shard}.control'
+    control.unlink(missing_ok=True)
+    budget = startup_budget(len(names),input_seconds)
+    command = minimize_shard_command(target,binary,fresh,run_corpus,control,artifacts)
+    log_path = output/f'{target}-minimize-shard-{shard}.log'
+    shard_env = direct_environment(target,env)
+    # libFuzzer skips empty files in a merge.
+    expected = sorted(n for n in names if (corpus/n).stat().st_size)
+    started = time.monotonic()
+    try:
+        if expected:
+            with log_path.open('w') as log:
+                code = run_process(command,log,budget,shard_env)
+        else:
+            code = 0
+            control.write_text('0\n0\n')
+    finally:
+        shutil.rmtree(run_corpus)
+        shutil.rmtree(fresh)
+    try:
+        inputs = parse_control_file(control.read_text()) if control.exists() else {}
+    except (ValueError, IndexError, KeyError):
+        inputs = {}  # an unreadable control file lists nothing: the shard fails
+    report = {'target':target,'mode':'minimize-shard','shard':shard,'shards':shards,
+              'corpus_files':sum(map(len,plan)),'corpus_digest':listing_digest(n for part in plan for n in part),
+              'shard_files':len(names),'names':names,'expected_names':expected,'listed_names':sorted(inputs),
+              'binary_sha256':hashlib.sha256(binary.read_bytes()).hexdigest(),
+              'exit_code':code,'elapsed_seconds':round(time.monotonic()-started,2),'budget_seconds':budget,
+              'input_limit_seconds':input_seconds,'sanitizer_options':shard_env.get('ASAN_OPTIONS'),
+              'control_file':control.name,
+              'features':len({f for e in inputs.values() for f in e.get('features') or ()}),
+              'failed_inputs':sorted(n for n,e in inputs.items() if 'size' in e and e['features'] is None),
+              'unrun_inputs':sorted(n for n,e in inputs.items() if 'size' not in e),
+              'artifacts':[p.name for p in sorted(artifacts.iterdir())],'command':command}
+    report['passed'] = minimize_shard_passed(report)
+    return report
+
+
+def set_cover(inputs):
+    """Greedy set cover, libFuzzer's SetCoverMerge rule made independent of
+    the listing order: take the input adding the most features not yet
+    covered, the smaller then the lesser name on a tie, until every feature
+    is covered. Lazy evaluation gives the same choice as recomputing every
+    gain, since an input's gain only falls."""
+    import heapq
+    covered, chosen = set(), []
+    rest = {name:e['features'] for name,e in inputs.items() if e['features']}
+    heap = [(-len(set(features)),inputs[name]['size'],name) for name,features in rest.items()]
+    heapq.heapify(heap)
+    while heap:
+        _, size, name = heapq.heappop(heap)
+        # An input's uncovered features only shrink: keep the remainder.
+        rest[name] = left = [f for f in rest[name] if f not in covered]
+        gain = len(set(left))
+        if not gain:
+            continue
+        if heap and (-gain,size,name) > heap[0]:
+            heapq.heappush(heap,(-gain,size,name))
+            continue
+        covered.update(left)
+        chosen.append(name)
+    return sorted(chosen)
+
+
+def combine_minimized(target, corpus, reports, shards=None):
+    """Accept the sharded minimisation only if every shard of this snapshot
+    reported, ran exactly its inputs with one binary and passed; then choose
+    the minimised corpus from all the shards' features, check it keeps every
+    feature, and replace the corpus with it. Otherwise nothing changes. Each
+    report's control_path (set by the caller) names its control file."""
+    shards = shards or MINIMIZE_SHARDS[target]
+    plan = shard_names(corpus, shards)
+    everything = {n for part in plan for n in part}
+    digest = listing_digest(everything)
+    problems, by_shard = [], {}
+    for report in reports:
+        k = report.get('shard')
+        if (report.get('target') != target or report.get('mode') != 'minimize-shard'
+                or report.get('shards') != shards or k not in range(shards)):
+            problems.append(f'report of {report.get("target")} shard {k} of {report.get("shards")} is not one of {shards} {target} minimisation shards')
+        elif k in by_shard:
+            problems.append(f'shard {k} reported twice')
+        else:
+            by_shard[k] = report
+    problems += [f'shard {k} did not report' for k in range(shards) if k not in by_shard]
+    inputs = {}
+    for k,report in sorted(by_shard.items()):
+        if report.get('corpus_digest') != digest:
+            problems.append(f'shard {k} minimised another snapshot')
+        if report['names'] != plan[k]:
+            problems.append(f'shard {k} ran other inputs than its own')
+        control = Path(report.get('control_path') or report['control_file'])
+        if not control.exists():
+            problems.append(f'shard {k} left no control file')
+            continue
+        listed = parse_control_file(control.read_text())
+        nonempty = sorted(n for n in plan[k] if (corpus/n).stat().st_size)
+        if sorted(listed) != nonempty or any(e.get('features') is None for e in listed.values()):
+            problems.append(f'shard {k}\'s control file does not record every input of the shard once, complete')
+        inputs.update(listed)
+    binaries = {r.get('binary_sha256') for r in by_shard.values()}
+    if len(binaries) > 1:
+        problems.append('the shards ran different binaries, whose features are not comparable')
+    failed = sorted(k for k,report in by_shard.items() if not report.get('passed'))
+    before = len(everything)
+    report = {'target':target,'mode':'combine-minimized','shards':shards,'corpus_files_before':before,
+              'corpus_digest':digest,'shard_files':[len(part) for part in plan],
+              'shard_elapsed_seconds':[by_shard[k].get('elapsed_seconds') if k in by_shard else None for k in range(shards)],
+              'problems':problems,'failed_shards':failed}
+    if problems or failed:
+        return dict(report,corpus_files_after=before,features=None,passed=False,replaced=False)
+    chosen = set_cover(inputs)
+    every = {f for e in inputs.values() for f in e['features']}
+    kept = {f for n in chosen for f in inputs[n]['features']}
+    edges = {c for e in inputs.values() for c in e['coverage']}
+    report.update(features=len(every),features_kept=len(kept),coverage_edges=len(edges))
+    if kept != every:
+        return dict(report,corpus_files_after=before,passed=False,replaced=False,
+                    problems=['the chosen inputs lose features'])
+    fresh = corpus.parent/f'.{target}-minimized'
+    if fresh.exists(): shutil.rmtree(fresh)
+    fresh.mkdir()
+    for name in chosen:
+        shutil.copy2(corpus/name,fresh/name)
+    shutil.rmtree(corpus)
+    fresh.rename(corpus)
+    # The shards ran every kept input: a full replay.
+    write_manifest(target,corpus)
+    return dict(report,corpus_files_after=len(chosen),corpus_after_digest=listing_digest(chosen),
+                passed=True,replaced=True)
+
+
 def replay_regressions(target, toolchain, output, env):
     """Run every checked-in regression once, with the target's limits."""
     files=sorted((FUZZ/'regressions'/target).glob('*.bin')) if (FUZZ/'regressions'/target).exists() else []
@@ -910,6 +1157,16 @@ def main():
     parser.add_argument('--check-replay-shards',type=Path,metavar='DIR',
                         help='check the shard reports under DIR against the unseeded corpus; '
                              'write the manifest if they cover it exactly once and passed')
+    parser.add_argument('--build-only',action='store_true',
+                        help='build the sanitizer binary the minimisation shards run, to target/fuzz-binaries')
+    parser.add_argument('--minimize-shard',type=int,metavar='K',
+                        help='run shard K of the unseeded corpus through the set-cover merge, recording '
+                             'every input\'s features; replaces nothing (MINIMIZE_SHARDS)')
+    parser.add_argument('--binary',type=Path,
+                        help='the binary --minimize-shard runs (default: --build-only\'s)')
+    parser.add_argument('--combine-minimized',type=Path,metavar='DIR',
+                        help='check the minimisation shards\' reports under DIR against the unseeded corpus; '
+                             'if all passed, replace the corpus by the inputs covering all their features')
     args = parser.parse_args()
     if args.per_push:
         if set(args.target or TARGETS) <= SCHEDULE_ONLY_TARGETS:
@@ -918,15 +1175,49 @@ def main():
             args.replay = 'sample'
     if not 1 <= args.seconds <= 3600: parser.error('--seconds must be in [1,3600]')
     targets = args.target or TARGETS
-    sharding = args.replay_shard is not None or args.check_replay_shards is not None
-    if sharding:
+    replaying = args.replay_shard is not None or args.check_replay_shards is not None
+    minimizing = args.minimize_shard is not None or args.combine_minimized is not None
+    if replaying:
         if len(targets) != 1 or targets[0] not in REPLAY_SHARDS:
             parser.error(f'shard replays take one --target of {sorted(REPLAY_SHARDS)}')
         if args.replay_shard is not None and not 0 <= args.replay_shard < REPLAY_SHARDS[targets[0]]:
             parser.error(f'--replay-shard must be in [0,{REPLAY_SHARDS[targets[0]]})')
+    if minimizing:
+        if len(targets) != 1 or targets[0] not in MINIMIZE_SHARDS:
+            parser.error(f'sharded minimisation takes one --target of {sorted(MINIMIZE_SHARDS)}')
+        if args.minimize_shard is not None and not 0 <= args.minimize_shard < MINIMIZE_SHARDS[targets[0]]:
+            parser.error(f'--minimize-shard must be in [0,{MINIMIZE_SHARDS[targets[0]]})')
+    sharding = replaying or minimizing
     # A shard replays, and the check reads, the snapshot it was given as it is.
     corpora = {target: FUZZ/'corpus'/target if sharding else seed_corpus(target) for target in targets}
     if args.seed_only: return
+    if args.combine_minimized is not None:
+        target = targets[0]
+        reports = []
+        for path in sorted(args.combine_minimized.rglob(f'{target}-minimize-shard-*.json')):
+            report = json.loads(path.read_text())
+            report['control_path'] = str(path.parent/report.get('control_file',''))
+            reports.append(report)
+        report = combine_minimized(target,corpora[target],reports)
+        print(json.dumps(report),flush=True)
+        for k,(files,seconds) in enumerate(zip(report['shard_files'],report['shard_elapsed_seconds'])):
+            print(f'{target} minimisation shard {k}: {files} inputs, {seconds} s',flush=True)
+        output = args.report_dir.resolve()
+        output.mkdir(parents=True,exist_ok=True)
+        (output/f'{target}-minimized.json').write_text(json.dumps(report,indent=2)+'\n')
+        raise SystemExit(0 if report['passed'] else 1)
+    if args.minimize_shard is not None:
+        # No toolchain: the shard runs the snapshot job's binary.
+        target = targets[0]
+        output = args.report_dir.resolve()
+        output.mkdir(parents=True,exist_ok=True)
+        binary = args.binary or binary_path(target)
+        if not binary.exists():
+            parser.error(f'no binary at {binary}: run --build-only first, or pass --binary')
+        report = minimize_shard(target,corpora[target],args.minimize_shard,output,dict(os.environ),binary)
+        (output/f'{target}-minimize-shard-{args.minimize_shard}.json').write_text(json.dumps(report,indent=2)+'\n')
+        print(json.dumps({k:v for k,v in report.items() if k not in ('names','expected_names','listed_names')}),flush=True)
+        raise SystemExit(0 if report['passed'] else 1)
     if args.check_replay_shards is not None:
         target = targets[0]
         reports = [json.loads(p.read_text()) for p in sorted(args.check_replay_shards.rglob(f'{target}-shard-*.json'))]
@@ -960,6 +1251,17 @@ def main():
                 summary['targets'].append(report)
                 failed |= not report['replaced'] or (FUZZ/'Cargo.lock').read_bytes() != locked
                 print(json.dumps(report),flush=True)
+        if args.build_only:
+            summary['mode']='build'
+            for target in targets:
+                started=time.monotonic()
+                code,path=build_binary(target,args.toolchain,output,env)
+                report={'target':target,'mode':'build','exit_code':code,'binary':str(path) if path else None,
+                        'binary_sha256':hashlib.sha256(path.read_bytes()).hexdigest() if path else None,
+                        'elapsed_seconds':round(time.monotonic()-started,2)}
+                summary['targets'].append(report)
+                failed |= code != 0 or (FUZZ/'Cargo.lock').read_bytes() != locked
+                print(json.dumps(report),flush=True)
         if args.regressions_only:
             summary['mode']='regressions'
             for target in targets:
@@ -975,7 +1277,7 @@ def main():
             (output/f'{target}-shard-{args.replay_shard}.json').write_text(json.dumps(report,indent=2)+'\n')
             failed |= not report['passed'] or (FUZZ/'Cargo.lock').read_bytes() != locked
             print(json.dumps({k:v for k,v in report.items() if k != 'names'}),flush=True)
-        for target in [] if args.minimize or args.regressions_only or sharding else targets:
+        for target in [] if args.minimize or args.regressions_only or args.build_only or sharding else targets:
             artifacts = FUZZ/'artifacts'/target
             artifacts.mkdir(parents=True,exist_ok=True)
             log_path = output/f'{target}.log'

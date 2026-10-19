@@ -20,9 +20,10 @@ jobs:
     name: Original OCCT tests / Rust and native
     runs-on: ubuntu-24.04
     # The fixture generators' checks run in their own job (fixture-generators
-    # below); the bridge tests (10 minutes), the upstream runs on both
-    # kernels (28 minutes with S9's registered Booleans) and the native
-    # comparisons remain.
+    # below), and the rust/tools unit tests in theirs (tool-tests, 31
+    # minutes here at 73a266de); the upstream runs on both kernels (28
+    # minutes with S9's registered Booleans) and the native comparisons
+    # remain.
     timeout-minutes: 60
     env:
       CSF_OCCTResourcePath: /usr/share/opencascade/resources
@@ -41,10 +42,6 @@ jobs:
         run: |
           python3 -m venv target/math-oracle-venv
           target/math-oracle-venv/bin/python -m pip install --disable-pip-version-check --no-cache-dir --require-hashes -r rust/tools/math-oracle-requirements.txt
-      - name: Test the bridge, including deliberate failures
-        env:
-          RUSTY_TEST_DRAW_EXE: /usr/bin/occt-draw
-        run: target/math-oracle-venv/bin/python -m unittest discover -s rust/tools -p 'test_*.py' -v
       - name: Run unchanged upstream tests on both kernels
         run: python3 rust/tools/run_upstream_tests.py --backend both --draw-exe /usr/bin/occt-draw
       - name: Compare line and plane intersections with native OCCT
@@ -101,6 +98,41 @@ jobs:
             target/spline-quadric-oracle/
           if-no-files-found: warn
 
+  tool-tests:
+    name: Bridge and reference unit tests / shard ${{ matrix.shard }}
+    runs-on: ubuntu-24.04
+    # The rust/tools unit tests, `unittest discover -s rust/tools -p
+    # 'test_*.py'`, which took 31 of the upstream job's 45 minutes, split by
+    # module across run_tool_tests.py's SHARDS: each shard discovers the
+    # whole suite and runs the modules its plan gives it, so every test runs
+    # once, in the upstream job's environment (FUZZING.md).
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2, 3]
+    env:
+      CSF_OCCTResourcePath: /usr/share/opencascade/resources
+      DRAWHOME: /usr/share/opencascade/resources/DrawResources
+      CSF_DrawPluginDefaults: /usr/share/opencascade/resources/DrawResources
+      DRAWDEFAULT: /usr/share/opencascade/resources/DrawResources/DrawDefault
+    steps:
+      - uses: actions/checkout@v4.2.2
+      - run: rustup toolchain install stable --profile minimal
+      - name: Install test interpreters
+        run: |
+          sudo apt-get update
+          # DRAW loads plugins by unversioned .so names supplied by the dev package.
+          sudo apt-get install --no-install-recommends -y tcl occt-draw occt-misc libocct-draw-dev libocct-modeling-data-dev libocct-modeling-algorithms-dev python3-venv
+      - name: Install independent polynomial oracle
+        run: |
+          python3 -m venv target/math-oracle-venv
+          target/math-oracle-venv/bin/python -m pip install --disable-pip-version-check --no-cache-dir --require-hashes -r rust/tools/math-oracle-requirements.txt
+      - name: Test the bridge, including deliberate failures
+        env:
+          RUSTY_TEST_DRAW_EXE: /usr/bin/occt-draw
+        run: target/math-oracle-venv/bin/python rust/tools/run_tool_tests.py --shard ${{ matrix.shard }}
+
   fixture-generators:
     name: Fixture generators / ${{ matrix.group }}
     runs-on: ubuntu-24.04
@@ -108,6 +140,13 @@ jobs:
     # the generators' checks (31 minutes) beside the bridge tests. The cones'
     # reference alone took 31 minutes on a loaded host.
     timeout-minutes: 60
+    env:
+      # On a push or pull request a group whose recorded inputs are all
+      # identical to those of its last pass is skipped, and counts as green
+      # under R15: it passed on those inputs in the run its marker names
+      # (generator_groups.py, FUZZING.md). The schedule and manual runs run
+      # every group, and record fresh passes.
+      MAY_SKIP: ${{ github.event_name == 'push' || github.event_name == 'pull_request' }}
     strategy:
       fail-fast: false
       matrix:
@@ -118,203 +157,40 @@ jobs:
                 polyhedra-curved, deep-trees, two-leaves, rim-leaves, flush-leaves, stack-leaves,
                 nested-leaves, turned-profiles, turned-flats, turned-tilted, turned-fillets,
                 turned-cone-fillets, turned-crossings, turned-corners, crossed-leaves, inside-first]
+    # Each group's commands are generator_groups.py's GROUPS[group]: the
+    # --check runs of its independent references, each in the interpreter
+    # it always had (python3, or the oracle's venv).
     steps:
       - uses: actions/checkout@v4.2.2
-      - run: rustup toolchain install stable --profile minimal
+      # `--` ends the group in the key: no group's prefix is another's
+      # (given, given-curved).
+      - name: Restore the group's last recorded pass
+        if: env.MAY_SKIP == 'true'
+        uses: actions/cache/restore@v4.2.3
+        with:
+          path: target/generator-pass
+          key: generator-pass-v1-${{ matrix.group }}--${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: generator-pass-v1-${{ matrix.group }}--
+      - name: Skip the group if it passed on identical inputs
+        id: memo
+        if: env.MAY_SKIP == 'true'
+        run: python3 rust/tools/generator_groups.py check "${{ matrix.group }}" --marker target/generator-pass/marker.json
+      - if: steps.memo.outputs.skip != 'true'
+        run: rustup toolchain install stable --profile minimal
       - name: Install independent polynomial oracle
+        if: steps.memo.outputs.skip != 'true'
         run: |
           python3 -m venv target/math-oracle-venv
           target/math-oracle-venv/bin/python -m pip install --disable-pip-version-check --no-cache-dir --require-hashes -r rust/tools/math-oracle-requirements.txt
-      - name: Verify the independent exact arithmetic oracle - predicates, curves and splines
-        if: matrix.group == 'algebra'
-        run: |
-          python3 rust/tools/generate_predicate_fixtures.py --check
-          python3 rust/tools/generate_spatial_fixtures.py --check
-          python3 rust/tools/generate_proximity_fixtures.py --check
-          python3 rust/tools/generate_linear_sets_fixtures.py --check
-          python3 rust/tools/generate_curved_fixtures.py --check
-          python3 rust/tools/generate_spline_fixtures.py --check
-          python3 rust/tools/generate_bezier_editing_fixtures.py --check
-          python3 rust/tools/generate_knot_editing_fixtures.py --check
-          python3 rust/tools/generate_surface_knot_fixtures.py --check
-          python3 rust/tools/generate_degree_elevation_fixtures.py --check
-          python3 rust/tools/generate_exact_spline_intersection_fixtures.py --check
-          python3 rust/tools/generate_surface_editing_fixtures.py --check
-          python3 rust/tools/generate_surface_fixtures.py --check
-          target/math-oracle-venv/bin/python rust/tools/generate_real_root_fixtures.py --check
-          target/math-oracle-venv/bin/python rust/tools/generate_root_comparison_fixtures.py --check
-          target/math-oracle-venv/bin/python rust/tools/generate_algebraic_image_fixtures.py --check
-          target/math-oracle-venv/bin/python rust/tools/generate_spline_proximity_fixtures.py --check
-          target/math-oracle-venv/bin/python rust/tools/generate_spline_plane_fixtures.py --check
-          target/math-oracle-venv/bin/python rust/tools/generate_spline_quadric_fixtures.py --check
-          target/math-oracle-venv/bin/python rust/tools/generate_closed_clip_fixtures.py --check
-          target/math-oracle-venv/bin/python rust/tools/generate_correctly_rounded_fixtures.py --check
-          target/math-oracle-venv/bin/python rust/tools/generate_affine_parameter_fixtures.py --check
-          target/math-oracle-venv/bin/python rust/tools/generate_spline_linear_fixtures.py --check
-      - name: Verify the independent exact arithmetic oracle - B-rep, history, intersections, splits and Booleans
-        if: matrix.group == 'brep'
-        run: |
-          target/math-oracle-venv/bin/python rust/tools/generate_brep_fixtures.py --check
-          target/math-oracle-venv/bin/python rust/tools/generate_identity_fixtures.py --check
-          target/math-oracle-venv/bin/python rust/tools/generate_history_fixtures.py --check
-          target/math-oracle-venv/bin/python rust/tools/generate_split_merge_fixtures.py --check
-          target/math-oracle-venv/bin/python rust/tools/generate_attribute_fixtures.py --check
-          target/math-oracle-venv/bin/python rust/tools/generate_brep_io_fixtures.py --check
-          target/math-oracle-venv/bin/python rust/tools/generate_primitive_fixtures.py --check
-          target/math-oracle-venv/bin/python rust/tools/generate_analytic_intersection_fixtures.py --check
-          target/math-oracle-venv/bin/python rust/tools/generate_procedural_intersection_fixtures.py --check
-          target/math-oracle-venv/bin/python rust/tools/generate_torus_curve_fixtures.py --check
-          target/math-oracle-venv/bin/python rust/tools/generate_ruled_curve_fixtures.py --check
-          target/math-oracle-venv/bin/python rust/tools/generate_curve_surface_fixtures.py --check
-          target/math-oracle-venv/bin/python rust/tools/generate_curve_curve_fixtures.py --check
-          target/math-oracle-venv/bin/python rust/tools/generate_split_fixtures.py --check
-          target/math-oracle-venv/bin/python rust/tools/generate_boolean_fixtures.py --check
-          target/math-oracle-venv/bin/python rust/tools/generate_polyhedral_fixtures.py --check
-          target/math-oracle-venv/bin/python rust/tools/generate_curved_boolean_fixtures.py --check
-          target/math-oracle-venv/bin/python rust/tools/generate_tessellation_fixtures.py --check
-          target/math-oracle-venv/bin/python rust/tools/generate_step_fixtures.py --check
-      - name: Verify the curved Booleans independent references (S9c-S9d)
-        if: matrix.group == 'booleans'
-        run: |
-          target/math-oracle-venv/bin/python rust/tools/generate_procedural_boolean_fixtures.py --check
-          target/math-oracle-venv/bin/python rust/tools/generate_turned_boolean_fixtures.py --check
-          target/math-oracle-venv/bin/python rust/tools/generate_capped_boolean_fixtures.py --check
-          target/math-oracle-venv/bin/python rust/tools/generate_sphere_boolean_fixtures.py --check
-          target/math-oracle-venv/bin/python rust/tools/generate_spheres_boolean_fixtures.py --check
-          target/math-oracle-venv/bin/python rust/tools/generate_spheres_turned_boolean_fixtures.py --check
-          target/math-oracle-venv/bin/python rust/tools/generate_cone_boolean_fixtures.py --check
-          target/math-oracle-venv/bin/python rust/tools/generate_torus_boolean_fixtures.py --check
-          target/math-oracle-venv/bin/python rust/tools/generate_torus_segment_boolean_fixtures.py --check
-          target/math-oracle-venv/bin/python rust/tools/generate_shallow_lens_fixtures.py --check
-      - name: Verify the cones' Boolean independent reference (S9d.3b)
-        if: matrix.group == 'cones'
-        run: target/math-oracle-venv/bin/python rust/tools/generate_cones_boolean_fixtures.py --check
-      - name: Verify the cones' loops Boolean independent reference (S9d.3c)
-        if: matrix.group == 'cones-loops'
-        run: target/math-oracle-venv/bin/python rust/tools/generate_cones_loops_boolean_fixtures.py --check
-      - name: Verify the tori's curved Boolean independent reference (S9d.4b.2)
-        if: matrix.group == 'tori'
-        run: target/math-oracle-venv/bin/python rust/tools/generate_torus_curved_boolean_fixtures.py --check
-      - name: Verify the torus parts' and caps' Boolean independent reference (S9d.4c)
-        if: matrix.group == 'torus-parts'
-        run: target/math-oracle-venv/bin/python rust/tools/generate_torus_parts_boolean_fixtures.py --check
-      - name: Verify the chained Boolean independent reference (S9e.1)
-        if: matrix.group == 'chained'
-        run: target/math-oracle-venv/bin/python rust/tools/generate_chained_boolean_fixtures.py --check
-      - name: Verify the spline prisms' Boolean independent reference in any position (S9f.1)
-        if: matrix.group == 'spline-any'
-        run: target/math-oracle-venv/bin/python rust/tools/generate_spline_any_boolean_fixtures.py --check
-      - name: Verify the given Boolean independent reference (S9e.2)
-        if: matrix.group == 'given'
-        run: target/math-oracle-venv/bin/python rust/tools/generate_given_boolean_fixtures.py --check
-      - name: Verify the given curved Boolean independent reference (S9e.3a)
-        if: matrix.group == 'given-curved'
-        run: target/math-oracle-venv/bin/python rust/tools/generate_given_curved_boolean_fixtures.py --check --workers 4
-      - name: Verify the given met Boolean independent reference (S9e.3b)
-        if: matrix.group == 'given-met'
-        run: target/math-oracle-venv/bin/python rust/tools/generate_given_met_boolean_fixtures.py --check --workers 4
-      - name: Verify the spline prisms' Boolean independent reference with parallel walls (S9f.2a)
-        if: matrix.group == 'spline-parallel'
-        run: target/math-oracle-venv/bin/python rust/tools/generate_spline_parallel_boolean_fixtures.py --check --workers 4
-      - name: Verify the spline prisms' Boolean independent reference with crossing walls (S9f.2b)
-        if: matrix.group == 'spline-crossing'
-        run: target/math-oracle-venv/bin/python rust/tools/generate_spline_crossing_boolean_fixtures.py --check --workers 4
-      - name: Verify the imported solids' Boolean independent reference (S9e.4a)
-        if: matrix.group == 'imported'
-        run: target/math-oracle-venv/bin/python rust/tools/generate_imported_boolean_fixtures.py --check --workers 4
-      - name: Verify the imported prisms' arcs Boolean independent reference (S9e.4b.1)
-        if: matrix.group == 'imported-arcs'
-        run: target/math-oracle-venv/bin/python rust/tools/generate_imported_arcs_boolean_fixtures.py --check --workers 4
-      - name: Verify the spline prisms' Boolean independent reference against spheres (S9f.3a)
-        if: matrix.group == 'spline-sphere'
-        run: target/math-oracle-venv/bin/python rust/tools/generate_spline_sphere_boolean_fixtures.py --check --workers 4
-      - name: Verify the imported polyhedra's Boolean independent reference (S9e.4b.2)
-        if: matrix.group == 'imported-polyhedra'
-        run: target/math-oracle-venv/bin/python rust/tools/generate_imported_polyhedra_boolean_fixtures.py --check --workers 4
-      - name: Verify the spline prisms' Boolean independent reference against cones (S9f.3b)
-        if: matrix.group == 'spline-cone'
-        run: target/math-oracle-venv/bin/python rust/tools/generate_spline_cone_boolean_fixtures.py --check --workers 4
-      - name: Verify the imported plane pieces' Boolean independent reference (S9e.4b.3a)
-        if: matrix.group == 'imported-pieces'
-        run: target/math-oracle-venv/bin/python rust/tools/generate_imported_pieces_boolean_fixtures.py --check --workers 4
-      - name: Verify the split plane pieces' Boolean independent reference (S9e.4b.3b)
-        if: matrix.group == 'split-pieces'
-        run: target/math-oracle-venv/bin/python rust/tools/generate_split_pieces_boolean_fixtures.py --check --workers 4
-      - name: Verify two pieces of one sphere's Boolean independent reference (S9e.4b.3c.1)
-        if: matrix.group == 'one-sphere'
-        run: target/math-oracle-venv/bin/python rust/tools/generate_one_sphere_boolean_fixtures.py --check --workers 4
-      - name: Verify exact incidences on one sphere's Boolean independent reference (S9e.4b.3c.2)
-        if: matrix.group == 'one-sphere-incidence'
-        run: target/math-oracle-venv/bin/python rust/tools/generate_one_sphere_incidence_boolean_fixtures.py --check --workers 4
-      - name: Verify the plane pieces' other Booleans' independent reference (S9e.4b.3c.3a)
-        if: matrix.group == 'piece-forms'
-        run: target/math-oracle-venv/bin/python rust/tools/generate_piece_forms_boolean_fixtures.py --check --workers 4
-      - name: Verify the plane pieces' Boolean trees' independent reference (S9e.4b.3c.3b)
-        if: matrix.group == 'piece-trees'
-        run: target/math-oracle-venv/bin/python rust/tools/generate_piece_trees_boolean_fixtures.py --check --workers 4
-      - name: Verify the imported prisms' joints of two circles Boolean independent reference (S9e.4b.4a)
-        if: matrix.group == 'imported-joints'
-        run: target/math-oracle-venv/bin/python rust/tools/generate_imported_joints_boolean_fixtures.py --check --workers 4
-      - name: Verify the imported bodies' Boolean chains of primitives independent reference (S9e.4b.4b.1)
-        if: matrix.group == 'primitive-chains'
-        run: target/math-oracle-venv/bin/python rust/tools/generate_primitive_chains_boolean_fixtures.py --check --workers 4
-      - name: Verify the imported bodies' chains led by a prism leaf independent reference (S9e.4b.4b.2a)
-        if: matrix.group == 'prism-leaves'
-        run: target/math-oracle-venv/bin/python rust/tools/generate_prism_leaves_boolean_fixtures.py --check --workers 4
-      - name: Verify the imported bodies' flats, prisms of one cap and pockets independent reference (S9e.4b.4b.2b.1)
-        if: matrix.group == 'plane-parts'
-        run: target/math-oracle-venv/bin/python rust/tools/generate_plane_parts_boolean_fixtures.py --check --workers 4
-      - name: Verify the imported polyhedra against curved faces independent reference (S9e.4b.4c.1)
-        if: matrix.group == 'polyhedra-curved'
-        run: target/math-oracle-venv/bin/python rust/tools/generate_polyhedra_curved_boolean_fixtures.py --check --workers 4
-      - name: Verify the imported plane pieces' nested pockets independent reference (S9e.4b.4c.2a)
-        if: matrix.group == 'deep-trees'
-        run: target/math-oracle-venv/bin/python rust/tools/generate_deep_trees_boolean_fixtures.py --check --workers 4
-      - name: Verify the imported bodies' two prism leaves independent reference (S9e.4b.4b.2b.2a)
-        if: matrix.group == 'two-leaves'
-        run: target/math-oracle-venv/bin/python rust/tools/generate_two_leaves_boolean_fixtures.py --check --workers 4
-      - name: Verify the imported bodies' leaves cut at their rim independent reference (S9e.4b.4b.2b.2b.1)
-        if: matrix.group == 'rim-leaves'
-        run: target/math-oracle-venv/bin/python rust/tools/generate_rim_leaves_boolean_fixtures.py --check --workers 4
-      - name: Verify the imported bodies' parts flush with a leaf's walls independent reference (S9e.4b.4b.2b.2b.2)
-        if: matrix.group == 'flush-leaves'
-        run: target/math-oracle-venv/bin/python rust/tools/generate_flush_leaves_boolean_fixtures.py --check --workers 4
-      - name: Verify the imported bodies' stacks of two prisms independent reference (S9e.4b.4b.2b.2b.3a)
-        if: matrix.group == 'stack-leaves'
-        run: target/math-oracle-venv/bin/python rust/tools/generate_stack_leaves_boolean_fixtures.py --check --workers 4
-      - name: Verify the imported bodies' pockets with pockets of their own independent reference (S9e.4b.4c.2b.1)
-        if: matrix.group == 'nested-leaves'
-        run: target/math-oracle-venv/bin/python rust/tools/generate_nested_leaves_boolean_fixtures.py --check --workers 4
-      - name: Verify the imported turned bodies' profiles of corners independent reference (S9e.4b.4d.2a)
-        if: matrix.group == 'turned-profiles'
-        run: target/math-oracle-venv/bin/python rust/tools/generate_turned_profiles_boolean_fixtures.py --check --workers 4
-      - name: Verify the imported turned bodies' near-flat cones independent reference (S9e.4b.4d.2b)
-        if: matrix.group == 'turned-flats'
-        run: target/math-oracle-venv/bin/python rust/tools/generate_turned_flats_boolean_fixtures.py --check --workers 4
-      - name: Verify the imported turned bodies on a tilted axis independent reference (moved turned bodies)
-        if: matrix.group == 'turned-tilted'
-        run: target/math-oracle-venv/bin/python rust/tools/generate_turned_tilted_boolean_fixtures.py --check --workers 4
-      - name: Verify the imported turned bodies' fillets and rounds independent reference (S9e.4b.4d.2c.1a)
-        if: matrix.group == 'turned-fillets'
-        run: target/math-oracle-venv/bin/python rust/tools/generate_turned_fillets_boolean_fixtures.py --check --workers 4
-      - name: Verify the imported turned bodies' consistency reference (S9e.4b.4d.2c.1a's consistency fixed)
-        if: matrix.group == 'turned-fillets'
-        run: target/math-oracle-venv/bin/python rust/tools/generate_turned_consistency_fixtures.py --check
-      - name: Verify the imported turned bodies' fillets and rounds beside a cone independent reference (S9e.4b.4d.2c.1b)
-        if: matrix.group == 'turned-cone-fillets'
-        run: target/math-oracle-venv/bin/python rust/tools/generate_turned_cone_fillets_boolean_fixtures.py --check --workers 4
-      - name: Verify the imported turned bodies' partners across smooth edges independent reference (S9e.4b.4d.2c.2)
-        if: matrix.group == 'turned-crossings'
-        run: target/math-oracle-venv/bin/python rust/tools/generate_turned_crossings_boolean_fixtures.py --check --workers 4
-      - name: Verify the imported turned bodies' rounds at corners independent reference (S9e.4b.4d.2c.1c)
-        if: matrix.group == 'turned-corners'
-        run: target/math-oracle-venv/bin/python rust/tools/generate_turned_corners_boolean_fixtures.py --check --workers 4
-      - name: Verify the imported bodies' leaves split by a crossing leaf independent reference (S9e.4b.4b.2b.2b.3b)
-        if: matrix.group == 'crossed-leaves'
-        run: target/math-oracle-venv/bin/python rust/tools/generate_crossed_leaves_boolean_fixtures.py --check --workers 4
-      - name: Verify the imported bodies' chains in the inside-first order independent reference (S9e.4b.4c.2b.2)
-        if: matrix.group == 'inside-first'
-        run: target/math-oracle-venv/bin/python rust/tools/generate_inside_first_boolean_fixtures.py --check --workers 4
+      - name: Verify the group's independent references, recording every input they read
+        if: steps.memo.outputs.skip != 'true'
+        run: python3 rust/tools/generator_groups.py run "${{ matrix.group }}" --marker target/generator-pass/marker.json
+      - name: Record the pass and its inputs
+        if: steps.memo.outputs.skip != 'true'
+        uses: actions/cache/save@v4.2.3
+        with:
+          path: target/generator-pass
+          key: generator-pass-v1-${{ matrix.group }}--${{ github.run_id }}-${{ github.run_attempt }}
 
   pinned-degree-oracle:
     name: Degree elevation / source-pinned OCCT
