@@ -12,8 +12,11 @@ followed only by commits that address it or revert it.
   Windows, macOS and Rust 1.85), "Rust geometry fuzzing" run 39190991866,
   "Rust Boolean captures on Linux" run 39197100462.
 - CI at `50afeef4` (the head of `rust-kernel`: X6's CI changes, merged at
-  `5e861738`): pending. Fill in each workflow's run and result here when
-  confirmed; a later head adds its own line.
+  `5e861738`): green. "Rust kernel" run 39198951086 (62 jobs, 84 minutes
+  from start to finish; every fixture-generator group ran, as no marker
+  existed yet), "Rust geometry fuzzing" run 39198951083. The documentation
+  commits after it (X4, X5) change no code, workflow or fixture; a later
+  head adds its own line.
 
 ## Pick up
 

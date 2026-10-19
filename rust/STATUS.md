@@ -43,8 +43,8 @@ UPSTREAM_TESTS.md and the review file):
 
 ## Open items, in order
 
-1. **CI at the head**, `50afeef4` (X6's CI changes): pending; the
-   HANDOFF.md header line is filled in when confirmed. Red is the next task.
+1. **CI at the head**: green at `50afeef4` (X6's CI changes; HANDOFF.md's
+   header has the runs). Red is always the next task.
 2. **X6's gate**: no scheduled job hitting its budget for a week, the
    Sunday minimisation of 25 October first ([FUZZING](FUZZING.md)'s
    sharded minimisation; the review's Status).
