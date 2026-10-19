@@ -227,7 +227,10 @@ fn report(parts: &TopologyParts, tolerance: Tolerance) -> Vec<String> {
 
 /// `report`, with the topology it constructed when the parts are valid.
 fn report_topology(parts: &TopologyParts, tolerance: Tolerance) -> (Vec<String>, Option<Topology>) {
-    let issues = parts.check(tolerance);
+    // S10: the first check of an input under a budget too (`budget.rs`).
+    let checked = |budget: &rusty_occt::Budget| budget.run(|| Ok(parts.check(tolerance)));
+    let issues = crate::budget::metered("validation", crate::budget::first(), checked)
+        .expect("an unlimited validation");
     // Deterministic, duplicate-free, and consistent with the constructor.
     assert_eq!(issues, parts.check(tolerance));
     let mut names: Vec<String> = issues.iter().map(|i| i.to_string()).collect();
@@ -1391,6 +1394,7 @@ fn sheets(b: &mut Bytes) {
 }
 
 pub fn check_brep_validation(data: &[u8]) {
+    crate::budget::begin(data);
     if data.first() == Some(&b'W') {
         // S6: sheets, wires and acorns.
         sheets(&mut Bytes(data, 1));

@@ -36,9 +36,18 @@ proc logPuts {args} {
 }
 proc metadata {args} {return ""}
 proc cpuLimit {seconds} {
-    # The outer process supervisor enforces a stricter wall-time limit.
+    # The outer process supervisor enforces a stricter wall-time limit. On
+    # the Rust backend (S10, BUDGETS.md) the worker runs every later command
+    # under a budget whose deadline is `seconds` of wall time from here: an
+    # operation past it is refused as the budget's wall time.
     if {![string is integer -strict $seconds] || $seconds <= 0} {
         return [unsupportedCommand cpulimit $seconds]
+    }
+    if {$::backend eq "rust"} {
+        puts $::worker [join [list [hex cpulimit] [hex $seconds]] " "]
+        flush $::worker
+        if {[gets $::worker response] < 0} {error "Rust worker closed its output"}
+        if {![regexp {^OK [0-9a-f]*$} $response]} {error "invalid Rust worker response"}
     }
 }
 proc locateData {name} {
