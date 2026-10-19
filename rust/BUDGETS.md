@@ -160,3 +160,149 @@ boolean corpus's CPU (measured below).
 **Not counted.** Parsing `.brep` and Part 21 text is linear in the file and
 counts no units. An import's constructions and validations count theirs.
 Constructions without loops (frames, primitives' topology) count none.
+
+## Work-unit points
+
+Each point counts one unit per iteration, under the stage name an
+`Exhaustion` reports (`grep -rn 'budget::unit' rust/kernel/src` lists them).
+
+| Where | Stages |
+| --- | --- |
+| Curved Booleans, arrangement (`curved/graph.rs`) | a face pair's meeting, coincidence, near miss and section; an edge pair on one surface; an edge's pierce of a face; a crossing's point; an edge's split; a section's segment; a face's pieces; a face loop's step; a hole's refinement; a stored point's split |
+| Curved Booleans, near misses (`curved/near.rs`) | a face pair's near miss, grid row, Newton seed and critical point; an edge's near miss of a face or a vertex; a vertex's near miss of a face; vertex and edge pairs' near misses |
+| Torus meetings (`curved/torus_curved.rs`) | a torus meeting's verification box (each box `VERIFY_BOXES` also draws), turning-point box, tracing step, piece plan and component |
+| Attempts | a seam attempt (`curved/mod.rs`, `given.rs`, `pieces.rs`); a chain attempt and a form attempt (`solid/imported.rs`) |
+| Assembly (`curved/assemble.rs`) | a result face's loops, a result vertex's neighbours, a cavity's trial, a result solid, edge and face |
+| Polyhedral Booleans (`boolean/polyhedra.rs`) | the near-miss pairs; a face's clip; a fragment's side; a fragment edge's points; an edge chain; a face group; a result solid |
+| Profiles and stacks (`profile/boolean.rs`, `boolean/stack.rs`) | a profile vertex pair, segment pair, segment's vertices and pieces, piece pair, piece's side, loop and loop pair; a stack level; a face group; a result solid |
+| Splits (`solid/split.rs`, `split/oblique.rs`) | a split piece; a section's boundary, segment and loop; a section loop's step; an oblique piece |
+| Imports (`solid/imported.rs`, `imported/turned.rs`) | a face pair's prism; a face grouping round; a turned part pair |
+| Validation (`topology/validate*`, `jet.rs`) | an integral's piece and box; a quotient integral's and a Green integral's piece; a Green integral's fin; a face's integrals and flux; a spline deviation's piece; a ray's face; a ray crossing's piece |
+| Tessellation (`tessellation.rs`, `tessellation/spline.rs`) | a tessellation round; a spline cell; an edge's discretisation; a spline edge's doubling; a face's mesh; a mesh grid; a mesh triangle |
+| Intersections (`intersection/*`) | a root's piece; a curve root's piece; an edge's piece; a turning-point box; a tracing step; a Newton step |
+
+## Evidence
+
+**Budget fixtures.**
+- The slowest distinct inputs of three corpora at `50afeef4` are kept under
+  `rust/fixtures/budgets/`:
+  - `boolean`: eight inputs, 3.1 to 4.5 s each in a release replay;
+  - `split`: eight inputs, 1.3 to 1.4 s each;
+  - `brep_validation`: four inputs, 1.0 to 1.2 s each.
+- `rust/fixtures/budget-work.tsv` lists them with those seconds and pins the
+  work units of every metered operation of each:
+  - `boolean`: fuse, cut and common, 1,669 to 4,769 units;
+  - `split`: the split, 454 to 2,293 units;
+  - `brep_validation`: each validation, 10,884 to 17,027 units.
+- `rust/fuzz/examples/replay_budgets.rs --check` runs them with their
+  targets' oracles and S10's invariant. It passes on macOS and on a Linux
+  host (glibc 2.39, rustc 1.99.1) with the same counts. The fuzz
+  workflow's `boolean` job runs it on CI's Ubuntu runner.
+- `tests/budgets.rs` pins two kernel counts, which every kernel job checks
+  on its host:
+  - two boxes' fuse: 477 units;
+  - the tilted torus and a rod crossing its inner equator by `1e-6`:
+    51,200 units.
+
+**The fuzz invariant** ([FUZZING.md](FUZZING.md), "Budgets (S10)").
+- The `boolean`, `split`, `brep_validation` and `tessellation` targets each
+  run one long operation an input twice:
+  1. under a budget drawn from the input's hash, log-uniform below `2^24`;
+  2. unlimited.
+- The two runs must agree in one of two ways:
+  - work within the budget: the same result and the same work;
+  - otherwise: refused for work with exactly one unit past the budget.
+- Replayed over the local corpora and regressions on the Linux host, every
+  check holds:
+
+| Target | Checked | Within the budget | of them, no work | Refused | Budget equal to the work |
+| --- | --- | --- | --- | --- | --- |
+| `boolean` | 1,482 | 950 | 199 | 532 | 7 |
+| `split` | 3,378 | 2,653 | 756 | 725 | 38 |
+| `brep_validation` | 3,170 | 2,599 | 327 | 571 | 41 |
+| `tessellation` | 1,289 | 855 | 0 | 434 | 1 |
+
+- The same replays with debug assertions on macOS, one process an input,
+  have no failure. They cover:
+  - `boolean`: 1,482 inputs;
+  - `split`: 3,571 inputs;
+  - `brep_validation`: 3,217 inputs;
+  - `tessellation`: 1,315 inputs.
+
+**Cancellation from another thread.**
+`another_thread_cancels_a_long_boolean_promptly` (`tests/budgets.rs`) fuses
+the tilted torus with the `1e-6` rod. That Boolean takes about a second in
+release. A second thread cancels it after 50 ms, and the operation must
+return `Cause::Cancelled` within 500 ms of the cancellation. On the
+development Mac it returned in 11 ms in release and in 21 ms at
+`opt-level = 2` with debug assertions. Afterwards the same fuse, unlimited,
+evaluates on the same thread: the cancelled arrangement was not kept.
+
+**The DRAW adapter's `cpulimit`.** On the Rust backend the worker installs
+a wall budget with that deadline for every later command (`draw_bridge.tcl`,
+`draw_worker.rs`; [UPSTREAM_TESTS.md](UPSTREAM_TESTS.md)'s "Deliberate
+limits"). `test_draw_bridge.py` checks two things:
+- commands under it evaluate;
+- `cpulimit 0` stays unsupported.
+
+The registered cases take their groups' limits of 60 s or more, so the 30 s
+contract and the ledger are unchanged.
+
+## Measurements
+
+**The longest stretch between two checks** (`Budget::run`'s start, every
+unit and its end). It bounds how late a deadline or a cancellation lands.
+It was measured with an uncommitted instrumented build, in release, on the
+Linux host, over every corpus input and regression:
+
+| Target | Median | 90th percentile | 99th percentile | Longest |
+| --- | --- | --- | --- | --- |
+| `boolean` | 2.4 ms | 16 ms | 66 ms | 114 ms (a stack's cells after its profiles' loops) |
+| `split` | 0.6 ms | 3.6 ms | 54 ms | 58 ms (a spline integral's setup) |
+| `brep_validation` | 0.1 ms | 0.9 ms | 3.3 ms | 11 ms |
+| `tessellation` | 0.4 ms | 19 ms | 67 ms | 167 ms (after a grid face's mesh) |
+
+Every stretch is under a fifth of a second. Before the validation's
+integrals had units, the boolean corpus's longest stretch on the development
+Mac was 1.1 s, from a result's last integral box to the operation's end.
+
+**Cost.**
+- Without a budget a unit is a thread-local read. With an unlimited budget
+  installed it is a thread-local slow path and an atomic add.
+- The boolean corpus counts 4.0 million units in its fuse, cut and common
+  (1,482 inputs, 14,784 at most for one input), against about 750 s of CPU.
+- The cost was measured on the development Mac (load about 7.5, other
+  work), with release replays of the boolean corpus, back to back and
+  twice. The three variants are:
+  - `50afeef4`;
+  - S10 with the old harness (no budget anywhere);
+  - S10 with every metered operation run once under an unlimited budget
+    (every unit counted).
+
+| Run | `50afeef4` | S10, no budget | S10, counting |
+| --- | --- | --- | --- |
+| first | 768.5 s | 754.4 s | 754.3 s |
+| second | 752.6 s | 751.6 s | 753.5 s |
+
+- The cost is within the runs' noise. The second round, the quieter one,
+  shows -0.1% without a budget and +0.1% counting, well under the 1%
+  allowed.
+- The release suite is also within noise:
+  - wall: 726.9 s becomes 717.4 s;
+  - CPU: 2,299.5 s becomes 2,280.0 s;
+  - tests: 857 become 861, with `tests/budgets.rs`.
+
+## Open items
+
+- **For the user:** the refusal is a new variant, `Error::BudgetExhausted`,
+  rather than `ComputationLimit` with a payload ("Refined decisions"). Both
+  are mechanical to change while nothing outside the repository uses them.
+- Memory budgets are not counted. The 2 GiB fuzz limit and the kernel's
+  fixed size limits remain the only bounds on memory.
+- Parsing `.brep` and Part 21 text counts no units.
+- The longest stretches left are a stack's cells after its profiles'
+  loops, a spline integral's setup and a tessellation's checks after its
+  last triangle, each under 0.2 s on the Linux host. Points can be added
+  there if an application needs faster cancellation. Each addition changes
+  the pinned counts and must be recorded again (`replay_budgets --write`,
+  `tests/budgets.rs`).
