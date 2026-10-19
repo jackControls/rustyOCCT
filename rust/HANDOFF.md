@@ -17,6 +17,9 @@ followed only by commits that address it or revert it.
   existed yet), "Rust geometry fuzzing" run 39198951083. The documentation
   commits after it (X4, X5) change no code, workflow or fixture; a later
   head adds its own line.
+- CI at `5bfa0fe7` (X4 and X5's documents): green. "Rust kernel" run
+  39206270565 (66 minutes, the fixture generators' groups skipped on
+  unchanged inputs), "Rust geometry fuzzing" run 39206270608.
 
 ## Pick up
 
