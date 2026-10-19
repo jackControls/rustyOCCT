@@ -63,6 +63,11 @@ jobs:
       - if: steps.runner.outputs.cache-hit != 'true'
         run: cargo install cargo-fuzz --version 0.13.1 --locked
       - run: cargo +"$NIGHTLY" fmt --manifest-path rust/fuzz/Cargo.toml --check
+      # S10 (BUDGETS.md): the budget fixtures' work units, pinned on macOS,
+      # are the same on this host; each fixture runs S10's invariant too.
+      - name: Budget fixtures' work units
+        if: matrix.target == 'boolean'
+        run: cargo +"$NIGHTLY" run --locked --release --manifest-path rust/fuzz/Cargo.toml --example replay_budgets -- --check
       - name: Restore evolving corpus
         uses: actions/cache/restore@v4.2.3
         with:

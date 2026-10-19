@@ -919,6 +919,7 @@ pub(crate) fn arrange(a: &[&Profile], b: &[&Profile], tolerance: Tolerance) -> R
     let ids: Vec<(PId, Point2)> = arr.positions.iter().map(|(k, v)| (*k, *v)).collect();
     for (i, (ka, pa)) in ids.iter().enumerate() {
         for (kb, pb) in &ids[i + 1..] {
+            crate::budget::unit("a profile vertex pair")?;
             let ops = |k: &PId| match k {
                 PId::Vertex(o, ..) => Some(*o),
                 PId::Cross(_) => None,
@@ -934,6 +935,7 @@ pub(crate) fn arrange(a: &[&Profile], b: &[&Profile], tolerance: Tolerance) -> R
     let mut overlaps: BTreeSet<(usize, usize)> = BTreeSet::new();
     for s in 0..n {
         for t in 0..n {
+            crate::budget::unit("a profile segment pair")?;
             if arr.segs[s].op != Operand::A || arr.segs[t].op != Operand::B {
                 continue;
             }
@@ -961,6 +963,7 @@ pub(crate) fn arrange(a: &[&Profile], b: &[&Profile], tolerance: Tolerance) -> R
     // Every stored vertex of one on a segment of the other (exactly on a
     // line, or within the resolution of a curve) cuts it.
     for s in 0..n {
+        crate::budget::unit("a profile segment's vertices")?;
         let op = arr.segs[s].op;
         let verts: Vec<PId> = arr
             .positions
@@ -998,6 +1001,7 @@ pub(crate) fn arrange(a: &[&Profile], b: &[&Profile], tolerance: Tolerance) -> R
     // Pieces along each segment.
     let mut pieces: Vec<Piece> = Vec::new();
     for s in 0..n {
+        crate::budget::unit("a profile segment's pieces")?;
         let mut ev = std::mem::take(&mut arr.events[s]);
         let mut failed = false;
         ev.sort_by(|x, y| {
@@ -1089,6 +1093,7 @@ pub(crate) fn arrange(a: &[&Profile], b: &[&Profile], tolerance: Tolerance) -> R
             continue;
         }
         for (k, pb) in pieces.iter().enumerate() {
+            crate::budget::unit("a profile piece pair")?;
             if arr.segs[pb.seg].op != Operand::B || !same_support(pa.seg, pb.seg) {
                 continue;
             }
@@ -1120,6 +1125,7 @@ pub(crate) fn arrange(a: &[&Profile], b: &[&Profile], tolerance: Tolerance) -> R
     // Each piece's place against the other profile.
     let mut place: Vec<Option<Location>> = Vec::new();
     for (i, piece) in pieces.iter().enumerate() {
+        crate::budget::unit("a profile piece's side")?;
         if partner.contains_key(&i) {
             place.push(None);
             continue;
@@ -1311,6 +1317,7 @@ fn traced(
     let mut used = vec![false; edges.len()];
     let mut cycles: Vec<(Vec<usize>, bool)> = Vec::new();
     for i in 0..edges.len() {
+        crate::budget::unit("a profile loop")?;
         if used[i] {
             continue;
         }
@@ -1397,6 +1404,7 @@ fn traced(
     // Separate results must not touch.
     for i in 0..out.len() {
         for k in (i + 1)..out.len() {
+            crate::budget::unit("a profile loop pair")?;
             if boundaries_touch(out[i].profile.outer(), out[k].profile.outer(), tol) {
                 return Err(Error::Degenerate("two results touching"));
             }

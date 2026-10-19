@@ -139,9 +139,11 @@ pub fn tessellate(topology: &Topology, parameters: Parameters) -> Result<Mesh> {
     let splines = Splines::new(topology, &fin_face)?;
     let mut multiplier = vec![1usize; topology.edges().len()];
     for _ in 0..MAX_ROUNDS {
+        crate::budget::unit("a tessellation round")?;
         let mut nodes: Vec<Point3> = topology.vertices().iter().map(|v| v.position).collect();
         let mut polylines = Vec::with_capacity(topology.edges().len());
         for (e, edge) in topology.edges().iter().enumerate() {
+            crate::budget::unit("an edge's discretisation")?;
             let mut n = segment_count(topology, e, &fin_face, &ranges, &splines, parameters)?
                 * multiplier[e];
             let cells = splines.edges[e].as_ref();
@@ -153,6 +155,7 @@ pub fn tessellate(topology: &Topology, parameters: Parameters) -> Result<Mesh> {
             while splines.checked(topology, e, &fin_face)
                 && !splines.edge_ok(topology, e, &polyline, &fin_face, parameters)
             {
+                crate::budget::unit("a spline edge's doubling")?;
                 doublings += 1;
                 n = n.saturating_mul(2);
                 if doublings > MAX_ROUNDS || n > MAX_NODES {
@@ -171,6 +174,7 @@ pub fn tessellate(topology: &Topology, parameters: Parameters) -> Result<Mesh> {
         let mut faces = Vec::new();
         let mut refine = Vec::new();
         for (f, face) in topology.faces().iter().enumerate() {
+            crate::budget::unit("a face's mesh")?;
             let start = triangles.len();
             let mesher = FaceMesher {
                 topology,
@@ -1365,6 +1369,7 @@ impl FaceMesher<'_> {
             .map(|t| (t, cdt.stamp(t)))
             .collect();
         while let Some((t, stamp)) = queue.pop_front() {
+            crate::budget::unit("a mesh triangle").map_err(FaceError::Fatal)?;
             if !cdt.alive_inside(t) || cdt.stamp(t) != stamp {
                 continue;
             }
@@ -1479,6 +1484,7 @@ impl FaceMesher<'_> {
             .sqrt()
             .min(CURVE_SHARE * theta / (nu + nv));
         for _ in 0..16 {
+            crate::budget::unit("a mesh grid").map_err(FaceError::Fatal)?;
             let steps = |span: f64, least: f64| ((span / h).ceil()).max(least);
             let (mu, mv) = (
                 steps(TAU, 3.0),

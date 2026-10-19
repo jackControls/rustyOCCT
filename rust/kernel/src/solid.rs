@@ -194,6 +194,19 @@ impl Solid {
         start: f64,
         end: f64,
     ) -> Result<(Self, History)> {
+        crate::budget::within(context.budget, || {
+            Self::extrude_in_budgeted(context, profile, frame, start, end)
+        })
+    }
+
+    /// [`Self::extrude_in`], which runs this under the context's budget (S10).
+    fn extrude_in_budgeted(
+        context: &Context,
+        profile: Profile,
+        frame: Frame3,
+        start: f64,
+        end: f64,
+    ) -> Result<(Self, History)> {
         let (level, operation) = (context.level, context.operation);
         replayable(level)?;
         let solid = Self::build(operation, profile, frame, start, end)?;
@@ -559,6 +572,23 @@ impl Solid {
         angle: f64,
         tolerance: Tolerance,
     ) -> Result<(Self, History)> {
+        crate::budget::within(context.budget, || {
+            Self::torus_in_budgeted(context, frame, major, minor, low, high, angle, tolerance)
+        })
+    }
+
+    /// [`Self::torus_in`], which runs this under the context's budget (S10).
+    #[allow(clippy::too_many_arguments)]
+    fn torus_in_budgeted(
+        context: &Context,
+        frame: Frame3,
+        major: f64,
+        minor: f64,
+        low: f64,
+        high: f64,
+        angle: f64,
+        tolerance: Tolerance,
+    ) -> Result<(Self, History)> {
         let (level, operation) = (context.level, context.operation);
         replayable(level)?;
         let solid = Self::build_torus(operation, frame, major, minor, low, high, angle, tolerance)?;
@@ -691,6 +721,20 @@ impl Solid {
         high: f64,
         tolerance: Tolerance,
     ) -> Result<(Self, History)> {
+        crate::budget::within(context.budget, || {
+            Self::sphere_in_budgeted(context, frame, radius, low, high, tolerance)
+        })
+    }
+
+    /// [`Self::sphere_in`], which runs this under the context's budget (S10).
+    fn sphere_in_budgeted(
+        context: &Context,
+        frame: Frame3,
+        radius: f64,
+        low: f64,
+        high: f64,
+        tolerance: Tolerance,
+    ) -> Result<(Self, History)> {
         let (level, operation) = (context.level, context.operation);
         replayable(level)?;
         let solid = Self::build_sphere(operation, frame, radius, low, high, tolerance)?;
@@ -772,6 +816,20 @@ impl Solid {
     /// [`Solid::cone_with`] in an operation context. Every entity is
     /// generated from its meridian element; nothing carries an attribute.
     pub fn cone_in(
+        context: &Context,
+        frame: Frame3,
+        bottom: f64,
+        top: f64,
+        height: f64,
+        tolerance: Tolerance,
+    ) -> Result<(Self, History)> {
+        crate::budget::within(context.budget, || {
+            Self::cone_in_budgeted(context, frame, bottom, top, height, tolerance)
+        })
+    }
+
+    /// [`Self::cone_in`], which runs this under the context's budget (S10).
+    fn cone_in_budgeted(
         context: &Context,
         frame: Frame3,
         bottom: f64,
@@ -1102,6 +1160,17 @@ impl Solid {
     /// [`Solid::transform_with`] in an operation context: its level, the
     /// attribute policies and the callback for `Recompute` policies.
     pub fn transform_in(
+        &self,
+        context: &Context,
+        transform: RigidTransform,
+    ) -> Result<(Self, History)> {
+        crate::budget::within(context.budget, || {
+            self.transform_in_budgeted(context, transform)
+        })
+    }
+
+    /// [`Self::transform_in`], which runs this under the context's budget (S10).
+    fn transform_in_budgeted(
         &self,
         context: &Context,
         transform: RigidTransform,

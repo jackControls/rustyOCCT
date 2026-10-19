@@ -477,6 +477,9 @@ fn exact_green<T: Real>(
     let mut total: Option<Vec<T>> = None;
     for lp in loops {
         for fin in &lp.fins {
+            if !crate::budget::unit_ok("a Green integral's fin") {
+                return None;
+            }
             // A spline wall's meeting's projection onto this wall (S9f.2b):
             // `-G(ū, v̄) dū` along it, piece by piece between the knots on
             // each knot span's patch, with jets.
@@ -817,6 +820,9 @@ fn enclosed_green<T: Real>(
                     let (a, b) = ([r(start.x), r(start.y)], [r(end.x), r(end.y)]);
                     let n = 1 << PIECES;
                     for k in 0..n {
+                        if !crate::budget::unit_ok("a Green integral's piece") {
+                            return None;
+                        }
                         let at = |t: R| -> [R; 2] {
                             std::array::from_fn(|i| &a[i] + (&b[i] - &a[i]) * &t)
                         };

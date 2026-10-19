@@ -37,6 +37,7 @@ use super::assemble::{assemble_made, Made};
 use super::graph::{arrange_shared, Arr};
 use super::model::*;
 use super::num::*;
+use crate::budget::Recorded;
 use crate::identity::{Derivation, EntityId, EntityKind, OperationId, OperationKind, Role};
 use crate::profile::boolean::{Op2, Operand};
 use crate::solid::boolean::polyhedra::Component;
@@ -501,6 +502,7 @@ fn of_form(
         .chain(seams[..seams.len() - 1].iter().map(|&s| r(s)))
         .collect();
     for (k, seam) in tried.iter().enumerate() {
+        crate::budget::unit("a seam attempt")?;
         let attempt = || -> Result<(Arr, Vec<(Component, Made)>)> {
             let mut arr = if swapped {
                 let b = super::model_of(p, Operand::B, seam, false)?;
@@ -573,9 +575,12 @@ thread_local! {
     /// `imported_primitives`), and the chains of one body share their first
     /// Booleans, each its own arrangement and assembly again; a hit is the
     /// model those build, bit for bit, its ids alike.
-    static INNER: std::cell::RefCell<Vec<(String, Result<Prism>, u64)>> =
-        const { std::cell::RefCell::new(Vec::new()) };
+    /// Each with the work it counted (S10, `crate::budget::recorded`).
+    static INNER: std::cell::RefCell<Vec<Inner>> = const { std::cell::RefCell::new(Vec::new()) };
 }
+
+/// An inner Boolean kept (`INNER`): its key, model, count after it and work.
+type Inner = (String, Result<Prism>, u64, Recorded);
 
 #[cfg(test)]
 thread_local! {
@@ -624,18 +629,19 @@ impl Tree<'_> {
                     self.text(tree)
                 );
                 let kept = inner_kept();
-                if let Some((hit, after)) = INNER.with(|k| {
+                if let Some((hit, after, work)) = INNER.with(|k| {
                     k.borrow()
                         .iter()
-                        .find(|(known, _, _)| kept && *known == key)
-                        .map(|(_, m, after)| (m.clone(), *after))
+                        .find(|(known, _, _, _)| kept && *known == key)
+                        .map(|(_, m, after, work)| (m.clone(), *after, work.clone()))
                 }) {
                     #[cfg(test)]
                     INNER_HITS.with(|h| h.set(h.get() + 1));
+                    work.replay()?;
                     *count = after;
                     return hit;
                 }
-                let built = (|| {
+                let (built, work) = crate::budget::recorded(|| {
                     let (arr, out) = self.boolean(*op, a, b, count)?;
                     // One solid, its own assembly naming its given model
                     // (under ids of its own operation).
@@ -651,14 +657,16 @@ impl Tree<'_> {
                         poles: false,
                     };
                     super::given::built_on(&stored, operand, arr, out, *op, Some(0))
-                })();
-                INNER.with(|k| {
-                    let mut k = k.borrow_mut();
-                    if k.len() >= INNER_KEPT {
-                        k.drain(..1);
-                    }
-                    k.push((key, built.clone(), *count));
                 });
+                if let Some(work) = work {
+                    INNER.with(|k| {
+                        let mut k = k.borrow_mut();
+                        if k.len() >= INNER_KEPT {
+                            k.drain(..1);
+                        }
+                        k.push((key, built.clone(), *count, work));
+                    });
+                }
                 built
             }
         }
@@ -750,6 +758,7 @@ fn of_tree(
     // otherwise): past the tried seams, further ones.
     let extra: Vec<R> = TURNED_SEAMS.iter().map(|&s| r(s)).collect();
     for k in 0..tried.len() {
+        crate::budget::unit("a seam attempt")?;
         // Each primitive's seam apart from the others' (one surface's seams
         // on one line otherwise; S9e.4b.4b.1).
         let seams: Vec<&R> = (0..prims.len())
@@ -790,7 +799,8 @@ fn of_tree(
 thread_local! {
     /// The last pieces' arrangements, by their content (the piece's and the
     /// stored topology's `Debug` text).
-    static ARRANGED: std::cell::RefCell<Vec<(String, Result<Prism>)>> =
+    /// Each with the work it counted (S10, `crate::budget::recorded`).
+    static ARRANGED: std::cell::RefCell<Vec<(String, Result<Prism>, Recorded)>> =
         const { std::cell::RefCell::new(Vec::new()) };
 }
 
@@ -804,15 +814,16 @@ pub(super) fn model(s: &Solid, op: Operand, first: Option<&R>) -> Result<Prism> 
         unreachable!("an imported piece")
     };
     let key = format!("{piece:?}\n{:?}\n{op:?}\n{first:?}", s.topology);
-    if let Some(hit) = ARRANGED.with(|k| {
+    if let Some((hit, work)) = ARRANGED.with(|k| {
         k.borrow()
             .iter()
-            .find(|(known, _)| *known == key)
-            .map(|(_, m)| m.clone())
+            .find(|(known, _, _)| *known == key)
+            .map(|(_, m, work)| (m.clone(), work.clone()))
     }) {
+        work.replay()?;
         return hit;
     }
-    let built = (|| {
+    let (built, work) = crate::budget::recorded(|| {
         let stored: Vec<[f64; 3]> = s
             .topology
             .vertices()
@@ -850,14 +861,16 @@ pub(super) fn model(s: &Solid, op: Operand, first: Option<&R>) -> Result<Prism> 
             }
             e => e,
         })
-    })();
-    ARRANGED.with(|k| {
-        let mut k = k.borrow_mut();
-        if k.len() >= 2 {
-            k.drain(..1);
-        }
-        k.push((key, built.clone()));
     });
+    if let Some(work) = work {
+        ARRANGED.with(|k| {
+            let mut k = k.borrow_mut();
+            if k.len() >= 2 {
+                k.drain(..1);
+            }
+            k.push((key, built.clone(), work));
+        });
+    }
     built
 }
 

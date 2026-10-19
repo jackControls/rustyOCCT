@@ -482,6 +482,7 @@ fn roots_on<T: Real>(
     let mut out = Vec::new();
     let mut pending = vec![(lo, hi, 60usize)];
     while let Some((a, b, depth)) = pending.pop() {
+        crate::budget::unit("a curve root's piece")?;
         *budget = budget.checked_sub(1).ok_or(limit("a meridian's roots"))?;
         let m = 0.5 * a + 0.5 * b;
         let j = f.jet(&p, &span(a, b));
@@ -562,6 +563,7 @@ fn newton<T: Real>(f: &dyn Chart<T>, phi: f64, w: [f64; 2]) -> Result<Enclosure>
     let p = T::exact_f64(phi);
     let mut b = w;
     for _ in 0..12 {
+        crate::budget::unit("a Newton step")?;
         let m = mid(b);
         if !(b[0] < m && m < b[1]) {
             break;
@@ -652,6 +654,7 @@ pub(super) fn roots_along(
         let mut out = Vec::new();
         let mut pending = vec![(-PI_HI, PI_HI, 60usize)];
         while let Some((a, b, depth)) = pending.pop() {
+            crate::budget::unit("a curve root's piece")?;
             *budget = budget
                 .checked_sub(1)
                 .ok_or(limit("a curve's crossings of infinity"))?;
@@ -763,6 +766,7 @@ fn edge_free<T: Real>(
     }
     let mut pending = vec![(p0, p1, s0, s1, 40usize)];
     while let Some((a, b, sa, sb, depth)) = pending.pop() {
+        crate::budget::unit("an edge's piece")?;
         *budget = budget.checked_sub(1).ok_or(limit("a box's edge"))?;
         let j = f.jet(&span(a, b), &tt);
         if certain(&j.g) {
@@ -936,6 +940,7 @@ fn folds(
     let mut budget = 50_000usize;
     let mut exact_budget = 4usize;
     while let Some((b, depth)) = pending.pop() {
+        crate::budget::unit("a turning-point box")?;
         budget = budget
             .checked_sub(1)
             .ok_or(limit("a torus curve's folds"))?;
@@ -1246,6 +1251,7 @@ fn follow(
     let (mut at, mut w) = (phi0, w0);
     let mut h = ((phi1 - phi0) / 8.0).max(1e-9);
     while at < phi1 {
+        crate::budget::unit("a tracing step")?;
         *budget = budget
             .checked_sub(1)
             .ok_or(limit("a torus curve's branches"))?;

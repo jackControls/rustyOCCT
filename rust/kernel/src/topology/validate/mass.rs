@@ -460,7 +460,11 @@ fn integrate_along_kept<T: Real>(
     n: usize,
     g: super::projection::AlongIntegrands<'_, T>,
 ) -> Option<Vec<T>> {
-    type Kept = std::collections::HashMap<String, Option<Vec<crate::certified::Fast>>>;
+    // Each with the work it counted (S10, `crate::budget::recorded`).
+    type Kept = std::collections::HashMap<
+        String,
+        (Option<Vec<crate::certified::Fast>>, crate::budget::Recorded),
+    >;
     thread_local! {
         static KEPT: std::cell::RefCell<Kept> = std::cell::RefCell::new(Kept::new());
     }
@@ -468,24 +472,30 @@ fn integrate_along_kept<T: Real>(
         return super::projection::integrate_along_many::<T>(pr, n, true, g);
     }
     let key = format!("{pr:?}\n{}\n{n}\n{}", integrands(), projection::narrow());
-    if let Some(hit) = KEPT.with(|k| k.borrow().get(&key).cloned()) {
+    if let Some((hit, work)) = KEPT.with(|k| k.borrow().get(&key).cloned()) {
+        if work.replay().is_err() {
+            return None;
+        }
         return hit.map(|v| {
             v.into_iter()
                 .map(|x| T::of_fast(x).expect("binary64"))
                 .collect()
         });
     }
-    let values = super::projection::integrate_along_many::<T>(pr, n, true, g);
+    let (values, work) =
+        crate::budget::recorded(|| super::projection::integrate_along_many::<T>(pr, n, true, g));
     let fast = values
         .as_ref()
         .map(|v| v.iter().map(|x| x.as_fast().expect("binary64")).collect());
-    KEPT.with(|k| {
-        let mut k = k.borrow_mut();
-        if k.len() >= 1 << 12 {
-            k.clear();
-        }
-        k.insert(key, fast);
-    });
+    if let Some(work) = work {
+        KEPT.with(|k| {
+            let mut k = k.borrow_mut();
+            if k.len() >= 1 << 12 {
+                k.clear();
+            }
+            k.insert(key, (fast, work));
+        });
+    }
     values
 }
 
@@ -1974,6 +1984,9 @@ fn solve<T: Real>(view: &View, reference: [f64; 3]) -> Option<Enclosed> {
     for r in view.regions.iter().filter(|r| r.kind == RegionKind::Solid) {
         for s in &r.shells {
             for (f, side) in &view.shells[s.0].sides {
+                if !crate::budget::unit_ok("a face's integrals") {
+                    return None;
+                }
                 let values = face_integrals::<T>(&view.faces[f.0], &loops[f.0], &origin)?;
                 for (t, v) in region.iter_mut().zip(values.iter()) {
                     *t = match side {

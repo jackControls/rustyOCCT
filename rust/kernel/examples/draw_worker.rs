@@ -216,6 +216,9 @@ struct Session {
     /// an operation of its own (fresh ids), and a copy of one is built
     /// again from this when a Boolean's arguments share ids.
     primitives: BTreeMap<EntityId, Primitive>,
+    /// `cpulimit`'s budget (S10, `BUDGETS.md`): every later command runs
+    /// under it, refused past its deadline.
+    budget: Option<rusty_occt::Budget>,
 }
 
 /// A cone, sphere or torus as its constructor made it (S9d.4b's survey):
@@ -2360,6 +2363,16 @@ fn dispatch(session: &mut Session, args: &[String]) -> Result<String> {
     if command == "explode" {
         session.explodes += 1;
     }
+    // S10: `cpulimit` as a wall-time budget for the commands after it.
+    if command == "cpulimit" {
+        let seconds = match args.get(1).map(|a| a.parse::<u64>()) {
+            Some(Ok(s)) if s > 0 && args.len() == 2 => s,
+            _ => return Err(unsupported(args)),
+        };
+        let wall = std::time::Duration::from_secs(seconds);
+        session.budget = Some(rusty_occt::Budget::unlimited().with_wall_time(wall));
+        return Ok(String::new());
+    }
     let shapes = &mut session.shapes;
     match command {
         // S6: DRAW's geometric objects and the faces and edges made on them.
@@ -3653,7 +3666,10 @@ fn main() -> io::Result<()> {
             .split(' ')
             .map(unhex)
             .collect::<Result<Vec<_>>>()
-            .and_then(|args| dispatch(&mut session, &args));
+            .and_then(|args| match session.budget.clone() {
+                Some(budget) => budget.run(|| dispatch(&mut session, &args)),
+                None => dispatch(&mut session, &args),
+            });
         let (status, message) = match result {
             Ok(value) => ("OK", value),
             Err(Failure::Error(value)) => ("ERROR", value),

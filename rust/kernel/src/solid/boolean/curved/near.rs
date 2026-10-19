@@ -410,6 +410,7 @@ pub(super) fn sphere_quadrics(models: &[Prism; 2], res: f64) -> Result<()> {
     for s in 0..2 {
         let (sm, qm) = (&models[s], &models[1 - s]);
         for fs in 0..sm.faces.len() {
+            crate::budget::unit("a face pair's near miss")?;
             let (vm, vi) = sm.view(fs);
             let Surf::Sphere { c, r } = &vm.faces[vi].surf else {
                 continue;
@@ -580,6 +581,7 @@ fn edge_faces_with(models: &[Prism; 2], res: f64, curved: bool) -> Result<()> {
             let (from, to, with) = edge_places(em, ei);
             let run = Run::new(em, ei);
             for fq in 0..qm.faces.len() {
+                crate::budget::unit("an edge's near miss of a face")?;
                 let quad = if curved {
                     Quad::of_curved(qm, fq)
                 } else {
@@ -1079,6 +1081,7 @@ fn vertex_faces_with(models: &[Prism; 2], res: f64, curved: bool) -> Result<()> 
             }
             let x = qv_f64(&mv.p);
             for fq in 0..qm.faces.len() {
+                crate::budget::unit("a vertex's near miss of a face")?;
                 let b = wide(&qm.boxes[fq]);
                 if !(0..3).all(|k| b.0[k] <= x[k] && x[k] <= b.1[k]) {
                     continue;
@@ -1400,6 +1403,7 @@ fn edges_and_vertices_kept(models: &[Prism; 2], res: f64) -> Result<()> {
     for (va, sa) in spots[0].iter().enumerate() {
         let Some(sa) = sa else { continue };
         for (vb, sb) in spots[1].iter().enumerate() {
+            crate::budget::unit("a vertex pair's near miss")?;
             let Some(sb) = sb else { continue };
             if !near(&views[0][va], &views[1][vb]) {
                 continue;
@@ -1425,6 +1429,7 @@ fn edges_and_vertices_kept(models: &[Prism; 2], res: f64) -> Result<()> {
             }
             let b = wide(&edge_box(em, e));
             for (v, spot) in spots[o].iter().enumerate() {
+                crate::budget::unit("an edge's near miss of a vertex")?;
                 let Some(spot) = spot else { continue };
                 let x = &views[o][v];
                 if !(0..3).all(|k| b.0[k] <= x[k] && x[k] <= b.1[k]) {
@@ -1461,6 +1466,7 @@ fn edges_and_vertices_kept(models: &[Prism; 2], res: f64) -> Result<()> {
         }
         let ba = wide(&edge_box(&models[0], e));
         for (eb, f) in models[1].edges.iter().enumerate() {
+            crate::budget::unit("an edge pair's near miss")?;
             if !takes[1][eb] || !boxes_meet(&ba, &edge_box(&models[1], f)) {
                 continue;
             }
@@ -4766,6 +4772,7 @@ pub(super) fn face_pairs(models: &[Prism; 2], res: f64) -> Result<()> {
         let (va, ia) = models[0].view(fa);
         let ra = rank(&va.faces[ia].surf);
         for fb in 0..models[1].faces.len() {
+            crate::budget::unit("a face pair's near miss")?;
             let (vb, ib) = models[1].view(fb);
             let rb = rank(&vb.faces[ib].surf);
             let Some(why) = taken(ra, rb) else {
@@ -5397,6 +5404,7 @@ fn face_pair(
     let checked = qf.kind != QKind::Spline;
     let mut all_far = true;
     for i in 0..n0 {
+        crate::budget::unit("a face pair's grid row")?;
         for j in 0..n1 {
             let at = grid.at(i, j);
             let x = pp.point(&at);
@@ -5469,6 +5477,7 @@ fn face_pair(
     };
     let mut crits: Vec<Crit> = Vec::new();
     for (_, s) in seeds {
+        crate::budget::unit("a face pair's Newton seed")?;
         let Some(c) = newton(&pj, &qj, &grid, s) else {
             continue;
         };
@@ -5495,6 +5504,7 @@ fn face_pair(
     // A curve of critical points is decided once.
     let mut curves: Vec<f64> = Vec::new();
     for c in crits {
+        crate::budget::unit("a face pair's critical point")?;
         let Some(contact) = contact_of(&c, size) else {
             continue;
         };

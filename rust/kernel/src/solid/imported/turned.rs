@@ -1264,6 +1264,7 @@ pub(super) fn turned_piece(t: &Topology, tolerance: Tolerance, op: OperationId) 
     let mut terms = settle(&mut parts, &every, nodes, span);
     for i in 0..every.len() {
         for j in every[i].clone().into_iter().rev() {
+            crate::budget::unit("a turned part pair")?;
             if j == i {
                 continue;
             }

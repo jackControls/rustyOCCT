@@ -672,6 +672,7 @@ fn search<T: Real>(
     let (mut roots, mut left) = (Vec::new(), Vec::new());
     let mut pending = boxes;
     while let Some((lo, hi)) = pending.pop() {
+        crate::budget::unit("a root's piece")?;
         *budget = budget
             .checked_sub(1)
             .ok_or(limit("a circle against a cone"))?;

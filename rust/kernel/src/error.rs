@@ -28,6 +28,10 @@ pub enum Error {
     MissingAttributePolicy(u64),
     /// A `Recompute` policy met a transform without a recompute callback.
     MissingRecompute(u64),
+    /// The operation's budget ran out (S10, `BUDGETS.md`): what ran out,
+    /// where, and the work counted. Never a partial result; the kernel's
+    /// own fixed limits stay `ComputationLimit`.
+    BudgetExhausted(crate::budget::Exhaustion),
 }
 
 impl fmt::Display for Error {
@@ -53,6 +57,7 @@ impl fmt::Display for Error {
             Self::UnknownAlgorithmLevel(level) => write!(f, "algorithm level {level} is not available in this build"),
             Self::MissingAttributePolicy(key) => write!(f, "attribute key {key} has no policy"),
             Self::MissingRecompute(key) => write!(f, "attribute key {key} must be recomputed but no callback was given"),
+            Self::BudgetExhausted(e) => write!(f, "operation budget exhausted: {e}"),
         }
     }
 }

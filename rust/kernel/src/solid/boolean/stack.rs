@@ -395,6 +395,7 @@ pub(super) fn build(stack: &Stack, frame: Frame3) -> Result<Vec<Component>> {
     // and region-left cycles.
     let mut caps: BTreeMap<(usize, bool), Vec<CapFace>> = BTreeMap::new();
     for k in 0..=slabs {
+        crate::budget::unit("a stack level")?;
         for up in [true, false] {
             let way = |a: bool, b: bool| {
                 let (below, above) = (holds(k as isize - 1, [a, b]), holds(k as isize, [a, b]));
@@ -748,6 +749,7 @@ pub(super) fn build(stack: &Stack, frame: Frame3) -> Result<Vec<Component>> {
     }
     let mut built: Vec<Built> = Vec::new();
     for group in &groups {
+        crate::budget::unit("a face group")?;
         let first = cells[group[0]];
         let low = group
             .iter()
@@ -1250,6 +1252,7 @@ pub(super) fn build(stack: &Stack, frame: Frame3) -> Result<Vec<Component>> {
 
     let mut out = Vec::new();
     for (index, faces) in outers.iter().enumerate() {
+        crate::budget::unit("a result solid")?;
         let cavity: Vec<usize> = if index == 0 {
             cavities.iter().flatten().copied().collect()
         } else {

@@ -707,6 +707,7 @@ pub(super) fn arrange_touching(models: [Prism; 2], touch: bool) -> Result<Arr> {
             continue;
         };
         for fb in 0..models[1].faces.len() {
+            crate::budget::unit("a face pair's meeting")?;
             let (vb, ib) = models[1].view(fb);
             let Surf::Cyl { c: cb, r: rb, .. } = &vb.faces[ib].surf else {
                 continue;
@@ -730,6 +731,7 @@ pub(super) fn arrange_touching(models: [Prism; 2], touch: bool) -> Result<Arr> {
             continue;
         };
         for fb in 0..models[1].faces.len() {
+            crate::budget::unit("a face pair's meeting")?;
             let (vb, ib) = models[1].view(fb);
             let Surf::Sphere { c: cb, r: rb } = &vb.faces[ib].surf else {
                 continue;
@@ -755,6 +757,7 @@ pub(super) fn arrange_touching(models: [Prism; 2], touch: bool) -> Result<Arr> {
     for fa in 0..models[0].faces.len() {
         let (va, ia) = models[0].view(fa);
         for fb in 0..models[1].faces.len() {
+            crate::budget::unit("a face pair's meeting")?;
             let (vb, ib) = models[1].view(fb);
             let crossing =
                 |s: &Prism, c: &Prism| super::spline_parallel::map2(&s.f, &c.f).is_none();
@@ -817,6 +820,7 @@ pub(super) fn arrange_touching(models: [Prism; 2], touch: bool) -> Result<Arr> {
     for fa in 0..models[0].faces.len() {
         let (va, ia) = models[0].view(fa);
         for fb in 0..models[1].faces.len() {
+            crate::budget::unit("a face pair's meeting")?;
             let (vb, ib) = models[1].view(fb);
             let pair = match (&va.faces[ia].surf, &vb.faces[ib].surf) {
                 (Surf::Cyl { c: ca, r: ra, .. }, Surf::Sphere { c, r }) => {
@@ -842,6 +846,7 @@ pub(super) fn arrange_touching(models: [Prism; 2], touch: bool) -> Result<Arr> {
     // apart (a spline wall's above, S9f.3b).
     for fa in 0..models[0].faces.len() {
         for fb in 0..models[1].faces.len() {
+            crate::budget::unit("a face pair's meeting")?;
             let (sa, sb) = (&models[0].faces[fa].surf, &models[1].faces[fb].surf);
             let cone = matches!(sa, Surf::Cone { .. }) || matches!(sb, Surf::Cone { .. });
             let curved =
@@ -867,6 +872,7 @@ pub(super) fn arrange_touching(models: [Prism; 2], touch: bool) -> Result<Arr> {
     let mut touches: Vec<(usize, usize, super::torus::TouchRing)> = Vec::new();
     for fa in 0..models[0].faces.len() {
         for fb in 0..models[1].faces.len() {
+            crate::budget::unit("a face pair's meeting")?;
             let (sa, sb) = (&models[0].faces[fa].surf, &models[1].faces[fb].surf);
             let (k, plane) = match (sa, sb) {
                 (Surf::Torus, Surf::Plane { p, m }) => (0, (p, m)),
@@ -911,6 +917,7 @@ pub(super) fn arrange_touching(models: [Prism; 2], touch: bool) -> Result<Arr> {
     let mut toric: Vec<((usize, usize, usize), CylPair)> = Vec::new();
     for fa in 0..models[0].faces.len() {
         for fb in 0..models[1].faces.len() {
+            crate::budget::unit("a face pair's meeting")?;
             let (sa, sb) = (&models[0].faces[fa].surf, &models[1].faces[fb].surf);
             let quadric = |s: &Surf| {
                 matches!(
@@ -981,6 +988,7 @@ pub(super) fn arrange_touching(models: [Prism; 2], touch: bool) -> Result<Arr> {
             continue;
         };
         for (fb, b) in models[1].faces.iter().enumerate() {
+            crate::budget::unit("a face pair's coincidence")?;
             let Surf::Plane { p: pb, m: mb } = &b.surf else {
                 continue;
             };
@@ -1200,6 +1208,7 @@ pub(super) fn arrange_touching(models: [Prism; 2], touch: bool) -> Result<Arr> {
                 continue;
             }
             for (eb, b) in models[1].edges.iter().enumerate() {
+                crate::budget::unit("an edge pair on one surface")?;
                 let Crv::Circle(cb) = &b.curve else { continue };
                 if !b.faces.contains(&fb) || !crossed.insert((ea, eb)) {
                     continue;
@@ -1274,6 +1283,7 @@ pub(super) fn arrange_touching(models: [Prism; 2], touch: bool) -> Result<Arr> {
     let wide = |b: &([f64; 3], [f64; 3])| (b.0.map(|x| x - res), b.1.map(|x| x + res));
     for fa in 0..models[0].faces.len() {
         for fb in 0..models[1].faces.len() {
+            crate::budget::unit("a face pair's near miss")?;
             if boxes_meet(&wide(&models[0].boxes[fa]), &models[1].boxes[fb]) {
                 near_miss(&models, fa, fb, res)?;
             }
@@ -1325,6 +1335,7 @@ pub(super) fn arrange_touching(models: [Prism; 2], touch: bool) -> Result<Arr> {
                     _ => false,
                 };
             for (g, gface) in other.faces.iter().enumerate() {
+                crate::budget::unit("an edge's pierce of a face")?;
                 if !boxes_meet(&ebox, &other.boxes[g]) {
                     continue;
                 }
@@ -1611,6 +1622,7 @@ pub(super) fn arrange_touching(models: [Prism; 2], touch: bool) -> Result<Arr> {
             _ => continue,
         };
         for (k, x) in points.iter().enumerate() {
+            crate::budget::unit("a crossing's point")?;
             match (models[0].in_face(*fa, x), models[1].in_face(*fb, x)) {
                 // Equal cylinders' ellipses cross where the two surfaces are
                 // tangent (their normals both along the axes' common
@@ -1649,6 +1661,7 @@ pub(super) fn arrange_touching(models: [Prism; 2], touch: bool) -> Result<Arr> {
     let mut parts_of: BTreeMap<(usize, usize), Vec<usize>> = BTreeMap::new();
     let mut half: BTreeMap<(usize, usize), Vec<(usize, bool)>> = BTreeMap::new();
     for ((o, ei), list) in &on_edge {
+        crate::budget::unit("an edge's split")?;
         let e = &models[*o].edges[*ei];
         let mut list = list.clone();
         let ccw = edge_places(&models[*o], *ei).2;
@@ -1800,6 +1813,7 @@ pub(super) fn arrange_touching(models: [Prism; 2], touch: bool) -> Result<Arr> {
     let mut secs: Vec<Sec> = Vec::new();
     for fa in 0..models[0].faces.len() {
         for fb in 0..models[1].faces.len() {
+            crate::budget::unit("a face pair's section")?;
             if !boxes_meet(&models[0].boxes[fa], &models[1].boxes[fb]) {
                 continue;
             }
@@ -2009,6 +2023,7 @@ pub(super) fn arrange_touching(models: [Prism; 2], touch: bool) -> Result<Arr> {
                     (0..n.saturating_sub(1)).map(|i| (i, i + 1)).collect()
                 };
                 for (i, j) in segments {
+                    crate::budget::unit("a section's segment")?;
                     let (a, b) = (&list[i], &list[j]);
                     let (mid, mid_pos) = midpoint(crv, &a.1, &b.1, true)?;
                     let la = models[0].in_face(fa, &mid);
@@ -2081,6 +2096,7 @@ pub(super) fn arrange_touching(models: [Prism; 2], touch: bool) -> Result<Arr> {
     // there, in each face along it: kept.
     let travels = Travels::default();
     for ((o, f), hs) in &half {
+        crate::budget::unit("a face's pieces")?;
         let loops = arr.trace(*o, *f, hs, &travels)?;
         let pieces = arr.group(*o, *f, loops)?;
         for loops in pieces {
@@ -2151,6 +2167,7 @@ impl Arr {
             let xq: QV = x.map(|c| Qd::rat(q(c)));
             let mut found = None;
             for (g, e) in self.edges.iter().enumerate() {
+                crate::budget::unit("a stored point's split")?;
                 let CurveRef::Section(si, _) = e.curve else {
                     continue;
                 };
@@ -2708,6 +2725,7 @@ impl Arr {
             used.insert(h0);
             let mut h = h0;
             loop {
+                crate::budget::unit("a face loop's step")?;
                 let v = self.end_of(h);
                 let outs = out_of.get(&v).map_or(&[][..], |x| x);
                 let next = self.next_on_kept(o, f, v, h, outs, Some(travels))?;
@@ -3216,6 +3234,7 @@ impl Arr {
             let hole_edges: BTreeSet<usize> = loops[h].iter().map(|x| x.0).collect();
             let mut mult = 1;
             let k = loop {
+                crate::budget::unit("a hole's refinement")?;
                 let mut poly = |i: usize| -> Polygon {
                     if mult == 1 {
                         return (polys[i].clone(), areas[i]);

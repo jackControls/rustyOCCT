@@ -138,6 +138,9 @@ impl Exact {
         }
         let half = T::exact_f64(0.5);
         while let Some((q, depth, inner2, outer2)) = stack.pop() {
+            if !crate::budget::unit_ok("a spline deviation's piece") {
+                return Verdict::Unknown;
+            }
             if q.within(&inner2) {
                 continue;
             }

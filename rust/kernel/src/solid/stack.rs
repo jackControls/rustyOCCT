@@ -78,6 +78,17 @@ impl Solid {
         context: &Context,
         height: f64,
     ) -> Result<([Solid; 2], History)> {
+        crate::budget::within(context.budget, || {
+            self.split_at_height_in_budgeted(context, height)
+        })
+    }
+
+    /// [`Self::split_at_height_in`], which runs this under the context's budget (S10).
+    fn split_at_height_in_budgeted(
+        &self,
+        context: &Context,
+        height: f64,
+    ) -> Result<([Solid; 2], History)> {
         let (level, operation) = (context.level, context.operation);
         replayable(level)?;
         let (low, high) = (self.start.min(self.end), self.start.max(self.end));
@@ -218,6 +229,17 @@ impl Solid {
     /// [`Solid::fuse_stacked`] in an operation context: its level and the
     /// attribute policies by which input attributes reach the fused body.
     pub fn fuse_stacked_in(&self, context: &Context, other: &Solid) -> Result<(Solid, History)> {
+        crate::budget::within(context.budget, || {
+            self.fuse_stacked_in_budgeted(context, other)
+        })
+    }
+
+    /// [`Self::fuse_stacked_in`], which runs this under the context's budget (S10).
+    fn fuse_stacked_in_budgeted(
+        &self,
+        context: &Context,
+        other: &Solid,
+    ) -> Result<(Solid, History)> {
         let (level, operation) = (context.level, context.operation);
         replayable(level)?;
         if self.prism_profile()? != other.prism_profile()? || self.frame != other.frame {

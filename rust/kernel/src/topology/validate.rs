@@ -2984,6 +2984,9 @@ fn shell_flux<T: Real>(
     let mut total = c::<T>(0.0);
     let both = two_sided(shell);
     for (f, side) in &shell.sides {
+        if !crate::budget::unit_ok("a face's flux") {
+            return None;
+        }
         if both.contains(&f.0) {
             continue;
         }
@@ -3025,6 +3028,9 @@ fn inside<T: Real>(
         let d: [R; 3] = d.map(int);
         let mut hits = 0;
         for (f, _) in &shell.sides {
+            if !crate::budget::unit_ok("a ray's face") {
+                return None;
+            }
             match face_hits::<T>(&faces[f.0], &resolved[f.0], point, &d, margin2) {
                 Some(n) => hits += n,
                 None => continue 'direction,

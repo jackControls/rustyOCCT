@@ -1292,6 +1292,7 @@ fn vertex_near_misses(models: &[Model; 2], res: f64) -> Result<()> {
             })
             .collect();
         for (p, _) in &vm.vertices {
+            crate::budget::unit("a vertex's near miss of a face")?;
             let x = approx3(p);
             for (face, b) in fm.faces.iter().zip(&boxes) {
                 if !(0..3).all(|i| b.0[i] <= x[i] && x[i] <= b.1[i]) {
@@ -1389,6 +1390,7 @@ fn edge_vertex_near_misses(models: &[Model; 2], res: f64) -> Result<()> {
     });
     for (i, (p, _)) in models[0].vertices.iter().enumerate() {
         for (j, (r, _)) in models[1].vertices.iter().enumerate() {
+            crate::budget::unit("a vertex pair's near miss")?;
             if near(&views[0][i], &views[1][j]) {
                 near_pair(
                     &models[0],
@@ -1409,6 +1411,7 @@ fn edge_vertex_near_misses(models: &[Model; 2], res: f64) -> Result<()> {
             let d = sub(b, a);
             let dd = dot(&d, &d);
             for (i, (p, _)) in vm.vertices.iter().enumerate() {
+                crate::budget::unit("an edge's near miss of a vertex")?;
                 let x = &views[k][i];
                 if !(0..3).all(|c| bx.0[c] <= x[c] && x[c] <= bx.1[c]) {
                     continue;
@@ -1429,6 +1432,7 @@ fn edge_vertex_near_misses(models: &[Model; 2], res: f64) -> Result<()> {
     for ((a1, b1, _), x1) in models[0].edges.iter().zip(&edge_boxes[0]) {
         let d1 = sub(b1, a1);
         for ((a2, b2, _), x2) in models[1].edges.iter().zip(&edge_boxes[1]) {
+            crate::budget::unit("an edge pair's near miss")?;
             if !boxes_meet(x1, x2) {
                 continue;
             }
@@ -1799,6 +1803,7 @@ pub(super) fn build(poly: &Polyhedron) -> Result<Vec<Component>> {
         let other = &models[1 - k];
         let operand = if k == 0 { Operand::A } else { Operand::B };
         for (fi, face) in m.faces.iter().enumerate() {
+            crate::budget::unit("a face's clip")?;
             let n = &face.plane.n;
             let mut parts: Vec<(Vec<V>, _)> = face
                 .pieces
@@ -1832,6 +1837,7 @@ pub(super) fn build(poly: &Polyhedron) -> Result<Vec<Component>> {
             let flat = face.plane.canonical(false);
             let coplanar = on_planes[1 - k].contains(&flat);
             for (part, _) in parts {
+                crate::budget::unit("a fragment's side")?;
                 let c = interior(&part, &face.plane);
                 // Off the other's planes a fragment's point decides both
                 // sides at once (its near planes split it).
@@ -1889,6 +1895,7 @@ pub(super) fn build(poly: &Polyhedron) -> Result<Vec<Component>> {
     for f in &frags {
         let mut cycle = Vec::new();
         for i in 0..f.pts.len() {
+            crate::budget::unit("a fragment edge's points")?;
             let (a, b) = (&f.pts[i], &f.pts[(i + 1) % f.pts.len()]);
             let (ia, ib) = (ids[a], ids[b]);
             cycle.push(ia);
@@ -2065,6 +2072,7 @@ pub(super) fn build(poly: &Polyhedron) -> Result<Vec<Component>> {
     let mut edge_ends: Vec<(usize, usize)> = Vec::new();
     for &start in vertex_of.keys() {
         for first in incident[&start].clone() {
+            crate::budget::unit("an edge chain")?;
             if edge_of.contains_key(&first) {
                 continue;
             }
@@ -2107,6 +2115,7 @@ pub(super) fn build(poly: &Polyhedron) -> Result<Vec<Component>> {
     }
     let mut built: Vec<Built> = Vec::new();
     for group in &groups {
+        crate::budget::unit("a face group")?;
         // The face's vector area (a stored face's fragments lie on its
         // triangles' planes, some of them slivers) and its point farthest
         // from the first for the axis.
@@ -2330,6 +2339,7 @@ pub(super) fn build(poly: &Polyhedron) -> Result<Vec<Component>> {
     };
     let mut out = Vec::new();
     for (index, faces) in outers.iter().enumerate() {
+        crate::budget::unit("a result solid")?;
         let mut all: Vec<usize> = faces.clone();
         for c in &held[index] {
             all.extend(c);

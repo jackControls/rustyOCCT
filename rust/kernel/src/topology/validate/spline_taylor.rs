@@ -679,6 +679,9 @@ impl Taylor {
             pieces.into_iter().map(|(e, p)| (e, p, 0)).collect();
         let mut undecided = false;
         while let Some((edge, uv, depth)) = stack.pop() {
+            if !crate::budget::unit_ok("a spline deviation's piece") {
+                return Verdict::Unknown;
+            }
             // An undefined jet (off the surface's domain, a weight not
             // certainly positive) leaves the piece undecided.
             let Some((d0, d1, d2)) = terms(&self.surface, &patches, &edge, &uv) else {

@@ -697,6 +697,9 @@ fn integrate_1d<T: Real, F: Integrand1<T>>(f: &F) -> Option<Vec<T>> {
     let mut stack = vec![(0.0_f64, 1.0_f64, 0_u32)];
     let mut work = 0;
     while let Some((a, b, depth)) = stack.pop() {
+        if !crate::budget::unit_ok("an integral's piece") {
+            return None;
+        }
         work += 1;
         if work > WORK {
             return None;
@@ -812,6 +815,9 @@ fn integrate_2d<T: Real, F: Integrand2<T>>(f: &F) -> Option<Vec<T>> {
     let mut stack: Vec<(Box2, [u32; 2], Option<Sizes>)> = vec![(whole, [0_u32; 2], None)];
     let mut work = 0;
     while let Some((bx, depth, parent)) = stack.pop() {
+        if !crate::budget::unit_ok("an integral's box") {
+            return None;
+        }
         work += 1;
         if work > WORK {
             return None;
