@@ -2137,7 +2137,8 @@ the restore cases 0.15 to 3.7 (`bcommon_complex/B9`), the rollex 0.5.
 
 **The version-3 `.brep` header: the cases loading the dataset's
 version-3 texts.** The reader took OCCT's version-3 line (`CASCADE
-Topology V3, (c) Open Cascade`, HANDOFF's item 3), which it had refused,
+Topology V3, (c) Open Cascade`, REVIEW_NOTES.md's "The version-3 `.brep`
+header, done"), which it had refused,
 at `cefd273a`. The public dataset has 26 such texts (REVIEW_NOTES.md, "The
 version-3 `.brep` header refined"); 16 cases load 19 of them, none
 registered: 14 by `restore` (`bugs/moddata_3/bug32557`,

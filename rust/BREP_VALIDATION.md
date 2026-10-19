@@ -347,7 +347,7 @@ enclosures; neither decides from an unverified float.
   in the binary64 tier only; the rational tier takes none) decide a sign
   (a loop's winding, a shell's orientation) at a loose absolute width
   (`1e-6`), then a tight one (`1e-12`), then in a **narrow tier**
-  (`projection::with_narrow`, HANDOFF item 5 (d)): widths `2^-30` of each
+  (`projection::with_narrow`, the shallow lens of `BOOLEAN.md`): widths `2^-30` of each
   integrand's own scale (its largest value at eight points, floored at
   `2^-80`); on a sphere, torus, cylinder or cone face each loop that does
   not wind, its fins lines or projections, takes `F`'s antiderivative in

@@ -1,5 +1,10 @@
 # Review notes and next steps
 
+**Archive, frozen by R16 of the review of 18 October 2026.** This file is
+kept as the record of the findings, decisions, evidence and campaigns up
+to that review; no new bullets are added to it. The plan of record is
+[STATUS.md](STATUS.md) with [REVIEW_2026-10-18.md](REVIEW_2026-10-18.md).
+
 Reviewer's findings, decisions and the recommended order of work, written for
 the implementing agent to read and execute. It complements
 `IDENTITY_AND_HISTORY.md` and `TOPOLOGY_MODEL.md`; it does not replace their

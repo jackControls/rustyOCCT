@@ -686,8 +686,7 @@ and exact feet. Two rods crossing `1e-12` apart, a ball by a torus, a rod
 by a spline wall, a box's edge or corner by either were two solids.
 
 A crossing just beyond the resolution leaves a lens thinner than the
-validator's tight enclosures (HANDOFF item 5 (d), REVIEW_NOTES.md's "The
-shallow lens"): a ball of radius 0.75 crossing a rod's wall by `1.4e-7`
+validator's tight enclosures (REVIEW_NOTES.md's "The shallow lens"): a ball of radius 0.75 crossing a rod's wall by `1.4e-7`
 of its radius has a common of volume `2e-14`, whose shell's flux the
 binary64 integrals along the meeting's projections enclosed `5e-11` wide
 (the sphere's Green integrand from its pole, terms of its size cancelling,
@@ -2170,7 +2169,8 @@ campaign of every target the steps touch.
   The slowest input of any campaign took 15 s (`boolean`).
 * **Verification** of the revision's kernel (`a72e7127`, `54030783` adding
   one record to `REVIEW_NOTES.md`): fmt, clippy, the 1.85 check, the
-  release suite, the 46 Boolean comparisons of `HANDOFF.md`'s table and the
+  release suite, the 46 Boolean comparisons of the table in "Comparisons"
+  below (55 since) and the
   four analytic ones with their documented counts and no failure,
   `compare_split.py`, `compare_brep.py --family spline` and
   `compare_brep_io.py`, and the boolean, split and analytic_intersections
@@ -2179,7 +2179,8 @@ campaign of every target the steps touch.
 * **DRAW.** The last full survey (`cc7af85c`, `s9-draw-18`) and the trials
   since (`UPSTREAM_TESTS.md`): 1,132 registered cases, every one holding its
   manifest status in a full contract run on both backends.
-* **Open beyond acceptance** (`HANDOFF.md`, items 2, 3 and 5): the Linux
+* **Open beyond acceptance** (then `HANDOFF.md`'s items 2, 3 and 5; what
+  remains open is in "Open items and refusals" below): the Linux
   records of the per-set captures (CI ran only the default set's compare
   script; the scheduled workflow "Rust Boolean captures on Linux", added
   2026-10-14, runs every set's: all 46 recorded from run 38670188123 and
@@ -2198,6 +2199,127 @@ campaign of every target the steps touch.
   refusals by design listed there. U9 and U10 stayed open
   at acceptance (answered on 2026-10-14: U9 the certified mode only, U10
   (b)).
+
+## Comparisons
+
+Every Boolean set's native comparison, with the counts each must report
+and 0 failures (at `36f83779` as before X2: the correctly rounded
+constructions moved no count). Each takes `--occt-root
+target/spline-linear-preflight/pinned-sdk/install --sdk-manifest
+target/spline-linear-preflight/pinned-sdk/build-manifest.json`, the
+pinned SDK; `rust/tools/run_boolean_comparisons.py --shard 0 --shards 1`
+with the same two arguments runs all 55 in turn (the Linux workflow runs
+them in three shards: "Linux records (CI)" below).
+
+| Comparison | Matches / reviewed |
+|---|---|
+| `compare_boolean.py` | 45 / 0 |
+| `compare_boolean.py --splines` | 33 / 13 |
+| `compare_polyhedral.py` | 43 / 2 |
+| `compare_curved_boolean.py` | 42 / 2 |
+| `compare_procedural_boolean.py` | 4 / 24 |
+| `compare_turned_boolean.py` | 2 / 13 |
+| `compare_capped_boolean.py` | 0 / 18 |
+| `compare_sphere_boolean.py` | 30 / 0 |
+| `compare_spheres_boolean.py` | 12 / 21 |
+| `compare_cone_boolean.py` | 25 / 5 |
+| `compare_cones_boolean.py` | 21 / 19 |
+| `compare_torus_boolean.py` | 11 / 24 |
+| `compare_torus_segment_boolean.py` | 15 / 14 |
+| `compare_torus_curved_boolean.py` | 15 / 29 |
+| `compare_spheres_turned_boolean.py` | 0 / 18 |
+| `compare_cones_loops_boolean.py` | 5 / 26 |
+| `compare_torus_parts_boolean.py` | 16 / 37 |
+| `compare_chained_boolean.py` | 24 / 6 |
+| `compare_given_boolean.py` | 36 / 0 |
+| `compare_given_curved_boolean.py` | 25 / 23 |
+| `compare_spline_any_boolean.py` | 22 / 16 (the kernel within the reference on all 33 solid and empty cases, the 5 degenerate refused) |
+| `compare_spline_parallel_boolean.py` | 31 / 12 (the kernel within the reference on all 39 results, the 4 degenerate refused) |
+| `compare_spline_crossing_boolean.py` | 14 / 37 (the kernel within the reference on all 45 results, the 6 degenerate refused, none `unsupported`) |
+| `compare_given_met_boolean.py` | 8 / 42 (the kernel within the reference on all 42 solid cases, the 8 degenerate refused) |
+| `compare_imported_boolean.py` | 54 / 15 (the kernel within the reference on all 57 solid cases, the 12 degenerate refused: since S9e.4b.1 the 3 turned profiles' corner on the box's) |
+| `compare_imported_arcs_boolean.py` | 27 / 9 (the kernel within the reference on all 30 solid cases, the 6 degenerate refused; the lens's 3 solid since S9e.4b.4a) |
+| `compare_spline_sphere_boolean.py` | 4 / 29 (the kernel within the reference on all 27 results, the 6 degenerate refused, none `unsupported`) |
+| `compare_imported_polyhedra_boolean.py` | 47 / 1 (the kernel within the reference on all 47 solid and empty cases, the flush fuse refused; the cavity's 3 solid since S9e.4b.4c.1) |
+| `compare_spline_cone_boolean.py` | 4 / 23 (the kernel within the reference on all 21 results, the 6 degenerate refused, none `unsupported`) |
+| `compare_imported_pieces_boolean.py` | 30 / 15 (the kernel within the reference on all 39 solid cases, the 6 degenerate refused; the one-sphere cases solid since S9e.4b.3c.1, the bitten ball's since S9e.4b.3c.3a, two of them reviewed for OCCT's seam and pole edges) |
+| `compare_split_pieces_boolean.py` | 26 / 22 (the kernel within the reference on all 42 solid and empty cases, the 6 degenerate refused; the one-sphere cases solid since S9e.4b.3c.1) |
+| `compare_one_sphere_boolean.py` | 8 / 14 (the kernel within the reference on all 20 solid and empty cases, the 2 degenerate refused; the 3 exact incidences solid since S9e.4b.3c.2) |
+| `compare_one_sphere_incidence_boolean.py` | 42 / 3 (the kernel within the reference on all 33 solid and empty cases, the 12 degenerate refused) |
+| `compare_piece_forms_boolean.py` | 20 / 19 (the kernel within the reference on all 33 solid cases, the 6 degenerate refused) |
+| `compare_piece_trees_boolean.py` | 22 / 8 (the kernel within the reference on all 27 solid cases, the 3 degenerate refused; the tooth's 3 solid since S9e.4b.4c.2a) |
+| `compare_imported_joints_boolean.py` | 36 / 3 (the kernel within the reference on all 33 solid cases, the 3 degenerate refused, the split lens's 3 `unsupported`, S9e.4b.4's) |
+| `compare_primitive_chains_boolean.py` | 14 / 10 (the kernel within the reference on all 24 solid cases; the rounded box's 3 solid since S9e.4b.4b.2a) |
+| `compare_prism_leaves_boolean.py` | 15 / 9 (the kernel within the reference on all 21 solid cases, the 3 degenerate refused) |
+| `compare_plane_parts_boolean.py` | 15 / 9 (the kernel within the reference on all 21 solid cases, the 3 degenerate refused) |
+| `compare_polyhedra_curved_boolean.py` | 18 / 16 (the kernel within the reference on all 30 solid cases, the 3 degenerate refused, the inner ball's fuse `unsupported`: a cavity among several solids) |
+| `compare_deep_trees_boolean.py` | 20 / 1 (the kernel within the reference on all 18 solid cases, the 3 degenerate refused) |
+| `compare_two_leaves_boolean.py` | 18 / 3 (the kernel within the reference on all 18 solid cases, the 3 degenerate refused) |
+| `compare_rim_leaves_boolean.py` | 17 / 1 (the kernel within the reference on all 15 solid cases, the 3 degenerate refused) |
+| `compare_flush_leaves_boolean.py` | 13 / 8 (the kernel within the reference on all 18 solid cases, the 3 degenerate refused) |
+| `compare_stack_leaves_boolean.py` | 20 / 1 (the kernel within the reference on all 18 solid cases, the 3 degenerate refused) |
+| `compare_nested_leaves_boolean.py` | 19 / 2 (the kernel within the reference on all 18 solid cases, the 3 degenerate refused) |
+| `compare_turned_profiles_boolean.py` | 8 / 13 (the kernel within the reference on all 18 solid cases, the 3 degenerate refused) |
+| `compare_turned_flats_boolean.py` | 1 / 11 (the kernel within the reference on all 9 solid cases, the 3 degenerate refused) |
+| `compare_turned_tilted_boolean.py` | 2 / 7 (the kernel within the reference on all 9 solid cases) |
+| `compare_turned_fillets_boolean.py` | 7 / 8 (the kernel within the reference on all 12 solid cases, the 3 degenerate refused) |
+| `compare_turned_cone_fillets_boolean.py` | 7 / 8 (the kernel within the reference on all 12 solid cases, the 3 degenerate refused) |
+| `compare_turned_crossings_boolean.py` | 11 / 16 (the kernel within the reference on all 24 solid cases, the 3 degenerate refused) |
+| `compare_turned_corners_boolean.py` | 11 / 16 (the kernel within the reference on all 24 solid cases, the 3 degenerate refused) |
+| `compare_crossed_leaves_boolean.py` | 18 / 3 (the kernel within the reference on all 18 solid cases, the 3 degenerate refused) |
+| `compare_inside_first_boolean.py` | 19 / 5 (the kernel within the reference on all 21 solid cases, the 3 degenerate refused) |
+
+A new Boolean set: `run_boolean_comparisons.py` finds its
+`compare_*_boolean.py`; add its local time to `SECONDS` there (the test
+requires it), add its row here, and take its Linux record from the next
+scheduled run.
+
+## Open items and refusals
+
+Open beyond the acceptance, each refused today with a named reason; the
+detail is in the `REVIEW_NOTES.md` bullet named.
+
+* Keeping a circle a partner holds exactly instead of taking an imported
+  arc through its ends needs the partner in the prism's model: the
+  parallel cylinders' rule costs `bcut_complex/E8` a result ("S9e.4b.4
+  refined" and S9e.4b.4a's implemented bullet).
+* A tree's planes, or a pocket's walls, along a turned primitive's or
+  leaf's axis within rounding of it: S9's refusal (S9e.4b.4c.2a,
+  S9e.4b.4b.2b.2a).
+* Not built, no measured body importing by a draft: the rest of
+  S9e.4b.4b.2b's list (hulls across several parts, mixed pockets, notches,
+  three leaves), a flat with pockets of its own (5 fuzz bodies reach it)
+  and a nested pocket holding a primitive (none does) (S9e.4b.4b.2b.2b.3b,
+  S9e.4b.4c.2b.2).
+* Diagnosed and left refused: two cylinders on parallel axes sharing a cap
+  (`CTO900_pro6066a`, `-part`: OCCT's seams on partial faces, a one-to-one
+  match's limit), the block `CTO904_pro12859a` (its own tangency, a cusp),
+  `turned_round_off` (its stored edge `1e-4` off the snapped tangency) and
+  a partner tangent to a circle of a turned body (contact only)
+  (S9e.4b.4c.2b.2, S9e.4b.4d.2c.2).
+* Still refused after the shallow lens: a lens on a spline wall
+  (`ComputationLimit`, the shell's orientation undecided) and a ball or a
+  rod crossing a torus's outer equator by `1.5e-7` ("a torus meeting's
+  trace stalls", in every operation); a lens about a sphere's pole
+  evaluates with its volume 25 % wide ("The shallow lens, done").
+* `rational_f64` rounds a tie to the lower neighbour where IEEE rounds to
+  even, so a kept entity's `Unchanged` in the history depends on tie
+  coincidences in the inputs' last bits, the same on every host since R13
+  (`REVIEW_2026-10-18.md`, F11): a fix of its own.
+* Fuzz levers: libFuzzer's leak-check rerun (an input whose run keeps the
+  kernel's caches runs twice under the sanitizer) and the torus meetings'
+  root sampling ("The degree-eight arrangement's arithmetic").
+* `bug476_1` to `_8` evaluate and stay unregistered by the user's answer
+  (`UPSTREAM_TESTS.md`, "Evaluating but not registered").
+
+Refused by design and staying refused, each documented in its step: a
+tangency between the inputs, a cavity beside several solids, spline
+segments along one curve of different forms, an arc ending off its circle,
+a section through a sphere's pole off its meridians, a torus's tube circle
+on the other surface, a result touching itself, splines against tori,
+spline walls against spline walls with crossing axes, coincident spline
+walls in different frames, and a torus among three curved surfaces or two
+tori in one plane at a given meeting (S9e.3b, by cost).
 
 ## Evidence
 
@@ -2274,8 +2396,8 @@ campaign of every target the steps touch.
   Linux rows. The per-push B-rep job ("Rust kernel") runs only
   `compare_boolean.py`'s default set. The workflow "Rust Boolean captures
   on Linux" (`.github/workflows/rust-boolean-linux.yml`, daily schedule and
-  `workflow_dispatch`, never per push) runs all 46 comparisons of
-  `HANDOFF.md`'s table: one job builds the pinned SDK (`TKBO`, `TKPrim`)
+  `workflow_dispatch`, never per push) runs every comparison of the table
+  in "Comparisons" (46 at its start, 55 now): one job builds the pinned SDK (`TKBO`, `TKPrim`)
   and hands it to three shard jobs, each running
   `run_boolean_comparisons.py --shard K --shards 3` (the comparisons
   balanced by their measured local times, about 14 minutes a shard on a
@@ -2291,11 +2413,38 @@ campaign of every target the steps touch.
   capture's statuses and counts within 1e-11 of its values (a macOS review
   copied under the Linux row's fingerprint where the difference is that
   review's), by hand otherwise (REVIEW_NOTES.md's "The Boolean captures'
-  Linux records on CI, refined"; the steps in `HANDOFF.md`, item 2). All
+  Linux records on CI, refined"; the steps below). All
   46 captures have their Linux records since the first run, 38670188123:
   28 within rounding, 17 reviewed by hand against the macOS capture and
   the reference (REVIEW_NOTES.md's "The Boolean captures' Linux records
   taken from run 38670188123").
+
+  A new capture takes its record from the first scheduled run after its
+  merge. After a green run `RUN` at commit `SHA`:
+  1. `gh run download RUN -R jackControls/rustyOCCT -p
+     'boolean-linux-observations-*' -D target/boolean-linux-RUN`;
+  2. `target/math-oracle-venv/bin/python rust/tools/take_platform_records.py
+     target/boolean-linux-RUN` (the run's summary shows the same): per
+     capture, the cases differing from the macOS capture beyond rounding,
+     the largest deviation, the macOS reviews it can copy under the Linux
+     rows' fingerprints and the differences needing a review by hand;
+  3. for a capture beyond rounding (statuses, counts, or values beyond
+     1e-11 of max(1, |value|)), read its listed cases' rows against the
+     capture's and write the record's review (`--review CAPTURE=TEXT`);
+     for a difference needing a review by hand (new on Linux, or on a case
+     beyond rounding), add a Linux review with its independent evidence
+     and the listed `native_sha256` to the set's divergences JSON (run
+     38670188123's reviews compared each listed case's Linux and macOS
+     rows with the set's expected TSV: which platform is closer to the
+     reference, by how much, and whether the difference is in values,
+     counts, solids or order);
+  4. rerun step 2 with `--write --run RUN --commit SHA`: it writes
+     `platform-linux/{native.txt,record.json}` and the copied reviews of
+     the complete captures only; review the diff, commit, push, and check
+     that the next scheduled run is green with those captures strict
+     (`gh run list -R jackControls/rustyOCCT -w "Rust Boolean captures on
+     Linux"`). A red set there is a real change: OCCT's Linux result
+     moving between runs shows as a departure from its record.
 * **Spline profiles (S9a.2), before their kernel code.** The reference's
   `SplinePair` (`boolean_reference.py`, chosen by `make_pair` when either
   profile holds S8b's spline segments; S9a's pairs are unchanged) takes each
