@@ -77,6 +77,72 @@ the checked-in Python `Fraction` fixtures provide a separate integer runtime.
 Coverage counts include the oracle and dependencies: they are not kernel-only
 coverage percentages or evidence of exhaustive input coverage.
 
+## Budgets (S10)
+
+`boolean`, `split`, `brep_validation` and `tessellation` check S10's
+invariant ([BUDGETS.md](BUDGETS.md)) on the operations that take longest.
+The operations are `rust/fuzz/src/budget.rs`'s `metered`:
+- `boolean`: one of fuse, cut and common, picked by the input's hash, or
+  the one operation of two tori;
+- `split`: the split;
+- `brep_validation`: an input's first `TopologyParts::check`, under
+  `Budget::run`;
+- `tessellation`: the tessellation.
+
+Each such operation runs twice:
+1. Under a budget of `n` work units, drawn from the input's hash
+   log-uniformly below `2^24` (0 included).
+2. Under an unlimited budget, counting its work `w`. Its result is the one
+   the target's oracle checks.
+
+The two runs must then agree:
+- If `w <= n`, the limited run's result equals the unlimited run's, and it
+  counted exactly `w` units.
+- If `w > n`, it was refused with `BudgetExhausted` for work, having counted
+  exactly `n + 1` units: one past its budget, never more.
+
+The limited run comes first, so a refusal is met inside the arrangements
+and integrals the kernel keeps, which must then not be kept. A success
+leaves them kept, and the unlimited run charges them again. The other
+operations of `boolean` run once under an unlimited budget, so their work
+is counted and recorded too.
+
+The check is as granular as the count, because every unit is checked as it
+is counted. The invariant tests three things:
+- that the count is deterministic: the same in both runs, whatever was
+  kept;
+- that a refusal neither passes on a partial result nor is swallowed by an
+  internal alternative;
+- that an operation whose work fits its budget is unchanged by it.
+
+Its cost is a second run of one operation an input. Release replays of the
+corpora and regressions on the development Mac, at `50afeef4` and with S10,
+back to back:
+
+| Target | CPU before | CPU after | Change | Largest change, slowest 20 inputs |
+| --- | --- | --- | --- | --- |
+| `boolean` | 736.8 s | 751.7 s | +2.0% | 2% |
+| `split` | 404.1 s | 437.2 s | +8.2% | 46% |
+| `brep_validation` | 84.3 s | 92.1 s | +9.3% | 21% |
+
+`boolean`'s second run mostly charges the kept arrangement again. A split
+is not kept, so its second run is the whole split. The slowest `split`
+input was 28 s a run under AddressSanitizer with the first piece's
+Booleans, so at the largest change it would take about 41 s against the
+60 s limit. Measure again under the sanitizer before calling a timeout a
+regression.
+
+Replayed over the corpora with the invariant on the Linux host, every check
+holds. `BUDGETS.md`'s "Evidence" has the counts of operations within their
+budgets and refused.
+
+The budget fixtures (`rust/fixtures/budgets/`, the slowest distinct inputs
+of the `boolean`, `split` and `brep_validation` corpora) pin each metered
+operation's work units in `rust/fixtures/budget-work.tsv`. They are checked
+by `cargo +nightly-2026-09-22 run --release --example replay_budgets --
+--check` in `rust/fuzz`, which runs on every fuzz workflow run of the
+`boolean` job (Linux) and locally on macOS. `--write` records them again.
+
 ## Continuing campaigns
 
 [Rust geometry fuzzing](../.github/workflows/rust-fuzz.yml) runs all twenty-nine targets

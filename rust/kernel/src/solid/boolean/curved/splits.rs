@@ -20,6 +20,7 @@ use super::graph::Arr;
 use super::model::*;
 use super::num::*;
 use super::pieces::{common, cube, hull_of, hull_operation};
+use crate::budget::Recorded;
 use crate::identity::OperationId;
 use crate::profile::boolean::{Op2, Operand};
 use crate::solid::boolean::polyhedra::Component;
@@ -190,7 +191,8 @@ fn arranged(s: &Solid, first: Option<&R>) -> Result<(Arr, Vec<(Component, Made)>
 thread_local! {
     /// The last split pieces' models, by their content (the piece's
     /// construction, frame, heights and stored topology's `Debug` text).
-    static ARRANGED: std::cell::RefCell<Vec<(String, Result<Prism>)>> =
+    /// Each with the work it counted (S10, `crate::budget::recorded`).
+    static ARRANGED: std::cell::RefCell<Vec<(String, Result<Prism>, Recorded)>> =
         const { std::cell::RefCell::new(Vec::new()) };
 }
 
@@ -201,25 +203,28 @@ pub(super) fn model(s: &Solid, op: Operand, first: Option<&R>) -> Result<Prism> 
         "{:?}\n{:?}\n{:?} {:?}\n{:?}\n{op:?}\n{first:?}",
         s.construction, s.frame, s.start, s.end, s.topology
     );
-    if let Some(hit) = ARRANGED.with(|k| {
+    if let Some((hit, work)) = ARRANGED.with(|k| {
         k.borrow()
             .iter()
-            .find(|(known, _)| *known == key)
-            .map(|(_, m)| m.clone())
+            .find(|(known, _, _)| *known == key)
+            .map(|(_, m, work)| (m.clone(), work.clone()))
     }) {
+        work.replay()?;
         return hit;
     }
-    let built = (|| {
+    let (built, work) = crate::budget::recorded(|| {
         let (arr, out) = arranged(s, first)?;
         super::given::built(s, op, arr, out, Op2::Common, None)
-    })();
-    ARRANGED.with(|k| {
-        let mut k = k.borrow_mut();
-        if k.len() >= 2 {
-            k.drain(..1);
-        }
-        k.push((key, built.clone()));
     });
+    if let Some(work) = work {
+        ARRANGED.with(|k| {
+            let mut k = k.borrow_mut();
+            if k.len() >= 2 {
+                k.drain(..1);
+            }
+            k.push((key, built.clone(), work));
+        });
+    }
     built
 }
 

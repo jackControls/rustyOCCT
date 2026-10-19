@@ -58,6 +58,17 @@ impl Body {
         profile: Profile,
         frame: Frame3,
     ) -> Result<(Self, History)> {
+        crate::budget::within(context.budget, || {
+            Self::face_from_profile_in_budgeted(context, profile, frame)
+        })
+    }
+
+    /// [`Self::face_from_profile_in`], which runs this under the context's budget (S10).
+    fn face_from_profile_in_budgeted(
+        context: &Context,
+        profile: Profile,
+        frame: Frame3,
+    ) -> Result<(Self, History)> {
         Self::construct(
             context,
             Construction::Face(Box::new(profile)),
@@ -81,6 +92,18 @@ impl Body {
 
     /// [`Body::wire_from_boundary_with`] in an operation context.
     pub fn wire_from_boundary_in(
+        context: &Context,
+        boundary: Boundary,
+        frame: Frame3,
+        tolerance: Tolerance,
+    ) -> Result<(Self, History)> {
+        crate::budget::within(context.budget, || {
+            Self::wire_from_boundary_in_budgeted(context, boundary, frame, tolerance)
+        })
+    }
+
+    /// [`Self::wire_from_boundary_in`], which runs this under the context's budget (S10).
+    fn wire_from_boundary_in_budgeted(
         context: &Context,
         boundary: Boundary,
         frame: Frame3,
@@ -181,6 +204,17 @@ impl Body {
     /// body carries no attributes, so the context's policies have nothing to
     /// act on.
     pub fn transform_in(
+        &self,
+        context: &Context,
+        transform: RigidTransform,
+    ) -> Result<(Self, History)> {
+        crate::budget::within(context.budget, || {
+            self.transform_in_budgeted(context, transform)
+        })
+    }
+
+    /// [`Self::transform_in`], which runs this under the context's budget (S10).
+    fn transform_in_budgeted(
         &self,
         context: &Context,
         transform: RigidTransform,

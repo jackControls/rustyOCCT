@@ -233,6 +233,17 @@ impl Body {
         context: &Context,
         plane: Frame3,
     ) -> Result<(Vec<(Side, Body)>, History)> {
+        crate::budget::within(context.budget, || {
+            self.split_by_plane_in_budgeted(context, plane)
+        })
+    }
+
+    /// [`Self::split_by_plane_in`], which runs this under the context's budget (S10).
+    fn split_by_plane_in_budgeted(
+        &self,
+        context: &Context,
+        plane: Frame3,
+    ) -> Result<(Vec<(Side, Body)>, History)> {
         replayable(context.level)?;
         // The plane in the frame's coordinates at w = 0: a u + b v + d.
         let dot = |u: [f64; 3], v: [f64; 3]| -> R { (0..3).map(|i| q(u[i]) * q(v[i])).sum() };

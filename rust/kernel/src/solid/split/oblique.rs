@@ -381,6 +381,7 @@ pub(super) fn pieces(
     keys.sort_by_key(|k| (k.0, k.1));
     let mut out = Vec::new();
     for (k, &(side, _, s, i)) in keys.iter().enumerate() {
+        crate::budget::unit("an oblique piece")?;
         if only.is_some_and(|o| o != k) {
             continue;
         }

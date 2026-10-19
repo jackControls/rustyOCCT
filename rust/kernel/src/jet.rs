@@ -308,6 +308,9 @@ pub(crate) fn integrate_many<T: Real>(
         }
     }
     while let Some((lo, hi, level, inherited)) = stack.pop() {
+        if !crate::budget::unit_ok("an integral's piece") {
+            return None;
+        }
         let mid = 0.5 * lo + 0.5 * hi;
         let (l, m, h) = (T::exact_f64(lo), T::exact_f64(mid), T::exact_f64(hi));
         let (s0, s1) = (l.sub(&m), h.sub(&m));

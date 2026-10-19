@@ -273,6 +273,7 @@ pub(super) fn positive_roots<T: Real>(coeffs: &[T]) -> Result<Vec<Enclosure>> {
     let mut pending = vec![(lower, upper)];
     let mut budget = 20_000usize;
     while let Some((lo, hi)) = pending.pop() {
+        crate::budget::unit("a root's piece")?;
         budget = budget
             .checked_sub(1)
             .ok_or(limit("a polynomial's positive roots"))?;

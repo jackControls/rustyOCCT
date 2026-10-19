@@ -1,0 +1,25 @@
+# S10's budget fixtures (BUDGETS.md): the slowest distinct inputs of the boolean,
+# split and brep_validation corpora at 50afeef4 (release seconds a replay on the
+# development Mac, kernel and oracle), under fixtures/budgets/TARGET/INPUT.bin, and
+# the work units each metered operation counts (rust/fuzz/examples/replay_budgets.rs).
+# target	input	seconds	units
+boolean	17e131e351b53a29f4966c6dd07b19837efa0626	4.51	fuse=2937 cut=3536 common=2876
+boolean	21928984a54f016cf7e3e987dcdd3f07df37c15c	4.07	fuse=2879 cut=1737 common=1705
+boolean	36f96cda9632700ca345c18dc8b7cf018e3b01bc	3.94	fuse=2995 cut=3738 common=3047
+boolean	d8c872b28be95364bc9672422396235167c48b42	3.84	fuse=2677 cut=1705 common=1669
+boolean	972c8678a1dc2d5378a1282351e2b561032ba1a0	3.25	fuse=3037 cut=1887 common=1845
+boolean	442d4917351fae5b54e219c755d5f75641707cb3	3.22	fuse=3249 cut=2257 common=2185
+boolean	e36969f1937e115810b5a3ba892c4ac5dd2f7479	3.17	fuse=3749 cut=3686 common=3694
+boolean	1b40592903dbef27addc42024053d79e2d5799c1	3.12	fuse=4769 cut=4769 common=4755
+split	434a0d589bf073cf0b98433bb5da89dc836e69f1	1.38	split=2293
+split	4cf931535377c1482a5b7bb41b86119b2d21c647	1.38	split=660
+split	933e3bdad53068fc6660559002bd241135af2f10	1.33	split=454
+split	b967daec1d53cca4fb5e4a5ba7d1acbeefb108e3	1.28	split=888
+split	674ebdd30b135f3807e5587ebe7e453e412265cb	1.28	split=967
+split	88ea4abd89f2d930dbf00f8558bf0e8fb6a92fb1	1.28	split=760
+split	75806f57ec777dabc46d8ef23207c0a270f4981f	1.26	split=760
+split	f42c52b43d651f20a3d037f43b851f929e4da213	1.26	split=824
+brep_validation	1c346ef518d2e9277a8c72de7c10070e3dcbcec1	1.21	validation=17027 validation=14980
+brep_validation	ff5d54333ddfe66f8aa3ab2c7a8e0bff730f1fae	1.13	validation=17027 validation=14980
+brep_validation	6f1381f4f5857326500f769656297c9c7edb5a92	1.06	validation=12931 validation=10884
+brep_validation	8dc14560602876e97d7fecb7ae4ef2f80c651038	0.97	validation=17027 validation=16638

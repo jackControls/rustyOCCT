@@ -77,6 +77,17 @@ impl Solid {
         context: &Context,
         plane: Frame3,
     ) -> Result<(Vec<(Side, Solid)>, History)> {
+        crate::budget::within(context.budget, || {
+            self.split_by_plane_in_budgeted(context, plane)
+        })
+    }
+
+    /// [`Self::split_by_plane_in`], which runs this under the context's budget (S10).
+    fn split_by_plane_in_budgeted(
+        &self,
+        context: &Context,
+        plane: Frame3,
+    ) -> Result<(Vec<(Side, Solid)>, History)> {
         replayable(context.level)?;
         // The plane in the solid's frame coordinates: a u + b v + c w + d.
         let dot = |u: [f64; 3], v: [f64; 3]| -> R { (0..3).map(|i| q(u[i]) * q(v[i])).sum() };
@@ -230,6 +241,7 @@ impl Solid {
         let mut order: Vec<usize> = (0..section.pieces.len()).collect();
         order.sort_by_key(|&i| (section.pieces[i].side, section.pieces[i].first_origin()));
         for (k, &i) in order.iter().enumerate() {
+            crate::budget::unit("a split piece")?;
             let piece2 = &section.pieces[i];
             let mut solid = Self::build(
                 operation,
@@ -714,6 +726,7 @@ impl Section {
             along(&[I::exact(foot[0].clone()), I::exact(foot[1].clone())])
         };
         for (bi, boundary) in profile.boundaries().enumerate() {
+            crate::budget::unit("a section's boundary")?;
             let (points, segments): (Vec<Point2>, Vec<Segment>) = match &boundary.kind {
                 BoundaryKind::Polygon(p) => (p.clone(), vec![Segment::Line; p.len()]),
                 BoundaryKind::Path { points, segments } => (points.clone(), segments.clone()),
@@ -810,6 +823,7 @@ impl Section {
             }
             let mut boundary_edges = Vec::new();
             for j in 0..n {
+                crate::budget::unit("a section's segment")?;
                 let (p, e) = (points[j], points[(j + 1) % n]);
                 let (fp, fe) = (f(p), f(e));
                 let mut cuts: Vec<PointId> = Vec::new();
@@ -1438,6 +1452,7 @@ fn trace(
         let mut used = vec![false; set.len()];
         let mut cycles: Vec<Vec<usize>> = Vec::new();
         for start in 0..set.len() {
+            crate::budget::unit("a section's loop")?;
             if used[start] {
                 continue;
             }
@@ -1445,6 +1460,7 @@ fn trace(
             used[start] = true;
             let mut current = start;
             loop {
+                crate::budget::unit("a section loop's step")?;
                 let at = set[current].to;
                 if at == set[start].from {
                     break;

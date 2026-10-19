@@ -12,6 +12,8 @@ use rusty_occt::predicates::{
 use rusty_occt::{Error, Point2, Point3, Triangle3};
 use std::cmp::Ordering;
 
+mod budget;
+pub use budget::recorded as budget_work;
 mod curved;
 pub use curved::check_curved;
 mod splines;

@@ -120,6 +120,7 @@ fn rerun(poly: &Polyhedron) -> Result<(Arr, Vec<(Component, Made)>)> {
     let seams = super::SEAMS;
     let r = |(n, d): (i64, i64)| num_rational::BigRational::new(n.into(), d.into());
     for k in 0..seams.len() - 1 {
+        crate::budget::unit("a seam attempt")?;
         let attempt = || -> Result<(Arr, Vec<(Component, Made)>)> {
             let mut arr = super::shared(poly, &r(seams[k]), &r(seams[k + 1]))?;
             arr.for_op(poly.op);

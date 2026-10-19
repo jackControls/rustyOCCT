@@ -122,6 +122,13 @@ class BridgeTests(unittest.TestCase):
     def test_shape_names_use_framed_utf8(self):
         self.expect('set name {box μ with spaces}\nbox $name 1 2 3\nset props [vprops $name]\nregexp {Mass : ([^\\n]+)} $props all mass\ncheckreal mass $mass 6 1e-9 0', "pass")
 
+    def test_cpulimit_runs_later_commands_under_a_wall_budget(self):
+        # S10: the Rust worker runs the commands after `cpulimit` under a
+        # budget with that deadline (BUDGETS.md); within it they evaluate.
+        script = 'cpulimit 60\nbox b 1 2 3\nset props [vprops b]\nregexp {Mass : ([^\\n]+)} $props all mass\ncheckreal mass $mass 6 1e-9 0'
+        self.expect(script, "pass")
+        self.expect("cpulimit 0\nbox b 1 2 3", "unsupported")
+
     def test_timeout_is_a_failure(self):
         self.expect("while {1} {}", "timeout", timeout=0.3)
 

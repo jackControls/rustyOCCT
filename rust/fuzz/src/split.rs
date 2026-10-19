@@ -30,11 +30,12 @@
 //! (exact incidences on one sphere): their common is the piece, their fuse
 //! the solid, the solid less the piece the rest.
 use crate::analytic_intersections::Bytes;
+use crate::budget::metered;
 use rusty_occt::identity::OperationId;
 use rusty_occt::topology::SplineSpan;
 use rusty_occt::{
-    BSplineCurve2, Boundary, Error, Frame3, Point2, Point3, Profile, Segment, Side, Solid,
-    Tolerance, Vec3,
+    BSplineCurve2, Boundary, Budget, Context, Error, Frame3, Point2, Point3, Profile, Segment,
+    Side, Solid, Tolerance, Vec3,
 };
 
 /// Whether split pieces with curved faces are given to Booleans (S9e.4b.3b:
@@ -383,6 +384,7 @@ pub(crate) fn profile(kind: u8, s: f64, t: f64) -> Option<Profile> {
 }
 
 pub fn check_split(data: &[u8]) {
+    crate::budget::begin(data);
     if data.first().is_some_and(|k| *k >= 224) {
         return check_revolved(&data[1..]);
     }
@@ -479,7 +481,11 @@ fn check_body(data: &[u8]) {
     let Ok(plane) = Frame3::new(point, normal, hint, Tolerance::default()) else {
         return;
     };
-    let (pieces, _history) = match body.split_by_plane(OperationId(2), plane) {
+    // S10: under a budget too (`budget.rs`).
+    let split = |budget: &Budget| {
+        body.split_by_plane_in(&Context::new(OperationId(2)).with_budget(budget), plane)
+    };
+    let (pieces, _history) = match metered("split", true, split) {
         Ok(r) => r,
         Err(Error::ComputationLimit(_) | Error::Degenerate(_)) => return,
         Err(e) => panic!("unexpected error {e}"),
@@ -625,7 +631,11 @@ fn check_prism(data: &[u8], splined: bool) {
     let Ok(plane) = Frame3::new(point, normal, hint, Tolerance::default()) else {
         return;
     };
-    let (pieces, _history) = match solid.split_by_plane(OperationId(2), plane) {
+    // S10: under a budget too (`budget.rs`).
+    let split = |budget: &Budget| {
+        solid.split_by_plane_in(&Context::new(OperationId(2)).with_budget(budget), plane)
+    };
+    let (pieces, _history) = match metered("split", true, split) {
         Ok(r) => r,
         Err(Error::ComputationLimit(_)) => return,
         Err(Error::Degenerate(_)) => return,
@@ -837,7 +847,11 @@ fn check_revolved(data: &[u8]) {
     let Ok(plane) = Frame3::new(point, normal, hint, tolerance) else {
         return;
     };
-    let pieces = match solid.split_by_plane(OperationId(2), plane) {
+    // S10: under a budget too (`budget.rs`).
+    let split = |budget: &Budget| {
+        solid.split_by_plane_in(&Context::new(OperationId(2)).with_budget(budget), plane)
+    };
+    let pieces = match metered("split", true, split) {
         Ok((pieces, _)) => pieces,
         Err(Error::ComputationLimit(_) | Error::Degenerate(_)) => return,
         Err(Error::OutOfDomain(_)) if may_refuse => return,

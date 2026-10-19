@@ -1696,6 +1696,9 @@ pub(super) fn crossings<T: Real>(pr: &Projection, p: &V2<T>) -> Option<u32> {
     let mut count = 0;
     let mut stack = vec![(0.0f64, 1.0f64, 0usize)];
     while let Some((lo, hi, depth)) = stack.pop() {
+        if !crate::budget::unit_ok("a ray crossing's piece") {
+            return None;
+        }
         let base = T::exact_f64(lo).union(&T::exact_f64(hi));
         let mid = 0.5 * lo + 0.5 * hi;
         // Not enclosed over the whole piece: halves.
@@ -1770,6 +1773,9 @@ pub(super) fn cover_crossings_on<T: Real>(
     let mut out = Vec::new();
     let mut stack = vec![(0.0f64, 1.0f64, 0usize)];
     while let Some((lo, hi, depth)) = stack.pop() {
+        if !crate::budget::unit_ok("a ray crossing's piece") {
+            return None;
+        }
         let mid = 0.5 * lo + 0.5 * hi;
         let base = T::exact_f64(lo).union(&T::exact_f64(hi));
         let decided = (|| -> Option<Vec<i64>> {

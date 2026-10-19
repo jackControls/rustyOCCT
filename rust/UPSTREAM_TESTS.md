@@ -3162,9 +3162,16 @@ not a regression.
 - Test geometry remains boxes and rigidly transformed copies. The adapter
   intentionally does not expose every Rust prism capability yet. More command
   adapters must delegate to real kernel functions, never return canned success.
-- Metadata `help` registers no UI help; `cpulimit` is handled by the outer wall
-  timeout. An existing topology-check registration avoids `bugs/begin` loading
-  a viewer. These administrative differences do not skip geometry assertions.
+- Metadata `help` registers no UI help. `cpulimit N` is handled by the outer
+  wall timeout on both backends. On the Rust backend (S10, `BUDGETS.md`), the
+  worker also runs every later command under a budget whose deadline is `N`
+  seconds of wall time after the call (not CPU time). An operation past it is
+  refused as `BudgetExhausted` for wall time, and the case fails as upstream's
+  fails when its CPU limit kills it. No registered case calls `cpulimit`
+  itself. They take their group's `begin` limit, 60 s or more, past the 30 s
+  contract, so none meets the budget. An existing
+  topology-check registration avoids `bugs/begin` loading a viewer. These
+  administrative differences do not skip geometry assertions.
 - A safe child interpreter supplies Tcl control flow and prevents tests from
   launching processes or writing files. This is isolation for trusted pinned
   tests, not a security sandbox for arbitrary untrusted native DRAW input.

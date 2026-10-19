@@ -53,6 +53,7 @@ mod triple;
 mod turned;
 
 use super::polyhedra::{Component, Polyhedron};
+use crate::budget::Recorded;
 use crate::profile::boolean::Operand;
 use crate::profile::{BoundaryKind, Segment};
 use crate::solid::Construction;
@@ -273,6 +274,7 @@ pub(super) fn build(poly: &Polyhedron) -> Result<Vec<Component>> {
     spline_pairs(poly)?;
     let seams = SEAMS;
     for k in 0..seams.len() - 1 {
+        crate::budget::unit("a seam attempt")?;
         let r = |(n, d): (i64, i64)| R::new(BigInt::from(n), BigInt::from(d));
         match attempt(poly, &r(seams[k]), &r(seams[k + 1])) {
             Err(Error::ComputationLimit(m)) if m == graph::SEAM => continue,
@@ -301,22 +303,25 @@ thread_local! {
     /// apart). Fuse, cut and common of one pair share one (its pieces'
     /// sides decided, the operation's keeping not), bit for bit what each
     /// would build.
-    static ARRANGED: std::cell::RefCell<Vec<(String, Result<graph::Arr>)>> =
+    /// Each with the work its arrangement counted (S10: charged again on a
+    /// hit, `crate::budget::recorded`).
+    static ARRANGED: std::cell::RefCell<Vec<(String, Result<graph::Arr>, Recorded)>> =
         const { std::cell::RefCell::new(Vec::new()) };
 }
 
 /// The models' arrangement every operation on the pair shares, kept.
 fn shared(poly: &Polyhedron, seam_a: &R, seam_b: &R) -> Result<graph::Arr> {
     let key = format!("{:?}\n{:?}\n{seam_a}\n{seam_b}", poly.a, poly.b);
-    if let Some(hit) = ARRANGED.with(|k| {
+    if let Some((hit, work)) = ARRANGED.with(|k| {
         k.borrow()
             .iter()
-            .find(|(known, _)| *known == key)
-            .map(|(_, arr)| arr.clone())
+            .find(|(known, _, _)| *known == key)
+            .map(|(_, arr, work)| (arr.clone(), work.clone()))
     }) {
+        work.replay()?;
         return hit;
     }
-    let arr = (|| {
+    let (arr, work) = crate::budget::recorded(|| {
         let one = pieces::on_one_sphere(&poly.a, &poly.b);
         let mut a = model_of(&poly.a, Operand::A, seam_a, one)?;
         let mut b = model_of(&poly.b, Operand::B, seam_b, one)?;
@@ -328,13 +333,15 @@ fn shared(poly: &Polyhedron, seam_a: &R, seam_b: &R) -> Result<graph::Arr> {
         // S9e.2: a given solid of several kept alone.
         matched::keep_solid(&mut arr)?;
         Ok(arr)
-    })();
-    ARRANGED.with(|k| {
-        let mut k = k.borrow_mut();
-        if k.len() >= KEPT {
-            k.drain(..1);
-        }
-        k.push((key, arr.clone()));
     });
+    if let Some(work) = work {
+        ARRANGED.with(|k| {
+            let mut k = k.borrow_mut();
+            if k.len() >= KEPT {
+                k.drain(..1);
+            }
+            k.push((key, arr.clone(), work));
+        });
+    }
     arr
 }

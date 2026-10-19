@@ -251,6 +251,7 @@ fn contract(t: &Topology, mesh: &Mesh, p: Parameters) -> (i64, usize, f64, f64) 
 }
 
 pub fn check_tessellation(data: &[u8]) {
+    crate::budget::begin(data);
     let mut u = Unstructured::new(data);
     let Ok(Some(built)) = body(&mut u) else {
         return;
@@ -292,7 +293,11 @@ pub fn check_tessellation(data: &[u8]) {
         size = size.max(s.mass_properties().volume.abs().cbrt());
     }
     let p = Parameters::new(size * 2f64.powi(-i32::from(k)), angle).unwrap();
-    let mesh = tessellate(topology, p).unwrap_or_else(|e| panic!("{e}"));
+    // S10: under a budget too (`budget.rs`).
+    let mesh = crate::budget::metered("tessellation", true, |budget| {
+        budget.run(|| tessellate(topology, p))
+    })
+    .unwrap_or_else(|e| panic!("{e}"));
     let (euler, boundary, area, volume) = contract(topology, &mesh, p);
     match &built {
         Built::Solid(s) => {

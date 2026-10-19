@@ -1363,6 +1363,7 @@ fn boxes_clear(
     let mut stack = vec![(p, s)];
     let mut count = 0usize;
     while let Some((p, s)) = stack.pop() {
+        crate::budget::unit("a torus meeting's verification box")?;
         count += 1;
         if count > 60_000 {
             return Ok(false);
@@ -1671,6 +1672,7 @@ fn folds(m: &Meeting) -> Result<Vec<Bx>> {
     let mut stack: Vec<Bx> = vec![[[-PI_HI, PI_HI], [-PI_HI, PI_HI]]];
     let mut budget = 200_000usize;
     while let Some(b) = stack.pop() {
+        crate::budget::unit("a torus meeting's turning-point box")?;
         budget = budget
             .checked_sub(1)
             .ok_or(limit("a torus meeting's turning points"))?;
@@ -1842,6 +1844,7 @@ fn trace(
     let mut pts = vec![start];
     seen[li][ri] = true;
     for _ in 0..400_000 {
+        crate::budget::unit("a torus meeting's tracing step")?;
         let pred = [p[0] + h * d[0], p[1] + h * d[1]];
         let mut q = pred;
         let mut converged = false;
@@ -2179,6 +2182,7 @@ fn pieces_of(
 ) -> Result<(Vec<ToricCrv>, Vec<QV>)> {
     let mut runs = plan(m, comp);
     for _ in 0..48 {
+        crate::budget::unit("a torus meeting's piece plan")?;
         match build(k, m, comp, &runs, budget)? {
             Built::Done(p, s) => return Ok((p, s)),
             Built::Split(i) => {
@@ -2293,6 +2297,7 @@ fn torus_far(k: usize, t: &Prism, other: &Far) -> Result<CylPair> {
     let mut switches = Vec::new();
     for li in 0..lines.len() {
         for ri in 0..lines[li].v.len() {
+            crate::budget::unit("a torus meeting's component")?;
             if seen[li][ri] {
                 continue;
             }

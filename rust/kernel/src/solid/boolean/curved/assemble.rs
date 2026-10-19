@@ -269,6 +269,7 @@ pub(super) fn assemble_made(arr: &Arr, op: Op2) -> Result<Vec<(Component, Made)>
     // stack floors) runs its loops the other way, about the face's own
     // normal, and every vertex's way on is chosen about that normal.
     for rf in &mut faces {
+        crate::budget::unit("a result face's loops")?;
         let mut face_of: BTreeMap<(usize, bool), usize> = BTreeMap::new();
         for &i in &rf.pieces {
             let same = arr.pieces[i].behind == rf.behind;
@@ -531,6 +532,7 @@ pub(super) fn assemble_made(arr: &Arr, op: Op2) -> Result<Vec<(Component, Made)>
         .collect();
     let pv: Vec<(&usize, &Point3)> = points.iter().collect();
     for i in 0..pv.len() {
+        crate::budget::unit("a result vertex's neighbours")?;
         for j in i + 1..pv.len() {
             if (*pv[i].1 - *pv[j].1).length() <= tol {
                 return Err(Error::Degenerate("a result thinner than the resolution"));
@@ -565,6 +567,7 @@ pub(super) fn assemble_made(arr: &Arr, op: Op2) -> Result<Vec<(Component, Made)>
     let cavities_held = alone && arr.models.iter().any(Prism::may_hold_cavities);
     if shells.len() > 1 {
         for si in 0..shells.len() {
+            crate::budget::unit("a cavity's trial")?;
             let both = shells[si].iter().any(|&fi| faces[fi].op == 0)
                 && shells[si].iter().any(|&fi| faces[fi].op == 1);
             if !cavities_held && (is_cavity[si] || !both) {
@@ -603,6 +606,7 @@ pub(super) fn assemble_made(arr: &Arr, op: Op2) -> Result<Vec<(Component, Made)>
     }
     let mut out = Vec::new();
     for &si in &outers {
+        crate::budget::unit("a result solid")?;
         let mut all: Vec<usize> = shells[si].clone();
         // Each cavity's faces by its index (S9e.4b.4c.1: an imported
         // polyhedron's cavity split by the other input, or two kept).
@@ -683,6 +687,7 @@ fn build_component(
         .map(|(i, e)| (*e, EdgeId(i)))
         .collect();
     for &ri in &used_edges {
+        crate::budget::unit("a result edge")?;
         let e = &redges[ri];
         p.edges.push(Edge {
             start: e.ends.map(|x| vertex_id[&x[0]]),
@@ -696,6 +701,7 @@ fn build_component(
     // model face).
     let mut poles: Vec<(VertexId, usize, usize)> = Vec::new();
     for (k, &fi) in all.iter().enumerate() {
+        crate::budget::unit("a result face")?;
         let rf = &faces[fi];
         let mface = &arr.models[rf.op].faces[rf.face];
         let surface = mface.stored.clone();

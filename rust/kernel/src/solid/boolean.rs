@@ -319,6 +319,18 @@ impl Solid {
         other: &Solid,
         op: Op2,
     ) -> Result<(Vec<Solid>, History)> {
+        crate::budget::within(context.budget, || {
+            self.boolean_in_budgeted(context, other, op)
+        })
+    }
+
+    /// [`Self::boolean_in`], which runs this under the context's budget (S10).
+    fn boolean_in_budgeted(
+        &self,
+        context: &Context,
+        other: &Solid,
+        op: Op2,
+    ) -> Result<(Vec<Solid>, History)> {
         replayable(context.level)?;
         // The history names each input's entities by id: inputs sharing
         // ids (built by one operation, or one solid twice) cannot be told

@@ -10,7 +10,7 @@ use crate::attributes::{
 };
 use crate::history::{History, Relation};
 use crate::identity::{AlgorithmLevel, EntityId, OperationId, OperationKind};
-use crate::{Error, Result};
+use crate::{Budget, Error, Result};
 use std::collections::BTreeMap;
 
 /// Computes a new value for an attribute under an `OnTransform::Recompute`
@@ -19,14 +19,18 @@ use std::collections::BTreeMap;
 pub type Recompute<'a> = &'a dyn Fn(AttributeKey, EntityId, &[u8]) -> Vec<u8>;
 
 /// The context of one operation: its id, the algorithm level it runs at, the
-/// attribute policy of every key its inputs carry, and the application's
-/// recompute callback.
+/// attribute policy of every key its inputs carry, the application's
+/// recompute callback and the operation's budget (S10; none: unlimited).
 #[derive(Clone, Copy)]
 pub struct Context<'a> {
     pub operation: OperationId,
     pub level: AlgorithmLevel,
     pub policies: &'a PolicyTable,
     pub recompute: Option<Recompute<'a>>,
+    /// Work units, deadline and cancellation (`BUDGETS.md`); `None` keeps
+    /// the budget of an enclosing operation, if any, and is otherwise
+    /// unlimited.
+    pub budget: Option<&'a Budget>,
 }
 
 static NO_POLICIES: PolicyTable = PolicyTable(BTreeMap::new());
@@ -40,6 +44,7 @@ impl<'a> Context<'a> {
             level: AlgorithmLevel::CURRENT,
             policies: &NO_POLICIES,
             recompute: None,
+            budget: None,
         }
     }
     pub fn at(self, level: AlgorithmLevel) -> Self {
@@ -54,6 +59,13 @@ impl<'a> Context<'a> {
             ..self
         }
     }
+    /// The operation under `budget` (S10).
+    pub fn with_budget(self, budget: &'a Budget) -> Self {
+        Self {
+            budget: Some(budget),
+            ..self
+        }
+    }
 }
 
 impl std::fmt::Debug for Context<'_> {
@@ -63,6 +75,7 @@ impl std::fmt::Debug for Context<'_> {
             .field("level", &self.level)
             .field("policies", self.policies)
             .field("recompute", &self.recompute.is_some())
+            .field("budget", &self.budget)
             .finish()
     }
 }

@@ -297,6 +297,9 @@ pub(super) fn quotient_integral<T: Real>(
     let mut total = T::exact_f64(0.0);
     let mut stack = vec![(m.clone(), w.clone(), if uniform { 0 } else { 6 })];
     while let Some((m, w, depth)) = stack.pop() {
+        if !crate::budget::unit_ok("a quotient integral's piece") {
+            return None;
+        }
         if depth > 0 {
             let (m, w) = (halves(&m), halves(&w));
             // Each half covers half the parameter.
@@ -515,6 +518,9 @@ pub(super) fn green_integrals<T: Real>(
         let coords: [Bern<T>; 3] = [0, 1, 3].map(|k| poles.iter().map(|p| c(&p[k])).collect());
         let mut stack = vec![(coords, depth)];
         while let Some(([u, v, w], d)) = stack.pop() {
+            if !crate::budget::unit_ok("a Green integral's piece") {
+                return None;
+            }
             if d > 0 {
                 let (u, v, w) = (halves(&u), halves(&v), halves(&w));
                 // Each half covers half the piece's parameter.

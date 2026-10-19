@@ -352,6 +352,7 @@ impl CurveCells {
                 pieces = next;
             }
             for (lo, hi, net) in pieces {
+                crate::budget::unit("a spline cell")?;
                 cells.push(curve_cell(lo, hi, &net, degree));
             }
         }
@@ -1055,6 +1056,7 @@ impl SurfaceCells {
                         .collect();
                 }
                 for (b, net) in pieces.into_iter().enumerate() {
+                    crate::budget::unit("a spline cell")?;
                     let (i, j) = (pi * split + a, pj * split + b);
                     let lengths = [
                         Fast::from_r(&(&ubreaks[i + 1] - &ubreaks[i])),

@@ -32,6 +32,7 @@
 mod algebraic;
 pub mod attributes;
 mod body;
+pub mod budget;
 pub(crate) mod certified;
 pub mod cr;
 pub mod curve;
@@ -58,6 +59,7 @@ pub mod tessellation;
 pub mod topology;
 
 pub use body::Body;
+pub use budget::{Budget, Cancel};
 pub use curve::{
     BSplineCurve2, BSplineCurve3, BezierCurve3, ExactBSplineCurve3, ExactBezierCurve3,
 };

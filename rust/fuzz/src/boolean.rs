@@ -114,12 +114,13 @@
 //! at most, the first whose key is set, and none where `JOINTS` takes the
 //! lens (`own` in `check_boolean`).
 use crate::analytic_intersections::Bytes;
+use crate::budget::{metered, pick as budget_pick};
 use crate::split::{profile, spline_profile};
 use rusty_occt::identity::OperationId;
 use rusty_occt::topology::SplineSpan;
 use rusty_occt::{
-    BSplineCurve2, Boundary, Error, Frame3, Point2, Point3, Profile, Segment, Solid, Tolerance,
-    Vec3,
+    BSplineCurve2, Boundary, Context, Error, Frame3, Point2, Point3, Profile, Segment, Solid,
+    Tolerance, Vec3,
 };
 
 /// Whether two whole tori are decoded (S9d.4b.2b). On since the torus
@@ -361,6 +362,7 @@ fn knot_profile(s: f64, t: f64) -> Option<Profile> {
 }
 
 pub fn check_boolean(data: &[u8]) {
+    crate::budget::begin(data);
     let mut b = Bytes(data, 0);
     let (ka, kb, flags) = (b.next(), b.next(), b.next());
     let (s1, t1) = (
@@ -721,10 +723,17 @@ pub fn check_boolean(data: &[u8]) {
         // most the smaller (within 1e-9).
         let slack = 1e-9 * (va + vb);
         let op = b.next() % 3;
+        // S10: under a budget too (`budget.rs`).
         let r = match op {
-            0 => a.fuse(OperationId(3), &tool),
-            1 => a.cut(OperationId(4), &tool),
-            _ => a.common(OperationId(5), &tool),
+            0 => metered("fuse", true, |budget| {
+                a.fuse_in(&Context::new(OperationId(3)).with_budget(budget), &tool)
+            }),
+            1 => metered("cut", true, |budget| {
+                a.cut_in(&Context::new(OperationId(4)).with_budget(budget), &tool)
+            }),
+            _ => metered("common", true, |budget| {
+                a.common_in(&Context::new(OperationId(5)).with_budget(budget), &tool)
+            }),
         };
         if let Some(out) = run(r) {
             let v = volume(&out);
@@ -738,9 +747,18 @@ pub fn check_boolean(data: &[u8]) {
         }
         return;
     }
-    let fused = run(a.fuse(OperationId(3), &tool));
-    let cut = run(a.cut(OperationId(4), &tool));
-    let common = run(a.common(OperationId(5), &tool));
+    // S10: each operation's work counted, one of the three (by the input's
+    // hash) under a budget too (`budget.rs`).
+    let checked = budget_pick(3);
+    let fused = run(metered("fuse", checked == 0, |budget| {
+        a.fuse_in(&Context::new(OperationId(3)).with_budget(budget), &tool)
+    }));
+    let cut = run(metered("cut", checked == 1, |budget| {
+        a.cut_in(&Context::new(OperationId(4)).with_budget(budget), &tool)
+    }));
+    let common = run(metered("common", checked == 2, |budget| {
+        a.common_in(&Context::new(OperationId(5)).with_budget(budget), &tool)
+    }));
     if let (Some(f), Some(m)) = (&fused, &common) {
         assert!(
             near(volume(f), va + vb - volume(m)),

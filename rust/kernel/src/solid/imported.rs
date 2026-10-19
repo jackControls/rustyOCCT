@@ -433,6 +433,17 @@ impl Solid {
         topology: Topology,
         resolution: Tolerance,
     ) -> Result<(Self, History)> {
+        crate::budget::within(context.budget, || {
+            Self::imported_in_budgeted(context, topology, resolution)
+        })
+    }
+
+    /// [`Self::imported_in`], which runs this under the context's budget (S10).
+    fn imported_in_budgeted(
+        context: &Context,
+        topology: Topology,
+        resolution: Tolerance,
+    ) -> Result<(Self, History)> {
         let (level, operation) = (context.level, context.operation);
         replayable(level)?;
         let topology = renamed(topology, operation)?;
@@ -621,6 +632,7 @@ impl Solid {
             Err(e) if e == not_their_chain() => {
                 let (choices, _, _, total) = primitives_choices(&topology, resolution);
                 for choice in choices.into_iter().filter(|&c| c >= total) {
+                    crate::budget::unit("a chain attempt")?;
                     if let Some(Ok(done)) = attempt(choice) {
                         return Ok(done);
                     }
@@ -632,6 +644,7 @@ impl Solid {
         let (mut refusal, mut tangent) = (None, alone == tangent_body());
         let (choices, plain, rim, _) = primitives_choices(&topology, resolution);
         for choice in choices.into_iter().skip(1) {
+            crate::budget::unit("a chain attempt")?;
             let Some(attempted) = attempt(choice) else {
                 continue;
             };
@@ -684,6 +697,7 @@ impl Solid {
             .map(|&f| (f, 0))
             .chain((0..choices).map(|c| (Form::Tree, c)));
         for (form, choice) in tried {
+            crate::budget::unit("a form attempt")?;
             let built = piece(&topology, resolution, op, form, choice).map_err(|x| {
                 let tree = form == Form::Tree && matches!(x, Error::Degenerate(_));
                 if x == not_its_primitive() || tree {
@@ -1146,6 +1160,7 @@ fn prism(t: &Topology, tolerance: Tolerance, op: OperationId) -> Result<Solid> {
     'pairs: for i in 0..faces.len() {
         let Some(mi) = normals[i] else { continue };
         for j in i + 1..faces.len() {
+            crate::budget::unit("a face pair's prism")?;
             let Some(mj) = normals[j] else { continue };
             if mi.dot(mj) >= 0.0 || !parallel(mi, mj) {
                 continue;
@@ -2739,6 +2754,7 @@ fn groups(
     // Through keeping edges, in rounds; both groups at once refused.
     let spread = |group: &mut Vec<Option<usize>>| -> Result<()> {
         loop {
+            crate::budget::unit("a face grouping round")?;
             let before = group.clone();
             let mut changed = false;
             for (i, slot) in group.iter_mut().enumerate() {

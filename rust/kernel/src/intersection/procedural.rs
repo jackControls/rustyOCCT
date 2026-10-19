@@ -673,6 +673,7 @@ fn isolate<T: Real>(
 ) -> Result<()> {
     let mut pending = vec![(lo, hi, depth)];
     while let Some((lo, hi, depth)) = pending.pop() {
+        crate::budget::unit("a root's piece")?;
         *budget = budget
             .checked_sub(1)
             .ok_or(limit("isolating a loop's ends"))?;
